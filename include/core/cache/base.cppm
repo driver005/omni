@@ -26,6 +26,7 @@ export import :cache_query;
 
 export import :cache;
 export import :cache_builder;
+export import :cache_aside;
 
 // Re-exported as interface partitions; contents are NOT exported.
 export import :cache_storage_backend;

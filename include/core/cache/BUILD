@@ -38,6 +38,7 @@ congelado_module_library(
         # facade + builder
         "cache.cppm",
         "cache_builder.cppm",
+        "cache_aside.cppm",
     ],
     deps = [],
 

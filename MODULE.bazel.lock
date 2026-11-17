@@ -84,6 +84,8 @@
     "https://bcr.bazel.build/modules/libffi/3.4.7.bcr.3/MODULE.bazel": "2aaa0e32669002a26ffe421e98913ed70fa5ee21c36fc51d2d51053a5ed07420",
     "https://bcr.bazel.build/modules/libffi/3.4.7.bcr.3/source.json": "fdffd7d4e35124905988e03a5f7ced705df34f5e5134445b7f17f1ecaede9df2",
     "https://bcr.bazel.build/modules/libpfm/4.11.0/MODULE.bazel": "45061ff025b301940f1e30d2c16bea596c25b176c8b6b3087e92615adbd52902",
+    "https://bcr.bazel.build/modules/libsodium/1.0.19/MODULE.bazel": "b1ed029b3bd83aabe9cb1d5f4c19b1380ca673ff1b5344dac7705fdde20d2f84",
+    "https://bcr.bazel.build/modules/libsodium/1.0.19/source.json": "2bdfb4f85a2fce136efe686f9dec4ba0dd2d2a2353603cea0beed2ca06f77967",
     "https://bcr.bazel.build/modules/libuv/1.48.0/MODULE.bazel": "52e85b2b271d21ed767727762d7ed68be1b214b87f83b4b4a2fa12a74e693270",
     "https://bcr.bazel.build/modules/libuv/1.48.0/source.json": "c956e4cab814593615f8d9d3707f2d2c8cb69bca58e37a49d29fb3a6e4a8284b",
     "https://bcr.bazel.build/modules/nlohmann_json/3.11.2/MODULE.bazel": "720e68559637b673f7414e06ca8b3ad911be34525ce2ca9d4b38e6772cded36f",

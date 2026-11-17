@@ -36,11 +36,11 @@ public:
     }
 
 private:
-    [[nodiscard]] static bool compare_strings(
+    [[nodiscard]] bool compare_strings(
         std::string_view lhs,
         std::string_view rhs,
         CacheCompare comparison
-    ) noexcept
+    ) const noexcept
     {
         const int cmp = lhs.compare(rhs);
         switch (comparison) {

@@ -15,7 +15,7 @@ namespace core::bridge::detail {
 using RegisterFn = void (*)(void*);
 
 /** @brief Instance functor exposing the plugin registration symbol name. */
-export class RegisterSymbol
+class RegisterSymbol
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()() const noexcept

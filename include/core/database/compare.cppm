@@ -21,7 +21,7 @@ enum class Compare : std::uint8_t
 };
 
 /** @brief Instance functor mapping a Compare to its SQL operator. */
-export class CompareSql
+class CompareSql
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()(Compare comparison) const noexcept

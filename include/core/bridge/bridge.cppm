@@ -91,7 +91,7 @@ suite<"core_bridge_bridge"> core_bridge_bridge_suite = []
     "service registry works through the handle"_test = []
     {
         Bridge bridge;
-        const auto key = ServiceKey::make<int>("n");
+        const auto key = ServiceKey{}.make<int>("n");
         expect(bridge.register_service(key, 7) == BridgeStatus::OK);
         expect(bridge.resolve<int>(key).value_or(0) == 7);
         expect(bridge.service_count() == 1);

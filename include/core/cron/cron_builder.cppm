@@ -28,8 +28,7 @@ public:
 
     [[nodiscard]] Cron build() const
     {
-        auto runtime = std::make_unique<Cron::Runtime>(m_context.build());
-        return Cron{std::move(runtime)};
+        return Cron{m_context.engine()};
     }
 
 private:
@@ -43,7 +42,7 @@ namespace core::cron::tests {
 
 struct BuiltCronJob
 {
-    static void run() {}
+     void run() {}
 };
 CORE_CRON_JOB(BuiltCronJob, "built-cron-job", "*/5 * * * *");
 

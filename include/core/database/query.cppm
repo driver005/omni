@@ -27,7 +27,7 @@ public:
     Query() :
         m_spec{
             .table = std::string{reflect::EntityMeta<E>::table},
-            .columns = split_columns(reflect::SqlGenerator::select_columns<E>()),
+            .columns = split_columns(reflect::SqlGenerator{}.select_columns<E>()),
         }
     {
     }
@@ -108,7 +108,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static std::vector<std::string> split_columns(std::string_view joined)
+    [[nodiscard]] std::vector<std::string> split_columns(std::string_view joined)
     {
         std::vector<std::string> columns;
         for (const auto part: joined | std::views::split(',')) {

@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] static std::optional<CronJob> create(
+    [[nodiscard]] std::optional<CronJob> create(
         std::string_view name,
         std::string_view expression
     )
@@ -31,7 +31,7 @@ public:
         if (name.empty()) {
             return std::nullopt;
         }
-        auto parsed = CronExpression::parse(expression);
+        auto parsed = CronExpression{}.parse(expression);
         if (!parsed) {
             return std::nullopt;
         }
@@ -74,12 +74,12 @@ suite<"core_cron_job"> core_cron_job_suite = []
 {
     "creates named jobs from valid expressions"_test = []
     {
-        const auto job = CronJob::create("nightly", "0 0 * * *");
+        const auto job = CronJob{}.create("nightly", "0 0 * * *");
         expect(job.has_value());
         expect(job->name() == "nightly");
         expect(job->expression() == "0 0 * * *");
-        expect(!CronJob::create("", "* * * * *").has_value());
-        expect(!CronJob::create("bad", "nope").has_value());
+        expect(!CronJob{}.create("", "* * * * *").has_value());
+        expect(!CronJob{}.create("bad", "nope").has_value());
     };
 };
 

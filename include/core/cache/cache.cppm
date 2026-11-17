@@ -17,13 +17,17 @@ import :cache_runtime;
 import boost.ut;
 #endif
 
-namespace core::cache::detail {
+export namespace core::cache::detail {
 
-/** @brief Keys must be non-empty; enforced on every write through the facade. */
-[[nodiscard]] inline bool valid_key(std::string_view key) noexcept
+/** @brief Instance functor validating a cache key. */
+class ValidKey
 {
-    return !key.empty();
-}
+public:
+    [[nodiscard]] bool operator()(std::string_view key) const noexcept
+    {
+        return !key.empty();
+    }
+};
 
 } // namespace core::cache::detail
 
@@ -52,7 +56,7 @@ public:
     void put(
         std::string_view key,
         CacheValue value,
-        Ttl ttl = Ttl::never(),
+        Ttl ttl = Ttl{}.never(),
         std::vector<std::string> tags = {}
     );
 
@@ -60,7 +64,7 @@ public:
     [[nodiscard]] std::optional<E> get(const Entity& entity) const;
 
     template<reflect::ReflectedCacheEntity E, typename Entity>
-    void put(const Entity& entity, Ttl ttl = Ttl::never());
+    void put(const Entity& entity, Ttl ttl = Ttl{}.never());
 
     bool erase(std::string_view key);
 
@@ -135,17 +139,17 @@ std::size_t Cache::size() const noexcept
 CacheResult Cache::get(std::string_view key) const
 {
     const CacheEntry entry = m_runtime->impl->driver().get(key);
-    if (is_miss(entry.value)) {
-        return CacheResult::miss(key);
+    if (IsMiss{}(entry.value)) {
+        return CacheResult{}.miss(key);
     }
-    CacheResult result = CacheResult::found(key, entry.value, entry.tags);
+    CacheResult result = CacheResult{}.found(key, entry.value, entry.tags);
     result.attributes = entry.attributes;
     return result;
 }
 
 void Cache::put(std::string_view key, CacheValue value, Ttl ttl, std::vector<std::string> tags)
 {
-    if (!detail::valid_key(key)) {
+    if (!detail::ValidKey{}(key)) {
         throw std::invalid_argument("core_cache: cache key must not be empty");
     }
     CacheEntry entry;
@@ -159,7 +163,7 @@ void Cache::put(std::string_view key, CacheValue value, Ttl ttl, std::vector<std
 template<reflect::ReflectedCacheEntity E, typename Entity>
 std::optional<E> Cache::get(const Entity& entity) const
 {
-    const std::string key = reflect::KeyBuilder::build<E>(entity);
+    const std::string key = reflect::KeyBuilder{}.build<E>(entity);
     const CacheResult result = get(key);
     if (!result.hit) {
         return std::nullopt;
@@ -169,13 +173,13 @@ std::optional<E> Cache::get(const Entity& entity) const
     entry.value = result.value;
     entry.tags = result.tags;
     entry.attributes = result.attributes;
-    return reflect::EntityCodec::decode<E>(entry);
+    return reflect::EntityCodec{}.decode<E>(entry);
 }
 
 template<reflect::ReflectedCacheEntity E, typename Entity>
 void Cache::put(const Entity& entity, Ttl ttl)
 {
-    CacheEntry entry = reflect::EntityCodec::encode<E>(entity);
+    CacheEntry entry = reflect::EntityCodec{}.encode<E>(entity);
     entry.expires_at = ttl.deadline_from(CacheEntry::Clock::now());
     m_runtime->impl->driver().put(entry);
 }
@@ -188,7 +192,7 @@ bool Cache::erase(std::string_view key)
 template<reflect::ReflectedCacheEntity E, typename Entity>
 bool Cache::erase(const Entity& entity)
 {
-    return erase(reflect::KeyBuilder::build<E>(entity));
+    return erase(reflect::KeyBuilder{}.build<E>(entity));
 }
 
 std::vector<CacheEntry> Cache::execute(const CacheQuerySpec& spec) const
@@ -201,7 +205,7 @@ std::vector<E> Cache::query(const CacheQuerySpec& spec) const
 {
     std::vector<E> entities;
     for (const CacheEntry& entry: execute(spec)) {
-        if (auto decoded = reflect::EntityCodec::decode<E>(entry)) {
+        if (auto decoded = reflect::EntityCodec{}.decode<E>(entry)) {
             entities.push_back(*decoded);
         }
     }
@@ -248,8 +252,8 @@ suite<"core_cache_cache"> core_cache_cache_suite = []
 {
     "facade rejects empty keys on write"_test = []
     {
-        expect(detail::valid_key("users:v1:7"));
-        expect(!detail::valid_key(""));
+        expect(detail::ValidKey{}("users:v1:7"));
+        expect(!detail::ValidKey{}(""));
     };
 };
 

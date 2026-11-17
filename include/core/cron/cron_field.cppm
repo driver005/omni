@@ -13,7 +13,7 @@ class CronField
 public:
     using Bounds = std::pair<int, int>;
 
-    [[nodiscard]] static std::optional<CronField> parse(std::string_view field, int min, int max)
+    [[nodiscard]] std::optional<CronField> parse(std::string_view field, int min, int max)
     {
         CronField result;
         result.m_min = min;
@@ -92,7 +92,7 @@ private:
         return true;
     }
 
-    [[nodiscard]] static std::optional<int> parse_number(std::string_view text)
+    [[nodiscard]] std::optional<int> parse_number(std::string_view text)
     {
         if (text.empty()) {
             return std::nullopt;
@@ -122,22 +122,22 @@ suite<"core_cron_field"> core_cron_field_suite = []
 {
     "parses stars, steps, ranges and lists"_test = []
     {
-        const auto star = CronField::parse("*", 0, 59);
+        const auto star = CronField{}.parse("*", 0, 59);
         expect(star.has_value());
         expect(star->values().size() == 60);
         expect(star->matches(37));
 
-        const auto step = CronField::parse("*/15", 0, 59);
+        const auto step = CronField{}.parse("*/15", 0, 59);
         expect(step.has_value());
         expect(step->matches(0));
         expect(step->matches(45));
         expect(!step->matches(7));
 
-        const auto list = CronField::parse("1,3-5", 0, 59);
+        const auto list = CronField{}.parse("1,3-5", 0, 59);
         expect(list.has_value());
         expect(list->matches(4));
         expect(!list->matches(2));
-        expect(!CronField::parse("99", 0, 59).has_value());
+        expect(!CronField{}.parse("99", 0, 59).has_value());
     };
 };
 

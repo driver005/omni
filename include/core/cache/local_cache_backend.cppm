@@ -154,7 +154,7 @@ suite<"core_cache_local_cache_backend"> core_cache_local_cache_backend_suite = [
         c.value = to_cache_value(std::int64_t{3});
         backend.put(c); // evicts least-recently-stamped ("a")
         expect(backend.size() == 2);
-        expect(is_miss(backend.get("a").value));
+        expect(IsMiss{}(backend.get("a").value));
         expect(backend.erase("b"));
         expect(!backend.erase("missing"));
     };
@@ -168,7 +168,7 @@ suite<"core_cache_local_cache_backend"> core_cache_local_cache_backend_suite = [
         entry.value = to_cache_value(std::string{"v"});
         entry.expires_at = CacheEntry::Clock::now() - std::chrono::seconds{1};
         backend.put(entry);
-        expect(is_miss(backend.get("k").value));
+        expect(IsMiss{}(backend.get("k").value));
         expect(backend.entries().empty());
     };
 };

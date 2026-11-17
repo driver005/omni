@@ -105,7 +105,7 @@ private:
     template<reflect::ReflectedEntity E>
     [[nodiscard]] std::vector<E> collect(const QuerySpec& spec) const;
 
-    [[nodiscard]] static std::vector<std::string> split(std::string_view joined);
+    [[nodiscard]] std::vector<std::string> split(std::string_view joined);
 
     friend class DatabaseBuilder;
 };
@@ -173,7 +173,7 @@ std::vector<E> Database::collect(const QuerySpec& spec) const
     std::vector<E> entities;
     entities.reserve(result.rows.size());
     for (const Row& row: result.rows) {
-        entities.push_back(reflect::EntityMapper::from_row<E>(row));
+        entities.push_back(reflect::EntityMapper{}.from_row<E>(row));
     }
     return entities;
 }
@@ -195,7 +195,7 @@ std::optional<E> Database::find(const DbValue& id) const
 
     QuerySpec spec;
     spec.table = table;
-    spec.columns = split(reflect::SqlGenerator::select_columns<E>());
+    spec.columns = split(reflect::SqlGenerator{}.select_columns<E>());
     spec.predicates.push_back(Predicate{
         .column = std::string{detail::primary_key_column<E>()},
         .comparison = Compare::EQ,
@@ -206,7 +206,7 @@ std::optional<E> Database::find(const DbValue& id) const
     if (result.rows.empty()) {
         return std::nullopt;
     }
-    return reflect::EntityMapper::from_row<E>(result.rows.front());
+    return reflect::EntityMapper{}.from_row<E>(result.rows.front());
 }
 
 template<reflect::ReflectedEntity E, auto Member>
@@ -221,7 +221,7 @@ std::optional<E> Database::find_first_by(Compare comparison, DbValue value) cons
 
     QuerySpec spec;
     spec.table = table;
-    spec.columns = split(reflect::SqlGenerator::select_columns<E>());
+    spec.columns = split(reflect::SqlGenerator{}.select_columns<E>());
     spec.predicates.push_back(Predicate{
         .column = std::string{reflect::column_of<E, Member>()},
         .comparison = comparison,
@@ -232,7 +232,7 @@ std::optional<E> Database::find_first_by(Compare comparison, DbValue value) cons
     if (result.rows.empty()) {
         return std::nullopt;
     }
-    return reflect::EntityMapper::from_row<E>(result.rows.front());
+    return reflect::EntityMapper{}.from_row<E>(result.rows.front());
 }
 
 template<reflect::ReflectedEntity E>
@@ -248,7 +248,7 @@ E Database::insert(E entity)
 {
     const std::string table{reflect::EntityMeta<E>::table};
     m_runtime->impl->require_table(table);
-    auto values = reflect::EntityMapper::to_values(entity);
+    auto values = reflect::EntityMapper{}.to_values(entity);
 
     if constexpr (detail::has_primary_key<E>()) {
         const std::string pk{detail::primary_key_column<E>()};
@@ -284,7 +284,7 @@ std::uint64_t Database::update_where(const E& entity, Compare comparison, DbValu
     );
     const std::string table{reflect::EntityMeta<E>::table};
     m_runtime->impl->require_table(table);
-    auto values = reflect::EntityMapper::to_values(entity);
+    auto values = reflect::EntityMapper{}.to_values(entity);
     values.erase(std::string{detail::primary_key_column<E>()});
     return m_runtime->impl->driver().update(
         table,

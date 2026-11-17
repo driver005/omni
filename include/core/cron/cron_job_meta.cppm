@@ -58,7 +58,7 @@ namespace core::cron::reflect::tests {
 
 struct NightlyJob
 {
-    static void run() {}
+     void run() {}
 };
 CORE_CRON_JOB(NightlyJob, "nightly-backup", "0 2 * * *");
 

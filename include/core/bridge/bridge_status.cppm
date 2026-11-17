@@ -19,7 +19,7 @@ enum class BridgeStatus : std::uint8_t
 };
 
 /** @brief Instance functor naming a BridgeStatus — no free functions. */
-export class BridgeStatusName
+class BridgeStatusName
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()(BridgeStatus status) const noexcept

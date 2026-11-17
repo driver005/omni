@@ -38,7 +38,7 @@ suite<"core_cron_query_spec"> core_cron_query_spec_suite = []
 {
     "collects predicates and matches jobs"_test = []
     {
-        const auto job = CronJob::create("nightly", "0 2 * * *");
+        const auto job = CronJob{}.create("nightly", "0 2 * * *");
         expect(job.has_value());
         CronQuerySpec spec;
         spec.predicates.emplace_back("name", CronCompare::CONTAINS, "night");

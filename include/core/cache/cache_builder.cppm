@@ -76,7 +76,7 @@ suite<"core_cache_cache_builder"> core_cache_cache_builder_suite = []
         expect(cache.size() == 0);
 
         const CacheUser user{7, "Ada", true};
-        cache.put<CacheUser>(user, Ttl::seconds(60));
+        cache.put<CacheUser>(user, Ttl{}.seconds(60));
         const auto restored = cache.get<CacheUser>(user);
         expect(restored.has_value());
         expect(restored->id == 7);

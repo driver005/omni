@@ -17,7 +17,7 @@ class KeyBuilder
 {
 public:
     template<ReflectedCacheEntity E, typename Entity>
-    [[nodiscard]] static std::string build(const Entity& entity)
+    [[nodiscard]] std::string build(const Entity& entity)
     {
         std::string out{std::string{CacheEntityMeta<E>::prefix} + ":v1"};
         append_keys<E>(entity, out);
@@ -26,7 +26,7 @@ public:
 
     /** @brief Fully qualified key for a role value (e.g. "users:v1:7"). */
     template<typename Value>
-    [[nodiscard]] static std::string composite(
+    [[nodiscard]] std::string composite(
         std::string_view prefix,
         std::string_view role,
         const Value& value
@@ -38,7 +38,7 @@ public:
 
 private:
     template<ReflectedCacheEntity E, typename Entity>
-    static void append_keys(const Entity& entity, std::string& out)
+     void append_keys(const Entity& entity, std::string& out)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             auto append = [&](auto descriptor) {
@@ -51,7 +51,7 @@ private:
         }(std::make_index_sequence<field_count_v<E>>{});
     }
 
-    [[nodiscard]] static std::string key_part(const CacheValue& value)
+    [[nodiscard]] std::string key_part(const CacheValue& value)
     {
         return std::visit(
             [](const auto& v) -> std::string {
@@ -92,8 +92,8 @@ suite<"core_cache_key_builder"> core_cache_key_builder_suite = []
     "builds keys from reflected KEY members"_test = []
     {
         const KeySample entity{7, "Ada"};
-        expect(KeyBuilder::build<KeySample>(entity) == "users:v1:7");
-        expect(KeyBuilder::composite("users", "id", std::int64_t{7}) == "users:v1:id:7");
+        expect(KeyBuilder{}.build<KeySample>(entity) == "users:v1:7");
+        expect(KeyBuilder{}.composite("users", "id", std::int64_t{7}) == "users:v1:id:7");
     };
 };
 

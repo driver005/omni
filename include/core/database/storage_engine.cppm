@@ -19,7 +19,7 @@ enum class StorageEngine : std::uint8_t
 };
 
 /** @brief Instance functor mapping a StorageEngine to its name. */
-export class EngineName
+class EngineName
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()(StorageEngine engine) const noexcept

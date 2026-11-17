@@ -22,7 +22,7 @@ enum class ColumnType : std::uint8_t
 };
 
 /** @brief Instance functor mapping a ColumnType to its SQL spelling. */
-export class SqlTypeName
+class SqlTypeName
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()(ColumnType type) const noexcept

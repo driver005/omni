@@ -30,7 +30,7 @@ public:
     {
         const std::string table{reflect::EntityMeta<E>::table};
         if (!m_tables.contains(table)) {
-            m_tables.emplace(table, reflect::SqlGenerator::create_table<E>());
+            m_tables.emplace(table, reflect::SqlGenerator{}.create_table<E>());
         }
     }
 

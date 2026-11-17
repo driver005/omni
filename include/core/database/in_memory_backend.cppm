@@ -136,7 +136,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static Row project(const Row& source, const std::vector<std::string>& columns)
+    [[nodiscard]] Row project(const Row& source, const std::vector<std::string>& columns)
     {
         if (columns.empty()) {
             return source;

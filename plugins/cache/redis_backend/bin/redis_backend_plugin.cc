@@ -234,7 +234,7 @@ extern "C" void congelado_bridge_register(void* context) noexcept
     }
     auto* bridge = static_cast<core::bridge::Bridge*>(context);
     bridge->register_service(
-        core::bridge::ServiceKey::make<interfaces::ICache*>("cache"),
+        core::bridge::ServiceKey{}.make<interfaces::ICache*>("cache"),
         static_cast<interfaces::ICache*>(plugin)
     );
 }

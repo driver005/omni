@@ -60,7 +60,7 @@ namespace core::cron::tests {
 
 struct ScheduledJob
 {
-    static void run() {}
+     void run() {}
 };
 CORE_CRON_JOB(ScheduledJob, "scheduled", "*/5 * * * *");
 
@@ -80,7 +80,7 @@ suite<"core_cron_query"> core_cron_query_suite = []
         CronQuery reflected;
         reflected.where_job<ScheduledJob>();
         expect(reflected.spec().predicates[0].matches(
-            *CronJob::create("scheduled", "*/5 * * * *")
+            *CronJob{}.create("scheduled", "*/5 * * * *")
         ));
     };
 };

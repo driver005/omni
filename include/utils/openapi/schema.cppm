@@ -10,7 +10,7 @@ import :model;
 import boost.ut;
 #endif
 
-namespace utils::openapi::detail {
+namespace utils::openapi {
 
 template<typename T>
 constexpr bool IS_OPTIONAL_V = false;
@@ -44,7 +44,7 @@ template<typename T>
     return separator_pos == std::string::npos ? full_name : full_name.substr(separator_pos + 2);
 }
 
-} // namespace utils::openapi::detail
+} // namespace utils::openapi
 
 export namespace utils::openapi {
 
@@ -117,7 +117,7 @@ template<typename T>
     // shape falls through to an inline schema derived straight from the C++ type itself,
     // lowkey a 1:1 mapping the whole way down.
     if constexpr (serde::ISerializable<Decayed>) {
-        auto name = detail::bare_type_name<Decayed>();
+        auto name = bare_type_name<Decayed>();
         if (!SchemaRegistry::hasSchema(name)) {
             // Register a placeholder BEFORE recursing into properties, so a type that
             // (directly or indirectly) references itself sees hasSchema()==true on
@@ -139,13 +139,13 @@ template<typename T>
             SchemaRegistry::addSchema(name, std::move(object_schema));
         }
         schema.set_ref(std::format("#/components/schemas/{}", name));
-    } else if constexpr (detail::IS_OPTIONAL_V<Decayed>) {
+    } else if constexpr (IS_OPTIONAL_V<Decayed>) {
         schema = build_schema<typename Decayed::value_type>();
         schema.set_nullable(true);
-    } else if constexpr (detail::IS_VECTOR_V<Decayed>) {
+    } else if constexpr (IS_VECTOR_V<Decayed>) {
         schema.set_type("array");
         schema.set_items(build_schema<typename Decayed::value_type>());
-    } else if constexpr (detail::IS_STRING_MAP_V<Decayed>) {
+    } else if constexpr (IS_STRING_MAP_V<Decayed>) {
         schema.set_type("object");
     } else if constexpr (std::same_as<Decayed, serde::Value>) {
         // Dynamic value objects — a jsonb-typed task input — can't be reflected into fixed

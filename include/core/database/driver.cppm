@@ -31,12 +31,16 @@ public:
 
     void open()
     {
-        m_backend->open();
+        if (m_backend) {
+            m_backend->open();
+        }
     }
 
     void close()
     {
-        m_backend->close();
+        if (m_backend) {
+            m_backend->close();
+        }
     }
 
     [[nodiscard]] bool is_open() const noexcept

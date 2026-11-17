@@ -10,7 +10,7 @@ import :predicate;
 import boost.ut;
 #endif
 
-namespace core::db {
+export namespace core::db {
 
 /** @brief Instance functor: total ordering over DbValue alternatives. */
 class CompareValues

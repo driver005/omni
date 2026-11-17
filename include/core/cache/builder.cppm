@@ -51,7 +51,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] Cache build() const
+    [[nodiscard]] Cache build()
     {
         auto runtime = std::make_unique<Cache::Runtime>(m_context.build());
         return Cache{std::move(runtime)};

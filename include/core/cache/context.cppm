@@ -41,7 +41,7 @@ public:
 
     [[nodiscard]] std::unique_ptr<CacheRuntime> build()
     {
-        return std::make_unique<CacheRuntime>(m_engine, m_capacity, m_policy);
+        return std::make_unique<CacheRuntime>(std::move(m_backend));
     }
 
     [[nodiscard]] CacheEngine engine() const noexcept

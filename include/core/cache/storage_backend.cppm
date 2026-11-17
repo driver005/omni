@@ -6,7 +6,7 @@ import :entry;
 import boost.ut;
 #endif
 
-namespace core::cache {
+export namespace core::cache {
 
 /**
  * @brief Backend contract the facade talks to. Purely internal — concrete

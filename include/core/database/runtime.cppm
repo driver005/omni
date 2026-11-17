@@ -7,6 +7,10 @@ import :driver;
 import boost.ut;
 #endif
 
+export namespace core::db {
+class DatabaseRuntime;
+}
+
 namespace core::db {
 
 /**
@@ -17,8 +21,8 @@ namespace core::db {
 class DatabaseRuntime
 {
 public:
-    explicit DatabaseRuntime(StorageEngine engine) :
-        m_driver{engine}
+    explicit DatabaseRuntime(std::unique_ptr<StorageBackend> backend) :
+        m_driver{std::move(backend)}
     {
         m_driver.open();
     }

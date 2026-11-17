@@ -9,6 +9,7 @@ congelado_module_library(
     name = "core_database",
     primary_interface = "base.cppm",
     partitions = [
+        "storage_backend.cppm",
         # value types
         "db_value.cppm",
         "column_type.cppm",

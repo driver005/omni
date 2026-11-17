@@ -2,9 +2,6 @@ export module memory_backends:cache;
 
 import std;
 import core_cache;
-import :entry;
-import :eviction_policy;
-import :storage_backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

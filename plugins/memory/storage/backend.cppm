@@ -2,9 +2,6 @@ export module memory_backends:storage;
 
 import std;
 import core_storage;
-import :ref;
-import :result;
-import :backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

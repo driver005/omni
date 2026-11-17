@@ -4,6 +4,7 @@ congelado_module_library(
     name = "core_search",
     primary_interface = "base.cppm",
     partitions = [
+        "backend.cppm",
         "query.cppm",
         "hit.cppm",
         "result.cppm",

@@ -32,7 +32,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] Cron build() const
+    [[nodiscard]] Cron build()
     {
         Cron cron;
         cron.use_backend(m_context.take_backend());

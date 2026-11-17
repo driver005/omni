@@ -29,6 +29,7 @@ export import :builder;
 export import :aside;
 
 // Re-exported as interface partitions; contents are NOT exported.
+export import :storage_backend;
 export import :driver;
 export import :runtime;
 export import :context;

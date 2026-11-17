@@ -7,7 +7,7 @@ import :fire_event;
 import boost.ut;
 #endif
 
-namespace core::cron {
+export namespace core::cron {
 
 /**
  * @brief Backend contract the facade talks to. Purely internal — concrete

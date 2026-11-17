@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/reflect-cpp/0.23.0/conanbuildenv-release-x86_64.sh"

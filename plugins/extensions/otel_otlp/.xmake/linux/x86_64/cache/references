@@ -1,6 +1,0 @@
-{
-    packages = {
-        "/home/default/.xmake/packages/m/microsoft-gsl/v4.2.2/2d816d194cc14c2b8fa75c131b21483b",
-        "/home/default/.xmake/packages/r/range-v3/0.12.0/ff6e67832a2e44bc83ee11756d53981c"
-    }
-}

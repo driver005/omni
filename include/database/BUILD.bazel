@@ -16,7 +16,7 @@ cc_library(
     ],
     deps = [
         "//include/reflection:reflection_lib",
-        "@nlohmann_json//:nlohmann_json",
+        "@nlohmann_json//:json",
         "@fmt//:fmt",
         "@spdlog//:spdlog",
     ],

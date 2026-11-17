@@ -1,4 +1,0 @@
-[requires]
-backward-cpp/1.6
-[options]
-openssl/*:enable_quic=True

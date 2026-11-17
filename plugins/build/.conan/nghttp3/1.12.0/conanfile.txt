@@ -1,4 +1,0 @@
-[requires]
-nghttp3/1.12.0
-[options]
-openssl/*:enable_quic=True

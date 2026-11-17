@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/libffi/3.4.4/deactivate_conanrunenv-release-x86_64.sh"

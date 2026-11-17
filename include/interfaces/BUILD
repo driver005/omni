@@ -40,7 +40,7 @@ congelado_module_library(
         "//include/io/shared:io_shared",
         "//include/utils/buffering:utils_buffering",
         "//include/utils:utils_encode",
-        "@reflect_cpp//:reflect_cpp",  # interfaces/serde.cppm: #include <rfl/Generic.hpp>
+        "@reflect_cpp//:reflect-cpp",  # interfaces/serde.cppm: #include <rfl/Generic.hpp>
     ],
     visibility = ["//visibility:public"],
 )

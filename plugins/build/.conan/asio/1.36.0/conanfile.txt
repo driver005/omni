@@ -1,4 +1,0 @@
-[requires]
-asio/1.36.0
-[options]
-openssl/*:enable_quic=True

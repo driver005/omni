@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/asio/1.36.0/conanbuildenv-release-x86_64.sh"

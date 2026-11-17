@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/simdjson/4.2.4/conanrunenv-release-x86_64.sh"

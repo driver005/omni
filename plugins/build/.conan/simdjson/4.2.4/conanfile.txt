@@ -1,4 +1,0 @@
-[requires]
-simdjson/4.2.4
-[options]
-openssl/*:enable_quic=True

@@ -1,0 +1,17 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+# Plugin base classes and CONGELADO_CAP_* helpers, used by every plugin backend.
+congelado_module_library(
+    name = "congelado_plugin",
+    primary_interface = "congelado_plugin.cppm",
+    hdrs = [
+        "include/congelado/plugin.h",
+        "include/congelado/mode.h",
+        "//include/congelado:headers",
+    ],
+    deps = [
+        "//include/interfaces:interfaces",
+        "//include/core/manager:core_plugin",
+    ],
+    visibility = ["//visibility:public"],
+)

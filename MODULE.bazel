@@ -3,7 +3,63 @@ module(
     version = "1.0.0",
 )
 
+# Online BCR deps only.
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "nlohmann_json", version = "3.11.2")
 bazel_dep(name = "fmt", version = "10.2.1")
 bazel_dep(name = "spdlog", version = "1.13.0")
-bazel_dep(name = "gtest", version = "1.15.0")
+bazel_dep(name = "googletest", version = "1.17.0")
+bazel_dep(name = "simdjson", version = "4.2.4")
+bazel_dep(name = "poco", version = "1.14.2-20250528.bcr.1")
+bazel_dep(name = "reflect-cpp", version = "0.25.0", repo_name = "reflect_cpp")
+bazel_dep(name = "tomlplusplus", version = "3.4.0.bcr.1")
+bazel_dep(name = "hiredis", version = "1.3.0")
+
+# No BCR module for these two — pull sources via http_archive at fetch time.
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "stduuid",
+    urls = ["https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz"],
+    strip_prefix = "stduuid-1.2.3",
+    build_file_content = """
+load("@rules_cc//cc:defs.bzl", "cc_library")
+cc_library(
+    name = "stduuid",
+    hdrs = glob(["include/**", "gsl/**"]),
+    includes = ["include", "gsl"],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# Bazel-ready libpq wrapper (Bazel rules + generated pg_config headers) from
+# brainhivenl/libpq, plus the PostgreSQL source it compiles.
+http_archive(
+    name = "libpq",
+    urls = ["https://github.com/brainhivenl/libpq/archive/refs/heads/master.tar.gz"],
+    strip_prefix = "libpq-main",
+    # The wrapper's patch files are named like generated headers and would
+    # shadow the real ones on the include path. Host copies in-tree instead.
+    patch_cmds = ["rm -f pg_config*.h"],
+)
+
+http_archive(
+    name = "postgres",
+    urls = ["https://ftp.postgresql.org/pub/source/v16.2/postgresql-16.2.tar.gz"],
+    sha256 = "2b8201047ec81acd1bad29dba278d788e7891b9c3e8232eda16bb29dec8131c7",
+    strip_prefix = "postgresql-16.2",
+    build_file = "@libpq//:BUILD.postgresql.bazel",
+    patches = [
+        "//third_party/libpq_patches:pg_config_os.h",
+        "//third_party/libpq_patches:pg_config_paths.h",
+        "//third_party/libpq_patches:pg_config_ext.h",
+        "//third_party/libpq_patches:pg_config.macos.h",
+        "//third_party/libpq_patches:pg_config.linux.h",
+    ],
+)
+
+# `std` module: built from the host libstdc++ source by a local module extension.
+system_libstdcxx = use_extension("//bazel:system_libstdcxx.bzl", "system_libstdcxx")
+use_repo(system_libstdcxx, "system_libstdcxx")

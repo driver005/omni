@@ -5,6 +5,9 @@ congelado_module_library(
     primary_interface = "events.cppm",
     partitions = [
         "registry.cppm",
+        "webhook.cppm",
+        "webhook_dispatcher.cppm",
+        "stats_counter.cppm",
     ],
     deps = [
         "//include/interfaces:interfaces",

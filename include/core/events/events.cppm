@@ -5,6 +5,9 @@ import interfaces;
 import core_logger;
 
 export import :registry;
+export import :webhook;
+export import :webhook_dispatcher;
+export import :stats_counter;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

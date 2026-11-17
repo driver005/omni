@@ -3,7 +3,7 @@ export module core_database:seeder;
 import std;
 import :db_value;
 import :database;
-import :database_builder;
+import :builder;
 import :query_spec;
 #ifdef CONGELADO_TEST
 import boost.ut;

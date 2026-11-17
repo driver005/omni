@@ -7,7 +7,7 @@ import :span;
 import boost.ut;
 #endif
 
-namespace core::otel::detail {
+namespace core::otel {
 
 /**
  * @brief Encodes one nibble (0-15) as its lowercase hex digit character.
@@ -74,7 +74,7 @@ std::optional<std::array<std::byte, N>> from_hex(std::string_view hex)
     return out;
 }
 
-} // namespace core::otel::detail
+} // namespace core::otel
 
 export namespace core::otel {
 
@@ -88,8 +88,8 @@ inline std::string format_traceparent(const interfaces::SpanContext& ctx)
 {
     return std::format(
         "00-{}-{}-{:02x}",
-        detail::to_hex(ctx.trace_id),
-        detail::to_hex(ctx.span_id),
+        to_hex(ctx.trace_id),
+        to_hex(ctx.span_id),
         ctx.sampled ? 1 : 0
     );
 }
@@ -110,9 +110,9 @@ inline std::optional<interfaces::SpanContext> parse_traceparent(std::string_view
         header[35] != '-' || header[52] != '-') {
         return std::nullopt;
     }
-    auto trace_id = detail::from_hex<16>(header.substr(3, 32));
-    auto span_id = detail::from_hex<8>(header.substr(36, 16));
-    auto flags = detail::from_hex<1>(header.substr(53, 2));
+    auto trace_id = from_hex<16>(header.substr(3, 32));
+    auto span_id = from_hex<8>(header.substr(36, 16));
+    auto flags = from_hex<1>(header.substr(53, 2));
     if (!trace_id.has_value() || !span_id.has_value() || !flags.has_value()) {
         return std::nullopt;
     }

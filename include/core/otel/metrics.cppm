@@ -7,7 +7,7 @@ import :registry;
 import boost.ut;
 #endif
 
-namespace core::otel::detail {
+namespace core::otel {
 
 /**
  * @brief Per-instrument-name cache of one `ICounter` handle per currently-registered
@@ -40,7 +40,7 @@ inline HistogramCache& histogram_cache()
     return cache;
 }
 
-} // namespace core::otel::detail
+} // namespace core::otel
 
 export namespace core::otel {
 
@@ -64,7 +64,7 @@ inline void counter_add(
         if (registry == nullptr || !registry->has_provider()) {
             return;
         }
-        auto& cache = detail::counter_cache();
+        auto& cache = counter_cache();
         std::scoped_lock lock(cache.mutex);
         auto& counters = cache.entries[std::string{name}];
         if (counters.empty()) {
@@ -102,7 +102,7 @@ inline void histogram_record(
         if (registry == nullptr || !registry->has_provider()) {
             return;
         }
-        auto& cache = detail::histogram_cache();
+        auto& cache = histogram_cache();
         std::scoped_lock lock(cache.mutex);
         auto& histograms = cache.entries[std::string{name}];
         if (histograms.empty()) {
@@ -154,7 +154,7 @@ public:
 };
 
 // Every counter_add()/histogram_record() name goes through a process-wide static cache
-// (detail::counter_cache()/histogram_cache()), so each test below uses its own unique
+// (counter_cache()/histogram_cache()), so each test below uses its own unique
 // instrument name to avoid tripping over a stale entry left by another test.
 class MetricsFakeMeterProvider : public interfaces::IMeterProvider
 {

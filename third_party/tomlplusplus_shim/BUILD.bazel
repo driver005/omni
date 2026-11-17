@@ -3,5 +3,5 @@ package(default_visibility = ["//visibility:public"])
 # Back-compat label used by serde / core-config BUILD files.
 alias(
     name = "toml++",
-    actual = "@tomlplusplus//:toml++",
+    actual = "@tomlplusplus//:toml++-src",
 )

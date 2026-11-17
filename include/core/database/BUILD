@@ -30,14 +30,12 @@ congelado_module_library(
         "query_spec.cppm",
         "query.cppm",
         # hidden storage layer
-        "storage_backend.cppm",
-        "in_memory_backend.cppm",
         "driver.cppm",
-        "database_runtime.cppm",
+        "runtime.cppm",
         "db_context.cppm",
         # facade + builder
         "database.cppm",
-        "database_builder.cppm",
+        "builder.cppm",
         "migration.cppm",
         "migration_runner.cppm",
         "seeder.cppm",

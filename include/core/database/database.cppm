@@ -12,14 +12,14 @@ import :predicate;
 import :entity_meta;
 import :sql_generator;
 import :entity_mapper;
-import :database_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 // ─── Reflection helpers (module-local, deliberately not exported) ────────────
 
-namespace core::db::detail {
+namespace core::db {
 
 template<reflect::ReflectedEntity E>
 consteval bool has_primary_key()
@@ -47,7 +47,7 @@ consteval std::string_view primary_key_column()
     return result;
 }
 
-} // namespace core::db::detail
+} // namespace core::db
 
 export namespace core::db {
 
@@ -118,12 +118,12 @@ namespace core::db {
 
 struct Database::Runtime
 {
-    explicit Runtime(std::unique_ptr<detail::DatabaseRuntime> value) noexcept :
+    explicit Runtime(std::unique_ptr<DatabaseRuntime> value) noexcept :
         impl{std::move(value)}
     {
     }
 
-    std::unique_ptr<detail::DatabaseRuntime> impl{};
+    std::unique_ptr<DatabaseRuntime> impl{};
 };
 
 Database::Database(std::unique_ptr<Runtime> runtime) noexcept :
@@ -189,7 +189,7 @@ std::vector<E> Database::all() const
 template<reflect::ReflectedEntity E>
 std::optional<E> Database::find(const DbValue& id) const
 {
-    static_assert(detail::has_primary_key<E>(), "find() requires a reflected primary key");
+    static_assert(has_primary_key<E>(), "find() requires a reflected primary key");
     const std::string table{reflect::EntityMeta<E>::table};
     m_runtime->impl->require_table(table);
 
@@ -197,7 +197,7 @@ std::optional<E> Database::find(const DbValue& id) const
     spec.table = table;
     spec.columns = split(reflect::SqlGenerator{}.select_columns<E>());
     spec.predicates.push_back(Predicate{
-        .column = std::string{detail::primary_key_column<E>()},
+        .column = std::string{primary_key_column<E>()},
         .comparison = Compare::EQ,
         .value = id,
     });
@@ -250,8 +250,8 @@ E Database::insert(E entity)
     m_runtime->impl->require_table(table);
     auto values = reflect::EntityMapper{}.to_values(entity);
 
-    if constexpr (detail::has_primary_key<E>()) {
-        const std::string pk{detail::primary_key_column<E>()};
+    if constexpr (has_primary_key<E>()) {
+        const std::string pk{primary_key_column<E>()};
         if (!values.contains(pk)) {
             const std::uint64_t id = m_runtime->impl->driver().next_id();
             values[pk] = to_db_value(id);
@@ -285,7 +285,7 @@ std::uint64_t Database::update_where(const E& entity, Compare comparison, DbValu
     const std::string table{reflect::EntityMeta<E>::table};
     m_runtime->impl->require_table(table);
     auto values = reflect::EntityMapper{}.to_values(entity);
-    values.erase(std::string{detail::primary_key_column<E>()});
+    values.erase(std::string{primary_key_column<E>()});
     return m_runtime->impl->driver().update(
         table,
         values,
@@ -297,12 +297,12 @@ std::uint64_t Database::update_where(const E& entity, Compare comparison, DbValu
 template<reflect::ReflectedEntity E>
 std::uint64_t Database::remove(const DbValue& id)
 {
-    static_assert(detail::has_primary_key<E>(), "remove() requires a reflected primary key");
+    static_assert(has_primary_key<E>(), "remove() requires a reflected primary key");
     const std::string table{reflect::EntityMeta<E>::table};
     m_runtime->impl->require_table(table);
     return m_runtime->impl->driver().remove(
         table,
-        detail::primary_key_column<E>(),
+        primary_key_column<E>(),
         id
     );
 }
@@ -335,8 +335,8 @@ suite<"core_db_database"> core_db_database_suite = []
 {
     "primary key metadata drives the facade's key handling"_test = []
     {
-        static_assert(detail::has_primary_key<Person>());
-        expect(detail::primary_key_column<Person>() == "id");
+        static_assert(has_primary_key<Person>());
+        expect(primary_key_column<Person>() == "id");
     };
 };
 

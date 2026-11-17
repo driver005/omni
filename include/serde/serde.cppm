@@ -8,6 +8,7 @@ export module serde;
 export import :core;
 export import :converter;
 export import :cache;
+export import :jsonld;
 
 import interfaces;
 #ifdef CONGELADO_TEST

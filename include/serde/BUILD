@@ -7,6 +7,7 @@ congelado_module_library(
         "core.cppm",
         "converter.cppm",
         "cache.cppm",
+        "jsonld.cppm",
     ],
     deps = [
         "//include/interfaces:interfaces",

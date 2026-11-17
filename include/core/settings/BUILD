@@ -6,11 +6,11 @@ congelado_module_library(
     partitions = [
         "setting_value.cppm",
         "setting_key.cppm",
-        "settings_validator.cppm",
-        "settings_map.cppm",
-        "settings_runtime.cppm",
+        "validator.cppm",
+        "map.cppm",
+        "runtime.cppm",
         "settings.cppm",
-        "settings_builder.cppm",
+        "builder.cppm",
     ],
     visibility = ["//visibility:public"],
 )

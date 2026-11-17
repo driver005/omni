@@ -1,19 +1,20 @@
 export module core_cron:cron;
 
 import std;
-import :cron_engine;
-import :cron_expression;
-import :cron_job;
+import :backend;
+import :engine;
+import :expression;
+import :job;
 import :fire_event;
-import :cron_job_meta;
-import :cron_query;
-import :cron_query_spec;
-import :cron_runtime;
+import :job_meta;
+import :query;
+import :query_spec;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-// detail::CronRuntime is forward-declared (exported) by :cron_runtime.
+// CronRuntime is forward-declared (exported) by :cron_runtime.
 export namespace core::cron {
 
 /**
@@ -32,8 +33,13 @@ public:
     }
 
     explicit Cron(CronEngine engine) :
-        m_runtime{std::make_shared<detail::CronRuntime>(engine)}
+        m_runtime{std::make_shared<CronRuntime>(nullptr)}
     {
+    }
+
+    void use_backend(std::unique_ptr<CronBackend> backend)
+    {
+        m_runtime = std::make_shared<CronRuntime>(std::move(backend));
     }
 
     Cron(const Cron&) = delete;
@@ -133,7 +139,7 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::CronRuntime> m_runtime{};
+    std::shared_ptr<CronRuntime> m_runtime{};
 };
 
 } // namespace core::cron

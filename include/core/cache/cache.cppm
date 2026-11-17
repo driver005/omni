@@ -1,23 +1,23 @@
 export module core_cache:cache;
 
 import std;
-import :cache_value;
-import :cache_entry;
-import :cache_result;
-import :cache_stats;
+import :value;
+import :entry;
+import :result;
+import :stats;
 import :ttl;
-import :cache_query_spec;
-import :cache_query;
-import :cache_predicate;
-import :cache_entity_meta;
+import :query_spec;
+import :query;
+import :predicate;
+import :entity_meta;
 import :key_builder;
 import :entity_codec;
-import :cache_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-export namespace core::cache::detail {
+export namespace core::cache {
 
 /** @brief Instance functor validating a cache key. */
 class ValidKey
@@ -29,7 +29,7 @@ public:
     }
 };
 
-} // namespace core::cache::detail
+} // namespace core::cache
 
 export namespace core::cache {
 
@@ -99,12 +99,12 @@ namespace core::cache {
 
 struct Cache::Runtime
 {
-    explicit Runtime(std::unique_ptr<detail::CacheRuntime> value) noexcept :
+    explicit Runtime(std::unique_ptr<CacheRuntime> value) noexcept :
         impl{std::move(value)}
     {
     }
 
-    std::unique_ptr<detail::CacheRuntime> impl{};
+    std::unique_ptr<CacheRuntime> impl{};
 };
 
 Cache::Cache(std::unique_ptr<Runtime> runtime) noexcept :
@@ -149,7 +149,7 @@ CacheResult Cache::get(std::string_view key) const
 
 void Cache::put(std::string_view key, CacheValue value, Ttl ttl, std::vector<std::string> tags)
 {
-    if (!detail::ValidKey{}(key)) {
+    if (!ValidKey{}(key)) {
         throw std::invalid_argument("core_cache: cache key must not be empty");
     }
     CacheEntry entry;
@@ -252,8 +252,8 @@ suite<"core_cache_cache"> core_cache_cache_suite = []
 {
     "facade rejects empty keys on write"_test = []
     {
-        expect(detail::ValidKey{}("users:v1:7"));
-        expect(!detail::ValidKey{}(""));
+        expect(ValidKey{}("users:v1:7"));
+        expect(!ValidKey{}(""));
     };
 };
 

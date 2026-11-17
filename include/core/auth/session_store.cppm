@@ -4,7 +4,7 @@ module;
 export module core_auth:session_store;
 
 import std;
-import :auth_status;
+import :status;
 import :token;
 #ifdef CONGELADO_TEST
 import boost.ut;

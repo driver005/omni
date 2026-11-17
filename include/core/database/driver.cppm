@@ -6,12 +6,11 @@ import :db_value;
 import :query_result;
 import :query_spec;
 import :storage_backend;
-import :in_memory_backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-namespace core::db::detail {
+namespace core::db {
 
 /**
  * @brief Owns the active backend. This is the lowest layer the facade touches;
@@ -20,18 +19,9 @@ namespace core::db::detail {
 class Driver
 {
 public:
-    explicit Driver(StorageEngine engine)
+    explicit Driver(std::unique_ptr<StorageBackend> backend) :
+        m_backend{std::move(backend)}
     {
-        switch (engine) {
-            case StorageEngine::IN_MEMORY:
-                m_backend = std::make_unique<InMemoryBackend>();
-                break;
-            case StorageEngine::POSTGRES:
-                throw std::runtime_error(
-                    "core_database: POSTGRES engine is reserved; the plugin "
-                    "backend has not been registered"
-                );
-        }
     }
 
     Driver(const Driver&) = delete;
@@ -104,10 +94,10 @@ private:
     std::uint64_t m_next_id{1};
 };
 
-} // namespace core::db::detail
+} // namespace core::db
 
 #ifdef CONGELADO_TEST
-namespace core::db::detail::tests {
+namespace core::db::tests {
 using namespace boost::ut;
 
 suite<"core_db_driver"> core_db_driver_suite = []
@@ -131,5 +121,5 @@ suite<"core_db_driver"> core_db_driver_suite = []
     };
 };
 
-} // namespace core::db::detail::tests
+} // namespace core::db::tests
 #endif

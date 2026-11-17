@@ -4,13 +4,11 @@ congelado_module_library(
     name = "core_storage",
     primary_interface = "base.cppm",
     partitions = [
-        "storage_ref.cppm",
-        "storage_result.cppm",
-        "storage_backend.cppm",
-        "memory_storage_backend.cppm",
-        "storage_runtime.cppm",
+        "ref.cppm",
+        "result.cppm",
+        "runtime.cppm",
         "storage.cppm",
-        "storage_builder.cppm",
+        "builder.cppm",
     ],
     visibility = ["//visibility:public"],
 )

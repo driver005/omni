@@ -1,8 +1,8 @@
 export module core_cache:key_builder;
 
 import std;
-import :cache_value;
-import :cache_entity_meta;
+import :value;
+import :entity_meta;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

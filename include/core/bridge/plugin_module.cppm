@@ -4,12 +4,12 @@ module;
 export module core_bridge:plugin_module;
 
 import std;
-import :bridge_status;
+import :status;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-namespace core::bridge::detail {
+namespace core::bridge {
 
 /** @brief Signature every plugin's C registration entrypoint must expose. */
 using RegisterFn = void (*)(void*);
@@ -92,10 +92,10 @@ private:
     RegisterFn m_register{nullptr};
 };
 
-} // namespace core::bridge::detail
+} // namespace core::bridge
 
 #ifdef CONGELADO_TEST
-namespace core::bridge::detail::tests {
+namespace core::bridge::tests {
 using namespace boost::ut;
 
 suite<"core_bridge_plugin_module"> core_bridge_plugin_module_suite = []
@@ -115,5 +115,5 @@ suite<"core_bridge_plugin_module"> core_bridge_plugin_module_suite = []
     };
 };
 
-} // namespace core::bridge::detail::tests
+} // namespace core::bridge::tests
 #endif

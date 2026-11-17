@@ -4,7 +4,7 @@ import std;
 import :db_value;
 import :row;
 import :database;
-import :database_builder;
+import :builder;
 import :query;
 import :query_spec;
 import :entity_meta;

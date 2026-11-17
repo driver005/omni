@@ -1,15 +1,15 @@
 export module core_bridge:bridge;
 
 import std;
-import :bridge_status;
+import :status;
 import :service_key;
 import :service_registry;
-import :bridge_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-// detail::BridgeRuntime is forward-declared (exported) by :bridge_runtime;
+// BridgeRuntime is forward-declared (exported) by :bridge_runtime;
 // a shared_ptr member needs only that incomplete declaration.
 export namespace core::bridge {
 
@@ -23,7 +23,7 @@ class Bridge
 {
 public:
     Bridge() :
-        m_runtime{std::make_shared<detail::BridgeRuntime>()}
+        m_runtime{std::make_shared<BridgeRuntime>()}
     {
         m_runtime->set_owner(this);
     }
@@ -77,7 +77,7 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::BridgeRuntime> m_runtime{};
+    std::shared_ptr<BridgeRuntime> m_runtime{};
 };
 
 } // namespace core::bridge

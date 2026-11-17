@@ -27,14 +27,12 @@ export import :query_spec;
 export import :query;
 
 export import :database;
-export import :database_builder;
+export import :builder;
 
 // Interface partitions must be re-exported by the primary interface for the
 // toolchain to accept them. Their contents are NOT exported (no `export` on
 // the namespace), so a consumer importing core_database cannot name any of
 // the backend classes below — they are reachable only inside this module.
-export import :storage_backend;
-export import :in_memory_backend;
 export import :driver;
-export import :database_runtime;
+export import :runtime;
 export import :db_context;

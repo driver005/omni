@@ -4,7 +4,7 @@ module;
 export module core_auth:jwt_signer;
 
 import std;
-import :auth_status;
+import :status;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

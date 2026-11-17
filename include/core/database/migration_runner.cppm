@@ -3,7 +3,7 @@ export module core_database:migration_runner;
 import std;
 import :migration;
 import :database;
-import :database_builder;
+import :builder;
 import :query_spec;
 #ifdef CONGELADO_TEST
 import boost.ut;

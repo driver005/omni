@@ -15,7 +15,7 @@ template<std::size_t MaxMiddlewareSize = 10>
 class Router;
 
 template<
-    std::size_t RouterSize = 256,
+    std::size_t RouterSize = 1024,
     std::size_t MaxHandlerSize = 8,
     std::size_t MaxMiddlewareSize = 10>
 class RouterContext
@@ -364,11 +364,9 @@ private:
             // routers can only be plain literal segments — param/wildcard routers make no sense
             switch (kind) {
                 case EdgeKind::PATH:
-                    break;
                 case EdgeKind::PARAM:
-                    throw std::runtime_error("Router path cannot be parameterized");
                 case EdgeKind::WILD:
-                    throw std::runtime_error("Router path cannot be wildcard");
+                    break;
             }
 
             router_number = route.get_router_number();

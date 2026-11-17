@@ -1,7 +1,7 @@
 export module utils_openapi:model;
 
 import std;
-import serde;
+import core_serde;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

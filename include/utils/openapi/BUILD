@@ -13,7 +13,7 @@ congelado_module_library(
     ],
     deps = [
         "//include/core/router:core_router",
-        "//include/serde:serde",
+        "//include/core/serde:core_serde",
         "//include/interfaces:interfaces",
     ],
     visibility = ["//visibility:public"],

@@ -22,8 +22,7 @@ public:
             auto assign = [&](auto descriptor) {
                 using F = decltype(descriptor);
                 if (row.contains(std::string_view{F::name})) {
-                    entity.*F::member =
-                        row.get<typename F::value_type>(std::string_view{F::name});
+                    set_field(entity, F{}, row.get<typename F::value_type>(std::string_view{F::name}));
                 }
             };
             (assign(field_at_t<E, I>{}), ...);
@@ -41,7 +40,7 @@ public:
                 using F = decltype(descriptor);
                 values.emplace(
                     std::string{std::string_view{F::name}},
-                    to_db_value(entity.*F::member)
+                    to_db_value(get_field(entity, F{}))
                 );
             };
             (append(field_at_t<E, I>{}), ...);

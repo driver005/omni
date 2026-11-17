@@ -22,9 +22,9 @@ public:
     [[nodiscard]] std::optional<model::Member> signup(std::string email, std::string name)
     {
         model::Member member;
-        member.email = std::move(email);
-        member.name = std::move(name);
-        member.status = "free";
+        member.set_email(std::move(email));
+        member.set_name(std::move(name));
+        member.set_status("free");
         return m_repo.insert(std::move(member));
     }
 

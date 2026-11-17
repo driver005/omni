@@ -59,9 +59,29 @@ public:
         return result;
     }
 
+    [[nodiscard]] std::vector<model::Post> find_by_column(
+        std::string_view column,
+        core::db::Compare comparison,
+        core::db::DbValue value
+    ) const
+    {
+        core::db::QuerySpec spec;
+        spec.table = std::string{core::db::reflect::EntityMeta<model::Post>::table};
+        spec.predicates.push_back(core::db::Predicate{
+            .column = std::string{column},
+            .comparison = comparison,
+            .value = std::move(value),
+        });
+        std::vector<model::Post> result;
+        for (const core::db::Row& row: m_db.execute(spec).rows) {
+            result.push_back(core::db::reflect::EntityMapper{}.from_row<model::Post>(row));
+        }
+        return result;
+    }
+
     [[nodiscard]] std::vector<model::Post> find_by_status(std::string status) const
     {
-        return find_by<&model::Post::status>(core::db::Compare::EQ, core::db::DbValue{std::move(status)});
+        return find_by_column("status", core::db::Compare::EQ, core::db::DbValue{std::move(status)});
     }
 
 private:

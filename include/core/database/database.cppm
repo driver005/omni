@@ -174,9 +174,9 @@ public:
                         using F = decltype(descriptor);
                         if constexpr (F::primary_key) {
                             if constexpr (std::integral<typename F::value_type>) {
-                                entity.*F::member = static_cast<typename F::value_type>(id);
+                                set_field(entity, F{}, static_cast<typename F::value_type>(id));
                             } else if constexpr (std::same_as<typename F::value_type, std::string>) {
-                                entity.*F::member = std::to_string(id);
+                                set_field(entity, F{}, std::to_string(id));
                             }
                         }
                     };
@@ -205,6 +205,23 @@ public:
             values,
             std::string{reflect::column_of<E, Member>()},
             std::move(value)
+        );
+    }
+
+    template<reflect::ReflectedEntity E>
+    std::uint64_t update_where_column(
+        const E& entity,
+        std::string_view column,
+        Compare comparison,
+        DbValue value
+    )
+    {
+        const std::string table{std::string{reflect::EntityMeta<E>::table}};
+        m_runtime->require_table(table);
+        auto values = reflect::EntityMapper{}.to_values(entity);
+        values.erase(std::string{pk_column<E>()});
+        return m_runtime->driver().update(
+            table, values, std::string{column}, std::move(value)
         );
     }
 

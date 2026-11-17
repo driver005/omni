@@ -10,7 +10,7 @@ congelado_module_library(
         "//include/core/otel:core_otel",
         "//include/interfaces:interfaces",
         "//include/shared:shared",
-        "//include/serde:serde",
+        "//include/core/serde:core_serde",
         "@stduuid//:stduuid",  # connector.cppm: #include <uuid.h>
     ],
     visibility = ["//visibility:public"],

@@ -4,6 +4,7 @@ module;
 export module blog_model:author;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -11,21 +12,48 @@ import boost.ut;
 
 export namespace blog::model {
 
-struct Author
+class Author
 {
-    std::int64_t id{};
-    std::string name{};
-    std::string slug{};
-    std::string email{};
+public:
+    Author() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_name(std::string value) { m_name = std::move(value); }
+    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
+    void set_slug(std::string value) { m_slug = std::move(value); }
+    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
+    void set_email(std::string value) { m_email = std::move(value); }
+    [[nodiscard]] const std::string& get_email() const noexcept { return m_email; }
+
+    std::int64_t m_id{};
+    std::string m_name{};
+    std::string m_slug{};
+    std::string m_email{};
 };
 
-GHOST_ENTITY(Author, "authors",
-    GHOST_FIELD("id", &Author::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("name", &Author::name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("slug", &Author::slug, core::db::ColumnType::TEXT),
-    GHOST_FIELD("email", &Author::email, core::db::ColumnType::TEXT));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Author>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Author::get_id, &blog::model::Author::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"name", &blog::model::Author::get_name, &blog::model::Author::set_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"slug", &blog::model::Author::get_slug, &blog::model::Author::set_slug, serde::FieldOptions{}>{},
+            serde::FieldDesc<"email", &blog::model::Author::get_email, &blog::model::Author::set_email, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "authors"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

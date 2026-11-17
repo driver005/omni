@@ -4,6 +4,7 @@ module;
 export module blog_model:comment;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -12,35 +13,76 @@ import boost.ut;
 export namespace blog::model {
 
 /** @brief Ghost comments entity — full field set from data/schema/schema.js. */
-struct Comment
+class Comment
 {
-    std::int64_t id{};
-    std::string post_id{};
-    std::string member_id{};
-    std::string parent_id{};
-    std::string in_reply_to_id{};
-    std::string status{};
-    std::string html{};
-    std::chrono::system_clock::time_point edited_at{};
-    std::chrono::system_clock::time_point pinned_at{};
-    std::chrono::system_clock::time_point created_at{};
-    std::chrono::system_clock::time_point updated_at{};
+public:
+    Comment() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_post_id(std::string value) { m_post_id = std::move(value); }
+    [[nodiscard]] const std::string& get_post_id() const noexcept { return m_post_id; }
+    void set_member_id(std::string value) { m_member_id = std::move(value); }
+    [[nodiscard]] const std::string& get_member_id() const noexcept { return m_member_id; }
+    void set_parent_id(std::string value) { m_parent_id = std::move(value); }
+    [[nodiscard]] const std::string& get_parent_id() const noexcept { return m_parent_id; }
+    void set_in_reply_to_id(std::string value) { m_in_reply_to_id = std::move(value); }
+    [[nodiscard]] const std::string& get_in_reply_to_id() const noexcept { return m_in_reply_to_id; }
+    void set_status(std::string value) { m_status = std::move(value); }
+    [[nodiscard]] const std::string& get_status() const noexcept { return m_status; }
+    void set_html(std::string value) { m_html = std::move(value); }
+    [[nodiscard]] const std::string& get_html() const noexcept { return m_html; }
+    void set_edited_at(std::chrono::system_clock::time_point value) { m_edited_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_edited_at() const noexcept { return m_edited_at; }
+    void set_pinned_at(std::chrono::system_clock::time_point value) { m_pinned_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_pinned_at() const noexcept { return m_pinned_at; }
+    void set_created_at(std::chrono::system_clock::time_point value) { m_created_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_created_at() const noexcept { return m_created_at; }
+    void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
+
+    std::int64_t m_id{};
+    std::string m_post_id{};
+    std::string m_member_id{};
+    std::string m_parent_id{};
+    std::string m_in_reply_to_id{};
+    std::string m_status{};
+    std::string m_html{};
+    std::chrono::system_clock::time_point m_edited_at{};
+    std::chrono::system_clock::time_point m_pinned_at{};
+    std::chrono::system_clock::time_point m_created_at{};
+    std::chrono::system_clock::time_point m_updated_at{};
 };
 
-GHOST_ENTITY(Comment, "comments",
-    GHOST_FIELD("id", &Comment::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("post_id", &Comment::post_id, core::db::ColumnType::TEXT),
-    GHOST_FIELD("member_id", &Comment::member_id, core::db::ColumnType::TEXT),
-    GHOST_FIELD("parent_id", &Comment::parent_id, core::db::ColumnType::TEXT),
-    GHOST_FIELD("in_reply_to_id", &Comment::in_reply_to_id, core::db::ColumnType::TEXT),
-    GHOST_FIELD("status", &Comment::status, core::db::ColumnType::TEXT),
-    GHOST_FIELD("html", &Comment::html, core::db::ColumnType::TEXT),
-    GHOST_FIELD("edited_at", &Comment::edited_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("pinned_at", &Comment::pinned_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("created_at", &Comment::created_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("updated_at", &Comment::updated_at, core::db::ColumnType::TIMESTAMP));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Comment>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Comment::get_id, &blog::model::Comment::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"post_id", &blog::model::Comment::get_post_id, &blog::model::Comment::set_post_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"member_id", &blog::model::Comment::get_member_id, &blog::model::Comment::set_member_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"parent_id", &blog::model::Comment::get_parent_id, &blog::model::Comment::set_parent_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"in_reply_to_id", &blog::model::Comment::get_in_reply_to_id, &blog::model::Comment::set_in_reply_to_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &blog::model::Comment::get_status, &blog::model::Comment::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"html", &blog::model::Comment::get_html, &blog::model::Comment::set_html, serde::FieldOptions{}>{},
+            serde::FieldDesc<"edited_at", &blog::model::Comment::get_edited_at, &blog::model::Comment::set_edited_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"pinned_at", &blog::model::Comment::get_pinned_at, &blog::model::Comment::set_pinned_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"created_at", &blog::model::Comment::get_created_at, &blog::model::Comment::set_created_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"updated_at", &blog::model::Comment::get_updated_at, &blog::model::Comment::set_updated_at, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "comments"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

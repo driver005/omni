@@ -43,7 +43,8 @@ congelado_module_library(
         "relation.cppm",
         "repository_base.cppm",
     ],
-    deps = [],
+    deps = [
+        "//include/core/serde:core_serde",],
 
     visibility = ["//visibility:public"],
 )

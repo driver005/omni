@@ -1,0 +1,54 @@
+load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test")
+
+congelado_module_library(
+    name = "wire_client",
+    primary_interface = "base.cppm",
+    partitions = [
+        "wire_client.cppm",
+        "snapshot_cases.cppm",
+        "route_catalog.cppm",
+        "request.cppm",
+        "response.cppm",
+        "test_api.cppm",
+    ],
+    deps = [
+        "//include/blog/api:blog_api",
+        "//include/blog/handlers:blog_handlers",
+        "//include/blog/context:blog_context",
+        "//include/io/layer/http2:io_layer_http2",
+        "//include/utils/buffering:utils_buffering",
+        "//include/shared:shared",
+        "//include/core/router:core_router",
+        "//include/io/codec/hpack:io_codec_hpack",
+        "//include/interfaces:interfaces",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+congelado_cc_test(
+    name = "api_test",
+    srcs = ["api_test.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [":wire_client"],
+)
+
+congelado_cc_test(
+    name = "http_e2e_test",
+    srcs = ["http_e2e_test.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [":wire_client"],
+)
+
+congelado_cc_test(
+    name = "http2_wire_test",
+    srcs = ["http2_wire_test.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [":wire_client"],
+)
+
+congelado_cc_test(
+    name = "snapshot_replay_test",
+    srcs = ["snapshot_replay_test.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [":wire_client"],
+)

@@ -1,4 +1,0 @@
-[requires]
-openssl/3.6.1
-[options]
-openssl/*:enable_quic=True

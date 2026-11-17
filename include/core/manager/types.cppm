@@ -318,6 +318,27 @@ template<typename T>
     return static_cast<T*>(host.cache_ctx);
 }
 
+/** @brief Gets the resolved cron-capable plugin's interface pointer, if any. */
+template<typename T>
+[[nodiscard]] T* cron_ctx(const CongeladoHostCallbacks& host) noexcept
+{
+    return static_cast<T*>(host.cron_ctx);
+}
+
+/** @brief Gets the host-owned contract registry pointer, if any. */
+template<typename T>
+[[nodiscard]] T* registry_ctx(const CongeladoHostCallbacks& host) noexcept
+{
+    return static_cast<T*>(host.registry_ctx);
+}
+
+/** @brief Gets the resolved worker-manager plugin's interface pointer, if any. */
+template<typename T>
+[[nodiscard]] T* worker_manager_ctx(const CongeladoHostCallbacks& host) noexcept
+{
+    return static_cast<T*>(host.worker_manager_ctx);
+}
+
 /**
  * @brief Gets the shared connector::Connector* registered with the host's ContractGroup before
  * build() runs — the engine plugin reads this during its on_load so it uses the SDK-owned

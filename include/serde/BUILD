@@ -11,7 +11,7 @@ congelado_module_library(
     deps = [
         "//include/interfaces:interfaces",
         "//include/io/layer/http2:io_layer_http2",
-        "@reflect_cpp//:reflect_cpp",  # rfl.hpp / rfl/*.hpp
+        "@reflect_cpp//:reflect-cpp",  # rfl.hpp / rfl/*.hpp
         "@simdjson//:simdjson",  # converter.cppm: simdjson.h
         "//third_party/tomlplusplus_shim:toml++",  # converter.cppm: toml++/toml.hpp
         "@stduuid//:stduuid",  # core.cppm / converter.cppm: uuid.h

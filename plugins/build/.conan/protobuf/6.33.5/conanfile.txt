@@ -1,4 +1,0 @@
-[requires]
-protobuf/6.33.5
-[options]
-openssl/*:enable_quic=True

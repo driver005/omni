@@ -1,4 +1,0 @@
-[requires]
-reflect-cpp/0.23.0
-[options]
-reflect-cpp/*:with_toml=True

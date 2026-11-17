@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/libnghttp2/1.66.0/conanrunenv-release-x86_64.sh"

@@ -1,4 +1,0 @@
-[requires]
-libffi/3.4.4
-[options]
-openssl/*:enable_quic=True

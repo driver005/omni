@@ -15,6 +15,6 @@ cc_library(
         "-Wpedantic",
     ],
     deps = [
-        "@nlohmann_json//:nlohmann_json",
+        "@nlohmann_json//:json",
     ],
 )

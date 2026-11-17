@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/openssl/3.6.1/conanbuildenv-release-x86_64.sh"

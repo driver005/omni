@@ -5,7 +5,10 @@ common --spawn_strategy=standalone
 common --incompatible_enforce_config_setting_visibility
 common --legacy_external_runfiles=true
 
-common --incompatible_autoload_externally=cc_binary,cc_import,cc_library,cc_shared_library,cc_test,cc_toolchain,cc_toolchain_suite,cc_proto_library,fdo_prefetch_hints,fdo_profile,proto_lang_toolchain,proto_library,py_library,py_runtime,py_test,sh_library,sh_test
+# Autoload only the native C++ rules that older BCR modules still use without
+# an explicit load(). Do NOT autoload cc_toolchain_suite — Bazel 9 removed it
+# and rules_cc's toolchain config breaks if it is autoloaded.
+common --incompatible_autoload_externally=cc_binary,cc_library,cc_test
 
 common --features=-external_include_paths
 common --host_features=-external_include_paths

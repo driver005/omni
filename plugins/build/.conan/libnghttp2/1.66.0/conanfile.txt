@@ -1,4 +1,0 @@
-[requires]
-libnghttp2/1.66.0
-[options]
-openssl/*:enable_quic=True

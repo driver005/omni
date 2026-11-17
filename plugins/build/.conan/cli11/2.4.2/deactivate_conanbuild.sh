@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/cli11/2.4.2/deactivate_conanbuildenv-release-x86_64.sh"

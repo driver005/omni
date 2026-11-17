@@ -1,0 +1,27 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:build_defs.bzl", "congelado_cxx26_copts")
+load("//third_party:copts.bzl", "congelado_linkopts")
+
+# Cache-only Redis backend plugin. Implements interfaces::ICache and advertises
+# CONGELADO_CAP_CACHE so the host wires it into Connector's cache slot.
+cc_library(
+    name = "redis_backend_plugin",
+    module_interfaces = ["bin/redis_backend_plugin.cc"],
+    hdrs = ["bin/redis_backend_plugin.cc"],
+    copts = congelado_cxx26_copts() + [
+        "-Iinclude/sdk/plugin/include",
+    ],
+    linkopts = congelado_linkopts(),
+    deps = [
+        "//include/sdk/plugin:congelado_plugin",
+        "//include/core/bridge:core_bridge",
+        "//include/interfaces:interfaces",
+        "//include/shared:shared",
+        "//include/core/logger:core_logger",
+        "//include/core/events:core_events",
+        "@hiredis//:hiredis",
+        "@system_libstdcxx//:std",
+    ],
+    features = ["cpp_modules"],
+    visibility = ["//visibility:public"],
+)

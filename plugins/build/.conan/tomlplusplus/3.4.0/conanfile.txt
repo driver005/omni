@@ -1,4 +1,0 @@
-[requires]
-tomlplusplus/3.4.0
-[options]
-openssl/*:enable_quic=True

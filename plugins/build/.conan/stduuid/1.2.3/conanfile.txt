@@ -1,4 +1,0 @@
-[requires]
-stduuid/1.2.3
-[options]
-openssl/*:enable_quic=True

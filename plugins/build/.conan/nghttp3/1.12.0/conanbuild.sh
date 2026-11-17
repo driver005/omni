@@ -1,1 +1,0 @@
-. "/home/default/cc/congelado/plugins/build/.conan/nghttp3/1.12.0/conanbuildenv-release-x86_64.sh"

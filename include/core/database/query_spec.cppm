@@ -47,10 +47,10 @@ public:
     }
 
 private:
-    [[nodiscard]] static std::string join(
+    [[nodiscard]] std::string join(
         const std::vector<std::string>& parts,
         std::string_view separator
-    )
+    ) const
     {
         std::string out;
         for (std::size_t i = 0; i < parts.size(); ++i) {

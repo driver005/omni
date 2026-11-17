@@ -14,7 +14,10 @@ export namespace core::cache::reflect {
 namespace detail {
 
 template<typename T>
-[[nodiscard]] std::string encode_field(const T& value)
+class EncodeField
+{
+public:
+    [[nodiscard]] std::string operator()(const T& value) const
 {
     using U = std::remove_cvref_t<T>;
     if constexpr (std::same_as<U, bool>) {
@@ -27,10 +30,14 @@ template<typename T>
     } else {
         return std::format("{}", value);
     }
-}
+    }
+};
 
 template<typename T>
-[[nodiscard]] std::optional<T> decode_field(std::string_view text)
+class DecodeField
+{
+public:
+    [[nodiscard]] std::optional<T> operator()(std::string_view text) const
 {
     using U = std::remove_cvref_t<T>;
     if constexpr (std::same_as<U, std::string>) {
@@ -54,7 +61,8 @@ template<typename T>
     } else {
         return std::nullopt;
     }
-}
+    }
+};
 
 } // namespace detail
 
@@ -63,7 +71,7 @@ class EntityCodec
 {
 public:
     template<ReflectedCacheEntity E>
-    [[nodiscard]] static CacheValue encode_value(const CacheEntry& entry)
+    [[nodiscard]] CacheValue encode_value(const CacheEntry& entry)
     {
         // The raw value is the encoded key itself; typed round-trips rely on
         // the attributes below, while raw gets still see a meaningful value.
@@ -71,15 +79,15 @@ public:
     }
 
     template<ReflectedCacheEntity E>
-    [[nodiscard]] static CacheEntry encode(const E& entity)
+    [[nodiscard]] CacheEntry encode(const E& entity)
     {
         CacheEntry entry;
-        entry.key = KeyBuilder::build<E>(entity);
+        entry.key = KeyBuilder{}.build<E>(entity);
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             auto append = [&](auto descriptor) {
                 using F = decltype(descriptor);
                 const std::string name{std::string_view{F::name}};
-                const std::string encoded = detail::encode_field(entity.*F::member);
+                const std::string encoded = detail::EncodeField<std::remove_cvref_t<decltype(entity.*F::member)>>{}(entity.*F::member);
                 entry.attributes.emplace(name, encoded);
                 if constexpr (F::is_tag) {
                     entry.tags.push_back(encoded);
@@ -92,7 +100,7 @@ public:
     }
 
     template<ReflectedCacheEntity E>
-    [[nodiscard]] static std::optional<E> decode(const CacheEntry& entry)
+    [[nodiscard]] std::optional<E> decode(const CacheEntry& entry)
     {
         E entity{};
         bool complete = true;
@@ -103,7 +111,7 @@ public:
                 if (it == entry.attributes.end()) {
                     return;
                 }
-                if (auto parsed = detail::decode_field<typename F::value_type>(it->second)) {
+                if (auto parsed = detail::DecodeField<typename F::value_type>{}(it->second)) {
                     entity.*F::member = *parsed;
                 } else {
                     complete = false;
@@ -141,11 +149,11 @@ suite<"core_cache_entity_codec"> core_cache_entity_codec_suite = []
     "round trips an entity through a cache entry"_test = []
     {
         const CodecSample original{7, "Ada", true};
-        const CacheEntry entry = EntityCodec::encode(original);
+        const CacheEntry entry = EntityCodec{}.encode(original);
         expect(entry.key == "users:v1:7");
         expect(entry.attributes.at("name") == "Ada");
         expect(entry.has_tag("Ada"));
-        const auto decoded = EntityCodec::decode<CodecSample>(entry);
+        const auto decoded = EntityCodec{}.decode<CodecSample>(entry);
         expect(decoded.has_value());
         expect(decoded->id == 7);
         expect(decoded->name == "Ada");

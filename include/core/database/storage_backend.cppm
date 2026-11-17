@@ -13,7 +13,7 @@ import boost.ut;
 namespace core::db::detail {
 
 /** @brief Instance functor: total ordering over DbValue alternatives. */
-export class CompareValues
+class CompareValues
 {
 public:
     [[nodiscard]] int operator()(const DbValue& a, const DbValue& b) const noexcept
@@ -44,7 +44,7 @@ public:
 };
 
 /** @brief Instance functor evaluating a predicate against a row. */
-export class RowMatches
+class RowMatches
 {
 public:
     [[nodiscard]] bool operator()(const Row& row, const Predicate& predicate) const noexcept

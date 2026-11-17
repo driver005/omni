@@ -66,7 +66,7 @@ suite<"core_cron_predicate"> core_cron_predicate_suite = []
 {
     "matches job name and expression"_test = []
     {
-        const auto job = CronJob::create("nightly-backup", "0 2 * * *");
+        const auto job = CronJob{}.create("nightly-backup", "0 2 * * *");
         expect(job.has_value());
         expect(CronPredicate{"name", CronCompare::EQ, "nightly-backup"}.matches(*job));
         expect(CronPredicate{"name", CronCompare::CONTAINS, "backup"}.matches(*job));

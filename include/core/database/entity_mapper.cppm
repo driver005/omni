@@ -15,7 +15,7 @@ class EntityMapper
 public:
     /** @brief Builds an entity from a row using reflected member pointers. */
     template<ReflectedEntity E>
-    [[nodiscard]] static E from_row(const Row& row)
+    [[nodiscard]] E from_row(const Row& row)
     {
         E entity{};
         [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -33,7 +33,7 @@ public:
 
     /** @brief Flattens an entity into named DbValues via reflected members. */
     template<ReflectedEntity E>
-    [[nodiscard]] static std::map<std::string, DbValue> to_values(const E& entity)
+    [[nodiscard]] std::map<std::string, DbValue> to_values(const E& entity)
     {
         std::map<std::string, DbValue> values;
         [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -77,12 +77,12 @@ suite<"core_db_entity_mapper"> core_db_entity_mapper_suite = []
         row.cells["name"] = std::string{"Ada"};
         row.cells["active"] = true;
 
-        const MapSample entity = EntityMapper::from_row<MapSample>(row);
+        const MapSample entity = EntityMapper{}.from_row<MapSample>(row);
         expect(entity.id == 7);
         expect(entity.name == "Ada");
         expect(entity.active);
 
-        const auto values = EntityMapper::to_values(entity);
+        const auto values = EntityMapper{}.to_values(entity);
         expect(values.at("name") == DbValue{std::string{"Ada"}});
         expect(values.at("active") == DbValue{true});
     };

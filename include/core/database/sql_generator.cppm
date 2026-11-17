@@ -15,7 +15,7 @@ class SqlGenerator
 public:
     /** @brief Comma-joined column list, e.g. `"id,name"`. */
     template<ReflectedEntity E>
-    [[nodiscard]] static std::string select_columns()
+    [[nodiscard]] std::string select_columns()
     {
         std::string out;
         [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -28,7 +28,7 @@ public:
 
     /** @brief Alias-qualified column list, e.g. `"u.id,u.name"`. */
     template<ReflectedEntity E>
-    [[nodiscard]] static std::string qualified_columns(std::string_view alias = {})
+    [[nodiscard]] std::string qualified_columns(std::string_view alias = {})
     {
         const std::string prefix = alias.empty() ? std::string{} : std::string{alias} + ".";
         std::string out;
@@ -42,7 +42,7 @@ public:
 
     /** @brief CREATE TABLE with kinds, NOT NULL, UNIQUE and composite PK. */
     template<ReflectedEntity E>
-    [[nodiscard]] static std::string create_table(bool if_not_exists = true)
+    [[nodiscard]] std::string create_table(bool if_not_exists = true)
     {
         std::string out = "CREATE TABLE ";
         if (if_not_exists) {
@@ -85,7 +85,7 @@ public:
 
     /** @brief DROP TABLE statement. */
     template<ReflectedEntity E>
-    [[nodiscard]] static std::string drop_table(bool if_exists = true)
+    [[nodiscard]] std::string drop_table(bool if_exists = true)
     {
         return std::string{"DROP TABLE "} + (if_exists ? "IF EXISTS " : "") +
                std::string{EntityMeta<E>::table};
@@ -114,10 +114,10 @@ suite<"core_db_sql_generator"> core_db_sql_generator_suite = []
 {
     "generates projections and DDL from metadata"_test = []
     {
-        expect(SqlGenerator::select_columns<SqlSample>() == "id,name,active");
-        expect(SqlGenerator::qualified_columns<SqlSample>("s") == "s.id,s.name,s.active");
-        expect(SqlGenerator::drop_table<SqlSample>() == "DROP TABLE IF EXISTS sql_samples");
-        const std::string ddl = SqlGenerator::create_table<SqlSample>();
+        expect(SqlGenerator{}.select_columns<SqlSample>() == "id,name,active");
+        expect(SqlGenerator{}.qualified_columns<SqlSample>("s") == "s.id,s.name,s.active");
+        expect(SqlGenerator{}.drop_table<SqlSample>() == "DROP TABLE IF EXISTS sql_samples");
+        const std::string ddl = SqlGenerator{}.create_table<SqlSample>();
         expect(ddl.contains("CREATE TABLE IF NOT EXISTS sql_samples"));
         expect(ddl.contains("id BIGINT NOT NULL"));
         expect(ddl.contains("PRIMARY KEY (id)"));

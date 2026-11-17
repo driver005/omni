@@ -75,7 +75,7 @@ template<typename T>
 }
 
 /** @brief Instance functor detecting a cache miss value. */
-export class IsMiss
+class IsMiss
 {
 public:
     [[nodiscard]] bool operator()(const CacheValue& value) const noexcept
@@ -104,8 +104,8 @@ suite<"core_cache_value"> core_cache_value_suite = []
         const CacheValue v = to_cache_value(std::int64_t{42});
         expect(value_as<std::int64_t>(v) == 42);
         expect(value_as<std::string>(v, std::string{"fallback"}) == "fallback");
-        expect(is_miss(CacheValue{Miss{}}));
-        expect(!is_miss(v));
+        expect(IsMiss{}(CacheValue{Miss{}}));
+        expect(!IsMiss{}(v));
     };
 };
 

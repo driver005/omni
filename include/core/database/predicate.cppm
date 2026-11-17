@@ -10,7 +10,7 @@ import boost.ut;
 export namespace core::db {
 
 /** @brief Instance functor escaping a SQL string literal. */
-export class QuoteSql
+class QuoteSql
 {
 public:
     [[nodiscard]] std::string operator()(std::string_view text) const
@@ -25,7 +25,7 @@ public:
 };
 
 /** @brief Instance functor rendering a DbValue as a SQL literal. */
-export class DbValueLiteral
+class DbValueLiteral
 {
 public:
     [[nodiscard]] std::string operator()(const DbValue& value) const

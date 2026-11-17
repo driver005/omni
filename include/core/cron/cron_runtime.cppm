@@ -7,6 +7,10 @@ import :cron_driver;
 import boost.ut;
 #endif
 
+export namespace core::cron::detail {
+class CronRuntime;
+}
+
 namespace core::cron::detail {
 
 /** @brief Internal state owned by the facade: the single cron driver. */

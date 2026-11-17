@@ -44,7 +44,7 @@ suite<"core_bridge_bridge_builder"> core_bridge_bridge_builder_suite = []
     "builds a bridge and registers/resolves services"_test = []
     {
         Bridge bridge = BridgeBuilder{}.option("base_dir", "./plugins").build();
-        const auto key = ServiceKey::make<BridgePayload>("payload");
+        const auto key = ServiceKey{}.make<BridgePayload>("payload");
         expect(bridge.register_service(key, BridgePayload{42}) == BridgeStatus::OK);
         expect(bridge.has_service(key));
         expect(bridge.service_count() == 1);

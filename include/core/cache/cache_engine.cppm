@@ -15,10 +15,14 @@ enum class CacheEngine : std::uint8_t
     REDIS
 };
 
-[[nodiscard]] constexpr std::string_view cache_engine_name(CacheEngine engine) noexcept
+class CacheEngineName
 {
-    return engine == CacheEngine::REDIS ? "redis" : "local";
-}
+public:
+    [[nodiscard]] constexpr std::string_view operator()(CacheEngine engine) const noexcept
+    {
+        return engine == CacheEngine::REDIS ? "redis" : "local";
+    }
+};
 
 } // namespace core::cache
 
@@ -30,8 +34,8 @@ suite<"core_cache_engine"> core_cache_engine_suite = []
 {
     "exposes engine names only"_test = []
     {
-        expect(cache_engine_name(CacheEngine::LOCAL) == "local");
-        expect(cache_engine_name(CacheEngine::REDIS) == "redis");
+        expect(CacheEngineName{}(CacheEngine::LOCAL) == "local");
+        expect(CacheEngineName{}(CacheEngine::REDIS) == "redis");
     };
 };
 

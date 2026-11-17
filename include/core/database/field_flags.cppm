@@ -31,7 +31,7 @@ enum class FieldFlags : std::uint8_t
 }
 
 /** @brief Instance functor testing a FieldFlags bitmask. */
-export class HasFlag
+class HasFlag
 {
 public:
     [[nodiscard]] constexpr bool operator()(FieldFlags value, FieldFlags flag) const noexcept

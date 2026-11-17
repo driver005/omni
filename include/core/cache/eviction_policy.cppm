@@ -15,18 +15,22 @@ enum class EvictionPolicy : std::uint8_t
     TTL_ONLY
 };
 
-[[nodiscard]] constexpr std::string_view eviction_policy_name(EvictionPolicy policy) noexcept
+class EvictionPolicyName
 {
-    switch (policy) {
-        case EvictionPolicy::LRU:
-            return "lru";
-        case EvictionPolicy::LFU:
-            return "lfu";
-        case EvictionPolicy::TTL_ONLY:
-            return "ttl_only";
+public:
+    [[nodiscard]] constexpr std::string_view operator()(EvictionPolicy policy) const noexcept
+    {
+        switch (policy) {
+            case EvictionPolicy::LRU:
+                return "lru";
+            case EvictionPolicy::LFU:
+                return "lfu";
+            case EvictionPolicy::TTL_ONLY:
+                return "ttl_only";
+        }
+        return "lru";
     }
-    return "lru";
-}
+};
 
 } // namespace core::cache
 
@@ -38,9 +42,9 @@ suite<"core_cache_eviction_policy"> core_cache_eviction_policy_suite = []
 {
     "names every policy"_test = []
     {
-        expect(eviction_policy_name(EvictionPolicy::LRU) == "lru");
-        expect(eviction_policy_name(EvictionPolicy::LFU) == "lfu");
-        expect(eviction_policy_name(EvictionPolicy::TTL_ONLY) == "ttl_only");
+        expect(EvictionPolicyName{}(EvictionPolicy::LRU) == "lru");
+        expect(EvictionPolicyName{}(EvictionPolicy::LFU) == "lfu");
+        expect(EvictionPolicyName{}(EvictionPolicy::TTL_ONLY) == "ttl_only");
     };
 };
 

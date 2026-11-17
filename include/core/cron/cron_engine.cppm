@@ -15,10 +15,14 @@ enum class CronEngine : std::uint8_t
     EXTERNAL
 };
 
-[[nodiscard]] constexpr std::string_view cron_engine_name(CronEngine engine) noexcept
+class CronEngineName
 {
-    return engine == CronEngine::EXTERNAL ? "external" : "local";
-}
+public:
+    [[nodiscard]] constexpr std::string_view operator()(CronEngine engine) const noexcept
+    {
+        return engine == CronEngine::EXTERNAL ? "external" : "local";
+    }
+};
 
 } // namespace core::cron
 
@@ -30,8 +34,8 @@ suite<"core_cron_engine"> core_cron_engine_suite = []
 {
     "exposes engine names only"_test = []
     {
-        expect(cron_engine_name(CronEngine::LOCAL) == "local");
-        expect(cron_engine_name(CronEngine::EXTERNAL) == "external");
+        expect(CronEngineName{}(CronEngine::LOCAL) == "local");
+        expect(CronEngineName{}(CronEngine::EXTERNAL) == "external");
     };
 };
 

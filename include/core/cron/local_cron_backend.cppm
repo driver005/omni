@@ -115,7 +115,7 @@ suite<"core_cron_local_backend"> core_cron_local_backend_suite = []
         std::vector<std::string> fired;
         backend.set_fire_callback([&](std::string_view name) { fired.emplace_back(name); });
 
-        const auto job = CronJob::create("minutely", "* * * * *");
+        const auto job = CronJob{}.create("minutely", "* * * * *");
         expect(job.has_value());
         backend.upsert(*job);
         expect(backend.jobs().size() == 1);

@@ -18,14 +18,14 @@ public:
     std::vector<std::string> tags{};
     std::map<std::string, std::string> attributes{};
 
-    [[nodiscard]] static CacheResult miss(std::string_view requested_key)
+    [[nodiscard]] CacheResult miss(std::string_view requested_key)
     {
         CacheResult result;
         result.key = std::string{requested_key};
         return result;
     }
 
-    [[nodiscard]] static CacheResult found(
+    [[nodiscard]] CacheResult found(
         std::string_view found_key,
         CacheValue found_value,
         std::vector<std::string> found_tags = {}
@@ -56,13 +56,13 @@ suite<"core_cache_result"> core_cache_result_suite = []
 {
     "miss and found carry the right state"_test = []
     {
-        const CacheResult missed = CacheResult::miss("k");
+        const CacheResult missed = CacheResult{}.miss("k");
         expect(!missed.hit);
         expect(missed.key == "k");
         expect(missed.value_or<std::int64_t>(9) == 9);
 
         const CacheResult found =
-            CacheResult::found("k", to_cache_value(std::int64_t{5}), {"tag"});
+            CacheResult{}.found("k", to_cache_value(std::int64_t{5}), {"tag"});
         expect(found.hit);
         expect(found.value_or<std::int64_t>(0) == 5);
         expect(found.tags.size() == 1);

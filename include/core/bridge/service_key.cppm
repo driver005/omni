@@ -12,7 +12,7 @@ class ServiceKey
 {
 public:
     template<typename T>
-    [[nodiscard]] static ServiceKey make(std::string_view name)
+    [[nodiscard]] ServiceKey make(std::string_view name)
     {
         return ServiceKey{std::string{name}, &typeid(T)};
     }
@@ -32,7 +32,11 @@ public:
         return *m_type == other;
     }
 
+public:
+    ServiceKey() = default;
+
 private:
+
     ServiceKey(std::string name, const std::type_info* type) :
         m_name{std::move(name)},
         m_type{type}
@@ -53,7 +57,7 @@ suite<"core_bridge_service_key"> core_bridge_service_key_suite = []
 {
     "keys carry a name and a type"_test = []
     {
-        const auto key = ServiceKey::make<int>("counter");
+        const auto key = ServiceKey{}.make<int>("counter");
         expect(key.name() == "counter");
         expect(key.matches(typeid(int)));
         expect(!key.matches(typeid(double)));

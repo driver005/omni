@@ -15,7 +15,7 @@ enum class SortOrder : std::uint8_t
 };
 
 /** @brief Instance functor mapping a SortOrder to its SQL clause. */
-export class SortOrderSql
+class SortOrderSql
 {
 public:
     [[nodiscard]] constexpr std::string_view operator()(SortOrder order) const noexcept

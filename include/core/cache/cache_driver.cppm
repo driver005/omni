@@ -61,7 +61,7 @@ public:
     [[nodiscard]] CacheEntry get(std::string_view key)
     {
         CacheEntry entry = m_backend->get(key);
-        if (!is_miss(entry.value)) {
+        if (!IsMiss{}(entry.value)) {
             ++m_stats.hits;
             entry.hits++;
             m_backend->put(entry);
@@ -143,7 +143,7 @@ suite<"core_cache_driver"> core_cache_driver_suite = []
         entry.value = to_cache_value(std::string{"v"});
         driver.put(entry);
         expect(std::get<std::string>(driver.get("k").value) == "v");
-        expect(is_miss(driver.get("missing").value));
+        expect(IsMiss{}(driver.get("missing").value));
         expect(driver.stats().hits == 1);
         expect(driver.stats().misses == 1);
         expect(driver.size() == 1);

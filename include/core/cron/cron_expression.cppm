@@ -14,7 +14,7 @@ class CronExpression
 public:
     using TimePoint = std::chrono::system_clock::time_point;
 
-    [[nodiscard]] static std::optional<CronExpression> parse(std::string_view expression)
+    [[nodiscard]] std::optional<CronExpression> parse(std::string_view expression)
     {
         std::vector<std::string_view> fields;
         std::size_t start = 0;
@@ -37,11 +37,11 @@ public:
         }
 
         CronExpression result;
-        result.m_minutes = CronField::parse(fields[0], 0, 59);
-        result.m_hours = CronField::parse(fields[1], 0, 23);
-        result.m_days = CronField::parse(fields[2], 1, 31);
-        result.m_months = CronField::parse(fields[3], 1, 12);
-        result.m_weekdays = CronField::parse(fields[4], 0, 6);
+        result.m_minutes = CronField{}.parse(fields[0], 0, 59);
+        result.m_hours = CronField{}.parse(fields[1], 0, 23);
+        result.m_days = CronField{}.parse(fields[2], 1, 31);
+        result.m_months = CronField{}.parse(fields[3], 1, 12);
+        result.m_weekdays = CronField{}.parse(fields[4], 0, 6);
         if (!result.m_minutes || !result.m_hours || !result.m_days || !result.m_months ||
             !result.m_weekdays) {
             return std::nullopt;
@@ -119,15 +119,15 @@ suite<"core_cron_expression"> core_cron_expression_suite = []
 {
     "validates and rejects expressions"_test = []
     {
-        expect(CronExpression::parse("*/5 * * * *").has_value());
-        expect(CronExpression::parse("0 9 * * 1-5").has_value());
-        expect(!CronExpression::parse("* * * *").has_value());
-        expect(!CronExpression::parse("nope * * * *").has_value());
+        expect(CronExpression{}.parse("*/5 * * * *").has_value());
+        expect(CronExpression{}.parse("0 9 * * 1-5").has_value());
+        expect(!CronExpression{}.parse("* * * *").has_value());
+        expect(!CronExpression{}.parse("nope * * * *").has_value());
     };
 
     "computes next fire times"_test = []
     {
-        const auto expression = CronExpression::parse("0 0 * * *");
+        const auto expression = CronExpression{}.parse("0 0 * * *");
         expect(expression.has_value());
         const auto base = std::chrono::sys_days{std::chrono::year{2026} / std::chrono::January / 1} +
                           std::chrono::hours{12};

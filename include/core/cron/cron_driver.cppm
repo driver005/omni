@@ -101,7 +101,7 @@ suite<"core_cron_driver"> core_cron_driver_suite = []
         driver.open();
         expect(driver.is_open());
         expect(driver.name() == "local");
-        const auto job = CronJob::create("j", "* * * * *");
+        const auto job = CronJob{}.create("j", "* * * * *");
         expect(job.has_value());
         driver.upsert(*job);
         expect(driver.jobs().size() == 1);

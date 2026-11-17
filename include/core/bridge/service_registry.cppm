@@ -83,7 +83,7 @@ suite<"core_bridge_service_registry"> core_bridge_service_registry_suite = []
     "registers and resolves typed services"_test = []
     {
         ServiceRegistry registry;
-        const auto key = ServiceKey::make<std::string>("greeting");
+        const auto key = ServiceKey{}.make<std::string>("greeting");
         expect(registry.register_service(key, std::string{"hello"}) == BridgeStatus::OK);
         expect(registry.contains(key));
         expect(registry.size() == 1);
@@ -96,7 +96,7 @@ suite<"core_bridge_service_registry"> core_bridge_service_registry_suite = []
     "rejects mismatched key type and removes services"_test = []
     {
         ServiceRegistry registry;
-        const auto int_key = ServiceKey::make<int>("n");
+        const auto int_key = ServiceKey{}.make<int>("n");
         expect(registry.register_service(int_key, std::string{"bad"}) ==
                BridgeStatus::TYPE_MISMATCH);
         expect(registry.register_service(int_key, 42) == BridgeStatus::OK);

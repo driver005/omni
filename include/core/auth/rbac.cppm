@@ -1,7 +1,7 @@
 export module core_auth:rbac;
 
 import std;
-import :auth_status;
+import :status;
 import :permission;
 import :role;
 #ifdef CONGELADO_TEST

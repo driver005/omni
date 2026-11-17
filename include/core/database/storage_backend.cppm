@@ -10,7 +10,7 @@ import :predicate;
 import boost.ut;
 #endif
 
-namespace core::db::detail {
+namespace core::db {
 
 /** @brief Instance functor: total ordering over DbValue alternatives. */
 class CompareValues
@@ -127,10 +127,10 @@ public:
     ) = 0;
 };
 
-} // namespace core::db::detail
+} // namespace core::db
 
 #ifdef CONGELADO_TEST
-namespace core::db::detail::tests {
+namespace core::db::tests {
 using namespace boost::ut;
 
 suite<"core_db_storage_backend"> core_db_storage_backend_suite = []
@@ -154,5 +154,5 @@ suite<"core_db_storage_backend"> core_db_storage_backend_suite = []
     };
 };
 
-} // namespace core::db::detail::tests
+} // namespace core::db::tests
 #endif

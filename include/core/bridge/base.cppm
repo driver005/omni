@@ -5,12 +5,12 @@ export module core_bridge;
 // a Poco::SharedLibrary or a registry implementation. Entry point:
 // BridgeBuilder -> Bridge.
 
-export import :bridge_status;
+export import :status;
 export import :service_key;
 export import :service_registry;
 export import :bridge;
-export import :bridge_builder;
+export import :builder;
 
 export import :plugin_module;
-export import :bridge_runtime;
-export import :bridge_context;
+export import :runtime;
+export import :context;

@@ -1,17 +1,16 @@
 export module core_cache:entity_codec;
 
 import std;
-import :cache_value;
-import :cache_entry;
+import :value;
+import :entry;
 import :key_builder;
-import :cache_entity_meta;
+import :entity_meta;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace core::cache::reflect {
 
-namespace detail {
 
 template<typename T>
 class EncodeField
@@ -64,7 +63,6 @@ public:
     }
 };
 
-} // namespace detail
 
 /** @brief Encodes/decodes reflected entities into backend-neutral cache entries. */
 class EntityCodec
@@ -87,7 +85,7 @@ public:
             auto append = [&](auto descriptor) {
                 using F = decltype(descriptor);
                 const std::string name{std::string_view{F::name}};
-                const std::string encoded = detail::EncodeField<std::remove_cvref_t<decltype(entity.*F::member)>>{}(entity.*F::member);
+                const std::string encoded = EncodeField<std::remove_cvref_t<decltype(entity.*F::member)>>{}(entity.*F::member);
                 entry.attributes.emplace(name, encoded);
                 if constexpr (F::is_tag) {
                     entry.tags.push_back(encoded);
@@ -111,7 +109,7 @@ public:
                 if (it == entry.attributes.end()) {
                     return;
                 }
-                if (auto parsed = detail::DecodeField<typename F::value_type>{}(it->second)) {
+                if (auto parsed = DecodeField<typename F::value_type>{}(it->second)) {
                     entity.*F::member = *parsed;
                 } else {
                     complete = false;

@@ -3,7 +3,7 @@ export module core_settings:settings;
 import std;
 import :setting_key;
 import :setting_value;
-import :settings_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -15,7 +15,7 @@ class Settings
 {
 public:
     Settings() :
-        m_runtime{std::make_shared<detail::SettingsRuntime>()}
+        m_runtime{std::make_shared<SettingsRuntime>()}
     {
     }
 
@@ -61,7 +61,7 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::SettingsRuntime> m_runtime{};
+    std::shared_ptr<SettingsRuntime> m_runtime{};
 };
 
 } // namespace core::settings

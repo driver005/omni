@@ -11,26 +11,24 @@ congelado_module_library(
     partitions = [
         # value types
         "string_literal.cppm",
-        "cron_engine.cppm",
-        "cron_field.cppm",
-        "cron_expression.cppm",
-        "cron_job.cppm",
+        "engine.cppm",
+        "field.cppm",
+        "expression.cppm",
+        "job.cppm",
         "fire_event.cppm",
         # compile-time reflection
-        "cron_job_meta.cppm",
+        "job_meta.cppm",
         # query support
-        "cron_predicate.cppm",
-        "cron_query_spec.cppm",
-        "cron_query.cppm",
+        "predicate.cppm",
+        "query_spec.cppm",
+        "query.cppm",
         # hidden engine layer
-        "cron_backend.cppm",
-        "local_cron_backend.cppm",
-        "cron_driver.cppm",
-        "cron_runtime.cppm",
-        "cron_context.cppm",
+        "driver.cppm",
+        "runtime.cppm",
+        "context.cppm",
         # facade + builder
         "cron.cppm",
-        "cron_builder.cppm",
+        "builder.cppm",
     ],
     visibility = ["//visibility:public"],
 )

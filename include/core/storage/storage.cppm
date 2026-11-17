@@ -1,9 +1,10 @@
 export module core_storage:storage;
 
 import std;
-import :storage_ref;
-import :storage_result;
-import :storage_runtime;
+import :backend;
+import :ref;
+import :result;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -18,8 +19,13 @@ class Storage
 {
 public:
     Storage() :
-        m_runtime{std::make_shared<detail::StorageRuntime>()}
+        m_runtime{std::make_shared<StorageRuntime>(nullptr)}
     {
+    }
+
+    void use_backend(std::unique_ptr<StorageBackend> backend)
+    {
+        m_runtime = std::make_shared<StorageRuntime>(std::move(backend));
     }
 
     Storage(const Storage&) = delete;
@@ -54,7 +60,7 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::StorageRuntime> m_runtime{};
+    std::shared_ptr<StorageRuntime> m_runtime{};
 };
 
 } // namespace core::storage

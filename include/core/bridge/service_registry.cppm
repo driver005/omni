@@ -5,7 +5,7 @@ module;
 export module core_bridge:service_registry;
 
 import std;
-import :bridge_status;
+import :status;
 import :service_key;
 #ifdef CONGELADO_TEST
 import boost.ut;

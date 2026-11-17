@@ -65,3 +65,20 @@ Persistent summary of the user's preferred C++ style. Mirrors the rules appended
 - Each implements `interfaces::IDatabase` / `ICache` and exposes
   `extern "C" void congelado_bridge_register(void*)` receiving the public `Bridge*`,
   calling `bridge->register_service(ServiceKey<T>::make<T>("name"), ptr)`.
+
+## Additional rules (user, later session)
+
+- **NO `::detail` namespaces anywhere.** Use plain namespaces (`core::x`) with
+  non-exported declarations inside interface partitions, or separate internal
+  partitions named without `detail`. Rename all existing `::detail` namespaces.
+- **Core = abstractions/implementation only. Plugins = runners/concrete backends.**
+  Move all in-memory/local/memory backends out of `include/core/` into plugins:
+  `MemoryDatabase`/`InMemoryBackend`, `MemoryCache`/`LocalCacheBackend`,
+  `MemoryStorageBackend`, `MemorySearchBackend`, `LocalEmailProvider`,
+  `LocalCronBackend`, `LocalWorkflowDriver`, etc. Core drivers accept injected
+  backends; plugins register/construct them.
+- **No redundant module-name prefixes in filenames.** In `include/core/<m>/`, files
+  must not start with `<m>_`. Use `builder.cppm`, `runtime.cppm`, `query.cppm`,
+  `hit.cppm`, `result.cppm`, `backend.cppm`, `status.cppm`, etc. Applies to
+  `workflow_`, `search_`, `cache_`, `database_`, `cron_`, `auth_`, `bridge_`,
+  `email_`, `storage_`, `settings_`, `theme_`, `activitypub_` and any other module.

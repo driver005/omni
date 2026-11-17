@@ -4,12 +4,12 @@ import std;
 import :storage_engine;
 import :entity_meta;
 import :sql_generator;
-import :database_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-namespace core::db::detail {
+namespace core::db {
 
 /** @brief Accumulates builder configuration and compiles it into a runtime. */
 class DbContext
@@ -18,6 +18,11 @@ public:
     void set_engine(StorageEngine engine) noexcept
     {
         m_engine = engine;
+    }
+
+    void use_backend(std::unique_ptr<StorageBackend> backend)
+    {
+        m_backend = std::move(backend);
     }
 
     void set_option(std::string key, std::string value)
@@ -34,9 +39,9 @@ public:
         }
     }
 
-    [[nodiscard]] std::unique_ptr<DatabaseRuntime> build() const
+    [[nodiscard]] std::unique_ptr<DatabaseRuntime> build()
     {
-        auto runtime = std::make_unique<DatabaseRuntime>(m_engine);
+        auto runtime = std::make_unique<DatabaseRuntime>(std::move(m_backend));
         for (const auto& [table, ddl]: m_tables) {
             (void)ddl; // DDL is retained for diagnostics; the backend keys by table name.
             runtime->register_table(table);
@@ -60,15 +65,16 @@ public:
     }
 
 private:
+    std::unique_ptr<StorageBackend> m_backend{};
     StorageEngine m_engine{StorageEngine::IN_MEMORY};
     std::map<std::string, std::string> m_options{};
     std::map<std::string, std::string> m_tables{};
 };
 
-} // namespace core::db::detail
+} // namespace core::db
 
 #ifdef CONGELADO_TEST
-namespace core::db::detail::tests {
+namespace core::db::tests {
 
 struct ContextSample
 {
@@ -96,5 +102,5 @@ suite<"core_db_db_context"> core_db_db_context_suite = []
     };
 };
 
-} // namespace core::db::detail::tests
+} // namespace core::db::tests
 #endif

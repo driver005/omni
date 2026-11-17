@@ -62,7 +62,7 @@ export namespace core::otel {
 class ScopedSpan;
 }
 
-namespace core::otel::detail {
+namespace core::otel {
 
 /// @brief The two pieces every new span needs: its ids, and one live `ISpan` per currently
 /// registered `ITracerProvider`.
@@ -136,7 +136,7 @@ ScopedSpan start_span_impl(
     std::span<const interfaces::Attribute> attrs
 );
 
-} // namespace core::otel::detail
+} // namespace core::otel
 
 export namespace core::otel {
 
@@ -285,7 +285,7 @@ public:
     }
 
 private:
-    friend ScopedSpan detail::start_span_impl(
+    friend ScopedSpan start_span_impl(
         std::string_view,
         interfaces::SpanKind,
         const std::optional<interfaces::SpanContext>&,
@@ -327,7 +327,7 @@ private:
 
 } // namespace core::otel
 
-namespace core::otel::detail {
+namespace core::otel {
 
 // Out-of-line definition of the prototype declared above, now that ScopedSpan is complete.
 inline ScopedSpan start_span_impl(
@@ -342,7 +342,7 @@ inline ScopedSpan start_span_impl(
     return ScopedSpan{built.ctx, std::move(built.spans), true};
 }
 
-} // namespace core::otel::detail
+} // namespace core::otel
 
 export namespace core::otel {
 
@@ -360,7 +360,7 @@ export namespace core::otel {
     std::span<const interfaces::Attribute> attrs = {}
 )
 {
-    return detail::start_span_impl(name, kind, current_context(), attrs);
+    return start_span_impl(name, kind, current_context(), attrs);
 }
 
 /**
@@ -381,7 +381,7 @@ export namespace core::otel {
     std::span<const interfaces::Attribute> attrs = {}
 )
 {
-    return detail::start_span_impl(name, kind, parent, attrs);
+    return start_span_impl(name, kind, parent, attrs);
 }
 
 /**
@@ -495,7 +495,7 @@ private:
     std::span<const interfaces::Attribute> attrs = {}
 )
 {
-    auto built = detail::build_new_span(name, kind, parent, attrs);
+    auto built = build_new_span(name, kind, parent, attrs);
     return DetachedSpan{built.ctx, std::move(built.spans)};
 }
 

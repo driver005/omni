@@ -1,13 +1,13 @@
 export module core_auth:auth;
 
 import std;
-import :auth_status;
+import :status;
 import :password_hash;
 import :token;
 import :permission;
 import :role;
 import :api_key;
-import :auth_runtime;
+import :runtime;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -22,7 +22,7 @@ class Auth
 {
 public:
     Auth() :
-        m_runtime{std::make_shared<detail::AuthRuntime>()}
+        m_runtime{std::make_shared<AuthRuntime>()}
     {
     }
 
@@ -94,7 +94,7 @@ public:
     }
 
 private:
-    std::shared_ptr<detail::AuthRuntime> m_runtime{};
+    std::shared_ptr<AuthRuntime> m_runtime{};
 };
 
 } // namespace core::auth

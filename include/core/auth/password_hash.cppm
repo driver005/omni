@@ -4,7 +4,7 @@ module;
 export module core_auth:password_hash;
 
 import std;
-import :auth_status;
+import :status;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

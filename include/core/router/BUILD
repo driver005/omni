@@ -13,6 +13,8 @@ congelado_module_library(
         "types.cppm",
         "executor.cppm",
         "consts.cppm",
+        "route_config.cppm",
+        "redirect.cppm",
     ],
     deps = [
         "//include/interfaces:interfaces",

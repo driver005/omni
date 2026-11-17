@@ -38,6 +38,11 @@ congelado_module_library(
         # facade + builder
         "database.cppm",
         "database_builder.cppm",
+        "migration.cppm",
+        "migration_runner.cppm",
+        "seeder.cppm",
+        "relation.cppm",
+        "repository_base.cppm",
     ],
     deps = [],
 

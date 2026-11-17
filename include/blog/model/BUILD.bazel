@@ -1,4 +1,4 @@
-load("//bazel:build_defs.bzl", "congelado_module_library")
+load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test")
 
 congelado_module_library(
     name = "blog_model",
@@ -24,4 +24,15 @@ congelado_module_library(
     deps = ["//include/core/database:core_database"],
     hdrs = ["entity_macros.h"],
     visibility = ["//visibility:public"],
+)
+
+congelado_cc_test(
+    name = "serde_bridge_test",
+    srcs = ["serde_bridge_test.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [
+        ":blog_model",
+        "//include/core/database:core_database",
+        "//plugins/memory:memory_backends",
+    ],
 )

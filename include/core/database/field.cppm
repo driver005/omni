@@ -36,6 +36,65 @@ struct Field
     static constexpr bool unique = HasFlag{}(Flags, FieldFlags::UNIQUE);
 };
 
+
+template<typename>
+struct SetterValue;
+
+template<typename C, typename V>
+struct SetterValue<void (C::*)(V)>
+{
+    using type = std::remove_cvref_t<V>;
+};
+
+/**
+ * @brief Reflection descriptor backed by serde getters/setters instead of a
+ * data-member pointer. Lets DB code consume serde-described models directly.
+ */
+template<
+    auto Name,
+    auto Getter,
+    auto Setter,
+    ColumnType Type,
+    bool PrimaryKey = false,
+    bool NotNull = false,
+    bool Unique = false>
+struct SerdeField
+{
+    using traits = MemberPointerTraits<decltype(Getter)>;
+    using entity_type = typename traits::class_t;
+    using value_type = typename SetterValue<decltype(Setter)>::type;
+
+    static constexpr auto name = Name.string_view();
+    static constexpr auto getter = Getter;
+    static constexpr auto setter = Setter;
+    static constexpr ColumnType type = Type;
+    static constexpr bool primary_key = PrimaryKey;
+    static constexpr bool not_null = NotNull || PrimaryKey;
+    static constexpr bool unique = Unique;
+};
+
+/** @brief Write a field described by either member pointer or serde setter. */
+template<typename Entity, typename FieldDesc, typename Value>
+void set_field(Entity& entity, FieldDesc, const Value& value)
+{
+    if constexpr (requires { entity.*FieldDesc::member; }) {
+        entity.*FieldDesc::member = value;
+    } else {
+        (entity.*FieldDesc::setter)(value);
+    }
+}
+
+/** @brief Read a field described by either member pointer or serde getter. */
+template<typename Entity, typename FieldDesc>
+[[nodiscard]] decltype(auto) get_field(const Entity& entity, FieldDesc)
+{
+    if constexpr (requires { entity.*FieldDesc::member; }) {
+        return (entity.*FieldDesc::member);
+    } else {
+        return (entity.*FieldDesc::getter)();
+    }
+}
+
 } // namespace core::db::reflect
 
 #ifdef CONGELADO_TEST

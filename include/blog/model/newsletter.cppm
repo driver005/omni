@@ -4,6 +4,7 @@ module;
 export module blog_model:newsletter;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -12,93 +13,192 @@ import boost.ut;
 export namespace blog::model {
 
 /** @brief Ghost newsletters entity — full field set from data/schema/schema.js. */
-struct Newsletter
+class Newsletter
 {
-    std::int64_t id{};
-    std::string uuid{};
-    std::string name{};
-    std::string description{};
-    bool feedback_enabled{};
-    std::string slug{};
-    std::string sender_name{};
-    std::string sender_email{};
-    std::string sender_reply_to{};
-    std::string status{};
-    std::string visibility{};
-    bool subscribe_on_signup{};
-    std::int64_t sort_order{};
-    std::string header_image{};
-    bool show_header_icon{};
-    bool show_header_title{};
-    bool show_excerpt{};
-    std::string title_font_category{};
-    std::string title_alignment{};
-    bool show_feature_image{};
-    std::string body_font_category{};
-    std::string footer_content{};
-    bool show_badge{};
-    bool show_header_name{};
-    bool show_post_title_section{};
-    bool show_comment_cta{};
-    bool show_subscription_details{};
-    bool show_latest_posts{};
-    bool show_share_button{};
-    std::string background_color{};
-    std::string post_title_color{};
-    std::chrono::system_clock::time_point created_at{};
-    std::chrono::system_clock::time_point updated_at{};
-    std::string button_corners{};
-    std::string button_style{};
-    std::string title_font_weight{};
-    std::string link_style{};
-    std::string image_corners{};
-    std::string header_background_color{};
-    std::string section_title_color{};
+public:
+    Newsletter() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_uuid(std::string value) { m_uuid = std::move(value); }
+    [[nodiscard]] const std::string& get_uuid() const noexcept { return m_uuid; }
+    void set_name(std::string value) { m_name = std::move(value); }
+    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
+    void set_description(std::string value) { m_description = std::move(value); }
+    [[nodiscard]] const std::string& get_description() const noexcept { return m_description; }
+    void set_feedback_enabled(bool value) { m_feedback_enabled = std::move(value); }
+    [[nodiscard]] const bool& get_feedback_enabled() const noexcept { return m_feedback_enabled; }
+    void set_slug(std::string value) { m_slug = std::move(value); }
+    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
+    void set_sender_name(std::string value) { m_sender_name = std::move(value); }
+    [[nodiscard]] const std::string& get_sender_name() const noexcept { return m_sender_name; }
+    void set_sender_email(std::string value) { m_sender_email = std::move(value); }
+    [[nodiscard]] const std::string& get_sender_email() const noexcept { return m_sender_email; }
+    void set_sender_reply_to(std::string value) { m_sender_reply_to = std::move(value); }
+    [[nodiscard]] const std::string& get_sender_reply_to() const noexcept { return m_sender_reply_to; }
+    void set_status(std::string value) { m_status = std::move(value); }
+    [[nodiscard]] const std::string& get_status() const noexcept { return m_status; }
+    void set_visibility(std::string value) { m_visibility = std::move(value); }
+    [[nodiscard]] const std::string& get_visibility() const noexcept { return m_visibility; }
+    void set_subscribe_on_signup(bool value) { m_subscribe_on_signup = std::move(value); }
+    [[nodiscard]] const bool& get_subscribe_on_signup() const noexcept { return m_subscribe_on_signup; }
+    void set_sort_order(std::int64_t value) { m_sort_order = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_sort_order() const noexcept { return m_sort_order; }
+    void set_header_image(std::string value) { m_header_image = std::move(value); }
+    [[nodiscard]] const std::string& get_header_image() const noexcept { return m_header_image; }
+    void set_show_header_icon(bool value) { m_show_header_icon = std::move(value); }
+    [[nodiscard]] const bool& get_show_header_icon() const noexcept { return m_show_header_icon; }
+    void set_show_header_title(bool value) { m_show_header_title = std::move(value); }
+    [[nodiscard]] const bool& get_show_header_title() const noexcept { return m_show_header_title; }
+    void set_show_excerpt(bool value) { m_show_excerpt = std::move(value); }
+    [[nodiscard]] const bool& get_show_excerpt() const noexcept { return m_show_excerpt; }
+    void set_title_font_category(std::string value) { m_title_font_category = std::move(value); }
+    [[nodiscard]] const std::string& get_title_font_category() const noexcept { return m_title_font_category; }
+    void set_title_alignment(std::string value) { m_title_alignment = std::move(value); }
+    [[nodiscard]] const std::string& get_title_alignment() const noexcept { return m_title_alignment; }
+    void set_show_feature_image(bool value) { m_show_feature_image = std::move(value); }
+    [[nodiscard]] const bool& get_show_feature_image() const noexcept { return m_show_feature_image; }
+    void set_body_font_category(std::string value) { m_body_font_category = std::move(value); }
+    [[nodiscard]] const std::string& get_body_font_category() const noexcept { return m_body_font_category; }
+    void set_footer_content(std::string value) { m_footer_content = std::move(value); }
+    [[nodiscard]] const std::string& get_footer_content() const noexcept { return m_footer_content; }
+    void set_show_badge(bool value) { m_show_badge = std::move(value); }
+    [[nodiscard]] const bool& get_show_badge() const noexcept { return m_show_badge; }
+    void set_show_header_name(bool value) { m_show_header_name = std::move(value); }
+    [[nodiscard]] const bool& get_show_header_name() const noexcept { return m_show_header_name; }
+    void set_show_post_title_section(bool value) { m_show_post_title_section = std::move(value); }
+    [[nodiscard]] const bool& get_show_post_title_section() const noexcept { return m_show_post_title_section; }
+    void set_show_comment_cta(bool value) { m_show_comment_cta = std::move(value); }
+    [[nodiscard]] const bool& get_show_comment_cta() const noexcept { return m_show_comment_cta; }
+    void set_show_subscription_details(bool value) { m_show_subscription_details = std::move(value); }
+    [[nodiscard]] const bool& get_show_subscription_details() const noexcept { return m_show_subscription_details; }
+    void set_show_latest_posts(bool value) { m_show_latest_posts = std::move(value); }
+    [[nodiscard]] const bool& get_show_latest_posts() const noexcept { return m_show_latest_posts; }
+    void set_show_share_button(bool value) { m_show_share_button = std::move(value); }
+    [[nodiscard]] const bool& get_show_share_button() const noexcept { return m_show_share_button; }
+    void set_background_color(std::string value) { m_background_color = std::move(value); }
+    [[nodiscard]] const std::string& get_background_color() const noexcept { return m_background_color; }
+    void set_post_title_color(std::string value) { m_post_title_color = std::move(value); }
+    [[nodiscard]] const std::string& get_post_title_color() const noexcept { return m_post_title_color; }
+    void set_created_at(std::chrono::system_clock::time_point value) { m_created_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_created_at() const noexcept { return m_created_at; }
+    void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
+    void set_button_corners(std::string value) { m_button_corners = std::move(value); }
+    [[nodiscard]] const std::string& get_button_corners() const noexcept { return m_button_corners; }
+    void set_button_style(std::string value) { m_button_style = std::move(value); }
+    [[nodiscard]] const std::string& get_button_style() const noexcept { return m_button_style; }
+    void set_title_font_weight(std::string value) { m_title_font_weight = std::move(value); }
+    [[nodiscard]] const std::string& get_title_font_weight() const noexcept { return m_title_font_weight; }
+    void set_link_style(std::string value) { m_link_style = std::move(value); }
+    [[nodiscard]] const std::string& get_link_style() const noexcept { return m_link_style; }
+    void set_image_corners(std::string value) { m_image_corners = std::move(value); }
+    [[nodiscard]] const std::string& get_image_corners() const noexcept { return m_image_corners; }
+    void set_header_background_color(std::string value) { m_header_background_color = std::move(value); }
+    [[nodiscard]] const std::string& get_header_background_color() const noexcept { return m_header_background_color; }
+    void set_section_title_color(std::string value) { m_section_title_color = std::move(value); }
+    [[nodiscard]] const std::string& get_section_title_color() const noexcept { return m_section_title_color; }
+
+    std::int64_t m_id{};
+    std::string m_uuid{};
+    std::string m_name{};
+    std::string m_description{};
+    bool m_feedback_enabled{};
+    std::string m_slug{};
+    std::string m_sender_name{};
+    std::string m_sender_email{};
+    std::string m_sender_reply_to{};
+    std::string m_status{};
+    std::string m_visibility{};
+    bool m_subscribe_on_signup{};
+    std::int64_t m_sort_order{};
+    std::string m_header_image{};
+    bool m_show_header_icon{};
+    bool m_show_header_title{};
+    bool m_show_excerpt{};
+    std::string m_title_font_category{};
+    std::string m_title_alignment{};
+    bool m_show_feature_image{};
+    std::string m_body_font_category{};
+    std::string m_footer_content{};
+    bool m_show_badge{};
+    bool m_show_header_name{};
+    bool m_show_post_title_section{};
+    bool m_show_comment_cta{};
+    bool m_show_subscription_details{};
+    bool m_show_latest_posts{};
+    bool m_show_share_button{};
+    std::string m_background_color{};
+    std::string m_post_title_color{};
+    std::chrono::system_clock::time_point m_created_at{};
+    std::chrono::system_clock::time_point m_updated_at{};
+    std::string m_button_corners{};
+    std::string m_button_style{};
+    std::string m_title_font_weight{};
+    std::string m_link_style{};
+    std::string m_image_corners{};
+    std::string m_header_background_color{};
+    std::string m_section_title_color{};
 };
 
-GHOST_ENTITY(Newsletter, "newsletters",
-    GHOST_FIELD("id", &Newsletter::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("uuid", &Newsletter::uuid, core::db::ColumnType::TEXT),
-    GHOST_FIELD("name", &Newsletter::name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("description", &Newsletter::description, core::db::ColumnType::TEXT),
-    GHOST_FIELD("feedback_enabled", &Newsletter::feedback_enabled, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("slug", &Newsletter::slug, core::db::ColumnType::TEXT),
-    GHOST_FIELD("sender_name", &Newsletter::sender_name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("sender_email", &Newsletter::sender_email, core::db::ColumnType::TEXT),
-    GHOST_FIELD("sender_reply_to", &Newsletter::sender_reply_to, core::db::ColumnType::TEXT),
-    GHOST_FIELD("status", &Newsletter::status, core::db::ColumnType::TEXT),
-    GHOST_FIELD("visibility", &Newsletter::visibility, core::db::ColumnType::TEXT),
-    GHOST_FIELD("subscribe_on_signup", &Newsletter::subscribe_on_signup, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("sort_order", &Newsletter::sort_order, core::db::ColumnType::INTEGER),
-    GHOST_FIELD("header_image", &Newsletter::header_image, core::db::ColumnType::TEXT),
-    GHOST_FIELD("show_header_icon", &Newsletter::show_header_icon, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_header_title", &Newsletter::show_header_title, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_excerpt", &Newsletter::show_excerpt, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("title_font_category", &Newsletter::title_font_category, core::db::ColumnType::TEXT),
-    GHOST_FIELD("title_alignment", &Newsletter::title_alignment, core::db::ColumnType::TEXT),
-    GHOST_FIELD("show_feature_image", &Newsletter::show_feature_image, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("body_font_category", &Newsletter::body_font_category, core::db::ColumnType::TEXT),
-    GHOST_FIELD("footer_content", &Newsletter::footer_content, core::db::ColumnType::TEXT),
-    GHOST_FIELD("show_badge", &Newsletter::show_badge, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_header_name", &Newsletter::show_header_name, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_post_title_section", &Newsletter::show_post_title_section, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_comment_cta", &Newsletter::show_comment_cta, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_subscription_details", &Newsletter::show_subscription_details, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_latest_posts", &Newsletter::show_latest_posts, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("show_share_button", &Newsletter::show_share_button, core::db::ColumnType::BOOLEAN),
-    GHOST_FIELD("background_color", &Newsletter::background_color, core::db::ColumnType::TEXT),
-    GHOST_FIELD("post_title_color", &Newsletter::post_title_color, core::db::ColumnType::TEXT),
-    GHOST_FIELD("created_at", &Newsletter::created_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("updated_at", &Newsletter::updated_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("button_corners", &Newsletter::button_corners, core::db::ColumnType::TEXT),
-    GHOST_FIELD("button_style", &Newsletter::button_style, core::db::ColumnType::TEXT),
-    GHOST_FIELD("title_font_weight", &Newsletter::title_font_weight, core::db::ColumnType::TEXT),
-    GHOST_FIELD("link_style", &Newsletter::link_style, core::db::ColumnType::TEXT),
-    GHOST_FIELD("image_corners", &Newsletter::image_corners, core::db::ColumnType::TEXT),
-    GHOST_FIELD("header_background_color", &Newsletter::header_background_color, core::db::ColumnType::TEXT),
-    GHOST_FIELD("section_title_color", &Newsletter::section_title_color, core::db::ColumnType::TEXT));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Newsletter>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Newsletter::get_id, &blog::model::Newsletter::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"uuid", &blog::model::Newsletter::get_uuid, &blog::model::Newsletter::set_uuid, serde::FieldOptions{}>{},
+            serde::FieldDesc<"name", &blog::model::Newsletter::get_name, &blog::model::Newsletter::set_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"description", &blog::model::Newsletter::get_description, &blog::model::Newsletter::set_description, serde::FieldOptions{}>{},
+            serde::FieldDesc<"feedback_enabled", &blog::model::Newsletter::get_feedback_enabled, &blog::model::Newsletter::set_feedback_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"slug", &blog::model::Newsletter::get_slug, &blog::model::Newsletter::set_slug, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sender_name", &blog::model::Newsletter::get_sender_name, &blog::model::Newsletter::set_sender_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sender_email", &blog::model::Newsletter::get_sender_email, &blog::model::Newsletter::set_sender_email, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sender_reply_to", &blog::model::Newsletter::get_sender_reply_to, &blog::model::Newsletter::set_sender_reply_to, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &blog::model::Newsletter::get_status, &blog::model::Newsletter::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"visibility", &blog::model::Newsletter::get_visibility, &blog::model::Newsletter::set_visibility, serde::FieldOptions{}>{},
+            serde::FieldDesc<"subscribe_on_signup", &blog::model::Newsletter::get_subscribe_on_signup, &blog::model::Newsletter::set_subscribe_on_signup, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sort_order", &blog::model::Newsletter::get_sort_order, &blog::model::Newsletter::set_sort_order, serde::FieldOptions{}>{},
+            serde::FieldDesc<"header_image", &blog::model::Newsletter::get_header_image, &blog::model::Newsletter::set_header_image, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_header_icon", &blog::model::Newsletter::get_show_header_icon, &blog::model::Newsletter::set_show_header_icon, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_header_title", &blog::model::Newsletter::get_show_header_title, &blog::model::Newsletter::set_show_header_title, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_excerpt", &blog::model::Newsletter::get_show_excerpt, &blog::model::Newsletter::set_show_excerpt, serde::FieldOptions{}>{},
+            serde::FieldDesc<"title_font_category", &blog::model::Newsletter::get_title_font_category, &blog::model::Newsletter::set_title_font_category, serde::FieldOptions{}>{},
+            serde::FieldDesc<"title_alignment", &blog::model::Newsletter::get_title_alignment, &blog::model::Newsletter::set_title_alignment, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_feature_image", &blog::model::Newsletter::get_show_feature_image, &blog::model::Newsletter::set_show_feature_image, serde::FieldOptions{}>{},
+            serde::FieldDesc<"body_font_category", &blog::model::Newsletter::get_body_font_category, &blog::model::Newsletter::set_body_font_category, serde::FieldOptions{}>{},
+            serde::FieldDesc<"footer_content", &blog::model::Newsletter::get_footer_content, &blog::model::Newsletter::set_footer_content, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_badge", &blog::model::Newsletter::get_show_badge, &blog::model::Newsletter::set_show_badge, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_header_name", &blog::model::Newsletter::get_show_header_name, &blog::model::Newsletter::set_show_header_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_post_title_section", &blog::model::Newsletter::get_show_post_title_section, &blog::model::Newsletter::set_show_post_title_section, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_comment_cta", &blog::model::Newsletter::get_show_comment_cta, &blog::model::Newsletter::set_show_comment_cta, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_subscription_details", &blog::model::Newsletter::get_show_subscription_details, &blog::model::Newsletter::set_show_subscription_details, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_latest_posts", &blog::model::Newsletter::get_show_latest_posts, &blog::model::Newsletter::set_show_latest_posts, serde::FieldOptions{}>{},
+            serde::FieldDesc<"show_share_button", &blog::model::Newsletter::get_show_share_button, &blog::model::Newsletter::set_show_share_button, serde::FieldOptions{}>{},
+            serde::FieldDesc<"background_color", &blog::model::Newsletter::get_background_color, &blog::model::Newsletter::set_background_color, serde::FieldOptions{}>{},
+            serde::FieldDesc<"post_title_color", &blog::model::Newsletter::get_post_title_color, &blog::model::Newsletter::set_post_title_color, serde::FieldOptions{}>{},
+            serde::FieldDesc<"created_at", &blog::model::Newsletter::get_created_at, &blog::model::Newsletter::set_created_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"updated_at", &blog::model::Newsletter::get_updated_at, &blog::model::Newsletter::set_updated_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"button_corners", &blog::model::Newsletter::get_button_corners, &blog::model::Newsletter::set_button_corners, serde::FieldOptions{}>{},
+            serde::FieldDesc<"button_style", &blog::model::Newsletter::get_button_style, &blog::model::Newsletter::set_button_style, serde::FieldOptions{}>{},
+            serde::FieldDesc<"title_font_weight", &blog::model::Newsletter::get_title_font_weight, &blog::model::Newsletter::set_title_font_weight, serde::FieldOptions{}>{},
+            serde::FieldDesc<"link_style", &blog::model::Newsletter::get_link_style, &blog::model::Newsletter::set_link_style, serde::FieldOptions{}>{},
+            serde::FieldDesc<"image_corners", &blog::model::Newsletter::get_image_corners, &blog::model::Newsletter::set_image_corners, serde::FieldOptions{}>{},
+            serde::FieldDesc<"header_background_color", &blog::model::Newsletter::get_header_background_color, &blog::model::Newsletter::set_header_background_color, serde::FieldOptions{}>{},
+            serde::FieldDesc<"section_title_color", &blog::model::Newsletter::get_section_title_color, &blog::model::Newsletter::set_section_title_color, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "newsletters"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

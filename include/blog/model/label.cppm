@@ -4,6 +4,7 @@ module;
 export module blog_model:label;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -12,23 +13,52 @@ import boost.ut;
 export namespace blog::model {
 
 /** @brief Ghost labels entity — full field set from data/schema/schema.js. */
-struct Label
+class Label
 {
-    std::int64_t id{};
-    std::string name{};
-    std::string slug{};
-    std::chrono::system_clock::time_point created_at{};
-    std::chrono::system_clock::time_point updated_at{};
+public:
+    Label() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_name(std::string value) { m_name = std::move(value); }
+    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
+    void set_slug(std::string value) { m_slug = std::move(value); }
+    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
+    void set_created_at(std::chrono::system_clock::time_point value) { m_created_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_created_at() const noexcept { return m_created_at; }
+    void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
+
+    std::int64_t m_id{};
+    std::string m_name{};
+    std::string m_slug{};
+    std::chrono::system_clock::time_point m_created_at{};
+    std::chrono::system_clock::time_point m_updated_at{};
 };
 
-GHOST_ENTITY(Label, "labels",
-    GHOST_FIELD("id", &Label::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("name", &Label::name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("slug", &Label::slug, core::db::ColumnType::TEXT),
-    GHOST_FIELD("created_at", &Label::created_at, core::db::ColumnType::TIMESTAMP),
-    GHOST_FIELD("updated_at", &Label::updated_at, core::db::ColumnType::TIMESTAMP));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Label>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Label::get_id, &blog::model::Label::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"name", &blog::model::Label::get_name, &blog::model::Label::set_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"slug", &blog::model::Label::get_slug, &blog::model::Label::set_slug, serde::FieldOptions{}>{},
+            serde::FieldDesc<"created_at", &blog::model::Label::get_created_at, &blog::model::Label::set_created_at, serde::FieldOptions{}>{},
+            serde::FieldDesc<"updated_at", &blog::model::Label::get_updated_at, &blog::model::Label::set_updated_at, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "labels"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

@@ -9,7 +9,7 @@ import io_base_leverage;
 import core_logger;
 import core_events;
 import core_otel;
-import serde;
+import core_serde;
 import connector;
 #ifdef CONGELADO_TEST
 import boost.ut;

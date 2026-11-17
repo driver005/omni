@@ -73,8 +73,12 @@ public:
     // Not noexcept: the body calls std::println (formatting/IO may throw). Its sole caller,
     // RouteHandler::match() below, isn't noexcept either (it already throws std::runtime_error
     // on a routing miss), so dropping noexcept here doesn't tighten any contract.
-    constexpr std::optional<RouterNode>
-    find_child(std::string_view seg, std::span<RouterNode> table, std::uint8_t& current_index) const
+    constexpr std::optional<RouterNode> find_child(
+        std::string_view seg,
+        std::span<RouterNode> table,
+        std::uint8_t& current_index,
+        std::span<const std::string_view> rest = {}
+    ) const
     {
         // no children at all — nothing to probe, bail immediately
         if (m_children_length == 0) {
@@ -86,6 +90,7 @@ public:
         current_index += m_children_offset;
 
         std::optional<std::size_t> wild_index{std::nullopt};
+        std::vector<std::size_t> param_indexes{};
 
         if (m_children_length > 1) {
             // multiple siblings — hash-probe starting from a bucket derived from the segment,
@@ -118,8 +123,8 @@ public:
                         }
                         break;
                     case EdgeKind::PARAM:
-                        current_index = idx;
-                        return std::make_optional(node);
+                        param_indexes.push_back(idx);
+                        continue;
                     case EdgeKind::WILD:
                         wild_index = std::make_optional(idx);
                         continue;
@@ -137,12 +142,30 @@ public:
                     }
                     break;
                 case EdgeKind::PARAM:
-                    return std::make_optional(node);
+                    param_indexes.push_back(current_index);
+                    break;
                 case EdgeKind::WILD:
                     wild_index = std::make_optional(current_index);
             }
         }
 
+        if (!param_indexes.empty()) {
+            std::size_t chosen = param_indexes.front();
+            if (param_indexes.size() > 1 && !rest.empty()) {
+                for (const auto candidate : param_indexes) {
+                    auto& node = table[candidate];
+                    for (std::size_t i = 0; i < node.get_children_length(); ++i) {
+                        auto& child = table[node.get_data_offset() + i];
+                        if (child.get_kind() == EdgeKind::PATH && child.get_literal() == rest[0]) {
+                            chosen = candidate;
+                            break;
+                        }
+                    }
+                }
+            }
+            current_index = chosen;
+            return std::make_optional(table[chosen]);
+        }
         // nothing matched outright during the probe — fall back to the wildcard we saw, if any
         if (wild_index) {
             std::println("Returning wildcard node at index {}", *wild_index);
@@ -242,8 +265,8 @@ private:
 };
 
 template<
-    std::size_t RouterSize = 256,
-    std::size_t HandlerSize = 64,
+    std::size_t RouterSize = 1024,
+    std::size_t HandlerSize = 512,
     std::size_t MiddlewareSize = 10>
 class RouteHandler
 {
@@ -319,8 +342,9 @@ public:
             }
         }
 
-        // break the request path into its `/`-separated segments up front
-        auto segments = split_path(path);
+        // Query strings are not part of route matching.
+        auto segment_view = split_path(path.substr(0, path.find('?')));
+        const std::vector<std::string_view> segments{segment_view.begin(), segment_view.end()};
         auto it = segments.begin();
         auto end = segments.end();
 
@@ -331,7 +355,9 @@ public:
             std::uint8_t current_index = 0;
 
             for (; it != end; ++it) {
-                auto node = current.find_child(*it, m_table, current_index);
+                const auto position = static_cast<std::size_t>(it - segments.begin());
+                const auto rest = std::span<const std::string_view>{segments}.subspan(position + 1);
+                auto node = current.find_child(*it, m_table, current_index, rest);
                 // segment has no matching child anywhere in the trie — walk stops short,
                 // `it != end` below is what flags this as an incomplete match
                 if (!node) {

@@ -8,7 +8,7 @@ import utils_openapi;
 import utils_hash;
 import connector;
 import model;
-import serde;
+import core_serde;
 
 namespace {
 

@@ -4,6 +4,7 @@ module;
 export module blog_model:tier;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -11,21 +12,48 @@ import boost.ut;
 
 export namespace blog::model {
 
-struct Tier
+class Tier
 {
-    std::int64_t id{};
-    std::string name{};
-    std::string slug{};
-    double price{};
+public:
+    Tier() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_name(std::string value) { m_name = std::move(value); }
+    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
+    void set_slug(std::string value) { m_slug = std::move(value); }
+    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
+    void set_price(double value) { m_price = std::move(value); }
+    [[nodiscard]] const double& get_price() const noexcept { return m_price; }
+
+    std::int64_t m_id{};
+    std::string m_name{};
+    std::string m_slug{};
+    double m_price{};
 };
 
-GHOST_ENTITY(Tier, "tiers",
-    GHOST_FIELD("id", &Tier::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("name", &Tier::name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("slug", &Tier::slug, core::db::ColumnType::TEXT),
-    GHOST_FIELD("price", &Tier::price, core::db::ColumnType::DOUBLE));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Tier>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Tier::get_id, &blog::model::Tier::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"name", &blog::model::Tier::get_name, &blog::model::Tier::set_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"slug", &blog::model::Tier::get_slug, &blog::model::Tier::set_slug, serde::FieldOptions{}>{},
+            serde::FieldDesc<"price", &blog::model::Tier::get_price, &blog::model::Tier::set_price, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "tiers"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

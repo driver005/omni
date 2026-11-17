@@ -1,75 +1,131 @@
-export module blog_api:route;
+export module blog_api;
+
+export import :actions_routes;
+export import :apps_routes;
+export import :authentication_routes;
+export import :authors_routes;
+export import :automated_emails_routes;
+export import :automations_routes;
+export import :comments_routes;
+export import :config_routes;
+export import :custom_theme_settings_routes;
+export import :db_routes;
+export import :email_previews_routes;
+export import :emails_routes;
+export import :exports_routes;
+export import :featurebase_routes;
+export import :feedback_routes;
+export import :files_routes;
+export import :gift_links_routes;
+export import :gifts_routes;
+export import :identities_routes;
+export import :images_routes;
+export import :incoming_recommendations_routes;
+export import :integrations_routes;
+export import :invites_routes;
+export import :labels_routes;
+export import :links_routes;
+export import :media_routes;
+export import :members_routes;
+export import :mentions_routes;
+export import :newsletters_routes;
+export import :notifications_routes;
+export import :oembed_routes;
+export import :offers_routes;
+export import :pages_routes;
+export import :posts_routes;
+export import :recommendations_routes;
+export import :redirects_routes;
+export import :roles_routes;
+export import :schedules_routes;
+export import :search_index_routes;
+export import :session_routes;
+export import :settings_routes;
+export import :site_routes;
+export import :slack_routes;
+export import :slugs_routes;
+export import :snippets_routes;
+export import :stats_routes;
+export import :stripe_routes;
+export import :tags_routes;
+export import :themes_routes;
+export import :tiers_routes;
+export import :tinybird_routes;
+export import :upgrades_routes;
+export import :users_routes;
+export import :webhooks_routes;
 
 import std;
-#ifdef CONGELADO_TEST
-import boost.ut;
-#endif
+import interfaces;
+import core_router;
+import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief One Ghost API route: method, path template, resource, action, auth tier. */
-class ApiRoute
+/** @brief Installs every Ghost route into a core_router context. */
+class ApiRoutes
 {
 public:
-    ApiRoute() = default;
-
-    ApiRoute(std::string method, std::string path, std::string resource, std::string action, bool admin) :
-        m_method{std::move(method)},
-        m_path{std::move(path)},
-        m_resource{std::move(resource)},
-        m_action{std::move(action)},
-        m_admin{admin}
+    void install(
+        core::router::RouterContext<>& router,
+        blog::api::CoreHandler& handler
+    )
     {
+        ActionsRoutes{}.install(router, handler);
+        AppsRoutes{}.install(router, handler);
+        AuthenticationRoutes{}.install(router, handler);
+        AuthorsRoutes{}.install(router, handler);
+        AutomatedEmailsRoutes{}.install(router, handler);
+        AutomationsRoutes{}.install(router, handler);
+        CommentsRoutes{}.install(router, handler);
+        ConfigRoutes{}.install(router, handler);
+        CustomThemeSettingsRoutes{}.install(router, handler);
+        DbRoutes{}.install(router, handler);
+        EmailPreviewsRoutes{}.install(router, handler);
+        EmailsRoutes{}.install(router, handler);
+        ExportsRoutes{}.install(router, handler);
+        FeaturebaseRoutes{}.install(router, handler);
+        FeedbackRoutes{}.install(router, handler);
+        FilesRoutes{}.install(router, handler);
+        GiftLinksRoutes{}.install(router, handler);
+        GiftsRoutes{}.install(router, handler);
+        IdentitiesRoutes{}.install(router, handler);
+        ImagesRoutes{}.install(router, handler);
+        IncomingRecommendationsRoutes{}.install(router, handler);
+        IntegrationsRoutes{}.install(router, handler);
+        InvitesRoutes{}.install(router, handler);
+        LabelsRoutes{}.install(router, handler);
+        LinksRoutes{}.install(router, handler);
+        MediaRoutes{}.install(router, handler);
+        MembersRoutes{}.install(router, handler);
+        MentionsRoutes{}.install(router, handler);
+        NewslettersRoutes{}.install(router, handler);
+        NotificationsRoutes{}.install(router, handler);
+        OembedRoutes{}.install(router, handler);
+        OffersRoutes{}.install(router, handler);
+        PagesRoutes{}.install(router, handler);
+        PostsRoutes{}.install(router, handler);
+        RecommendationsRoutes{}.install(router, handler);
+        RedirectsRoutes{}.install(router, handler);
+        RolesRoutes{}.install(router, handler);
+        SchedulesRoutes{}.install(router, handler);
+        SearchIndexRoutes{}.install(router, handler);
+        SessionRoutes{}.install(router, handler);
+        SettingsRoutes{}.install(router, handler);
+        SiteRoutes{}.install(router, handler);
+        SlackRoutes{}.install(router, handler);
+        SlugsRoutes{}.install(router, handler);
+        SnippetsRoutes{}.install(router, handler);
+        StatsRoutes{}.install(router, handler);
+        StripeRoutes{}.install(router, handler);
+        TagsRoutes{}.install(router, handler);
+        ThemesRoutes{}.install(router, handler);
+        TiersRoutes{}.install(router, handler);
+        TinybirdRoutes{}.install(router, handler);
+        UpgradesRoutes{}.install(router, handler);
+        UsersRoutes{}.install(router, handler);
+        WebhooksRoutes{}.install(router, handler);
     }
-
-    [[nodiscard]] const std::string& method() const noexcept { return m_method; }
-    [[nodiscard]] const std::string& path() const noexcept { return m_path; }
-    [[nodiscard]] const std::string& resource() const noexcept { return m_resource; }
-    [[nodiscard]] const std::string& action() const noexcept { return m_action; }
-    [[nodiscard]] bool admin() const noexcept { return m_admin; }
-
-    /** @brief Matches a concrete path, extracting :param segments. */
-    [[nodiscard]] bool match(std::string_view concrete, std::map<std::string, std::string>& params) const
-    {
-        auto p = m_path.begin();
-        auto c = concrete.begin();
-        while (p != m_path.end()) {
-            if (*p == ':') {
-                auto pend = std::find(p, m_path.end(), '/');
-                auto cend = std::find(c, concrete.end(), '/');
-                std::string key{p + 1, pend};
-                if (key.empty() || c == cend) return false;
-                params[key] = std::string{c, cend};
-                p = pend; c = cend;
-            } else {
-                if (c == concrete.end() || *p != *c) return false;
-                ++p; ++c;
-            }
-        }
-        return c == concrete.end();
-    }
-
-private:
-    std::string m_method{"GET"};
-    std::string m_path{"/"};
-    std::string m_resource{"root"};
-    std::string m_action{"get"};
-    bool m_admin{false};
 };
 
 } // namespace blog::api
-#ifdef CONGELADO_TEST
-namespace blog::api::tests {
-using namespace boost::ut;
-suite<"blog_api_route"> blog_api_route_suite = []
-{
-    "matches param routes"_test = []
-    {
-        ApiRoute route{"GET", "/posts/:id/posts", "posts", "get", false};
-        std::map<std::string, std::string> params;
-        expect(route.match("/posts/42/posts", params));
-        expect(params["id"] == "42");
-    };
-};
-} // namespace blog::api::tests
-#endif

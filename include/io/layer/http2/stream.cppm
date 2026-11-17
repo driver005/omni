@@ -105,7 +105,8 @@ public:
             encoding_table,
             m_request,
             m_response,
-            (STREAM_ID % 2 == 0),
+            // Incoming streams on a server decode HEADERS into the request sink.
+            true,
         },
         m_header_block{std::make_optional<utils::buffering::BufferView>()}
     {

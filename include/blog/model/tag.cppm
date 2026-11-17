@@ -4,6 +4,7 @@ module;
 export module blog_model:tag;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -11,21 +12,48 @@ import boost.ut;
 
 export namespace blog::model {
 
-struct Tag
+class Tag
 {
-    std::int64_t id{};
-    std::string name{};
-    std::string slug{};
-    std::string description{};
+public:
+    Tag() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_name(std::string value) { m_name = std::move(value); }
+    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
+    void set_slug(std::string value) { m_slug = std::move(value); }
+    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
+    void set_description(std::string value) { m_description = std::move(value); }
+    [[nodiscard]] const std::string& get_description() const noexcept { return m_description; }
+
+    std::int64_t m_id{};
+    std::string m_name{};
+    std::string m_slug{};
+    std::string m_description{};
 };
 
-GHOST_ENTITY(Tag, "tags",
-    GHOST_FIELD("id", &Tag::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("name", &Tag::name, core::db::ColumnType::TEXT),
-    GHOST_FIELD("slug", &Tag::slug, core::db::ColumnType::TEXT),
-    GHOST_FIELD("description", &Tag::description, core::db::ColumnType::TEXT));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Tag>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Tag::get_id, &blog::model::Tag::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"name", &blog::model::Tag::get_name, &blog::model::Tag::set_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"slug", &blog::model::Tag::get_slug, &blog::model::Tag::set_slug, serde::FieldOptions{}>{},
+            serde::FieldDesc<"description", &blog::model::Tag::get_description, &blog::model::Tag::set_description, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "tags"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

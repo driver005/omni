@@ -18,7 +18,7 @@ import io_base_socket;
 import io_base_leverage;
 import core_contract;
 import shared;
-import serde;
+import core_serde;
 import connector;
 import congelado_api_dto;
 import congelado_api_routes;

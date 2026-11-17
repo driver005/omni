@@ -4,7 +4,7 @@ module;
 export module utils_openapi:schema;
 
 import std;
-import serde;
+import core_serde;
 import :model;
 #ifdef CONGELADO_TEST
 import boost.ut;

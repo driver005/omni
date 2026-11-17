@@ -10,7 +10,7 @@ import core_logger;
 import core_otel;
 import interfaces;
 import shared;
-import serde;
+import core_serde;
 import std;
 #ifdef CONGELADO_TEST
 import boost.ut;

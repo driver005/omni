@@ -2,6 +2,7 @@ export module core_database:entity_meta;
 
 import std;
 import :field;
+import core_serde;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -27,11 +28,61 @@ public:
     using entity_type = E;
 };
 
+/** @brief True for models described only by serde::Serializable. */
+template<typename E>
+concept SerdeReflected = serde::ISerializable<E> &&
+    !requires { core_db_reflect_meta(static_cast<E*>(nullptr)); };
+
+template<typename T>
+consteval ColumnType serde_column_type()
+{
+    if constexpr (std::same_as<T, std::string>) return ColumnType::TEXT;
+    else if constexpr (std::same_as<T, bool>) return ColumnType::BOOLEAN;
+    else if constexpr (std::is_integral_v<T>) return ColumnType::BIGINT;
+    else if constexpr (std::is_floating_point_v<T>) return ColumnType::DOUBLE;
+    else return ColumnType::TEXT;
+}
+
+template<typename Descriptor>
+consteval bool serde_pk()
+{
+    if constexpr (requires { Descriptor::options.m_db.m_primary_key; }) {
+        return Descriptor::options.m_db.m_primary_key;
+    } else {
+        return false;
+    }
+}
+
+/** @brief EntityMeta bridge: DB field descriptors built from serde FieldDesc. */
+template<SerdeReflected E>
+struct EntityMeta<E>
+{
+private:
+    template<typename... Descriptors>
+    static consteval auto make_fields(std::tuple<Descriptors...>)
+    {
+        return std::tuple<
+            SerdeField<
+                Descriptors::name,
+                Descriptors::getter,
+                Descriptors::setter,
+                serde_column_type<typename Descriptors::ValueType>(),
+                serde_pk<Descriptors>()
+            >...
+        >{};
+    }
+
+public:
+    static constexpr std::string_view table = serde::Serializable<E>::table_name();
+    using fields = decltype(make_fields(serde::Serializable<E>::fields()));
+    using entity_type = E;
+};
+
 /** @brief True when `E` was registered with CORE_DB_REFLECT. */
 template<typename E>
-concept ReflectedEntity = requires {
+concept ReflectedEntity = (requires {
     core_db_reflect_meta(static_cast<E*>(nullptr));
-} && requires {
+} || SerdeReflected<E>) && requires {
     typename EntityMeta<E>::fields;
     { EntityMeta<E>::table } -> std::convertible_to<std::string_view>;
     typename EntityMeta<E>::entity_type;

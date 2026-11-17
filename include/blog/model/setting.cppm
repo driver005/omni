@@ -4,6 +4,7 @@ module;
 export module blog_model:setting;
 
 import std;
+import core_serde;
 import core_database;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -11,19 +12,44 @@ import boost.ut;
 
 export namespace blog::model {
 
-struct Setting
+class Setting
 {
-    std::int64_t id{};
-    std::string key{};
-    std::string value{};
+public:
+    Setting() = default;
+
+    void set_id(std::int64_t value) { m_id = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
+    void set_key(std::string value) { m_key = std::move(value); }
+    [[nodiscard]] const std::string& get_key() const noexcept { return m_key; }
+    void set_value(std::string value) { m_value = std::move(value); }
+    [[nodiscard]] const std::string& get_value() const noexcept { return m_value; }
+
+    std::int64_t m_id{};
+    std::string m_key{};
+    std::string m_value{};
 };
 
-GHOST_ENTITY(Setting, "settings",
-    GHOST_FIELD("id", &Setting::id, core::db::ColumnType::BIGINT, core::db::FieldFlags::PRIMARY_KEY),
-    GHOST_FIELD("key", &Setting::key, core::db::ColumnType::TEXT),
-    GHOST_FIELD("value", &Setting::value, core::db::ColumnType::TEXT));
+
+
 
 } // namespace blog::model
+
+namespace serde {
+template<>
+struct Serializable<blog::model::Setting>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"id", &blog::model::Setting::get_id, &blog::model::Setting::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<"key", &blog::model::Setting::get_key, &blog::model::Setting::set_key, serde::FieldOptions{}>{},
+            serde::FieldDesc<"value", &blog::model::Setting::get_value, &blog::model::Setting::set_value, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "settings"; }
+};
+} // namespace serde
+
 
 #ifdef CONGELADO_TEST
 namespace blog::model::tests {

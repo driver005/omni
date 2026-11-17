@@ -14,7 +14,7 @@ import core_events;
 import core_otel;
 import core_plugin;
 import utils_openapi;
-import serde;
+import core_serde;
 import connector;
 import migration;
 import core_contract;

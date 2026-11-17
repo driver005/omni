@@ -1,0 +1,132 @@
+name: "blog"
+version: "1.0.0"
+description: "Ghost Blog Plugin - Full-featured blog API with posts, tags, authors, and search"
+author: "Ghost Foundation"
+license: "MIT"
+
+# Plugin type
+type: "protocol"
+
+# Capabilities
+capabilities:
+  - "protocol"
+  - "http2"
+  - "router"
+  - "database"
+
+# Dependencies
+requires:
+  - "file_logger"
+  - "core_config"
+  - "core_router"
+  - "core_contract"
+  - "core_otel"
+  - "connector"
+  - "interfaces"
+
+# Configuration schema
+config:
+  host:
+    type: "string"
+    default: "0.0.0.0"
+    description: "Bind host address"
+  port:
+    type: "integer"
+    default: 8080
+    description: "Bind port"
+  cert_path:
+    type: "string"
+    default: ""
+    description: "TLS certificate path"
+  key_path:
+    type: "string"
+    default: ""
+    description: "TLS key path"
+  database_url:
+    type: "string"
+    default: ""
+    description: "Database connection URL"
+  log_level:
+    type: "string"
+    default: "info"
+    enum: ["debug", "info", "warn", "error"]
+    description: "Log level"
+  enable_tls:
+    type: "boolean"
+    default: false
+    description: "Enable TLS"
+  worker_threads:
+    type: "integer"
+    default: 0
+    description: "Worker thread count (0 = auto)"
+
+# API Endpoints
+endpoints:
+  - path: "/api/v1/posts"
+    methods: ["GET", "POST"]
+    description: "List and create posts"
+  - path: "/api/v1/posts/{id}"
+    methods: ["GET", "PUT", "DELETE"]
+    description: "Get, update, delete post by ID"
+  - path: "/api/v1/posts/slug/{slug}"
+    methods: ["GET"]
+    description: "Get post by slug"
+  - path: "/api/v1/posts/{id}/publish"
+    methods: ["POST"]
+    description: "Publish a post"
+  - path: "/api/v1/posts/{id}/unpublish"
+    methods: ["POST"]
+    description: "Unpublish a post"
+  - path: "/api/v1/posts/{id}/schedule"
+    methods: ["POST"]
+    description: "Schedule a post"
+  - path: "/api/v1/tags"
+    methods: ["GET", "POST"]
+    description: "List and create tags"
+  - path: "/api/v1/tags/{id}"
+    methods: ["GET", "PUT", "DELETE"]
+    description: "Get, update, delete tag"
+  - path: "/api/v1/tags/{id}/posts"
+    methods: ["GET"]
+    description: "Get posts by tag"
+  - path: "/api/v1/authors"
+    methods: ["GET"]
+    description: "List authors"
+  - path: "/api/v1/authors/{id}"
+    methods: ["GET"]
+    description: "Get author"
+  - path: "/api/v1/authors/{id}/posts"
+    methods: ["GET"]
+    description: "Get posts by author"
+  - path: "/api/v1/search"
+    methods: ["GET"]
+    description: "Search posts"
+  - path: "/api/v1/stats"
+    methods: ["GET"]
+    description: "Get blog stats"
+  - path: "/health"
+    methods: ["GET"]
+    description: "Health check"
+
+# Database migrations
+migrations:
+  - version: 1
+    name: "initial_schema"
+    description: "Create initial blog tables (posts, tags, authors, post_tags)"
+  - version: 2
+    name: "add_indexes"
+    description: "Add performance indexes"
+  - version: 3
+    name: "add_revisions"
+    description: "Add post revisions table"
+
+# Health check
+health_check:
+  path: "/health"
+  interval: "30s"
+  timeout: "5s"
+
+# Metrics
+metrics:
+  enabled: true
+  path: "/metrics"

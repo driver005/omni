@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/tomlplusplus/3.4.0/conanrunenv-release-x86_64.sh"

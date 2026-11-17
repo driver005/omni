@@ -1,0 +1,13 @@
+{
+    cmdlines = {
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake build otel_otlp_plugin",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp",
+        "xmake f -c -y -P /home/default/cc/congelado/plugins/otel_otlp"
+    }
+}

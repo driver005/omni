@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/backward-cpp/1.6/deactivate_conanbuildenv-release-x86_64.sh"

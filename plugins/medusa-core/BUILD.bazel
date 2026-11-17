@@ -1,0 +1,52 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//toolchain:cc_rules.bzl", "cc_library", "cc_binary", "cc_test")
+
+cc_library(
+    name = "medusa_core_plugin",
+    srcs = glob([
+        "api/**/*.cppm",
+        "database/**/*.cppm",
+        "src/**/*.cppm",
+    ]),
+    hdrs = glob([
+        "api/**/*.cppm",
+        "database/**/*.cppm",
+    ]),
+    includes = [".", "api", "database", "src"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "//include/database:database_lib",
+        "//include/router:router_lib",
+        "//include/reflection:reflection_lib",
+        "//include/http:http_lib",
+        "@fmt//:fmt",
+        "@spdlog//:spdlog",
+    ],
+)
+
+cc_binary(
+    name = "medusa_server",
+    srcs = ["src/main.cppm"],
+    deps = [
+        ":medusa_core_plugin",
+    ],
+)
+
+cc_test(
+    name = "medusa_core_plugin_test",
+    srcs = glob([
+        "tests/**/*.cppm",
+    ]),
+    deps = [
+        ":medusa_core_plugin",
+        "@gtest//:gtest_main",
+    ],
+    tags = ["integration"],
+)

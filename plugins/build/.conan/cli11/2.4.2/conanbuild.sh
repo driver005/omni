@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/cli11/2.4.2/conanbuildenv-release-x86_64.sh"

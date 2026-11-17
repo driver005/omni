@@ -1,0 +1,86 @@
+# Blog Plugin Module - Congelado plugin
+package(default_visibility = ["//visibility:public"])
+
+# Blog Plugin Library (shared library for congelado)
+cc_library(
+    name = "blog_plugin_lib",
+    srcs = [
+        "plugin.cppm",
+        "plugin_routes.cppm",
+    ],
+    hdrs = [],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-I../../include",
+        "-DCONGELADO_GUEST",
+    ],
+    deps = [
+        "//plugins/blog/api:blog_api",
+        "//plugins/blog/database:blog_database",
+        "//include/io/layer/http2:http2_lib",
+        "//include/core/router:router_lib",
+        "//include/core/config:config_lib",
+        "//include/core/logger:logger_lib",
+        "//include/core/events:events_lib",
+        "//include/core/contract:contract_lib",
+        "//include/core/otel:otel_lib",
+        "//include/connector:connector_lib",
+        "//include/interfaces:interfaces_lib",
+        "//include/shared:shared_lib",
+        "//include/utils:utils_lib",
+        "@congelado//:congelado_plugin",
+        "@nlohmann_json//:nlohmann_json",
+        "@boost//:system",
+        "@boost//:thread",
+        "@boost//:asio",
+    ],
+    linkopts = [
+        "-shared",
+        "-fPIC",
+    ],
+)
+
+# Blog Plugin Shared Object (for loading by host)
+cc_binary(
+    name = "blog_plugin",
+    srcs = [
+        "plugin_entry.cppm",
+    ],
+    deps = [
+        ":blog_plugin_lib",
+    ],
+    linkshared = 1,
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-I../../include",
+        "-DCONGELADO_GUEST",
+    ],
+    linkopts = [
+        "-shared",
+        "-fPIC",
+    ],
+)
+
+# Plugin manifest
+exports_files([
+    "plugin.yaml",
+])
+
+# Plugin test
+cc_test(
+    name = "blog_plugin_test",
+    srcs = [
+        "plugin_test.cppm",
+    ],
+    deps = [
+        ":blog_plugin_lib",
+        "@gtest//:gtest",
+        "@gtest//:gtest_main",
+    ],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+    ],
+)

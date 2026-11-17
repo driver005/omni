@@ -1,0 +1,8 @@
+package(default_visibility = ["//visibility:public"])
+
+# Minimal C++ rules for Bazel 9.x without rules_cc
+# These are simplified Starlark implementations that wrap clang++
+
+load("//toolchain:cc_rules.bzl", "cc_library", "cc_binary", "cc_test")
+
+exports_files(["cc_rules.bzl"])

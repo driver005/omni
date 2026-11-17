@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/asio/1.36.0/deactivate_conanrunenv-release-x86_64.sh"

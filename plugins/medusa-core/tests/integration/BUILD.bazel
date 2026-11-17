@@ -1,0 +1,18 @@
+load("//toolchain:cc_rules.bzl", "cc_test")
+
+cc_test(
+    name = "medusa_core_integration_tests",
+    srcs = [
+        "main.cppm",
+        "test_product.cppm",
+        "test_order.cppm",
+        "test_customer.cppm",
+        "test_cart.cppm",
+        "test_auth.cppm",
+    ],
+    deps = [
+        "//plugins/medusa-core:medusa_core_plugin",
+        "@gtest//:gtest_main",
+    ],
+    tags = ["integration"],
+)

@@ -1,0 +1,600 @@
+{
+    simdjson = {
+        sysincludedirs = "/home/default/.conan2/p/b/simdj3d516f6caeca8/p/include",
+        __requirestr = "conan::simdjson/4.2.4",
+        links = "simdjson",
+        defines = "SIMDJSON_THREADS_ENABLED=1",
+        libfiles = "/home/default/.conan2/p/b/simdj3d516f6caeca8/p/lib/libsimdjson.a",
+        __requireconfs = {
+            configs = {
+                conf = {
+                    "tools.build:compiler_executables={'c':'clang','cpp':'clang++'}"
+                },
+                settings = {
+                    "os=Linux",
+                    "compiler=clang",
+                    "compiler.version=20",
+                    "compiler.cppstd=gnu26",
+                    "compiler.libcxx=libstdc++11"
+                },
+                options = {
+                    "openssl/*:enable_quic=True"
+                },
+                settings_build = {
+                    "os=Linux",
+                    "compiler=clang",
+                    "compiler.version=20",
+                    "compiler.cppstd=gnu26",
+                    "compiler.libcxx=libstdc++11"
+                },
+                build = "missing"
+            },
+            alias = "simdjson"
+        },
+        syslinks = {
+            "m",
+            "pthread"
+        },
+        static = true,
+        linkdirs = "/home/default/.conan2/p/b/simdj3d516f6caeca8/p/lib",
+        __enabled = true
+    },
+    nghttp3 = {
+        sysincludedirs = "/home/default/.conan2/p/b/nghtt15fe53d4c38cf/p/include",
+        libfiles = "/home/default/.conan2/p/b/nghtt15fe53d4c38cf/p/lib/libnghttp3.a",
+        __requirestr = "conan::nghttp3/1.12.0",
+        linkdirs = "/home/default/.conan2/p/b/nghtt15fe53d4c38cf/p/lib",
+        links = "nghttp3",
+        __enabled = true,
+        static = true,
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "nghttp3"
+        }
+    },
+    tomlplusplus = {
+        sysincludedirs = "/home/default/.conan2/p/tomlpf6611d18152aa/p/include",
+        libfiles = { },
+        __requirestr = "conan::tomlplusplus/3.4.0",
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "tomlplusplus"
+        },
+        __enabled = true
+    },
+    libffi = {
+        sysincludedirs = "/home/default/.conan2/p/b/libff5540f815e473a/p/include",
+        __requirestr = "conan::libffi/3.4.4",
+        links = "ffi",
+        linkdirs = "/home/default/.conan2/p/b/libff5540f815e473a/p/lib",
+        libfiles = "/home/default/.conan2/p/b/libff5540f815e473a/p/lib/libffi.a",
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "libffi"
+        },
+        static = true,
+        __enabled = true,
+        defines = "FFI_BUILDING"
+    },
+    nghttp2 = {
+        sysincludedirs = "/home/default/.conan2/p/b/libngb1aaff01c1d78/p/include",
+        libfiles = "/home/default/.conan2/p/b/libngb1aaff01c1d78/p/lib/libnghttp2.a",
+        __requirestr = "conan::libnghttp2/1.66.0",
+        linkdirs = "/home/default/.conan2/p/b/libngb1aaff01c1d78/p/lib",
+        links = "nghttp2",
+        __enabled = true,
+        static = true,
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "nghttp2"
+        }
+    },
+    asio = {
+        sysincludedirs = "/home/default/.conan2/p/asiofe6f54c191fb4/p/include",
+        libfiles = { },
+        __requirestr = "conan::asio/1.36.0",
+        syslinks = "pthread",
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "asio"
+        },
+        defines = "ASIO_STANDALONE",
+        __enabled = true
+    },
+    opentelemetrycpp = {
+        __requireconfs = {
+            configs = {
+                conf = {
+                    "tools.build:compiler_executables={'c':'clang','cpp':'clang++'}"
+                },
+                settings = {
+                    "os=Linux",
+                    "compiler=clang",
+                    "compiler.version=20",
+                    "compiler.cppstd=gnu26",
+                    "compiler.libcxx=libstdc++11"
+                },
+                options = {
+                    "opentelemetry-cpp/*:with_otlp_grpc=False",
+                    "opentelemetry-cpp/*:with_otlp_http=True"
+                },
+                settings_build = {
+                    "os=Linux",
+                    "compiler=clang",
+                    "compiler.version=20",
+                    "compiler.cppstd=gnu26",
+                    "compiler.libcxx=libstdc++11"
+                },
+                build = "missing"
+            },
+            alias = "opentelemetrycpp"
+        },
+        __requirestr = "conan::opentelemetry-cpp/1.26.0",
+        __enabled = false
+    },
+    protobuf = {
+        sysincludedirs = {
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/include",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/include",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/include"
+        },
+        __requirestr = "conan::protobuf/6.33.5",
+        links = {
+            "protoc",
+            "protobuf",
+            "utf8_validity",
+            "utf8_range",
+            "z",
+            "absl_flags_parse",
+            "absl_log_flags",
+            "absl_flags_usage",
+            "absl_flags_usage_internal",
+            "absl_hashtable_profiler",
+            "absl_profile_builder",
+            "absl_die_if_null",
+            "absl_flags_reflection",
+            "absl_log_internal_check_op",
+            "absl_statusor",
+            "absl_raw_hash_set",
+            "absl_status",
+            "absl_log_internal_message",
+            "absl_cord",
+            "absl_cordz_sample_token",
+            "absl_log_initialize",
+            "absl_log_internal_log_sink_set",
+            "absl_flags_internal",
+            "absl_cordz_info",
+            "absl_random_seed_sequences",
+            "absl_log_globals",
+            "absl_flags_config",
+            "absl_hashtablez_sampler",
+            "absl_cordz_handle",
+            "absl_cord_internal",
+            "absl_random_internal_entropy_pool",
+            "absl_vlog_config_internal",
+            "absl_flags_program_name",
+            "absl_failure_signal_handler",
+            "absl_synchronization",
+            "absl_examine_stack",
+            "absl_crc_cord_state",
+            "absl_generic_printer_internal",
+            "absl_random_internal_distribution_test_util",
+            "absl_log_sink",
+            "absl_log_internal_format",
+            "absl_flags_marshalling",
+            "absl_symbolize",
+            "absl_stacktrace",
+            "absl_crc32c",
+            "absl_kernel_timeout_internal",
+            "absl_log_internal_structured_proto",
+            "absl_log_entry",
+            "absl_log_internal_globals",
+            "absl_flags_private_handle_accessor",
+            "absl_demangle_internal",
+            "absl_borrowed_fixup_buffer",
+            "absl_time",
+            "absl_str_format_internal",
+            "absl_random_internal_seed_material",
+            "absl_random_distributions",
+            "absl_log_internal_fnmatch",
+            "absl_log_internal_proto",
+            "absl_hash",
+            "absl_flags_commandlineflag",
+            "absl_demangle_rust",
+            "absl_strings",
+            "absl_decode_rust_punycode",
+            "absl_int128",
+            "absl_crc_internal",
+            "absl_graphcycles_internal",
+            "absl_strings_internal",
+            "absl_city",
+            "absl_poison",
+            "absl_random_internal_randen",
+            "absl_log_internal_conditions",
+            "absl_crc_cpu_detect",
+            "absl_tracing_internal",
+            "absl_malloc_internal",
+            "absl_random_internal_randen_hwaes",
+            "absl_base",
+            "absl_cordz_functions",
+            "absl_random_seed_gen_exception",
+            "absl_debugging_internal",
+            "absl_scoped_set_env",
+            "absl_throw_delegate",
+            "absl_spinlock_wait",
+            "absl_periodic_sampler",
+            "absl_raw_logging_internal",
+            "absl_random_internal_randen_hwaes_impl",
+            "absl_random_internal_randen_slow",
+            "absl_exponential_biased",
+            "absl_log_internal_nullguard",
+            "absl_flags_commandlineflag_internal",
+            "absl_leak_check",
+            "absl_strerror",
+            "absl_log_severity",
+            "absl_random_internal_platform",
+            "absl_utf8_for_code_point",
+            "absl_time_zone",
+            "absl_civil_time"
+        },
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "protobuf"
+        },
+        libfiles = {
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib/libutf8_validity.a",
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib/libutf8_range.a",
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib/libprotobuf.a",
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib/libprotoc.a",
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib/libupb.a",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib/libz.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_severity.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_raw_logging_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_spinlock_wait.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_malloc_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_base.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_throw_delegate.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_scoped_set_env.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_strerror.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_poison.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_tracing_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_hashtablez_sampler.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_raw_hash_set.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_crc_cpu_detect.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_crc_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_crc32c.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_crc_cord_state.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_borrowed_fixup_buffer.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_stacktrace.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_symbolize.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_examine_stack.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_failure_signal_handler.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_debugging_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_demangle_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_decode_rust_punycode.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_demangle_rust.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_utf8_for_code_point.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_leak_check.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_program_name.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_config.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_marshalling.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_commandlineflag_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_commandlineflag.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_private_handle_accessor.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_reflection.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_usage_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_usage.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_flags_parse.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_hash.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_city.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_check_op.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_conditions.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_format.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_globals.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_proto.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_message.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_log_sink_set.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_nullguard.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_die_if_null.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_flags.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_globals.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_initialize.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_entry.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_sink.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_structured_proto.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_vlog_config_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_log_internal_fnmatch.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_int128.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_exponential_biased.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_periodic_sampler.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_profile_builder.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_hashtable_profiler.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_distributions.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_seed_gen_exception.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_seed_sequences.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_seed_material.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_entropy_pool.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_platform.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_randen.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_randen_slow.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_randen_hwaes.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_randen_hwaes_impl.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_random_internal_distribution_test_util.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_status.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_statusor.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_strings.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_strings_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_str_format_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cord_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cordz_functions.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cordz_handle.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cordz_info.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cordz_sample_token.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_cord.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_generic_printer_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_graphcycles_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_kernel_timeout_internal.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_synchronization.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_time.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_civil_time.a",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib/libabsl_time_zone.a"
+        },
+        syslinks = {
+            "m",
+            "pthread",
+            "rt"
+        },
+        __enabled = true,
+        linkdirs = {
+            "/home/default/.conan2/p/b/protob598cd9ccc7f8/p/lib",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib",
+            "/home/default/.conan2/p/b/absei749044e1fc846/p/lib"
+        },
+        static = true
+    },
+    ["range-v3"] = {
+        sysincludedirs = "/home/default/.xmake/packages/r/range-v3/0.12.0/ff6e67832a2e44bc83ee11756d53981c/include",
+        license = "BSL-1.0",
+        __requirestr = "range-v3",
+        envs = {
+            PATH = {
+                "/home/default/.xmake/packages/n/ninja/v1.13.2/0a9451759a4647b5923438b464085dd6/bin",
+                "/home/default/.xmake/packages/c/cmake/4.2.3/e71a3c9d8ba0426bac589c2c548be58b/bin"
+            }
+        },
+        version = "0.12.0",
+        __enabled = true,
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs")
+        },
+        installdir = "/home/default/.xmake/packages/r/range-v3/0.12.0/ff6e67832a2e44bc83ee11756d53981c"
+    },
+    openssl = {
+        sysincludedirs = {
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/include",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/include"
+        },
+        __requirestr = "conan::openssl/3.6.1",
+        links = {
+            "ssl",
+            "crypto",
+            "z"
+        },
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "openssl"
+        },
+        libfiles = {
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib/libcrypto.a",
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib/libssl.a",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib/libz.a"
+        },
+        syslinks = {
+            "dl",
+            "pthread",
+            "rt"
+        },
+        __enabled = true,
+        linkdirs = {
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib"
+        },
+        static = true
+    },
+    stduuid = {
+        sysincludedirs = "/home/default/.conan2/p/stduuc98cd9a774ddd/p/include",
+        libfiles = { },
+        __requirestr = "conan::stduuid/1.2.3",
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "stduuid"
+        },
+        defines = "LIBUUID_CPP20_OR_GREATER",
+        __enabled = true
+    },
+    reflectcpp = {
+        sysincludedirs = {
+            "/home/default/.conan2/p/b/refle0dd1b604208c4/p/include",
+            "/home/default/.conan2/p/ctre16c3bbe68aec0/p/include",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/include",
+            "/home/default/.conan2/p/tomlpf6611d18152aa/p/include"
+        },
+        libfiles = {
+            "/home/default/.conan2/p/b/refle0dd1b604208c4/p/lib/libreflectcpp.a",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/lib/libyyjson.a"
+        },
+        __requirestr = "conan::reflect-cpp/0.23.0",
+        linkdirs = {
+            "/home/default/.conan2/p/b/refle0dd1b604208c4/p/lib",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/lib"
+        },
+        links = {
+            "reflectcpp",
+            "yyjson"
+        },
+        __enabled = true,
+        static = true,
+        __requireconfs = {
+            configs = {
+                conf = ref("simdjson", "__requireconfs", "configs", "conf"),
+                settings = ref("simdjson", "__requireconfs", "configs", "settings"),
+                options = {
+                    "reflect-cpp/*:with_toml=True"
+                },
+                settings_build = ref("simdjson", "__requireconfs", "configs", "settings_build"),
+                build = "missing"
+            },
+            alias = "reflectcpp"
+        }
+    },
+    sqlgen = {
+        sysincludedirs = {
+            "/home/default/.conan2/p/b/sqlge7f74ab3b4e9ac/p/include",
+            "/home/default/.conan2/p/b/refle7425c119f8bb5/p/include",
+            "/home/default/.conan2/p/ctre16c3bbe68aec0/p/include",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/include",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/include",
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/include",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/include",
+            "/home/default/.conan2/p/b/lz4e45db012da967/p/include",
+            "/home/default/.conan2/p/b/sqlit275c5166b588e/p/include"
+        },
+        __requirestr = "conan::sqlgen/0.4.0",
+        links = {
+            "sqlgen",
+            "reflectcpp",
+            "yyjson",
+            "pq",
+            "pgcommon_shlib",
+            "pgfeutils",
+            "pgport",
+            "pgport_shlib",
+            "ssl",
+            "crypto",
+            "z",
+            "lz4",
+            "sqlite3"
+        },
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "sqlgen"
+        },
+        libfiles = {
+            "/home/default/.conan2/p/b/sqlge7f74ab3b4e9ac/p/lib/libsqlgen.a",
+            "/home/default/.conan2/p/b/refle7425c119f8bb5/p/lib/libreflectcpp.a",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/lib/libyyjson.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgport.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgport_shlib.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgcommon.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgcommon_shlib.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpq.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgfeutils.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libpgtypes.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libecpg.a",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib/libecpg_compat.a",
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib/libcrypto.a",
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib/libssl.a",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib/libz.a",
+            "/home/default/.conan2/p/b/lz4e45db012da967/p/lib/liblz4.a",
+            "/home/default/.conan2/p/b/sqlit275c5166b588e/p/lib/libsqlite3.a"
+        },
+        syslinks = {
+            "rt",
+            "pthread",
+            "dl",
+            "m"
+        },
+        __enabled = true,
+        linkdirs = {
+            "/home/default/.conan2/p/b/sqlge7f74ab3b4e9ac/p/lib",
+            "/home/default/.conan2/p/b/refle7425c119f8bb5/p/lib",
+            "/home/default/.conan2/p/b/yyjso56a7736c5afd8/p/lib",
+            "/home/default/.conan2/p/b/libpq53b5f79bd7446/p/lib",
+            "/home/default/.conan2/p/b/opense7ece80fda80a/p/lib",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib",
+            "/home/default/.conan2/p/b/lz4e45db012da967/p/lib",
+            "/home/default/.conan2/p/b/sqlit275c5166b588e/p/lib"
+        },
+        static = true
+    },
+    backward = {
+        sysincludedirs = {
+            "/home/default/.conan2/p/b/backw1090483d4e305/p/include",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/include/elfutils",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/include",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/include",
+            "/home/default/.conan2/p/b/bzip281a5059c569c2/p/include",
+            "/home/default/.conan2/p/b/xz_utb18d409e4a8a6/p/include",
+            "/home/default/.conan2/p/b/zstdc43a11e3e3d4b/p/include"
+        },
+        __requirestr = "conan::backward-cpp/1.6",
+        links = {
+            "backward",
+            "asm",
+            "dw",
+            "elf",
+            "z",
+            "bz2",
+            "lzma",
+            "zstd"
+        },
+        defines = {
+            "BACKWARD_HAS_UNWIND=1",
+            "BACKWARD_HAS_LIBUNWIND=0",
+            "BACKWARD_HAS_BACKTRACE=0",
+            "BACKWARD_HAS_BACKTRACE_SYMBOL=0",
+            "BACKWARD_HAS_DW=1",
+            "BACKWARD_HAS_BFD=0",
+            "BACKWARD_HAS_DWARF=0",
+            "BACKWARD_HAS_PDB_SYMBOL=0",
+            "LZMA_API_STATIC"
+        },
+        libfiles = {
+            "/home/default/.conan2/p/b/backw1090483d4e305/p/lib/libbackward.a",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/lib/libelf.a",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/lib/libdw.a",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/lib/libasm.a",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib/libz.a",
+            "/home/default/.conan2/p/b/bzip281a5059c569c2/p/lib/libbz2.a",
+            "/home/default/.conan2/p/b/xz_utb18d409e4a8a6/p/lib/liblzma.a",
+            "/home/default/.conan2/p/b/zstdc43a11e3e3d4b/p/lib/libzstd.a"
+        },
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs"),
+            alias = "backward"
+        },
+        syslinks = {
+            "m",
+            "dl",
+            "pthread"
+        },
+        static = true,
+        linkdirs = {
+            "/home/default/.conan2/p/b/backw1090483d4e305/p/lib",
+            "/home/default/.conan2/p/b/elfut14c8897009917/p/lib",
+            "/home/default/.conan2/p/b/zlib413105a270937/p/lib",
+            "/home/default/.conan2/p/b/bzip281a5059c569c2/p/lib",
+            "/home/default/.conan2/p/b/xz_utb18d409e4a8a6/p/lib",
+            "/home/default/.conan2/p/b/zstdc43a11e3e3d4b/p/lib"
+        },
+        __enabled = true
+    },
+    ["microsoft-gsl"] = {
+        sysincludedirs = "/home/default/.xmake/packages/m/microsoft-gsl/v4.2.2/2d816d194cc14c2b8fa75c131b21483b/include",
+        license = "MIT",
+        __requirestr = "microsoft-gsl",
+        envs = {
+            PATH = {
+                "/home/default/.xmake/packages/n/ninja/v1.13.2/0a9451759a4647b5923438b464085dd6/bin",
+                "/home/default/.xmake/packages/c/cmake/4.2.3/e71a3c9d8ba0426bac589c2c548be58b/bin"
+            }
+        },
+        version = "v4.2.2",
+        __enabled = true,
+        __requireconfs = {
+            configs = ref("simdjson", "__requireconfs", "configs")
+        },
+        installdir = "/home/default/.xmake/packages/m/microsoft-gsl/v4.2.2/2d816d194cc14c2b8fa75c131b21483b"
+    }
+}

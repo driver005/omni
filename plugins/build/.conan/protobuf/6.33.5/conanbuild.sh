@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/protobuf/6.33.5/conanbuildenv-release-x86_64.sh"

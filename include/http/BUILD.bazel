@@ -1,0 +1,20 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//toolchain:cc_rules.bzl", "cc_library")
+
+cc_library(
+    name = "http_lib",
+    srcs = glob(["*.cppm"]),
+    hdrs = glob(["*.cppm"]),
+    includes = [".", "http"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "@nlohmann_json//:nlohmann_json",
+    ],
+)

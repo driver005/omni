@@ -1,0 +1,85 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//toolchain:cc_rules.bzl", "cc_library")
+
+cc_library(
+    name = "database_lib",
+    srcs = glob(["database/*.cppm"]),
+    hdrs = glob(["database/*.cppm"]),
+    includes = [".", "database"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "//include/reflection:reflection_lib",
+        "@nlohmann_json//:nlohmann_json",
+        "@fmt//:fmt",
+        "@spdlog//:spdlog",
+    ],
+)
+
+cc_library(
+    name = "reflection_lib",
+    srcs = glob(["reflection/*.cppm"]),
+    hdrs = glob(["reflection/*.cppm"]),
+    includes = [".", "reflection"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "//include/database:database_lib",
+    ],
+)
+
+cc_library(
+    name = "router_lib",
+    srcs = glob(["router/*.cppm"]),
+    hdrs = glob(["router/*.cppm"]),
+    includes = [".", "router"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "//include/http:http_lib",
+    ],
+)
+
+cc_library(
+    name = "http_lib",
+    srcs = glob(["http/*.cppm"]),
+    hdrs = glob(["http/*.cppm"]),
+    includes = [".", "http"],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "@nlohmann_json//:nlohmann_json",
+    ],
+)
+
+cc_library(
+    name = "all_lib",
+    srcs = [],
+    deps = [
+        ":database_lib",
+        ":reflection_lib",
+        ":router_lib",
+        ":http_lib",
+    ],
+)

@@ -1,0 +1,91 @@
+# Blog API Module
+package(default_visibility = ["//visibility:public"])
+
+# Blog API Library - C++20 modules
+cc_library(
+    name = "blog_api",
+    srcs = [
+        "blog_api.cppm",
+        "blog_types.cppm",
+        "post_controller.cppm",
+        "json_serializer.cppm",
+    ],
+    hdrs = [],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-I../../include",
+    ],
+    deps = [
+        "@nlohmann_json//:nlohmann_json",
+        "@boost//:system",
+        "@boost//:thread",
+        "@boost//:asio",
+        "//include/core/router:router_lib",
+        "//include/interfaces:interfaces_lib",
+        "//include/shared:shared_lib",
+        "//include/connector:connector_lib",
+    ],
+)
+
+# Blog API Endpoints Library
+cc_library(
+    name = "blog_api_endpoints",
+    srcs = [],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+        "-I../../include",
+    ],
+    deps = [
+        ":blog_api",
+        "//plugins/blog/api/endpoints:main_index",
+    ],
+)
+
+# Blog API Tests
+cc_test(
+    name = "blog_api_test",
+    srcs = [
+        "blog_api_test.cppm",
+    ],
+    deps = [
+        ":blog_api",
+        "@gtest//:gtest",
+        "@gtest//:gtest_main",
+    ],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+    ],
+)
+
+# Endpoints Tests
+cc_test(
+    name = "endpoints_test",
+    srcs = [
+        "endpoints/endpoints_test.cppm",
+    ],
+    deps = [
+        ":blog_api_endpoints",
+        "@gtest//:gtest",
+        "@gtest//:gtest_main",
+    ],
+    copts = [
+        "-std=c++20",
+        "-fmodules-ts",
+    ],
+)
+
+# Generate API documentation
+exports_files([
+    "blog_api.cppm",
+    "blog_types.cppm",
+    "post_controller.cppm",
+    "json_serializer.cppm",
+])
+
+# Subpackages
+subpackages = [
+    "endpoints",
+]

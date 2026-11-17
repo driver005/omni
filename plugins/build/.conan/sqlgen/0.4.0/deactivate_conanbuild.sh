@@ -1,0 +1,1 @@
+. "/home/default/cc/congelado/plugins/build/.conan/sqlgen/0.4.0/deactivate_conanbuildenv-release-x86_64.sh"

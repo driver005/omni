@@ -1,0 +1,8 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+congelado_module_library(
+    name = "blog_redirects",
+    primary_interface = "base.cppm",
+    partitions = ["redirects.cppm", "builder.cppm"],
+    deps = ["//include/core/router:core_router"],
+    visibility = ["//visibility:public"],
+)

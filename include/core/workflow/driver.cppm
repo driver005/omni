@@ -8,7 +8,7 @@ import :execution;
 
 // Internal interface partition. Re-exported by base.cppm for toolchain
 // correctness only — namespace is not exported, so importers cannot name it.
-namespace core::workflow {
+export namespace core::workflow {
 
 /** @brief Backend contract implemented by the in-process and distributed drivers. */
 class WorkflowDriver

@@ -2,15 +2,8 @@ export module memory_backends:workflow;
 
 import std;
 import core_workflow;
-import :driver;
-import :value;
-import :state;
-import :definition;
-import :context;
-import :execution;
-import :step_outcome;
 
-namespace core::workflow {
+export namespace core::workflow {
 
 /**
  * @brief In-process driver: depth-ordered invoke, reverse compensation,

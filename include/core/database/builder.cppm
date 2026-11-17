@@ -5,6 +5,7 @@ import :storage_engine;
 import :entity_meta;
 import :db_context;
 import :database;
+import :storage_backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -44,10 +45,11 @@ public:
         return *this;
     }
 
-    [[nodiscard]] Database build() const
+    [[nodiscard]] Database build()
     {
-        auto runtime = std::make_unique<Database::Runtime>(m_context.build());
-        return Database{std::move(runtime)};
+        Database db;
+        db.use_backend(m_context.take_backend());
+        return db;
     }
 
 private:

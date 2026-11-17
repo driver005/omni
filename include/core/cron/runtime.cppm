@@ -17,8 +17,8 @@ namespace core::cron {
 class CronRuntime
 {
 public:
-    explicit CronRuntime(CronEngine engine) :
-        m_driver{engine}
+    explicit CronRuntime(std::unique_ptr<CronBackend> backend) :
+        m_driver{std::move(backend)}
     {
         m_driver.open();
     }

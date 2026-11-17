@@ -20,6 +20,11 @@ public:
         m_engine = engine;
     }
 
+    std::unique_ptr<StorageBackend> take_backend()
+    {
+        return std::move(m_backend);
+    }
+
     void use_backend(std::unique_ptr<StorageBackend> backend)
     {
         m_backend = std::move(backend);

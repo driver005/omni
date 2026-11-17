@@ -77,10 +77,13 @@ consteval std::string_view column_of()
 {
     std::string_view result;
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-        ((std::same_as<decltype(MemberPointer), field_member_t<E, I>>
-              ? (result = std::string_view{field_at_t<E, I>::name}, 0)
-              : 0),
-         ...);
+        (([&] {
+            if constexpr (std::same_as<decltype(MemberPointer), field_member_t<E, I>>) {
+                if (MemberPointer == field_at_t<E, I>::member) {
+                    result = std::string_view{field_at_t<E, I>::name};
+                }
+            }
+        }()), ...);
     }(std::make_index_sequence<
       std::tuple_size_v<typename EntityMeta<E>::fields>>{});
     if (result.empty()) {

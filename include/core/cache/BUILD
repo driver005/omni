@@ -9,6 +9,7 @@ congelado_module_library(
     name = "core_cache",
     primary_interface = "base.cppm",
     partitions = [
+        "storage_backend.cppm",
         # value types
         "value.cppm",
         "entry.cppm",

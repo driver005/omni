@@ -99,7 +99,7 @@ public:
     }
 
     /// @brief Gets the whole backing map at once — the escape hatch for callers (like
-    /// `detail::FfiWorker::execute`) that need to forward every key/value pair rather than pull
+    /// `FfiWorker::execute`) that need to forward every key/value pair rather than pull
     /// them one at a time. @return a reference to the raw input map.
     [[nodiscard]] const std::unordered_map<std::string, std::string>& get_data_map() const noexcept
     {
@@ -204,7 +204,7 @@ public:
 
 } // namespace congelado::worker
 
-namespace congelado::worker::detail {
+namespace congelado::worker {
 
 using WorkerExecuteFn = CongeladoConfigView (*)(const CongeladoConfigView*);
 
@@ -282,7 +282,7 @@ private:
     WorkerExecuteFn m_exec;
 };
 
-} // namespace congelado::worker::detail
+} // namespace congelado::worker
 
 export namespace congelado::worker {
 
@@ -338,7 +338,7 @@ public:
     /**
      * @brief Scans `external_directory` (if given) and `internal_directory` for
      * `CONGELADO_TASK`-ABI shared libraries, opens every one it finds, and registers a
-     * `detail::FfiWorker` for each that actually exports a non-empty worker type and execute
+     * `FfiWorker` for each that actually exports a non-empty worker type and execute
      * symbol — this is the real bulk-loading entrypoint most worker hosts call once at startup.
      * @warning Aborts the process (`std::abort()`) if any discovered shared library fails to
      * open — this is a boot-time hard-fail, not a per-file skip.
@@ -397,7 +397,7 @@ public:
                     return;
                 }
                 auto* raw = std::any_cast<void*>(exec_it->second);
-                auto exec_fn = reinterpret_cast<detail::WorkerExecuteFn>(
+                auto exec_fn = reinterpret_cast<WorkerExecuteFn>(
                     raw
                 ); // FIXME(clang-tidy): reinterpret_cast usage — cross-ABI cast of a dlsym'd void*
                    // back to its known function pointer type, no smart-pointer/GSL equivalent
@@ -405,7 +405,7 @@ public:
 
                 // Both pieces resolved — build the FfiWorker, register it, and keep it alive in
                 // m_loaded_workers since addTaskWorker only stores a non-owning pointer.
-                auto worker = std::make_unique<detail::FfiWorker>(type, exec_fn);
+                auto worker = std::make_unique<FfiWorker>(type, exec_fn);
                 addTaskWorker(worker.get());
                 m_loaded_workers.push_back(std::move(worker));
             }
@@ -642,7 +642,7 @@ private:
 };
 
 // Backing storage for a mock CONGELADO_TASK-ABI `congelado_worker_execute` symbol —
-// `detail::WorkerExecuteFn` is a plain C function pointer (`CongeladoConfigView(*)(const
+// `WorkerExecuteFn` is a plain C function pointer (`CongeladoConfigView(*)(const
 // CongeladoConfigView*)`), not a std::function, so a captureless free function is what's needed
 // to stand in for a dlopen'd plugin here without touching dlopen/FFI at all.
 constexpr const char* const OVERSIZED_KEYS[] = {"k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7"};
@@ -651,7 +651,7 @@ constexpr const char* const OVERSIZED_VALUES[] = {"v0", "v1", "v2", "v3", "v4", 
 // Stands in for a plugin whose `execute` symbol reports `count` = the full size of its backing
 // buffer, regardless of the real input — every slot is a real, valid, non-null C string, so
 // this is a safe OOB-*shaped* demonstration (no genuine out-of-bounds read happens), but it
-// exercises detail::FfiWorker::execute()'s `for (i < out.count) result.set(out.keys[i],
+// exercises FfiWorker::execute()'s `for (i < out.count) result.set(out.keys[i],
 // out.values[i])` loop (see that method's own doc) with a `count`/`keys`/`values` triple that's
 // fully plugin-controlled and never cross-checked against anything — no cap on `count`, no
 // check that it matches the real input size, nothing.
@@ -666,7 +666,7 @@ CongeladoConfigView mock_exec_oversized_count(const CongeladoConfigView* /*in*/)
 
 suite<"FfiWorker (detail) execute() ABI trust"> ffi_worker_suite = []
 {
-    // Regression/design-gap marker, NOT a fix: proves detail::FfiWorker::execute() has no upper
+    // Regression/design-gap marker, NOT a fix: proves FfiWorker::execute() has no upper
     // bound or sanity check on a plugin-reported `out.count` before walking `out.keys`/
     // `out.values` — every one of the mock's 8 oversized-but-safely-backed entries lands in the
     // result, with nothing in execute() questioning whether that count makes any sense for the
@@ -674,7 +674,7 @@ suite<"FfiWorker (detail) execute() ABI trust"> ffi_worker_suite = []
     "execute() walks every entry the plugin's out.count claims, with no validation against the "
     "real input"_test = []
     {
-        detail::FfiWorker worker{"oversized", &mock_exec_oversized_count};
+        FfiWorker worker{"oversized", &mock_exec_oversized_count};
 
         std::unordered_map<std::string, std::string> data;
         TaskInput input{data};

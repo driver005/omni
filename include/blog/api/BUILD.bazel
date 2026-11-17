@@ -1,0 +1,38 @@
+load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test")
+
+congelado_module_library(
+    name = "blog_api",
+    primary_interface = "base.cppm",
+    partitions = [
+        "http_handler.cppm",
+        "json.cppm",
+        "pagination.cppm",
+        "query.cppm",
+        "stripe.cppm",
+        "datastore.cppm",
+        "resource_schema.cppm",
+        "resource_store.cppm",
+        "mutation.cppm",
+        "request.cppm",
+        "response.cppm",
+        "route.cppm",
+        "route_table.cppm",
+        "dispatcher.cppm",
+        "api.cppm",
+        "builder.cppm",
+    ],
+    deps = [
+        "//include/core/database:core_database",
+        "//include/blog/model:blog_model",
+        "//plugins/memory:memory_backends",
+        "//include/interfaces:interfaces",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+congelado_cc_test(
+    name = "api_test",
+    srcs = ["api_test.cc"],
+    linkopts = ["-lcrypto"],
+    deps = [":blog_api"],
+)

@@ -3,6 +3,7 @@ export module core_cache:runtime;
 import std;
 import :engine;
 import :driver;
+import :storage_backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -13,8 +14,8 @@ namespace core::cache {
 class CacheRuntime
 {
 public:
-    CacheRuntime(CacheEngine engine, std::size_t capacity, EvictionPolicy policy) :
-        m_driver{engine, capacity, policy}
+    explicit CacheRuntime(std::unique_ptr<CacheStorageBackend> backend) :
+        m_driver{std::move(backend)}
     {
         m_driver.open();
     }

@@ -2,10 +2,6 @@ export module memory_backends:search;
 
 import std;
 import core_search;
-import :query;
-import :hit;
-import :result;
-import :backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

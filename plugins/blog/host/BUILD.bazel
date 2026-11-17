@@ -1,0 +1,8 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+congelado_module_library(
+    name = "blog_host",
+    primary_interface = "base.cppm",
+    partitions = ["host.cppm", "builder.cppm"],
+    deps = ["//include/core/bridge:core_bridge"],
+    visibility = ["//visibility:public"],
+)

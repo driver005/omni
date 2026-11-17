@@ -9,6 +9,7 @@ congelado_module_library(
     name = "core_cron",
     primary_interface = "base.cppm",
     partitions = [
+        "backend.cppm",
         # value types
         "string_literal.cppm",
         "engine.cppm",

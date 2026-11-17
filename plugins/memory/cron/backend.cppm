@@ -2,9 +2,6 @@ export module memory_backends:cron;
 
 import std;
 import core_cron;
-import :job;
-import :fire_event;
-import :backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

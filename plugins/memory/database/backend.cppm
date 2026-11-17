@@ -2,16 +2,11 @@ export module memory_backends:database;
 
 import std;
 import core_database;
-import :db_value;
-import :row;
-import :query_result;
-import :query_spec;
-import :storage_backend;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
-namespace core::db {
+export namespace core::db {
 
 /** @brief Reference backend: tables are vectors of rows held in process memory. */
 class InMemoryBackend final : public StorageBackend

@@ -2,8 +2,6 @@ export module memory_backends:email;
 
 import std;
 import core_email;
-import :message;
-import :provider;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

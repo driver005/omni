@@ -1,0 +1,27 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+# Concrete in-memory / local backends live in plugins. Core modules define only
+# abstract interfaces and orchestration; runners inject a backend via builders.
+congelado_module_library(
+    name = "memory_backends",
+    primary_interface = "base.cppm",
+    partitions = [
+        "storage/backend.cppm",
+        "cache/backend.cppm",
+        "database/backend.cppm",
+        "search/backend.cppm",
+        "email/backend.cppm",
+        "cron/backend.cppm",
+        "workflow/backend.cppm",
+    ],
+    deps = [
+        "//include/core/storage:core_storage",
+        "//include/core/cache:core_cache",
+        "//include/core/database:core_database",
+        "//include/core/search:core_search",
+        "//include/core/email:core_email",
+        "//include/core/cron:core_cron",
+        "//include/core/workflow:core_workflow",
+    ],
+    visibility = ["//visibility:public"],
+)

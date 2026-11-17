@@ -4,6 +4,7 @@ congelado_module_library(
     name = "core_storage",
     primary_interface = "base.cppm",
     partitions = [
+        "backend.cppm",
         "ref.cppm",
         "result.cppm",
         "runtime.cppm",

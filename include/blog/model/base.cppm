@@ -1,4 +1,4 @@
-export module ghost_model;
+export module blog_model;
 
 export import :post;
 export import :page;
@@ -10,3 +10,9 @@ export import :setting;
 export import :newsletter;
 export import :tier;
 export import :comment;
+export import :invite;
+export import :offer;
+export import :webhook;
+export import :label;
+export import :snippet;
+export import :recommendation;

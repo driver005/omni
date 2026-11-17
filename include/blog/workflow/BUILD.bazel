@@ -1,0 +1,41 @@
+load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test")
+
+congelado_module_library(
+    name = "blog_workflow",
+    primary_interface = "base.cppm",
+    partitions = [
+        "automation.cppm",
+        "builder.cppm",
+        "member_signup.cppm",
+        "newsletter_send.cppm",
+        "registry.cppm",
+        "scheduled_post.cppm",
+        "step_automation_notify.cppm",
+        "step_automation_publish.cppm",
+        "step_automation_validate.cppm",
+        "step_member_signup_create_member.cppm",
+        "step_member_signup_grant_access.cppm",
+        "step_member_signup_send_welcome.cppm",
+        "step_newsletter_send_dispatch.cppm",
+        "step_newsletter_send_prepare.cppm",
+        "step_newsletter_send_record.cppm",
+        "step_newsletter_send_render.cppm",
+        "step_scheduled_post_mark_published.cppm",
+        "step_scheduled_post_publish_post.cppm",
+        "step_scheduled_post_select_due.cppm",
+    ],
+    deps = [
+        "//include/core/workflow:core_workflow",
+        "//plugins/memory:memory_backends",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+congelado_cc_test(
+    name = "workflow_test",
+    srcs = ["workflow_test.cc"],
+    deps = [
+        ":blog_workflow",
+        "//include/core/workflow:core_workflow",
+    ],
+)

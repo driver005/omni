@@ -59,6 +59,7 @@ import std;
 import interfaces;
 import core_router;
 import blog_handlers;
+import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -71,6 +72,7 @@ public:
         blog::api::BlogHandlers& handlers
     )
     {
+        blog::handlers::middleware::install_serde_formats();
         ActionsRoutes{}.install(router, handlers);
         AppsRoutes{}.install(router, handlers);
         AuthenticationRoutes{}.install(router, handlers);

@@ -10,8 +10,8 @@ import :automations_automations_id_runs_get_flow;
 export namespace blog::handlers::automations::automations_id_runs_get {
 class AutomationsIdRunsGetHandler {
 public:
- AutomationsIdRunsGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ AutomationsIdRunsGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

@@ -10,8 +10,8 @@ import :users_users_password_put_flow;
 export namespace blog::handlers::users::users_password_put {
 class UsersPasswordPutHandler {
 public:
- UsersPasswordPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ UsersPasswordPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

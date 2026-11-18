@@ -10,8 +10,8 @@ import :files_files_upload_post_flow;
 export namespace blog::handlers::files::files_upload_post {
 class FilesUploadPostHandler {
 public:
- FilesUploadPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ FilesUploadPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

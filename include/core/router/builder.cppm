@@ -9,15 +9,15 @@ import :router;
 export namespace core::router {
 
 
-template<std::size_t MaxHandlerSize = 8, std::size_t MaxMiddlewareSize = 10>
+template<std::size_t MaxHandlerSize = 8, std::size_t MaxMiddlewareSize = 64>
 class Route;
-template<std::size_t MaxMiddlewareSize = 10>
+template<std::size_t MaxMiddlewareSize = 64>
 class Router;
 
 template<
     std::size_t RouterSize = 1024,
     std::size_t MaxHandlerSize = 8,
-    std::size_t MaxMiddlewareSize = 10>
+    std::size_t MaxMiddlewareSize = 64>
 class RouterContext
 {
 public:
@@ -405,7 +405,7 @@ private:
     std::size_t m_base_router_children{0};
 };
 
-template<std::size_t MaxHandlerSize = 8, std::size_t MaxMiddlewareSize = 10>
+template<std::size_t MaxHandlerSize = 8, std::size_t MaxMiddlewareSize = 64>
 class Route
 {
 public:
@@ -789,7 +789,7 @@ private:
     Middleware<MaxMiddlewareSize> m_local_middleware;
 };
 
-template<std::size_t MaxMiddlewareSize = 10>
+template<std::size_t MaxMiddlewareSize = 64>
 class Router
 {
 public:

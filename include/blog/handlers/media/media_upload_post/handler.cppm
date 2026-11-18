@@ -10,8 +10,8 @@ import :media_media_upload_post_flow;
 export namespace blog::handlers::media::media_upload_post {
 class MediaUploadPostHandler {
 public:
- MediaUploadPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ MediaUploadPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

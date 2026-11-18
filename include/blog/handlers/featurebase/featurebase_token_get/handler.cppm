@@ -10,8 +10,8 @@ import :featurebase_featurebase_token_get_flow;
 export namespace blog::handlers::featurebase::featurebase_token_get {
 class FeaturebaseTokenGetHandler {
 public:
- FeaturebaseTokenGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ FeaturebaseTokenGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

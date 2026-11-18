@@ -10,8 +10,8 @@ import :emails_emails_id_retry_put_flow;
 export namespace blog::handlers::emails::emails_id_retry_put {
 class EmailsIdRetryPutHandler {
 public:
- EmailsIdRetryPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ EmailsIdRetryPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

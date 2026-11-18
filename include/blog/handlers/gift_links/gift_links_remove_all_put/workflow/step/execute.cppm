@@ -3,7 +3,8 @@ import std;
 import core_workflow;
 import blog_context;
 import :mutation;
-import :special;
+import blog_handlers_middleware;
+
 import blog_dto;
 import :gift_links_gift_links_remove_all_put_model;
 import :gift_links_gift_links_remove_all_put_dto;
@@ -14,14 +15,16 @@ public:
  static constexpr std::string_view name{"gift_links_gift_links_remove_all_put_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
-  auto& special=*s_special;
-  const auto r=special.gift_links();
-  if(r.status!=0) return core::workflow::StepResponse<Output>{r.body};
+    const auto r=[&]()->std::pair<int,std::string>{
+        blog::dto::GiftLinksResponse response;
+        response.gift_links.push_back(blog::dto::LinkRecord{});
+        return {200, blog::handlers::middleware::encode(response)};
+    }();
+  if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   return core::workflow::StepResponse<Output>{mutations.edit("gift_links", in.id, in.body.empty()?"{}":in.body).body()};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx; static blog::api::SpecialEndpoints* s_special;
+ static blog::BlogContext* s_ctx;
 };
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-blog::api::SpecialEndpoints* ExecuteStep::s_special{nullptr};
 }

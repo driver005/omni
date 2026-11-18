@@ -10,8 +10,8 @@ import :images_images_upload_post_flow;
 export namespace blog::handlers::images::images_upload_post {
 class ImagesUploadPostHandler {
 public:
- ImagesUploadPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ ImagesUploadPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

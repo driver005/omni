@@ -4,3 +4,4 @@ export import :registry;
 export import :bearer;
 export import :auth;
 export import :error;
+export import :serde;

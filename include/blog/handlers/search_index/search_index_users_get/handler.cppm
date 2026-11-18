@@ -10,8 +10,8 @@ import :search_index_search_index_users_get_flow;
 export namespace blog::handlers::search_index::search_index_users_get {
 class SearchIndexUsersGetHandler {
 public:
- SearchIndexUsersGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ SearchIndexUsersGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

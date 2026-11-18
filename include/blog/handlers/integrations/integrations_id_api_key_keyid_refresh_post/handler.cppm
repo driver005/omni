@@ -10,8 +10,8 @@ import :integrations_integrations_id_api_key_keyid_refresh_post_flow;
 export namespace blog::handlers::integrations::integrations_id_api_key_keyid_refresh_post {
 class IntegrationsIdApiKeyKeyidRefreshPostHandler {
 public:
- IntegrationsIdApiKeyKeyidRefreshPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ IntegrationsIdApiKeyKeyidRefreshPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

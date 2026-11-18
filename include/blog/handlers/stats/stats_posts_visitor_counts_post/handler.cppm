@@ -10,8 +10,8 @@ import :stats_stats_posts_visitor_counts_post_flow;
 export namespace blog::handlers::stats::stats_posts_visitor_counts_post {
 class StatsPostsVisitorCountsPostHandler {
 public:
- StatsPostsVisitorCountsPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ StatsPostsVisitorCountsPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

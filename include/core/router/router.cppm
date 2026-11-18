@@ -267,7 +267,7 @@ private:
 template<
     std::size_t RouterSize = 1024,
     std::size_t HandlerSize = 512,
-    std::size_t MiddlewareSize = 10>
+    std::size_t MiddlewareSize = 64>
 class RouteHandler
 {
 public:

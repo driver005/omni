@@ -5,6 +5,7 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,6 +17,7 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/gift_links"}
+            .use(blog::handlers::middleware::content_type_middleware)
             .add_route(
                 Route{"/remove_all"}
                     .put([&handler](

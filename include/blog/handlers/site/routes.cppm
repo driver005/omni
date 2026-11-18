@@ -5,6 +5,7 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,6 +17,7 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/site"}
+            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

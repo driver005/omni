@@ -288,21 +288,21 @@ private:
     [[nodiscard]] static std::string serialize(const E& value)
     {
         if constexpr (std::same_as<E, model::Post>) {
-            return blog::dto::GhostJson::post(value);
+            return blog::dto::GhostFixtures::post(value);
         } else if constexpr (std::same_as<E, model::Member>) {
-            return blog::dto::GhostJson::member(value);
+            return blog::dto::GhostFixtures::member(value);
         } else if constexpr (std::same_as<E, model::User>) {
-            return blog::dto::GhostJson::user(value);
+            return blog::dto::GhostFixtures::user(value);
         } else if constexpr (std::same_as<E, model::Newsletter>) {
-            return blog::dto::GhostJson::newsletter(value);
+            return blog::dto::GhostFixtures::newsletter(value);
         } else if constexpr (std::same_as<E, model::Tier>) {
-            return blog::dto::GhostJson::tier(value);
+            return blog::dto::GhostFixtures::tier(value);
         } else if constexpr (std::same_as<E, model::Comment>) {
-            return blog::dto::GhostJson::comment(value);
+            return blog::dto::GhostFixtures::comment(value);
         } else if constexpr (std::same_as<E, model::Page>) {
-            return blog::dto::GhostJson::page(value);
+            return blog::dto::GhostFixtures::page(value);
         } else if constexpr (std::same_as<E, model::Author>) {
-            return blog::dto::GhostJson::author(value);
+            return blog::dto::GhostFixtures::author(value);
         } else {
             return EntityJson<E>{}.to_json(value);
         }

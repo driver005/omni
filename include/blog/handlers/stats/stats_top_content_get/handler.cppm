@@ -10,8 +10,8 @@ import :stats_stats_top_content_get_flow;
 export namespace blog::handlers::stats::stats_top_content_get {
 class StatsTopContentGetHandler {
 public:
- StatsTopContentGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ StatsTopContentGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

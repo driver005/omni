@@ -10,8 +10,8 @@ import :members_members_stripe_connect_get_flow;
 export namespace blog::handlers::members::members_stripe_connect_get {
 class MembersStripeConnectGetHandler {
 public:
- MembersStripeConnectGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ MembersStripeConnectGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

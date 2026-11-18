@@ -10,8 +10,8 @@ import :settings_settings_verifications_put_flow;
 export namespace blog::handlers::settings::settings_verifications_put {
 class SettingsVerificationsPutHandler {
 public:
- SettingsVerificationsPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ SettingsVerificationsPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

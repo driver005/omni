@@ -10,8 +10,8 @@ import :redirects_redirects_upload_post_flow;
 export namespace blog::handlers::redirects::redirects_upload_post {
 class RedirectsUploadPostHandler {
 public:
- RedirectsUploadPostHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ RedirectsUploadPostHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

@@ -154,6 +154,8 @@ int main(int argc, char** argv)
         io::layer::http2::HttpResponse res{1};
         req.set_header(interfaces::io::types::Token::METHOD, request->method);
         req.set_header(interfaces::io::types::Token::PATH, request->path);
+        req.set_header(interfaces::io::types::Token::CONTENT_TYPE, "application/json");
+        req.set_header(interfaces::io::types::Token::ACCEPT, "application/json");
         if (!request->authorization.empty()) {
             req.set_header(interfaces::io::types::Token::AUTHORIZATION, request->authorization);
         }

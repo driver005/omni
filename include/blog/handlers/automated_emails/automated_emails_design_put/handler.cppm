@@ -10,8 +10,8 @@ import :automated_emails_automated_emails_design_put_flow;
 export namespace blog::handlers::automated_emails::automated_emails_design_put {
 class AutomatedEmailsDesignPutHandler {
 public:
- AutomatedEmailsDesignPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ AutomatedEmailsDesignPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

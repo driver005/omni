@@ -10,8 +10,8 @@ import :automations_automations_poll_put_flow;
 export namespace blog::handlers::automations::automations_poll_put {
 class AutomationsPollPutHandler {
 public:
- AutomationsPollPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ AutomationsPollPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

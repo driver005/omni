@@ -7,7 +7,7 @@
 
 import std;
 
-import blog_api;
+import blog_handlers_routes;
 import blog_handlers;
 import core_router;
 import core_serde;

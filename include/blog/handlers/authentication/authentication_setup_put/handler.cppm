@@ -10,8 +10,8 @@ import :authentication_authentication_setup_put_flow;
 export namespace blog::handlers::authentication::authentication_setup_put {
 class AuthenticationSetupPutHandler {
 public:
- AuthenticationSetupPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ AuthenticationSetupPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

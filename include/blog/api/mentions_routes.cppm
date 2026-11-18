@@ -14,7 +14,7 @@ class MentionsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::MentionsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

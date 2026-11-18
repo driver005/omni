@@ -14,7 +14,7 @@ class TiersRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::TiersRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

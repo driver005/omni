@@ -46,9 +46,10 @@ private:
 class WireClient
 {
 public:
-    explicit WireClient(blog::api::CoreHandler& handler)
+    explicit WireClient(blog::api::BlogHandlers& handlers)
     {
-        blog::api::ApiRoutes{}.install(m_context, handler);
+        blog::api::ApiRoutes{}.install(m_context, handlers);
+        auto& handler = handlers.core();
         m_server.build(&m_context);
         m_read = m_server.on_connect(
             [this](utils::buffering::BufferNode&& node) {

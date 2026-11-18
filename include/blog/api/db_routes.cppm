@@ -14,7 +14,7 @@ class DbRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::DbRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

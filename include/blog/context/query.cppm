@@ -36,10 +36,21 @@ public:
                     continue;
                 }
                 std::string value{trim(condition.substr(colon + 1))};
+                char op = '=';
+                if (!value.empty()) {
+                    const char first = value.front();
+                    if (first == '-' || first == '~' || first == '>' || first == '<') {
+                        op = first == '-' ? '!' : first;
+                        value.erase(value.begin());
+                    }
+                }
                 if (value.size() >= 2 && value.front() == '\'' && value.back() == '\'') {
                     value = value.substr(1, value.size() - 2);
                 }
-                ands.emplace_back(std::string{trim(condition.substr(0, colon))}, std::move(value));
+                ands.emplace_back(
+                    std::string{trim(condition.substr(0, colon))},
+                    std::string{op} + value
+                );
             }
             if (!ands.empty()) {
                 m_filters.push_back(std::move(ands));
@@ -48,7 +59,7 @@ public:
 
         for (const auto& [key, value] : params) {
             if (key.starts_with("filter[") && key.ends_with(']')) {
-                m_filters.push_back({{key.substr(7, key.size() - 8), value}});
+                m_filters.push_back({{key.substr(7, key.size() - 8), "=" + value}});
             }
         }
     }
@@ -136,9 +147,38 @@ private:
         }
         for (const auto& group : m_filters) {
             bool all = true;
-            for (const auto& [field, expected] : group) {
+            for (const auto& [field, encoded] : group) {
                 const auto it = record.find(field);
-                if (it == record.end() || unquote(it->second) != expected) {
+                if (it == record.end()) {
+                    all = false;
+                    break;
+                }
+                const char op = encoded.empty() ? '=' : encoded.front();
+                const std::string expected = encoded.empty() ? std::string{} : encoded.substr(1);
+                const std::string actual = unquote(it->second);
+                bool hit = false;
+                if (op == '=') hit = actual == expected;
+                else if (op == '!') hit = actual != expected;
+                else if (op == '~') {
+                    std::string a = actual;
+                    std::string e = expected;
+                    std::ranges::transform(a, a.begin(), [](char c) {
+                        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                    });
+                    std::ranges::transform(e, e.begin(), [](char c) {
+                        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                    });
+                    hit = a.contains(e);
+                } else if (op == '>' || op == '<') {
+                    try {
+                        const auto lhs = std::stold(actual);
+                        const auto rhs = std::stold(expected);
+                        hit = op == '>' ? lhs > rhs : lhs < rhs;
+                    } catch (...) {
+                        hit = op == '>' ? actual > expected : actual < expected;
+                    }
+                }
+                if (!hit) {
                     all = false;
                     break;
                 }
@@ -289,6 +329,35 @@ private:
         return std::string_view::npos;
     }
 
+    /** @brief End index of a JSON value, skipping nested objects/arrays and strings. */
+    [[nodiscard]] static std::size_t find_value_end(std::string_view text, std::size_t start)
+    {
+        if (start >= text.size()) return start;
+        const char first = text[start];
+        if (first == '{' || first == '[') {
+            const char close = (first == '{') ? '}' : ']';
+            int depth = 0;
+            bool in_string = false;
+            bool escaped = false;
+            for (std::size_t i = start; i < text.size(); ++i) {
+                const char c = text[i];
+                if (in_string) {
+                    if (escaped) escaped = false;
+                    else if (c == '\\') escaped = true;
+                    else if (c == '"') in_string = false;
+                    continue;
+                }
+                if (c == '"') in_string = true;
+                else if (c == first) ++depth;
+                else if (c == close && --depth == 0) return i + 1;
+            }
+            return text.size();
+        }
+        const auto comma = text.find(',', start);
+        const auto brace = text.find('}', start);
+        return std::min(comma, brace);
+    }
+
     [[nodiscard]] static Record parse_object(std::string_view object)
     {
         Record record;
@@ -322,10 +391,8 @@ private:
                 raw = std::string{object.substr(i, value_end - i + 1)};
                 i = value_end + 1;
             } else {
-                const auto comma = object.find(',', i);
-                const auto brace = object.find('}', i);
-                const auto stop = std::min(comma, brace);
-                if (stop == std::string_view::npos) {
+                const auto stop = find_value_end(object, i);
+                if (stop <= i) {
                     break;
                 }
                 raw = std::string{trim(object.substr(i, stop - i))};

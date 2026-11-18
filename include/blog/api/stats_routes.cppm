@@ -14,7 +14,7 @@ class StatsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::StatsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

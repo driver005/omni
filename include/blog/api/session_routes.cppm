@@ -14,7 +14,7 @@ class SessionRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SessionRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

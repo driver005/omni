@@ -14,7 +14,7 @@ class ThemesRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::ThemesRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -30,7 +30,7 @@ public:
     })
             .summary("Ghost themes GET")
             .add_router(
-                Router{router, "/:name"}
+                Router{router, "/:id"}
                     .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -38,7 +38,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :name DELETE")
+                    .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/activate"}
                             .put([h](

@@ -14,7 +14,7 @@ class SnippetsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SnippetsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

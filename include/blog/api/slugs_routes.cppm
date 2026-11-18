@@ -14,7 +14,7 @@ class SlugsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SlugsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -22,9 +22,9 @@ public:
         auto* h = &handler;
         Router{router, "/slugs"}
             .add_router(
-                Router{router, "/:type"}
+                Router{router, "/:id"}
                     .add_router(
-                        Router{router, "/:name"}
+                        Router{router, "/:id"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -32,7 +32,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost :name GET")
+                            .summary("Ghost :id GET")
                             .add_route(
                                 Route{"/:id"}
                                     .get([h](

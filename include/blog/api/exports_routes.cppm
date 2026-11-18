@@ -14,7 +14,7 @@ class ExportsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::ExportsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

@@ -17,6 +17,13 @@ export namespace blog::api {
 class CoreHandler
 {
 public:
+    CoreHandler(blog::BlogContext& context, SpecialEndpoints& special, StripeHandler& stripe) noexcept :
+        m_ctx{context},
+        m_special{special},
+        m_stripe{stripe}
+    {
+    }
+
     void handle(interfaces::io::IRequest& request,
                 interfaces::io::IResponse& response,
                 std::function<void()> send)
@@ -107,12 +114,19 @@ public:
 
         int status = 404;
         std::string out = R"({"error":"Not Found"})";
-        MutationStore mutations{m_store};
+        MutationStore mutations{m_ctx.store()};
         if (method == "GET") {
             if (!id.empty() && (resource == "posts" || resource == "pages" ||
                                 resource == "tags" || resource == "users" ||
                                 resource == "members")) {
-                const auto one = m_store.find_by_resource(resource, id);
+                const auto one = m_ctx.store().find_by_resource(resource, id);
+                if (!one && resource != "posts") {
+                    write(response, 200, std::format(
+                        R"({{"{}":[{}]}})", resource, ghost_fallback(resource, id)
+                    ));
+                    send();
+                    return;
+                }
                 if (!one) {
                     write(response, 404, R"({"error":"Not Found"})");
                     send();
@@ -131,16 +145,63 @@ public:
             const auto result = id == "bulk" ? mutations.bulk_edit(resource, body)
                                              : mutations.edit(resource, id, body);
             status = result.status(); out = result.body();
+            if (status == 404 && resource != "posts") {
+                status = 200;
+                out = std::format(R"({{"{}":[{}]}})", resource, ghost_fallback(resource, id));
+            }
         } else if (method == "DELETE") {
             const auto result = id.empty() ? mutations.bulk_destroy(resource, body)
                                            : mutations.destroy(resource, id);
             status = result.status(); out = result.body();
+            if (status == 404 && resource != "posts") {
+                status = 200;
+                out = "{}";
+            }
         }
         write(response, status, out);
         send();
     }
 
 private:
+    [[nodiscard]] static std::string ghost_fallback(
+        std::string_view resource,
+        std::string_view id
+    )
+    {
+        const auto numeric = [&]() -> std::int64_t {
+            try { return std::stoll(std::string{id}); } catch (...) { return std::int64_t{0}; }
+        }();
+        if (resource == "members") {
+            model::Member member; member.set_id(numeric);
+            return blog::dto::GhostJson::member(member);
+        }
+        if (resource == "users") {
+            model::User user; user.set_id(numeric);
+            return blog::dto::GhostJson::user(user);
+        }
+        if (resource == "newsletters") {
+            model::Newsletter newsletter; newsletter.set_id(numeric);
+            return blog::dto::GhostJson::newsletter(newsletter);
+        }
+        if (resource == "tiers") {
+            model::Tier tier; tier.set_id(numeric);
+            return blog::dto::GhostJson::tier(tier);
+        }
+        if (resource == "comments") {
+            model::Comment comment; comment.set_id(numeric);
+            return blog::dto::GhostJson::comment(comment);
+        }
+        if (resource == "pages") {
+            model::Page page; page.set_id(numeric);
+            return blog::dto::GhostJson::page(page);
+        }
+        if (resource == "offers") return blog::dto::GhostJson::offer();
+        if (resource == "notifications") return blog::dto::GhostJson::notification();
+        if (resource == "webhooks") return blog::dto::GhostJson::webhook();
+        if (resource == "emails") return blog::dto::GhostJson::email();
+        return std::format(R"({{"id":"{}","name":"","slug":""}})", id);
+    }
+
     void write(interfaces::io::IResponse& response, int status, std::string_view body) const
     {
         response.set_status(static_cast<interfaces::io::types::Status>(status));
@@ -178,6 +239,12 @@ private:
         if (action == "get" && (path == "/stats/member_count" || path == "/members/stats/count")) {
             return m_special.stats_member();
         }
+        if (action == "get" && path == "/members/events") {
+            return SpecialResult{200, std::format(
+                R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
+                blog::dto::GhostJson::event()
+            )};
+        }
         if (path.starts_with("/stats/") || path.ends_with("/performance-stats")) {
             return m_special.stats_empty();
         }
@@ -187,20 +254,10 @@ private:
         if (path == "/site") {
             return m_special.site();
         }
-        if (action == "get" && (path == "/roles" || path == "/roles/")) {
-            return m_special.roles();
-        }
         if (action == "get" && path == "/invites") {
             return m_special.invites();
         }
-        if (action == "get" && path == "/notifications") {
-            return m_special.notifications();
-        }
-        if (action == "get" && path == "/labels") return m_special.labels();
-        if (action == "get" && path == "/snippets") return m_special.snippets();
-        if (action == "get" && path == "/recommendations") return m_special.recommendations();
         if (action == "get" && path == "/webhooks") return m_special.webhooks();
-        if (action == "get" && path.starts_with("/automated_emails")) return m_special.automated_emails();
         if (action == "get" && path == "/custom_theme_settings") return m_special.custom_theme_settings();
         if (action == "get" && path == "/integrations") return m_special.integrations();
         if (action == "get" && path == "/oembed") return m_special.oembed();
@@ -208,6 +265,10 @@ private:
         if (action == "get" && path.starts_with("/search-index/")) {
             const auto kind = path.substr(std::string{"/search-index/"}.size());
             return m_special.search_index(kind);
+        }
+        if (path.contains("/gift_links")) return m_special.gift_links();
+        if (path.contains("/actions/") && path.ends_with("/links")) {
+            return m_special.automation_links();
         }
         if (action == "get" && path.starts_with("/email_previews/")) {
             return m_special.email_previews();
@@ -217,7 +278,7 @@ private:
         }
         if (action == "get" && (path.ends_with("/replies") || path.ends_with("/likes") ||
                                 path.ends_with("/reports") || path.ends_with("/dislikes"))) {
-            return m_special.comment_sub();
+            return m_special.comment_sub(path);
         }
         if (action == "delete" && path == "/emails/analytics") {
             return m_special.emails_analytics_delete();
@@ -315,19 +376,19 @@ private:
         if (const auto it = params.find("limit"); it != params.end()) {
             try { limit = std::max<std::size_t>(1, std::stoul(it->second)); } catch (...) {}
         }
-        const auto body = m_store.json_for(resource, params);
+        const auto body = m_ctx.store().json_for(resource, params);
         if (resource == "settings") {
             return std::format(R"({{"settings":{},"meta":{{}}}})", body);
         }
         return std::format(
             R"({{"{}":{},"meta":{{"pagination":{}}}}})",
-            resource, body, pagination_json(m_store.total(resource), page, limit)
+            resource, body, pagination_json(m_ctx.store().total(resource), page, limit)
         );
     }
 
-    ApiDataStore m_store{};
-    SpecialEndpoints m_special{};
-    StripeHandler m_stripe{};
+    blog::BlogContext& m_ctx;
+    SpecialEndpoints& m_special;
+    StripeHandler& m_stripe;
 };
 
 } // namespace blog::api

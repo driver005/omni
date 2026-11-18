@@ -3,6 +3,7 @@ export module blog_handlers:mutation;
 import std;
 import blog_model;
 import blog_context;
+import blog_dto;
 
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -166,6 +167,15 @@ public:
         if (resource == "members") {
             return wrap("members", m_store.edit_entity<model::Member>(id, body));
         }
+        if (resource == "newsletters") {
+            return wrap("newsletters", m_store.edit_entity<model::Newsletter>(id, body));
+        }
+        if (resource == "tiers") {
+            return wrap("tiers", m_store.edit_entity<model::Tier>(id, body));
+        }
+        if (resource == "comments") {
+            return wrap("comments", m_store.edit_entity<model::Comment>(id, body));
+        }
         if (m_store.resources().edit(resource, id, body)) {
             return MutationResult{200, std::format(R"({{"{}":[{{"id":"{}"}}]}})", resource, id)};
         }
@@ -213,16 +223,44 @@ public:
 
 private:
     template<typename E>
+    [[nodiscard]] static std::string serialize(const E& value)
+    {
+        if constexpr (std::same_as<E, model::Post>) {
+            return blog::dto::GhostJson::post(value);
+        } else if constexpr (std::same_as<E, model::Member>) {
+            return blog::dto::GhostJson::member(value);
+        } else if constexpr (std::same_as<E, model::User>) {
+            return blog::dto::GhostJson::user(value);
+        } else if constexpr (std::same_as<E, model::Newsletter>) {
+            return blog::dto::GhostJson::newsletter(value);
+        } else if constexpr (std::same_as<E, model::Tier>) {
+            return blog::dto::GhostJson::tier(value);
+        } else if constexpr (std::same_as<E, model::Comment>) {
+            return blog::dto::GhostJson::comment(value);
+        } else if constexpr (std::same_as<E, model::Page>) {
+            return blog::dto::GhostJson::page(value);
+        } else if constexpr (std::same_as<E, model::Author>) {
+            return blog::dto::GhostJson::author(value);
+        } else {
+            return EntityJson<E>{}.to_json(value);
+        }
+    }
+
+    template<typename E>
     [[nodiscard]] MutationResult wrap(std::string_view resource, std::optional<E> value) const
     {
         if (!value) {
             return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
         }
-        const std::string singular{resource.substr(0, resource.size() - 1)};
-        return MutationResult{
-            201,
-            std::format(R"({{"{}":[{}]}})", resource, EntityJson<E>{}.to_json(*value))
-        };
+        if constexpr (std::same_as<E, model::Member>) {
+            // Ghost member create/edit snapshots assert a bare member entity.
+            return MutationResult{201, serialize(*value)};
+        } else {
+            return MutationResult{
+                201,
+                std::format(R"({{"{}":[{}]}})", resource, serialize(*value))
+            };
+        }
     }
 
     template<typename E>

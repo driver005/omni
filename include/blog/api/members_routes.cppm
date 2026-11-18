@@ -14,7 +14,7 @@ class MembersRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::MembersRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -129,7 +129,7 @@ public:
     })
                             .summary("Ghost subscriptions POST")
                             .add_route(
-                                Route{"/:subscription_id"}
+                                Route{"/:id"}
                                     .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -137,7 +137,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                                    .summary("Ghost :subscription_id PUT")
+                                    .summary("Ghost :id PUT")
                             )
                     )
                     .add_route(

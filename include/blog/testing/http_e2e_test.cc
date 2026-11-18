@@ -13,7 +13,7 @@ import interfaces;
  */
 int main()
 {
-    blog::api::CoreHandler handler;
+    blog::api::BlogHandlers handler;
 
     // The API itself installs all 261 Ghost routes into core_router.
     core::router::RouterContext<> context;
@@ -95,6 +95,24 @@ int main()
 
     const auto unauthorized = run("GET", "/members");
     if (unauthorized.first != 401 || !unauthorized.second.contains("Unauthorized")) return 9;
+
+    std::size_t missing{0};
+    for (const auto& route: blog::testing::RouteCatalog::values) {
+        std::string concrete{route.path()};
+        for (;;) {
+            const auto colon = concrete.find(':');
+            if (colon == std::string::npos) break;
+            const auto slash = concrete.find('/', colon);
+            concrete.replace(colon, slash == std::string::npos ? concrete.size() - colon : slash - colon, "1");
+        }
+        const std::string method = std::string{route.method() == "ALL" ? "GET" : route.method()};
+        const auto r = run(method, concrete, "{}", "admin");
+        if (r.first == 404 || r.first == -1) {
+            ++missing;
+        }
+    }
+    std::println("unrouted {}/261", missing);
+    if (missing != 0) return 10;
 
     return 0;
 }

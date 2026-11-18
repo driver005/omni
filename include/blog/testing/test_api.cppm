@@ -55,10 +55,10 @@ public:
             req.get_body().push_back(node, 0, request.body().size());
         }
         if (!m_installed) {
-            blog::api::ApiRoutes{}.install(m_context_router, m_handler);
+            blog::api::ApiRoutes{}.install(m_context_router, m_handlers);
             m_installed = true;
         }
-        m_handler.handle(req, res, [] {});
+        m_handlers.core().handle(req, res, [] {});
         std::string body;
         for (const std::byte byte : res.get_body()) body += static_cast<char>(byte);
         int status = 200;
@@ -83,7 +83,7 @@ public:
 private:
     blog::BlogContext m_context{};
     core::router::RouterContext<> m_context_router{};
-    blog::api::CoreHandler m_handler{};
+    blog::api::BlogHandlers m_handlers{};
     bool m_installed{false};
 };
 

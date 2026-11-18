@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,22 +21,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/db"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost db DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::db::browse::BrowseDbHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost db GET")
             .post([h](
@@ -42,9 +36,17 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::db::create::CreateDbHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost db POST")
+            .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        blog::handlers::operations::db::bulk_destroy::BulkDestroyDbHandler::handle(req, res, std::move(send));
+    })
+            .summary("Ghost db DELETE")
             .add_route(
                 Route{"/backup"}
                     .post([h](
@@ -52,7 +54,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::db::db_backup_post::DbBackupPostDbHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost backup POST")
             )
@@ -65,7 +67,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::db::db_media_inline_post::DbMediaInlinePostDbHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost inline POST")
                     )

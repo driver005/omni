@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,14 +21,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/comments"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::browse::BrowseCommentsHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost comments GET")
             .post([h](
@@ -34,7 +36,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::create::CreateCommentsHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost comments POST")
             .add_router(
@@ -44,7 +46,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::read_by_id::ReadByIdCommentsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -52,7 +54,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::edit::EditCommentsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
                     .add_route(
@@ -62,7 +64,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::comment_dislikes::CommentDislikesCommentsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost dislikes GET")
                     )
@@ -73,7 +75,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::comment_likes::CommentLikesCommentsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost likes GET")
                     )
@@ -84,7 +86,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::comment_replies::CommentRepliesCommentsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost replies GET")
                     )
@@ -95,7 +97,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::comment_reports::CommentReportsCommentsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost reports GET")
                     )
@@ -109,7 +111,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::comments::get_detail::GetDetailCommentsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )

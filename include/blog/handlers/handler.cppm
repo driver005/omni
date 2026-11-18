@@ -233,6 +233,29 @@ private:
                 if (id == "1") id = part; else sub = part;
             }
         }
+        if (action == "post" &&
+            (path.ends_with("/commenting/disable") || path.ends_with("/commenting/enable"))) {
+            const bool disable = path.ends_with("/disable");
+            std::string id;
+            if (path.starts_with("/members/")) {
+                const auto rest = path.substr(std::string{"/members/"}.size());
+                const auto slash = rest.find('/');
+                id = std::string{rest.substr(0, slash)};
+            }
+            return m_special.commenting_set(id, body, disable);
+        }
+        if (path.contains("/metafields/custom")) {
+            const auto marker = path.find("/custom/");
+            std::string key;
+            if (marker != std::string_view::npos) {
+                const auto rest = path.substr(marker + 8);
+                const auto slash = rest.find('/');
+                key = std::string{rest.substr(0, slash)};
+            }
+            if (action == "post") return m_special.metafields_create(body);
+            if (action == "get" && !key.empty()) return m_special.metafields_get(key);
+            if (action == "put" && !key.empty()) return m_special.metafields_edit(key, body);
+        }
         if (action == "get" && (path == "/stats/mrr" || path == "/members/stats/mrr")) {
             return m_special.stats_mrr();
         }

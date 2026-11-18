@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,14 +21,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/automated_emails"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::browse::BrowseAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost automated_emails GET")
             .post([h](
@@ -34,7 +36,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::create::CreateAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost automated_emails POST")
             .add_router(
@@ -44,7 +46,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::read_by_id::ReadByIdAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -52,7 +54,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::edit::EditAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
                     .add_route(
@@ -62,7 +64,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_id_preview_post::AutomatedEmailsIdPreviewPostAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost preview POST")
                     )
@@ -73,7 +75,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_id_test_post::AutomatedEmailsIdTestPostAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost test POST")
                     )
@@ -85,7 +87,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_design_get::AutomatedEmailsDesignGetAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost design GET")
                     .put([h](
@@ -93,7 +95,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_design_put::AutomatedEmailsDesignPutAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost design PUT")
             )
@@ -104,7 +106,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_senders_put::AutomatedEmailsSendersPutAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost senders PUT")
             )
@@ -115,7 +117,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::automated_emails::automated_emails_verifications_put::AutomatedEmailsVerificationsPutAutomatedEmailsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost verifications PUT")
             );

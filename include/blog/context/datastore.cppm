@@ -129,6 +129,16 @@ public:
 
     }
 
+    [[nodiscard]] core::db::Database& db() noexcept
+    {
+        return m_db;
+    }
+
+    [[nodiscard]] const core::db::Database& db() const noexcept
+    {
+        return m_db;
+    }
+
     [[nodiscard]] std::vector<model::Post> posts() const
     {
         return m_db.all<model::Post>();

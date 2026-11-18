@@ -1,6 +1,6 @@
 import pathlib, re, json, collections
 
-ADMIN=pathlib.Path('docs/Ghost/ghost/test/e2e-api/admin')
+ADMIN=pathlib.Path('test/e2e-api/admin')
 
 def blocks(src):
     """Yield (describe_chain, it_title, it_body) for each it(...) in a JS/TS test."""
@@ -49,10 +49,10 @@ def blocks(src):
 def requests(body):
     out=[]
     snap=body.find('matchBodySnapshot')
-    for m in re.finditer(r'agent\.(get|post|put|delete|patch)\s*\(\s*[`\'"]([^`\'"]+)', body):
+    for m in re.finditer(r'agent\s*\.\s*(get|post|put|delete|patch)\s*\(\s*[`\'"]([^`\'"]+)', body):
         if snap >= 0 and m.start() > snap: continue
         out.append((m.group(1).upper(), m.group(2)))
-    return out[-1:] if out else []
+    return out if out else []
 
 def snap_names(file):
     txt=(ADMIN/'__snapshots__'/file.replace('.test.js','.test.js.snap').replace('.test.ts','.test.ts.snap')).read_text()
@@ -68,14 +68,15 @@ for f in sorted(ADMIN.glob('*.test.js'))+sorted(ADMIN.glob('*.test.ts')):
         reqs=requests(body)
         if not reqs: continue
         # match snapshot names ending with this it title + ' 1: [body] 1'
-        matched=[n for n in names if ('[body]' in n) and (title in n)]
+        nt = title.split('${')[0].strip()
+        matched=[n for n in names if ('[body]' in n) and
+                 ((title in n) or (len(nt) > 8 and nt in n))]
         if not matched: continue
-        method,path=reqs[0]
-        path=re.sub(r'\$\{[^}]+\}','1',path)
-        if not path.startswith('/'): path='/'+path
-        path=path.rstrip('/') or '/'
-        for n in matched:
-            cases.append((f.name,method,path,n))
-print('mapped',len(cases))
+        for method,path in reqs:
+            path=re.sub(r'\$\{[^}]+\}','1',path)
+            if not path.startswith('/'): path='/'+path
+            path=path.rstrip('/') or '/'
+            for n in matched:
+                cases.append((f.name,method,path,n))
 for c in cases[:15]: print(c[1],c[2],'<=',c[3][:70])
 json.dump(cases,open('/tmp/opencode/snapshot_map.json','w'),indent=1)

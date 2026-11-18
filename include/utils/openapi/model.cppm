@@ -347,6 +347,67 @@ private:
     std::unordered_map<std::string, MediaType> m_content;
 };
 
+/**
+ * @brief Minimal OpenAPI parameter object. Path templates such as `/posts/{id}` need a
+ * declared `in: path` parameter before strict client generators (progenitor) accept the doc.
+ */
+class Parameter
+{
+public:
+    Parameter() = default;
+
+    explicit Parameter(std::string name) :
+        m_name(std::move(name))
+    {
+    }
+
+    void set_name(std::string value)
+    {
+        m_name = std::move(value);
+    }
+
+    void set_in(std::string value)
+    {
+        m_in = std::move(value);
+    }
+
+    void set_required(bool value) noexcept
+    {
+        m_required = value;
+    }
+
+    void set_schema(SchemaObject value)
+    {
+        m_schema = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
+    [[nodiscard]] const std::string& get_in() const noexcept
+    {
+        return m_in;
+    }
+
+    [[nodiscard]] bool get_required() const noexcept
+    {
+        return m_required;
+    }
+
+    [[nodiscard]] const SchemaObject& get_schema() const noexcept
+    {
+        return m_schema;
+    }
+
+private:
+    std::string m_name;
+    std::string m_in{"path"};
+    bool m_required{true};
+    SchemaObject m_schema;
+};
+
 class Operation
 {
 public:
@@ -354,6 +415,16 @@ public:
      * @brief Default ctor — blank operation, no summary/tags/body/responses yet.
      */
     Operation() = default;
+
+    /**
+     * @brief Sets the stable operation identifier used by client generators (progenitor
+     * requires one per path/method pair).
+     * @param value the operation id.
+     */
+    void set_operation_id(std::string value)
+    {
+        m_operation_id = std::move(value);
+    }
 
     /**
      * @brief Sets the one-liner summary shown in docs/UI. Keep it lowkey short, that's the
@@ -395,6 +466,15 @@ public:
     }
 
     /**
+     * @brief Registers a parameter (e.g. a `{id}` path template variable).
+     * @param parameter the parameter spec, moved in.
+     */
+    void add_parameter(Parameter parameter)
+    {
+        m_parameters.push_back(std::move(parameter));
+    }
+
+    /**
      * @brief Registers a response for a given status code.
      * @param status the status code as a string (OpenAPI keys responses by string, not int).
      * @param response the response spec, moved in.
@@ -402,6 +482,15 @@ public:
     void add_response(std::string status, Response response)
     {
         m_responses.emplace(std::move(status), std::move(response));
+    }
+
+    /**
+     * @brief Grabs the stable operation identifier.
+     * @return the operation id, or empty if never set.
+     */
+    [[nodiscard]] const std::string& get_operation_id() const noexcept
+    {
+        return m_operation_id;
     }
 
     /**
@@ -444,6 +533,15 @@ public:
     }
 
     /**
+     * @brief Grabs the parameter list.
+     * @return every registered parameter, in registration order.
+     */
+    [[nodiscard]] const std::vector<Parameter>& get_parameters() const noexcept
+    {
+        return m_parameters;
+    }
+
+    /**
      * @brief Grabs the response map.
      * @return every registered response, keyed by status code string.
      */
@@ -453,9 +551,11 @@ public:
     }
 
 private:
+    std::string m_operation_id;
     std::string m_summary;
     std::string m_description;
     std::vector<std::string> m_tags;
+    std::vector<Parameter> m_parameters;
     std::shared_ptr<RequestBody> m_request_body;
     std::unordered_map<std::string, Response> m_responses;
 };
@@ -892,6 +992,21 @@ struct serde::Serializable<utils::openapi::Response>
 };
 
 template<>
+struct serde::Serializable<utils::openapi::Parameter>
+{
+    static constexpr auto fields()
+    {
+        using utils::openapi::Parameter;
+        return std::tuple{
+            serde::FieldDesc<"name", &Parameter::get_name, &Parameter::set_name>{},
+            serde::FieldDesc<"in", &Parameter::get_in, &Parameter::set_in>{},
+            serde::FieldDesc<"required", &Parameter::get_required, &Parameter::set_required>{},
+            serde::FieldDesc<"schema", &Parameter::get_schema, &Parameter::set_schema>{},
+        };
+    }
+};
+
+template<>
 struct serde::Serializable<utils::openapi::Operation>
 {
     /**
@@ -904,12 +1019,20 @@ struct serde::Serializable<utils::openapi::Operation>
     {
         using utils::openapi::Operation;
         return std::tuple{
+            serde::FieldDesc<
+                "operationId",
+                &Operation::get_operation_id,
+                &Operation::set_operation_id>{},
             serde::FieldDesc<"summary", &Operation::get_summary, &Operation::set_summary>{},
             serde::FieldDesc<
                 "description",
                 &Operation::get_description,
                 &Operation::set_description>{},
             serde::FieldDesc<"tags", &Operation::get_tags, &Operation::add_tag>{},
+            serde::FieldDesc<
+                "parameters",
+                &Operation::get_parameters,
+                &Operation::add_parameter>{},
             serde::FieldDesc<
                 "requestBody",
                 &Operation::get_request_body,

@@ -1,4 +1,4 @@
-load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test")
+load("//bazel:build_defs.bzl", "congelado_module_library", "congelado_cc_test", "congelado_cc_binary")
 
 congelado_module_library(
     name = "wire_client",
@@ -52,4 +52,19 @@ congelado_cc_test(
     srcs = ["snapshot_replay_test.cc"],
     linkopts = ["-lcrypto", "-lssl"],
     deps = [":wire_client"],
+)
+
+congelado_cc_binary(
+    name = "cpp_api_server",
+    srcs = ["cpp_api_server.cc"],
+    linkopts = ["-lcrypto", "-lssl"],
+    deps = [
+        ":wire_client",
+        "//include/blog/api:blog_api",
+        "//include/blog/handlers:blog_handlers",
+        "//include/core/router:core_router",
+        "//include/interfaces:interfaces",
+        "//include/io/layer/http2:io_layer_http2",
+        "//include/utils/buffering:utils_buffering",
+    ],
 )

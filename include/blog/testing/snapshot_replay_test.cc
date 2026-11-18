@@ -192,14 +192,14 @@ int main()
         blog::api::BlogHandlers fresh;
         blog::testing::WireClient wire{fresh};
         const auto included = wire.request("GET", "/posts?include=authors", "", "admin");
-        if (!included.body().contains(R"("authors":[)")) { std::println("INC {}", included.body().substr(0,140)); ++failed; }
+        if (!included.body().contains(R"("authors":[)")) ++failed;
         const auto projected = wire.request("GET", "/posts?fields=title,slug", "", "admin");
-        if (projected.body().contains(R"("html":)")) { std::println("PROJ {}", projected.body().substr(0,140)); ++failed; }
+        if (projected.body().contains(R"("html":)")) ++failed;
         const auto filtered = wire.request("GET", "/posts?filter=status:draft", "", "admin");
-        if (filtered.body().contains("Hello Ghost")) { std::println("FILT {}", filtered.body().substr(0,140)); ++failed; }
+        if (filtered.body().contains("Hello Ghost")) ++failed;
         const auto invalid = wire.request("POST", "/members", R"({"email":"bad"})", "admin");
         if (!invalid.body().contains(R"("errors":[)") ||
-            !invalid.body().contains(R"("property":)")) { std::println("INV {}", invalid.body().substr(0,140)); ++failed; }
+            !invalid.body().contains(R"("property":)")) ++failed;
     }
 
     // DTO-backed domain handlers keep their Ghost payloads on the wire path.

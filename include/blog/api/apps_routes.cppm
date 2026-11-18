@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,16 +21,16 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/apps"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::apps::all_collection::AllCollectionAppsHandler::handle(req, res, std::move(send));
     })
-            .summary("Ghost apps GET");
+            .summary("Ghost apps ALL");
     }
 };
 

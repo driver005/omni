@@ -59,3 +59,4 @@ export import :upgrades_handler;
 export import :users_handler;
 export import :webhooks_handler;
 export import :all;
+export import blog_handlers_posts_browse;

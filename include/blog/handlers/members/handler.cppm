@@ -82,6 +82,13 @@ public:
             } else if (!std::ranges::all_of(id, [](char c) {
                    return std::isdigit(static_cast<unsigned char>(c));
                })) {
+                if (id.size() == 24 && std::ranges::all_of(id, [](char c) {
+                        return std::isxdigit(static_cast<unsigned char>(c));
+                    })) {
+                    write(response, 404, R"({"error":"Not Found"})");
+                    send();
+                    return;
+                }
                 id.clear();
             }
         }
@@ -119,6 +126,7 @@ public:
             const auto pagination = blog::dto::ModelJson<blog::dto::PaginationMetaDto>{}.to_json(meta);
             out = std::format(R"({{"members":{},"meta":{{"pagination":{}}}}})", body, pagination);
         }
+        if (!id.empty()) out = m_special.apply_commenting(id, out);
         write(response, 200, out);
         send();
     }

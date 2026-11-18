@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,7 +21,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/stats"}
             .add_route(
                 Route{"/member_count"}
@@ -28,7 +30,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_member_count_get::StatsMemberCountGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost member_count GET")
             )
@@ -39,7 +41,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_mrr_get::StatsMrrGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost mrr GET")
             )
@@ -50,7 +52,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_newsletter_basic_stats_get::StatsNewsletterBasicStatsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost newsletter-basic-stats GET")
             )
@@ -61,7 +63,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_newsletter_click_stats_get::StatsNewsletterClickStatsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost newsletter-click-stats GET")
             )
@@ -72,7 +74,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_newsletter_stats_get::StatsNewsletterStatsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost newsletter-stats GET")
             )
@@ -87,7 +89,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_posts_id_growth_get::StatsPostsIdGrowthGetStatsHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost growth GET")
                             )
@@ -98,7 +100,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_posts_id_stats_get::StatsPostsIdStatsGetStatsHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost stats GET")
                             )
@@ -109,7 +111,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_posts_id_top_referrers_get::StatsPostsIdTopReferrersGetStatsHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost top-referrers GET")
                             )
@@ -122,7 +124,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_posts_member_counts_post::StatsPostsMemberCountsPostStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost posts-member-counts POST")
             )
@@ -133,7 +135,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_posts_visitor_counts_post::StatsPostsVisitorCountsPostStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost posts-visitor-counts POST")
             )
@@ -144,7 +146,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_referrers_get::StatsReferrersGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost referrers GET")
             )
@@ -155,7 +157,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_subscriber_count_get::StatsSubscriberCountGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost subscriber-count GET")
             )
@@ -166,7 +168,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::subscriptions_get::SubscriptionsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost subscriptions GET")
             )
@@ -177,7 +179,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_top_content_get::StatsTopContentGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost top-content GET")
             )
@@ -188,7 +190,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_top_posts_get::StatsTopPostsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost top-posts GET")
             )
@@ -199,7 +201,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_top_posts_views_get::StatsTopPostsViewsGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost top-posts-views GET")
             )
@@ -210,7 +212,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::stats::stats_top_sources_growth_get::StatsTopSourcesGrowthGetStatsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost top-sources-growth GET")
             );

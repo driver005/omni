@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,7 +21,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/gifts"}
             .add_route(
                 Route{"/flush_deliveries"}
@@ -28,7 +30,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::gifts::gifts_flush_deliveries_put::GiftsFlushDeliveriesPutGiftsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost flush_deliveries PUT")
             )
@@ -39,7 +41,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::gifts::gifts_flush_reminders_put::GiftsFlushRemindersPutGiftsHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost flush_reminders PUT")
             );

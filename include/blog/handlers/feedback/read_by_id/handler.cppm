@@ -10,8 +10,8 @@ import :feedback_read_by_id_flow;
 export namespace blog::handlers::feedback::read_by_id {
 class ReadByIdHandler {
 public:
- ReadByIdHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ ReadByIdHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

@@ -10,8 +10,8 @@ import :themes_themes_active_get_flow;
 export namespace blog::handlers::themes::themes_active_get {
 class ThemesActiveGetHandler {
 public:
- ThemesActiveGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ ThemesActiveGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

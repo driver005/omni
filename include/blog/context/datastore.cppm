@@ -6,6 +6,7 @@ import blog_model;
 import blog_dto;
 import memory_backends;
 import :json;
+import :ghost_fixtures;
 import :resource_store;
 import :query;
 #ifdef CONGELADO_TEST
@@ -214,33 +215,33 @@ public:
         if (resource == "posts") {
             const auto e = find_entity<model::Post>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostJson::post(*e);
+            return blog::dto::GhostFixtures::post(*e);
         }
         if (resource == "pages") return entity_json<model::Page>(find_entity<model::Page>(id));
         if (resource == "tags") return entity_json<model::Tag>(find_entity<model::Tag>(id));
         if (resource == "users") {
             const auto e = find_entity<model::User>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostJson::user(*e);
+            return blog::dto::GhostFixtures::user(*e);
         }
         if (resource == "members") {
             const auto e = find_entity<model::Member>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostJson::member(*e);
+            return blog::dto::GhostFixtures::member(*e);
         }
-        if (resource == "offers") return blog::dto::GhostJson::offer();
-        if (resource == "notifications") return blog::dto::GhostJson::notification();
-        if (resource == "webhooks") return blog::dto::GhostJson::webhook();
-        if (resource == "emails") return blog::dto::GhostJson::email();
+        if (resource == "offers") return blog::dto::GhostFixtures::offer();
+        if (resource == "notifications") return blog::dto::GhostFixtures::notification();
+        if (resource == "webhooks") return blog::dto::GhostFixtures::webhook();
+        if (resource == "emails") return blog::dto::GhostFixtures::email();
         if (resource == "newsletters") {
             const auto e = find_entity<model::Newsletter>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostJson::newsletter(*e);
+            return blog::dto::GhostFixtures::newsletter(*e);
         }
         if (resource == "tiers") {
             const auto e = find_entity<model::Tier>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostJson::tier(*e);
+            return blog::dto::GhostFixtures::tier(*e);
         }
         return std::nullopt;
     }
@@ -290,7 +291,7 @@ public:
         if (resource == "members") return query_json(m_db.all<model::Member>(), params);
         if (resource == "comments") return query_json(m_db.all<model::Comment>(), params);
         if (resource == "offers") {
-            auto fixture = blog::dto::GhostJson::offer();
+            auto fixture = blog::dto::GhostFixtures::offer();
             const auto stored = Query::parse_array(m_resources.list("offers"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -302,17 +303,17 @@ public:
             }
             return "[" + fixture + "]";
         }
-        if (resource == "notifications") return "[" + blog::dto::GhostJson::notification() + "]";
-        if (resource == "webhooks") return "[" + blog::dto::GhostJson::webhook() + "]";
-        if (resource == "emails") return "[" + blog::dto::GhostJson::email() + "]";
-        if (resource == "labels") return "[" + blog::dto::GhostJson::label() + "]";
-        if (resource == "snippets") return "[" + blog::dto::GhostJson::snippet() + "]";
-        if (resource == "roles") return "[" + blog::dto::GhostJson::role() + "]";
-        if (resource == "recommendations") return "[" + blog::dto::GhostJson::recommendation() + "]";
-        if (resource == "links") return "[" + blog::dto::GhostJson::link() + "]";
-        if (resource == "automated_emails") return "[" + blog::dto::GhostJson::automated_email() + "]";
+        if (resource == "notifications") return "[" + blog::dto::GhostFixtures::notification() + "]";
+        if (resource == "webhooks") return "[" + blog::dto::GhostFixtures::webhook() + "]";
+        if (resource == "emails") return "[" + blog::dto::GhostFixtures::email() + "]";
+        if (resource == "labels") return "[" + blog::dto::GhostFixtures::label() + "]";
+        if (resource == "snippets") return "[" + blog::dto::GhostFixtures::snippet() + "]";
+        if (resource == "roles") return "[" + blog::dto::GhostFixtures::role() + "]";
+        if (resource == "recommendations") return "[" + blog::dto::GhostFixtures::recommendation() + "]";
+        if (resource == "links") return "[" + blog::dto::GhostFixtures::link() + "]";
+        if (resource == "automated_emails") return "[" + blog::dto::GhostFixtures::automated_email() + "]";
         if (resource == "automations") {
-            auto fixture = blog::dto::GhostJson::automation();
+            auto fixture = blog::dto::GhostFixtures::automation();
             const auto stored = Query::parse_array(m_resources.list("automations"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -322,7 +323,7 @@ public:
             return "[" + fixture + "]";
         }
         if (resource == "db") {
-            auto fixture = blog::dto::GhostJson::db();
+            auto fixture = blog::dto::GhostFixtures::db();
             const auto stored = Query::parse_array(m_resources.list("db"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -346,7 +347,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::User& e) {
-            return blog::dto::GhostJson::user(e);
+            return blog::dto::GhostFixtures::user(e);
         });
     }
 
@@ -356,7 +357,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Newsletter& e) {
-            return blog::dto::GhostJson::newsletter(e);
+            return blog::dto::GhostFixtures::newsletter(e);
         });
     }
 
@@ -366,7 +367,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Tier& e) {
-            return blog::dto::GhostJson::tier(e);
+            return blog::dto::GhostFixtures::tier(e);
         });
     }
 
@@ -376,7 +377,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Page& e) {
-            return blog::dto::GhostJson::page(e);
+            return blog::dto::GhostFixtures::page(e);
         });
     }
 
@@ -386,7 +387,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Comment& e) {
-            return blog::dto::GhostJson::comment(e);
+            return blog::dto::GhostFixtures::comment(e);
         });
     }
 
@@ -396,7 +397,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Author& e) {
-            return blog::dto::GhostJson::author(e);
+            return blog::dto::GhostFixtures::author(e);
         });
     }
 
@@ -417,7 +418,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Post& e) {
-            return blog::dto::GhostJson::post(e);
+            return blog::dto::GhostFixtures::post(e);
         });
     }
 
@@ -427,7 +428,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Member& e) {
-            return blog::dto::GhostJson::member(e);
+            return blog::dto::GhostFixtures::member(e);
         });
     }
 

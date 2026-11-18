@@ -10,8 +10,8 @@ import :authentication_authentication_invitation_get_flow;
 export namespace blog::handlers::authentication::authentication_invitation_get {
 class AuthenticationInvitationGetHandler {
 public:
- AuthenticationInvitationGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ AuthenticationInvitationGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

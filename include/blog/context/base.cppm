@@ -7,3 +7,4 @@ export import :resource_store;
 export import :resource_schema;
 export import :query;
 export import :json;
+export import :ghost_fixtures;

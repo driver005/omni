@@ -3,25 +3,25 @@ import std;
 import core_workflow;
 import blog_context;
 import :mutation;
-import :special;
+import :emails_state;
 import blog_dto;
 import :emails_analytics_delete_model;
 import :emails_analytics_delete_dto;
 export namespace blog::handlers::emails::analytics_delete::workflow {
 class ExecuteStep {
 public:
- using Input=model::Request; using Output=std::string;
+ using Input=model::Request; using Output=std::map<std::string, std::string>;
  static constexpr std::string_view name{"emails_analytics_delete_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
-  auto& special=*s_special;
-  const auto r=special.emails_analytics_delete();
-  if(r.status!=0) return core::workflow::StepResponse<Output>{r.body};
-  return core::workflow::StepResponse<Output>{mutations.bulk_destroy("emails", in.body.empty()?"{}":in.body).body()};
+  auto& state=*s_state;
+  const auto r=state.emails_analytics_delete();
+  if(r.first!=0) return core::workflow::StepResponse<Output>{{{"status",std::to_string(r.first)},{"body",r.second}}};
+  return core::workflow::StepResponse<Output>{{{"status","200"},{"body",mutations.bulk_destroy("emails", in.body.empty()?"{}":in.body).body()}}};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx; static blog::api::SpecialEndpoints* s_special;
+ static blog::BlogContext* s_ctx; static blog::api::EmailsState* s_state;
 };
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-blog::api::SpecialEndpoints* ExecuteStep::s_special{nullptr};
+blog::api::EmailsState* ExecuteStep::s_state{nullptr};
 }

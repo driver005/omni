@@ -3,7 +3,9 @@ export module blog_handlers:all;
 import std;
 import blog_context;
 import blog_handlers_middleware;
-import :handler;
+import :members_state;
+import :emails_state;
+import :automations_state;
 import :pages_browse_handler;
 import :pages_read_by_id_handler;
 import :pages_read_by_slug_handler;
@@ -250,62 +252,7 @@ import :posts_read_by_id_handler;
 import :posts_read_by_slug_handler;
 import :posts_upload_handler;
 
-import :special;
 import :stripe;
-import :actions_handler;
-import :apps_handler;
-import :authentication_handler;
-import :authors_handler;
-import :automated_emails_handler;
-import :automations_handler;
-import :comments_handler;
-import :config_handler;
-import :custom_theme_settings_handler;
-import :db_handler;
-import :email_previews_handler;
-import :emails_handler;
-import :exports_handler;
-import :featurebase_handler;
-import :feedback_handler;
-import :files_handler;
-import :gift_links_handler;
-import :gifts_handler;
-import :identities_handler;
-import :images_handler;
-import :incoming_recommendations_handler;
-import :integrations_handler;
-import :invites_handler;
-import :labels_handler;
-import :links_handler;
-import :media_handler;
-import :members_handler;
-import :mentions_handler;
-import :newsletters_handler;
-import :notifications_handler;
-import :oembed_handler;
-import :offers_handler;
-import :pages_handler;
-import :posts_handler;
-import :recommendations_handler;
-import :redirects_handler;
-import :roles_handler;
-import :schedules_handler;
-import :search_index_handler;
-import :session_handler;
-import :settings_handler;
-import :site_handler;
-import :slack_handler;
-import :slugs_handler;
-import :snippets_handler;
-import :stats_handler;
-import :stripe_handler;
-import :tags_handler;
-import :themes_handler;
-import :tiers_handler;
-import :tinybird_handler;
-import :upgrades_handler;
-import :users_handler;
-import :webhooks_handler;
 
 export namespace blog::api {
 
@@ -316,18 +263,14 @@ public:
     /** @brief Owns a fresh context (tests / standalone use). */
     BlogHandlers() :
         m_owned_context{std::make_unique<blog::BlogContext>()},
-        m_ctx{*m_owned_context},
-        m_special{},
-        m_core{m_ctx, m_special, m_stripe}
+        m_ctx{*m_owned_context}
     {
         blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
     }
 
     /** @brief Use an injected, externally-owned context (plugin load). */
     explicit BlogHandlers(blog::BlogContext& context) :
-        m_ctx{context},
-        m_special{},
-        m_core{m_ctx, m_special, m_stripe}
+        m_ctx{context}
     {
         blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
     }
@@ -637,227 +580,7 @@ public:
  [[nodiscard]] blog::handlers::feedback::read_by_id::ReadByIdHandler& feedback_read_by_id() noexcept { return m_feedback_read_by_id; }
  [[nodiscard]] blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler& search_index_search_index_pages_get() noexcept { return m_search_index_search_index_pages_get; }
  [[nodiscard]] blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler& search_index_search_index_users_get() noexcept { return m_search_index_search_index_users_get; }
-    [[nodiscard]] CoreHandler& core() noexcept
-    {
-        return m_core;
-    }
 
-    [[nodiscard]] ActionsRouteHandler& actions() noexcept
-    {
-        return ActionsRouteHandler;
-    }
-    [[nodiscard]] AppsRouteHandler& apps() noexcept
-    {
-        return AppsRouteHandler;
-    }
-    [[nodiscard]] AuthenticationRouteHandler& authentication() noexcept
-    {
-        return AuthenticationRouteHandler;
-    }
-    [[nodiscard]] AuthorsRouteHandler& authors() noexcept
-    {
-        return AuthorsRouteHandler;
-    }
-    [[nodiscard]] AutomatedEmailsRouteHandler& automated_emails() noexcept
-    {
-        return AutomatedEmailsRouteHandler;
-    }
-    [[nodiscard]] AutomationsRouteHandler& automations() noexcept
-    {
-        return AutomationsRouteHandler;
-    }
-    [[nodiscard]] CommentsRouteHandler& comments() noexcept
-    {
-        return CommentsRouteHandler;
-    }
-    [[nodiscard]] ConfigRouteHandler& config() noexcept
-    {
-        return ConfigRouteHandler;
-    }
-    [[nodiscard]] CustomThemeSettingsRouteHandler& custom_theme_settings() noexcept
-    {
-        return CustomThemeSettingsRouteHandler;
-    }
-    [[nodiscard]] DbRouteHandler& db() noexcept
-    {
-        return DbRouteHandler;
-    }
-    [[nodiscard]] EmailPreviewsRouteHandler& email_previews() noexcept
-    {
-        return EmailPreviewsRouteHandler;
-    }
-    [[nodiscard]] EmailsRouteHandler& emails() noexcept
-    {
-        return EmailsRouteHandler;
-    }
-    [[nodiscard]] ExportsRouteHandler& exports() noexcept
-    {
-        return ExportsRouteHandler;
-    }
-    [[nodiscard]] FeaturebaseRouteHandler& featurebase() noexcept
-    {
-        return FeaturebaseRouteHandler;
-    }
-    [[nodiscard]] FeedbackRouteHandler& feedback() noexcept
-    {
-        return FeedbackRouteHandler;
-    }
-    [[nodiscard]] FilesRouteHandler& files() noexcept
-    {
-        return FilesRouteHandler;
-    }
-    [[nodiscard]] GiftLinksRouteHandler& gift_links() noexcept
-    {
-        return GiftLinksRouteHandler;
-    }
-    [[nodiscard]] GiftsRouteHandler& gifts() noexcept
-    {
-        return GiftsRouteHandler;
-    }
-    [[nodiscard]] IdentitiesRouteHandler& identities() noexcept
-    {
-        return IdentitiesRouteHandler;
-    }
-    [[nodiscard]] ImagesRouteHandler& images() noexcept
-    {
-        return ImagesRouteHandler;
-    }
-    [[nodiscard]] IncomingRecommendationsRouteHandler& incoming_recommendations() noexcept
-    {
-        return IncomingRecommendationsRouteHandler;
-    }
-    [[nodiscard]] IntegrationsRouteHandler& integrations() noexcept
-    {
-        return IntegrationsRouteHandler;
-    }
-    [[nodiscard]] InvitesRouteHandler& invites() noexcept
-    {
-        return InvitesRouteHandler;
-    }
-    [[nodiscard]] LabelsRouteHandler& labels() noexcept
-    {
-        return LabelsRouteHandler;
-    }
-    [[nodiscard]] LinksRouteHandler& links() noexcept
-    {
-        return LinksRouteHandler;
-    }
-    [[nodiscard]] MediaRouteHandler& media() noexcept
-    {
-        return MediaRouteHandler;
-    }
-    [[nodiscard]] MembersRouteHandler& members() noexcept
-    {
-        return MembersRouteHandler;
-    }
-    [[nodiscard]] MentionsRouteHandler& mentions() noexcept
-    {
-        return MentionsRouteHandler;
-    }
-    [[nodiscard]] NewslettersRouteHandler& newsletters() noexcept
-    {
-        return NewslettersRouteHandler;
-    }
-    [[nodiscard]] NotificationsRouteHandler& notifications() noexcept
-    {
-        return NotificationsRouteHandler;
-    }
-    [[nodiscard]] OembedRouteHandler& oembed() noexcept
-    {
-        return OembedRouteHandler;
-    }
-    [[nodiscard]] OffersRouteHandler& offers() noexcept
-    {
-        return OffersRouteHandler;
-    }
-    [[nodiscard]] PagesRouteHandler& pages() noexcept
-    {
-        return PagesRouteHandler;
-    }
-    [[nodiscard]] PostsRouteHandler& posts() noexcept
-    {
-        return PostsRouteHandler;
-    }
-    [[nodiscard]] RecommendationsRouteHandler& recommendations() noexcept
-    {
-        return RecommendationsRouteHandler;
-    }
-    [[nodiscard]] RedirectsRouteHandler& redirects() noexcept
-    {
-        return RedirectsRouteHandler;
-    }
-    [[nodiscard]] RolesRouteHandler& roles() noexcept
-    {
-        return RolesRouteHandler;
-    }
-    [[nodiscard]] SchedulesRouteHandler& schedules() noexcept
-    {
-        return SchedulesRouteHandler;
-    }
-    [[nodiscard]] SearchIndexRouteHandler& search_index() noexcept
-    {
-        return SearchIndexRouteHandler;
-    }
-    [[nodiscard]] SessionRouteHandler& session() noexcept
-    {
-        return SessionRouteHandler;
-    }
-    [[nodiscard]] SettingsRouteHandler& settings() noexcept
-    {
-        return SettingsRouteHandler;
-    }
-    [[nodiscard]] SiteRouteHandler& site() noexcept
-    {
-        return SiteRouteHandler;
-    }
-    [[nodiscard]] SlackRouteHandler& slack() noexcept
-    {
-        return SlackRouteHandler;
-    }
-    [[nodiscard]] SlugsRouteHandler& slugs() noexcept
-    {
-        return SlugsRouteHandler;
-    }
-    [[nodiscard]] SnippetsRouteHandler& snippets() noexcept
-    {
-        return SnippetsRouteHandler;
-    }
-    [[nodiscard]] StatsRouteHandler& stats() noexcept
-    {
-        return StatsRouteHandler;
-    }
-    [[nodiscard]] StripeRouteHandler& stripe() noexcept
-    {
-        return StripeRouteHandler;
-    }
-    [[nodiscard]] TagsRouteHandler& tags() noexcept
-    {
-        return TagsRouteHandler;
-    }
-    [[nodiscard]] ThemesRouteHandler& themes() noexcept
-    {
-        return ThemesRouteHandler;
-    }
-    [[nodiscard]] TiersRouteHandler& tiers() noexcept
-    {
-        return TiersRouteHandler;
-    }
-    [[nodiscard]] TinybirdRouteHandler& tinybird() noexcept
-    {
-        return TinybirdRouteHandler;
-    }
-    [[nodiscard]] UpgradesRouteHandler& upgrades() noexcept
-    {
-        return UpgradesRouteHandler;
-    }
-    [[nodiscard]] UsersRouteHandler& users() noexcept
-    {
-        return UsersRouteHandler;
-    }
-    [[nodiscard]] WebhooksRouteHandler& webhooks() noexcept
-    {
-        return WebhooksRouteHandler;
-    }
 
 private:
     std::unique_ptr<blog::BlogContext> m_owned_context{};
@@ -876,293 +599,240 @@ private:
     blog::handlers::posts::gift_links_browse::PostsGiftLinksBrowseHandler m_posts_gift_links_browse{m_ctx};
     blog::handlers::posts::gift_links_edit::PostsGiftLinksEditHandler m_posts_gift_links_edit{m_ctx};
     blog::handlers::posts::gift_links_create::PostsGiftLinksCreateHandler m_posts_gift_links_create{m_ctx};
- blog::handlers::pages::browse::BrowseHandler m_pages_browse{m_ctx, m_special};
- blog::handlers::pages::read_by_id::ReadByIdHandler m_pages_read_by_id{m_ctx, m_special};
- blog::handlers::pages::read_by_slug::ReadBySlugHandler m_pages_read_by_slug{m_ctx, m_special};
- blog::handlers::authors::browse::BrowseHandler m_authors_browse{m_ctx, m_special};
- blog::handlers::authors::read_by_id::ReadByIdHandler m_authors_read_by_id{m_ctx, m_special};
- blog::handlers::authors::read_by_slug::ReadBySlugHandler m_authors_read_by_slug{m_ctx, m_special};
- blog::handlers::tags::browse::BrowseHandler m_tags_browse{m_ctx, m_special};
- blog::handlers::tags::read_by_id::ReadByIdHandler m_tags_read_by_id{m_ctx, m_special};
- blog::handlers::tags::read_by_slug::ReadBySlugHandler m_tags_read_by_slug{m_ctx, m_special};
- blog::handlers::settings::browse::BrowseHandler m_settings_browse{m_ctx, m_special};
- blog::handlers::newsletters::browse::BrowseHandler m_newsletters_browse{m_ctx, m_special};
- blog::handlers::tiers::browse::BrowseHandler m_tiers_browse{m_ctx, m_special};
- blog::handlers::offers::read_by_id::ReadByIdHandler m_offers_read_by_id{m_ctx, m_special};
- blog::handlers::recommendations::browse::BrowseHandler m_recommendations_browse{m_ctx, m_special};
- blog::handlers::search_index::search_index_posts_get::SearchIndexPostsGetHandler m_search_index_search_index_posts_get{m_ctx, m_special};
- blog::handlers::search_index::search_index_authors_get::SearchIndexAuthorsGetHandler m_search_index_search_index_authors_get{m_ctx, m_special};
- blog::handlers::search_index::search_index_tags_get::SearchIndexTagsGetHandler m_search_index_search_index_tags_get{m_ctx, m_special};
- blog::handlers::site::browse::BrowseHandler m_site_browse{m_ctx, m_special};
- blog::handlers::config::browse::BrowseHandler m_config_browse{m_ctx, m_special};
- blog::handlers::config::config_featurebase_get::ConfigFeaturebaseGetHandler m_config_config_featurebase_get{m_ctx, m_special};
- blog::handlers::mentions::browse::BrowseHandler m_mentions_browse{m_ctx, m_special};
- blog::handlers::comments::browse::BrowseHandler m_comments_browse{m_ctx, m_special};
- blog::handlers::comments::read_by_id::ReadByIdHandler m_comments_read_by_id{m_ctx, m_special};
- blog::handlers::comments::comment_replies::CommentRepliesHandler m_comments_comment_replies{m_ctx, m_special};
- blog::handlers::comments::comment_reports::CommentReportsHandler m_comments_comment_reports{m_ctx, m_special};
- blog::handlers::comments::comment_likes::CommentLikesHandler m_comments_comment_likes{m_ctx, m_special};
- blog::handlers::comments::comment_dislikes::CommentDislikesHandler m_comments_comment_dislikes{m_ctx, m_special};
- blog::handlers::comments::get_detail::GetDetailHandler m_comments_get_detail{m_ctx, m_special};
- blog::handlers::comments::create::CreateHandler m_comments_create{m_ctx, m_special};
- blog::handlers::comments::edit::EditHandler m_comments_edit{m_ctx, m_special};
- blog::handlers::pages::bulk_destroy::BulkDestroyHandler m_pages_bulk_destroy{m_ctx, m_special};
- blog::handlers::pages::bulk_edit::BulkEditHandler m_pages_bulk_edit{m_ctx, m_special};
- blog::handlers::pages::create::CreateHandler m_pages_create{m_ctx, m_special};
- blog::handlers::pages::edit::EditHandler m_pages_edit{m_ctx, m_special};
- blog::handlers::pages::destroy::DestroyHandler m_pages_destroy{m_ctx, m_special};
- blog::handlers::pages::pages_id_copy_post::PagesIdCopyPostHandler m_pages_pages_id_copy_post{m_ctx, m_special};
- blog::handlers::pages::gift_links_get::GiftLinksGetHandler m_pages_gift_links_get{m_ctx, m_special};
- blog::handlers::pages::gift_links_put::GiftLinksPutHandler m_pages_gift_links_put{m_ctx, m_special};
- blog::handlers::pages::gift_links_post::GiftLinksPostHandler m_pages_gift_links_post{m_ctx, m_special};
- blog::handlers::gift_links::gift_links_remove_all_put::GiftLinksRemoveAllPutHandler m_gift_links_gift_links_remove_all_put{m_ctx, m_special};
- blog::handlers::integrations::browse::BrowseHandler m_integrations_browse{m_ctx, m_special};
- blog::handlers::integrations::read_by_id::ReadByIdHandler m_integrations_read_by_id{m_ctx, m_special};
- blog::handlers::integrations::create::CreateHandler m_integrations_create{m_ctx, m_special};
- blog::handlers::integrations::integrations_id_api_key_keyid_refresh_post::IntegrationsIdApiKeyKeyidRefreshPostHandler m_integrations_integrations_id_api_key_keyid_refresh_post{m_ctx, m_special};
- blog::handlers::integrations::edit::EditHandler m_integrations_edit{m_ctx, m_special};
- blog::handlers::integrations::destroy::DestroyHandler m_integrations_destroy{m_ctx, m_special};
- blog::handlers::schedules::put_detail::PutDetailHandler m_schedules_put_detail{m_ctx, m_special};
- blog::handlers::gifts::gifts_flush_reminders_put::GiftsFlushRemindersPutHandler m_gifts_gifts_flush_reminders_put{m_ctx, m_special};
- blog::handlers::gifts::gifts_flush_deliveries_put::GiftsFlushDeliveriesPutHandler m_gifts_gifts_flush_deliveries_put{m_ctx, m_special};
- blog::handlers::settings::settings_routes_yaml_get::SettingsRoutesYamlGetHandler m_settings_settings_routes_yaml_get{m_ctx, m_special};
- blog::handlers::settings::settings_routes_yaml_post::SettingsRoutesYamlPostHandler m_settings_settings_routes_yaml_post{m_ctx, m_special};
- blog::handlers::settings::bulk_edit::BulkEditHandler m_settings_bulk_edit{m_ctx, m_special};
- blog::handlers::settings::settings_access_code_regenerate_post::SettingsAccessCodeRegeneratePostHandler m_settings_settings_access_code_regenerate_post{m_ctx, m_special};
- blog::handlers::settings::settings_verifications_put::SettingsVerificationsPutHandler m_settings_settings_verifications_put{m_ctx, m_special};
- blog::handlers::settings::settings_stripe_connect_delete::SettingsStripeConnectDeleteHandler m_settings_settings_stripe_connect_delete{m_ctx, m_special};
- blog::handlers::users::browse::BrowseHandler m_users_browse{m_ctx, m_special};
- blog::handlers::users::read_by_id::ReadByIdHandler m_users_read_by_id{m_ctx, m_special};
- blog::handlers::users::read_by_slug::ReadBySlugHandler m_users_read_by_slug{m_ctx, m_special};
- blog::handlers::users::read_by_email::ReadByEmailHandler m_users_read_by_email{m_ctx, m_special};
- blog::handlers::users::users_id_token_get::UsersIdTokenGetHandler m_users_users_id_token_get{m_ctx, m_special};
- blog::handlers::users::users_password_put::UsersPasswordPutHandler m_users_users_password_put{m_ctx, m_special};
- blog::handlers::users::users_owner_put::UsersOwnerPutHandler m_users_users_owner_put{m_ctx, m_special};
- blog::handlers::users::edit::EditHandler m_users_edit{m_ctx, m_special};
- blog::handlers::users::users_id_token_put::UsersIdTokenPutHandler m_users_users_id_token_put{m_ctx, m_special};
- blog::handlers::users::destroy::DestroyHandler m_users_destroy{m_ctx, m_special};
- blog::handlers::tags::create::CreateHandler m_tags_create{m_ctx, m_special};
- blog::handlers::tags::edit::EditHandler m_tags_edit{m_ctx, m_special};
- blog::handlers::tags::destroy::DestroyHandler m_tags_destroy{m_ctx, m_special};
- blog::handlers::tiers::create::CreateHandler m_tiers_create{m_ctx, m_special};
- blog::handlers::tiers::read_by_id::ReadByIdHandler m_tiers_read_by_id{m_ctx, m_special};
- blog::handlers::tiers::edit::EditHandler m_tiers_edit{m_ctx, m_special};
- blog::handlers::stripe::stripe_checkout_config_get::StripeCheckoutConfigGetHandler m_stripe_stripe_checkout_config_get{m_ctx, m_special};
- blog::handlers::stripe::stripe_checkout_config_put::StripeCheckoutConfigPutHandler m_stripe_stripe_checkout_config_put{m_ctx, m_special};
- blog::handlers::stripe::stripe_checkout_preview_post::StripeCheckoutPreviewPostHandler m_stripe_stripe_checkout_preview_post{m_ctx, m_special};
- blog::handlers::stripe::stripe_checkout_branding_get::StripeCheckoutBrandingGetHandler m_stripe_stripe_checkout_branding_get{m_ctx, m_special};
- blog::handlers::members::browse::BrowseHandler m_members_browse{m_ctx, m_special};
- blog::handlers::members::create::CreateHandler m_members_create{m_ctx, m_special};
- blog::handlers::members::bulk_destroy::BulkDestroyHandler m_members_bulk_destroy{m_ctx, m_special};
- blog::handlers::members::bulk_edit::BulkEditHandler m_members_bulk_edit{m_ctx, m_special};
- blog::handlers::offers::browse::BrowseHandler m_offers_browse{m_ctx, m_special};
- blog::handlers::offers::create::CreateHandler m_offers_create{m_ctx, m_special};
- blog::handlers::offers::edit::EditHandler m_offers_edit{m_ctx, m_special};
- blog::handlers::members::members_stats_count_get::MembersStatsCountGetHandler m_members_members_stats_count_get{m_ctx, m_special};
- blog::handlers::members::members_stats_mrr_get::MembersStatsMrrGetHandler m_members_members_stats_mrr_get{m_ctx, m_special};
- blog::handlers::members::members_events_get::MembersEventsGetHandler m_members_members_events_get{m_ctx, m_special};
- blog::handlers::members::members_upload_get::MembersUploadGetHandler m_members_members_upload_get{m_ctx, m_special};
- blog::handlers::members::members_upload_post::MembersUploadPostHandler m_members_members_upload_post{m_ctx, m_special};
- blog::handlers::members::members_stripe_connect_get::MembersStripeConnectGetHandler m_members_members_stripe_connect_get{m_ctx, m_special};
- blog::handlers::members::members_metafields_all::MembersMetafieldsAllHandler m_members_members_metafields_all{m_ctx, m_special};
- blog::handlers::apps::all_collection::AllCollectionHandler m_apps_all_collection{m_ctx, m_special};
- blog::handlers::members::read_by_id::ReadByIdHandler m_members_read_by_id{m_ctx, m_special};
- blog::handlers::members::edit::EditHandler m_members_edit{m_ctx, m_special};
- blog::handlers::members::destroy::DestroyHandler m_members_destroy{m_ctx, m_special};
- blog::handlers::members::members_id_sessions_delete::MembersIdSessionsDeleteHandler m_members_members_id_sessions_delete{m_ctx, m_special};
- blog::handlers::members::members_id_suppression_delete::MembersIdSuppressionDeleteHandler m_members_members_id_suppression_delete{m_ctx, m_special};
- blog::handlers::members::subscriptions_post::SubscriptionsPostHandler m_members_subscriptions_post{m_ctx, m_special};
- blog::handlers::members::put_detail::PutDetailHandler m_members_put_detail{m_ctx, m_special};
- blog::handlers::members::signin_urls::SigninUrlsHandler m_members_signin_urls{m_ctx, m_special};
- blog::handlers::members::members_id_commenting_disable_post::MembersIdCommentingDisablePostHandler m_members_members_id_commenting_disable_post{m_ctx, m_special};
- blog::handlers::members::members_id_commenting_enable_post::MembersIdCommentingEnablePostHandler m_members_members_id_commenting_enable_post{m_ctx, m_special};
- blog::handlers::stats::stats_member_count_get::StatsMemberCountGetHandler m_stats_stats_member_count_get{m_ctx, m_special};
- blog::handlers::stats::stats_mrr_get::StatsMrrGetHandler m_stats_stats_mrr_get{m_ctx, m_special};
- blog::handlers::stats::subscriptions_get::SubscriptionsGetHandler m_stats_subscriptions_get{m_ctx, m_special};
- blog::handlers::stats::stats_referrers_get::StatsReferrersGetHandler m_stats_stats_referrers_get{m_ctx, m_special};
- blog::handlers::stats::stats_posts_id_stats_get::StatsPostsIdStatsGetHandler m_stats_stats_posts_id_stats_get{m_ctx, m_special};
- blog::handlers::stats::stats_top_posts_get::StatsTopPostsGetHandler m_stats_stats_top_posts_get{m_ctx, m_special};
- blog::handlers::stats::stats_top_posts_views_get::StatsTopPostsViewsGetHandler m_stats_stats_top_posts_views_get{m_ctx, m_special};
- blog::handlers::stats::stats_top_content_get::StatsTopContentGetHandler m_stats_stats_top_content_get{m_ctx, m_special};
- blog::handlers::stats::stats_newsletter_stats_get::StatsNewsletterStatsGetHandler m_stats_stats_newsletter_stats_get{m_ctx, m_special};
- blog::handlers::stats::stats_newsletter_basic_stats_get::StatsNewsletterBasicStatsGetHandler m_stats_stats_newsletter_basic_stats_get{m_ctx, m_special};
- blog::handlers::stats::stats_newsletter_click_stats_get::StatsNewsletterClickStatsGetHandler m_stats_stats_newsletter_click_stats_get{m_ctx, m_special};
- blog::handlers::stats::stats_subscriber_count_get::StatsSubscriberCountGetHandler m_stats_stats_subscriber_count_get{m_ctx, m_special};
- blog::handlers::stats::stats_posts_id_top_referrers_get::StatsPostsIdTopReferrersGetHandler m_stats_stats_posts_id_top_referrers_get{m_ctx, m_special};
- blog::handlers::stats::stats_posts_id_growth_get::StatsPostsIdGrowthGetHandler m_stats_stats_posts_id_growth_get{m_ctx, m_special};
- blog::handlers::stats::stats_top_sources_growth_get::StatsTopSourcesGrowthGetHandler m_stats_stats_top_sources_growth_get{m_ctx, m_special};
- blog::handlers::stats::stats_posts_visitor_counts_post::StatsPostsVisitorCountsPostHandler m_stats_stats_posts_visitor_counts_post{m_ctx, m_special};
- blog::handlers::stats::stats_posts_member_counts_post::StatsPostsMemberCountsPostHandler m_stats_stats_posts_member_counts_post{m_ctx, m_special};
- blog::handlers::labels::browse::BrowseHandler m_labels_browse{m_ctx, m_special};
- blog::handlers::labels::read_by_id::ReadByIdHandler m_labels_read_by_id{m_ctx, m_special};
- blog::handlers::labels::read_by_slug::ReadBySlugHandler m_labels_read_by_slug{m_ctx, m_special};
- blog::handlers::labels::create::CreateHandler m_labels_create{m_ctx, m_special};
- blog::handlers::labels::edit::EditHandler m_labels_edit{m_ctx, m_special};
- blog::handlers::labels::destroy::DestroyHandler m_labels_destroy{m_ctx, m_special};
- blog::handlers::automations::browse::BrowseHandler m_automations_browse{m_ctx, m_special};
- blog::handlers::automations::automations_automation_id_actions_action_id_links_get::AutomationsAutomationIdActionsActionIdLinksGetHandler m_automations_automations_automation_id_actions_action_id_links_get{m_ctx, m_special};
- blog::handlers::automations::read_by_id::ReadByIdHandler m_automations_read_by_id{m_ctx, m_special};
- blog::handlers::automations::automations_id_performance_stats_get::AutomationsIdPerformanceStatsGetHandler m_automations_automations_id_performance_stats_get{m_ctx, m_special};
- blog::handlers::automations::automations_id_runs_get::AutomationsIdRunsGetHandler m_automations_automations_id_runs_get{m_ctx, m_special};
- blog::handlers::automations::get_detail::GetDetailHandler m_automations_get_detail{m_ctx, m_special};
- blog::handlers::automations::automations_id_email_preview_post::AutomationsIdEmailPreviewPostHandler m_automations_automations_id_email_preview_post{m_ctx, m_special};
- blog::handlers::automations::automations_id_email_test_post::AutomationsIdEmailTestPostHandler m_automations_automations_id_email_test_post{m_ctx, m_special};
- blog::handlers::automations::automations_poll_put::AutomationsPollPutHandler m_automations_automations_poll_put{m_ctx, m_special};
- blog::handlers::automations::create::CreateHandler m_automations_create{m_ctx, m_special};
- blog::handlers::automations::edit::EditHandler m_automations_edit{m_ctx, m_special};
- blog::handlers::automated_emails::browse::BrowseHandler m_automated_emails_browse{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_design_get::AutomatedEmailsDesignGetHandler m_automated_emails_automated_emails_design_get{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_senders_put::AutomatedEmailsSendersPutHandler m_automated_emails_automated_emails_senders_put{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_verifications_put::AutomatedEmailsVerificationsPutHandler m_automated_emails_automated_emails_verifications_put{m_ctx, m_special};
- blog::handlers::automated_emails::read_by_id::ReadByIdHandler m_automated_emails_read_by_id{m_ctx, m_special};
- blog::handlers::automated_emails::create::CreateHandler m_automated_emails_create{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_design_put::AutomatedEmailsDesignPutHandler m_automated_emails_automated_emails_design_put{m_ctx, m_special};
- blog::handlers::automated_emails::edit::EditHandler m_automated_emails_edit{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_id_preview_post::AutomatedEmailsIdPreviewPostHandler m_automated_emails_automated_emails_id_preview_post{m_ctx, m_special};
- blog::handlers::automated_emails::automated_emails_id_test_post::AutomatedEmailsIdTestPostHandler m_automated_emails_automated_emails_id_test_post{m_ctx, m_special};
- blog::handlers::roles::browse::BrowseHandler m_roles_browse{m_ctx, m_special};
- blog::handlers::slugs::get_detail::GetDetailHandler m_slugs_get_detail{m_ctx, m_special};
- blog::handlers::themes::browse::BrowseHandler m_themes_browse{m_ctx, m_special};
- blog::handlers::themes::themes_name_download_get::ThemesNameDownloadGetHandler m_themes_themes_name_download_get{m_ctx, m_special};
- blog::handlers::themes::themes_active_get::ThemesActiveGetHandler m_themes_themes_active_get{m_ctx, m_special};
- blog::handlers::themes::themes_upload_post::ThemesUploadPostHandler m_themes_themes_upload_post{m_ctx, m_special};
- blog::handlers::themes::themes_install_post::ThemesInstallPostHandler m_themes_themes_install_post{m_ctx, m_special};
- blog::handlers::themes::themes_name_activate_put::ThemesNameActivatePutHandler m_themes_themes_name_activate_put{m_ctx, m_special};
- blog::handlers::themes::destroy::DestroyHandler m_themes_destroy{m_ctx, m_special};
- blog::handlers::notifications::browse::BrowseHandler m_notifications_browse{m_ctx, m_special};
- blog::handlers::notifications::create::CreateHandler m_notifications_create{m_ctx, m_special};
- blog::handlers::notifications::destroy::DestroyHandler m_notifications_destroy{m_ctx, m_special};
- blog::handlers::db::browse::BrowseHandler m_db_browse{m_ctx, m_special};
- blog::handlers::db::create::CreateHandler m_db_create{m_ctx, m_special};
- blog::handlers::db::bulk_destroy::BulkDestroyHandler m_db_bulk_destroy{m_ctx, m_special};
- blog::handlers::db::db_backup_post::DbBackupPostHandler m_db_db_backup_post{m_ctx, m_special};
- blog::handlers::db::db_media_inline_post::DbMediaInlinePostHandler m_db_db_media_inline_post{m_ctx, m_special};
- blog::handlers::exports::exports_download_get::ExportsDownloadGetHandler m_exports_exports_download_get{m_ctx, m_special};
- blog::handlers::exports::create::CreateHandler m_exports_create{m_ctx, m_special};
- blog::handlers::slack::slack_test_post::SlackTestPostHandler m_slack_slack_test_post{m_ctx, m_special};
- blog::handlers::tinybird::tinybird_token_get::TinybirdTokenGetHandler m_tinybird_tinybird_token_get{m_ctx, m_special};
- blog::handlers::featurebase::featurebase_token_get::FeaturebaseTokenGetHandler m_featurebase_featurebase_token_get{m_ctx, m_special};
- blog::handlers::session::create::CreateHandler m_session_create{m_ctx, m_special};
- blog::handlers::session::bulk_destroy::BulkDestroyHandler m_session_bulk_destroy{m_ctx, m_special};
- blog::handlers::session::session_verify_post::SessionVerifyPostHandler m_session_session_verify_post{m_ctx, m_special};
- blog::handlers::session::session_verify_put::SessionVerifyPutHandler m_session_session_verify_put{m_ctx, m_special};
- blog::handlers::identities::browse::BrowseHandler m_identities_browse{m_ctx, m_special};
- blog::handlers::authentication::authentication_password_reset_post::AuthenticationPasswordResetPostHandler m_authentication_authentication_password_reset_post{m_ctx, m_special};
- blog::handlers::authentication::authentication_password_reset_put::AuthenticationPasswordResetPutHandler m_authentication_authentication_password_reset_put{m_ctx, m_special};
- blog::handlers::authentication::authentication_invitation_post::AuthenticationInvitationPostHandler m_authentication_authentication_invitation_post{m_ctx, m_special};
- blog::handlers::authentication::authentication_invitation_get::AuthenticationInvitationGetHandler m_authentication_authentication_invitation_get{m_ctx, m_special};
- blog::handlers::authentication::authentication_setup_post::AuthenticationSetupPostHandler m_authentication_authentication_setup_post{m_ctx, m_special};
- blog::handlers::authentication::authentication_setup_put::AuthenticationSetupPutHandler m_authentication_authentication_setup_put{m_ctx, m_special};
- blog::handlers::authentication::authentication_setup_get::AuthenticationSetupGetHandler m_authentication_authentication_setup_get{m_ctx, m_special};
- blog::handlers::authentication::authentication_reset_post::AuthenticationResetPostHandler m_authentication_authentication_reset_post{m_ctx, m_special};
- blog::handlers::images::images_upload_post::ImagesUploadPostHandler m_images_images_upload_post{m_ctx, m_special};
- blog::handlers::media::media_upload_post::MediaUploadPostHandler m_media_media_upload_post{m_ctx, m_special};
- blog::handlers::media::media_thumbnail_upload_put::MediaThumbnailUploadPutHandler m_media_media_thumbnail_upload_put{m_ctx, m_special};
- blog::handlers::files::files_upload_post::FilesUploadPostHandler m_files_files_upload_post{m_ctx, m_special};
- blog::handlers::invites::browse::BrowseHandler m_invites_browse{m_ctx, m_special};
- blog::handlers::invites::read_by_id::ReadByIdHandler m_invites_read_by_id{m_ctx, m_special};
- blog::handlers::invites::create::CreateHandler m_invites_create{m_ctx, m_special};
- blog::handlers::invites::destroy::DestroyHandler m_invites_destroy{m_ctx, m_special};
- blog::handlers::redirects::redirects_download_get::RedirectsDownloadGetHandler m_redirects_redirects_download_get{m_ctx, m_special};
- blog::handlers::redirects::redirects_upload_post::RedirectsUploadPostHandler m_redirects_redirects_upload_post{m_ctx, m_special};
- blog::handlers::upgrades::browse::BrowseHandler m_upgrades_browse{m_ctx, m_special};
- blog::handlers::upgrades::create::CreateHandler m_upgrades_create{m_ctx, m_special};
- blog::handlers::upgrades::read_by_id::ReadByIdHandler m_upgrades_read_by_id{m_ctx, m_special};
- blog::handlers::webhooks::create::CreateHandler m_webhooks_create{m_ctx, m_special};
- blog::handlers::webhooks::edit::EditHandler m_webhooks_edit{m_ctx, m_special};
- blog::handlers::webhooks::destroy::DestroyHandler m_webhooks_destroy{m_ctx, m_special};
- blog::handlers::oembed::browse::BrowseHandler m_oembed_browse{m_ctx, m_special};
- blog::handlers::actions::browse::BrowseHandler m_actions_browse{m_ctx, m_special};
- blog::handlers::email_previews::get_detail::GetDetailHandler m_email_previews_get_detail{m_ctx, m_special};
- blog::handlers::email_previews::post_detail::PostDetailHandler m_email_previews_post_detail{m_ctx, m_special};
- blog::handlers::emails::browse::BrowseHandler m_emails_browse{m_ctx, m_special};
- blog::handlers::emails::read_by_id::ReadByIdHandler m_emails_read_by_id{m_ctx, m_special};
- blog::handlers::emails::emails_id_status_get::EmailsIdStatusGetHandler m_emails_emails_id_status_get{m_ctx, m_special};
- blog::handlers::emails::emails_id_retry_put::EmailsIdRetryPutHandler m_emails_emails_id_retry_put{m_ctx, m_special};
- blog::handlers::emails::batches_get::BatchesGetHandler m_emails_batches_get{m_ctx, m_special};
- blog::handlers::emails::recipient_failures_get::RecipientFailuresGetHandler m_emails_recipient_failures_get{m_ctx, m_special};
- blog::handlers::emails::analytics_get::AnalyticsGetHandler m_emails_analytics_get{m_ctx, m_special};
- blog::handlers::emails::analytics_put::AnalyticsPutHandler m_emails_analytics_put{m_ctx, m_special};
- blog::handlers::emails::analytics_delete::AnalyticsDeleteHandler m_emails_analytics_delete{m_ctx, m_special};
- blog::handlers::snippets::browse::BrowseHandler m_snippets_browse{m_ctx, m_special};
- blog::handlers::snippets::read_by_id::ReadByIdHandler m_snippets_read_by_id{m_ctx, m_special};
- blog::handlers::snippets::create::CreateHandler m_snippets_create{m_ctx, m_special};
- blog::handlers::snippets::edit::EditHandler m_snippets_edit{m_ctx, m_special};
- blog::handlers::snippets::destroy::DestroyHandler m_snippets_destroy{m_ctx, m_special};
- blog::handlers::custom_theme_settings::browse::BrowseHandler m_custom_theme_settings_browse{m_ctx, m_special};
- blog::handlers::custom_theme_settings::bulk_edit::BulkEditHandler m_custom_theme_settings_bulk_edit{m_ctx, m_special};
- blog::handlers::newsletters::read_by_id::ReadByIdHandler m_newsletters_read_by_id{m_ctx, m_special};
- blog::handlers::newsletters::create::CreateHandler m_newsletters_create{m_ctx, m_special};
- blog::handlers::newsletters::newsletters_verifications_put::NewslettersVerificationsPutHandler m_newsletters_newsletters_verifications_put{m_ctx, m_special};
- blog::handlers::newsletters::edit::EditHandler m_newsletters_edit{m_ctx, m_special};
- blog::handlers::links::browse::BrowseHandler m_links_browse{m_ctx, m_special};
- blog::handlers::links::bulk_edit::BulkEditHandler m_links_bulk_edit{m_ctx, m_special};
- blog::handlers::recommendations::read_by_id::ReadByIdHandler m_recommendations_read_by_id{m_ctx, m_special};
- blog::handlers::recommendations::create::CreateHandler m_recommendations_create{m_ctx, m_special};
- blog::handlers::recommendations::recommendations_check_post::RecommendationsCheckPostHandler m_recommendations_recommendations_check_post{m_ctx, m_special};
- blog::handlers::recommendations::edit::EditHandler m_recommendations_edit{m_ctx, m_special};
- blog::handlers::recommendations::destroy::DestroyHandler m_recommendations_destroy{m_ctx, m_special};
- blog::handlers::incoming_recommendations::browse::BrowseHandler m_incoming_recommendations_browse{m_ctx, m_special};
- blog::handlers::feedback::read_by_id::ReadByIdHandler m_feedback_read_by_id{m_ctx, m_special};
- blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler m_search_index_search_index_pages_get{m_ctx, m_special};
- blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler m_search_index_search_index_users_get{m_ctx, m_special};
-    SpecialEndpoints m_special{};
+ blog::handlers::pages::browse::BrowseHandler m_pages_browse{m_ctx};
+ blog::handlers::pages::read_by_id::ReadByIdHandler m_pages_read_by_id{m_ctx};
+ blog::handlers::pages::read_by_slug::ReadBySlugHandler m_pages_read_by_slug{m_ctx};
+ blog::handlers::authors::browse::BrowseHandler m_authors_browse{m_ctx};
+ blog::handlers::authors::read_by_id::ReadByIdHandler m_authors_read_by_id{m_ctx};
+ blog::handlers::authors::read_by_slug::ReadBySlugHandler m_authors_read_by_slug{m_ctx};
+ blog::handlers::tags::browse::BrowseHandler m_tags_browse{m_ctx};
+ blog::handlers::tags::read_by_id::ReadByIdHandler m_tags_read_by_id{m_ctx};
+ blog::handlers::tags::read_by_slug::ReadBySlugHandler m_tags_read_by_slug{m_ctx};
+ blog::handlers::settings::browse::BrowseHandler m_settings_browse{m_ctx};
+ blog::handlers::newsletters::browse::BrowseHandler m_newsletters_browse{m_ctx};
+ blog::handlers::tiers::browse::BrowseHandler m_tiers_browse{m_ctx};
+ blog::handlers::offers::read_by_id::ReadByIdHandler m_offers_read_by_id{m_ctx};
+ blog::handlers::recommendations::browse::BrowseHandler m_recommendations_browse{m_ctx};
+ blog::handlers::search_index::search_index_posts_get::SearchIndexPostsGetHandler m_search_index_search_index_posts_get{m_ctx};
+ blog::handlers::search_index::search_index_authors_get::SearchIndexAuthorsGetHandler m_search_index_search_index_authors_get{m_ctx};
+ blog::handlers::search_index::search_index_tags_get::SearchIndexTagsGetHandler m_search_index_search_index_tags_get{m_ctx};
+ blog::handlers::site::browse::BrowseHandler m_site_browse{m_ctx};
+ blog::handlers::config::browse::BrowseHandler m_config_browse{m_ctx};
+ blog::handlers::config::config_featurebase_get::ConfigFeaturebaseGetHandler m_config_config_featurebase_get{m_ctx};
+ blog::handlers::mentions::browse::BrowseHandler m_mentions_browse{m_ctx};
+ blog::handlers::comments::browse::BrowseHandler m_comments_browse{m_ctx};
+ blog::handlers::comments::read_by_id::ReadByIdHandler m_comments_read_by_id{m_ctx};
+ blog::handlers::comments::comment_replies::CommentRepliesHandler m_comments_comment_replies{m_ctx};
+ blog::handlers::comments::comment_reports::CommentReportsHandler m_comments_comment_reports{m_ctx};
+ blog::handlers::comments::comment_likes::CommentLikesHandler m_comments_comment_likes{m_ctx};
+ blog::handlers::comments::comment_dislikes::CommentDislikesHandler m_comments_comment_dislikes{m_ctx};
+ blog::handlers::comments::get_detail::GetDetailHandler m_comments_get_detail{m_ctx};
+ blog::handlers::comments::create::CreateHandler m_comments_create{m_ctx};
+ blog::handlers::comments::edit::EditHandler m_comments_edit{m_ctx};
+ blog::handlers::pages::bulk_destroy::BulkDestroyHandler m_pages_bulk_destroy{m_ctx};
+ blog::handlers::pages::bulk_edit::BulkEditHandler m_pages_bulk_edit{m_ctx};
+ blog::handlers::pages::create::CreateHandler m_pages_create{m_ctx};
+ blog::handlers::pages::edit::EditHandler m_pages_edit{m_ctx};
+ blog::handlers::pages::destroy::DestroyHandler m_pages_destroy{m_ctx};
+ blog::handlers::pages::pages_id_copy_post::PagesIdCopyPostHandler m_pages_pages_id_copy_post{m_ctx};
+ blog::handlers::pages::gift_links_get::GiftLinksGetHandler m_pages_gift_links_get{m_ctx};
+ blog::handlers::pages::gift_links_put::GiftLinksPutHandler m_pages_gift_links_put{m_ctx};
+ blog::handlers::pages::gift_links_post::GiftLinksPostHandler m_pages_gift_links_post{m_ctx};
+ blog::handlers::gift_links::gift_links_remove_all_put::GiftLinksRemoveAllPutHandler m_gift_links_gift_links_remove_all_put{m_ctx};
+ blog::handlers::integrations::browse::BrowseHandler m_integrations_browse{m_ctx};
+ blog::handlers::integrations::read_by_id::ReadByIdHandler m_integrations_read_by_id{m_ctx};
+ blog::handlers::integrations::create::CreateHandler m_integrations_create{m_ctx};
+ blog::handlers::integrations::integrations_id_api_key_keyid_refresh_post::IntegrationsIdApiKeyKeyidRefreshPostHandler m_integrations_integrations_id_api_key_keyid_refresh_post{m_ctx};
+ blog::handlers::integrations::edit::EditHandler m_integrations_edit{m_ctx};
+ blog::handlers::integrations::destroy::DestroyHandler m_integrations_destroy{m_ctx};
+ blog::handlers::schedules::put_detail::PutDetailHandler m_schedules_put_detail{m_ctx};
+ blog::handlers::gifts::gifts_flush_reminders_put::GiftsFlushRemindersPutHandler m_gifts_gifts_flush_reminders_put{m_ctx};
+ blog::handlers::gifts::gifts_flush_deliveries_put::GiftsFlushDeliveriesPutHandler m_gifts_gifts_flush_deliveries_put{m_ctx};
+ blog::handlers::settings::settings_routes_yaml_get::SettingsRoutesYamlGetHandler m_settings_settings_routes_yaml_get{m_ctx};
+ blog::handlers::settings::settings_routes_yaml_post::SettingsRoutesYamlPostHandler m_settings_settings_routes_yaml_post{m_ctx};
+ blog::handlers::settings::bulk_edit::BulkEditHandler m_settings_bulk_edit{m_ctx};
+ blog::handlers::settings::settings_access_code_regenerate_post::SettingsAccessCodeRegeneratePostHandler m_settings_settings_access_code_regenerate_post{m_ctx};
+ blog::handlers::settings::settings_verifications_put::SettingsVerificationsPutHandler m_settings_settings_verifications_put{m_ctx};
+ blog::handlers::settings::settings_stripe_connect_delete::SettingsStripeConnectDeleteHandler m_settings_settings_stripe_connect_delete{m_ctx};
+ blog::handlers::users::browse::BrowseHandler m_users_browse{m_ctx};
+ blog::handlers::users::read_by_id::ReadByIdHandler m_users_read_by_id{m_ctx};
+ blog::handlers::users::read_by_slug::ReadBySlugHandler m_users_read_by_slug{m_ctx};
+ blog::handlers::users::read_by_email::ReadByEmailHandler m_users_read_by_email{m_ctx};
+ blog::handlers::users::users_id_token_get::UsersIdTokenGetHandler m_users_users_id_token_get{m_ctx};
+ blog::handlers::users::users_password_put::UsersPasswordPutHandler m_users_users_password_put{m_ctx};
+ blog::handlers::users::users_owner_put::UsersOwnerPutHandler m_users_users_owner_put{m_ctx};
+ blog::handlers::users::edit::EditHandler m_users_edit{m_ctx};
+ blog::handlers::users::users_id_token_put::UsersIdTokenPutHandler m_users_users_id_token_put{m_ctx};
+ blog::handlers::users::destroy::DestroyHandler m_users_destroy{m_ctx};
+ blog::handlers::tags::create::CreateHandler m_tags_create{m_ctx};
+ blog::handlers::tags::edit::EditHandler m_tags_edit{m_ctx};
+ blog::handlers::tags::destroy::DestroyHandler m_tags_destroy{m_ctx};
+ blog::handlers::tiers::create::CreateHandler m_tiers_create{m_ctx};
+ blog::handlers::tiers::read_by_id::ReadByIdHandler m_tiers_read_by_id{m_ctx};
+ blog::handlers::tiers::edit::EditHandler m_tiers_edit{m_ctx};
+ blog::handlers::stripe::stripe_checkout_config_get::StripeCheckoutConfigGetHandler m_stripe_stripe_checkout_config_get{m_ctx, m_stripe};
+ blog::handlers::stripe::stripe_checkout_config_put::StripeCheckoutConfigPutHandler m_stripe_stripe_checkout_config_put{m_ctx, m_stripe};
+ blog::handlers::stripe::stripe_checkout_preview_post::StripeCheckoutPreviewPostHandler m_stripe_stripe_checkout_preview_post{m_ctx, m_stripe};
+ blog::handlers::stripe::stripe_checkout_branding_get::StripeCheckoutBrandingGetHandler m_stripe_stripe_checkout_branding_get{m_ctx, m_stripe};
+ blog::handlers::members::browse::BrowseHandler m_members_browse{m_ctx};
+ blog::handlers::members::create::CreateHandler m_members_create{m_ctx};
+ blog::handlers::members::bulk_destroy::BulkDestroyHandler m_members_bulk_destroy{m_ctx};
+ blog::handlers::members::bulk_edit::BulkEditHandler m_members_bulk_edit{m_ctx};
+ blog::handlers::offers::browse::BrowseHandler m_offers_browse{m_ctx};
+ blog::handlers::offers::create::CreateHandler m_offers_create{m_ctx};
+ blog::handlers::offers::edit::EditHandler m_offers_edit{m_ctx};
+ blog::handlers::members::members_stats_count_get::MembersStatsCountGetHandler m_members_members_stats_count_get{m_ctx};
+ blog::handlers::members::members_stats_mrr_get::MembersStatsMrrGetHandler m_members_members_stats_mrr_get{m_ctx};
+ blog::handlers::members::members_events_get::MembersEventsGetHandler m_members_members_events_get{m_ctx};
+ blog::handlers::members::members_upload_get::MembersUploadGetHandler m_members_members_upload_get{m_ctx};
+ blog::handlers::members::members_upload_post::MembersUploadPostHandler m_members_members_upload_post{m_ctx};
+ blog::handlers::members::members_stripe_connect_get::MembersStripeConnectGetHandler m_members_members_stripe_connect_get{m_ctx};
+ blog::handlers::members::members_metafields_all::MembersMetafieldsAllHandler m_members_members_metafields_all{m_ctx, m_members_state};
+ blog::handlers::apps::all_collection::AllCollectionHandler m_apps_all_collection{m_ctx};
+ blog::handlers::members::read_by_id::ReadByIdHandler m_members_read_by_id{m_ctx};
+ blog::handlers::members::edit::EditHandler m_members_edit{m_ctx};
+ blog::handlers::members::destroy::DestroyHandler m_members_destroy{m_ctx};
+ blog::handlers::members::members_id_sessions_delete::MembersIdSessionsDeleteHandler m_members_members_id_sessions_delete{m_ctx};
+ blog::handlers::members::members_id_suppression_delete::MembersIdSuppressionDeleteHandler m_members_members_id_suppression_delete{m_ctx};
+ blog::handlers::members::subscriptions_post::SubscriptionsPostHandler m_members_subscriptions_post{m_ctx, m_members_state};
+ blog::handlers::members::put_detail::PutDetailHandler m_members_put_detail{m_ctx, m_members_state};
+ blog::handlers::members::signin_urls::SigninUrlsHandler m_members_signin_urls{m_ctx, m_members_state};
+ blog::handlers::members::members_id_commenting_disable_post::MembersIdCommentingDisablePostHandler m_members_members_id_commenting_disable_post{m_ctx, m_members_state};
+ blog::handlers::members::members_id_commenting_enable_post::MembersIdCommentingEnablePostHandler m_members_members_id_commenting_enable_post{m_ctx, m_members_state};
+ blog::handlers::stats::stats_member_count_get::StatsMemberCountGetHandler m_stats_stats_member_count_get{m_ctx};
+ blog::handlers::stats::stats_mrr_get::StatsMrrGetHandler m_stats_stats_mrr_get{m_ctx};
+ blog::handlers::stats::subscriptions_get::SubscriptionsGetHandler m_stats_subscriptions_get{m_ctx};
+ blog::handlers::stats::stats_referrers_get::StatsReferrersGetHandler m_stats_stats_referrers_get{m_ctx};
+ blog::handlers::stats::stats_posts_id_stats_get::StatsPostsIdStatsGetHandler m_stats_stats_posts_id_stats_get{m_ctx};
+ blog::handlers::stats::stats_top_posts_get::StatsTopPostsGetHandler m_stats_stats_top_posts_get{m_ctx};
+ blog::handlers::stats::stats_top_posts_views_get::StatsTopPostsViewsGetHandler m_stats_stats_top_posts_views_get{m_ctx};
+ blog::handlers::stats::stats_top_content_get::StatsTopContentGetHandler m_stats_stats_top_content_get{m_ctx};
+ blog::handlers::stats::stats_newsletter_stats_get::StatsNewsletterStatsGetHandler m_stats_stats_newsletter_stats_get{m_ctx};
+ blog::handlers::stats::stats_newsletter_basic_stats_get::StatsNewsletterBasicStatsGetHandler m_stats_stats_newsletter_basic_stats_get{m_ctx};
+ blog::handlers::stats::stats_newsletter_click_stats_get::StatsNewsletterClickStatsGetHandler m_stats_stats_newsletter_click_stats_get{m_ctx};
+ blog::handlers::stats::stats_subscriber_count_get::StatsSubscriberCountGetHandler m_stats_stats_subscriber_count_get{m_ctx};
+ blog::handlers::stats::stats_posts_id_top_referrers_get::StatsPostsIdTopReferrersGetHandler m_stats_stats_posts_id_top_referrers_get{m_ctx};
+ blog::handlers::stats::stats_posts_id_growth_get::StatsPostsIdGrowthGetHandler m_stats_stats_posts_id_growth_get{m_ctx};
+ blog::handlers::stats::stats_top_sources_growth_get::StatsTopSourcesGrowthGetHandler m_stats_stats_top_sources_growth_get{m_ctx};
+ blog::handlers::stats::stats_posts_visitor_counts_post::StatsPostsVisitorCountsPostHandler m_stats_stats_posts_visitor_counts_post{m_ctx};
+ blog::handlers::stats::stats_posts_member_counts_post::StatsPostsMemberCountsPostHandler m_stats_stats_posts_member_counts_post{m_ctx};
+ blog::handlers::labels::browse::BrowseHandler m_labels_browse{m_ctx};
+ blog::handlers::labels::read_by_id::ReadByIdHandler m_labels_read_by_id{m_ctx};
+ blog::handlers::labels::read_by_slug::ReadBySlugHandler m_labels_read_by_slug{m_ctx};
+ blog::handlers::labels::create::CreateHandler m_labels_create{m_ctx};
+ blog::handlers::labels::edit::EditHandler m_labels_edit{m_ctx};
+ blog::handlers::labels::destroy::DestroyHandler m_labels_destroy{m_ctx};
+ blog::handlers::automations::browse::BrowseHandler m_automations_browse{m_ctx};
+ blog::handlers::automations::automations_automation_id_actions_action_id_links_get::AutomationsAutomationIdActionsActionIdLinksGetHandler m_automations_automations_automation_id_actions_action_id_links_get{m_ctx};
+ blog::handlers::automations::read_by_id::ReadByIdHandler m_automations_read_by_id{m_ctx};
+ blog::handlers::automations::automations_id_performance_stats_get::AutomationsIdPerformanceStatsGetHandler m_automations_automations_id_performance_stats_get{m_ctx};
+ blog::handlers::automations::automations_id_runs_get::AutomationsIdRunsGetHandler m_automations_automations_id_runs_get{m_ctx};
+ blog::handlers::automations::get_detail::GetDetailHandler m_automations_get_detail{m_ctx};
+ blog::handlers::automations::automations_id_email_preview_post::AutomationsIdEmailPreviewPostHandler m_automations_automations_id_email_preview_post{m_ctx, m_automations_state};
+ blog::handlers::automations::automations_id_email_test_post::AutomationsIdEmailTestPostHandler m_automations_automations_id_email_test_post{m_ctx, m_automations_state};
+ blog::handlers::automations::automations_poll_put::AutomationsPollPutHandler m_automations_automations_poll_put{m_ctx};
+ blog::handlers::automations::create::CreateHandler m_automations_create{m_ctx};
+ blog::handlers::automations::edit::EditHandler m_automations_edit{m_ctx};
+ blog::handlers::automated_emails::browse::BrowseHandler m_automated_emails_browse{m_ctx};
+ blog::handlers::automated_emails::automated_emails_design_get::AutomatedEmailsDesignGetHandler m_automated_emails_automated_emails_design_get{m_ctx};
+ blog::handlers::automated_emails::automated_emails_senders_put::AutomatedEmailsSendersPutHandler m_automated_emails_automated_emails_senders_put{m_ctx};
+ blog::handlers::automated_emails::automated_emails_verifications_put::AutomatedEmailsVerificationsPutHandler m_automated_emails_automated_emails_verifications_put{m_ctx};
+ blog::handlers::automated_emails::read_by_id::ReadByIdHandler m_automated_emails_read_by_id{m_ctx};
+ blog::handlers::automated_emails::create::CreateHandler m_automated_emails_create{m_ctx};
+ blog::handlers::automated_emails::automated_emails_design_put::AutomatedEmailsDesignPutHandler m_automated_emails_automated_emails_design_put{m_ctx};
+ blog::handlers::automated_emails::edit::EditHandler m_automated_emails_edit{m_ctx};
+ blog::handlers::automated_emails::automated_emails_id_preview_post::AutomatedEmailsIdPreviewPostHandler m_automated_emails_automated_emails_id_preview_post{m_ctx};
+ blog::handlers::automated_emails::automated_emails_id_test_post::AutomatedEmailsIdTestPostHandler m_automated_emails_automated_emails_id_test_post{m_ctx};
+ blog::handlers::roles::browse::BrowseHandler m_roles_browse{m_ctx};
+ blog::handlers::slugs::get_detail::GetDetailHandler m_slugs_get_detail{m_ctx};
+ blog::handlers::themes::browse::BrowseHandler m_themes_browse{m_ctx};
+ blog::handlers::themes::themes_name_download_get::ThemesNameDownloadGetHandler m_themes_themes_name_download_get{m_ctx};
+ blog::handlers::themes::themes_active_get::ThemesActiveGetHandler m_themes_themes_active_get{m_ctx};
+ blog::handlers::themes::themes_upload_post::ThemesUploadPostHandler m_themes_themes_upload_post{m_ctx};
+ blog::handlers::themes::themes_install_post::ThemesInstallPostHandler m_themes_themes_install_post{m_ctx};
+ blog::handlers::themes::themes_name_activate_put::ThemesNameActivatePutHandler m_themes_themes_name_activate_put{m_ctx};
+ blog::handlers::themes::destroy::DestroyHandler m_themes_destroy{m_ctx};
+ blog::handlers::notifications::browse::BrowseHandler m_notifications_browse{m_ctx};
+ blog::handlers::notifications::create::CreateHandler m_notifications_create{m_ctx};
+ blog::handlers::notifications::destroy::DestroyHandler m_notifications_destroy{m_ctx};
+ blog::handlers::db::browse::BrowseHandler m_db_browse{m_ctx};
+ blog::handlers::db::create::CreateHandler m_db_create{m_ctx};
+ blog::handlers::db::bulk_destroy::BulkDestroyHandler m_db_bulk_destroy{m_ctx};
+ blog::handlers::db::db_backup_post::DbBackupPostHandler m_db_db_backup_post{m_ctx};
+ blog::handlers::db::db_media_inline_post::DbMediaInlinePostHandler m_db_db_media_inline_post{m_ctx};
+ blog::handlers::exports::exports_download_get::ExportsDownloadGetHandler m_exports_exports_download_get{m_ctx};
+ blog::handlers::exports::create::CreateHandler m_exports_create{m_ctx};
+ blog::handlers::slack::slack_test_post::SlackTestPostHandler m_slack_slack_test_post{m_ctx};
+ blog::handlers::tinybird::tinybird_token_get::TinybirdTokenGetHandler m_tinybird_tinybird_token_get{m_ctx};
+ blog::handlers::featurebase::featurebase_token_get::FeaturebaseTokenGetHandler m_featurebase_featurebase_token_get{m_ctx};
+ blog::handlers::session::create::CreateHandler m_session_create{m_ctx};
+ blog::handlers::session::bulk_destroy::BulkDestroyHandler m_session_bulk_destroy{m_ctx};
+ blog::handlers::session::session_verify_post::SessionVerifyPostHandler m_session_session_verify_post{m_ctx};
+ blog::handlers::session::session_verify_put::SessionVerifyPutHandler m_session_session_verify_put{m_ctx};
+ blog::handlers::identities::browse::BrowseHandler m_identities_browse{m_ctx};
+ blog::handlers::authentication::authentication_password_reset_post::AuthenticationPasswordResetPostHandler m_authentication_authentication_password_reset_post{m_ctx};
+ blog::handlers::authentication::authentication_password_reset_put::AuthenticationPasswordResetPutHandler m_authentication_authentication_password_reset_put{m_ctx};
+ blog::handlers::authentication::authentication_invitation_post::AuthenticationInvitationPostHandler m_authentication_authentication_invitation_post{m_ctx};
+ blog::handlers::authentication::authentication_invitation_get::AuthenticationInvitationGetHandler m_authentication_authentication_invitation_get{m_ctx};
+ blog::handlers::authentication::authentication_setup_post::AuthenticationSetupPostHandler m_authentication_authentication_setup_post{m_ctx};
+ blog::handlers::authentication::authentication_setup_put::AuthenticationSetupPutHandler m_authentication_authentication_setup_put{m_ctx};
+ blog::handlers::authentication::authentication_setup_get::AuthenticationSetupGetHandler m_authentication_authentication_setup_get{m_ctx};
+ blog::handlers::authentication::authentication_reset_post::AuthenticationResetPostHandler m_authentication_authentication_reset_post{m_ctx};
+ blog::handlers::images::images_upload_post::ImagesUploadPostHandler m_images_images_upload_post{m_ctx};
+ blog::handlers::media::media_upload_post::MediaUploadPostHandler m_media_media_upload_post{m_ctx};
+ blog::handlers::media::media_thumbnail_upload_put::MediaThumbnailUploadPutHandler m_media_media_thumbnail_upload_put{m_ctx};
+ blog::handlers::files::files_upload_post::FilesUploadPostHandler m_files_files_upload_post{m_ctx};
+ blog::handlers::invites::browse::BrowseHandler m_invites_browse{m_ctx};
+ blog::handlers::invites::read_by_id::ReadByIdHandler m_invites_read_by_id{m_ctx};
+ blog::handlers::invites::create::CreateHandler m_invites_create{m_ctx};
+ blog::handlers::invites::destroy::DestroyHandler m_invites_destroy{m_ctx};
+ blog::handlers::redirects::redirects_download_get::RedirectsDownloadGetHandler m_redirects_redirects_download_get{m_ctx};
+ blog::handlers::redirects::redirects_upload_post::RedirectsUploadPostHandler m_redirects_redirects_upload_post{m_ctx};
+ blog::handlers::upgrades::browse::BrowseHandler m_upgrades_browse{m_ctx};
+ blog::handlers::upgrades::create::CreateHandler m_upgrades_create{m_ctx};
+ blog::handlers::upgrades::read_by_id::ReadByIdHandler m_upgrades_read_by_id{m_ctx};
+ blog::handlers::webhooks::create::CreateHandler m_webhooks_create{m_ctx};
+ blog::handlers::webhooks::edit::EditHandler m_webhooks_edit{m_ctx};
+ blog::handlers::webhooks::destroy::DestroyHandler m_webhooks_destroy{m_ctx};
+ blog::handlers::oembed::browse::BrowseHandler m_oembed_browse{m_ctx};
+ blog::handlers::actions::browse::BrowseHandler m_actions_browse{m_ctx};
+ blog::handlers::email_previews::get_detail::GetDetailHandler m_email_previews_get_detail{m_ctx};
+ blog::handlers::email_previews::post_detail::PostDetailHandler m_email_previews_post_detail{m_ctx};
+ blog::handlers::emails::browse::BrowseHandler m_emails_browse{m_ctx};
+ blog::handlers::emails::read_by_id::ReadByIdHandler m_emails_read_by_id{m_ctx};
+ blog::handlers::emails::emails_id_status_get::EmailsIdStatusGetHandler m_emails_emails_id_status_get{m_ctx};
+ blog::handlers::emails::emails_id_retry_put::EmailsIdRetryPutHandler m_emails_emails_id_retry_put{m_ctx};
+ blog::handlers::emails::batches_get::BatchesGetHandler m_emails_batches_get{m_ctx, m_emails_state};
+ blog::handlers::emails::recipient_failures_get::RecipientFailuresGetHandler m_emails_recipient_failures_get{m_ctx, m_emails_state};
+ blog::handlers::emails::analytics_get::AnalyticsGetHandler m_emails_analytics_get{m_ctx, m_emails_state};
+ blog::handlers::emails::analytics_put::AnalyticsPutHandler m_emails_analytics_put{m_ctx, m_emails_state};
+ blog::handlers::emails::analytics_delete::AnalyticsDeleteHandler m_emails_analytics_delete{m_ctx, m_emails_state};
+ blog::handlers::snippets::browse::BrowseHandler m_snippets_browse{m_ctx};
+ blog::handlers::snippets::read_by_id::ReadByIdHandler m_snippets_read_by_id{m_ctx};
+ blog::handlers::snippets::create::CreateHandler m_snippets_create{m_ctx};
+ blog::handlers::snippets::edit::EditHandler m_snippets_edit{m_ctx};
+ blog::handlers::snippets::destroy::DestroyHandler m_snippets_destroy{m_ctx};
+ blog::handlers::custom_theme_settings::browse::BrowseHandler m_custom_theme_settings_browse{m_ctx};
+ blog::handlers::custom_theme_settings::bulk_edit::BulkEditHandler m_custom_theme_settings_bulk_edit{m_ctx};
+ blog::handlers::newsletters::read_by_id::ReadByIdHandler m_newsletters_read_by_id{m_ctx};
+ blog::handlers::newsletters::create::CreateHandler m_newsletters_create{m_ctx};
+ blog::handlers::newsletters::newsletters_verifications_put::NewslettersVerificationsPutHandler m_newsletters_newsletters_verifications_put{m_ctx};
+ blog::handlers::newsletters::edit::EditHandler m_newsletters_edit{m_ctx};
+ blog::handlers::links::browse::BrowseHandler m_links_browse{m_ctx};
+ blog::handlers::links::bulk_edit::BulkEditHandler m_links_bulk_edit{m_ctx};
+ blog::handlers::recommendations::read_by_id::ReadByIdHandler m_recommendations_read_by_id{m_ctx};
+ blog::handlers::recommendations::create::CreateHandler m_recommendations_create{m_ctx};
+ blog::handlers::recommendations::recommendations_check_post::RecommendationsCheckPostHandler m_recommendations_recommendations_check_post{m_ctx};
+ blog::handlers::recommendations::edit::EditHandler m_recommendations_edit{m_ctx};
+ blog::handlers::recommendations::destroy::DestroyHandler m_recommendations_destroy{m_ctx};
+ blog::handlers::incoming_recommendations::browse::BrowseHandler m_incoming_recommendations_browse{m_ctx};
+ blog::handlers::feedback::read_by_id::ReadByIdHandler m_feedback_read_by_id{m_ctx};
+ blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler m_search_index_search_index_pages_get{m_ctx};
+ blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler m_search_index_search_index_users_get{m_ctx};
+    MembersState m_members_state{};
+    EmailsState m_emails_state{};
+    AutomationsState m_automations_state{};
     StripeHandler m_stripe{};
-    CoreHandler m_core;
-        ActionsRouteHandler ActionsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        AppsRouteHandler AppsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        AuthenticationRouteHandler AuthenticationRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        AuthorsRouteHandler AuthorsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        AutomatedEmailsRouteHandler AutomatedEmailsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        AutomationsRouteHandler AutomationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        CommentsRouteHandler CommentsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        ConfigRouteHandler ConfigRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        CustomThemeSettingsRouteHandler CustomThemeSettingsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        DbRouteHandler DbRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        EmailPreviewsRouteHandler EmailPreviewsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        EmailsRouteHandler EmailsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        ExportsRouteHandler ExportsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        FeaturebaseRouteHandler FeaturebaseRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        FeedbackRouteHandler FeedbackRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        FilesRouteHandler FilesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        GiftLinksRouteHandler GiftLinksRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        GiftsRouteHandler GiftsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        IdentitiesRouteHandler IdentitiesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        ImagesRouteHandler ImagesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        IncomingRecommendationsRouteHandler IncomingRecommendationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        IntegrationsRouteHandler IntegrationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        InvitesRouteHandler InvitesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        LabelsRouteHandler LabelsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        LinksRouteHandler LinksRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        MediaRouteHandler MediaRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        MembersRouteHandler MembersRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        MentionsRouteHandler MentionsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        NewslettersRouteHandler NewslettersRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        NotificationsRouteHandler NotificationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        OembedRouteHandler OembedRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        OffersRouteHandler OffersRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        PagesRouteHandler PagesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        PostsRouteHandler PostsRouteHandler{m_ctx, m_special};
-        RecommendationsRouteHandler RecommendationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        RedirectsRouteHandler RedirectsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        RolesRouteHandler RolesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SchedulesRouteHandler SchedulesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SearchIndexRouteHandler SearchIndexRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SessionRouteHandler SessionRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SettingsRouteHandler SettingsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SiteRouteHandler SiteRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SlackRouteHandler SlackRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SlugsRouteHandler SlugsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        SnippetsRouteHandler SnippetsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        StatsRouteHandler StatsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        StripeRouteHandler StripeRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        TagsRouteHandler TagsRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        ThemesRouteHandler ThemesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        TiersRouteHandler TiersRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        TinybirdRouteHandler TinybirdRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        UpgradesRouteHandler UpgradesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        UsersRouteHandler UsersRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        WebhooksRouteHandler WebhooksRouteHandler{m_ctx, m_core, m_special, m_stripe};
 };
 
 } // namespace blog::api

@@ -37,6 +37,8 @@ int main()
     outgoing.set_header(interfaces::io::types::Token::PATH, "/posts");
     outgoing.set_header(interfaces::io::types::Token::SCHEME, "http");
     outgoing.set_header(interfaces::io::types::Token::AUTHORITY, "localhost");
+    outgoing.set_header(interfaces::io::types::Token::CONTENT_TYPE, "application/json");
+    outgoing.set_header(interfaces::io::types::Token::ACCEPT, "application/json");
 
     io::codec::hpack::HPackTable table;
     auto block = utils::buffering::BufferNode{8192};

@@ -45,6 +45,8 @@ public:
         io::layer::http2::HttpResponse res{1};
         req.set_header(interfaces::io::types::Token::METHOD, request.method());
         req.set_header(interfaces::io::types::Token::PATH, request.path());
+        req.set_header(interfaces::io::types::Token::CONTENT_TYPE, "application/json");
+        req.set_header(interfaces::io::types::Token::ACCEPT, "application/json");
         if (!request.token().empty()) {
             req.set_header(interfaces::io::types::Token::AUTHORIZATION, request.token());
         }
@@ -56,9 +58,12 @@ public:
         }
         if (!m_installed) {
             blog::api::ApiRoutes{}.install(m_context_router, m_handlers);
+            m_server = std::make_unique<io::layer::http2::Server>();
+            m_server->build(&m_context_router);
             m_installed = true;
         }
-        m_handlers.core().handle(req, res, [] {});
+        m_server->executor().enqueue(req, res, [] {});
+        m_server->executor().on_execute()();
         std::string body;
         for (const std::byte byte : res.get_body()) body += static_cast<char>(byte);
         int status = 200;
@@ -84,6 +89,7 @@ private:
     blog::BlogContext m_context{};
     core::router::RouterContext<> m_context_router{};
     blog::api::BlogHandlers m_handlers{};
+    std::unique_ptr<io::layer::http2::Server> m_server{};
     bool m_installed{false};
 };
 

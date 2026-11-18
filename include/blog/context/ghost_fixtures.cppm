@@ -1,4 +1,4 @@
-export module blog_dto:ghost_json;
+export module blog_context:ghost_fixtures;
 
 import std;
 import blog_model;
@@ -13,7 +13,7 @@ export namespace blog::dto {
  * produce every field the snapshots assert, with the correct JSON type, so a
  * structural oracle can compare responses against the Ghost schema.
  */
-class GhostJson
+class GhostFixtures
 {
 public:
     /** @brief 24-character hex id derived from the numeric entity id. */
@@ -100,7 +100,7 @@ public:
     /** @brief Full Ghost post entity from snapshots (25 asserted fields). */
     [[nodiscard]] static std::string post(const model::Post& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.raw("id", quote(ghost_id(entity.get_id())));
         j.str("uuid", entity.get_uuid().empty() ? uuid_for(entity.get_id()) : entity.get_uuid());
         j.str("title", entity.get_title());
@@ -141,7 +141,7 @@ public:
     /** @brief Full Ghost member entity from snapshots (29 asserted fields). */
     [[nodiscard]] static std::string member(const model::Member& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("uuid", entity.get_uuid().empty() ? uuid_for(entity.get_id()) : entity.get_uuid());
         j.str("email", entity.get_email());
@@ -179,7 +179,7 @@ public:
     /** @brief Ghost page entity. */
     [[nodiscard]] static std::string page(const model::Page& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("uuid", entity.get_uuid().empty() ? uuid_for(entity.get_id()) : entity.get_uuid());
         j.str("title", entity.get_title());
@@ -209,7 +209,7 @@ public:
     /** @brief Ghost author entity. */
     [[nodiscard]] static std::string author(const model::Author& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("name", entity.get_name());
         j.str("slug", entity.get_slug());
@@ -223,7 +223,7 @@ public:
     /** @brief Ghost tag entity (id, name, slug, description). */
     [[nodiscard]] static std::string tag(const model::Tag& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("name", entity.get_name());
         j.str("slug", entity.get_slug());
@@ -234,7 +234,7 @@ public:
     /** @brief Ghost comment entity from the admin comments snapshots. */
     [[nodiscard]] static std::string comment(const model::Comment& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("html", entity.get_html());
         j.str("status", entity.get_status());
@@ -259,7 +259,7 @@ public:
     /** @brief Ghost user entity from the admin users snapshots. */
     [[nodiscard]] static std::string user(const model::User& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("name", entity.get_name());
         j.str("slug", entity.get_slug());
@@ -274,7 +274,7 @@ public:
     /** @brief Ghost newsletter entity from the admin newsletters snapshots. */
     [[nodiscard]] static std::string newsletter(const model::Newsletter& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("uuid", entity.get_uuid().empty() ? uuid_for(entity.get_id()) : entity.get_uuid());
         j.str("name", entity.get_name());
@@ -328,7 +328,7 @@ public:
     /** @brief Ghost tier entity from the admin tiers snapshots. */
     [[nodiscard]] static std::string tier(const model::Tier& entity)
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(entity.get_id()));
         j.str("name", entity.get_name());
         j.str("slug", entity.get_slug());
@@ -350,7 +350,7 @@ public:
     /** @brief Ghost-shaped automated email fixture. */
     [[nodiscard]] static std::string automated_email()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("email_design_setting_id", ghost_id(2));
         j.str("html", "<p>Ghost Record</p>");
@@ -362,7 +362,7 @@ public:
     /** @brief Ghost activity-feed event (events snapshots assert data + type). */
     [[nodiscard]] static std::string event()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("type", "comment_event");
         j.raw("data", R"({"post_id":"1","member_id":"1","comment_id":"1"})");
         return j.done();
@@ -371,7 +371,7 @@ public:
     /** @brief Ghost comment sub-resource (like/dislike/report) fixture. */
     [[nodiscard]] static std::string comment_sub()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("comment_id", ghost_id(2));
         j.str("member_id", ghost_id(3));
@@ -384,7 +384,7 @@ public:
     /** @brief Ghost db maintenance status. */
     [[nodiscard]] static std::string db()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("status", "success");
         return j.done();
     }
@@ -392,7 +392,7 @@ public:
     /** @brief Ghost email batch fixture. */
     [[nodiscard]] static std::string batch()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.raw("count", R"({"total":1,"sent":1})");
         j.str("status", "submitted");
@@ -406,7 +406,7 @@ public:
     /** @brief Ghost email failure fixture. */
     [[nodiscard]] static std::string failure()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("email_id", ghost_id(2));
         j.str("email_recipient_id", ghost_id(3));
@@ -424,7 +424,7 @@ public:
     /** @brief Ghost custom theme setting fixture. */
     [[nodiscard]] static std::string custom_theme_setting()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("key", "accent_color");
         j.str("default", "#FF1A75");
@@ -438,7 +438,7 @@ public:
     /** @brief Ghost automation fixture. */
     [[nodiscard]] static std::string automation()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Ghost Automation");
         j.str("slug", "ghost-automation");
@@ -452,7 +452,7 @@ public:
     /** @brief Ghost-shaped label fixture. */
     [[nodiscard]] static std::string label()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Ghost Resource");
         j.str("slug", "ghost-resource");
@@ -465,7 +465,7 @@ public:
     /** @brief Ghost-shaped snippet fixture. */
     [[nodiscard]] static std::string snippet()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Ghost Resource");
         j.str("lexical", "{}");
@@ -478,7 +478,7 @@ public:
     /** @brief Ghost-shaped role fixture. */
     [[nodiscard]] static std::string role()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Administrator");
         j.str("description", "Administrator role");
@@ -490,7 +490,7 @@ public:
     /** @brief Ghost-shaped recommendation fixture. */
     [[nodiscard]] static std::string recommendation()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("url", "https://ghost.local");
         j.str("title", "Ghost Recommendation");
@@ -512,7 +512,7 @@ public:
     /** @brief Ghost-shaped link fixture. */
     [[nodiscard]] static std::string link()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("post_id", ghost_id(1));
         j.raw("link", R"({"url":"https://ghost.local","title":"Ghost"})");
         j.raw("count", R"({"clicks":0})");
@@ -522,7 +522,7 @@ public:
     /** @brief Ghost-shaped offer fixture (admin offers snapshots). */
     [[nodiscard]] static std::string offer()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Black Friday");
         j.str("code", "black-friday");
@@ -548,7 +548,7 @@ public:
     /** @brief Ghost-shaped notification fixture. */
     [[nodiscard]] static std::string notification()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("message", "Ghost notification");
         j.str("type", "info");
@@ -562,7 +562,7 @@ public:
     /** @brief Ghost-shaped webhook fixture. */
     [[nodiscard]] static std::string webhook()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("name", "Ghost Webhook");
         j.str("event", "post.published");
@@ -581,7 +581,7 @@ public:
     /** @brief Ghost-shaped email fixture (admin emails snapshots). */
     [[nodiscard]] static std::string email()
     {
-        GhostJson j;
+        GhostFixtures j;
         j.str("id", ghost_id(1));
         j.str("uuid", uuid_for(1));
         j.str("subject", "Ghost Newsletter");

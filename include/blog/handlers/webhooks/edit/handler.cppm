@@ -10,8 +10,8 @@ import :webhooks_edit_flow;
 export namespace blog::handlers::webhooks::edit {
 class EditHandler {
 public:
- EditHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ EditHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }
@@ -22,6 +22,10 @@ public:
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
   }
   model::Request in; in.path=std::string{req.get_path()};
+  const auto& path = in.path;
+  const auto slash = path.find_last_of('/');
+  const auto tail = slash == std::string::npos ? path : path.substr(slash + 1);
+  if (!tail.empty() && tail != "webhooks" && tail.find('?') == std::string::npos) in.id = tail;
   for(const std::byte byte:req.get_body()) in.body+=static_cast<char>(byte);
   const auto ex=m_workflow.run("webhooks_edit", in);
   const auto* r=ex.result_of("webhooks_edit_execute");

@@ -10,8 +10,8 @@ import :exports_exports_download_get_flow;
 export namespace blog::handlers::exports::exports_download_get {
 class ExportsDownloadGetHandler {
 public:
- ExportsDownloadGetHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ ExportsDownloadGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

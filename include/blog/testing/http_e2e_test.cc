@@ -32,6 +32,8 @@ int main()
         io::layer::http2::HttpResponse response{1};
         request.set_header(interfaces::io::types::Token::METHOD, method);
         request.set_header(interfaces::io::types::Token::PATH, path);
+        request.set_header(interfaces::io::types::Token::CONTENT_TYPE, "application/json");
+        request.set_header(interfaces::io::types::Token::ACCEPT, "application/json");
         if (!token.empty()) {
             request.set_header(interfaces::io::types::Token::AUTHORIZATION, token);
         }

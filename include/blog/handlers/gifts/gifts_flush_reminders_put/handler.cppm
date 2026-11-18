@@ -10,8 +10,8 @@ import :gifts_gifts_flush_reminders_put_flow;
 export namespace blog::handlers::gifts::gifts_flush_reminders_put {
 class GiftsFlushRemindersPutHandler {
 public:
- GiftsFlushRemindersPutHandler(blog::BlogContext& ctx, blog::api::SpecialEndpoints& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_special=&sp;
+ GiftsFlushRemindersPutHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

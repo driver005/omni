@@ -9,6 +9,7 @@ congelado_module_library(
         "resource_schema.cppm",
         "query.cppm",
         "json.cppm",
+        "ghost_fixtures.cppm",
         "context.cppm",
     ],
     deps = [

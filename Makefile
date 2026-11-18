@@ -8,7 +8,7 @@ TARGETS ?= //...
 FMT     ?= clang-format
 FMT_DIRS = include bazel third_party
 
-.PHONY: all build dev test prod release clean run query deps status fmt format lint help core fresh openapi sdk-build sdk-wasm sdk-lint visual-install visual-dev
+.PHONY: all build dev test prod release clean run query deps status fmt format lint help core fresh openapi sdk-build sdk-wasm sdk-lint visual-install visual-dev visual-e2e
 
 all: build
 
@@ -86,6 +86,10 @@ visual-install:
 
 visual-dev:
 	cd visual && corepack pnpm dev
+
+## visual-e2e: Playwright browser tests for the SDK/theme integration
+visual-e2e:
+	cd visual && corepack pnpm exec playwright test --config playwright.e2e.config.ts
 
 ## help: show this list
 help:

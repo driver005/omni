@@ -8,35 +8,30 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /exports. */
 class ExportsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::ExportsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/exports"}
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.exports_create().handle(req, res, std::move(send));
     })
             .summary("Ghost exports POST")
             .add_route(
                 Route{"/download"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.exports_exports_download_get().handle(req, res, std::move(send));
     })
                     .summary("Ghost download GET")
             );

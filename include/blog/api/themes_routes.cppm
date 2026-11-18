@@ -8,90 +8,85 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /themes. */
 class ThemesRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::ThemesRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/themes"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost themes GET")
             .add_router(
                 Router{router, "/:id"}
-                    .delt([h](
+                    .delt([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_destroy().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/activate"}
-                            .put([h](
+                            .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_themes_name_activate_put().handle(req, res, std::move(send));
     })
                             .summary("Ghost activate PUT")
                     )
                     .add_route(
                         Route{"/download"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_themes_name_download_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost download GET")
                     )
             )
             .add_route(
                 Route{"/active"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_themes_active_get().handle(req, res, std::move(send));
     })
                     .summary("Ghost active GET")
             )
             .add_route(
                 Route{"/install"}
-                    .post([h](
+                    .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_themes_install_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost install POST")
             )
             .add_route(
                 Route{"/upload"}
-                    .post([h](
+                    .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.themes_themes_upload_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost upload POST")
             );

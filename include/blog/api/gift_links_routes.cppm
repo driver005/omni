@@ -8,27 +8,22 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /gift_links. */
 class GiftLinksRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::GiftLinksRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/gift_links"}
             .add_route(
                 Route{"/remove_all"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.gift_links_gift_links_remove_all_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost remove_all PUT")
             );

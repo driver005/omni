@@ -8,35 +8,30 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /links. */
 class LinksRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::LinksRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/links"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.links_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost links GET")
             .add_route(
                 Route{"/bulk"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.links_bulk_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost bulk PUT")
             );

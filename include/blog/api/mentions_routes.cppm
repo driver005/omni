@@ -8,25 +8,20 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /mentions. */
 class MentionsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::MentionsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/mentions"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.mentions_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost mentions GET");
     }

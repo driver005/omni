@@ -8,51 +8,46 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /session. */
 class SessionRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::SessionRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/session"}
-            .delt([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost session DELETE")
-            .post([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.session_create().handle(req, res, std::move(send));
     })
             .summary("Ghost session POST")
+            .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.session_bulk_destroy().handle(req, res, std::move(send));
+    })
+            .summary("Ghost session DELETE")
             .add_route(
                 Route{"/verify"}
-                    .post([h](
+                    .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.session_session_verify_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost verify POST")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.session_session_verify_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost verify PUT")
             );

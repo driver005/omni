@@ -8,45 +8,40 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /webhooks. */
 class WebhooksRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::WebhooksRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/webhooks"}
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.webhooks_create().handle(req, res, std::move(send));
     })
             .summary("Ghost webhooks POST")
             .add_route(
                 Route{"/:id"}
-                    .delt([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
-                    .put([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.webhooks_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.webhooks_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
             );
     }
 };

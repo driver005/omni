@@ -8,94 +8,89 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /comments. */
 class CommentsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::CommentsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/comments"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost comments GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_create().handle(req, res, std::move(send));
     })
             .summary("Ghost comments POST")
             .add_router(
                 Router{router, "/:id"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
                     .add_route(
                         Route{"/dislikes"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_comment_dislikes().handle(req, res, std::move(send));
     })
                             .summary("Ghost dislikes GET")
                     )
                     .add_route(
                         Route{"/likes"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_comment_likes().handle(req, res, std::move(send));
     })
                             .summary("Ghost likes GET")
                     )
                     .add_route(
                         Route{"/replies"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_comment_replies().handle(req, res, std::move(send));
     })
                             .summary("Ghost replies GET")
                     )
                     .add_route(
                         Route{"/reports"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_comment_reports().handle(req, res, std::move(send));
     })
                             .summary("Ghost reports GET")
                     )
@@ -104,12 +99,12 @@ public:
                 Router{router, "/post"}
                     .add_route(
                         Route{"/:id"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.comments_get_detail().handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )

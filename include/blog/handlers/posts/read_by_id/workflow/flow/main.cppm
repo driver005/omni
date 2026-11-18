@@ -1,4 +1,5 @@
 export module blog_handlers:posts_read_by_id_flow;
+export import core_workflow;
 
 import std;
 import core_workflow;

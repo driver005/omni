@@ -8,69 +8,64 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /users. */
 class UsersRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::UsersRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/users"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost users GET")
             .add_router(
                 Router{router, "/:id"}
-                    .delt([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.users_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.users_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/token"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_users_id_token_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost token GET")
-                            .put([h](
+                            .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_users_id_token_put().handle(req, res, std::move(send));
     })
                             .summary("Ghost token PUT")
                     )
@@ -79,35 +74,35 @@ public:
                 Router{router, "/email"}
                     .add_route(
                         Route{"/:id"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_read_by_email().handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )
             )
             .add_route(
                 Route{"/owner"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_users_owner_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost owner PUT")
             )
             .add_route(
                 Route{"/password"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_users_password_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost password PUT")
             )
@@ -115,12 +110,12 @@ public:
                 Router{router, "/slug"}
                     .add_route(
                         Route{"/:id"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.users_read_by_slug().handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )

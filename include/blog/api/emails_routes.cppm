@@ -8,109 +8,104 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /emails. */
 class EmailsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::EmailsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/emails"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost emails GET")
             .add_router(
                 Router{router, "/:id"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .add_route(
                         Route{"/analytics"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_analytics_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost analytics GET")
-                            .put([h](
+                            .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_analytics_put().handle(req, res, std::move(send));
     })
                             .summary("Ghost analytics PUT")
                     )
                     .add_route(
                         Route{"/batches"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_batches_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost batches GET")
                     )
                     .add_route(
                         Route{"/recipient-failures"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_recipient_failures_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost recipient-failures GET")
                     )
                     .add_route(
                         Route{"/retry"}
-                            .put([h](
+                            .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_emails_id_retry_put().handle(req, res, std::move(send));
     })
                             .summary("Ghost retry PUT")
                     )
                     .add_route(
                         Route{"/status"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_emails_id_status_get().handle(req, res, std::move(send));
     })
                             .summary("Ghost status GET")
                     )
             )
             .add_route(
                 Route{"/analytics"}
-                    .delt([h](
+                    .delt([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.emails_analytics_delete().handle(req, res, std::move(send));
     })
                     .summary("Ghost analytics DELETE")
             );

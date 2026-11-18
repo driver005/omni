@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/themes"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost themes DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -37,16 +29,41 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost themes GET")
-            .post([h](
+            .add_router(
+                Router{router, "/:name"}
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost themes POST")
+                    .summary("Ghost :name DELETE")
+                    .add_route(
+                        Route{"/activate"}
+                            .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost activate PUT")
+                    )
+                    .add_route(
+                        Route{"/download"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost download GET")
+                    )
+            )
             .add_route(
-                Route{"/:name"}
+                Route{"/active"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -54,15 +71,29 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :name GET")
-                    .put([h](
+                    .summary("Ghost active GET")
+            )
+            .add_route(
+                Route{"/install"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :name PUT")
+                    .summary("Ghost install POST")
+            )
+            .add_route(
+                Route{"/upload"}
+                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost upload POST")
             );
     }
 };

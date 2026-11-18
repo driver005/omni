@@ -21,32 +21,49 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/stripe"}
-            .add_route(
-                Route{"/checkout"}
-                    .get([h](
+            .add_router(
+                Router{router, "/checkout"}
+                    .add_route(
+                        Route{"/branding"}
+                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost checkout GET")
-                    .post([h](
+                            .summary("Ghost branding GET")
+                    )
+                    .add_route(
+                        Route{"/config"}
+                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost checkout POST")
-                    .put([h](
+                            .summary("Ghost config GET")
+                            .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost checkout PUT")
+                            .summary("Ghost config PUT")
+                    )
+                    .add_route(
+                        Route{"/preview"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost preview POST")
+                    )
             );
     }
 };

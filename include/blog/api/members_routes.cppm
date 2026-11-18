@@ -45,14 +45,6 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost members POST")
-            .put([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost members PUT")
             .add_router(
                 Router{router, "/:id"}
                     .delt([h](
@@ -71,16 +63,63 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .post([h](
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id POST")
+                    .summary("Ghost :id PUT")
+                    .add_router(
+                        Router{router, "/commenting"}
+                            .add_route(
+                                Route{"/disable"}
+                                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                    .summary("Ghost disable POST")
+                            )
+                            .add_route(
+                                Route{"/enable"}
+                                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                    .summary("Ghost enable POST")
+                            )
+                    )
                     .add_route(
-                        Route{"/commenting"}
+                        Route{"/sessions"}
+                            .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost sessions DELETE")
+                    )
+                    .add_route(
+                        Route{"/signin_urls"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost signin_urls GET")
+                    )
+                    .add_router(
+                        Router{router, "/subscriptions"}
                             .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -88,22 +127,44 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost commenting POST")
-                    )
-                    .add_route(
-                        Route{"/subscriptions"}
-                            .put([h](
+                            .summary("Ghost subscriptions POST")
+                            .add_route(
+                                Route{"/:subscription_id"}
+                                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost subscriptions PUT")
+                                    .summary("Ghost :subscription_id PUT")
+                            )
+                    )
+                    .add_route(
+                        Route{"/suppression"}
+                            .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost suppression DELETE")
                     )
             )
             .add_route(
-                Route{"/stats"}
+                Route{"/bulk"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost bulk PUT")
+            )
+            .add_route(
+                Route{"/events"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -111,7 +172,73 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost stats GET")
+                    .summary("Ghost events GET")
+            )
+            .add_route(
+                Route{"/metafields"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields GET")
+            )
+            .add_router(
+                Router{router, "/stats"}
+                    .add_route(
+                        Route{"/count"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost count GET")
+                    )
+                    .add_route(
+                        Route{"/mrr"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost mrr GET")
+                    )
+            )
+            .add_route(
+                Route{"/stripe_connect"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost stripe_connect GET")
+            )
+            .add_route(
+                Route{"/upload"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost upload GET")
+                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost upload POST")
             );
     }
 };

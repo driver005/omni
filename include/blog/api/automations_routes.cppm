@@ -37,28 +37,23 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost automations POST")
-            .put([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost automations PUT")
             .add_router(
                 Router{router, "/:automation_id"}
                     .add_router(
                         Router{router, "/actions"}
-                            .add_route(
-                                Route{"/:action_id"}
-                                    .get([h](
+                            .add_router(
+                                Router{router, "/:action_id"}
+                                    .add_route(
+                                        Route{"/links"}
+                                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                                    .summary("Ghost :action_id GET")
+                                            .summary("Ghost links GET")
+                                    )
                             )
                     )
             )
@@ -72,16 +67,49 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .post([h](
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id POST")
+                    .summary("Ghost :id PUT")
                     .add_route(
-                        Route{"/runs"}
+                        Route{"/email_preview"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost email_preview POST")
+                    )
+                    .add_route(
+                        Route{"/email_test"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost email_test POST")
+                    )
+                    .add_route(
+                        Route{"/performance-stats"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost performance-stats GET")
+                    )
+                    .add_router(
+                        Router{router, "/runs"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -90,7 +118,29 @@ public:
         h->handle(req, res, std::move(send));
     })
                             .summary("Ghost runs GET")
+                            .add_route(
+                                Route{"/:run_id"}
+                                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                    .summary("Ghost :run_id GET")
+                            )
                     )
+            )
+            .add_route(
+                Route{"/poll"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost poll PUT")
             );
     }
 };

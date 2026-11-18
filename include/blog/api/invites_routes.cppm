@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/invites"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost invites DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -44,7 +36,26 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost invites POST");
+            .summary("Ghost invites POST")
+            .add_route(
+                Route{"/:id"}
+                    .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id GET")
+            );
     }
 };
 

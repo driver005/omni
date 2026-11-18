@@ -21,30 +21,82 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/authentication"}
-            .get([h](
+            .add_route(
+                Route{"/invitation"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost authentication GET")
-            .post([h](
+                    .summary("Ghost invitation GET")
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost authentication POST")
-            .put([h](
+                    .summary("Ghost invitation POST")
+            )
+            .add_route(
+                Route{"/password_reset"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost authentication PUT");
+                    .summary("Ghost password_reset POST")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost password_reset PUT")
+            )
+            .add_route(
+                Route{"/reset"}
+                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost reset POST")
+            )
+            .add_route(
+                Route{"/setup"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost setup GET")
+                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost setup POST")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost setup PUT")
+            );
     }
 };
 

@@ -21,14 +21,61 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/search-index"}
-            .get([h](
+            .add_route(
+                Route{"/authors"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost search-index GET");
+                    .summary("Ghost authors GET")
+            )
+            .add_route(
+                Route{"/pages"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost pages GET")
+            )
+            .add_route(
+                Route{"/posts"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost posts GET")
+            )
+            .add_route(
+                Route{"/tags"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost tags GET")
+            )
+            .add_route(
+                Route{"/users"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost users GET")
+            );
     }
 };
 

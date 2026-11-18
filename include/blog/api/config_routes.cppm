@@ -28,7 +28,18 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost config GET");
+            .summary("Ghost config GET")
+            .add_route(
+                Route{"/featurebase"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost featurebase GET")
+            );
     }
 };
 

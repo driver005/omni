@@ -37,14 +37,25 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost session POST")
-            .put([h](
+            .add_route(
+                Route{"/verify"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost session PUT");
+                    .summary("Ghost verify POST")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost verify PUT")
+            );
     }
 };
 

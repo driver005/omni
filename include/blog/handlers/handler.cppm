@@ -1,3 +1,5 @@
+module;
+#include <cstdio>
 export module blog_handlers:handler;
 
 import std;
@@ -67,7 +69,17 @@ public:
             return;
         }
         const std::string resource = segments[0];
-        const std::string id = segments.size() > 1 ? segments[1] : std::string{};
+        std::string id = segments.size() > 1 ? segments[1] : std::string{};
+        if (id == "slug" || id == "email" || id == "export" || id == "events") {
+            id = segments.size() > 2 ? segments[2] : std::string{};
+        }
+        if (id == "bulk") {
+            // keep collection bulk marker
+        } else if (!id.empty() && !std::ranges::all_of(id, [](char c) {
+                return std::isdigit(static_cast<unsigned char>(c));
+            })) {
+            id.clear();
+        }
         std::map<std::string, std::string> params;
         if (!id.empty()) params["id"] = id;
         if (question != std::string::npos) {
@@ -143,7 +155,7 @@ private:
         std::string_view body
     )
     {
-        const auto& action = method;
+                const auto& action = method;
         std::string id{"1"};
         std::string sub{"1"};
         std::vector<std::string> parts;
@@ -232,7 +244,6 @@ private:
             return m_special.member_subscription_create(id, body);
         }
         if (action == "put" && path.contains("/subscriptions/")) {
-            const std::string sub = sub;
             return m_special.member_subscription_edit(id, sub, body);
         }
         if (action == "get" && path.ends_with("/signin_urls")) {

@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/notifications"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost notifications DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -44,7 +36,18 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost notifications POST");
+            .summary("Ghost notifications POST")
+            .add_route(
+                Route{"/:notification_id"}
+                    .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :notification_id DELETE")
+            );
     }
 };
 

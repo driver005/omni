@@ -36,7 +36,18 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost upgrades POST");
+            .summary("Ghost upgrades POST")
+            .add_route(
+                Route{"/:id"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id GET")
+            );
     }
 };
 

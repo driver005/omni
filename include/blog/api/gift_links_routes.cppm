@@ -21,14 +21,17 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/gift_links"}
-            .put([h](
+            .add_route(
+                Route{"/remove_all"}
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost gift_links PUT");
+                    .summary("Ghost remove_all PUT")
+            );
     }
 };
 

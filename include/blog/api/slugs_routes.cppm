@@ -23,16 +23,8 @@ public:
         Router{router, "/slugs"}
             .add_router(
                 Router{router, "/:type"}
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :type GET")
-                    .add_route(
-                        Route{"/:name"}
+                    .add_router(
+                        Router{router, "/:name"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -41,6 +33,17 @@ public:
         h->handle(req, res, std::move(send));
     })
                             .summary("Ghost :name GET")
+                            .add_route(
+                                Route{"/:id"}
+                                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                    .summary("Ghost :id GET")
+                            )
                     )
             );
     }

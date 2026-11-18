@@ -21,24 +21,30 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/media"}
-            .post([h](
+            .add_router(
+                Router{router, "/thumbnail"}
+                    .add_route(
+                        Route{"/upload"}
+                            .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost media POST")
+                            .summary("Ghost upload PUT")
+                    )
+            )
             .add_route(
-                Route{"/thumbnail"}
-                    .put([h](
+                Route{"/upload"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost thumbnail PUT")
+                    .summary("Ghost upload POST")
             );
     }
 };

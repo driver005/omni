@@ -21,22 +21,28 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/redirects"}
-            .get([h](
+            .add_route(
+                Route{"/download"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost redirects GET")
-            .post([h](
+                    .summary("Ghost download GET")
+            )
+            .add_route(
+                Route{"/upload"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost redirects POST");
+                    .summary("Ghost upload POST")
+            );
     }
 };
 

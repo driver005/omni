@@ -46,7 +46,7 @@ public:
     })
             .summary("Ghost db POST")
             .add_route(
-                Route{"/media"}
+                Route{"/backup"}
                     .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -54,7 +54,21 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost media POST")
+                    .summary("Ghost backup POST")
+            )
+            .add_router(
+                Router{router, "/media"}
+                    .add_route(
+                        Route{"/inline"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost inline POST")
+                    )
             );
     }
 };

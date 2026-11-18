@@ -11,31 +11,11 @@ import boost.ut;
 
 export namespace blog::api {
 
-/** @brief Result of a special admin endpoint call. */
-class SpecialResult
+/** @brief status + body returned by a domain service method. */
+struct EndpointResponse
 {
-public:
-    SpecialResult() = default;
-
-    SpecialResult(int status, std::string body) :
-        m_status{status},
-        m_body{std::move(body)}
-    {
-    }
-
-    [[nodiscard]] int status() const noexcept
-    {
-        return m_status;
-    }
-
-    [[nodiscard]] const std::string& body() const noexcept
-    {
-        return m_body;
-    }
-
-private:
-    int m_status{200};
-    std::string m_body{};
+    int status{200};
+    std::string body{};
 };
 
 /**
@@ -55,7 +35,35 @@ public:
     }
 
     /** @brief POST /automations/:id/email_preview. */
-    SpecialResult automation_email_preview(std::string_view id, std::string_view body)
+    EndpointResponse events() const
+    {
+        return {200, std::format(
+            R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
+            blog::dto::GhostJson::event())};
+    }
+    EndpointResponse metafields_browse() const
+    {
+        return {200, "{\"members\":[" + blog::dto::GhostJson::member([]{
+            model::Member m; m.set_id(1); return m;
+        }()) + "]}"};
+    }
+    EndpointResponse stripe(std::string_view method, std::string_view body, std::string_view path = "/stripe/checkout/config")
+    {
+        if (path.contains("/branding")) return {200, m_stripe.branding()};
+        if (method == "GET") return {200, m_stripe.config()};
+        if (method == "PUT") { m_stripe.configure(body); return {200, m_stripe.config()}; }
+        if (method == "POST") return {200, m_stripe.preview(body)};
+        return {200, m_stripe.branding()};
+    }
+    EndpointResponse settings_put() const
+    {
+        return {200, R"({"settings":{"title":"Ghost"},"meta":{}})"};
+    }
+    EndpointResponse custom_theme_settings_put() const
+    {
+        return {200, R"({"custom_theme_settings":[],"meta":{}})"};
+    }
+    EndpointResponse automation_email_preview(std::string_view id, std::string_view body)
     {
         if (!known_automation(id)) {
             return not_found("Automation not found");
@@ -80,7 +88,7 @@ public:
     }
 
     /** @brief POST /automations/:id/email_test — 204 with no body on success. */
-    SpecialResult automation_email_test(std::string_view id, std::string_view body)
+    EndpointResponse automation_email_test(std::string_view id, std::string_view body)
     {
         if (!known_automation(id)) {
             return not_found("Automation not found");
@@ -101,13 +109,13 @@ public:
     }
 
     /** @brief GET /emails/:id/analytics. */
-    SpecialResult emails_analytics_get(std::string_view /*id*/) const
+    EndpointResponse emails_analytics_get(std::string_view /*id*/) const
     {
         return ok(m_analytics);
     }
 
     /** @brief PUT /emails/:id/analytics — flips a job's `running` flag. */
-    SpecialResult emails_analytics_put(std::string_view /*id*/, std::string_view body)
+    EndpointResponse emails_analytics_put(std::string_view /*id*/, std::string_view body)
     {
         const auto input = blog::dto::ModelJson<
             blog::dto::AnalyticsStatusInput
@@ -122,7 +130,7 @@ public:
     }
 
     /** @brief DELETE /emails/analytics — resets all job flags. */
-    SpecialResult emails_analytics_delete()
+    EndpointResponse emails_analytics_delete()
     {
         m_analytics = blog::dto::AnalyticsStatus{};
         m_analytics.latest.jobName = "email-analytics-latest-others";
@@ -133,25 +141,25 @@ public:
     }
 
     /** @brief GET /emails/:id/batches. */
-    SpecialResult emails_batches(std::string_view /*id*/) const
+    EndpointResponse emails_batches(std::string_view /*id*/) const
     {
-        return SpecialResult{200, std::format(
+        return EndpointResponse{200, std::format(
             R"({{"batches":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
             blog::dto::GhostJson::batch()
         )};
     }
 
     /** @brief GET /emails/:id/recipient-failures. */
-    SpecialResult emails_failures(std::string_view /*id*/) const
+    EndpointResponse emails_failures(std::string_view /*id*/) const
     {
-        return SpecialResult{200, std::format(
+        return EndpointResponse{200, std::format(
             R"({{"failures":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
             blog::dto::GhostJson::failure()
         )};
     }
 
     /** @brief POST /members/:id/subscriptions/. */
-    SpecialResult member_subscription_create(std::string_view id, std::string_view body)
+    EndpointResponse member_subscription_create(std::string_view id, std::string_view body)
     {
         const auto input = blog::dto::ModelJson<
             blog::dto::MemberSubscriptionInput
@@ -166,7 +174,7 @@ public:
     }
 
     /** @brief PUT /members/:id/subscriptions/:subscription_id. */
-    SpecialResult member_subscription_edit(
+    EndpointResponse member_subscription_edit(
         std::string_view id,
         std::string_view subscription_id,
         std::string_view body
@@ -188,7 +196,7 @@ public:
     }
 
     /** @brief GET /members/:id/signin_urls. */
-    SpecialResult member_signin_urls(std::string_view id) const
+    EndpointResponse member_signin_urls(std::string_view id) const
     {
         blog::dto::SigninUrlsResponse response;
         blog::dto::SigninUrl signin;
@@ -199,7 +207,7 @@ public:
     }
 
     /** @brief GET /stats/mrr and /members/stats/mrr. */
-    SpecialResult stats_mrr() const
+    EndpointResponse stats_mrr() const
     {
         blog::dto::StatsMrrResponse response;
         blog::dto::StatsMrrEntry first;
@@ -217,7 +225,7 @@ public:
     }
 
     /** @brief GET /stats/member_count and /members/stats/count. */
-    SpecialResult stats_member() const
+    EndpointResponse stats_member() const
     {
         blog::dto::StatsMemberResponse response;
         response.stats.push_back(blog::dto::StatsMemberEntry{});
@@ -225,7 +233,7 @@ public:
     }
 
     /** @brief Other stats endpoints — empty stats array. */
-    SpecialResult stats_empty() const
+    EndpointResponse stats_empty() const
     {
         return ok(blog::dto::StatsEmptyResponse{});
     }
@@ -282,7 +290,7 @@ public:
         return json;
     }
 
-    SpecialResult commenting_set(
+    EndpointResponse commenting_set(
         std::string_view id,
         std::string_view body,
         bool disable
@@ -328,7 +336,7 @@ public:
             return member;
         }());
         json = apply_commenting(id, json);
-        return SpecialResult{200, std::format(R"({{"members":[{}]}})", json)};
+        return EndpointResponse{200, std::format(R"({{"members":[{}]}})", json)};
     }
 
     /** @brief In-memory Ghost-style member metafields. */
@@ -375,12 +383,12 @@ public:
         return value.substr(begin, end - begin + 1);
     }
 
-    [[nodiscard]] SpecialResult metafield_error(
+    [[nodiscard]] EndpointResponse metafield_error(
         std::string_view context,
         std::string_view property
     ) const
     {
-        return SpecialResult{422, ApiError{}.validation(
+        return EndpointResponse{422, ApiError{}.validation(
             "Validation error, cannot save member metafield.", context, property
         )};
     }
@@ -441,7 +449,7 @@ public:
         return std::nullopt;
     }
 
-    SpecialResult metafields_create(std::string_view body)
+    EndpointResponse metafields_create(std::string_view body)
     {
         const auto name_pos = body.find("\"name\":");
         const auto type_pos = body.find("\"type\":");
@@ -491,16 +499,16 @@ public:
         field.type = type;
         field.settings = settings;
         m_metafields.push_back(field);
-        return SpecialResult{201, std::format(
+        return EndpointResponse{201, std::format(
             R"({{"members_metafields":[{}]}})", metafield_json(field)
         )};
     }
 
-    SpecialResult metafields_get(std::string_view key) const
+    EndpointResponse metafields_get(std::string_view key) const
     {
         for (const auto& field : m_metafields) {
             if (field.key == key) {
-                return SpecialResult{200, std::format(
+                return EndpointResponse{200, std::format(
                     R"({{"members_metafields":[{}]}})", metafield_json(field)
                 )};
             }
@@ -508,7 +516,7 @@ public:
         return not_found("Metafield not found");
     }
 
-    SpecialResult metafields_edit(std::string_view key, std::string_view body)
+    EndpointResponse metafields_edit(std::string_view key, std::string_view body)
     {
         for (auto& field : m_metafields) {
             if (field.key != key) continue;
@@ -531,14 +539,14 @@ public:
                 return metafield_error(error->first, error->second);
             }
             field.settings = settings;
-            return SpecialResult{200, std::format(
+            return EndpointResponse{200, std::format(
                 R"({{"members_metafields":[{}]}})", metafield_json(field)
             )};
         }
         return not_found("Metafield not found");
     }
 
-    SpecialResult email_previews() const
+    EndpointResponse email_previews() const
     {
         blog::dto::EmailPreviewsResponse response;
         response.email_previews.push_back(blog::dto::EmailPreview{});
@@ -546,36 +554,36 @@ public:
     }
 
     /** @brief PUT /users/password. */
-    SpecialResult password_change() const
+    EndpointResponse password_change() const
     {
         return ok(blog::dto::PasswordResponse{});
     }
 
     /** @brief GET /comments/:id/{replies,likes,reports,dislikes}. */
-    SpecialResult comment_sub(std::string_view path) const
+    EndpointResponse comment_sub(std::string_view path) const
     {
         std::string_view key{"comments"};
         if (path.ends_with("/likes")) key = "comment_likes";
         else if (path.ends_with("/dislikes")) key = "comment_dislikes";
         else if (path.ends_with("/reports")) key = "comment_reports";
-        return SpecialResult{200, std::format(
+        return EndpointResponse{200, std::format(
             R"({{"{}":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
             key, key == "comments" ? blog::dto::GhostJson::comment([]{ model::Comment c; c.set_id(1); return c; }())
                                    : blog::dto::GhostJson::comment_sub()
         )};
     }
 
-    SpecialResult oembed() const
+    EndpointResponse oembed() const
     {
         return ok(blog::dto::OembedResponse{});
     }
 
-    SpecialResult feedback() const
+    EndpointResponse feedback() const
     {
         return ok(blog::dto::FeedbackResponse{});
     }
 
-    SpecialResult search_index(std::string_view kind) const
+    EndpointResponse search_index(std::string_view kind) const
     {
         if (kind == "pages") {
             blog::dto::SearchPagesResponse r; r.pages.push_back(blog::dto::RecordDto{}); return ok(r);
@@ -594,85 +602,85 @@ public:
         blog::dto::SearchUsersResponse r; r.users.push_back(blog::dto::RecordDto{}); return ok(r);
     }
 
-    SpecialResult automated_emails() const
+    EndpointResponse automated_emails() const
     {
         blog::dto::AutomatedEmailsResponse response;
         response.automated_emails.push_back(blog::dto::RecordDto{});
         return ok(response);
     }
 
-    SpecialResult custom_theme_settings() const
+    EndpointResponse custom_theme_settings() const
     {
-        return SpecialResult{200, std::format(
+        return EndpointResponse{200, std::format(
             R"({{"custom_theme_settings":[{}]}})",
             blog::dto::GhostJson::custom_theme_setting()
         )};
     }
 
-    SpecialResult integrations() const
+    EndpointResponse integrations() const
     {
         blog::dto::IntegrationsResponse response;
         response.integrations.push_back(blog::dto::RecordDto{});
         return ok(response);
     }
 
-    SpecialResult labels() const
+    EndpointResponse labels() const
     {
         blog::dto::LabelsResponse response;
         response.labels.push_back(blog::dto::NamedRecordDto{});
         return ok(response);
     }
 
-    SpecialResult snippets() const
+    EndpointResponse snippets() const
     {
         blog::dto::SnippetsResponse response;
         response.snippets.push_back(blog::dto::NamedRecordDto{});
         return ok(response);
     }
 
-    SpecialResult recommendations() const
+    EndpointResponse recommendations() const
     {
         blog::dto::RecommendationsResponse response;
         response.recommendations.push_back(blog::dto::NamedRecordDto{});
         return ok(response);
     }
 
-    SpecialResult webhooks() const
+    EndpointResponse webhooks() const
     {
         blog::dto::WebhooksListResponse response;
         response.webhooks.push_back(blog::dto::WebhooksDto{});
         return ok(response);
     }
 
-    SpecialResult gift_links() const
+    EndpointResponse gift_links() const
     {
         blog::dto::GiftLinksResponse response;
         response.gift_links.push_back(blog::dto::LinkRecord{});
         return ok(response);
     }
 
-    SpecialResult automation_links() const
+    EndpointResponse automation_links() const
     {
         blog::dto::AutomationLinksResponse response;
         response.links.push_back(blog::dto::LinkRecord{});
         return ok(response);
     }
 
-    SpecialResult roles() const
+    EndpointResponse roles() const
     {
         blog::dto::RolesResponse response;
         response.roles.push_back(blog::dto::RoleDto{});
         return ok(response);
     }
 
-    SpecialResult invites() const
+    EndpointResponse invites() const
     {
         blog::dto::InvitesResponse response;
         response.invites.push_back(blog::dto::InviteDto{});
         return ok(response);
     }
 
-    SpecialResult notifications() const
+    EndpointResponse notifications() const
     {
         blog::dto::NotificationsResponse response;
         response.notifications.push_back(blog::dto::NotificationDto{});
@@ -680,73 +688,15 @@ public:
     }
 
     /** @brief GET /site. */
-    SpecialResult site() const
+    EndpointResponse site() const
     {
         return ok(blog::dto::SiteResponse{});
     }
 
     /** @brief GET /config. */
-    SpecialResult config() const
+    EndpointResponse config() const
     {
         return ok(blog::dto::ConfigEnvelope{});
-    }
-
-    /** @brief Hand-written dispatch for special (non-CRUD) admin endpoints. */
-    SpecialResult dispatch(std::string_view path, std::string_view method,
-                           std::string_view id, std::string_view body)
-    {
-        if (path == "/members/events") {
-            return SpecialResult{200, std::format(
-                R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}}}})",
-                blog::dto::GhostJson::event())};
-        }
-        if (path.starts_with("/stats/mrr") || path == "/members/stats/mrr") return stats_mrr();
-        if (path.starts_with("/stats/member_count") || path == "/members/stats/count") return stats_member();
-        if (path.starts_with("/stats/") || path.ends_with("/performance-stats")) return stats_empty();
-        if (path == "/members/metafields" && method == "GET") {
-            return SpecialResult{200, R"({"members":[{"id":"1","name":"Ghost","email":"member2@test.com","attribution":{"id":null,"referrer_medium":"Ghost Admin","referrer_source":"Created manually","referrer_url":null,"title":null,"type":null,"url":null},"commenting":{"disabled":false,"disabled_reason":null,"disabled_until":null},"created_at":"2024-01-01T00:00:00.000Z","updated_at":"2024-01-01T00:00:00.000Z","uuid":"00000000-0000-0000-0000-000000000001","status":"free","subscribed":false,"subscriptions":[],"tiers":[],"labels":[],"newsletters":[],"note":null,"avatar_image":null,"comped":false,"description":null,"can_comment":true,"current_subscription":null,"email_count":0,"email_opened_count":0,"email_open_rate":null,"email_suppression":{"info":null,"suppressed":false},"enable_comment_notifications":true,"enable_updates_and_announcements":null,"geolocation":null,"last_seen_at":null,"unsubscribe_url":"http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme"}]})"};
-        }
-        if (path.starts_with("/stripe/")) {
-            if (path == "/stripe/checkout/config" && method == "GET") return SpecialResult{200, m_stripe.config()};
-            if (path == "/stripe/checkout/config" && method == "PUT") {
-                m_stripe.configure(body);
-                return SpecialResult{200, m_stripe.config()};
-            }
-            if (method == "POST") return SpecialResult{200, m_stripe.preview(body)};
-            return SpecialResult{200, m_stripe.branding()};
-        }
-        if (path == "/settings" && method == "PUT") {
-            return SpecialResult{200, R"({"settings":{"title":"Ghost"},"meta":{}})"};
-        }
-        if (path.starts_with("/config")) return config();
-        if (path == "/site") return site();
-        if (method == "GET" && path == "/invites") return invites();
-        if (method == "GET" && path == "/webhooks") return webhooks();
-        if (method == "GET" && path == "/custom_theme_settings") return custom_theme_settings();
-        if (method == "GET" && path == "/integrations") return integrations();
-        if (method == "GET" && path == "/oembed") return oembed();
-        if (method == "GET" && path.starts_with("/feedback/")) return feedback();
-        if (method == "GET" && path.starts_with("/search-index/"))
-            return search_index(path.substr(std::string{"/search-index/"}.size()));
-        if (path.contains("/gift_links")) return gift_links();
-        if (path.contains("/actions/") && path.ends_with("/links")) return automation_links();
-        if (method == "GET" && path.starts_with("/email_previews/")) return email_previews();
-        if (method == "PUT" && path == "/users/password") return password_change();
-        if (method == "GET" && (path.ends_with("/replies") || path.ends_with("/likes") ||
-                                path.ends_with("/reports") || path.ends_with("/dislikes"))) return comment_sub(path);
-        if (method == "DELETE" && path == "/emails/analytics") return emails_analytics_delete();
-        if (method == "GET" && path.ends_with("/recipient-failures")) return emails_failures(id);
-        if (method == "GET" && path.ends_with("/batches")) return emails_batches(id);
-        if (method == "GET" && path.ends_with("/analytics")) return emails_analytics_get(id);
-        if (method == "PUT" && path.ends_with("/analytics")) return emails_analytics_put(id, body);
-        if (method == "POST" && path.ends_with("/email_preview")) return automation_email_preview(id, body);
-        if (method == "POST" && path.ends_with("/email_test")) return automation_email_test(id, body);
-        if (method == "POST" && path.ends_with("/subscriptions")) return member_subscription_create(id, body);
-        if (method == "PUT" && path.contains("/subscriptions/")) return member_subscription_edit(id, "1", body);
-        if (method == "GET" && path.ends_with("/signin_urls")) return member_signin_urls(id);
-        if (method == "POST" && path.ends_with("/commenting/disable")) return commenting_set(id, body, true);
-        if (method == "POST" && path.ends_with("/commenting/enable")) return commenting_set(id, body, false);
-        return SpecialResult{0, ""};
     }
 
     [[nodiscard]] std::size_t test_emails_sent() const noexcept
@@ -760,12 +710,12 @@ private:
     std::vector<MetaField> m_metafields{};
     std::uint64_t m_metafield_counter{0};
 
-    [[nodiscard]] SpecialResult not_found(std::string_view context) const
+    [[nodiscard]] EndpointResponse not_found(std::string_view context) const
     {
         return {404, ApiError{}.json("Resource not found", context)};
     }
 
-    [[nodiscard]] SpecialResult ok(const auto& model) const
+    [[nodiscard]] EndpointResponse ok(const auto& model) const
     {
         return {200, blog::dto::ModelJson<std::decay_t<decltype(model)>>{}.to_json(model)};
     }

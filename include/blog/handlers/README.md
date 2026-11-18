@@ -19,7 +19,7 @@ handlers/<domain>/
 - No central `api/` directory. Route files are part of their domain folder.
 - One handler folder per concrete route operation, not one god handler.
 - Handlers receive injected services (`BlogContext`, `SpecialEndpoints`, `MutationStore`).
-- `SpecialResult` is a status + body value object from `special.cppm`, not a handler.
+- `EndpointResponse` is a plain status + body value returned by domain service methods; each route folder calls the method it needs directly. There is no central special-endpoint dispatch and no `SpecialResult` type.
 - Shared code is limited to `middleware/`, `mutation.cppm`, `special.cppm`, `stripe.cppm`, `all.cppm`.
 
 Route lambdas bind to one exact handler:

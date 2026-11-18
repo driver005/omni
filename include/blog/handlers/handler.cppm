@@ -60,7 +60,7 @@ public:
 
         const auto special = special_result(path, lower_method, body);
         if (special) {
-            write(response, special->status(), special->body());
+            write(response, special->status, special->body);
             send();
             return;
         }
@@ -210,7 +210,7 @@ private:
         response.set_body(std::move(out));
     }
 
-    [[nodiscard]] std::optional<SpecialResult> special_result(
+    [[nodiscard]] std::optional<EndpointResponse> special_result(
         std::string_view path,
         std::string_view method,
         std::string_view body
@@ -263,7 +263,7 @@ private:
             return m_special.stats_member();
         }
         if (action == "get" && path == "/members/events") {
-            return SpecialResult{200, std::format(
+            return EndpointResponse{200, std::format(
                 R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
                 blog::dto::GhostJson::event()
             )};

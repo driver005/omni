@@ -45,12 +45,12 @@ public:
 
         if (path.contains("/gift_links")) {
             const auto result = m_special.gift_links();
-            write(response, result.status(), result.body(), std::move(send));
+            write(response, result.status, result.body, std::move(send));
             return;
         }
         if (path == "/posts/export") {
             const auto result = m_special.gift_links();
-            write(response, result.status(), result.body(), std::move(send));
+            write(response, result.status, result.body, std::move(send));
             return;
         }
 

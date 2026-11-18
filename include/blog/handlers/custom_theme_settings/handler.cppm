@@ -34,7 +34,7 @@ public:
         if (path.size() > 1 && path.back() == '/') path.pop_back();
         if (method == "GET" && (path == "/custom_theme_settings")) {
             const auto result = m_special.custom_theme_settings();
-            write(response, result.status(), result.body());
+            write(response, result.status, result.body);
             send();
             return;
         }

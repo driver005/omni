@@ -39,7 +39,7 @@ public:
                     : path == "/stats/member_count" || path == "/members/stats/count"
                           ? m_special.stats_member()
                           : m_special.stats_empty();
-            write(response, result.status(), result.body());
+            write(response, result.status, result.body);
             send();
             return;
         }

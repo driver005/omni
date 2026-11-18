@@ -15,8 +15,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
   auto& special=*s_special;
-  const auto r=special.dispatch(std::string_view{in.path}.substr(0, in.path.find('?')), "GET", in.id, in.body);
-  if(r.status()!=0) return core::workflow::StepResponse<Output>{r.body()};
+  
   const auto one=ctx.store().find_by_resource("authors", in.id.empty()?"1":in.id);
   if(one) return core::workflow::StepResponse<Output>{"{\"authors\":[" + *one + "]}"};
   return core::workflow::StepResponse<Output>{R"({"authors":[]})"};

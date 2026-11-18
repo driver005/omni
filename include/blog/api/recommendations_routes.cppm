@@ -8,70 +8,65 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /recommendations. */
 class RecommendationsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::RecommendationsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/recommendations"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.recommendations_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost recommendations GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.recommendations_create().handle(req, res, std::move(send));
     })
             .summary("Ghost recommendations POST")
             .add_route(
                 Route{"/:id"}
-                    .delt([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.recommendations_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.recommendations_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.recommendations_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
             )
             .add_route(
                 Route{"/check"}
-                    .post([h](
+                    .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.recommendations_recommendations_check_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost check POST")
             );

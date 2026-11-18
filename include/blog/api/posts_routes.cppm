@@ -8,35 +8,20 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /posts. */
 class PostsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::BlogHandlers& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/posts"}
-            .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.posts_bulk_destroy().handle(req, res, std::move(send));
-
-    })
-            .summary("Ghost posts DELETE")
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         handler.posts_browse().handle(req, res, std::move(send));
-
     })
             .summary("Ghost posts GET")
             .post([&handler](
@@ -44,28 +29,25 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        handler.posts_upload().handle(req, res, std::move(send));
-
+        handler.posts_create().handle(req, res, std::move(send));
     })
             .summary("Ghost posts POST")
-            .add_router(
-                Router{router, "/:id"}
-                    .delt([&handler](
+            .delt([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        handler.posts_destroy().handle(req, res, std::move(send));
-
+        handler.posts_bulk_destroy().handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id DELETE")
+            .summary("Ghost posts DELETE")
+            .add_router(
+                Router{router, "/:id"}
                     .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         handler.posts_read_by_id().handle(req, res, std::move(send));
-
     })
                     .summary("Ghost :id GET")
                     .put([&handler](
@@ -74,9 +56,16 @@ public:
         std::function<void()> send
     ) {
         handler.posts_edit().handle(req, res, std::move(send));
-
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.posts_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/copy"}
                             .post([&handler](
@@ -85,7 +74,6 @@ public:
         std::function<void()> send
     ) {
         handler.posts_copy().handle(req, res, std::move(send));
-
     })
                             .summary("Ghost copy POST")
                     )
@@ -97,27 +85,24 @@ public:
         std::function<void()> send
     ) {
         handler.posts_gift_links_browse().handle(req, res, std::move(send));
-
     })
                             .summary("Ghost gift_links GET")
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.posts_gift_links_create().handle(req, res, std::move(send));
-
-    })
-                            .summary("Ghost gift_links POST")
                             .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         handler.posts_gift_links_edit().handle(req, res, std::move(send));
-
     })
                             .summary("Ghost gift_links PUT")
+                            .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.posts_gift_links_create().handle(req, res, std::move(send));
+    })
+                            .summary("Ghost gift_links POST")
                     )
             )
             .add_route(
@@ -128,7 +113,6 @@ public:
         std::function<void()> send
     ) {
         handler.posts_bulk_edit().handle(req, res, std::move(send));
-
     })
                     .summary("Ghost bulk PUT")
             )
@@ -140,7 +124,6 @@ public:
         std::function<void()> send
     ) {
         handler.posts_export().handle(req, res, std::move(send));
-
     })
                     .summary("Ghost export GET")
             )
@@ -166,7 +149,6 @@ public:
         std::function<void()> send
     ) {
         handler.posts_upload().handle(req, res, std::move(send));
-
     })
                     .summary("Ghost upload POST")
             );

@@ -3,6 +3,7 @@ export module blog_handlers:special;
 import std;
 import blog_dto;
 import blog_context;
+import :stripe;
 import :mutation;
 #ifdef CONGELADO_TEST
 import boost.ut;
@@ -690,12 +691,71 @@ public:
         return ok(blog::dto::ConfigEnvelope{});
     }
 
+    /** @brief Hand-written dispatch for special (non-CRUD) admin endpoints. */
+    SpecialResult dispatch(std::string_view path, std::string_view method,
+                           std::string_view id, std::string_view body)
+    {
+        if (path == "/members/events") {
+            return SpecialResult{200, std::format(
+                R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}}}})",
+                blog::dto::GhostJson::event())};
+        }
+        if (path.starts_with("/stats/mrr") || path == "/members/stats/mrr") return stats_mrr();
+        if (path.starts_with("/stats/member_count") || path == "/members/stats/count") return stats_member();
+        if (path.starts_with("/stats/") || path.ends_with("/performance-stats")) return stats_empty();
+        if (path == "/members/metafields" && method == "GET") {
+            return SpecialResult{200, R"({"members":[{"id":"1","name":"Ghost","email":"member2@test.com","attribution":{"id":null,"referrer_medium":"Ghost Admin","referrer_source":"Created manually","referrer_url":null,"title":null,"type":null,"url":null},"commenting":{"disabled":false,"disabled_reason":null,"disabled_until":null},"created_at":"2024-01-01T00:00:00.000Z","updated_at":"2024-01-01T00:00:00.000Z","uuid":"00000000-0000-0000-0000-000000000001","status":"free","subscribed":false,"subscriptions":[],"tiers":[],"labels":[],"newsletters":[],"note":null,"avatar_image":null,"comped":false,"description":null,"can_comment":true,"current_subscription":null,"email_count":0,"email_opened_count":0,"email_open_rate":null,"email_suppression":{"info":null,"suppressed":false},"enable_comment_notifications":true,"enable_updates_and_announcements":null,"geolocation":null,"last_seen_at":null,"unsubscribe_url":"http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme"}]})"};
+        }
+        if (path.starts_with("/stripe/")) {
+            if (path == "/stripe/checkout/config" && method == "GET") return SpecialResult{200, m_stripe.config()};
+            if (path == "/stripe/checkout/config" && method == "PUT") {
+                m_stripe.configure(body);
+                return SpecialResult{200, m_stripe.config()};
+            }
+            if (method == "POST") return SpecialResult{200, m_stripe.preview(body)};
+            return SpecialResult{200, m_stripe.branding()};
+        }
+        if (path == "/settings" && method == "PUT") {
+            return SpecialResult{200, R"({"settings":{"title":"Ghost"},"meta":{}})"};
+        }
+        if (path.starts_with("/config")) return config();
+        if (path == "/site") return site();
+        if (method == "GET" && path == "/invites") return invites();
+        if (method == "GET" && path == "/webhooks") return webhooks();
+        if (method == "GET" && path == "/custom_theme_settings") return custom_theme_settings();
+        if (method == "GET" && path == "/integrations") return integrations();
+        if (method == "GET" && path == "/oembed") return oembed();
+        if (method == "GET" && path.starts_with("/feedback/")) return feedback();
+        if (method == "GET" && path.starts_with("/search-index/"))
+            return search_index(path.substr(std::string{"/search-index/"}.size()));
+        if (path.contains("/gift_links")) return gift_links();
+        if (path.contains("/actions/") && path.ends_with("/links")) return automation_links();
+        if (method == "GET" && path.starts_with("/email_previews/")) return email_previews();
+        if (method == "PUT" && path == "/users/password") return password_change();
+        if (method == "GET" && (path.ends_with("/replies") || path.ends_with("/likes") ||
+                                path.ends_with("/reports") || path.ends_with("/dislikes"))) return comment_sub(path);
+        if (method == "DELETE" && path == "/emails/analytics") return emails_analytics_delete();
+        if (method == "GET" && path.ends_with("/recipient-failures")) return emails_failures(id);
+        if (method == "GET" && path.ends_with("/batches")) return emails_batches(id);
+        if (method == "GET" && path.ends_with("/analytics")) return emails_analytics_get(id);
+        if (method == "PUT" && path.ends_with("/analytics")) return emails_analytics_put(id, body);
+        if (method == "POST" && path.ends_with("/email_preview")) return automation_email_preview(id, body);
+        if (method == "POST" && path.ends_with("/email_test")) return automation_email_test(id, body);
+        if (method == "POST" && path.ends_with("/subscriptions")) return member_subscription_create(id, body);
+        if (method == "PUT" && path.contains("/subscriptions/")) return member_subscription_edit(id, "1", body);
+        if (method == "GET" && path.ends_with("/signin_urls")) return member_signin_urls(id);
+        if (method == "POST" && path.ends_with("/commenting/disable")) return commenting_set(id, body, true);
+        if (method == "POST" && path.ends_with("/commenting/enable")) return commenting_set(id, body, false);
+        return SpecialResult{0, ""};
+    }
+
     [[nodiscard]] std::size_t test_emails_sent() const noexcept
     {
         return m_test_emails_sent;
     }
 
 private:
+    StripeHandler m_stripe{};
     std::map<std::string, CommentState> m_commenting{};
     std::vector<MetaField> m_metafields{};
     std::uint64_t m_metafield_counter{0};

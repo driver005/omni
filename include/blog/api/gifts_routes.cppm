@@ -8,38 +8,33 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /gifts. */
 class GiftsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::GiftsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/gifts"}
             .add_route(
                 Route{"/flush_deliveries"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.gifts_gifts_flush_deliveries_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost flush_deliveries PUT")
             )
             .add_route(
                 Route{"/flush_reminders"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.gifts_gifts_flush_reminders_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost flush_reminders PUT")
             );

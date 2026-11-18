@@ -1,5 +1,4 @@
 export module blog_handlers:posts_gift_links_create_handler;
-
 import std;
 import interfaces;
 import blog_context;

@@ -1,4 +1,5 @@
 export module blog_handlers:posts_gift_links_browse_flow;
+export import core_workflow;
 
 import std;
 import core_workflow;

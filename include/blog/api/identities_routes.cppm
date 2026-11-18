@@ -8,25 +8,20 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /identities. */
 class IdentitiesRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::IdentitiesRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/identities"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.identities_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost identities GET");
     }

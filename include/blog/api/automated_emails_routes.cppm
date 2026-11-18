@@ -8,114 +8,109 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /automated_emails. */
 class AutomatedEmailsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::AutomatedEmailsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/automated_emails"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost automated_emails GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_create().handle(req, res, std::move(send));
     })
             .summary("Ghost automated_emails POST")
             .add_router(
                 Router{router, "/:id"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
                     .add_route(
                         Route{"/preview"}
-                            .post([h](
+                            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_id_preview_post().handle(req, res, std::move(send));
     })
                             .summary("Ghost preview POST")
                     )
                     .add_route(
                         Route{"/test"}
-                            .post([h](
+                            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_id_test_post().handle(req, res, std::move(send));
     })
                             .summary("Ghost test POST")
                     )
             )
             .add_route(
                 Route{"/design"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_design_get().handle(req, res, std::move(send));
     })
                     .summary("Ghost design GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_design_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost design PUT")
             )
             .add_route(
                 Route{"/senders"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_senders_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost senders PUT")
             )
             .add_route(
                 Route{"/verifications"}
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.automated_emails_automated_emails_verifications_put().handle(req, res, std::move(send));
     })
                     .summary("Ghost verifications PUT")
             );

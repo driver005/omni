@@ -8,43 +8,38 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /notifications. */
 class NotificationsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::NotificationsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/notifications"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.notifications_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost notifications GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.notifications_create().handle(req, res, std::move(send));
     })
             .summary("Ghost notifications POST")
             .add_route(
                 Route{"/:id"}
-                    .delt([h](
+                    .delt([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.notifications_destroy().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id DELETE")
             );

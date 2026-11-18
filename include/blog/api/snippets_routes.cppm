@@ -8,61 +8,56 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /snippets. */
 class SnippetsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::SnippetsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/snippets"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.snippets_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost snippets GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.snippets_create().handle(req, res, std::move(send));
     })
             .summary("Ghost snippets POST")
             .add_route(
                 Route{"/:id"}
-                    .delt([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.snippets_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.snippets_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.snippets_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
             );
     }
 };

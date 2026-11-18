@@ -8,72 +8,67 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /tags. */
 class TagsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::TagsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/tags"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.tags_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost tags GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.tags_create().handle(req, res, std::move(send));
     })
             .summary("Ghost tags POST")
             .add_route(
                 Route{"/:id"}
-                    .delt([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
+        handler.tags_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.tags_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.tags_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
             )
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
                         Route{"/:id"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.tags_read_by_slug().handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )

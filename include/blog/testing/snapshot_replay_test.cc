@@ -228,6 +228,7 @@ int main()
         if (!created.body().contains("Injected Post") ||
             !listed.body().contains("Injected Post") ||
             shared.store().total("posts") <= before) {
+            std::println("DBGINJ c={} l={} b={} a={}", created.body().substr(0,80), listed.body().substr(0,80), before, shared.store().total("posts"));
             ++failed;
         }
     }

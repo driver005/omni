@@ -1,0 +1,11 @@
+export module blog_handlers:gifts_gifts_flush_reminders_put_flow;
+export import core_workflow;
+import std;
+import core_workflow;
+import :gifts_gifts_flush_reminders_put_step;
+export namespace blog::handlers::gifts::gifts_flush_reminders_put::workflow {
+class MainFlow { public:
+ [[nodiscard]] core::workflow::WorkflowDefinition build() const {
+  return core::workflow::WorkflowBuilder{}.name("gifts_gifts_flush_reminders_put").step<ExecuteStep>().build();
+ }};
+}

@@ -8,27 +8,22 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /slack. */
 class SlackRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::SlackRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/slack"}
             .add_route(
                 Route{"/test"}
-                    .post([h](
+                    .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.slack_slack_test_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost test POST")
             );

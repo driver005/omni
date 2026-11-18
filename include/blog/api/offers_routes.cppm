@@ -8,51 +8,46 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /offers. */
 class OffersRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::OffersRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/offers"}
-            .get([h](
+            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.offers_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost offers GET")
-            .post([h](
+            .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.offers_create().handle(req, res, std::move(send));
     })
             .summary("Ghost offers POST")
             .add_route(
                 Route{"/:id"}
-                    .get([h](
+                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.offers_read_by_id().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.offers_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
             );

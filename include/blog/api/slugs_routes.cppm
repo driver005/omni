@@ -8,39 +8,34 @@ import blog_handlers;
 
 export namespace blog::api {
 
-/** @brief Ghost routes for /slugs. */
 class SlugsRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::SlugsRouteHandler& handler
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
         Router{router, "/slugs"}
             .add_router(
                 Router{router, "/:id"}
                     .add_router(
                         Router{router, "/:id"}
-                            .get([h](
+                            .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.slugs_get_detail().handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                             .add_route(
                                 Route{"/:id"}
-                                    .get([h](
+                                    .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        handler.slugs_get_detail().handle(req, res, std::move(send));
     })
                                     .summary("Ghost :id GET")
                             )

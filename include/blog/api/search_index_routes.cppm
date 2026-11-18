@@ -5,8 +5,6 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
-import blog_handlers_middleware;
-import blog_operations;
 
 export namespace blog::api {
 
@@ -21,7 +19,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        [[maybe_unused]] auto* h = &handler;
+        auto* h = &handler;
         Router{router, "/search-index"}
             .add_route(
                 Route{"/authors"}
@@ -30,7 +28,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::search_index::search_index_authors_get::SearchIndexAuthorsGetSearchIndexHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost authors GET")
             )
@@ -41,7 +39,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::search_index::search_index_pages_get::SearchIndexPagesGetSearchIndexHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost pages GET")
             )
@@ -52,7 +50,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::search_index::search_index_posts_get::SearchIndexPostsGetSearchIndexHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost posts GET")
             )
@@ -63,7 +61,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::search_index::search_index_tags_get::SearchIndexTagsGetSearchIndexHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost tags GET")
             )
@@ -74,7 +72,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::search_index::search_index_users_get::SearchIndexUsersGetSearchIndexHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost users GET")
             );

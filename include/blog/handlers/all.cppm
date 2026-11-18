@@ -2,10 +2,23 @@ export module blog_handlers:all;
 
 import std;
 import blog_context;
-import blog_handlers_posts_browse;
 import blog_handlers_middleware;
-import blog_handlers_runtime;
 import :handler;
+import :posts_browse_handler;
+import :posts_bulk_destroy_handler;
+import :posts_bulk_edit_handler;
+import :posts_copy_handler;
+import :posts_create_handler;
+import :posts_destroy_handler;
+import :posts_edit_handler;
+import :posts_export_handler;
+import :posts_gift_links_browse_handler;
+import :posts_gift_links_create_handler;
+import :posts_gift_links_edit_handler;
+import :posts_read_by_id_handler;
+import :posts_read_by_slug_handler;
+import :posts_upload_handler;
+
 import :special;
 import :stripe;
 import :actions_handler;
@@ -77,8 +90,6 @@ public:
         m_core{m_ctx, m_special, m_stripe}
     {
         blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
-        blog::handlers::runtime::ServiceRegistry::configure(
-            m_ctx, std::ref(m_special), std::ref(m_stripe));
     }
 
     /** @brief Use an injected, externally-owned context (plugin load). */
@@ -88,8 +99,6 @@ public:
         m_core{m_ctx, m_special, m_stripe}
     {
         blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
-        blog::handlers::runtime::ServiceRegistry::configure(
-            m_ctx, std::ref(m_special), std::ref(m_stripe));
     }
 
     [[nodiscard]] blog::BlogContext& context() noexcept
@@ -100,6 +109,71 @@ public:
     [[nodiscard]] blog::handlers::posts::browse::PostsBrowseHandler& posts_browse() noexcept
     {
         return m_posts_browse;
+    }
+
+    [[nodiscard]] blog::handlers::posts::read_by_id::PostsReadByIdHandler& posts_read_by_id() noexcept
+    {
+        return m_posts_read_by_id;
+    }
+
+    [[nodiscard]] blog::handlers::posts::read_by_slug::PostsReadBySlugHandler& posts_read_by_slug() noexcept
+    {
+        return m_posts_read_by_slug;
+    }
+
+    [[nodiscard]] blog::handlers::posts::export_op::PostsExportHandler& posts_export() noexcept
+    {
+        return m_posts_export;
+    }
+
+    [[nodiscard]] blog::handlers::posts::create::PostsCreateHandler& posts_create() noexcept
+    {
+        return m_posts_create;
+    }
+
+    [[nodiscard]] blog::handlers::posts::bulk_destroy::PostsBulkDestroyHandler& posts_bulk_destroy() noexcept
+    {
+        return m_posts_bulk_destroy;
+    }
+
+    [[nodiscard]] blog::handlers::posts::bulk_edit::PostsBulkEditHandler& posts_bulk_edit() noexcept
+    {
+        return m_posts_bulk_edit;
+    }
+
+    [[nodiscard]] blog::handlers::posts::upload::PostsUploadHandler& posts_upload() noexcept
+    {
+        return m_posts_upload;
+    }
+
+    [[nodiscard]] blog::handlers::posts::edit::PostsEditHandler& posts_edit() noexcept
+    {
+        return m_posts_edit;
+    }
+
+    [[nodiscard]] blog::handlers::posts::destroy::PostsDestroyHandler& posts_destroy() noexcept
+    {
+        return m_posts_destroy;
+    }
+
+    [[nodiscard]] blog::handlers::posts::copy::PostsCopyHandler& posts_copy() noexcept
+    {
+        return m_posts_copy;
+    }
+
+    [[nodiscard]] blog::handlers::posts::gift_links_browse::PostsGiftLinksBrowseHandler& posts_gift_links_browse() noexcept
+    {
+        return m_posts_gift_links_browse;
+    }
+
+    [[nodiscard]] blog::handlers::posts::gift_links_edit::PostsGiftLinksEditHandler& posts_gift_links_edit() noexcept
+    {
+        return m_posts_gift_links_edit;
+    }
+
+    [[nodiscard]] blog::handlers::posts::gift_links_create::PostsGiftLinksCreateHandler& posts_gift_links_create() noexcept
+    {
+        return m_posts_gift_links_create;
     }
 
     [[nodiscard]] CoreHandler& core() noexcept
@@ -328,6 +402,19 @@ private:
     std::unique_ptr<blog::BlogContext> m_owned_context{};
     blog::BlogContext& m_ctx;
     blog::handlers::posts::browse::PostsBrowseHandler m_posts_browse{m_ctx};
+    blog::handlers::posts::read_by_id::PostsReadByIdHandler m_posts_read_by_id{m_ctx};
+    blog::handlers::posts::read_by_slug::PostsReadBySlugHandler m_posts_read_by_slug{m_ctx};
+    blog::handlers::posts::export_op::PostsExportHandler m_posts_export{m_ctx};
+    blog::handlers::posts::create::PostsCreateHandler m_posts_create{m_ctx};
+    blog::handlers::posts::bulk_destroy::PostsBulkDestroyHandler m_posts_bulk_destroy{m_ctx};
+    blog::handlers::posts::bulk_edit::PostsBulkEditHandler m_posts_bulk_edit{m_ctx};
+    blog::handlers::posts::upload::PostsUploadHandler m_posts_upload{m_ctx};
+    blog::handlers::posts::edit::PostsEditHandler m_posts_edit{m_ctx};
+    blog::handlers::posts::destroy::PostsDestroyHandler m_posts_destroy{m_ctx};
+    blog::handlers::posts::copy::PostsCopyHandler m_posts_copy{m_ctx};
+    blog::handlers::posts::gift_links_browse::PostsGiftLinksBrowseHandler m_posts_gift_links_browse{m_ctx};
+    blog::handlers::posts::gift_links_edit::PostsGiftLinksEditHandler m_posts_gift_links_edit{m_ctx};
+    blog::handlers::posts::gift_links_create::PostsGiftLinksCreateHandler m_posts_gift_links_create{m_ctx};
     SpecialEndpoints m_special{};
     StripeHandler m_stripe{};
     CoreHandler m_core;
@@ -364,7 +451,7 @@ private:
         OembedRouteHandler OembedRouteHandler{m_ctx, m_core, m_special, m_stripe};
         OffersRouteHandler OffersRouteHandler{m_ctx, m_core, m_special, m_stripe};
         PagesRouteHandler PagesRouteHandler{m_ctx, m_core, m_special, m_stripe};
-        PostsRouteHandler PostsRouteHandler{m_ctx, m_core, m_special, m_stripe};
+        PostsRouteHandler PostsRouteHandler{m_ctx, m_special};
         RecommendationsRouteHandler RecommendationsRouteHandler{m_ctx, m_core, m_special, m_stripe};
         RedirectsRouteHandler RedirectsRouteHandler{m_ctx, m_core, m_special, m_stripe};
         RolesRouteHandler RolesRouteHandler{m_ctx, m_core, m_special, m_stripe};

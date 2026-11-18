@@ -5,8 +5,6 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
-import blog_handlers_middleware;
-import blog_operations;
 
 export namespace blog::api {
 
@@ -21,7 +19,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        [[maybe_unused]] auto* h = &handler;
+        auto* h = &handler;
         Router{router, "/email_previews"}
             .add_router(
                 Router{router, "/posts"}
@@ -32,7 +30,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::email_previews::get_detail::GetDetailEmailPreviewsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                             .post([h](
@@ -40,7 +38,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::email_previews::post_detail::PostDetailEmailPreviewsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost :id POST")
                     )

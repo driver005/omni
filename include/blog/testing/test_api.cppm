@@ -5,7 +5,7 @@ import interfaces;
 import core_router;
 import io_layer_http2;
 import utils_buffering;
-import blog_api;
+import blog_handlers_routes;
 import blog_handlers;
 import blog_context;
 import :route_catalog;

@@ -13,7 +13,7 @@ congelado_module_library(
         "test_api.cppm",
     ],
     deps = [
-        "//include/blog/api:blog_api",
+        "//include/blog/handlers:blog_handlers_routes",
         "//include/blog/handlers:blog_handlers",
         "//include/blog/context:blog_context",
         "//include/io/layer/http2:io_layer_http2",
@@ -60,7 +60,7 @@ congelado_cc_binary(
     linkopts = ["-lcrypto", "-lssl"],
     deps = [
         ":wire_client",
-        "//include/blog/api:blog_api",
+        "//include/blog/handlers:blog_handlers_routes",
         "//include/blog/handlers:blog_handlers",
         "//include/core/router:core_router",
         "//include/interfaces:interfaces",

@@ -16,7 +16,7 @@ public:
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }
  void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
-  if (blog::handlers::middleware::token(req).empty() && !false) {
+  if (blog::handlers::middleware::token(req).empty()) {
    const std::string b{R"({"error":"Unauthorized"})"}; std::vector<std::byte> bytes;
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;

@@ -15,9 +15,9 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
   auto& special=*s_special;
-  const auto r=special.dispatch(std::string_view{in.path}.substr(0, in.path.find('?')), "GET", in.id, in.body);
-  if(r.status()!=0) return core::workflow::StepResponse<Output>{r.body()};
-  return core::workflow::StepResponse<Output>{"{}"};
+  
+  const auto r=special.metafields_browse();
+  if(r.status!=0) return core::workflow::StepResponse<Output>{r.body};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
  static blog::BlogContext* s_ctx; static blog::api::SpecialEndpoints* s_special;

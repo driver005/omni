@@ -15,8 +15,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
   auto& special=*s_special;
-  const auto r=special.dispatch(std::string_view{in.path}.substr(0, in.path.find('?')), "GET", in.id, in.body);
-  if(r.status()!=0) return core::workflow::StepResponse<Output>{r.body()};
+  
   const auto rows=ctx.store().json_for("tinybird", {});
   return core::workflow::StepResponse<Output>{"{\"tinybird\":" + rows + ",\"meta\":{\"pagination\":{\"limit\":15,\"page\":1,\"pages\":1,\"prev\":null,\"next\":null,\"total\":0}}}}"};
  }

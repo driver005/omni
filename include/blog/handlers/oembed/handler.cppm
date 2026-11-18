@@ -34,7 +34,7 @@ public:
         if (path.size() > 1 && path.back() == '/') path.pop_back();
         if (method == "GET" && (path == "/oembed")) {
             const auto result = m_special.oembed();
-            write(response, result.status(), result.body());
+            write(response, result.status, result.body);
             send();
             return;
         }

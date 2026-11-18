@@ -34,7 +34,7 @@ public:
         if (path.size() > 1 && path.back() == '/') path.pop_back();
         if (method == "GET" && (path.contains("/gift_links"))) {
             const auto result = m_special.gift_links();
-            write(response, result.status(), result.body());
+            write(response, result.status, result.body);
             send();
             return;
         }

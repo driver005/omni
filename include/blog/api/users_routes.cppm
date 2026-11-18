@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/users"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost users DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -37,16 +29,16 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost users GET")
-            .put([h](
+            .add_router(
+                Router{router, "/:id"}
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost users PUT")
-            .add_route(
-                Route{"/:id"}
+                    .summary("Ghost :id DELETE")
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -63,28 +55,75 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
-            )
-            .add_route(
-                Route{"/email"}
-                    .get([h](
+                    .add_route(
+                        Route{"/token"}
+                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost email GET")
-            )
-            .add_route(
-                Route{"/slug"}
-                    .get([h](
+                            .summary("Ghost token GET")
+                            .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost slug GET")
+                            .summary("Ghost token PUT")
+                    )
+            )
+            .add_router(
+                Router{router, "/email"}
+                    .add_route(
+                        Route{"/:email"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :email GET")
+                    )
+            )
+            .add_route(
+                Route{"/owner"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost owner PUT")
+            )
+            .add_route(
+                Route{"/password"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost password PUT")
+            )
+            .add_router(
+                Router{router, "/slug"}
+                    .add_route(
+                        Route{"/:slug"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :slug GET")
+                    )
             );
     }
 };

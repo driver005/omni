@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/tags"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost tags DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -45,16 +37,16 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost tags POST")
-            .put([h](
+            .add_route(
+                Route{"/:id"}
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost tags PUT")
-            .add_route(
-                Route{"/slug"}
+                    .summary("Ghost :id DELETE")
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -62,7 +54,29 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost slug GET")
+                    .summary("Ghost :id GET")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id PUT")
+            )
+            .add_router(
+                Router{router, "/slug"}
+                    .add_route(
+                        Route{"/:slug"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :slug GET")
+                    )
             );
     }
 };

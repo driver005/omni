@@ -37,24 +37,87 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost automated_emails POST")
-            .put([h](
+            .add_router(
+                Router{router, "/:id"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost automated_emails PUT")
+                    .summary("Ghost :id GET")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id PUT")
+                    .add_route(
+                        Route{"/preview"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost preview POST")
+                    )
+                    .add_route(
+                        Route{"/test"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost test POST")
+                    )
+            )
             .add_route(
-                Route{"/:id"}
-                    .post([h](
+                Route{"/design"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id POST")
+                    .summary("Ghost design GET")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost design PUT")
+            )
+            .add_route(
+                Route{"/senders"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost senders PUT")
+            )
+            .add_route(
+                Route{"/verifications"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost verifications PUT")
             );
     }
 };

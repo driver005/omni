@@ -21,14 +21,17 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/files"}
-            .post([h](
+            .add_route(
+                Route{"/upload"}
+                    .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost files POST");
+                    .summary("Ghost upload POST")
+            );
     }
 };
 

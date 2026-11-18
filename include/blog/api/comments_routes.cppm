@@ -37,16 +37,8 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost comments POST")
-            .put([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost comments PUT")
-            .add_route(
-                Route{"/:id"}
+            .add_router(
+                Router{router, "/:id"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -55,17 +47,72 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-            )
-            .add_route(
-                Route{"/post"}
-                    .get([h](
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost post GET")
+                    .summary("Ghost :id PUT")
+                    .add_route(
+                        Route{"/dislikes"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost dislikes GET")
+                    )
+                    .add_route(
+                        Route{"/likes"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost likes GET")
+                    )
+                    .add_route(
+                        Route{"/replies"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost replies GET")
+                    )
+                    .add_route(
+                        Route{"/reports"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost reports GET")
+                    )
+            )
+            .add_router(
+                Router{router, "/post"}
+                    .add_route(
+                        Route{"/:post_id"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :post_id GET")
+                    )
             );
     }
 };

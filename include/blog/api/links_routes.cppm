@@ -29,14 +29,17 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost links GET")
-            .put([h](
+            .add_route(
+                Route{"/bulk"}
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost links PUT");
+                    .summary("Ghost bulk PUT")
+            );
     }
 };
 

@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/webhooks"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost webhooks DELETE")
             .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -37,14 +29,25 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost webhooks POST")
-            .put([h](
+            .add_route(
+                Route{"/:id"}
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost webhooks PUT");
+                    .summary("Ghost :id DELETE")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id PUT")
+            );
     }
 };
 

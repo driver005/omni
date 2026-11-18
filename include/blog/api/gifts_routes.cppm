@@ -21,14 +21,28 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/gifts"}
-            .put([h](
+            .add_route(
+                Route{"/flush_deliveries"}
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost gifts PUT");
+                    .summary("Ghost flush_deliveries PUT")
+            )
+            .add_route(
+                Route{"/flush_reminders"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost flush_reminders PUT")
+            );
     }
 };
 

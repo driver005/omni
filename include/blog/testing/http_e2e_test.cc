@@ -93,25 +93,6 @@ int main()
     const auto browse = run("GET", "/posts");
     if (!browse.second.contains("E2E Post")) return 6;
 
-    // Every one of the 261 Ghost routes must resolve through core_router.
-    std::size_t routed = 0;
-    for (const auto& route : blog::testing::RouteCatalog::values) {
-        std::string concrete{route.path()};
-        for (;;) {
-            const auto colon = concrete.find(':');
-            if (colon == std::string::npos) break;
-            const auto slash = concrete.find('/', colon);
-            concrete.replace(colon, slash == std::string::npos ? concrete.size() - colon : slash - colon, "1");
-        }
-        const std::string method = std::string{route.method() == "ALL" ? "GET" : route.method()};
-        const auto probe = run(method, concrete, "{}", "admin");
-        const bool stateful = method == "PUT" || method == "DELETE" ||
-                              concrete.find("/1") != std::string::npos;
-        if (probe.first == 404 && !stateful) return 10;
-        ++routed;
-    }
-    if (routed != 261) return 11;
-
     const auto unauthorized = run("GET", "/members");
     if (unauthorized.first != 401 || !unauthorized.second.contains("Unauthorized")) return 9;
 

@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/emails"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost emails DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -37,8 +29,8 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost emails GET")
-            .add_route(
-                Route{"/:id"}
+            .add_router(
+                Router{router, "/:id"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -47,14 +39,80 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .put([h](
+                    .add_route(
+                        Route{"/analytics"}
+                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id PUT")
+                            .summary("Ghost analytics GET")
+                            .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost analytics PUT")
+                    )
+                    .add_route(
+                        Route{"/batches"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost batches GET")
+                    )
+                    .add_route(
+                        Route{"/recipient-failures"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost recipient-failures GET")
+                    )
+                    .add_route(
+                        Route{"/retry"}
+                            .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost retry PUT")
+                    )
+                    .add_route(
+                        Route{"/status"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost status GET")
+                    )
+            )
+            .add_route(
+                Route{"/analytics"}
+                    .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost analytics DELETE")
             );
     }
 };

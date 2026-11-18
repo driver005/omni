@@ -30,7 +30,7 @@ public:
     })
             .summary("Ghost authors GET")
             .add_route(
-                Route{"/slug"}
+                Route{"/:id"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -38,7 +38,21 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost slug GET")
+                    .summary("Ghost :id GET")
+            )
+            .add_router(
+                Router{router, "/slug"}
+                    .add_route(
+                        Route{"/:slug"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :slug GET")
+                    )
             );
     }
 };

@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/integrations"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost integrations DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -45,28 +37,47 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost integrations POST")
-            .put([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost integrations PUT")
             .add_router(
                 Router{router, "/:id"}
-                    .add_router(
-                        Router{router, "/api_key"}
-                            .add_route(
-                                Route{"/:keyid"}
-                                    .post([h](
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                                    .summary("Ghost :keyid POST")
+                    .summary("Ghost :id DELETE")
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id GET")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id PUT")
+                    .add_router(
+                        Router{router, "/api_key"}
+                            .add_router(
+                                Router{router, "/:keyid"}
+                                    .add_route(
+                                        Route{"/refresh"}
+                                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                            .summary("Ghost refresh POST")
+                                    )
                             )
                     )
             );

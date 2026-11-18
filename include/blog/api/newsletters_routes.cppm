@@ -37,14 +37,36 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost newsletters POST")
-            .put([h](
+            .add_route(
+                Route{"/:id"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost newsletters PUT");
+                    .summary("Ghost :id GET")
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id PUT")
+            )
+            .add_route(
+                Route{"/verifications"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost verifications PUT")
+            );
     }
 };
 

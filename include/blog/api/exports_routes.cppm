@@ -21,14 +21,6 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/exports"}
-            .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost exports GET")
             .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -36,7 +28,18 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost exports POST");
+            .summary("Ghost exports POST")
+            .add_route(
+                Route{"/download"}
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost download GET")
+            );
     }
 };
 

@@ -21,24 +21,27 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/email_previews"}
-            .add_route(
-                Route{"/posts"}
-                    .get([h](
+            .add_router(
+                Router{router, "/posts"}
+                    .add_route(
+                        Route{"/:id"}
+                            .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost posts GET")
-                    .post([h](
+                            .summary("Ghost :id GET")
+                            .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost posts POST")
+                            .summary("Ghost :id POST")
+                    )
             );
     }
 };

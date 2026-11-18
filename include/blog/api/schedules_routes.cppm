@@ -21,16 +21,19 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/schedules"}
-            .add_route(
-                Route{"/:resource"}
-                    .put([h](
+            .add_router(
+                Router{router, "/:resource"}
+                    .add_route(
+                        Route{"/:id"}
+                            .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :resource PUT")
+                            .summary("Ghost :id PUT")
+                    )
             );
     }
 };

@@ -45,16 +45,16 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost posts POST")
-            .put([h](
+            .add_router(
+                Router{router, "/:id"}
+                    .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost posts PUT")
-            .add_route(
-                Route{"/:id"}
+                    .summary("Ghost :id DELETE")
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -63,14 +63,6 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
-                    .post([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id POST")
                     .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -79,9 +71,58 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .add_route(
+                        Route{"/copy"}
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost copy POST")
+                    )
+                    .add_route(
+                        Route{"/gift_links"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost gift_links GET")
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost gift_links POST")
+                            .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost gift_links PUT")
+                    )
             )
             .add_route(
-                Route{"/slug"}
+                Route{"/bulk"}
+                    .put([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost bulk PUT")
+            )
+            .add_route(
+                Route{"/export"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -89,7 +130,32 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost slug GET")
+                    .summary("Ghost export GET")
+            )
+            .add_router(
+                Router{router, "/slug"}
+                    .add_route(
+                        Route{"/:slug"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost :slug GET")
+                    )
+            )
+            .add_route(
+                Route{"/upload"}
+                    .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost upload POST")
             );
     }
 };

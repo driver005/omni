@@ -21,14 +21,17 @@ public:
         using Router = utils::openapi::ApiRouter;
         auto* h = &handler;
         Router{router, "/feedback"}
-            .get([h](
+            .add_route(
+                Route{"/:id"}
+                    .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-            .summary("Ghost feedback GET");
+                    .summary("Ghost :id GET")
+            );
     }
 };
 

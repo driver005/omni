@@ -37,46 +37,66 @@ public:
         h->handle(req, res, std::move(send));
     })
             .summary("Ghost settings PUT")
-            .add_route(
-                Route{"/access_code"}
-                    .post([h](
+            .add_router(
+                Router{router, "/access_code"}
+                    .add_route(
+                        Route{"/regenerate"}
+                            .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost access_code POST")
+                            .summary("Ghost regenerate POST")
+                    )
+            )
+            .add_router(
+                Router{router, "/routes"}
+                    .add_route(
+                        Route{"/yaml"}
+                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost yaml GET")
+                            .post([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost yaml POST")
+                    )
+            )
+            .add_router(
+                Router{router, "/stripe"}
+                    .add_route(
+                        Route{"/connect"}
+                            .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                            .summary("Ghost connect DELETE")
+                    )
             )
             .add_route(
-                Route{"/routes"}
-                    .get([h](
+                Route{"/verifications"}
+                    .put([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost routes GET")
-                    .post([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost routes POST")
-            )
-            .add_route(
-                Route{"/stripe"}
-                    .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost stripe DELETE")
+                    .summary("Ghost verifications PUT")
             );
     }
 };

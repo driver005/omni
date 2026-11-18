@@ -64,6 +64,9 @@ congelado_module_library(
         "//include/core/router:core_router",
         "//include/utils/openapi:utils_openapi",
         "//include/blog/handlers:blog_handlers",
+        "//include/blog/handlers:blog_operations",
+        "//include/blog/handlers:blog_handlers_middleware",
+        "//include/blog/handlers:blog_handlers_posts_browse",
     ],
     visibility = ["//visibility:public"],
 )

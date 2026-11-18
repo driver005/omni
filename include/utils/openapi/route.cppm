@@ -35,6 +35,16 @@ public:
      * @param handler the request handler to install.
      * @return `*this`, moved, so the metadata chain (summary()/tags()/etc.) keeps going.
      */
+    /**
+     * @brief Builder chain — appends `middleware` to this route's core middleware chain.
+     * Ordering is registration order; a middleware that never calls `next` stops the chain.
+     */
+    ApiRoute use(interfaces::MiddlewareFn middleware)
+    {
+        m_route = std::move(m_route).use(std::move(middleware));
+        return std::move(*this);
+    }
+
     ApiRoute get(interfaces::HandlerFn handler)
     {
         m_route = m_route.get(std::move(handler));
@@ -449,6 +459,13 @@ public:
      * @param child_router the child router to mount, consumed.
      * @return `*this`, moved, so the chain keeps going.
      */
+    /** @brief Appends middleware to this router's core chain. */
+    ApiRouter use(interfaces::MiddlewareFn middleware) &&
+    {
+        m_router = std::move(m_router).use(std::move(middleware));
+        return std::move(*this);
+    }
+
     ApiRouter add_router(ApiRouter child_router) &&
     {
         // Stash the child's registry slot before it gets consumed below, then mount it

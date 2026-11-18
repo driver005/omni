@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,14 +21,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/offers"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::offers::browse::BrowseOffersHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost offers GET")
             .post([h](
@@ -34,7 +36,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::offers::create::CreateOffersHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost offers POST")
             .add_route(
@@ -44,7 +46,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::offers::read_by_id::ReadByIdOffersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -52,7 +54,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::offers::edit::EditOffersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
             );

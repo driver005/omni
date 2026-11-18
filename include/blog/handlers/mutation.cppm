@@ -102,10 +102,58 @@ public:
     {
     }
 
+    /** @brief Extract the first "name" value from a Ghost request body. */
+    [[nodiscard]] static std::string first_name(std::string_view body)
+    {
+        const auto marker = body.find("\"name\":");
+        if (marker == std::string_view::npos) return {};
+        const auto begin = body.find('"', marker + 7);
+        if (begin == std::string_view::npos) return {};
+        const auto end = body.find('"', begin + 1);
+        if (end == std::string_view::npos) return {};
+        return std::string{body.substr(begin + 1, end - begin - 1)};
+    }
+
+    [[nodiscard]] MutationResult label_validation(std::string_view reason) const
+    {
+        return MutationResult{422, ApiError{}.validation(
+            "Validation error, cannot save label.", reason, "name"
+        ), true};
+    }
+
     [[nodiscard]] MutationResult create(std::string_view resource, std::string_view body)
     {
         JsonBody parser;
         const auto fields = parser.parse(body);
+        if (resource == "labels") {
+            const auto name = first_name(body);
+            if (!name.empty()) {
+                if (name.size() > 191) {
+                    return label_validation("Validation (Length) failed for name");
+                }
+                for (const auto& record : Query::parse_array(m_store.resources().list("labels"))) {
+                    const auto it = record.find("name");
+                    if (it != record.end()) {
+                        std::string existing{it->second};
+                        if (existing.size() >= 2 && existing.front() == '"' && existing.back() == '"') {
+                            existing = existing.substr(1, existing.size() - 2);
+                        }
+                        if (existing == name) {
+                            return label_validation("Validation (Unique) failed for name");
+                        }
+                    }
+                }
+            }
+        }
+        if (resource == "members" && fields.contains("email")) {
+            const auto email = fields.at("email");
+            if (!email.contains('@')) {
+                return MutationResult{422, ApiError{}.validation(
+                    "Validation error, cannot save member.",
+                    "Validation (Email) failed for email", "email"
+                ), true};
+            }
+        }
         if ((resource == "posts" || resource == "pages" || resource == "tags") &&
             !fields.contains("title") && !fields.contains("name")) {
             return MutationResult{422,
@@ -152,6 +200,17 @@ public:
         std::string_view body
     )
     {
+        if (resource == "labels") {
+            const auto records = Query::parse_array(m_store.resources().list("labels"));
+            const bool exists = std::ranges::any_of(records, [&](const auto& record) {
+                const auto it = record.find("id");
+                return it != record.end() && it->second.find(id) != std::string::npos;
+            });
+            if (!exists) {
+                return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
+            }
+            return MutationResult{200, std::format(R"({{"labels":[{{"id":"{}","name":"{}"}}]}})", id, first_name(body))};
+        }
         if (resource == "posts") {
             return wrap("posts", m_store.edit_entity<model::Post>(id, body));
         }
@@ -205,6 +264,9 @@ public:
         if (!removed) {
             return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
         }
+        if (resource == "labels") {
+            return MutationResult{204, ""};
+        }
         return MutationResult{200, "{}"};
     }
 
@@ -252,15 +314,10 @@ private:
         if (!value) {
             return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
         }
-        if constexpr (std::same_as<E, model::Member>) {
-            // Ghost member create/edit snapshots assert a bare member entity.
-            return MutationResult{201, serialize(*value)};
-        } else {
-            return MutationResult{
-                201,
-                std::format(R"({{"{}":[{}]}})", resource, serialize(*value))
-            };
-        }
+        return MutationResult{
+            201,
+            std::format(R"({{"{}":[{}]}})", resource, serialize(*value))
+        };
     }
 
     template<typename E>

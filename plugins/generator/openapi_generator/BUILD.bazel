@@ -1,0 +1,68 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:build_defs.bzl", "congelado_cc_binary", "congelado_cxx26_copts")
+load("//third_party:copts.bzl", "congelado_linkopts")
+
+# Runtime-loadable OpenAPI generator plugin. Restored from commit 0f268c2 and ported
+# from xmake to Bazel. Implements interfaces::IOpenApiGenerator: writes openapi.json,
+# serves the live /openapi route, and generates the legacy C++ client SDK. Rust SDK
+# codegen consumes the same document through progenitor instead.
+cc_library(
+    name = "openapi_generator",
+    module_interfaces = [
+        "bin/openapi_generator_plugin.cc",
+        "src/document.cppm",
+        "src/schema_model.cppm",
+        "src/dto_writer.cppm",
+        "src/route_writer.cppm",
+        "src/client_generator.cppm",
+        "src/doc_generator.cppm",
+    ],
+    hdrs = [
+        "bin/openapi_generator_plugin.cc",
+        "src/document.cppm",
+        "src/schema_model.cppm",
+        "src/dto_writer.cppm",
+        "src/route_writer.cppm",
+        "src/client_generator.cppm",
+        "src/doc_generator.cppm",
+    ],
+    copts = congelado_cxx26_copts() + [
+        "-Iinclude/sdk/plugin/include",
+    ],
+    linkopts = congelado_linkopts(),
+    deps = [
+        "//include/core/bridge:core_bridge",
+        "//include/core/events:core_events",
+        "//include/core/generator:core_generator",
+        "//include/core/logger:core_logger",
+        "//include/core/router:core_router",
+        "//include/core/serde:core_serde",
+        "//include/interfaces:interfaces",
+        "//include/sdk/plugin:congelado_plugin",
+        "//include/shared:shared",
+        "//include/utils/openapi:utils_openapi",
+        "@system_libstdcxx//:std",
+    ],
+    features = ["cpp_modules"],
+    visibility = ["//visibility:public"],
+)
+
+# Generates sdk/openapi/openapi.json from the registered Ghost route metadata. Used by the
+# Bazel progenitor codegen and by `make openapi`. No server or format plugin required: the
+# document is encoded directly with serde::Ser::encode_json.
+congelado_cc_binary(
+    name = "openapi_dump",
+    srcs = ["bin/openapi_dump.cc"],
+    linkopts = congelado_linkopts(),
+    deps = [
+        ":openapi_generator",
+        "//include/blog/api:blog_api",
+        "//include/blog/handlers:blog_handlers",
+        "//include/core/router:core_router",
+        "//include/core/serde:core_serde",
+        "@nlohmann_json//:json",
+        "@system_libstdcxx//:std",
+    ],
+    features = ["cpp_modules"],
+    visibility = ["//visibility:public"],
+)

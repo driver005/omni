@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,22 +21,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/members"}
-            .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-            .summary("Ghost members DELETE")
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::browse::BrowseMembersHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost members GET")
             .post([h](
@@ -42,25 +36,25 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::create::CreateMembersHandler::handle(req, res, std::move(send));
     })
             .summary("Ghost members POST")
-            .add_router(
-                Router{router, "/:id"}
-                    .delt([h](
+            .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::bulk_destroy::BulkDestroyMembersHandler::handle(req, res, std::move(send));
     })
-                    .summary("Ghost :id DELETE")
+            .summary("Ghost members DELETE")
+            .add_router(
+                Router{router, "/:id"}
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::read_by_id::ReadByIdMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -68,9 +62,17 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::edit::EditMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        blog::handlers::operations::members::destroy::DestroyMembersHandler::handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
                     .add_router(
                         Router{router, "/commenting"}
                             .add_route(
@@ -80,7 +82,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_id_commenting_disable_post::MembersIdCommentingDisablePostMembersHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost disable POST")
                             )
@@ -91,7 +93,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_id_commenting_enable_post::MembersIdCommentingEnablePostMembersHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost enable POST")
                             )
@@ -103,7 +105,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_id_sessions_delete::MembersIdSessionsDeleteMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost sessions DELETE")
                     )
@@ -114,7 +116,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::signin_urls::SigninUrlsMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost signin_urls GET")
                     )
@@ -125,7 +127,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::subscriptions_post::SubscriptionsPostMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost subscriptions POST")
                             .add_route(
@@ -135,7 +137,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::put_detail::PutDetailMembersHandler::handle(req, res, std::move(send));
     })
                                     .summary("Ghost :id PUT")
                             )
@@ -147,7 +149,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_id_suppression_delete::MembersIdSuppressionDeleteMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost suppression DELETE")
                     )
@@ -159,7 +161,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::bulk_edit::BulkEditMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost bulk PUT")
             )
@@ -170,7 +172,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_events_get::MembersEventsGetMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost events GET")
             )
@@ -181,9 +183,9 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_metafields_all::MembersMetafieldsAllMembersHandler::handle(req, res, std::move(send));
     })
-                    .summary("Ghost metafields GET")
+                    .summary("Ghost metafields ALL")
             )
             .add_router(
                 Router{router, "/stats"}
@@ -194,7 +196,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_stats_count_get::MembersStatsCountGetMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost count GET")
                     )
@@ -205,7 +207,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_stats_mrr_get::MembersStatsMrrGetMembersHandler::handle(req, res, std::move(send));
     })
                             .summary("Ghost mrr GET")
                     )
@@ -217,7 +219,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_stripe_connect_get::MembersStripeConnectGetMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost stripe_connect GET")
             )
@@ -228,7 +230,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_upload_get::MembersUploadGetMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost upload GET")
                     .post([h](
@@ -236,7 +238,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::members::members_upload_post::MembersUploadPostMembersHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost upload POST")
             );

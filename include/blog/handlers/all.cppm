@@ -2,6 +2,9 @@ export module blog_handlers:all;
 
 import std;
 import blog_context;
+import blog_handlers_posts_browse;
+import blog_handlers_middleware;
+import blog_handlers_runtime;
 import :handler;
 import :special;
 import :stripe;
@@ -73,6 +76,9 @@ public:
         m_special{},
         m_core{m_ctx, m_special, m_stripe}
     {
+        blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
+        blog::handlers::runtime::ServiceRegistry::configure(
+            m_ctx, std::ref(m_special), std::ref(m_stripe));
     }
 
     /** @brief Use an injected, externally-owned context (plugin load). */
@@ -81,11 +87,19 @@ public:
         m_special{},
         m_core{m_ctx, m_special, m_stripe}
     {
+        blog::handlers::middleware::MiddlewareContextRegistry::set_active(&m_ctx);
+        blog::handlers::runtime::ServiceRegistry::configure(
+            m_ctx, std::ref(m_special), std::ref(m_stripe));
     }
 
     [[nodiscard]] blog::BlogContext& context() noexcept
     {
         return m_ctx;
+    }
+
+    [[nodiscard]] blog::handlers::posts::browse::PostsBrowseHandler& posts_browse() noexcept
+    {
+        return m_posts_browse;
     }
 
     [[nodiscard]] CoreHandler& core() noexcept
@@ -313,6 +327,7 @@ public:
 private:
     std::unique_ptr<blog::BlogContext> m_owned_context{};
     blog::BlogContext& m_ctx;
+    blog::handlers::posts::browse::PostsBrowseHandler m_posts_browse{m_ctx};
     SpecialEndpoints m_special{};
     StripeHandler m_stripe{};
     CoreHandler m_core;

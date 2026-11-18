@@ -1,6 +1,6 @@
 import re, json, collections, pathlib
 
-SNAP = pathlib.Path('docs/Ghost/ghost/test/e2e-api/admin/__snapshots__')
+SNAP = pathlib.Path('test/e2e-api/admin/__snapshots__')
 
 def strip_commas(line):
     return line.rstrip().rstrip(',')

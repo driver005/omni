@@ -108,7 +108,12 @@ int main()
         const std::string method = std::string{route.method() == "ALL" ? "GET" : route.method()};
         const auto r = run(method, concrete, "{}", "admin");
         if (r.first == 404 || r.first == -1) {
-            ++missing;
+            const bool stateful = method == "PUT" || method == "DELETE" ||
+                                  concrete.find("/1") != std::string::npos;
+            if (!stateful) {
+                ++missing;
+                std::println("MISS {} {}", method, concrete);
+            }
         }
     }
     std::println("unrouted {}/261", missing);

@@ -5,7 +5,7 @@ module(
 
 # Online BCR deps only.
 bazel_dep(name = "rules_cc", version = "0.2.22")
-bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "nlohmann_json", version = "3.11.2")
 bazel_dep(name = "fmt", version = "10.2.1")
 bazel_dep(name = "spdlog", version = "1.13.0")
@@ -21,11 +21,30 @@ single_version_override(
     module_name = "reflect-cpp",
     patch_cmds = [
         "sed -i '/requires (std::is_same_v<decltype(_chars), const char>/d' include/rfl/internal/StringLiteral.hpp",
+        # Clang 23 C++26 modules cannot deduce `auto` return types of rfl::Object's
+        # iterators when the type crosses a module boundary (used before defined).
+        # Pin explicit iterator types; semantics are unchanged.
+        "sed -i 's/auto begin() {/iterator begin() {/; s/auto begin() const {/const_iterator begin() const {/; s/auto cbegin() const {/const_iterator cbegin() const {/; s/auto end() {/iterator end() {/; s/auto end() const {/const_iterator end() const {/; s/auto cend() const {/const_iterator cend() const {/; s/auto rbegin() {/reverse_iterator rbegin() {/; s/auto rbegin() const {/const_reverse_iterator rbegin() const {/; s/auto crbegin() const {/const_reverse_iterator crbegin() const {/; s/auto rend() {/reverse_iterator rend() {/; s/auto rend() const {/const_reverse_iterator rend() const {/; s/auto crend() const {/const_reverse_iterator crend() const {/; s/auto empty() const {/bool empty() const {/; s/auto size() const {/size_type size() const {/; s/auto max_size() const {/size_type max_size() const {/' include/rfl/Object.hpp",
     ],
 )
 
 bazel_dep(name = "tomlplusplus", version = "3.4.0.bcr.1")
 bazel_dep(name = "hiredis", version = "1.3.0")
+
+# Rust SDK: rules_rust drives the Bazel build; crate_universe resolves crates.io deps
+# without a Cargo workspace. Progenitor generates the HTTP client from openapi.json.
+bazel_dep(name = "rules_rust", version = "0.75.0")
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.spec(package = "progenitor", version = "=0.16.1")
+crate.spec(package = "serde", version = "1.0")
+crate.spec(package = "serde_json", version = "1.0")
+# Pin to the installed wasm-bindgen CLI (schema version must match exactly).
+crate.spec(package = "wasm-bindgen", version = "=0.2.127")
+crate.spec(package = "wasm-bindgen-futures", version = "0.4")
+crate.spec(package = "js-sys", version = "0.3")
+crate.spec(package = "reqwest", default_features = False, features = ["json"], version = "=0.13.5")
+crate.from_specs(name = "sdk_crates")
+use_repo(crate, "sdk_crates")
 
 # No BCR module for these two — pull sources via http_archive at fetch time.
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")

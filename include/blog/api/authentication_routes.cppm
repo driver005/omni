@@ -5,6 +5,8 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
+import blog_handlers_middleware;
+import blog_operations;
 
 export namespace blog::api {
 
@@ -19,26 +21,26 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        auto* h = &handler;
+        [[maybe_unused]] auto* h = &handler;
         Router{router, "/authentication"}
             .add_route(
                 Route{"/invitation"}
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost invitation GET")
                     .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_invitation_post::AuthenticationInvitationPostAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost invitation POST")
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        blog::handlers::operations::authentication::authentication_invitation_get::AuthenticationInvitationGetAuthenticationHandler::handle(req, res, std::move(send));
+    })
+                    .summary("Ghost invitation GET")
             )
             .add_route(
                 Route{"/password_reset"}
@@ -47,7 +49,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_password_reset_post::AuthenticationPasswordResetPostAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost password_reset POST")
                     .put([h](
@@ -55,7 +57,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_password_reset_put::AuthenticationPasswordResetPutAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost password_reset PUT")
             )
@@ -66,26 +68,18 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_reset_post::AuthenticationResetPostAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost reset POST")
             )
             .add_route(
                 Route{"/setup"}
-                    .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                    .summary("Ghost setup GET")
                     .post([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_setup_post::AuthenticationSetupPostAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost setup POST")
                     .put([h](
@@ -93,9 +87,17 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        h->handle(req, res, std::move(send));
+        blog::handlers::operations::authentication::authentication_setup_put::AuthenticationSetupPutAuthenticationHandler::handle(req, res, std::move(send));
     })
                     .summary("Ghost setup PUT")
+                    .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        blog::handlers::operations::authentication::authentication_setup_get::AuthenticationSetupGetAuthenticationHandler::handle(req, res, std::move(send));
+    })
+                    .summary("Ghost setup GET")
             );
     }
 };

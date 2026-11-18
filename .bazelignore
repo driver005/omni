@@ -1,3 +1,4 @@
 .bzluser
 .cache
 old
+visual/node_modules

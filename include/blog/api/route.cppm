@@ -104,7 +104,7 @@ public:
         OembedRoutes{}.install(router, handlers.oembed());
         OffersRoutes{}.install(router, handlers.offers());
         PagesRoutes{}.install(router, handlers.pages());
-        PostsRoutes{}.install(router, handlers.posts(), handlers.posts_browse());
+        PostsRoutes{}.install(router, handlers);
         RecommendationsRoutes{}.install(router, handlers.recommendations());
         RedirectsRoutes{}.install(router, handlers.redirects());
         RolesRoutes{}.install(router, handlers.roles());

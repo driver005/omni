@@ -5,8 +5,6 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
-import blog_handlers_middleware;
-import blog_operations;
 
 export namespace blog::api {
 
@@ -21,14 +19,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        [[maybe_unused]] auto* h = &handler;
+        auto* h = &handler;
         Router{router, "/automations"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::browse::BrowseAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
             .summary("Ghost automations GET")
             .post([h](
@@ -36,7 +34,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::create::CreateAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
             .summary("Ghost automations POST")
             .add_router(
@@ -46,7 +44,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::read_by_id::ReadByIdAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -54,7 +52,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::edit::EditAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
                     .add_router(
@@ -68,7 +66,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_automation_id_actions_action_id_links_get::AutomationsAutomationIdActionsActionIdLinksGetAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                                             .summary("Ghost links GET")
                                     )
@@ -81,7 +79,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_id_email_preview_post::AutomationsIdEmailPreviewPostAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost email_preview POST")
                     )
@@ -92,7 +90,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_id_email_test_post::AutomationsIdEmailTestPostAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost email_test POST")
                     )
@@ -103,7 +101,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_id_performance_stats_get::AutomationsIdPerformanceStatsGetAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost performance-stats GET")
                     )
@@ -114,7 +112,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_id_runs_get::AutomationsIdRunsGetAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost runs GET")
                             .add_route(
@@ -124,7 +122,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::get_detail::GetDetailAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                                     .summary("Ghost :id GET")
                             )
@@ -137,7 +135,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::automations::automations_poll_put::AutomationsPollPutAutomationsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost poll PUT")
             );

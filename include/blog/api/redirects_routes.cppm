@@ -5,8 +5,6 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
-import blog_handlers_middleware;
-import blog_operations;
 
 export namespace blog::api {
 
@@ -21,7 +19,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        [[maybe_unused]] auto* h = &handler;
+        auto* h = &handler;
         Router{router, "/redirects"}
             .add_route(
                 Route{"/download"}
@@ -30,7 +28,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::redirects::redirects_download_get::RedirectsDownloadGetRedirectsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost download GET")
             )
@@ -41,7 +39,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::redirects::redirects_upload_post::RedirectsUploadPostRedirectsHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost upload POST")
             );

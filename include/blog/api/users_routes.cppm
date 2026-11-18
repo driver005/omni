@@ -5,8 +5,6 @@ import interfaces;
 import core_router;
 import utils_openapi;
 import blog_handlers;
-import blog_handlers_middleware;
-import blog_operations;
 
 export namespace blog::api {
 
@@ -21,24 +19,32 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        [[maybe_unused]] auto* h = &handler;
+        auto* h = &handler;
         Router{router, "/users"}
             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::browse::BrowseUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
             .summary("Ghost users GET")
             .add_router(
                 Router{router, "/:id"}
+                    .delt([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::read_by_id::ReadByIdUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id GET")
                     .put([h](
@@ -46,17 +52,9 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::edit::EditUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
-                    .delt([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        blog::handlers::operations::users::destroy::DestroyUsersHandler::handle(req, res, std::move(send));
-    })
-                    .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/token"}
                             .get([h](
@@ -64,7 +62,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::users_id_token_get::UsersIdTokenGetUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost token GET")
                             .put([h](
@@ -72,7 +70,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::users_id_token_put::UsersIdTokenPutUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost token PUT")
                     )
@@ -86,7 +84,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::read_by_email::ReadByEmailUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )
@@ -98,7 +96,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::users_owner_put::UsersOwnerPutUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost owner PUT")
             )
@@ -109,7 +107,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::users_password_put::UsersPasswordPutUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                     .summary("Ghost password PUT")
             )
@@ -122,7 +120,7 @@ public:
         interfaces::io::IResponse& res,
         std::function<void()> send
     ) {
-        blog::handlers::operations::users::read_by_slug::ReadBySlugUsersHandler::handle(req, res, std::move(send));
+        h->handle(req, res, std::move(send));
     })
                             .summary("Ghost :id GET")
                     )

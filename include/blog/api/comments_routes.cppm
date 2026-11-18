@@ -14,7 +14,7 @@ class CommentsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::CommentsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -103,7 +103,7 @@ public:
             .add_router(
                 Router{router, "/post"}
                     .add_route(
-                        Route{"/:post_id"}
+                        Route{"/:id"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -111,7 +111,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost :post_id GET")
+                            .summary("Ghost :id GET")
                     )
             );
     }

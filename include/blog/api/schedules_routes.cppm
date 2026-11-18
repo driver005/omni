@@ -14,7 +14,7 @@ class SchedulesRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SchedulesRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -22,7 +22,7 @@ public:
         auto* h = &handler;
         Router{router, "/schedules"}
             .add_router(
-                Router{router, "/:resource"}
+                Router{router, "/:id"}
                     .add_route(
                         Route{"/:id"}
                             .put([h](

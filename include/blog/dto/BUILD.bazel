@@ -27,6 +27,8 @@ congelado_module_library(
         "named_resources.cppm",
         "more_resources.cppm",
         "detail_resources.cppm",
+        "ghost_json.cppm",
+        "links.cppm",
         "pagination_envelope.cppm",
         "pagination_meta_dto.cppm",
         "scheduled_analytics_job.cppm",
@@ -45,6 +47,7 @@ congelado_module_library(
         "subscription_tier.cppm",
     ],
     deps = [
+        "//include/blog/model:blog_model",
         "//include/core/serde:core_serde",
         "@reflect_cpp//:reflect-cpp",
     ],

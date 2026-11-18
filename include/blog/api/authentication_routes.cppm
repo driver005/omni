@@ -14,7 +14,7 @@ class AuthenticationRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::AuthenticationRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

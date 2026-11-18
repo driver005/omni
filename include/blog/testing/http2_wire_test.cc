@@ -14,7 +14,7 @@ import utils_buffering;
  */
 int main()
 {
-    blog::api::CoreHandler handler;
+    blog::api::BlogHandlers handler;
     core::router::RouterContext<> context;
     blog::api::ApiRoutes{}.install(context, handler);
 

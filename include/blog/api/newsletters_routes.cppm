@@ -14,7 +14,7 @@ class NewslettersRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::NewslettersRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

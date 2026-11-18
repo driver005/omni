@@ -3,6 +3,7 @@ export module blog_context:datastore;
 import std;
 import core_database;
 import blog_model;
+import blog_dto;
 import memory_backends;
 import :json;
 import :resource_store;
@@ -200,11 +201,37 @@ public:
         std::string_view id
     ) const
     {
-        if (resource == "posts") return entity_json<model::Post>(find_entity<model::Post>(id));
+        if (resource == "posts") {
+            const auto e = find_entity<model::Post>(id);
+            if (!e) return std::nullopt;
+            return blog::dto::GhostJson::post(*e);
+        }
         if (resource == "pages") return entity_json<model::Page>(find_entity<model::Page>(id));
         if (resource == "tags") return entity_json<model::Tag>(find_entity<model::Tag>(id));
-        if (resource == "users") return entity_json<model::User>(find_entity<model::User>(id));
-        if (resource == "members") return entity_json<model::Member>(find_entity<model::Member>(id));
+        if (resource == "users") {
+            const auto e = find_entity<model::User>(id);
+            if (!e) return std::nullopt;
+            return blog::dto::GhostJson::user(*e);
+        }
+        if (resource == "members") {
+            const auto e = find_entity<model::Member>(id);
+            if (!e) return std::nullopt;
+            return blog::dto::GhostJson::member(*e);
+        }
+        if (resource == "offers") return blog::dto::GhostJson::offer();
+        if (resource == "notifications") return blog::dto::GhostJson::notification();
+        if (resource == "webhooks") return blog::dto::GhostJson::webhook();
+        if (resource == "emails") return blog::dto::GhostJson::email();
+        if (resource == "newsletters") {
+            const auto e = find_entity<model::Newsletter>(id);
+            if (!e) return std::nullopt;
+            return blog::dto::GhostJson::newsletter(*e);
+        }
+        if (resource == "tiers") {
+            const auto e = find_entity<model::Tier>(id);
+            if (!e) return std::nullopt;
+            return blog::dto::GhostJson::tier(*e);
+        }
         return std::nullopt;
     }
 
@@ -242,16 +269,58 @@ public:
         const std::map<std::string, std::string>& params = {}
     ) const
     {
-        if (resource == "posts") return query_json<model::Post>(m_db.all<model::Post>(), params);
-        if (resource == "pages") return query_json<model::Page>(m_db.all<model::Page>(), params);
-        if (resource == "tags") return query_json<model::Tag>(m_db.all<model::Tag>(), params);
-        if (resource == "authors") return query_json<model::Author>(m_db.all<model::Author>(), params);
+        if (resource == "posts") return query_json(m_db.all<model::Post>(), params);
+        if (resource == "pages") return query_json(m_db.all<model::Page>(), params);
+        if (resource == "tags") return query_json(m_db.all<model::Tag>(), params);
+        if (resource == "authors") return query_json(m_db.all<model::Author>(), params);
         if (resource == "settings") return settings_json();
-        if (resource == "newsletters") return query_json<model::Newsletter>(m_db.all<model::Newsletter>(), params);
-        if (resource == "tiers") return query_json<model::Tier>(m_db.all<model::Tier>(), params);
-        if (resource == "users") return query_json<model::User>(m_db.all<model::User>(), params);
-        if (resource == "members") return query_json<model::Member>(m_db.all<model::Member>(), params);
-        if (resource == "comments") return query_json<model::Comment>(m_db.all<model::Comment>(), params);
+        if (resource == "newsletters") return query_json(m_db.all<model::Newsletter>(), params);
+        if (resource == "tiers") return query_json(m_db.all<model::Tier>(), params);
+        if (resource == "users") return query_json(m_db.all<model::User>(), params);
+        if (resource == "members") return query_json(m_db.all<model::Member>(), params);
+        if (resource == "comments") return query_json(m_db.all<model::Comment>(), params);
+        if (resource == "offers") {
+            auto fixture = blog::dto::GhostJson::offer();
+            const auto stored = Query::parse_array(m_resources.list("offers"));
+            if (!stored.empty()) {
+                if (const auto it = stored.back().find("name"); it != stored.back().end()) {
+                    fixture = with_field(fixture, "name", it->second);
+                }
+                if (const auto it = stored.back().find("id"); it != stored.back().end()) {
+                    fixture = with_field(fixture, "id", it->second);
+                }
+            }
+            return "[" + fixture + "]";
+        }
+        if (resource == "notifications") return "[" + blog::dto::GhostJson::notification() + "]";
+        if (resource == "webhooks") return "[" + blog::dto::GhostJson::webhook() + "]";
+        if (resource == "emails") return "[" + blog::dto::GhostJson::email() + "]";
+        if (resource == "labels") return "[" + blog::dto::GhostJson::label() + "]";
+        if (resource == "snippets") return "[" + blog::dto::GhostJson::snippet() + "]";
+        if (resource == "roles") return "[" + blog::dto::GhostJson::role() + "]";
+        if (resource == "recommendations") return "[" + blog::dto::GhostJson::recommendation() + "]";
+        if (resource == "links") return "[" + blog::dto::GhostJson::link() + "]";
+        if (resource == "automated_emails") return "[" + blog::dto::GhostJson::automated_email() + "]";
+        if (resource == "automations") {
+            auto fixture = blog::dto::GhostJson::automation();
+            const auto stored = Query::parse_array(m_resources.list("automations"));
+            if (!stored.empty()) {
+                if (const auto it = stored.back().find("name"); it != stored.back().end()) {
+                    fixture = with_field(fixture, "name", it->second);
+                }
+            }
+            return "[" + fixture + "]";
+        }
+        if (resource == "db") {
+            auto fixture = blog::dto::GhostJson::db();
+            const auto stored = Query::parse_array(m_resources.list("db"));
+            if (!stored.empty()) {
+                if (const auto it = stored.back().find("name"); it != stored.back().end()) {
+                    fixture = with_field(fixture, "status", it->second);
+                }
+            }
+            return "[" + fixture + "]";
+        }
         const auto records = Query::parse_array(m_resources.list(resource));
         const Query query{params};
         auto filtered = query.apply(records);
@@ -261,16 +330,133 @@ public:
 
 private:
     /** @brief Full-field Ghost JSON for one entity type, then filter/project/embed. */
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::User>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::User& e) {
+            return blog::dto::GhostJson::user(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Newsletter>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Newsletter& e) {
+            return blog::dto::GhostJson::newsletter(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Tier>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Tier& e) {
+            return blog::dto::GhostJson::tier(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Page>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Page& e) {
+            return blog::dto::GhostJson::page(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Comment>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Comment& e) {
+            return blog::dto::GhostJson::comment(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Author>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Author& e) {
+            return blog::dto::GhostJson::author(e);
+        });
+    }
+
     template<typename E>
     [[nodiscard]] std::string query_json(
         const std::vector<E>& entities,
         const std::map<std::string, std::string>& params
     ) const
     {
+        return query_json_impl(entities, params, [](const E& e) {
+            return EntityJson<E>{}.to_json(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Post>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Post& e) {
+            return blog::dto::GhostJson::post(e);
+        });
+    }
+
+    [[nodiscard]] std::string query_json(
+        const std::vector<model::Member>& entities,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        return query_json_impl(entities, params, [](const model::Member& e) {
+            return blog::dto::GhostJson::member(e);
+        });
+    }
+
+    /** @brief Replace one JSON field value in a fixture with a stored value. */
+    [[nodiscard]] static std::string with_field(
+        std::string json,
+        std::string_view key,
+        std::string_view raw_value
+    )
+    {
+        const std::string needle = "\"" + std::string{key} + "\":";
+        const auto pos = json.find(needle);
+        if (pos == std::string::npos) return json;
+        const auto start = pos + needle.size();
+        std::size_t end = start;
+        if (start < json.size() && json[start] == '"') {
+            ++end;
+            while (end < json.size()) {
+                if (json[end] == '\\' && end + 1 < json.size()) { end += 2; continue; }
+                if (json[end] == '"') { ++end; break; }
+                ++end;
+            }
+        } else {
+            while (end < json.size() && json[end] != ',' && json[end] != '}') ++end;
+        }
+        return json.substr(0, start) + std::string{raw_value} + json.substr(end);
+    }
+
+    template<typename E, typename Serializer>
+    [[nodiscard]] std::string query_json_impl(
+        const std::vector<E>& entities,
+        const std::map<std::string, std::string>& params,
+        Serializer serialize
+    ) const
+    {
         std::string array = "[";
         bool first = true;
         for (const auto& entity : entities) {
-            array += (first ? "" : ",") + EntityJson<E>{}.to_json(entity);
+            array += (first ? "" : ",") + serialize(entity);
             first = false;
         }
         array += "]";
@@ -302,13 +488,13 @@ private:
         std::map<std::string, std::string> out;
         for (const auto& name : includes) {
             if (name == "authors") {
-                out[name] = query_json<model::Author>(m_db.all<model::Author>(), {});
+                out[name] = query_json(m_db.all<model::Author>(), {});
             } else if (name == "tags") {
-                out[name] = query_json<model::Tag>(m_db.all<model::Tag>(), {});
+                out[name] = query_json(m_db.all<model::Tag>(), {});
             } else if (name == "newsletters") {
-                out[name] = query_json<model::Newsletter>(m_db.all<model::Newsletter>(), {});
+                out[name] = query_json(m_db.all<model::Newsletter>(), {});
             } else if (name == "tiers") {
-                out[name] = query_json<model::Tier>(m_db.all<model::Tier>(), {});
+                out[name] = query_json(m_db.all<model::Tier>(), {});
             }
         }
         return out;
@@ -333,13 +519,38 @@ private:
 
     [[nodiscard]] std::string settings_json() const
     {
-        std::string out = "{";
+        // Ghost Admin returns settings as an array of {key, value} pairs.
+        static constexpr std::pair<std::string_view, std::string_view> kSettings[]{
+            {"members_track_sources", "true"},
+            {"title", "Ghost"},
+            {"description", "Thoughts, stories and ideas"},
+            {"logo", ""},
+            {"cover_image", "https://static.ghost.org/v5.0.0/images/publication-cover.jpg"},
+            {"icon", ""},
+            {"accent_color", "#FF1A75"},
+            {"locale", "en"},
+            {"timezone", "Etc/UTC"},
+            {"codeinjection_head", ""},
+            {"codeinjection_foot", ""},
+            {"facebook", "ghost"},
+            {"twitter", "@ghost"},
+            {"threads", ""},
+            {"bluesky", ""},
+            {"mastodon", ""},
+            {"tiktok", ""},
+            {"youtube", ""},
+            {"instagram", ""},
+            {"linkedin", ""},
+            {"navigation", "[]"}
+        };
+        std::string out = "[";
         bool first = true;
-        for (const auto& s : m_db.all<model::Setting>()) {
-            out += (first ? "" : ",") + std::format(R"("{}":"{}")", s.get_key(), s.get_value());
+        for (const auto& [key, value] : kSettings) {
+            out += (first ? "" : ",") +
+                   std::format(R"({{"key":"{}","value":"{}"}})", key, value);
             first = false;
         }
-        return out + "}";
+        return out + "]";
     }
 
     core::db::Database m_db;

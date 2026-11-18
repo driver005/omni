@@ -14,7 +14,7 @@ class SettingsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SettingsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

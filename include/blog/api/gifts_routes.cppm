@@ -14,7 +14,7 @@ class GiftsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::GiftsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

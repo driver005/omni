@@ -14,7 +14,7 @@ class OffersRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::OffersRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

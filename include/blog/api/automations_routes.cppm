@@ -14,7 +14,7 @@ class AutomationsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::AutomationsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -38,26 +38,6 @@ public:
     })
             .summary("Ghost automations POST")
             .add_router(
-                Router{router, "/:automation_id"}
-                    .add_router(
-                        Router{router, "/actions"}
-                            .add_router(
-                                Router{router, "/:action_id"}
-                                    .add_route(
-                                        Route{"/links"}
-                                            .get([h](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        h->handle(req, res, std::move(send));
-    })
-                                            .summary("Ghost links GET")
-                                    )
-                            )
-                    )
-            )
-            .add_router(
                 Router{router, "/:id"}
                     .get([h](
         interfaces::io::IRequest& req,
@@ -75,6 +55,23 @@ public:
         h->handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .add_router(
+                        Router{router, "/actions"}
+                            .add_router(
+                                Router{router, "/:id"}
+                                    .add_route(
+                                        Route{"/links"}
+                                            .get([h](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        h->handle(req, res, std::move(send));
+    })
+                                            .summary("Ghost links GET")
+                                    )
+                            )
+                    )
                     .add_route(
                         Route{"/email_preview"}
                             .post([h](
@@ -119,7 +116,7 @@ public:
     })
                             .summary("Ghost runs GET")
                             .add_route(
-                                Route{"/:run_id"}
+                                Route{"/:id"}
                                     .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -127,7 +124,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                                    .summary("Ghost :run_id GET")
+                                    .summary("Ghost :id GET")
                             )
                     )
             )

@@ -14,7 +14,7 @@ class SearchIndexRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::SearchIndexRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

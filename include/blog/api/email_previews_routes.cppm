@@ -14,7 +14,7 @@ class EmailPreviewsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::EmailPreviewsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

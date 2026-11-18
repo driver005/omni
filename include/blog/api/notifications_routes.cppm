@@ -14,7 +14,7 @@ class NotificationsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::NotificationsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -38,7 +38,7 @@ public:
     })
             .summary("Ghost notifications POST")
             .add_route(
-                Route{"/:notification_id"}
+                Route{"/:id"}
                     .delt([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -46,7 +46,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                    .summary("Ghost :notification_id DELETE")
+                    .summary("Ghost :id DELETE")
             );
     }
 };

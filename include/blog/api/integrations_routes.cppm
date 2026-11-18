@@ -14,7 +14,7 @@ class IntegrationsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::IntegrationsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -66,7 +66,7 @@ public:
                     .add_router(
                         Router{router, "/api_key"}
                             .add_router(
-                                Router{router, "/:keyid"}
+                                Router{router, "/:id"}
                                     .add_route(
                                         Route{"/refresh"}
                                             .post([h](

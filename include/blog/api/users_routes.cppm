@@ -14,7 +14,7 @@ class UsersRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::UsersRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;
@@ -78,7 +78,7 @@ public:
             .add_router(
                 Router{router, "/email"}
                     .add_route(
-                        Route{"/:email"}
+                        Route{"/:id"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -86,7 +86,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost :email GET")
+                            .summary("Ghost :id GET")
                     )
             )
             .add_route(
@@ -114,7 +114,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:slug"}
+                        Route{"/:id"}
                             .get([h](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -122,7 +122,7 @@ public:
     ) {
         h->handle(req, res, std::move(send));
     })
-                            .summary("Ghost :slug GET")
+                            .summary("Ghost :id GET")
                     )
             );
     }

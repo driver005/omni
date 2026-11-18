@@ -6,4 +6,5 @@ export import :response;
 export import :test_api;
 export import :wire_client;
 
+export import :ghost_schema;
 export import :snapshot_cases;

@@ -14,7 +14,7 @@ class RecommendationsRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::RecommendationsRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

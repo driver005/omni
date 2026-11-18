@@ -14,7 +14,7 @@ class TinybirdRoutes
 public:
     void install(
         core::router::RouterContext<>& router,
-        blog::api::CoreHandler& handler
+        blog::api::TinybirdRouteHandler& handler
     )
     {
         using Route = utils::openapi::ApiRoute;

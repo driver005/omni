@@ -132,35 +132,21 @@ public:
     }
 
     /** @brief GET /emails/:id/batches. */
-    SpecialResult emails_batches(std::string_view id) const
+    SpecialResult emails_batches(std::string_view /*id*/) const
     {
-        blog::dto::EmailBatchesResponse response;
-        blog::dto::EmailBatch batch;
-        batch.created_at = "1970-01-01T00:00:00.000Z";
-        batch.updated_at = batch.created_at;
-        batch.id = "batch-" + std::string{id};
-        batch.mailgun_message_id = "message-id";
-        batch.status = "submitted";
-        response.batches.push_back(std::move(batch));
-        response.meta.pagination.total = 1;
-        return ok(response);
+        return SpecialResult{200, std::format(
+            R"({{"batches":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
+            blog::dto::GhostJson::batch()
+        )};
     }
 
     /** @brief GET /emails/:id/recipient-failures. */
-    SpecialResult emails_failures(std::string_view id) const
+    SpecialResult emails_failures(std::string_view /*id*/) const
     {
-        blog::dto::EmailFailuresResponse response;
-        blog::dto::EmailFailure failure;
-        failure.code = 555;
-        failure.enhanced_code = "5.5.5";
-        failure.event_id = "event-" + std::string{id};
-        failure.failed_at = "1970-01-01T00:00:00.000Z";
-        failure.id = "failure-" + std::string{id};
-        failure.message = "Temporary failure";
-        failure.severity = "temporary";
-        response.failures.push_back(std::move(failure));
-        response.meta.pagination.total = 1;
-        return ok(response);
+        return SpecialResult{200, std::format(
+            R"({{"failures":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
+            blog::dto::GhostJson::failure()
+        )};
     }
 
     /** @brief POST /members/:id/subscriptions/. */
@@ -258,9 +244,17 @@ public:
     }
 
     /** @brief GET /comments/:id/{replies,likes,reports,dislikes}. */
-    SpecialResult comment_sub() const
+    SpecialResult comment_sub(std::string_view path) const
     {
-        return ok(blog::dto::CommentSubResponse{});
+        std::string_view key{"comments"};
+        if (path.ends_with("/likes")) key = "comment_likes";
+        else if (path.ends_with("/dislikes")) key = "comment_dislikes";
+        else if (path.ends_with("/reports")) key = "comment_reports";
+        return SpecialResult{200, std::format(
+            R"({{"{}":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
+            key, key == "comments" ? blog::dto::GhostJson::comment([]{ model::Comment c; c.set_id(1); return c; }())
+                                   : blog::dto::GhostJson::comment_sub()
+        )};
     }
 
     SpecialResult oembed() const
@@ -301,9 +295,10 @@ public:
 
     SpecialResult custom_theme_settings() const
     {
-        blog::dto::CustomThemeSettingsResponse response;
-        response.custom_theme_settings.push_back(blog::dto::RecordDto{});
-        return ok(response);
+        return SpecialResult{200, std::format(
+            R"({{"custom_theme_settings":[{}]}})",
+            blog::dto::GhostJson::custom_theme_setting()
+        )};
     }
 
     SpecialResult integrations() const
@@ -338,6 +333,20 @@ public:
     {
         blog::dto::WebhooksListResponse response;
         response.webhooks.push_back(blog::dto::WebhooksDto{});
+        return ok(response);
+    }
+
+    SpecialResult gift_links() const
+    {
+        blog::dto::GiftLinksResponse response;
+        response.gift_links.push_back(blog::dto::LinkRecord{});
+        return ok(response);
+    }
+
+    SpecialResult automation_links() const
+    {
+        blog::dto::AutomationLinksResponse response;
+        response.links.push_back(blog::dto::LinkRecord{});
         return ok(response);
     }
 

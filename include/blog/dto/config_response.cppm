@@ -34,9 +34,17 @@ public:
     [[nodiscard]] const bool& get_useGravatar() const noexcept { return useGravatar; }
     void set_labs(rfl::Generic value) { labs = std::move(value); }
     [[nodiscard]] const rfl::Generic& get_labs() const noexcept { return labs; }
+    void set_version(std::string value) { version = std::move(value); }
+    [[nodiscard]] const std::string& get_version() const noexcept { return version; }
+    void set_klipy(rfl::Generic value) { klipy = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_klipy() const noexcept { return klipy; }
+    void set_security(rfl::Generic value) { security = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_security() const noexcept { return security; }
+    void set_signupForm(rfl::Generic value) { signupForm = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_signupForm() const noexcept { return signupForm; }
 
     ConfigAuth auth{};
-    rfl::Generic clientExtensions{};
+    rfl::Generic clientExtensions{rfl::Object<rfl::Generic>{}};
     std::string database{"mysql8"};
     bool emailAnalytics{true};
     bool enableDeveloperExperiments{false};
@@ -46,6 +54,10 @@ public:
     bool stripeDirect{false};
     bool useGravatar{false};
     rfl::Generic labs{};
+    std::string version{"5.0.0"};
+    rfl::Generic klipy{rfl::Object<rfl::Generic>{}};
+    rfl::Generic security{rfl::Object<rfl::Generic>{}};
+    rfl::Generic signupForm{rfl::Object<rfl::Generic>{}};
 };
 
 
@@ -77,7 +89,11 @@ struct serde::Serializable<blog::dto::ConfigResponse>
             serde::FieldDesc<"mailgunIsConfigured", &blog::dto::ConfigResponse::get_mailgunIsConfigured, &blog::dto::ConfigResponse::set_mailgunIsConfigured, serde::FieldOptions{}>{},
             serde::FieldDesc<"stripeDirect", &blog::dto::ConfigResponse::get_stripeDirect, &blog::dto::ConfigResponse::set_stripeDirect, serde::FieldOptions{}>{},
             serde::FieldDesc<"useGravatar", &blog::dto::ConfigResponse::get_useGravatar, &blog::dto::ConfigResponse::set_useGravatar, serde::FieldOptions{}>{},
-            serde::FieldDesc<"labs", &blog::dto::ConfigResponse::get_labs, &blog::dto::ConfigResponse::set_labs, serde::FieldOptions{}>{}
+            serde::FieldDesc<"labs", &blog::dto::ConfigResponse::get_labs, &blog::dto::ConfigResponse::set_labs, serde::FieldOptions{}>{},
+            serde::FieldDesc<"version", &blog::dto::ConfigResponse::get_version, &blog::dto::ConfigResponse::set_version, serde::FieldOptions{}>{},
+            serde::FieldDesc<"klipy", &blog::dto::ConfigResponse::get_klipy, &blog::dto::ConfigResponse::set_klipy, serde::FieldOptions{}>{},
+            serde::FieldDesc<"security", &blog::dto::ConfigResponse::get_security, &blog::dto::ConfigResponse::set_security, serde::FieldOptions{}>{},
+            serde::FieldDesc<"signupForm", &blog::dto::ConfigResponse::get_signupForm, &blog::dto::ConfigResponse::set_signupForm, serde::FieldOptions{}>{}
         };
     }
 

@@ -39,3 +39,5 @@ export import :admin_resources;
 export import :named_resources;
 export import :more_resources;
 export import :detail_resources;
+export import :links;
+export import :ghost_json;

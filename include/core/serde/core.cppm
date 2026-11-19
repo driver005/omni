@@ -202,11 +202,28 @@ public:
 
 // ─── FieldDesc ────────────────────────────────────────────────────────────────
 
+/** @brief Default encode normalizer — leaves the stored value untouched. */
+struct identity_normalizer
+{
+    template <typename T>
+    [[nodiscard]] constexpr T&& operator()(T&& value) const noexcept
+    {
+        return std::forward<T>(value);
+    }
+};
+
+/** @brief A pre-rendered JSON fragment, emitted verbatim by the wire converter. */
+struct RawJson
+{
+    std::string json{};
+};
+
 template<
     rfl::internal::StringLiteral Name,
     auto Getter,
     auto Setter,
-    FieldOptions Opts = FieldOptions{}>
+    FieldOptions Opts = FieldOptions{},
+    auto Normalize = identity_normalizer{}>
 struct FieldDesc
 {
     // FIXME(clang-tidy): readability-identifier-naming — name/getter/setter/options have
@@ -225,6 +242,8 @@ struct FieldDesc
     static constexpr FieldOptions options =
         Opts; // NOLINT(readability-identifier-naming) — shared field name with 20+ external
               // call sites across model/serde/sdk/plugins, rename out of scope
+    static constexpr auto normalize =
+        Normalize; // NOLINT(readability-identifier-naming) — encode-time field normalizer
     using ClassType = MFPTraits<decltype(Getter)>::class_t;
     using ValueType = MFPTraits<decltype(Getter)>::value_t;
 };

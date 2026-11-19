@@ -1,6 +1,3 @@
-module;
-#include <rfl/Generic.hpp>
-
 export module blog_handlers_middleware:serde;
 
 import std;
@@ -51,15 +48,15 @@ public:
     }
 
     [[nodiscard]] std::expected<std::string, std::string>
-    encode(const rfl::Generic& value) const override
+    encode(const serde::Value& value) const override
     {
         return core_serde::JsonCodec{}.encode(value);
     }
 
-    [[nodiscard]] std::expected<rfl::Generic, std::string>
+    [[nodiscard]] std::expected<serde::Value, std::string>
     decode(std::string_view data) const override
     {
-        const auto value = core_serde::JsonCodec{}.decode<rfl::Generic>(data);
+        const auto value = core_serde::JsonCodec{}.decode<serde::Value>(data);
         if (!value) {
             return std::unexpected{std::string{"invalid JSON payload"}};
         }

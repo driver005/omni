@@ -3,6 +3,8 @@ module;
 export module core_serde:json_codec;
 
 import std;
+import :core;
+import :converter;
 
 export namespace core_serde {
 
@@ -28,3 +30,25 @@ public:
 };
 
 } // namespace core_serde
+
+
+export namespace serde {
+
+template<>
+struct FieldConverter<RawJson>
+{
+    using rfl_type = rfl::Generic;
+
+    static rfl_type to_rfl(const RawJson& value)
+    {
+        const auto parsed = rfl::json::read<rfl::Generic>(value.json);
+        return parsed ? *parsed : rfl::Generic{};
+    }
+
+    static RawJson from_rfl(const rfl_type& value)
+    {
+        return RawJson{rfl::json::write(value)};
+    }
+};
+
+} // namespace serde

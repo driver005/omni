@@ -1,0 +1,2 @@
+[     196ms] [ERROR] [Portal] Failed to initialize: JSHandle@object @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:6151
+[     759ms] [INFO] [congelado] posts request status 200 @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:6151

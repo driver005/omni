@@ -31,7 +31,6 @@ class MutationResult
 public:
     MutationResult() = default;
 
-    MutationResult(int status, std::string body, bool error = false) :
         m_status{status},
         m_body{std::move(body)},
         m_error{error}
@@ -1060,14 +1059,14 @@ public:
         if (resource == "posts") {
             const auto e = find_entity<model::Post>(id);
             if (!e) return std::nullopt;
-            return ::blog::dto::GhostFixtures::post(*e);
+            return ::core_serde::JsonCodec{}.encode(*e);
         }
         if (resource == "pages") return entity_json<model::Page>(find_entity<model::Page>(id));
         if (resource == "tags") return entity_json<model::Tag>(find_entity<model::Tag>(id));
         if (resource == "users") {
             const auto e = find_entity<model::User>(id);
             if (!e) return std::nullopt;
-            return ::blog::dto::GhostFixtures::user(*e);
+            return ::core_serde::JsonCodec{}.encode(*e);
         }
         if (resource == "members") {
             const auto e = find_entity<model::Member>(id);
@@ -1081,12 +1080,12 @@ public:
         if (resource == "newsletters") {
             const auto e = find_entity<model::Newsletter>(id);
             if (!e) return std::nullopt;
-            return ::blog::dto::GhostFixtures::newsletter(*e);
+            return ::core_serde::JsonCodec{}.encode(*e);
         }
         if (resource == "tiers") {
             const auto e = find_entity<model::Tier>(id);
             if (!e) return std::nullopt;
-            return ::blog::dto::GhostFixtures::tier(*e);
+            return ::core_serde::JsonCodec{}.encode(*e);
         }
         return std::nullopt;
     }
@@ -1370,21 +1369,21 @@ private:
     [[nodiscard]] static std::string serialize(const E& value)
     {
         if constexpr (std::same_as<E, model::Post>) {
-            return ::blog::dto::GhostFixtures::post(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Member>) {
             return core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::User>) {
-            return ::blog::dto::GhostFixtures::user(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Newsletter>) {
-            return ::blog::dto::GhostFixtures::newsletter(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Tier>) {
-            return ::blog::dto::GhostFixtures::tier(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Comment>) {
-            return ::blog::dto::GhostFixtures::comment(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Page>) {
-            return ::blog::dto::GhostFixtures::page(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else if constexpr (std::same_as<E, model::Author>) {
-            return ::blog::dto::GhostFixtures::author(value);
+            return ::core_serde::JsonCodec{}.encode(value);
         } else {
             return EntityJson<E>{}.to_json(value);
         }
@@ -1418,7 +1417,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::User& e) {
-            return ::blog::dto::GhostFixtures::user(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1428,7 +1427,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Newsletter& e) {
-            return ::blog::dto::GhostFixtures::newsletter(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1438,7 +1437,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Tier& e) {
-            return ::blog::dto::GhostFixtures::tier(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1448,7 +1447,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Page& e) {
-            return ::blog::dto::GhostFixtures::page(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1458,7 +1457,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Comment& e) {
-            return ::blog::dto::GhostFixtures::comment(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1468,7 +1467,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Author& e) {
-            return ::blog::dto::GhostFixtures::author(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 
@@ -1489,7 +1488,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Post& e) {
-            return ::blog::dto::GhostFixtures::post(e);
+            return ::core_serde::JsonCodec{}.encode(e);
         });
     }
 

@@ -6,6 +6,7 @@ export module blog_model:comment;
 import std;
 import core_serde;
 import core_database;
+import :member;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -41,6 +42,17 @@ public:
     void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
     [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
 
+    [[nodiscard]] std::string wire_id() const { return serde::ghost_id(m_id); }
+    [[nodiscard]] std::string wire_parent_id() const { return m_parent_id.empty() ? serde::ghost_id(m_id) : m_parent_id; }
+    [[nodiscard]] serde::RawJson wire_in_reply_to_id() const { return m_in_reply_to_id.empty() ? serde::RawJson{"null"} : serde::RawJson{"\"" + m_in_reply_to_id + "\""}; }
+    [[nodiscard]] serde::RawJson wire_count() const { return {R"({"likes":0,"dislikes":0,"replies":0})"}; }
+    [[nodiscard]] serde::RawJson wire_empty_object() const { return {"{}"}; }
+    [[nodiscard]] bool wire_false() const { return false; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
+    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
     std::int64_t m_id{};
     std::string m_post_id{};
     std::string m_member_id{};
@@ -63,7 +75,29 @@ namespace serde {
 template<>
 struct Serializable<blog::model::Comment>
 {
+    using M = blog::model::Comment;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::wire_id, &M::set_id>{},
+            FieldDesc<"html", &M::get_html, &M::set_html>{},
+            FieldDesc<"status", &M::get_status, &M::set_status>{},
+            FieldDesc<"parent_id", &M::wire_parent_id, &M::set_wire_string_noop>{},
+            FieldDesc<"in_reply_to_id", &M::wire_in_reply_to_id, &M::set_wire_noop>{},
+            FieldDesc<"in_reply_to_snippet", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"edited_at", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"liked", &M::wire_false, &M::set_wire_noop>{},
+            FieldDesc<"disliked", &M::wire_false, &M::set_wire_noop>{},
+            FieldDesc<"pinned", &M::wire_false, &M::set_wire_noop>{},
+            FieldDesc<"count", &M::wire_count, &M::set_wire_noop>{},
+            FieldDesc<"member", &M::wire_empty_object, &M::set_wire_noop>{},
+            FieldDesc<"parent", &M::wire_empty_object, &M::set_wire_noop>{},
+            FieldDesc<"post", &M::wire_empty_object, &M::set_wire_noop>{},
+            FieldDesc<"replies", &M::wire_empty_array, &M::set_wire_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::Comment::get_id, &blog::model::Comment::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

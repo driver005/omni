@@ -6,6 +6,7 @@ export module blog_model:user;
 import std;
 import core_serde;
 import core_database;
+import :member;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -95,6 +96,14 @@ public:
     void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
     [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
 
+    [[nodiscard]] std::string wire_id() const { return serde::ghost_id(m_id); }
+    [[nodiscard]] static std::string wire_accessibility() { return "Ghost Author"; }
+    [[nodiscard]] std::string wire_description() const { return m_bio; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
+    [[nodiscard]] std::string wire_accessibility_value() const { return "Ghost Author"; }
+
     std::int64_t m_id{};
     std::string m_name{};
     std::string m_slug{};
@@ -144,7 +153,21 @@ namespace serde {
 template<>
 struct Serializable<blog::model::User>
 {
+    using M = blog::model::User;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::wire_id, &M::set_id>{},
+            FieldDesc<"name", &M::get_name, &M::set_name>{},
+            FieldDesc<"slug", &M::get_slug, &M::set_slug>{},
+            FieldDesc<"email", &M::get_email, &M::set_email>{},
+            FieldDesc<"accessibility", &M::wire_accessibility_value, &M::set_wire_string_noop>{},
+            FieldDesc<"description", &M::wire_description, &M::set_wire_string_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::User::get_id, &blog::model::User::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

@@ -1,0 +1,4 @@
+[     162ms] [INFO] Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:17053
+[     179ms] [WARNING] using deprecated parameters for the initialization function; pass a single object instead @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:84673
+[     720ms] [INFO] [congelado] posts request status 200 @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:84767
+[     726ms] [ERROR] [Portal] Failed to initialize: JSHandle@object @ http://127.0.0.1:8124/apps/portal/umd/portal.min.js:83138

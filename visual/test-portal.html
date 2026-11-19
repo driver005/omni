@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Congelado SDK portal test</title>
+    </head>
+    <body>
+        <h1>Congelado SDK portal test</h1>
+        <p>Portal loads the Rust SDK because the embed tag carries <code>data-congelado="true"</code>.</p>
+        <script
+            defer
+            src="/apps/portal/umd/portal.min.js"
+            data-ghost="http://127.0.0.1:8124"
+            data-congelado="true"
+        ></script>
+    </body>
+</html>

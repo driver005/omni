@@ -1,0 +1,5 @@
+filegroup(
+    name = "openapi_spec",
+    srcs = ["openapi.json"],
+    visibility = ["//visibility:public"],
+)

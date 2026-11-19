@@ -1,0 +1,5 @@
+[     271ms] [ERROR] [Portal] Failed to initialize: JSHandle@object @ http://127.0.0.1:8123/apps/portal/umd/portal.min.js:6151
+[     272ms] [ERROR] [JavaScript Error: "Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://127.0.0.1:8124/members/api/member/. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404."] @ :1
+[     922ms] [WARNING] [congelado] SDK request failed Communication Error: error sending request @ http://127.0.0.1:8123/apps/portal/umd/portal.min.js:6151
+[     923ms] [ERROR] [JavaScript Error: "Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://127.0.0.1:8124/posts. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 404."] @ :1
+[     923ms] [ERROR] [JavaScript Error: "Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://127.0.0.1:8124/posts. (Reason: CORS request did not succeed). Status code: (null)."] @ :1

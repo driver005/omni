@@ -1,0 +1,6 @@
+- generic [active] [ref=e1]:
+  - heading "Congelado SDK portal test" [level=1] [ref=e2]
+  - paragraph [ref=e3]:
+    - text: Portal loads the Rust SDK because the embed tag carries
+    - code [ref=e4]: data-congelado="true"
+    - text: .

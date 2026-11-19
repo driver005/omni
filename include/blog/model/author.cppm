@@ -6,6 +6,7 @@ export module blog_model:author;
 import std;
 import core_serde;
 import core_database;
+import :member;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -26,6 +27,14 @@ public:
     void set_email(std::string value) { m_email = std::move(value); }
     [[nodiscard]] const std::string& get_email() const noexcept { return m_email; }
 
+    [[nodiscard]] std::string wire_id() const { return serde::ghost_id(m_id); }
+    [[nodiscard]] static std::string wire_bio() { return ""; }
+    [[nodiscard]] std::string wire_bio_value() const { return ""; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
+    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
     std::int64_t m_id{};
     std::string m_name{};
     std::string m_slug{};
@@ -41,7 +50,20 @@ namespace serde {
 template<>
 struct Serializable<blog::model::Author>
 {
+    using M = blog::model::Author;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::wire_id, &M::set_id>{},
+            FieldDesc<"name", &M::get_name, &M::set_name>{},
+            FieldDesc<"slug", &M::get_slug, &M::set_slug>{},
+            FieldDesc<"email", &M::get_email, &M::set_email>{},
+            FieldDesc<"bio", &M::wire_bio_value, &M::set_wire_string_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::Author::get_id, &blog::model::Author::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

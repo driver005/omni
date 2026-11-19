@@ -143,11 +143,35 @@ public:
 
 namespace serde {
 
+inline std::string ghost_id(std::int64_t value)
+{
+    static constexpr std::string_view digits{"0123456789abcdef"};
+    std::string out(24, '0');
+    auto n = static_cast<std::uint64_t>(value < 0 ? 0 : value);
+    for (int i = 23; i >= 0 && n > 0; --i) { out[static_cast<std::size_t>(i)] = digits[n & 0xF]; n >>= 4; }
+    for (std::size_t i = 0; i < out.size(); ++i) {
+        if (out[i] == '0') out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+    }
+    return out;
+}
+
+inline std::string uuid_for(std::int64_t id)
+{
+    const std::string hex = ghost_id(id);
+    return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) +
+           "-" + hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
+}
+
+struct zero_normalizer
+{
+    [[nodiscard]] std::int64_t operator()(std::int64_t) const { return 0; }
+};
+
 struct wire_id_normalizer
 {
     [[nodiscard]] std::string operator()(std::int64_t value) const
     {
-        return blog::model::Member::ghost_id(value);
+        return ghost_id(value);
     }
 };
 

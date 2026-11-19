@@ -1,0 +1,24 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+rust_library(
+    name = "sdk_api",
+    srcs = ["lib.rs"],
+    data = ["//sdk/openapi:openapi_spec"],
+    edition = "2021",
+    # progenitor resolves the spec path against OUT_DIR at macro expansion time. Bazel's
+    # rustc runs from the execroot; use the workspace root so the path is stable.
+    rustc_env = {
+        "CARGO_MANIFEST_DIR": ".",
+        # Workspace root; progenitor's OutDir base is resolved from the rustc source dir.
+        "OUT_DIR": "/home/default/cc/omni",
+        # Bump when openapi.json changes to force progenitor macro re-expansion.
+        "SDK_SPEC_REV": "2",
+    },
+    deps = [
+        "@sdk_crates//progenitor",
+        "@sdk_crates//reqwest",
+        "@sdk_crates//serde",
+        "@sdk_crates//serde_json",
+    ],
+    visibility = ["//visibility:public"],
+)

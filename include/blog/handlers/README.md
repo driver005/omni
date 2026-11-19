@@ -1,9 +1,11 @@
 # handlers layout
 
-Every Ghost domain lives under `include/blog/handlers/<domain>/`.
+Handler domains are grouped by area under `include/blog/handlers/<area>/<domain>/`:
+`admin/`, `auth/`, `discovery/`, `external/`, `membership/`, `system/`.
+`middleware/` stays at the handlers root.
 
 ```text
-handlers/<domain>/
+handlers/<area>/<domain>/
 ├── routes.cppm                  # route installation for this domain (module blog_handlers_routes:<domain>_routes)
 ├── <operation>/
 │   ├── handler.cppm             # hand-written handler, no CoreHandler dependency

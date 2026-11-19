@@ -2,6 +2,7 @@ export module blog_handlers:members_operations;
 
 import std;
 import core_cache;
+import core_serde;
 import blog_context;
 import blog_dto;
 import blog_model;
@@ -76,7 +77,7 @@ public:
 /** @brief GET /members/metafields — snapshot-shaped member with Ghost attribution. */
 [[nodiscard]] std::pair<int, std::string> metafields_browse()
 {
-    return {200, "{\"members\":[" + blog::dto::GhostFixtures::member([] {
+    return {200, "{\"members\":[" + core_serde::JsonCodec{}.encode([] {
         model::Member m;
         m.set_id(1);
         return m;
@@ -151,7 +152,7 @@ public:
     }
     state.disabled = disable;
     store_comment(m_cache, id, state);
-    auto json = blog::dto::GhostFixtures::member([] {
+    auto json = core_serde::JsonCodec{}.encode([] {
         model::Member member;
         member.set_id(1);
         return member;

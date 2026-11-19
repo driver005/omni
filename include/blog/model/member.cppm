@@ -59,6 +59,61 @@ public:
     void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
     [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
 
+    // Ghost wire-shape accessors (serde FieldDesc uses these for API JSON).
+    [[nodiscard]] std::string wire_uuid() const
+    {
+        return m_uuid.empty() ? uuid_for(m_id) : m_uuid;
+    }
+    [[nodiscard]] serde::RawJson wire_note() const
+    {
+        return {m_note.empty() ? std::string{"null"} : std::string{"\"" + m_note + "\""}};
+    }
+    [[nodiscard]] serde::RawJson wire_commenting() const
+    {
+        return {R"({"disabled":false,"disabled_reason":null,"disabled_until":null})"};
+    }
+    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
+    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
+    [[nodiscard]] bool wire_comped() const { return false; }
+    [[nodiscard]] bool wire_can_comment() const { return true; }
+    [[nodiscard]] bool wire_subscribed() const { return m_status == "paid"; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    [[nodiscard]] std::string wire_unsubscribe_url() const
+    {
+        return "http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme";
+    }
+    [[nodiscard]] serde::RawJson wire_attribution() const
+    {
+        return {R"({"id":null,"referrer_medium":"Ghost Admin","referrer_source":"Created manually",)"
+                R"("referrer_url":null,"title":null,"type":null,"url":null})"};
+    }
+    [[nodiscard]] serde::RawJson wire_email_suppression() const
+    {
+        return {R"({"info":null,"suppressed":false})"};
+    }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
+
+    [[nodiscard]] static std::string ghost_id(std::int64_t value)
+    {
+        static constexpr std::string_view digits{"0123456789abcdef"};
+        std::string out(24, '0');
+        auto n = static_cast<std::uint64_t>(value < 0 ? 0 : value);
+        for (int i = 23; i >= 0 && n > 0; --i) { out[static_cast<std::size_t>(i)] = digits[n & 0xF]; n >>= 4; }
+        for (std::size_t i = 0; i < out.size(); ++i) {
+            if (out[i] == '0') out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+        }
+        return out;
+    }
+
+    [[nodiscard]] static std::string uuid_for(std::int64_t id)
+    {
+        const std::string hex = ghost_id(id);
+        return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) +
+               "-" + hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
+    }
+
+public:
     std::int64_t m_id{};
     std::string m_uuid{};
     std::string m_transient_id{};
@@ -87,10 +142,54 @@ public:
 } // namespace blog::model
 
 namespace serde {
+
+struct wire_id_normalizer
+{
+    [[nodiscard]] std::string operator()(std::int64_t value) const
+    {
+        return blog::model::Member::ghost_id(value);
+    }
+};
+
 template<>
 struct Serializable<blog::model::Member>
 {
+    using M = blog::model::Member;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::get_id, &M::set_id, FieldOptions::init().with_db(FieldOptionsDb::init().pk()), wire_id_normalizer{}>{},
+            FieldDesc<"uuid", &M::wire_uuid, &M::set_uuid>{},
+            FieldDesc<"email", &M::get_email, &M::set_email>{},
+            FieldDesc<"name", &M::get_name, &M::set_name>{},
+            FieldDesc<"status", &M::get_status, &M::set_status>{},
+            FieldDesc<"note", &M::wire_note, &M::set_wire_string_noop>{},
+            FieldDesc<"avatar_image", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"comped", &M::wire_comped, &M::set_wire_noop>{},
+            FieldDesc<"can_comment", &M::wire_can_comment, &M::set_wire_noop>{},
+            FieldDesc<"subscribed", &M::wire_subscribed, &M::set_wire_noop>{},
+            FieldDesc<"email_count", &M::get_email_count, &M::set_email_count>{},
+            FieldDesc<"email_opened_count", &M::get_email_opened_count, &M::set_email_opened_count>{},
+            FieldDesc<"email_open_rate", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"enable_comment_notifications", &M::get_enable_comment_notifications, &M::set_enable_comment_notifications>{},
+            FieldDesc<"enable_updates_and_announcements", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"geolocation", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"description", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"last_seen_at", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"unsubscribe_url", &M::wire_unsubscribe_url, &M::set_wire_string_noop>{},
+            FieldDesc<"attribution", &M::wire_attribution, &M::set_wire_noop>{},
+            FieldDesc<"commenting", &M::wire_commenting, &M::set_wire_noop>{},
+            FieldDesc<"email_suppression", &M::wire_email_suppression, &M::set_wire_noop>{},
+            FieldDesc<"current_subscription", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"labels", &M::wire_empty_array, &M::set_wire_noop>{},
+            FieldDesc<"newsletters", &M::wire_empty_array, &M::set_wire_noop>{},
+            FieldDesc<"subscriptions", &M::wire_empty_array, &M::set_wire_noop>{},
+            FieldDesc<"tiers", &M::wire_empty_array, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::Member::get_id, &blog::model::Member::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

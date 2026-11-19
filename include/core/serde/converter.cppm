@@ -868,8 +868,10 @@ auto build_named_tuple(const T& object, std::tuple<Fds...> field_descriptors)
         {
             return rfl::NamedTuple(
                 rfl::make_field<decltype(fields)::name>(
-                    FieldConverter<typename decltype(fields)::ValueType>::to_rfl(
-                        (object.*decltype(fields)::getter)()
+                    FieldConverter<std::remove_cvref_t<decltype(
+                        decltype(fields)::normalize((object.*decltype(fields)::getter)())
+                    )>>::to_rfl(
+                        decltype(fields)::normalize((object.*decltype(fields)::getter)())
                     )
                 )...
             );

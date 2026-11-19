@@ -74,7 +74,15 @@ private:
 
 public:
     static constexpr std::string_view table = serde::Serializable<E>::table_name();
-    using fields = decltype(make_fields(serde::Serializable<E>::fields()));
+    [[nodiscard]] static constexpr auto storage_fields()
+    {
+        if constexpr (requires { serde::Serializable<E>::db_fields(); }) {
+            return serde::Serializable<E>::db_fields();
+        } else {
+            return serde::Serializable<E>::fields();
+        }
+    }
+    using fields = decltype(make_fields(storage_fields()));
     using entity_type = E;
 };
 

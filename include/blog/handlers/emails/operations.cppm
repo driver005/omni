@@ -8,45 +8,8 @@ import blog_handlers_middleware;
 
 export namespace blog::api::emails {
 
-namespace detail {
 
-constexpr std::string_view kAnalyticsKey{"emails:analytics"};
 
-[[nodiscard]] blog::dto::AnalyticsStatus load_analytics(core::cache::Cache& cache)
-{
-    const auto stored = core::cache::value_as<std::string>(cache.get(kAnalyticsKey).value);
-    if (auto analytics = blog::handlers::middleware::decode<blog::dto::AnalyticsStatus>(stored)) {
-        return *analytics;
-    }
-    blog::dto::AnalyticsStatus analytics;
-    analytics.latest.jobName = "email-analytics-latest-others";
-    analytics.latestOpened.jobName = "email-analytics-latest-opened";
-    analytics.missing.jobName = "email-analytics-missing";
-    analytics.scheduled.jobName = "email-analytics-scheduled";
-    return analytics;
-}
-
-void store_analytics(core::cache::Cache& cache, const blog::dto::AnalyticsStatus& analytics)
-{
-    cache.put(kAnalyticsKey,
-              core::cache::to_cache_value(blog::handlers::middleware::encode(analytics)),
-              core::cache::Ttl{}.never(),
-              {"emails"});
-}
-
-[[nodiscard]] blog::dto::AnalyticsJob* job_for(
-    blog::dto::AnalyticsStatus& analytics,
-    std::string_view name
-)
-{
-    if (name == "email-analytics-latest-opened") return &analytics.latestOpened;
-    if (name == "email-analytics-missing") return &analytics.missing;
-    return &analytics.latest;
-}
-
-} // namespace detail
-
-using namespace detail;
 class EmailsOperations
 {
 public:
@@ -98,6 +61,40 @@ public:
 }
 
 private:
+static constexpr std::string_view kAnalyticsKey{"emails:analytics"};
+
+[[nodiscard]] static blog::dto::AnalyticsStatus load_analytics(core::cache::Cache& cache)
+{
+    const auto stored = core::cache::value_as<std::string>(cache.get(kAnalyticsKey).value);
+    if (auto analytics = blog::handlers::middleware::decode<blog::dto::AnalyticsStatus>(stored)) {
+        return *analytics;
+    }
+    blog::dto::AnalyticsStatus analytics;
+    analytics.latest.jobName = "email-analytics-latest-others";
+    analytics.latestOpened.jobName = "email-analytics-latest-opened";
+    analytics.missing.jobName = "email-analytics-missing";
+    analytics.scheduled.jobName = "email-analytics-scheduled";
+    return analytics;
+}
+
+static void store_analytics(core::cache::Cache& cache, const blog::dto::AnalyticsStatus& analytics)
+{
+    cache.put(kAnalyticsKey,
+              core::cache::to_cache_value(blog::handlers::middleware::encode(analytics)),
+              core::cache::Ttl{}.never(),
+              {"emails"});
+}
+
+[[nodiscard]] static blog::dto::AnalyticsJob* job_for(
+    blog::dto::AnalyticsStatus& analytics,
+    std::string_view name
+)
+{
+    if (name == "email-analytics-latest-opened") return &analytics.latestOpened;
+    if (name == "email-analytics-missing") return &analytics.missing;
+    return &analytics.latest;
+}
+
     core::cache::Cache& m_cache;
 };
 

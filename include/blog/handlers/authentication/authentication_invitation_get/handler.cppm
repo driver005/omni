@@ -5,7 +5,6 @@ import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;
-import :authentication_authentication_invitation_get_model; 
 import :authentication_authentication_invitation_get_flow;
 export namespace blog::handlers::authentication::authentication_invitation_get {
 class AuthenticationInvitationGetHandler {
@@ -21,9 +20,7 @@ public:
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
   }
-  model::Request in; in.path=std::string{req.get_path()};
-  for(const std::byte byte:req.get_body()) in.body+=static_cast<char>(byte);
-  const auto ex=m_workflow.run("authentication_authentication_invitation_get", in);
+  const auto ex=m_workflow.run("authentication_authentication_invitation_get", req);
   const auto* r=ex.result_of("authentication_authentication_invitation_get_execute");
   auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{"{}"};
   std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));

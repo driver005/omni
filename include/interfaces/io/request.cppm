@@ -901,6 +901,19 @@ public:
     }
 
     /**
+     * @brief Materializes the body bytes as text. BufferView may span several nodes, so a
+     * single contiguous string_view is not available; consumers that need text call this once.
+     */
+    [[nodiscard]] std::string body_as_string() const
+    {
+        std::string out;
+        for (const std::byte byte : get_body()) {
+            out += static_cast<char>(byte);
+        }
+        return out;
+    }
+
+    /**
      * @brief Grabs every header currently set on this request, the whole collection in one go.
      * @warning Base impl aborts — mandatory override, last one in this section, you made it.
      * @return all headers as a vector of `HeaderEntry` (static or dynamic flavored).

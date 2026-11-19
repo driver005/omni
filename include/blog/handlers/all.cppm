@@ -258,14 +258,7 @@ import :stripe;
 
 export namespace blog::api {
 
-namespace detail {
-[[nodiscard]] core::cache::Cache make_cache()
-{
-    return core::cache::CacheBuilder{}
-        .use_backend(std::make_unique<core::cache::LocalCacheBackend>(4096, core::cache::EvictionPolicy::LRU))
-        .build();
-}
-} // namespace detail
+
 
 /** @brief Owns the shared core handler plus one domain handler per resource. */
 class BlogHandlers
@@ -840,11 +833,19 @@ private:
  blog::handlers::feedback::read_by_id::ReadByIdHandler m_feedback_read_by_id{m_ctx};
  blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler m_search_index_search_index_pages_get{m_ctx};
  blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler m_search_index_search_index_users_get{m_ctx};
-    core::cache::Cache m_cache{detail::make_cache()};
+    core::cache::Cache m_cache{make_cache()};
     blog::api::members::MembersOperations m_members_ops{m_cache};
     blog::api::emails::EmailsOperations m_emails_ops{m_cache};
     blog::api::automations::AutomationsOperations m_automations_ops{m_cache};
     StripeHandler m_stripe{};
+
+private:
+[[nodiscard]] core::cache::Cache make_cache()
+{
+    return core::cache::CacheBuilder{}
+        .use_backend(std::make_unique<core::cache::LocalCacheBackend>(4096, core::cache::EvictionPolicy::LRU))
+        .build();
+}
 };
 
 } // namespace blog::api

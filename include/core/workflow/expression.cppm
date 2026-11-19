@@ -16,6 +16,17 @@ public:
     }
 };
 
+/** @brief Step input declared as T& reads the reference stored by run(name, lvalue). */
+template<typename T>
+class InputOf<T&>
+{
+public:
+    [[nodiscard]] T& operator()(const WorkflowContext& ctx) const
+    {
+        return ctx.template input_as<std::reference_wrapper<T>>().get();
+    }
+};
+
 /** @brief Instance functor reading one typed field of a recorded step output. */
 template<typename Output, typename Member>
 class StepField

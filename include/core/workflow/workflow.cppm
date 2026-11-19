@@ -68,14 +68,18 @@ public:
     }
 
     template<typename Input>
-    [[nodiscard]] WorkflowExecution run(std::string_view name, Input input)
+    [[nodiscard]] WorkflowExecution run(std::string_view name, Input&& input)
     {
         const WorkflowDefinition* definition = find(name);
         if (definition == nullptr) {
             throw std::invalid_argument{"core_workflow: unknown workflow " + std::string{name}};
         }
         WorkflowContext context;
-        context.set_input(std::any{std::move(input)});
+        if constexpr (std::is_lvalue_reference_v<Input>) {
+            context.set_input(std::any{std::ref(input)});
+        } else {
+            context.set_input(std::any{std::forward<Input>(input)});
+        }
         return m_runtime->driver().run(*definition, context);
     }
 

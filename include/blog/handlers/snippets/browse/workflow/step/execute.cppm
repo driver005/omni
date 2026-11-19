@@ -1,16 +1,15 @@
 export module blog_handlers:snippets_browse_step;
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
 import :mutation;
 
 import blog_dto;
-import :snippets_browse_model;
-import :snippets_browse_dto;
 export namespace blog::handlers::snippets::browse::workflow {
 class ExecuteStep {
 public:
- using Input=model::Request; using Output=std::string;
+ using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"snippets_browse_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};

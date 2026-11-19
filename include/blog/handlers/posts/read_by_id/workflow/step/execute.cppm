@@ -1,22 +1,22 @@
 export module blog_handlers:posts_read_by_id_step;
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
-import :posts_read_by_id_model;
 
 export namespace blog::handlers::posts::read_by_id::workflow {
 
 class ExecuteStep
 {
 public:
-    using Input = model::Request;
+    using Input=interfaces::io::IRequest&;
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"posts_read_by_id_execute"};
 
     [[nodiscard]] core::workflow::StepResponse<Output> invoke(
         const Input& input, core::workflow::WorkflowContext&) const
     {
-        auto path = std::string_view{input.path}.substr(0, input.path.find('?'));
+        auto path = std::string_view{std::string{input.get_path()}}.substr(0, std::string{input.get_path()}.find('?'));
         while (path.size() > 1 && path.back() == '/') path.remove_suffix(1);
         const auto slash = path.find_last_of('/');
         const std::string id{slash == std::string_view::npos ? path : path.substr(slash + 1)};

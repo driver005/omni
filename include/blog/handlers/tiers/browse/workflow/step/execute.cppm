@@ -1,25 +1,24 @@
 export module blog_handlers:tiers_browse_step;
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
 import :mutation;
 
 import blog_dto;
-import :tiers_browse_model;
-import :tiers_browse_dto;
 export namespace blog::handlers::tiers::browse::workflow {
 class ExecuteStep {
 public:
- using Input=model::Request; using Output=std::string;
+ using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"tiers_browse_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
   
   const auto rows=ctx.store().json_for("tiers", {});
   std::string data=rows;
-  const auto q=in.path.find('?');
+  const auto q=std::string{in.get_path()}.find('?');
   if(q!=std::string::npos){
-    const auto filter=in.path.substr(q+1);
+    const auto filter=std::string{in.get_path()}.substr(q+1);
     const auto pos=filter.find("monthly_price:");
     if(pos!=std::string::npos){
       std::string_view value = std::string_view{filter}.substr(pos+14);

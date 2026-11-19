@@ -1,16 +1,15 @@
 export module blog_handlers:exports_exports_download_get_step;
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
 import :mutation;
 
 import blog_dto;
-import :exports_exports_download_get_model;
-import :exports_exports_download_get_dto;
 export namespace blog::handlers::exports::exports_download_get::workflow {
 class ExecuteStep {
 public:
- using Input=model::Request; using Output=std::string;
+ using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"exports_exports_download_get_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};

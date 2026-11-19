@@ -5,7 +5,6 @@ import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;
-import :automations_automations_id_performance_stats_get_model; 
 import :automations_automations_id_performance_stats_get_flow;
 export namespace blog::handlers::automations::automations_id_performance_stats_get {
 class AutomationsIdPerformanceStatsGetHandler {
@@ -21,9 +20,7 @@ public:
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
   }
-  model::Request in; in.path=std::string{req.get_path()};
-  for(const std::byte byte:req.get_body()) in.body+=static_cast<char>(byte);
-  const auto ex=m_workflow.run("automations_automations_id_performance_stats_get", in);
+  const auto ex=m_workflow.run("automations_automations_id_performance_stats_get", req);
   const auto* r=ex.result_of("automations_automations_id_performance_stats_get_execute");
   auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{"{}"};
   std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));

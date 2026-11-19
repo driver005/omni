@@ -5,7 +5,6 @@ import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;
-import :gifts_gifts_flush_deliveries_put_model; 
 import :gifts_gifts_flush_deliveries_put_flow;
 export namespace blog::handlers::gifts::gifts_flush_deliveries_put {
 class GiftsFlushDeliveriesPutHandler {
@@ -21,9 +20,7 @@ public:
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
   }
-  model::Request in; in.path=std::string{req.get_path()};
-  for(const std::byte byte:req.get_body()) in.body+=static_cast<char>(byte);
-  const auto ex=m_workflow.run("gifts_gifts_flush_deliveries_put", in);
+  const auto ex=m_workflow.run("gifts_gifts_flush_deliveries_put", req);
   const auto* r=ex.result_of("gifts_gifts_flush_deliveries_put_execute");
   auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{"{}"};
   std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));

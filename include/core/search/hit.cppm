@@ -41,11 +41,37 @@ public:
         return m_snippet;
     }
 
+    /** @brief Store a projected field value (raw JSON fragment). */
+    SearchHit& put(std::string key, std::string value)
+    {
+        m_fields.insert_or_assign(std::move(key), std::move(value));
+        return *this;
+    }
+
+    [[nodiscard]] const std::map<std::string, std::string>& fields() const noexcept
+    {
+        return m_fields;
+    }
+
+    /** @brief Attach related hits for an `include=` relation. */
+    SearchHit& embed(std::string relation, std::vector<SearchHit> hits)
+    {
+        m_includes.insert_or_assign(std::move(relation), std::move(hits));
+        return *this;
+    }
+
+    [[nodiscard]] const std::map<std::string, std::vector<SearchHit>>& includes() const noexcept
+    {
+        return m_includes;
+    }
+
 private:
     std::string m_id{};
     std::string m_type{};
     double m_score{0.0};
     std::string m_snippet{};
+    std::map<std::string, std::string> m_fields{};
+    std::map<std::string, std::vector<SearchHit>> m_includes{};
 };
 
 } // namespace core::search

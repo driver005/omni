@@ -57,9 +57,52 @@ public:
         return m_offset;
     }
 
+    /** @brief Ghost `fields=` projection: only these keys are returned. */
+    SearchQuery& fields(std::string_view csv)
+    {
+        m_fields = split(csv);
+        return *this;
+    }
+
+    /** @brief Ghost `include=` embedding: related documents to attach. */
+    SearchQuery& include(std::string_view csv)
+    {
+        m_includes = split(csv);
+        return *this;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& field_names() const noexcept
+    {
+        return m_fields;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& include_names() const noexcept
+    {
+        return m_includes;
+    }
+
 private:
+    [[nodiscard]] static std::vector<std::string> split(std::string_view csv)
+    {
+        std::vector<std::string> out;
+        for (;;) {
+            const auto comma = csv.find(',');
+            const auto part = csv.substr(0, comma);
+            const auto begin = part.find_first_not_of(" \t");
+            if (begin != std::string_view::npos) {
+                const auto end = part.find_last_not_of(" \t");
+                out.emplace_back(part.substr(begin, end - begin + 1));
+            }
+            if (comma == std::string_view::npos) break;
+            csv.remove_prefix(comma + 1);
+        }
+        return out;
+    }
+
     std::string m_term{};
     std::map<std::string, std::string> m_filters{};
+    std::vector<std::string> m_fields{};
+    std::vector<std::string> m_includes{};
     std::size_t m_limit{10};
     std::size_t m_offset{0};
 };

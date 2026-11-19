@@ -4,7 +4,6 @@ import std;
 import core_workflow;
 import interfaces;
 import blog_context;
-import :mutation;
 
 export namespace blog::handlers::posts::gift_links_create::workflow {
 
@@ -18,7 +17,7 @@ public:
     [[nodiscard]] core::workflow::StepResponse<Output> invoke(
         const Input& input, core::workflow::WorkflowContext&) const
     {
-        blog::api::MutationStore mutations{m_ctx->store()};
+        auto& mutations = m_ctx->store();
         return core::workflow::StepResponse<Output>{R"({"gift_links":[{"id":"1","url":"https://ghost.local/link"}]})"};
     }
 

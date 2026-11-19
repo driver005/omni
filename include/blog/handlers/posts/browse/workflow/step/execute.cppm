@@ -4,7 +4,6 @@ import std;
 import core_workflow;
 import interfaces;
 import blog_context;
-import :mutation;
 
 export namespace blog::handlers::posts::browse::workflow {
 
@@ -18,7 +17,7 @@ public:
     [[nodiscard]] core::workflow::StepResponse<Output> invoke(
         const Input& input, core::workflow::WorkflowContext&) const
     {
-        blog::api::MutationStore mutations{m_ctx->store()};
+        auto& mutations = m_ctx->store();
         std::map<std::string, std::string> params;
         const auto q = std::string{input.get_path()}.find('?');
         if (q != std::string::npos) {

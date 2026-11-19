@@ -3,7 +3,6 @@ import std;
 import core_workflow;
 import interfaces;
 import blog_context;
-import :mutation;
 import :stripe;
 import blog_dto;
 export namespace blog::handlers::stripe::stripe_checkout_config_get::workflow {
@@ -12,7 +11,7 @@ public:
  using Input=interfaces::io::IRequest&; using Output=std::map<std::string, std::string>;
  static constexpr std::string_view name{"stripe_stripe_checkout_config_get_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
+  auto& ctx=*s_ctx; auto& mutations = ctx.store();
   auto& state=*s_stripe;
   const auto r=[&](blog::api::StripeHandler& stripe, std::string_view method, std::string_view body, std::string_view path = "/stripe/checkout/config")->std::pair<int,std::string>{
         if (path.contains("/branding")) return {200, stripe.branding()};

@@ -3,7 +3,6 @@ import std;
 import core_workflow;
 import interfaces;
 import blog_context;
-import :mutation;
 import blog_handlers_middleware;
 
 import blog_dto;
@@ -13,7 +12,7 @@ public:
  using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"members_members_stats_count_get_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
+  auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
         blog::dto::StatsMemberResponse response;
         response.stats.push_back(blog::dto::StatsMemberEntry{});

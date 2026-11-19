@@ -4,14 +4,15 @@ import interfaces;
 import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
+import core_cache;
 import memory_backends;
 import :emails_analytics_put_model; 
 import :emails_analytics_put_flow;
 export namespace blog::handlers::emails::analytics_put {
 class AnalyticsPutHandler {
 public:
- AnalyticsPutHandler(blog::BlogContext& ctx, blog::api::EmailsState& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_state=&sp;
+ AnalyticsPutHandler(blog::BlogContext& ctx, core::cache::Cache& cache) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_cache=&cache;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

@@ -5,9 +5,9 @@ congelado_module_library(
     primary_interface = "base.cppm",
     partitions = [
         "mutation.cppm",
-        "members/state.cppm",
-        "emails/state.cppm",
-        "automations/state.cppm",
+        "members/operations.cppm",
+        "emails/operations.cppm",
+        "automations/operations.cppm",
         "stripe.cppm",
         "posts/browse/model/request.cppm",
         "posts/browse/dto/response.cppm",
@@ -1236,7 +1236,9 @@ congelado_module_library(
         "//include/blog/context:blog_context",
         "//include/blog/dto:blog_dto",
         "//include/blog/model:blog_model",
+        "//include/core/cache:core_cache",
         "//include/interfaces:interfaces",
+        "//plugins/memory:memory_backends",
     ],
     visibility = ["//visibility:public"],
 )

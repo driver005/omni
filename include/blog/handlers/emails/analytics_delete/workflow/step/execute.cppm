@@ -1,9 +1,10 @@
 export module blog_handlers:emails_analytics_delete_step;
 import std;
 import core_workflow;
+import core_cache;
 import blog_context;
 import :mutation;
-import :emails_state;
+import :emails_operations;
 import blog_dto;
 import :emails_analytics_delete_model;
 import :emails_analytics_delete_dto;
@@ -14,14 +15,13 @@ public:
  static constexpr std::string_view name{"emails_analytics_delete_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
-  auto& state=*s_state;
-  const auto r=state.emails_analytics_delete();
+    const auto r=blog::api::emails::emails_analytics_delete(*s_cache);
   if(r.first!=0) return core::workflow::StepResponse<Output>{{{"status",std::to_string(r.first)},{"body",r.second}}};
   return core::workflow::StepResponse<Output>{{{"status","200"},{"body",mutations.bulk_destroy("emails", in.body.empty()?"{}":in.body).body()}}};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx; static blog::api::EmailsState* s_state;
+ static blog::BlogContext* s_ctx; static core::cache::Cache* s_cache;
 };
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-blog::api::EmailsState* ExecuteStep::s_state{nullptr};
+core::cache::Cache* ExecuteStep::s_cache{nullptr};
 }

@@ -10,8 +10,8 @@ import :members_members_metafields_all_flow;
 export namespace blog::handlers::members::members_metafields_all {
 class MembersMetafieldsAllHandler {
 public:
- MembersMetafieldsAllHandler(blog::BlogContext& ctx, blog::api::MembersState& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_state=&sp;
+ MembersMetafieldsAllHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

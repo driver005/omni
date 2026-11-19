@@ -1,10 +1,9 @@
 export module blog_handlers:themes_themes_install_post_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::themes::themes_install_post::workflow {
 class ExecuteStep {
 public:

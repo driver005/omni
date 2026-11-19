@@ -1,10 +1,10 @@
 export module blog_handlers_routes:tinybird_routes;
+import blog_handlers;
 
 import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers;
 import blog_handlers_middleware;
 
 export namespace blog::api {

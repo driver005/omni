@@ -1,11 +1,10 @@
 export module blog_handlers:automations_automations_id_email_test_post_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
 
-import blog_context;
 import :automations_operations;
-import blog_dto;
 export namespace blog::handlers::automations::automations_id_email_test_post::workflow {
 class ExecuteStep {
 public:

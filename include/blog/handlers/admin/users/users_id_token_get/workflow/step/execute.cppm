@@ -1,10 +1,9 @@
 export module blog_handlers:users_users_id_token_get_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::users::users_id_token_get::workflow {
 class ExecuteStep {
 public:

@@ -1,10 +1,9 @@
 export module blog_handlers:settings_settings_access_code_regenerate_post_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::settings::settings_access_code_regenerate_post::workflow {
 class ExecuteStep {
 public:

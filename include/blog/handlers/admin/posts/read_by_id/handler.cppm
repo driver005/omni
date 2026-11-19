@@ -1,7 +1,7 @@
 export module blog_handlers:posts_read_by_id_handler;
+import :domain_all;
 import std;
 import interfaces;
-import blog_context;
 import core_workflow;
 import memory_backends;
 import :posts_read_by_id_flow;

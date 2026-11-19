@@ -1,10 +1,9 @@
 export module blog_handlers:apps_all_collection_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::apps::all_collection::workflow {
 class ExecuteStep {
 public:

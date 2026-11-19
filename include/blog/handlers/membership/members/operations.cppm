@@ -1,11 +1,9 @@
 export module blog_handlers:members_operations;
+import :domain_all;
 
 import std;
 import core_cache;
 import core_serde;
-import blog_context;
-import blog_dto;
-import blog_model;
 import blog_handlers_middleware;
 
 export namespace blog::api::members {

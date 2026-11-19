@@ -15,7 +15,6 @@ congelado_module_library(
     deps = [
         "//include/blog/handlers:blog_handlers_routes",
         "//include/blog/handlers:blog_handlers",
-        "//include/blog/context:blog_context",
         "//include/io/layer/http2:io_layer_http2",
         "//include/utils/buffering:utils_buffering",
         "//include/shared:shared",

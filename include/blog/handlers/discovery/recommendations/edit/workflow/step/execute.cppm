@@ -1,10 +1,9 @@
 export module blog_handlers:recommendations_edit_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::recommendations::edit::workflow {
 class ExecuteStep {
 public:

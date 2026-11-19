@@ -1,7 +1,7 @@
 import std;
 import blog_testing;
 import blog_handlers;
-import blog_context;
+import blog_handlers;
 
 using namespace blog::testing;
 

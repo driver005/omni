@@ -1,10 +1,9 @@
 export module blog_handlers:members_members_id_suppression_delete_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::members::members_id_suppression_delete::workflow {
 class ExecuteStep {
 public:

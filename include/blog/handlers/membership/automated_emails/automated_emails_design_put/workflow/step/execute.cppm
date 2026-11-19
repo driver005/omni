@@ -1,10 +1,9 @@
 export module blog_handlers:automated_emails_automated_emails_design_put_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::automated_emails::automated_emails_design_put::workflow {
 class ExecuteStep {
 public:

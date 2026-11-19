@@ -1,9 +1,9 @@
 export module blog_handlers:posts_upload_step;
+import :domain_all;
 
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
 export namespace blog::handlers::posts::upload::workflow {
 

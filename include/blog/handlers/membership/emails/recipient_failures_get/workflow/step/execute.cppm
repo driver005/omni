@@ -1,10 +1,9 @@
 export module blog_handlers:emails_recipient_failures_get_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 import :emails_operations;
-import blog_dto;
 export namespace blog::handlers::emails::recipient_failures_get::workflow {
 class ExecuteStep {
 public:

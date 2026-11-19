@@ -1,7 +1,7 @@
 export module blog_handlers:stripe;
+import :domain_all;
 
 import std;
-import blog_context;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif

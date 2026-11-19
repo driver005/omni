@@ -1,10 +1,9 @@
 export module blog_handlers:authors_read_by_id_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::authors::read_by_id::workflow {
 class ExecuteStep {
 public:

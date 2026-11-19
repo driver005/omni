@@ -1,11 +1,9 @@
 export module blog_handlers:emails_operations;
+import :domain_all;
 
 import std;
 import core_cache;
 import core_serde;
-import blog_context;
-import blog_model;
-import blog_dto;
 import blog_handlers_middleware;
 
 export namespace blog::api::emails {

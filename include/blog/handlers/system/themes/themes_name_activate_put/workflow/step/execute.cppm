@@ -1,10 +1,9 @@
 export module blog_handlers:themes_themes_name_activate_put_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::themes::themes_name_activate_put::workflow {
 class ExecuteStep {
 public:

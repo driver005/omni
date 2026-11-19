@@ -1,5 +1,6 @@
 export module blog_handlers:integrations_browse_step;
 import :domain_all;
+import :integrations_dto_more_resources;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,8 +14,8 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        blog::dto::IntegrationsResponse response;
-        response.integrations.push_back(blog::dto::RecordDto{});
+        blog::dto::integrations::IntegrationsResponse response;
+        response.integrations.push_back(blog::dto::integrations::RecordDto{});
         return {200, blog::handlers::middleware::encode(response)};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

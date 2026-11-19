@@ -1,5 +1,7 @@
 export module blog_handlers:config_browse_handler;
 import :domain_all;
+import :config_dto_config_auth;
+import :config_dto_config_response;
 import std;
 import interfaces;
 import blog_handlers_middleware;

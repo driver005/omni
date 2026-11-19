@@ -1,5 +1,6 @@
 export module blog_handlers:integrations_integrations_id_api_key_keyid_refresh_post_handler;
 import :domain_all;
+import :integrations_dto_more_resources;
 import std;
 import interfaces;
 import blog_handlers_middleware;

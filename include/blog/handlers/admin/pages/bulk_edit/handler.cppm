@@ -1,5 +1,6 @@
 export module blog_handlers:pages_bulk_edit_handler;
 import :domain_all;
+import :pages_dto_links;
 import std;
 import interfaces;
 import blog_handlers_middleware;

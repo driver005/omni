@@ -1,5 +1,6 @@
 export module blog_handlers:gift_links_gift_links_remove_all_put_handler;
 import :domain_all;
+import :gift_links_dto_links;
 import std;
 import interfaces;
 import blog_handlers_middleware;

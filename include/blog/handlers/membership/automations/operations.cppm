@@ -1,5 +1,11 @@
 export module blog_handlers:automations_operations;
 import :domain_all;
+import :automations_dto_automation_email_preview;
+import :automations_dto_automation_email_preview_input;
+import :automations_dto_automation_email_preview_response;
+import :automations_dto_automation_email_test_input;
+import :automations_dto_links;
+import :automations_dto_stats_empty_response;
 
 import std;
 import core_cache;
@@ -26,7 +32,7 @@ public:
     if (!known_automation(id)) {
         return not_found("Automation not found");
     }
-    const auto input = blog::handlers::middleware::decode<blog::dto::AutomationEmailPreviewInput>(body);
+    const auto input = blog::handlers::middleware::decode<blog::dto::automations::AutomationEmailPreviewInput>(body);
     if (!input || input->subject.empty() || input->lexical.empty()) {
         return {422, ApiError{}.validation(
             "Validation error, cannot preview email.",
@@ -34,8 +40,8 @@ public:
             "lexical"
         )};
     }
-    blog::dto::AutomationEmailPreviewResponse response;
-    blog::dto::AutomationEmailPreview preview;
+    blog::dto::automations::AutomationEmailPreviewResponse response;
+    blog::dto::automations::AutomationEmailPreview preview;
     preview.set_subject(input->subject);
     preview.set_html(R"(<p>Lorem ipsum.</p>)");
     preview.set_plaintext("Lorem ipsum.");
@@ -52,7 +58,7 @@ public:
     if (!known_automation(id)) {
         return not_found("Automation not found");
     }
-    const auto input = blog::handlers::middleware::decode<blog::dto::AutomationEmailTestInput>(body);
+    const auto input = blog::handlers::middleware::decode<blog::dto::automations::AutomationEmailTestInput>(body);
     if (!input || input->email.find('@') == std::string::npos ||
         input->email.find('.') == std::string::npos) {
         return {422, ApiError{}.validation(

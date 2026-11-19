@@ -1,5 +1,6 @@
 export module blog_handlers:users_users_id_token_put_step;
 import :domain_all;
+import :users_dto_subresources;
 import std;
 import core_workflow;
 import interfaces;

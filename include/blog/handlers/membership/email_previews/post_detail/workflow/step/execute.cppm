@@ -1,5 +1,6 @@
 export module blog_handlers:email_previews_post_detail_step;
 import :domain_all;
+import :email_previews_dto_subresources;
 import std;
 import core_workflow;
 import interfaces;

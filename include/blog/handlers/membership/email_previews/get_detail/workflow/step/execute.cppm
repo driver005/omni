@@ -1,5 +1,6 @@
 export module blog_handlers:email_previews_get_detail_step;
 import :domain_all;
+import :email_previews_dto_subresources;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,8 +14,8 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        blog::dto::EmailPreviewsResponse response;
-        response.email_previews.push_back(blog::dto::EmailPreview{});
+        blog::dto::email_previews::EmailPreviewsResponse response;
+        response.email_previews.push_back(blog::dto::email_previews::EmailPreview{});
         return {200, blog::handlers::middleware::encode(response)};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

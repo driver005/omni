@@ -1,5 +1,6 @@
 export module blog_handlers:users_destroy_step;
 import :domain_all;
+import :users_dto_subresources;
 import std;
 import core_workflow;
 import interfaces;

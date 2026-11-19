@@ -1,5 +1,6 @@
 export module blog_handlers:invites_create_step;
 import :domain_all;
+import :invites_dto_admin_resources;
 import std;
 import core_workflow;
 import interfaces;

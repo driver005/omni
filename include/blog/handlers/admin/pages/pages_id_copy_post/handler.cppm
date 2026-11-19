@@ -1,5 +1,6 @@
 export module blog_handlers:pages_pages_id_copy_post_handler;
 import :domain_all;
+import :pages_dto_links;
 import std;
 import interfaces;
 import blog_handlers_middleware;

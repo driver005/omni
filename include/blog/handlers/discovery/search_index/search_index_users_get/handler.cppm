@@ -1,5 +1,6 @@
 export module blog_handlers:search_index_search_index_users_get_handler;
 import :domain_all;
+import :search_index_dto_more_resources;
 import std;
 import interfaces;
 import blog_handlers_middleware;

@@ -42,3 +42,9 @@ Route lambdas bind to one exact handler:
 and `blog_model` partitions as partitions of `blog_handlers`. There are no
 separate type modules and no macros; all `serde::Serializable` specializations
 are written explicitly.
+
+## Domain type files
+
+Domains that use DTO/model types keep local copies under
+`handlers/<area>/<domain>/types/`, with module names and namespaces qualified
+by the domain. Shared `BlogContext` data stays under `handlers/context/`.

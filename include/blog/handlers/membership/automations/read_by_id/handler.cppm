@@ -1,5 +1,11 @@
 export module blog_handlers:automations_read_by_id_handler;
 import :domain_all;
+import :automations_dto_automation_email_preview;
+import :automations_dto_automation_email_preview_input;
+import :automations_dto_automation_email_preview_response;
+import :automations_dto_automation_email_test_input;
+import :automations_dto_links;
+import :automations_dto_stats_empty_response;
 import std;
 import interfaces;
 import blog_handlers_middleware;

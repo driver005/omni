@@ -1,5 +1,6 @@
 export module blog_handlers:pages_read_by_slug_step;
 import :domain_all;
+import :pages_dto_links;
 import std;
 import core_workflow;
 import interfaces;

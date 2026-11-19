@@ -1,5 +1,11 @@
 export module blog_handlers:emails_operations;
 import :domain_all;
+import :emails_dto_analytics_job;
+import :emails_dto_analytics_status;
+import :emails_dto_analytics_status_input;
+import :emails_dto_scheduled_analytics_job;
+import :emails_model_member;
+import :emails_model_wire_fixtures;
 
 import std;
 import core_cache;
@@ -28,7 +34,7 @@ public:
 )
 {
     auto analytics = load_analytics(m_cache);
-    const auto input = blog::handlers::middleware::decode<blog::dto::AnalyticsStatusInput>(body);
+    const auto input = blog::handlers::middleware::decode<blog::dto::emails::AnalyticsStatusInput>(body);
     if (input) {
         if (auto* job = job_for(analytics, input->jobName)) {
             job->running = input->running;
@@ -48,7 +54,7 @@ public:
 {
     return {200, std::format(
         R"({{"batches":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-        core_serde::JsonCodec{}.encode(blog::model::BatchWire{})
+        core_serde::JsonCodec{}.encode(blog::model::emails::BatchWire{})
     )};
 }
 
@@ -56,20 +62,20 @@ public:
 {
     return {200, std::format(
         R"({{"failures":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-        core_serde::JsonCodec{}.encode(blog::model::FailureWire{})
+        core_serde::JsonCodec{}.encode(blog::model::emails::FailureWire{})
     )};
 }
 
 private:
 static constexpr std::string_view kAnalyticsKey{"emails:analytics"};
 
-[[nodiscard]] static blog::dto::AnalyticsStatus load_analytics(core::cache::Cache& cache)
+[[nodiscard]] static blog::dto::emails::AnalyticsStatus load_analytics(core::cache::Cache& cache)
 {
     const auto stored = core::cache::value_as<std::string>(cache.get(kAnalyticsKey).value);
-    if (auto analytics = blog::handlers::middleware::decode<blog::dto::AnalyticsStatus>(stored)) {
+    if (auto analytics = blog::handlers::middleware::decode<blog::dto::emails::AnalyticsStatus>(stored)) {
         return *analytics;
     }
-    blog::dto::AnalyticsStatus analytics;
+    blog::dto::emails::AnalyticsStatus analytics;
     analytics.latest.jobName = "email-analytics-latest-others";
     analytics.latestOpened.jobName = "email-analytics-latest-opened";
     analytics.missing.jobName = "email-analytics-missing";
@@ -77,7 +83,7 @@ static constexpr std::string_view kAnalyticsKey{"emails:analytics"};
     return analytics;
 }
 
-static void store_analytics(core::cache::Cache& cache, const blog::dto::AnalyticsStatus& analytics)
+static void store_analytics(core::cache::Cache& cache, const blog::dto::emails::AnalyticsStatus& analytics)
 {
     cache.put(kAnalyticsKey,
               core::cache::to_cache_value(blog::handlers::middleware::encode(analytics)),
@@ -85,8 +91,8 @@ static void store_analytics(core::cache::Cache& cache, const blog::dto::Analytic
               {"emails"});
 }
 
-[[nodiscard]] static blog::dto::AnalyticsJob* job_for(
-    blog::dto::AnalyticsStatus& analytics,
+[[nodiscard]] static blog::dto::emails::AnalyticsJob* job_for(
+    blog::dto::emails::AnalyticsStatus& analytics,
     std::string_view name
 )
 {

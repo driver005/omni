@@ -1,5 +1,14 @@
 export module blog_handlers:stats_stats_newsletter_click_stats_get_handler;
 import :domain_all;
+import :stats_dto_stats_empty_response;
+import :stats_dto_stats_member_entry;
+import :stats_dto_stats_member_meta;
+import :stats_dto_stats_member_response;
+import :stats_dto_stats_member_totals;
+import :stats_dto_stats_mrr_entry;
+import :stats_dto_stats_mrr_meta;
+import :stats_dto_stats_mrr_response;
+import :stats_dto_stats_mrr_total;
 import std;
 import interfaces;
 import blog_handlers_middleware;

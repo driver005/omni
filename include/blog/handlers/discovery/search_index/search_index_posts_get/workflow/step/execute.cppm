@@ -1,5 +1,6 @@
 export module blog_handlers:search_index_search_index_posts_get_step;
 import :domain_all;
+import :search_index_dto_more_resources;
 import std;
 import core_workflow;
 import interfaces;
@@ -14,20 +15,20 @@ public:
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&](std::string_view kind)->std::pair<int,std::string>{
         if (kind == "pages") {
-            blog::dto::SearchPagesResponse r; r.pages.push_back(blog::dto::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
+            blog::dto::search_index::SearchPagesResponse r; r.pages.push_back(blog::dto::search_index::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
         }
         if (kind == "posts") {
-            blog::dto::SearchPostsResponse r; r.posts.push_back(blog::dto::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
+            blog::dto::search_index::SearchPostsResponse r; r.posts.push_back(blog::dto::search_index::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
         }
         if (kind == "tags") {
-            blog::dto::SearchTagsResponse r; r.tags.push_back(blog::dto::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
+            blog::dto::search_index::SearchTagsResponse r; r.tags.push_back(blog::dto::search_index::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
         }
         if (kind == "authors") {
-            blog::dto::SearchAuthorsResponse r;
-            r.authors.push_back(blog::dto::RecordDto{});
+            blog::dto::search_index::SearchAuthorsResponse r;
+            r.authors.push_back(blog::dto::search_index::RecordDto{});
             return {200, blog::handlers::middleware::encode(r)};
         }
-        blog::dto::SearchUsersResponse r; r.users.push_back(blog::dto::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
+        blog::dto::search_index::SearchUsersResponse r; r.users.push_back(blog::dto::search_index::RecordDto{}); return {200, blog::handlers::middleware::encode(r)};
     }("posts");
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   const auto rows=ctx.store().json_for("search-index", {});

@@ -1,5 +1,6 @@
 export module blog_handlers:invites_destroy_handler;
 import :domain_all;
+import :invites_dto_admin_resources;
 import std;
 import interfaces;
 import blog_handlers_middleware;

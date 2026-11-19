@@ -10,8 +10,8 @@ import :emails_recipient_failures_get_flow;
 export namespace blog::handlers::emails::recipient_failures_get {
 class RecipientFailuresGetHandler {
 public:
- RecipientFailuresGetHandler(blog::BlogContext& ctx, blog::api::EmailsState& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_state=&sp;
+ RecipientFailuresGetHandler(blog::BlogContext& ctx) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

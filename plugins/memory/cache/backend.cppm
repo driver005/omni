@@ -9,7 +9,7 @@ import boost.ut;
 namespace core::cache {
 
 /** @brief Reference backend: in-process store with optional LRU/LFU eviction. */
-class LocalCacheBackend final : public CacheStorageBackend
+export class LocalCacheBackend final : public CacheStorageBackend
 {
 public:
     explicit LocalCacheBackend(

@@ -4,14 +4,15 @@ import interfaces;
 import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
+import core_cache;
 import memory_backends;
 import :emails_analytics_get_model; 
 import :emails_analytics_get_flow;
 export namespace blog::handlers::emails::analytics_get {
 class AnalyticsGetHandler {
 public:
- AnalyticsGetHandler(blog::BlogContext& ctx, blog::api::EmailsState& sp) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_state=&sp;
+ AnalyticsGetHandler(blog::BlogContext& ctx, core::cache::Cache& cache) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_cache=&cache;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

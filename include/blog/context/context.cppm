@@ -1469,54 +1469,50 @@ export namespace blog::api {
 class ResourceStore
 {
 public:
+    explicit ResourceStore(core::cache::Cache& cache) noexcept : m_cache{cache} {}
+
     std::string create(std::string_view resource, std::string_view body)
     {
-        const auto values = JsonBody{}.parse_raw(body);
-        Record record = values;
+        Record record = JsonBody{}.parse_raw(body);
         const std::string id = std::to_string(++m_next_id);
         record["id"] = id;
-        m_records[std::string{resource}].push_back(std::move(record));
+        m_cache.put(record_key(resource, id), core::cache::to_cache_value(to_json(resource, record)),
+                    core::cache::Ttl{}.never(), {"resources"});
+        auto ids = load_ids(resource);
+        ids.push_back(id);
+        store_ids(resource, ids);
         return id;
     }
 
     bool edit(std::string_view resource, std::string_view id, std::string_view body)
     {
-        Record* record = find_record(resource, id);
-        if (record == nullptr) {
-            return false;
-        }
-        for (const auto& [key, value]: JsonBody{}.parse_raw(body)) {
-            (*record)[key] = value;
-        }
+        const auto key = record_key(resource, id);
+        const auto hit = m_cache.get(key);
+        if (!hit.hit) return false;
+        auto record = JsonBody{}.parse_raw(core::cache::value_as<std::string>(hit.value));
+        for (const auto& [field, value] : JsonBody{}.parse_raw(body)) record[field] = value;
+        m_cache.put(key, core::cache::to_cache_value(to_json(resource, record)),
+                    core::cache::Ttl{}.never(), {"resources"});
         return true;
     }
 
     bool destroy(std::string_view resource, std::string_view id)
     {
-        auto it = m_records.find(std::string{resource});
-        if (it == m_records.end()) {
-            return false;
-        }
-        const auto before = it->second.size();
-        std::erase_if(it->second, [&](const Record& record) {
-            const auto rid = record.find("id");
-            return rid != record.end() && rid->second == id;
-        });
-        return it->second.size() < before;
+        if (!m_cache.erase(record_key(resource, id))) return false;
+        auto ids = load_ids(resource);
+        std::erase(ids, std::string{id});
+        store_ids(resource, ids);
+        return true;
     }
 
     std::size_t bulk_destroy(std::string_view resource, std::string_view body)
     {
         const auto values = JsonBody{}.parse(body);
-        if (!values.contains("ids")) {
-            return 0;
-        }
+        if (!values.contains("ids")) return 0;
         std::size_t removed = 0;
-        for (const auto& id : values.at("ids") | std::views::split(',')) {
-            const std::string token{std::ranges::begin(id), std::ranges::end(id)};
-            if (!token.empty() && destroy(resource, token)) {
-                ++removed;
-            }
+        for (const auto& token : values.at("ids") | std::views::split(',')) {
+            const std::string id{std::ranges::begin(token), std::ranges::end(token)};
+            if (!id.empty() && destroy(resource, id)) ++removed;
         }
         return removed;
     }
@@ -1524,76 +1520,73 @@ public:
     std::size_t bulk_edit(std::string_view resource, std::string_view body)
     {
         const auto values = JsonBody{}.parse(body);
-        if (!values.contains("ids")) {
-            return 0;
-        }
+        if (!values.contains("ids")) return 0;
         std::size_t updated = 0;
-        for (const auto& id : values.at("ids") | std::views::split(',')) {
-            const std::string token{std::ranges::begin(id), std::ranges::end(id)};
-            if (!token.empty() && edit(resource, token, body)) {
-                ++updated;
-            }
+        for (const auto& token : values.at("ids") | std::views::split(',')) {
+            const std::string id{std::ranges::begin(token), std::ranges::end(token)};
+            if (!id.empty() && edit(resource, id, body)) ++updated;
         }
         return updated;
     }
 
     [[nodiscard]] std::string get(std::string_view resource, std::string_view id) const
     {
-        const Record* record = find_record(resource, id);
-        return record == nullptr ? std::string{} : to_json(resource, *record);
+        const auto hit = m_cache.get(record_key(resource, id));
+        return hit.hit ? core::cache::value_as<std::string>(hit.value) : std::string{};
     }
 
     [[nodiscard]] std::string list(std::string_view resource) const
     {
-        const auto it = m_records.find(std::string{resource});
         std::string out = "[";
         bool first = true;
-        if (it != m_records.end()) {
-            for (const auto& record: it->second) {
-                out += (first ? "" : ",") + to_json(resource, record);
-                first = false;
-            }
+        for (const auto& id : load_ids(resource)) {
+            const auto hit = m_cache.get(record_key(resource, id));
+            if (!hit.hit) continue;
+            out += (first ? "" : ",") + core::cache::value_as<std::string>(hit.value);
+            first = false;
         }
         return out + "]";
     }
 
     [[nodiscard]] std::size_t count(std::string_view resource) const
     {
-        const auto it = m_records.find(std::string{resource});
-        return it == m_records.end() ? 0 : it->second.size();
+        return load_ids(resource).size();
     }
 
 private:
     using Record = std::map<std::string, std::string>;
 
-    [[nodiscard]] Record* find_record(std::string_view resource, std::string_view id)
+    [[nodiscard]] static std::string record_key(std::string_view resource, std::string_view id)
     {
-        auto it = m_records.find(std::string{resource});
-        if (it == m_records.end()) {
-            return nullptr;
-        }
-        for (auto& record: it->second) {
-            const auto rid = record.find("id");
-            if (rid != record.end() && rid->second == id) {
-                return &record;
-            }
-        }
-        return nullptr;
+        return std::string{"resource:"} + std::string{resource} + ":" + std::string{id};
     }
 
-    [[nodiscard]] const Record* find_record(std::string_view resource, std::string_view id) const
+    [[nodiscard]] static std::string ids_key(std::string_view resource)
     {
-        auto it = m_records.find(std::string{resource});
-        if (it == m_records.end()) {
-            return nullptr;
+        return std::string{"resource:"} + std::string{resource} + ":ids";
+    }
+
+    [[nodiscard]] std::vector<std::string> load_ids(std::string_view resource) const
+    {
+        const auto hit = m_cache.get(ids_key(resource));
+        if (!hit.hit) return {};
+        std::vector<std::string> ids;
+        for (const auto& token : std::string_view{core::cache::value_as<std::string>(hit.value)} | std::views::split(',')) {
+            const std::string id{std::ranges::begin(token), std::ranges::end(token)};
+            if (!id.empty()) ids.push_back(id);
         }
-        for (const auto& record: it->second) {
-            const auto rid = record.find("id");
-            if (rid != record.end() && rid->second == id) {
-                return &record;
-            }
+        return ids;
+    }
+
+    void store_ids(std::string_view resource, const std::vector<std::string>& ids)
+    {
+        std::string joined;
+        for (const auto& id : ids) {
+            if (!joined.empty()) joined += ',';
+            joined += id;
         }
-        return nullptr;
+        m_cache.put(ids_key(resource), core::cache::to_cache_value(joined),
+                    core::cache::Ttl{}.never(), {"resources"});
     }
 
     [[nodiscard]] std::string to_json(std::string_view resource, const Record& record) const
@@ -1692,7 +1685,8 @@ private:
         return std::ranges::find(fields, key) != fields.end();
     }
 
-    std::map<std::string, std::vector<Record>> m_records{};
+
+    core::cache::Cache& m_cache;
     std::uint64_t m_next_id{0};
 };
 
@@ -1900,33 +1894,33 @@ public:
         if (resource == "posts") {
             const auto e = find_entity<model::Post>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostFixtures::post(*e);
+            return ::blog::dto::GhostFixtures::post(*e);
         }
         if (resource == "pages") return entity_json<model::Page>(find_entity<model::Page>(id));
         if (resource == "tags") return entity_json<model::Tag>(find_entity<model::Tag>(id));
         if (resource == "users") {
             const auto e = find_entity<model::User>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostFixtures::user(*e);
+            return ::blog::dto::GhostFixtures::user(*e);
         }
         if (resource == "members") {
             const auto e = find_entity<model::Member>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostFixtures::member(*e);
+            return ::blog::dto::GhostFixtures::member(*e);
         }
-        if (resource == "offers") return blog::dto::GhostFixtures::offer();
-        if (resource == "notifications") return blog::dto::GhostFixtures::notification();
-        if (resource == "webhooks") return blog::dto::GhostFixtures::webhook();
-        if (resource == "emails") return blog::dto::GhostFixtures::email();
+        if (resource == "offers") return ::blog::dto::GhostFixtures::offer();
+        if (resource == "notifications") return ::blog::dto::GhostFixtures::notification();
+        if (resource == "webhooks") return ::blog::dto::GhostFixtures::webhook();
+        if (resource == "emails") return ::blog::dto::GhostFixtures::email();
         if (resource == "newsletters") {
             const auto e = find_entity<model::Newsletter>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostFixtures::newsletter(*e);
+            return ::blog::dto::GhostFixtures::newsletter(*e);
         }
         if (resource == "tiers") {
             const auto e = find_entity<model::Tier>(id);
             if (!e) return std::nullopt;
-            return blog::dto::GhostFixtures::tier(*e);
+            return ::blog::dto::GhostFixtures::tier(*e);
         }
         return std::nullopt;
     }
@@ -1976,7 +1970,7 @@ public:
         if (resource == "members") return query_json(m_db.all<model::Member>(), params);
         if (resource == "comments") return query_json(m_db.all<model::Comment>(), params);
         if (resource == "offers") {
-            auto fixture = blog::dto::GhostFixtures::offer();
+            auto fixture = ::blog::dto::GhostFixtures::offer();
             const auto stored = Query::parse_array(m_resources.list("offers"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -1988,17 +1982,17 @@ public:
             }
             return "[" + fixture + "]";
         }
-        if (resource == "notifications") return "[" + blog::dto::GhostFixtures::notification() + "]";
-        if (resource == "webhooks") return "[" + blog::dto::GhostFixtures::webhook() + "]";
-        if (resource == "emails") return "[" + blog::dto::GhostFixtures::email() + "]";
-        if (resource == "labels") return "[" + blog::dto::GhostFixtures::label() + "]";
-        if (resource == "snippets") return "[" + blog::dto::GhostFixtures::snippet() + "]";
-        if (resource == "roles") return "[" + blog::dto::GhostFixtures::role() + "]";
-        if (resource == "recommendations") return "[" + blog::dto::GhostFixtures::recommendation() + "]";
-        if (resource == "links") return "[" + blog::dto::GhostFixtures::link() + "]";
-        if (resource == "automated_emails") return "[" + blog::dto::GhostFixtures::automated_email() + "]";
+        if (resource == "notifications") return "[" + ::blog::dto::GhostFixtures::notification() + "]";
+        if (resource == "webhooks") return "[" + ::blog::dto::GhostFixtures::webhook() + "]";
+        if (resource == "emails") return "[" + ::blog::dto::GhostFixtures::email() + "]";
+        if (resource == "labels") return "[" + ::blog::dto::GhostFixtures::label() + "]";
+        if (resource == "snippets") return "[" + ::blog::dto::GhostFixtures::snippet() + "]";
+        if (resource == "roles") return "[" + ::blog::dto::GhostFixtures::role() + "]";
+        if (resource == "recommendations") return "[" + ::blog::dto::GhostFixtures::recommendation() + "]";
+        if (resource == "links") return "[" + ::blog::dto::GhostFixtures::link() + "]";
+        if (resource == "automated_emails") return "[" + ::blog::dto::GhostFixtures::automated_email() + "]";
         if (resource == "automations") {
-            auto fixture = blog::dto::GhostFixtures::automation();
+            auto fixture = ::blog::dto::GhostFixtures::automation();
             const auto stored = Query::parse_array(m_resources.list("automations"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -2008,7 +2002,7 @@ public:
             return "[" + fixture + "]";
         }
         if (resource == "db") {
-            auto fixture = blog::dto::GhostFixtures::db();
+            auto fixture = ::blog::dto::GhostFixtures::db();
             const auto stored = Query::parse_array(m_resources.list("db"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -2032,7 +2026,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::User& e) {
-            return blog::dto::GhostFixtures::user(e);
+            return ::blog::dto::GhostFixtures::user(e);
         });
     }
 
@@ -2042,7 +2036,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Newsletter& e) {
-            return blog::dto::GhostFixtures::newsletter(e);
+            return ::blog::dto::GhostFixtures::newsletter(e);
         });
     }
 
@@ -2052,7 +2046,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Tier& e) {
-            return blog::dto::GhostFixtures::tier(e);
+            return ::blog::dto::GhostFixtures::tier(e);
         });
     }
 
@@ -2062,7 +2056,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Page& e) {
-            return blog::dto::GhostFixtures::page(e);
+            return ::blog::dto::GhostFixtures::page(e);
         });
     }
 
@@ -2072,7 +2066,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Comment& e) {
-            return blog::dto::GhostFixtures::comment(e);
+            return ::blog::dto::GhostFixtures::comment(e);
         });
     }
 
@@ -2082,7 +2076,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Author& e) {
-            return blog::dto::GhostFixtures::author(e);
+            return ::blog::dto::GhostFixtures::author(e);
         });
     }
 
@@ -2103,7 +2097,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Post& e) {
-            return blog::dto::GhostFixtures::post(e);
+            return ::blog::dto::GhostFixtures::post(e);
         });
     }
 
@@ -2113,7 +2107,7 @@ private:
     ) const
     {
         return query_json_impl(entities, params, [](const model::Member& e) {
-            return blog::dto::GhostFixtures::member(e);
+            return ::blog::dto::GhostFixtures::member(e);
         });
     }
 
@@ -2250,7 +2244,15 @@ private:
     }
 
     core::db::Database m_db;
-    ResourceStore m_resources{};
+    [[nodiscard]] static core::cache::Cache make_cache()
+    {
+        return core::cache::CacheBuilder{}
+            .use_backend(std::make_unique<core::cache::LocalCacheBackend>(4096, core::cache::EvictionPolicy::LRU))
+            .build();
+    }
+
+    core::cache::Cache m_cache{make_cache()};
+    ResourceStore m_resources{m_cache};
 };
 
 } // namespace blog::api

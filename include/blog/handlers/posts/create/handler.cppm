@@ -4,7 +4,6 @@ import interfaces;
 import blog_context;
 import core_workflow;
 import memory_backends;
-import :posts_create_model;
 import :posts_create_flow;
 
 export namespace blog::handlers::posts::create {
@@ -23,10 +22,7 @@ public:
     void handle(interfaces::io::IRequest& request, interfaces::io::IResponse& response,
                 std::function<void()> send)
     {
-        model::Request input;
-        input.path = std::string{request.get_path()};
-        for (const std::byte byte : request.get_body()) input.body += static_cast<char>(byte);
-        const auto execution = m_workflow.run("posts_create", input);
+        const auto execution = m_workflow.run("posts_create", request);
         const auto* result = execution.result_of("posts_create_execute");
         const auto payload = result && result->typed_output.has_value()
                               ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)

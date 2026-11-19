@@ -1,21 +1,20 @@
 export module blog_handlers:invites_read_by_id_step;
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
 import :mutation;
 
 import blog_dto;
-import :invites_read_by_id_model;
-import :invites_read_by_id_dto;
 export namespace blog::handlers::invites::read_by_id::workflow {
 class ExecuteStep {
 public:
- using Input=model::Request; using Output=std::string;
+ using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"invites_read_by_id_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
   
-  const auto one=ctx.store().find_by_resource("invites", in.id.empty()?"1":in.id);
+  const auto one=ctx.store().find_by_resource("invites", std::string{}.empty()?"1":std::string{});
   if(one) return core::workflow::StepResponse<Output>{"{\"invites\":[" + *one + "]}"};
   return core::workflow::StepResponse<Output>{R"({"invites":[]})"};
  }

@@ -2,17 +2,16 @@ export module blog_handlers:posts_browse_step;
 
 import std;
 import core_workflow;
+import interfaces;
 import blog_context;
 import :mutation;
-import :posts_browse_model;
-import :posts_browse_dto;
 
 export namespace blog::handlers::posts::browse::workflow {
 
 class ExecuteStep
 {
 public:
-    using Input = model::Request;
+    using Input=interfaces::io::IRequest&;
     using Output = std::string;
     static constexpr std::string_view name{"posts_browse_execute"};
 
@@ -21,9 +20,9 @@ public:
     {
         blog::api::MutationStore mutations{m_ctx->store()};
         std::map<std::string, std::string> params;
-        const auto q = input.path.find('?');
+        const auto q = std::string{input.get_path()}.find('?');
         if (q != std::string::npos) {
-            for (auto pair : std::string_view{input.path}.substr(q + 1) | std::views::split('&')) {
+            for (auto pair : std::string_view{std::string{input.get_path()}}.substr(q + 1) | std::views::split('&')) {
                 const std::string text{std::ranges::begin(pair), std::ranges::end(pair)};
                 const auto eq = text.find('=');
                 if (eq != std::string::npos) params[text.substr(0, eq)] = text.substr(eq + 1);

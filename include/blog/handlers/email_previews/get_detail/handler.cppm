@@ -5,7 +5,6 @@ import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;
-import :email_previews_get_detail_model; 
 import :email_previews_get_detail_flow;
 export namespace blog::handlers::email_previews::get_detail {
 class GetDetailHandler {
@@ -21,9 +20,7 @@ public:
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
    res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
   }
-  model::Request in; in.path=std::string{req.get_path()};
-  for(const std::byte byte:req.get_body()) in.body+=static_cast<char>(byte);
-  const auto ex=m_workflow.run("email_previews_get_detail", in);
+  const auto ex=m_workflow.run("email_previews_get_detail", req);
   const auto* r=ex.result_of("email_previews_get_detail_execute");
   auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{"{}"};
   std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));

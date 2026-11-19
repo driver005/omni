@@ -8,23 +8,8 @@ import :mutation;
 
 export namespace blog::api::automations {
 
-namespace detail {
 
-constexpr std::string_view kTestEmailsSent{"automations:test_emails_sent"};
 
-[[nodiscard]] bool known_automation(std::string_view id)
-{
-    return !id.empty() && id != "missing" && id != "0000";
-}
-
-[[nodiscard]] std::pair<int, std::string> not_found(std::string_view context)
-{
-    return {404, ApiError{}.json("Resource not found", context)};
-}
-
-} // namespace detail
-
-using namespace detail;
 class AutomationsOperations
 {
 public:
@@ -83,6 +68,18 @@ public:
 }
 
 private:
+static constexpr std::string_view kTestEmailsSent{"automations:test_emails_sent"};
+
+[[nodiscard]] static bool known_automation(std::string_view id)
+{
+    return !id.empty() && id != "missing" && id != "0000";
+}
+
+[[nodiscard]] static std::pair<int, std::string> not_found(std::string_view context)
+{
+    return {404, ApiError{}.json("Resource not found", context)};
+}
+
     core::cache::Cache& m_cache;
 };
 

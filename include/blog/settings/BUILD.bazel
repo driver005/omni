@@ -1,8 +1,0 @@
-load("//bazel:build_defs.bzl", "congelado_module_library")
-congelado_module_library(
-    name = "blog_settings",
-    primary_interface = "base.cppm",
-    partitions = ["settings.cppm", "builder.cppm"],
-    deps = ["//include/core/settings:core_settings"],
-    visibility = ["//visibility:public"],
-)

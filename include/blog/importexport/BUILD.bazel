@@ -1,8 +1,0 @@
-load("//bazel:build_defs.bzl", "congelado_module_library")
-congelado_module_library(
-    name = "blog_importexport",
-    primary_interface = "base.cppm",
-    partitions = ["importexport.cppm", "builder.cppm"],
-    deps = ["//include/core/storage:core_storage"],
-    visibility = ["//visibility:public"],
-)

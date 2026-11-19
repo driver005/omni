@@ -263,20 +263,26 @@ void store_subscriptions(
 } // namespace detail
 
 using namespace detail;
+class MembersOperations
+{
+public:
+    explicit MembersOperations(core::cache::Cache& cache) noexcept :
+        m_cache{cache}
+    {
+    }
 
 /** @brief POST /members/:id/subscriptions/ — cache-backed subscription list. */
 [[nodiscard]] std::pair<int, std::string> member_subscription_create(
-    core::cache::Cache& cache,
     std::string_view id,
     std::string_view body
 )
 {
     const auto input = blog::handlers::middleware::decode<blog::dto::MemberSubscriptionInput>(body);
-    auto items = load_subscriptions(cache, id);
+    auto items = load_subscriptions(m_cache, id);
     const auto next = core::cache::value_as<std::int64_t>(
-        cache.get(std::string{kSub} + "next").value, 0
+        m_cache.get(std::string{kSub} + "next").value, 0
     ) + 1;
-    cache.put(std::string{kSub} + "next", core::cache::to_cache_value(next), core::cache::Ttl{}.never(), {"members"});
+    m_cache.put(std::string{kSub} + "next", core::cache::to_cache_value(next), core::cache::Ttl{}.never(), {"members"});
 
     blog::dto::MemberSubscription subscription;
     subscription.id = std::to_string(next);
@@ -284,20 +290,19 @@ using namespace detail;
     subscription.tier.name = input ? input->tier : std::string{"free"};
     subscription.current_period_end = "1970-01-01T00:00:00.000Z";
     items.push_back(std::move(subscription));
-    store_subscriptions(cache, id, items);
+    store_subscriptions(m_cache, id, items);
     return {200, blog::handlers::middleware::encode(member_response(items, id))};
 }
 
 /** @brief PUT /members/:id/subscriptions/:subscription_id. */
 [[nodiscard]] std::pair<int, std::string> member_subscription_edit(
-    core::cache::Cache& cache,
     std::string_view id,
     std::string_view subscription_id,
     std::string_view body
 )
 {
     const auto input = blog::handlers::middleware::decode<blog::dto::MemberSubscriptionInput>(body);
-    auto items = load_subscriptions(cache, id);
+    auto items = load_subscriptions(m_cache, id);
     for (auto& subscription : items) {
         if (subscription.id == subscription_id) {
             if (!input) continue;
@@ -305,7 +310,7 @@ using namespace detail;
             subscription.tier.name = input->tier.empty() ? subscription.tier.name : input->tier;
         }
     }
-    store_subscriptions(cache, id, items);
+    store_subscriptions(m_cache, id, items);
     return {200, blog::handlers::middleware::encode(member_response(items, id))};
 }
 
@@ -332,7 +337,6 @@ using namespace detail;
 
 /** @brief Overlay cached commenting state onto a serialized member. */
 [[nodiscard]] std::string apply_commenting(
-    core::cache::Cache& cache,
     std::string_view id,
     std::string json
 )
@@ -347,8 +351,8 @@ using namespace detail;
         if (json[end] == '{') ++depth;
         else if (json[end] == '}' && --depth == 0) { ++end; break; }
     }
-    json.replace(open, end - open, commenting_json(cache, id));
-    const auto state = load_comment(cache, id);
+    json.replace(open, end - open, commenting_json(m_cache, id));
+    const auto state = load_comment(m_cache, id);
     const bool can_comment = !state.disabled;
     const auto can = json.find("\"can_comment\":");
     if (can != std::string::npos) {
@@ -362,7 +366,6 @@ using namespace detail;
 }
 
 [[nodiscard]] std::pair<int, std::string> commenting_set(
-    core::cache::Cache& cache,
     std::string_view id,
     std::string_view body,
     bool disable
@@ -399,18 +402,17 @@ using namespace detail;
         state.hide_comments = !body.contains("\"hide_comments\":false");
     }
     state.disabled = disable;
-    store_comment(cache, id, state);
+    store_comment(m_cache, id, state);
     auto json = blog::dto::GhostFixtures::member([] {
         model::Member member;
         member.set_id(1);
         return member;
     }());
-    json = apply_commenting(cache, id, json);
+    json = apply_commenting(id, json);
     return {200, std::format(R"({{"members":[{}]}})", json)};
 }
 
 [[nodiscard]] std::pair<int, std::string> metafields_create(
-    core::cache::Cache& cache,
     std::string_view body
 )
 {
@@ -453,11 +455,11 @@ using namespace detail;
     } else if (has_settings) {
         return metafield_error("Only a list field has settings.", "settings");
     }
-    auto fields = load_metafields(cache);
+    auto fields = load_metafields(m_cache);
     const auto next = core::cache::value_as<std::int64_t>(
-        cache.get(std::string{kMeta} + "next").value, 0
+        m_cache.get(std::string{kMeta} + "next").value, 0
     ) + 1;
-    cache.put(std::string{kMeta} + "next", core::cache::to_cache_value(next), core::cache::Ttl{}.never(), {"members"});
+    m_cache.put(std::string{kMeta} + "next", core::cache::to_cache_value(next), core::cache::Ttl{}.never(), {"members"});
     MetaField field;
     field.id = std::format("{:024x}", next);
     field.key = "mf_" + std::to_string(next);
@@ -465,16 +467,15 @@ using namespace detail;
     field.type = type;
     field.settings = settings;
     fields.push_back(field);
-    store_metafields(cache, fields);
+    store_metafields(m_cache, fields);
     return {201, std::format(R"({{"members_metafields":[{}]}})", metafield_json(field))};
 }
 
 [[nodiscard]] std::pair<int, std::string> metafields_get(
-    core::cache::Cache& cache,
     std::string_view key
 )
 {
-    for (const auto& field : load_metafields(cache)) {
+    for (const auto& field : load_metafields(m_cache)) {
         if (field.key == key) {
             return {200, std::format(R"({{"members_metafields":[{}]}})", metafield_json(field))};
         }
@@ -483,12 +484,11 @@ using namespace detail;
 }
 
 [[nodiscard]] std::pair<int, std::string> metafields_edit(
-    core::cache::Cache& cache,
     std::string_view key,
     std::string_view body
 )
 {
-    auto fields = load_metafields(cache);
+    auto fields = load_metafields(m_cache);
     for (auto& field : fields) {
         if (field.key != key) continue;
         const auto settings_at = body.find("\"settings\":");
@@ -510,10 +510,14 @@ using namespace detail;
             return metafield_error(error->first, error->second);
         }
         field.settings = settings;
-        store_metafields(cache, fields);
+        store_metafields(m_cache, fields);
         return {200, std::format(R"({{"members_metafields":[{}]}})", metafield_json(field))};
     }
     return not_found("Metafield not found");
 }
+
+private:
+    core::cache::Cache& m_cache;
+};
 
 } // namespace blog::api::members

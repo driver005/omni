@@ -4,15 +4,15 @@ import interfaces;
 import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
-import core_cache;
+
 import memory_backends;
 import :members_subscriptions_post_model; 
 import :members_subscriptions_post_flow;
 export namespace blog::handlers::members::subscriptions_post {
 class SubscriptionsPostHandler {
 public:
- SubscriptionsPostHandler(blog::BlogContext& ctx, core::cache::Cache& cache) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_cache=&cache;
+ SubscriptionsPostHandler(blog::BlogContext& ctx, blog::api::members::MembersOperations& ops) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_ops=&ops;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

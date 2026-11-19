@@ -25,6 +25,13 @@ constexpr std::string_view kTestEmailsSent{"automations:test_emails_sent"};
 } // namespace detail
 
 using namespace detail;
+class AutomationsOperations
+{
+public:
+    explicit AutomationsOperations(core::cache::Cache& cache) noexcept :
+        m_cache{cache}
+    {
+    }
 
 /** @brief POST /automations/:id/email_preview. */
 [[nodiscard]] std::pair<int, std::string> automation_email_preview(
@@ -54,7 +61,6 @@ using namespace detail;
 
 /** @brief POST /automations/:id/email_test — 204 with no body on success. */
 [[nodiscard]] std::pair<int, std::string> automation_email_test(
-    core::cache::Cache& cache,
     std::string_view id,
     std::string_view body
 )
@@ -71,9 +77,13 @@ using namespace detail;
             "email"
         )};
     }
-    const auto sent = core::cache::value_as<std::int64_t>(cache.get(kTestEmailsSent).value, 0) + 1;
-    cache.put(kTestEmailsSent, core::cache::to_cache_value(sent), core::cache::Ttl{}.never(), {"automations"});
+    const auto sent = core::cache::value_as<std::int64_t>(m_cache.get(kTestEmailsSent).value, 0) + 1;
+    m_cache.put(kTestEmailsSent, core::cache::to_cache_value(sent), core::cache::Ttl{}.never(), {"automations"});
     return {204, ""};
 }
+
+private:
+    core::cache::Cache& m_cache;
+};
 
 } // namespace blog::api::automations

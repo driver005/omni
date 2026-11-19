@@ -10,8 +10,8 @@ import :automations_automations_id_email_preview_post_flow;
 export namespace blog::handlers::automations::automations_id_email_preview_post {
 class AutomationsIdEmailPreviewPostHandler {
 public:
- AutomationsIdEmailPreviewPostHandler(blog::BlogContext& ctx) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx;
+ AutomationsIdEmailPreviewPostHandler(blog::BlogContext& ctx, blog::api::automations::AutomationsOperations& ops) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_ops=&ops;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

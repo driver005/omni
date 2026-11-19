@@ -1,5 +1,11 @@
 export module blog_handlers:emails_recipient_failures_get_handler;
 import :domain_all;
+import :emails_dto_analytics_job;
+import :emails_dto_analytics_status;
+import :emails_dto_analytics_status_input;
+import :emails_dto_scheduled_analytics_job;
+import :emails_model_member;
+import :emails_model_wire_fixtures;
 import std;
 import interfaces;
 import blog_handlers_middleware;

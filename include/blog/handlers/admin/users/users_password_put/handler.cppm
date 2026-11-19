@@ -1,5 +1,6 @@
 export module blog_handlers:users_users_password_put_handler;
 import :domain_all;
+import :users_dto_subresources;
 import std;
 import interfaces;
 import blog_handlers_middleware;

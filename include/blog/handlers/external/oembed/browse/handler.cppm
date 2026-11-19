@@ -1,5 +1,6 @@
 export module blog_handlers:oembed_browse_handler;
 import :domain_all;
+import :oembed_dto_more_resources;
 import std;
 import interfaces;
 import blog_handlers_middleware;

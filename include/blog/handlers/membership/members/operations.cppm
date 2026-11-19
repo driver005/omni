@@ -1,5 +1,22 @@
 export module blog_handlers:members_operations;
 import :domain_all;
+import :members_dto_member_subscription;
+import :members_dto_member_subscription_input;
+import :members_dto_member_subscription_response;
+import :members_dto_signin_url;
+import :members_dto_signin_urls_response;
+import :members_dto_stats_member_entry;
+import :members_dto_stats_member_meta;
+import :members_dto_stats_member_response;
+import :members_dto_stats_member_totals;
+import :members_dto_stats_mrr_entry;
+import :members_dto_stats_mrr_meta;
+import :members_dto_stats_mrr_response;
+import :members_dto_stats_mrr_total;
+import :members_dto_subscription_member;
+import :members_dto_subscription_tier;
+import :members_model_member;
+import :members_model_wire_fixtures;
 
 import std;
 import core_cache;
@@ -24,14 +41,14 @@ public:
     std::string_view body
 )
 {
-    const auto input = blog::handlers::middleware::decode<blog::dto::MemberSubscriptionInput>(body);
+    const auto input = blog::handlers::middleware::decode<blog::dto::members::MemberSubscriptionInput>(body);
     auto items = load_subscriptions(m_cache, id);
     const auto next = core::cache::value_as<std::int64_t>(
         m_cache.get(std::string{kSub} + "next").value, 0
     ) + 1;
     m_cache.put(std::string{kSub} + "next", core::cache::to_cache_value(next), core::cache::Ttl{}.never(), {"members"});
 
-    blog::dto::MemberSubscription subscription;
+    blog::dto::members::MemberSubscription subscription;
     subscription.id = std::to_string(next);
     subscription.status = input ? input->status : std::string{"active"};
     subscription.tier.name = input ? input->tier : std::string{"free"};
@@ -48,7 +65,7 @@ public:
     std::string_view body
 )
 {
-    const auto input = blog::handlers::middleware::decode<blog::dto::MemberSubscriptionInput>(body);
+    const auto input = blog::handlers::middleware::decode<blog::dto::members::MemberSubscriptionInput>(body);
     auto items = load_subscriptions(m_cache, id);
     for (auto& subscription : items) {
         if (subscription.id == subscription_id) {
@@ -64,8 +81,8 @@ public:
 /** @brief GET /members/:id/signin_urls. */
 [[nodiscard]] std::pair<int, std::string> member_signin_urls(std::string_view id)
 {
-    blog::dto::SigninUrlsResponse response;
-    blog::dto::SigninUrl signin;
+    blog::dto::members::SigninUrlsResponse response;
+    blog::dto::members::SigninUrl signin;
     signin.set_member_id(std::string{id});
     signin.set_url("https://ghost.local/signin/" + std::string{id});
     response.signin_urls.push_back(std::move(signin));
@@ -462,12 +479,12 @@ validate_settings(std::string_view settings)
     )};
 }
 
-[[nodiscard]] static std::vector<blog::dto::MemberSubscription> load_subscriptions(
+[[nodiscard]] static std::vector<blog::dto::members::MemberSubscription> load_subscriptions(
     core::cache::Cache& cache,
     std::string_view id
 )
 {
-    std::vector<blog::dto::MemberSubscription> items;
+    std::vector<blog::dto::members::MemberSubscription> items;
     const auto count = core::cache::value_as<std::int64_t>(
         cache.get(key(kSub, id, "count")).value, 0
     );
@@ -475,7 +492,7 @@ validate_settings(std::string_view settings)
         const auto stored = core::cache::value_as<std::string>(
             cache.get(key(kSub, id, std::to_string(i))).value
         );
-        if (auto item = blog::handlers::middleware::decode<blog::dto::MemberSubscription>(stored)) {
+        if (auto item = blog::handlers::middleware::decode<blog::dto::members::MemberSubscription>(stored)) {
             items.push_back(std::move(*item));
         }
     }
@@ -485,7 +502,7 @@ validate_settings(std::string_view settings)
 static void store_subscriptions(
     core::cache::Cache& cache,
     std::string_view id,
-    const std::vector<blog::dto::MemberSubscription>& items
+    const std::vector<blog::dto::members::MemberSubscription>& items
 )
 {
     const auto ttl = core::cache::Ttl{}.never();
@@ -497,17 +514,17 @@ static void store_subscriptions(
     }
 }
 
-[[nodiscard]] static blog::dto::MemberSubscriptionResponse member_response(
-    const std::vector<blog::dto::MemberSubscription>& subscriptions,
+[[nodiscard]] static blog::dto::members::MemberSubscriptionResponse member_response(
+    const std::vector<blog::dto::members::MemberSubscription>& subscriptions,
     std::string_view id
 )
 {
-    blog::dto::SubscriptionMember member;
+    blog::dto::members::SubscriptionMember member;
     member.email = "member@example.com";
     member.id = std::string{id};
     member.status = "paid";
     member.subscriptions = subscriptions;
-    blog::dto::MemberSubscriptionResponse response;
+    blog::dto::members::MemberSubscriptionResponse response;
     response.members.push_back(std::move(member));
     return response;
 }

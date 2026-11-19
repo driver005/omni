@@ -1,5 +1,11 @@
 export module blog_handlers:automations_automations_automation_id_actions_action_id_links_get_step;
 import :domain_all;
+import :automations_dto_automation_email_preview;
+import :automations_dto_automation_email_preview_input;
+import :automations_dto_automation_email_preview_response;
+import :automations_dto_automation_email_test_input;
+import :automations_dto_links;
+import :automations_dto_stats_empty_response;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,8 +19,8 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        blog::dto::AutomationLinksResponse response;
-        response.links.push_back(blog::dto::LinkRecord{});
+        blog::dto::automations::AutomationLinksResponse response;
+        response.links.push_back(blog::dto::automations::LinkRecord{});
         return {200, blog::handlers::middleware::encode(response)};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

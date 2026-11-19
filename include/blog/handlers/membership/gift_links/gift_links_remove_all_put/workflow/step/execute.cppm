@@ -1,5 +1,6 @@
 export module blog_handlers:gift_links_gift_links_remove_all_put_step;
 import :domain_all;
+import :gift_links_dto_links;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,8 +14,8 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        blog::dto::GiftLinksResponse response;
-        response.gift_links.push_back(blog::dto::LinkRecord{});
+        blog::dto::gift_links::GiftLinksResponse response;
+        response.gift_links.push_back(blog::dto::gift_links::LinkRecord{});
         return {200, blog::handlers::middleware::encode(response)};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

@@ -1,5 +1,6 @@
 export module blog_handlers:users_users_password_put_step;
 import :domain_all;
+import :users_dto_subresources;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,7 +14,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        return {200, blog::handlers::middleware::encode(blog::dto::PasswordResponse{})};
+        return {200, blog::handlers::middleware::encode(blog::dto::users::PasswordResponse{})};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   return core::workflow::StepResponse<Output>{mutations.edit("users", std::string{}, in.body_as_string().empty()?"{}":in.body_as_string()).body()};

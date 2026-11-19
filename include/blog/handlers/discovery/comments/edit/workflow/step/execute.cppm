@@ -1,5 +1,8 @@
 export module blog_handlers:comments_edit_step;
 import :domain_all;
+import :comments_model_comment;
+import :comments_model_member;
+import :comments_model_wire_fixtures;
 import std;
 import core_workflow;
 import interfaces;

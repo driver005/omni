@@ -1,5 +1,6 @@
 export module blog_handlers:feedback_read_by_id_step;
 import :domain_all;
+import :feedback_dto_more_resources;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,7 +14,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        return {200, blog::handlers::middleware::encode(blog::dto::FeedbackResponse{})};
+        return {200, blog::handlers::middleware::encode(blog::dto::feedback::FeedbackResponse{})};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   const auto one=ctx.store().find_by_resource("feedback", std::string{}.empty()?"1":std::string{});

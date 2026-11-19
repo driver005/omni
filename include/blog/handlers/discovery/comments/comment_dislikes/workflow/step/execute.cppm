@@ -1,5 +1,8 @@
 export module blog_handlers:comments_comment_dislikes_step;
 import :domain_all;
+import :comments_model_comment;
+import :comments_model_member;
+import :comments_model_wire_fixtures;
 import std;
 import core_workflow;
 import core_serde;
@@ -19,8 +22,8 @@ public:
         else if (path.ends_with("/reports")) key = "comment_reports";
         return std::pair<int, std::string>{200, std::format(
             R"({{"{}":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-            key, key == "comments" ? core_serde::JsonCodec{}.encode([]{ blog::model::Comment c; c.set_id(1); return c; }())
-                                   : core_serde::JsonCodec{}.encode(blog::model::CommentSubWire{})
+            key, key == "comments" ? core_serde::JsonCodec{}.encode([]{ blog::model::comments::Comment c; c.set_id(1); return c; }())
+                                   : core_serde::JsonCodec{}.encode(blog::model::comments::CommentSubWire{})
         )};
     }("/comments/:id/dislikes");
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

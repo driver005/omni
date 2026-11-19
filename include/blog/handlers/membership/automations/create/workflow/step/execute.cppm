@@ -1,5 +1,11 @@
 export module blog_handlers:automations_create_step;
 import :domain_all;
+import :automations_dto_automation_email_preview;
+import :automations_dto_automation_email_preview_input;
+import :automations_dto_automation_email_preview_response;
+import :automations_dto_automation_email_test_input;
+import :automations_dto_links;
+import :automations_dto_stats_empty_response;
 import std;
 import core_workflow;
 import interfaces;

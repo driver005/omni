@@ -1,5 +1,6 @@
 export module blog_handlers:site_browse_handler;
 import :domain_all;
+import :site_dto_site_response;
 import std;
 import interfaces;
 import blog_handlers_middleware;

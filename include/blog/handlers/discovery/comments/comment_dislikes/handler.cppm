@@ -1,5 +1,8 @@
 export module blog_handlers:comments_comment_dislikes_handler;
 import :domain_all;
+import :comments_model_comment;
+import :comments_model_member;
+import :comments_model_wire_fixtures;
 import std;
 import interfaces;
 import blog_handlers_middleware;

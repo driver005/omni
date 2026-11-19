@@ -1,5 +1,6 @@
 export module blog_handlers:site_browse_step;
 import :domain_all;
+import :site_dto_site_response;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,7 +14,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        return {200, blog::handlers::middleware::encode(blog::dto::SiteResponse{})};
+        return {200, blog::handlers::middleware::encode(blog::dto::site::SiteResponse{})};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   const auto rows=ctx.store().json_for("site", {});

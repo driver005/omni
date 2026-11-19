@@ -1,5 +1,14 @@
 export module blog_handlers:stats_stats_newsletter_basic_stats_get_step;
 import :domain_all;
+import :stats_dto_stats_empty_response;
+import :stats_dto_stats_member_entry;
+import :stats_dto_stats_member_meta;
+import :stats_dto_stats_member_response;
+import :stats_dto_stats_member_totals;
+import :stats_dto_stats_mrr_entry;
+import :stats_dto_stats_mrr_meta;
+import :stats_dto_stats_mrr_response;
+import :stats_dto_stats_mrr_total;
 import std;
 import core_workflow;
 import interfaces;
@@ -13,7 +22,7 @@ public:
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
   auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&]()->std::pair<int,std::string>{
-        return {200, blog::handlers::middleware::encode(blog::dto::StatsEmptyResponse{})};
+        return {200, blog::handlers::middleware::encode(blog::dto::stats::StatsEmptyResponse{})};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   const auto rows=ctx.store().json_for("stats", {});

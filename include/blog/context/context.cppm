@@ -31,6 +31,7 @@ class MutationResult
 public:
     MutationResult() = default;
 
+    MutationResult(int status, std::string body, bool error = false) :
         m_status{status},
         m_body{std::move(body)},
         m_error{error}

@@ -3,16 +3,16 @@ import std;
 import core_workflow;
 import interfaces;
 import blog_context;
-import :mutation;
 
 import blog_dto;
+import blog_model;
 export namespace blog::handlers::comments::comment_likes::workflow {
 class ExecuteStep {
 public:
  using Input=interfaces::io::IRequest&; using Output=std::string;
  static constexpr std::string_view name{"comments_comment_likes_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; blog::api::MutationStore mutations{ctx.store()};
+  auto& ctx=*s_ctx; auto& mutations = ctx.store();
     const auto r=[&](std::string_view path)->std::pair<int,std::string>{
         std::string_view key{"comments"};
         if (path.ends_with("/likes")) key = "comment_likes";

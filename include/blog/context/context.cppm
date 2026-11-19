@@ -630,6 +630,101 @@ private:
 
 export namespace blog::api {
 
+[[nodiscard]] inline std::string quote_fragment(std::string_view text)
+{
+    std::string out{"\""};
+    for (const char c : text) {
+        switch (c) {
+            case '"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            default: out += c;
+        }
+    }
+    return out + "\"";
+}
+
+class MutationResult
+{
+public:
+    MutationResult() = default;
+
+    MutationResult(int status, std::string body, bool error = false) :
+        m_status{status},
+        m_body{std::move(body)},
+        m_error{error}
+    {
+    }
+
+    [[nodiscard]] int status() const noexcept
+    {
+        return m_status;
+    }
+
+    [[nodiscard]] const std::string& body() const noexcept
+    {
+        return m_body;
+    }
+
+    [[nodiscard]] bool ok() const noexcept
+    {
+        return !m_error;
+    }
+
+private:
+    int m_status{200};
+    std::string m_body{"{}"};
+    bool m_error{false};
+};
+
+
+class ApiError
+{
+public:
+    [[nodiscard]] std::string json(
+        std::string_view message,
+        std::string_view context,
+        std::string_view help = ""
+    ) const
+    {
+        return envelope(message, context, help, "", "");
+    }
+
+    /** @brief Validation error with Ghost's `property` and `type` fields. */
+    [[nodiscard]] std::string validation(
+        std::string_view message,
+        std::string_view context,
+        std::string_view property,
+        std::string_view type = "ValidationError"
+    ) const
+    {
+        return envelope(message, context, "", property, type);
+    }
+
+private:
+    [[nodiscard]] std::string envelope(
+        std::string_view message,
+        std::string_view context,
+        std::string_view help,
+        std::string_view property,
+        std::string_view type
+    ) const
+    {
+        const std::string id = std::format("{:032x}", ++m_counter);
+        return std::format(
+            R"({{"errors":[{{"id":"{}","code":null,"context":{},"details":null,"ghostErrorCode":null,"help":{},"message":{},"property":{},"type":{}}}]}})",
+            id,
+            context.empty() ? "null" : quote_fragment(context),
+            help.empty() ? "null" : quote_fragment(help),
+            quote_fragment(message),
+            property.empty() ? "null" : quote_fragment(property),
+            type.empty() ? "null" : quote_fragment(type)
+        );
+    }
+
+    mutable std::uint64_t m_counter{0};
+};
+
+
 /**
  * @brief Ghost schema field names and defaultTo values, derived from
  * data/schema/schema.js. Defaults are raw JSON value fragments.
@@ -986,7 +1081,7 @@ public:
             if (i > 0) {
                 out += ",";
             }
-            out += JsonBody{}.quote(m_names[i]) + ":" + m_getters[i](entity);
+            out += quote_fragment(m_names[i]) + ":" + m_getters[i](entity);
         }
         return out + "}";
     }
@@ -1032,7 +1127,7 @@ private:
             using V = typename F::value_type;
             const auto& value = core::db::reflect::get_field(entity, F{});
             if constexpr (std::same_as<V, std::string>) {
-                return JsonBody{}.quote(value);
+                return quote_fragment(value);
             } else if constexpr (std::same_as<V, bool>) {
                 return value ? "true" : "false";
             } else if constexpr (std::is_arithmetic_v<V>) {
@@ -1179,7 +1274,7 @@ public:
         std::string out = "{";
         bool first = true;
         for (const auto& [key, value] : record) {
-            out += (first ? "" : ",") + JsonBody{}.quote(key) + ":" + value;
+            out += (first ? "" : ",") + quote_fragment(key) + ":" + value;
             first = false;
         }
         return out + "}";
@@ -1595,12 +1690,12 @@ private:
         std::string out = "{";
         bool first = true;
         for (const auto& field: schema.fields(resource)) {
-            out += (first ? "" : ",") + JsonBody{}.quote(field) + ":";
+            out += (first ? "" : ",") + quote_fragment(field) + ":";
             const auto it = record.find(std::string{field});
             if (it == record.end()) {
                 out += typed_default(resource, field, schema);
             } else if (field == "id") {
-                out += JsonBody{}.quote(it->second);
+                out += quote_fragment(it->second);
             } else {
                 out += it->second;
             }
@@ -1608,7 +1703,7 @@ private:
         }
         for (const auto& [key, value]: record) {
             if (!schema.known(resource) || !contains(schema.fields(resource), key)) {
-                out += (first ? "" : ",") + JsonBody{}.quote(key) + ":" + value;
+                out += (first ? "" : ",") + quote_fragment(key) + ":" + value;
                 first = false;
             }
         }
@@ -2017,6 +2112,235 @@ public:
         query.embed(filtered, {});
         return query.serialize(filtered);
     }
+
+
+public:
+
+    /** @brief Extract the first "name" value from a Ghost request body. */
+    [[nodiscard]] static std::string first_name(std::string_view body)
+    {
+        const auto marker = body.find("\"name\":");
+        if (marker == std::string_view::npos) return {};
+        const auto begin = body.find('"', marker + 7);
+        if (begin == std::string_view::npos) return {};
+        const auto end = body.find('"', begin + 1);
+        if (end == std::string_view::npos) return {};
+        return std::string{body.substr(begin + 1, end - begin - 1)};
+    }
+
+    [[nodiscard]] MutationResult label_validation(std::string_view reason) const
+    {
+        return MutationResult{422, ApiError{}.validation(
+            "Validation error, cannot save label.", reason, "name"
+        ), true};
+    }
+
+    [[nodiscard]] MutationResult create(std::string_view resource, std::string_view body)
+    {
+        JsonBody parser;
+        const auto fields = parser.parse(body);
+        if (resource == "labels") {
+            const auto name = first_name(body);
+            if (!name.empty()) {
+                if (name.size() > 191) {
+                    return label_validation("Validation (Length) failed for name");
+                }
+                for (const auto& record : Query::parse_array(resources().list("labels"))) {
+                    const auto it = record.find("name");
+                    if (it != record.end()) {
+                        std::string existing{it->second};
+                        if (existing.size() >= 2 && existing.front() == '"' && existing.back() == '"') {
+                            existing = existing.substr(1, existing.size() - 2);
+                        }
+                        if (existing == name) {
+                            return label_validation("Validation (Unique) failed for name");
+                        }
+                    }
+                }
+            }
+        }
+        if (resource == "members" && fields.contains("email")) {
+            const auto email = fields.at("email");
+            if (!email.contains('@')) {
+                return MutationResult{422, ApiError{}.validation(
+                    "Validation error, cannot save member.",
+                    "Validation (Email) failed for email", "email"
+                ), true};
+            }
+        }
+        if ((resource == "posts" || resource == "pages" || resource == "tags") &&
+            !fields.contains("title") && !fields.contains("name")) {
+            return MutationResult{422,
+                ApiError{}.validation(
+                    "Validation error, cannot save post.",
+                    "title is required",
+                    "title"
+                ), true};
+        }
+        if (resource == "posts") {
+            return wrap("posts", create_entity<model::Post>(body));
+        }
+        if (resource == "pages") {
+            return wrap("pages", create_entity<model::Page>(body));
+        }
+        if (resource == "tags") {
+            return wrap("tags", create_entity<model::Tag>(body));
+        }
+        if (resource == "users") {
+            return wrap("users", create_entity<model::User>(body));
+        }
+        if (resource == "members") {
+            return wrap("members", create_entity<model::Member>(body));
+        }
+        if (resource == "newsletters") {
+            return wrap("newsletters", create_entity<model::Newsletter>(body));
+        }
+        if (resource == "tiers") {
+            return wrap("tiers", create_entity<model::Tier>(body));
+        }
+        if (resource == "comments") {
+            return wrap("comments", create_entity<model::Comment>(body));
+        }
+        const std::string id = resources().create(resource, body);
+        return MutationResult{
+            201,
+            std::format(R"({{"{}":[{{"id":"{}"}}]}})", resource, id)
+        };
+    }
+
+    [[nodiscard]] MutationResult edit(
+        std::string_view resource,
+        std::string_view id,
+        std::string_view body
+    )
+    {
+        if (resource == "labels") {
+            const auto records = Query::parse_array(resources().list("labels"));
+            const bool exists = std::ranges::any_of(records, [&](const auto& record) {
+                const auto it = record.find("id");
+                return it != record.end() && it->second.find(id) != std::string::npos;
+            });
+            if (!exists) {
+                return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
+            }
+            return MutationResult{200, std::format(R"({{"labels":[{{"id":"{}","name":"{}"}}]}})", id, first_name(body))};
+        }
+        if (resource == "posts") {
+            return wrap("posts", edit_entity<model::Post>(id, body));
+        }
+        if (resource == "pages") {
+            return wrap("pages", edit_entity<model::Page>(id, body));
+        }
+        if (resource == "tags") {
+            return wrap("tags", edit_entity<model::Tag>(id, body));
+        }
+        if (resource == "users") {
+            return wrap("users", edit_entity<model::User>(id, body));
+        }
+        if (resource == "members") {
+            return wrap("members", edit_entity<model::Member>(id, body));
+        }
+        if (resource == "newsletters") {
+            return wrap("newsletters", edit_entity<model::Newsletter>(id, body));
+        }
+        if (resource == "tiers") {
+            return wrap("tiers", edit_entity<model::Tier>(id, body));
+        }
+        if (resource == "comments") {
+            return wrap("comments", edit_entity<model::Comment>(id, body));
+        }
+        if (resources().edit(resource, id, body)) {
+            return MutationResult{200, std::format(R"({{"{}":[{{"id":"{}"}}]}})", resource, id)};
+        }
+        const std::string created = resources().create(resource, body);
+        return MutationResult{200, std::format(R"({{"{}":[{{"id":"{}"}}]}})", resource, created)};
+    }
+
+    [[nodiscard]] MutationResult destroy(std::string_view resource, std::string_view id)
+    {
+        bool removed = false;
+        if (resource == "posts") {
+            removed = destroy_entity<model::Post>(id);
+        } else if (resource == "pages") {
+            removed = destroy_entity<model::Page>(id);
+        } else if (resource == "tags") {
+            removed = destroy_entity<model::Tag>(id);
+        } else if (resource == "users") {
+            removed = destroy_entity<model::User>(id);
+        } else if (resource == "members") {
+            removed = destroy_entity<model::Member>(id);
+        }
+        if (resource != "posts" && resource != "pages" && resource != "tags" &&
+            resource != "users" && resource != "members" &&
+            removed == false) {
+            removed = resources().destroy(resource, id);
+        }
+        if (!removed) {
+            return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
+        }
+        if (resource == "labels") {
+            return MutationResult{204, ""};
+        }
+        return MutationResult{200, "{}"};
+    }
+
+
+    [[nodiscard]] MutationResult bulk_destroy(std::string_view resource, std::string_view body)
+    {
+        const auto count = resources().bulk_destroy(resource, body);
+        return MutationResult{200, std::format(R"({{"meta":{{"deleted":{}}}}})", count)};
+    }
+
+    [[nodiscard]] MutationResult bulk_edit(std::string_view resource, std::string_view body)
+    {
+        const auto count = resources().bulk_edit(resource, body);
+        return MutationResult{200, std::format(R"({{"meta":{{"updated":{}}}}})", count)};
+    }
+
+private:
+    template<typename E>
+    [[nodiscard]] static std::string serialize(const E& value)
+    {
+        if constexpr (std::same_as<E, model::Post>) {
+            return blog::dto::GhostFixtures::post(value);
+        } else if constexpr (std::same_as<E, model::Member>) {
+            return blog::dto::GhostFixtures::member(value);
+        } else if constexpr (std::same_as<E, model::User>) {
+            return blog::dto::GhostFixtures::user(value);
+        } else if constexpr (std::same_as<E, model::Newsletter>) {
+            return blog::dto::GhostFixtures::newsletter(value);
+        } else if constexpr (std::same_as<E, model::Tier>) {
+            return blog::dto::GhostFixtures::tier(value);
+        } else if constexpr (std::same_as<E, model::Comment>) {
+            return blog::dto::GhostFixtures::comment(value);
+        } else if constexpr (std::same_as<E, model::Page>) {
+            return blog::dto::GhostFixtures::page(value);
+        } else if constexpr (std::same_as<E, model::Author>) {
+            return blog::dto::GhostFixtures::author(value);
+        } else {
+            return EntityJson<E>{}.to_json(value);
+        }
+    }
+
+    template<typename E>
+    [[nodiscard]] MutationResult wrap(std::string_view resource, std::optional<E> value) const
+    {
+        if (!value) {
+            return MutationResult{404, ApiError{}.json("Resource not found", "Not Found"), true};
+        }
+        return MutationResult{
+            201,
+            std::format(R"({{"{}":[{}]}})", resource, serialize(*value))
+        };
+    }
+
+    template<typename E>
+    [[nodiscard]] MutationResult wrap(std::string_view resource, E value) const
+    {
+        return wrap<E>(resource, std::optional<E>{std::move(value)});
+    }
+
+
 
 private:
     /** @brief Full-field Ghost JSON for one entity type, then filter/project/embed. */

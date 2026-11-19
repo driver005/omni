@@ -1,6 +1,5 @@
 export module blog_handlers;
 
-export import :mutation;
 export import :stripe;
 export import :posts_browse_handler;
 export import :posts_bulk_destroy_handler;

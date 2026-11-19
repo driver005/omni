@@ -6,7 +6,6 @@ import blog_context;
 import blog_dto;
 import blog_model;
 import blog_handlers_middleware;
-import :mutation;
 
 export namespace blog::api::members {
 

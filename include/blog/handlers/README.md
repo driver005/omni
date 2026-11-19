@@ -23,6 +23,7 @@ handlers/<domain>/
 - Stateless endpoint bodies are built inline in each route step with `core_serde` DTOs. Ghost fixtures live in `blog_context:ghost_fixtures`, not in `blog_dto`.
 - `blog_handlers_middleware:serde` validates `content-type` / `accept` on each domain router and drives `serde::Ser::serialize/deserialize` with the media type taken from the request.
 - Shared code is limited to `middleware/`, `mutation.cppm`, `stripe.cppm`, the three domain `operations.cppm` files, and `all.cppm`.
+- Each `operations.cppm` exports one class (`MembersOperations`, `EmailsOperations`, `AutomationsOperations`) holding a `core::cache::Cache&`. Instances live in `BlogHandlers`; stateful steps hold a pointer to the owning operations object.
 - Cross-request mutable data lives in the `core::cache::Cache` owned by `BlogHandlers`, under namespaced keys (`members:*`, `emails:*`, `automations:*`), never in domain object fields.
 
 Route lambdas bind to one exact handler:

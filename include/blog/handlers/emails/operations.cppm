@@ -47,31 +47,37 @@ void store_analytics(core::cache::Cache& cache, const blog::dto::AnalyticsStatus
 } // namespace detail
 
 using namespace detail;
-
-[[nodiscard]] std::pair<int, std::string> emails_analytics_get(core::cache::Cache& cache)
+class EmailsOperations
 {
-    return {200, blog::handlers::middleware::encode(load_analytics(cache))};
+public:
+    explicit EmailsOperations(core::cache::Cache& cache) noexcept :
+        m_cache{cache}
+    {
+    }
+
+[[nodiscard]] std::pair<int, std::string> emails_analytics_get()
+{
+    return {200, blog::handlers::middleware::encode(load_analytics(m_cache))};
 }
 
 [[nodiscard]] std::pair<int, std::string> emails_analytics_put(
-    core::cache::Cache& cache,
     std::string_view body
 )
 {
-    auto analytics = load_analytics(cache);
+    auto analytics = load_analytics(m_cache);
     const auto input = blog::handlers::middleware::decode<blog::dto::AnalyticsStatusInput>(body);
     if (input) {
         if (auto* job = job_for(analytics, input->jobName)) {
             job->running = input->running;
         }
     }
-    store_analytics(cache, analytics);
+    store_analytics(m_cache, analytics);
     return {200, blog::handlers::middleware::encode(analytics)};
 }
 
-[[nodiscard]] std::pair<int, std::string> emails_analytics_delete(core::cache::Cache& cache)
+[[nodiscard]] std::pair<int, std::string> emails_analytics_delete()
 {
-    cache.erase(kAnalyticsKey);
+    m_cache.erase(kAnalyticsKey);
     return {200, "{}"};
 }
 
@@ -90,5 +96,9 @@ using namespace detail;
         blog::dto::GhostFixtures::failure()
     )};
 }
+
+private:
+    core::cache::Cache& m_cache;
+};
 
 } // namespace blog::api::emails

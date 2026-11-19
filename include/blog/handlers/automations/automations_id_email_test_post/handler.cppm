@@ -4,15 +4,15 @@ import interfaces;
 import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
-import core_cache;
+
 import memory_backends;
 import :automations_automations_id_email_test_post_model; 
 import :automations_automations_id_email_test_post_flow;
 export namespace blog::handlers::automations::automations_id_email_test_post {
 class AutomationsIdEmailTestPostHandler {
 public:
- AutomationsIdEmailTestPostHandler(blog::BlogContext& ctx, core::cache::Cache& cache) noexcept {
-  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_cache=&cache;
+ AutomationsIdEmailTestPostHandler(blog::BlogContext& ctx, blog::api::automations::AutomationsOperations& ops) noexcept {
+  workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_ops=&ops;
   m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }

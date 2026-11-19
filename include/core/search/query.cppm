@@ -81,6 +81,10 @@ public:
         return m_includes;
     }
 
+    SearchQuery& where(std::string_view expression) { m_where = expression; return *this; }
+    [[nodiscard]] std::string_view where_expression() const noexcept { return m_where; }
+    [[nodiscard]] const std::map<std::string, std::string>& filters() const noexcept { return m_filters; }
+
 private:
     [[nodiscard]] static std::vector<std::string> split(std::string_view csv)
     {
@@ -103,6 +107,7 @@ private:
     std::map<std::string, std::string> m_filters{};
     std::vector<std::string> m_fields{};
     std::vector<std::string> m_includes{};
+    std::string m_where{};
     std::size_t m_limit{10};
     std::size_t m_offset{0};
 };

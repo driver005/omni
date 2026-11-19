@@ -1074,289 +1074,9 @@ export namespace blog::api {
  *  - `fields=title,slug` (projection; `id` is always kept, as in Ghost)
  *  - `include=authors,tags` (embedding, applied by the caller via embed())
  */
-class Query
-{
-public:
-    /** @brief One flat JSON object: field name -> raw JSON value fragment. */
-    using Record = std::map<std::string, std::string>;
+using RecordDto = std::map<std::string, std::string>;
 
-    explicit Query(const std::map<std::string, std::string>& params)
-    {
-        m_fields = parse_list(value_of(params, "fields"));
-        m_include = parse_list(value_of(params, "include"));
-
-        for (const auto& group : split(value_of(params, "filter"), ',')) {
-            std::vector<Condition> ands;
-            for (const auto& condition : split(group, '+')) {
-                const auto colon = condition.find(':');
-                if (colon == std::string::npos) {
-                    continue;
-                }
-                std::string value{trim(condition.substr(colon + 1))};
-                char op = '=';
-                if (!value.empty()) {
-                    const char first = value.front();
-                    if (first == '-' || first == '~' || first == '>' || first == '<') {
-                        op = first == '-' ? '!' : first;
-                        value.erase(value.begin());
-                    }
-                }
-                if (value.size() >= 2 && value.front() == '\'' && value.back() == '\'') {
-                    value = value.substr(1, value.size() - 2);
-                }
-                ands.emplace_back(
-                    std::string{trim(condition.substr(0, colon))},
-                    std::string{op} + value
-                );
-            }
-            if (!ands.empty()) {
-                m_filters.push_back(std::move(ands));
-            }
-        }
-
-        for (const auto& [key, value] : params) {
-            if (key.starts_with("filter[") && key.ends_with(']')) {
-                m_filters.push_back({{key.substr(7, key.size() - 8), "=" + value}});
-            }
-        }
-    }
-
-    [[nodiscard]] const std::vector<std::string>& includes() const noexcept
-    {
-        return m_include;
-    }
-
-    /** @brief Filter and project a set of records, preserving input order. */
-    [[nodiscard]] std::vector<Record> apply(const std::vector<Record>& records) const
-    {
-        std::vector<Record> out;
-        for (const auto& record : records) {
-            if (matches(record)) {
-                out.push_back(project(record));
-            }
-        }
-        return out;
-    }
-
-    /** @brief Add embedded relation arrays to every record for requested includes. */
-    void embed(
-        std::vector<Record>& records,
-        const std::map<std::string, std::string>& available
-    ) const
-    {
-        if (m_include.empty()) {
-            return;
-        }
-        for (auto& record : records) {
-            for (const auto& name : m_include) {
-                if (const auto it = available.find(name); it != available.end()) {
-                    record[name] = it->second;
-                }
-            }
-        }
-    }
-
-    [[nodiscard]] std::string serialize(const std::vector<Record>& records) const
-    {
-        std::string out = "[";
-        bool first = true;
-        for (const auto& record : records) {
-            out += (first ? "" : ",") + to_json(record);
-            first = false;
-        }
-        return out + "]";
-    }
-
-    /** @brief Parse a flat JSON array into records with raw value fragments. */
-    [[nodiscard]] static std::vector<Record> parse_array(std::string_view text)
-    {
-        std::vector<Record> out;
-        std::size_t i = 0;
-        while ((i = text.find('{', i)) != std::string_view::npos) {
-            const auto end = find_object_end(text, i);
-            if (end == std::string_view::npos) {
-                break;
-            }
-            out.push_back(parse_object(text.substr(i, end - i + 1)));
-            i = end + 1;
-        }
-        return out;
-    }
-
-    [[nodiscard]] static std::string to_json(const Record& record)
-    {
-        std::string out = "{";
-        bool first = true;
-        for (const auto& [key, value] : record) {
-            out += (first ? "" : ",") + quote_fragment(key) + ":" + value;
-            first = false;
-        }
-        return out + "}";
-    }
-
-private:
-    using Condition = std::pair<std::string, std::string>;
-
-    [[nodiscard]] bool matches(const Record& record) const
-    {
-        if (m_filters.empty()) {
-            return true;
-        }
-        for (const auto& group : m_filters) {
-            bool all = true;
-            for (const auto& [field, encoded] : group) {
-                const auto it = record.find(field);
-                if (it == record.end()) {
-                    all = false;
-                    break;
-                }
-                const char op = encoded.empty() ? '=' : encoded.front();
-                const std::string expected = encoded.empty() ? std::string{} : encoded.substr(1);
-                const std::string actual = unquote(it->second);
-                bool hit = false;
-                if (op == '=') hit = actual == expected;
-                else if (op == '!') hit = actual != expected;
-                else if (op == '~') {
-                    std::string a = actual;
-                    std::string e = expected;
-                    std::ranges::transform(a, a.begin(), [](char c) {
-                        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-                    });
-                    std::ranges::transform(e, e.begin(), [](char c) {
-                        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-                    });
-                    hit = a.contains(e);
-                } else if (op == '>' || op == '<') {
-                    try {
-                        const auto lhs = std::stold(actual);
-                        const auto rhs = std::stold(expected);
-                        hit = op == '>' ? lhs > rhs : lhs < rhs;
-                    } catch (...) {
-                        hit = op == '>' ? actual > expected : actual < expected;
-                    }
-                }
-                if (!hit) {
-                    all = false;
-                    break;
-                }
-            }
-            if (all) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    [[nodiscard]] Record project(const Record& record) const
-    {
-        std::vector<std::string> keys;
-        if (record.contains("id")) {
-            keys.push_back("id");
-        }
-        if (m_fields.empty()) {
-            for (const auto& [key, value] : record) {
-                (void)value;
-                if (key != "id") {
-                    keys.push_back(key);
-                }
-            }
-        } else {
-            for (const auto& field : m_fields) {
-                if (field != "id" && record.contains(field)) {
-                    keys.push_back(field);
-                }
-            }
-        }
-        Record out;
-        for (const auto& key : keys) {
-            out[key] = record.at(key);
-        }
-        return out;
-    }
-
-    [[nodiscard]] static std::string value_of(
-        const std::map<std::string, std::string>& params,
-        std::string_view key
-    )
-    {
-        const auto it = params.find(std::string{key});
-        return it == params.end() ? std::string{} : it->second;
-    }
-
-    [[nodiscard]] static std::vector<std::string> parse_list(std::string_view text)
-    {
-        std::vector<std::string> out;
-        for (const auto& item : split(text, ',')) {
-            const auto trimmed = trim(item);
-            if (!trimmed.empty()) {
-                out.emplace_back(trimmed);
-            }
-        }
-        return out;
-    }
-
-    [[nodiscard]] static std::vector<std::string_view> split(
-        std::string_view text,
-        char delimiter
-    )
-    {
-        std::vector<std::string_view> out;
-        std::size_t start = 0;
-        for (;;) {
-            const auto pos = text.find(delimiter, start);
-            if (pos == std::string_view::npos) {
-                out.push_back(text.substr(start));
-                break;
-            }
-            out.push_back(text.substr(start, pos - start));
-            start = pos + 1;
-        }
-        return out;
-    }
-
-    [[nodiscard]] static std::string_view trim(std::string_view text)
-    {
-        while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
-            text.remove_prefix(1);
-        }
-        while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
-            text.remove_suffix(1);
-        }
-        return text;
-    }
-
-    [[nodiscard]] static std::string unquote(std::string_view raw)
-    {
-        if (raw.size() < 2 || raw.front() != '"' || raw.back() != '"') {
-            return std::string{raw};
-        }
-        std::string out;
-        for (std::size_t i = 1; i + 1 < raw.size(); ++i) {
-            if (raw[i] == '\\' && i + 2 < raw.size()) {
-                out += raw[++i];
-            } else {
-                out += raw[i];
-            }
-        }
-        return out;
-    }
-
-    [[nodiscard]] static std::size_t find_quote_end(std::string_view text, std::size_t start)
-    {
-        bool escaped = false;
-        for (std::size_t i = start; i < text.size(); ++i) {
-            if (escaped) {
-                escaped = false;
-            } else if (text[i] == '\\') {
-                escaped = true;
-            } else if (text[i] == '"') {
-                return i;
-            }
-        }
-        return std::string_view::npos;
-    }
-
-    [[nodiscard]] static std::size_t find_object_end(std::string_view text, std::size_t start)
+[[nodiscard]] std::size_t find_object_end(std::string_view text, std::size_t start)
     {
         int depth = 0;
         bool in_string = false;
@@ -1386,8 +1106,24 @@ private:
         return std::string_view::npos;
     }
 
-    /** @brief End index of a JSON value, skipping nested objects/arrays and strings. */
-    [[nodiscard]] static std::size_t find_value_end(std::string_view text, std::size_t start)
+
+[[nodiscard]] std::size_t find_quote_end(std::string_view text, std::size_t start)
+    {
+        bool escaped = false;
+        for (std::size_t i = start; i < text.size(); ++i) {
+            if (escaped) {
+                escaped = false;
+            } else if (text[i] == '\\') {
+                escaped = true;
+            } else if (text[i] == '"') {
+                return i;
+            }
+        }
+        return std::string_view::npos;
+    }
+
+
+[[nodiscard]] std::size_t find_value_end(std::string_view text, std::size_t start)
     {
         if (start >= text.size()) return start;
         const char first = text[start];
@@ -1415,9 +1151,21 @@ private:
         return std::min(comma, brace);
     }
 
-    [[nodiscard]] static Record parse_object(std::string_view object)
+
+[[nodiscard]] std::string_view trim(std::string_view text)
     {
-        Record record;
+        while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+            text.remove_prefix(1);
+        }
+        while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
+            text.remove_suffix(1);
+        }
+        return text;
+    }
+
+[[nodiscard]] RecordDto parse_object(std::string_view object)
+    {
+        RecordDto record;
         std::size_t i = 1;
         while (i + 1 < object.size()) {
             while (i < object.size() && (std::isspace(static_cast<unsigned char>(object[i])) || object[i] == ',')) {
@@ -1460,10 +1208,36 @@ private:
         return record;
     }
 
-    std::vector<std::string> m_fields{};
-    std::vector<std::string> m_include{};
-    std::vector<std::vector<Condition>> m_filters{};
-};
+
+[[nodiscard]] std::vector<RecordDto> parse_array(std::string_view text)
+    {
+        std::vector<RecordDto> out;
+        std::size_t i = 0;
+        while ((i = text.find('{', i)) != std::string_view::npos) {
+            const auto end = find_object_end(text, i);
+            if (end == std::string_view::npos) {
+                break;
+            }
+            out.push_back(parse_object(text.substr(i, end - i + 1)));
+            i = end + 1;
+        }
+        return out;
+    }
+
+
+[[nodiscard]] std::string record_to_json(const RecordDto& record)
+    {
+        std::string out = "{";
+        bool first = true;
+        for (const auto& [key, value] : record) {
+            out += (first ? "" : ",") + quote_fragment(key) + ":" + value;
+            first = false;
+        }
+        return out + "}";
+    }
+
+
+
 
 } // namespace blog::api
 
@@ -1980,7 +1754,7 @@ public:
         if (resource == "comments") return query_json(m_db.all<model::Comment>(), params);
         if (resource == "offers") {
             auto fixture = ::blog::dto::GhostFixtures::offer();
-            const auto stored = Query::parse_array(m_resources.list("offers"));
+            const auto stored = parse_array(m_resources.list("offers"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
                     fixture = with_field(fixture, "name", it->second);
@@ -2002,7 +1776,7 @@ public:
         if (resource == "automated_emails") return "[" + ::blog::dto::GhostFixtures::automated_email() + "]";
         if (resource == "automations") {
             auto fixture = ::blog::dto::GhostFixtures::automation();
-            const auto stored = Query::parse_array(m_resources.list("automations"));
+            const auto stored = parse_array(m_resources.list("automations"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
                     fixture = with_field(fixture, "name", it->second);
@@ -2012,7 +1786,7 @@ public:
         }
         if (resource == "db") {
             auto fixture = ::blog::dto::GhostFixtures::db();
-            const auto stored = Query::parse_array(m_resources.list("db"));
+            const auto stored = parse_array(m_resources.list("db"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
                     fixture = with_field(fixture, "status", it->second);
@@ -2020,11 +1794,8 @@ public:
             }
             return "[" + fixture + "]";
         }
-        const auto records = Query::parse_array(m_resources.list(resource));
-        const Query query{params};
-        auto filtered = query.apply(records);
-        query.embed(filtered, {});
-        return query.serialize(filtered);
+        const auto records = parse_array(m_resources.list(resource));
+        return search_json(records, params);
     }
 
 
@@ -2059,7 +1830,7 @@ public:
                 if (name.size() > 191) {
                     return label_validation("Validation (Length) failed for name");
                 }
-                for (const auto& record : Query::parse_array(resources().list("labels"))) {
+                for (const auto& record : parse_array(resources().list("labels"))) {
                     const auto it = record.find("name");
                     if (it != record.end()) {
                         std::string existing{it->second};
@@ -2129,7 +1900,7 @@ public:
     )
     {
         if (resource == "labels") {
-            const auto records = Query::parse_array(resources().list("labels"));
+            const auto records = parse_array(resources().list("labels"));
             const bool exists = std::ranges::any_of(records, [&](const auto& record) {
                 const auto it = record.find("id");
                 return it != record.end() && it->second.find(id) != std::string::npos;
@@ -2216,21 +1987,21 @@ private:
     [[nodiscard]] static std::string serialize(const E& value)
     {
         if constexpr (std::same_as<E, model::Post>) {
-            return blog::dto::GhostFixtures::post(value);
+            return ::blog::dto::GhostFixtures::post(value);
         } else if constexpr (std::same_as<E, model::Member>) {
-            return blog::dto::GhostFixtures::member(value);
+            return ::blog::dto::GhostFixtures::member(value);
         } else if constexpr (std::same_as<E, model::User>) {
-            return blog::dto::GhostFixtures::user(value);
+            return ::blog::dto::GhostFixtures::user(value);
         } else if constexpr (std::same_as<E, model::Newsletter>) {
-            return blog::dto::GhostFixtures::newsletter(value);
+            return ::blog::dto::GhostFixtures::newsletter(value);
         } else if constexpr (std::same_as<E, model::Tier>) {
-            return blog::dto::GhostFixtures::tier(value);
+            return ::blog::dto::GhostFixtures::tier(value);
         } else if constexpr (std::same_as<E, model::Comment>) {
-            return blog::dto::GhostFixtures::comment(value);
+            return ::blog::dto::GhostFixtures::comment(value);
         } else if constexpr (std::same_as<E, model::Page>) {
-            return blog::dto::GhostFixtures::page(value);
+            return ::blog::dto::GhostFixtures::page(value);
         } else if constexpr (std::same_as<E, model::Author>) {
-            return blog::dto::GhostFixtures::author(value);
+            return ::blog::dto::GhostFixtures::author(value);
         } else {
             return EntityJson<E>{}.to_json(value);
         }
@@ -2395,7 +2166,7 @@ private:
             const auto page = parse_size(params, "page", 1);
             offset = (page > 0 ? page - 1 : 0) * limit;
         }
-        auto records = Query::parse_array(array);
+        auto records = parse_array(array);
         if (offset > 0 && offset < records.size()) {
             records.erase(records.begin(), records.begin() + static_cast<std::ptrdiff_t>(offset));
         }
@@ -2403,10 +2174,61 @@ private:
             records.resize(limit);
         }
 
-        const Query query{params};
-        auto filtered = query.apply(records);
-        query.embed(filtered, embeddings(query.includes()));
-        return query.serialize(filtered);
+        return search_json(records, params);
+    }
+
+    [[nodiscard]] std::string search_json(
+        const std::vector<RecordDto>& records,
+        const std::map<std::string, std::string>& params
+    ) const
+    {
+        core::search::Search search;
+        search.use_backend(std::make_unique<core::search::MemorySearchBackend>());
+        for (std::size_t i = 0; i < records.size(); ++i) {
+            search.index(std::to_string(i), "record", record_to_json(records[i]));
+        }
+        core::search::SearchQuery query;
+        for (const auto& [key, value] : params) {
+            if (key == "filter" || key == "limit" || key == "offset" || key == "page" ||
+                key == "fields" || key == "include") continue;
+            if (key.starts_with("filter[")) {
+                const auto close = key.find(']');
+                if (close != std::string::npos) query.filter(key.substr(7, close - 7), value);
+            }
+        }
+        if (const auto it = params.find("filter"); it != params.end()) query.where(it->second);
+        query.limit(parse_size(params, "limit", records.size()));
+        query.offset(parse_size(params, "offset", 0));
+        if (const auto it = params.find("fields"); it != params.end()) query.fields(it->second);
+        std::vector<std::string> names;
+        if (const auto it = params.find("include"); it != params.end()) {
+            query.include(it->second);
+            for (const auto& n : query.include_names()) names.push_back(n);
+        }
+        const auto embedded = embeddings(names);
+        const auto result = search.search(query);
+        std::string out = "[";
+        bool first = true;
+        for (const auto& hit : result.hits()) {
+            const auto index = std::stoul(hit.id());
+            if (index >= records.size()) continue;
+            std::string json;
+            if (!query.field_names().empty()) {
+                json = "{";
+                bool ff = true;
+                for (const auto& [name, value] : hit.fields()) {
+                    json += (ff ? "" : ",") + quote_fragment(name) + ":" + value;
+                    ff = false;
+                }
+                json += "}";
+            } else {
+                json = record_to_json(records[index]);
+            }
+            for (const auto& [name, value] : embedded) json = with_field(json, name, value);
+            out += (first ? "" : ",") + json;
+            first = false;
+        }
+        return out + "]";
     }
 
     [[nodiscard]] std::map<std::string, std::string> embeddings(

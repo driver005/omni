@@ -16,3 +16,5 @@ export import :webhook;
 export import :label;
 export import :snippet;
 export import :recommendation;
+
+export import :wire_fixtures;

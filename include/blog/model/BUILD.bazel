@@ -20,6 +20,7 @@ congelado_module_library(
         "label.cppm",
         "snippet.cppm",
         "recommendation.cppm",
+        "wire_fixtures.cppm",
     ],
     deps = ["//include/core/database:core_database"],
     hdrs = ["entity_macros.h"],

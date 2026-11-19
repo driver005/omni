@@ -1,8 +1,10 @@
 export module blog_handlers:custom_theme_settings_browse_step;
 import std;
 import core_workflow;
+import core_serde;
 import interfaces;
 import blog_context;
+import blog_model;
 
 import blog_dto;
 export namespace blog::handlers::custom_theme_settings::browse::workflow {
@@ -15,7 +17,7 @@ public:
     const auto r=[&]()->std::pair<int,std::string>{
         return std::pair<int, std::string>{200, std::format(
             R"({{"custom_theme_settings":[{}]}})",
-            blog::dto::GhostFixtures::custom_theme_setting()
+            blog::model::encode_custom_theme_setting_wire()
         )};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

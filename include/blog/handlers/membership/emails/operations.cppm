@@ -2,7 +2,9 @@ export module blog_handlers:emails_operations;
 
 import std;
 import core_cache;
+import core_serde;
 import blog_context;
+import blog_model;
 import blog_dto;
 import blog_handlers_middleware;
 
@@ -48,7 +50,7 @@ public:
 {
     return {200, std::format(
         R"({{"batches":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-        blog::dto::GhostFixtures::batch()
+        core_serde::JsonCodec{}.encode(blog::model::BatchWire{})
     )};
 }
 
@@ -56,7 +58,7 @@ public:
 {
     return {200, std::format(
         R"({{"failures":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-        blog::dto::GhostFixtures::failure()
+        core_serde::JsonCodec{}.encode(blog::model::FailureWire{})
     )};
 }
 

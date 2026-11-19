@@ -1,8 +1,10 @@
 export module blog_handlers:members_members_events_get_step;
 import std;
 import core_workflow;
+import core_serde;
 import interfaces;
 import blog_context;
+import blog_model;
 
 import blog_dto;
 export namespace blog::handlers::members::members_events_get::workflow {
@@ -15,7 +17,7 @@ public:
     const auto r=[&]()->std::pair<int,std::string>{
         return {200, std::format(
             R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-            blog::dto::GhostFixtures::event())};
+            core_serde::JsonCodec{}.encode(blog::model::EventWire{}))};
     }();
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
   const auto rows=ctx.store().json_for("members", {});

@@ -2,6 +2,7 @@ export module memory_backends:search;
 
 import std;
 import core_search;
+import core_serde;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -39,6 +40,13 @@ public:
                 continue;
             }
             hits.emplace_back(id, document.type, 1.0, document.body.substr(0, 80));
+            auto& hit = hits.back();
+            if (!query.field_names().empty()) {
+                apply_projection(hit, document.body, query.field_names());
+            }
+            if (!query.include_names().empty()) {
+                apply_includes(hit, query.include_names());
+            }
         }
         const std::size_t total = hits.size();
         const std::size_t start = std::min(query.offset_count(), hits.size());
@@ -62,6 +70,42 @@ private:
         std::string type{};
         std::string body{};
     };
+
+    [[nodiscard]] static std::string fragment(const serde::Value& value)
+    {
+        return core_serde::JsonCodec{}.encode(value);
+    }
+
+    void apply_projection(
+        SearchHit& hit,
+        std::string_view document,
+        const std::vector<std::string>& names
+    ) const
+    {
+        const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(document);
+        if (!parsed) return;
+        const auto* object = std::get_if<serde::Value::Object>(&parsed->get());
+        if (object == nullptr) return;
+        hit.put("id", fragment(serde::Value{hit.id()}));
+        for (const auto& name : names) {
+            if (const auto field = object->get(name)) {
+                hit.put(name, fragment(*field));
+            }
+        }
+    }
+
+    void apply_includes(SearchHit& hit, const std::vector<std::string>& names) const
+    {
+        for (const auto& name : names) {
+            std::vector<SearchHit> related;
+            for (const auto& [id, document] : m_documents) {
+                if (document.type == name) {
+                    related.emplace_back(id, document.type, 1.0, document.body.substr(0, 80));
+                }
+            }
+            hit.embed(name, std::move(related));
+        }
+    }
 
     std::map<std::string, Document> m_documents{};
 };

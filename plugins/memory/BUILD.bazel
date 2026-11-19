@@ -19,6 +19,7 @@ congelado_module_library(
         "//include/core/cache:core_cache",
         "//include/core/database:core_database",
         "//include/core/search:core_search",
+        "//include/core/serde:core_serde",
         "//include/core/email:core_email",
         "//include/core/cron:core_cron",
         "//include/core/workflow:core_workflow",

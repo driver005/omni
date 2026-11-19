@@ -1,10 +1,9 @@
 export module blog_handlers:pages_destroy_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::pages::destroy::workflow {
 class ExecuteStep {
 public:

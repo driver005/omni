@@ -1,7 +1,7 @@
 export module blog_handlers:all;
+import :domain_all;
 
 import std;
-import blog_context;
 import blog_handlers_middleware;
 import core_cache;
 import memory_backends;

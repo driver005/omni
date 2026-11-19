@@ -1,7 +1,7 @@
 export module blog_handlers:posts_bulk_edit_handler;
+import :domain_all;
 import std;
 import interfaces;
-import blog_context;
 import core_workflow;
 import memory_backends;
 import :posts_bulk_edit_flow;

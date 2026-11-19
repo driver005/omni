@@ -58,7 +58,6 @@ export import :webhooks_routes;
 import std;
 import interfaces;
 import core_router;
-import blog_handlers;
 import blog_handlers_middleware;
 
 export namespace blog::api {

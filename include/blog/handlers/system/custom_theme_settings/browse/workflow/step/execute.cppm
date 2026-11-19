@@ -1,12 +1,10 @@
 export module blog_handlers:custom_theme_settings_browse_step;
+import :domain_all;
 import std;
 import core_workflow;
 import core_serde;
 import interfaces;
-import blog_context;
-import blog_model;
 
-import blog_dto;
 export namespace blog::handlers::custom_theme_settings::browse::workflow {
 class ExecuteStep {
 public:

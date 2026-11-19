@@ -1,10 +1,9 @@
 export module blog_handlers:authentication_authentication_invitation_get_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::authentication::authentication_invitation_get::workflow {
 class ExecuteStep {
 public:

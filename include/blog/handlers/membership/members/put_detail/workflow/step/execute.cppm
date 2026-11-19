@@ -1,11 +1,10 @@
 export module blog_handlers:members_put_detail_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
 
-import blog_context;
 import :members_operations;
-import blog_dto;
 export namespace blog::handlers::members::put_detail::workflow {
 class ExecuteStep {
 public:

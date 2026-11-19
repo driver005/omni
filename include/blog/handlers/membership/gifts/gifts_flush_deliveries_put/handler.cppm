@@ -1,7 +1,7 @@
 export module blog_handlers:gifts_gifts_flush_deliveries_put_handler;
+import :domain_all;
 import std;
 import interfaces;
-import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;

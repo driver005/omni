@@ -1,10 +1,9 @@
 export module blog_handlers:offers_create_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::offers::create::workflow {
 class ExecuteStep {
 public:

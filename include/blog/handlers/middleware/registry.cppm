@@ -1,7 +1,7 @@
 export module blog_handlers_middleware:registry;
 
 import std;
-import blog_context;
+
 
 export namespace blog::handlers::middleware {
 
@@ -13,18 +13,18 @@ export namespace blog::handlers::middleware {
 class MiddlewareContextRegistry
 {
 public:
-    static void set_active(blog::BlogContext* context) noexcept
+    static void set_active(void* context) noexcept
     {
         s_active = context;
     }
 
-    [[nodiscard]] static blog::BlogContext* active() noexcept
+    [[nodiscard]] static void* active() noexcept
     {
         return s_active;
     }
 
 private:
-    static inline blog::BlogContext* s_active{nullptr};
+    static inline void* s_active{nullptr};
 };
 
 } // namespace blog::handlers::middleware

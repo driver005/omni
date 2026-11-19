@@ -1,12 +1,10 @@
 export module blog_handlers:comments_comment_replies_step;
+import :domain_all;
 import std;
 import core_workflow;
 import core_serde;
 import interfaces;
-import blog_context;
 
-import blog_dto;
-import blog_model;
 export namespace blog::handlers::comments::comment_replies::workflow {
 class ExecuteStep {
 public:

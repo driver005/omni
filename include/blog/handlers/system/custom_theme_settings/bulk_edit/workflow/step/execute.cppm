@@ -1,10 +1,9 @@
 export module blog_handlers:custom_theme_settings_bulk_edit_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::custom_theme_settings::bulk_edit::workflow {
 class ExecuteStep {
 public:

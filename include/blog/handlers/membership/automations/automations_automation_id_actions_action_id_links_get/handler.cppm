@@ -1,7 +1,7 @@
 export module blog_handlers:automations_automations_automation_id_actions_action_id_links_get_handler;
+import :domain_all;
 import std;
 import interfaces;
-import blog_context;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;

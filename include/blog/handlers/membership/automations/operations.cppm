@@ -1,9 +1,8 @@
 export module blog_handlers:automations_operations;
+import :domain_all;
 
 import std;
 import core_cache;
-import blog_context;
-import blog_dto;
 import blog_handlers_middleware;
 
 export namespace blog::api::automations {

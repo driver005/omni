@@ -1,10 +1,9 @@
 export module blog_handlers:gifts_gifts_flush_deliveries_put_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::gifts::gifts_flush_deliveries_put::workflow {
 class ExecuteStep {
 public:

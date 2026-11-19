@@ -1,8 +1,8 @@
 export module blog_handlers:posts_read_by_id_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
 export namespace blog::handlers::posts::read_by_id::workflow {
 

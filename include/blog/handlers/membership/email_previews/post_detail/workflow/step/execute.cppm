@@ -1,10 +1,9 @@
 export module blog_handlers:email_previews_post_detail_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 
-import blog_dto;
 export namespace blog::handlers::email_previews::post_detail::workflow {
 class ExecuteStep {
 public:

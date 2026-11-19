@@ -35,3 +35,10 @@ Route lambdas bind to one exact handler:
 ```cpp
 .get([h](req,res,send){ h->browse().handle(req,res,send); })
 ```
+
+## Type partitions
+
+`context/`, `dto/`, and `model/` hold the former `blog_context`, `blog_dto`,
+and `blog_model` partitions as partitions of `blog_handlers`. There are no
+separate type modules and no macros; all `serde::Serializable` specializations
+are written explicitly.

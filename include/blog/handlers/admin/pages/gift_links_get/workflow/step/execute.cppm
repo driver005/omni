@@ -1,11 +1,10 @@
 export module blog_handlers:pages_gift_links_get_step;
+import :domain_all;
 import std;
 import core_workflow;
 import interfaces;
-import blog_context;
 import blog_handlers_middleware;
 
-import blog_dto;
 export namespace blog::handlers::pages::gift_links_get::workflow {
 class ExecuteStep {
 public:

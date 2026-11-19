@@ -6,6 +6,7 @@ export module blog_model:newsletter;
 import std;
 import core_serde;
 import core_database;
+import :member;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -99,6 +100,31 @@ public:
     void set_section_title_color(std::string value) { m_section_title_color = std::move(value); }
     [[nodiscard]] const std::string& get_section_title_color() const noexcept { return m_section_title_color; }
 
+    [[nodiscard]] std::string wire_uuid() const { return m_uuid.empty() ? serde::uuid_for(m_id) : m_uuid; }
+    [[nodiscard]] serde::RawJson wire_description() const { return m_description.empty() ? serde::RawJson{"null"} : serde::RawJson{"\"" + m_description + "\""}; }
+    [[nodiscard]] std::string wire_sender_email() const { return m_sender_email.empty() ? std::string{"ghost@example.com"} : m_sender_email; }
+    [[nodiscard]] std::string wire_sender_name() const { return m_sender_name.empty() ? std::string{"Ghost"} : m_sender_name; }
+    [[nodiscard]] serde::RawJson wire_count() const { return {R"({"sent":0,"opened":0,"clicked":0})"}; }
+    [[nodiscard]] bool wire_true() const { return true; }
+    [[nodiscard]] std::string wire_visibility() const { return "public"; }
+    [[nodiscard]] std::string wire_body_font_category() const { return "sans-serif"; }
+    [[nodiscard]] std::string wire_button_color() const { return "#FF1A75"; }
+    [[nodiscard]] std::string wire_button_corners() const { return "square"; }
+    [[nodiscard]] std::string wire_button_style() const { return "solid"; }
+    [[nodiscard]] std::string wire_header_background_color() const { return "#15171A"; }
+    [[nodiscard]] std::string wire_image_corners() const { return "square"; }
+    [[nodiscard]] std::string wire_link_color() const { return "#FF1A75"; }
+    [[nodiscard]] std::string wire_link_style() const { return "underline"; }
+    [[nodiscard]] std::string wire_title_alignment() const { return "left"; }
+    [[nodiscard]] std::string wire_title_font_category() const { return "sans-serif"; }
+    [[nodiscard]] std::string wire_title_font_weight() const { return "bold"; }
+    [[nodiscard]] std::string wire_sender_reply_to() const { return "reply@example.com"; }
+    [[nodiscard]] std::string wire_background_color() const { return "#FFFFFF"; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
+
     std::int64_t m_id{};
     std::string m_uuid{};
     std::string m_name{};
@@ -150,7 +176,57 @@ namespace serde {
 template<>
 struct Serializable<blog::model::Newsletter>
 {
+    using M = blog::model::Newsletter;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::get_id, &M::set_id, FieldOptions::init().with_db(FieldOptionsDb::init().pk()), wire_id_normalizer{}>{},
+            FieldDesc<"uuid", &M::wire_uuid, &M::set_uuid>{},
+            FieldDesc<"name", &M::get_name, &M::set_name>{},
+            FieldDesc<"slug", &M::get_slug, &M::set_slug>{},
+            FieldDesc<"description", &M::wire_description, &M::set_wire_noop>{},
+            FieldDesc<"status", &M::get_status, &M::set_status>{},
+            FieldDesc<"visibility", &M::wire_visibility, &M::set_wire_string_noop>{},
+            FieldDesc<"body_font_category", &M::wire_body_font_category, &M::set_wire_string_noop>{},
+            FieldDesc<"button_color", &M::wire_button_color, &M::set_wire_string_noop>{},
+            FieldDesc<"button_corners", &M::wire_button_corners, &M::set_wire_string_noop>{},
+            FieldDesc<"button_style", &M::wire_button_style, &M::set_wire_string_noop>{},
+            FieldDesc<"header_background_color", &M::wire_header_background_color, &M::set_wire_string_noop>{},
+            FieldDesc<"image_corners", &M::wire_image_corners, &M::set_wire_string_noop>{},
+            FieldDesc<"link_color", &M::wire_link_color, &M::set_wire_string_noop>{},
+            FieldDesc<"link_style", &M::wire_link_style, &M::set_wire_string_noop>{},
+            FieldDesc<"title_alignment", &M::wire_title_alignment, &M::set_wire_string_noop>{},
+            FieldDesc<"title_font_category", &M::wire_title_font_category, &M::set_wire_string_noop>{},
+            FieldDesc<"title_font_weight", &M::wire_title_font_weight, &M::set_wire_string_noop>{},
+            FieldDesc<"sender_reply_to", &M::wire_sender_reply_to, &M::set_wire_string_noop>{},
+            FieldDesc<"background_color", &M::wire_background_color, &M::set_wire_string_noop>{},
+            FieldDesc<"sort_order", &M::get_id, &M::set_id, FieldOptions{}, zero_normalizer{}>{},
+            FieldDesc<"divider_color", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"footer_content", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"header_image", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"post_title_color", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"section_title_color", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"sender_email", &M::wire_sender_email, &M::set_wire_string_noop>{},
+            FieldDesc<"sender_name", &M::wire_sender_name, &M::set_wire_string_noop>{},
+            FieldDesc<"feedback_enabled", &M::get_feedback_enabled, &M::set_feedback_enabled>{},
+            FieldDesc<"show_badge", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_comment_cta", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_excerpt", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_feature_image", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_header_icon", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_header_name", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_header_title", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_latest_posts", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_post_title_section", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_share_button", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"show_subscription_details", &M::wire_true, &M::set_wire_noop>{},
+            FieldDesc<"subscribe_on_signup", &M::get_subscribe_on_signup, &M::set_subscribe_on_signup>{},
+            FieldDesc<"count", &M::wire_count, &M::set_wire_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::Newsletter::get_id, &blog::model::Newsletter::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

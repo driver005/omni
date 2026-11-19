@@ -1,0 +1,34 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
+
+rust_library(
+    name = "sdk_bindings",
+    crate_name = "sdk_bindings",
+    srcs = ["wasm.rs"],
+    edition = "2021",
+    deps = [
+        "//sdk/client:sdk_client",
+        "//sdk/domain:sdk_domain",
+        "@sdk_crates//js-sys",
+        "@sdk_crates//serde_json",
+        "@sdk_crates//wasm-bindgen",
+        "@sdk_crates//wasm-bindgen-futures",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# wasm-bindgen needs a cdylib; the CLI generates the JS glue consumed by visual/.
+rust_shared_library(
+    name = "sdk_wasm_cdylib",
+    srcs = ["wasm.rs"],
+    crate_name = "sdk_bindings",
+    edition = "2021",
+    deps = [
+        "//sdk/client:sdk_client",
+        "//sdk/domain:sdk_domain",
+        "@sdk_crates//js-sys",
+        "@sdk_crates//serde_json",
+        "@sdk_crates//wasm-bindgen",
+        "@sdk_crates//wasm-bindgen-futures",
+    ],
+    visibility = ["//visibility:public"],
+)

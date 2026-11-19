@@ -1,0 +1,16 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+rust_library(
+    name = "sdk_client",
+    crate_name = "sdk_client",
+    srcs = ["client.rs"],
+    edition = "2021",
+    deps = [
+        "//sdk/api:sdk_api",
+        "//sdk/auth:sdk_auth",
+        "//sdk/domain:sdk_domain",
+        "//sdk/error:sdk_error",
+        "@sdk_crates//reqwest",
+    ],
+    visibility = ["//visibility:public"],
+)

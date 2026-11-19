@@ -6,6 +6,7 @@ export module blog_model:post;
 import std;
 import core_serde;
 import core_database;
+import :member;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -77,6 +78,25 @@ public:
     void set_show_title_and_feature_image(bool value) { m_show_title_and_feature_image = std::move(value); }
     [[nodiscard]] const bool& get_show_title_and_feature_image() const noexcept { return m_show_title_and_feature_image; }
 
+    // Ghost wire-shape accessors.
+    [[nodiscard]] std::string wire_uuid() const { return m_uuid.empty() ? serde::uuid_for(m_id) : m_uuid; }
+    [[nodiscard]] std::string wire_excerpt() const { return m_custom_excerpt.empty() ? std::string{"Welcome to Ghost."} : m_custom_excerpt; }
+    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
+    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
+    [[nodiscard]] serde::RawJson wire_authors() const { return {"[]"}; }
+    [[nodiscard]] serde::RawJson wire_count() const { return {R"({"clicks":0,"negative_feedback":0,"positive_feedback":0})"}; }
+    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+    [[nodiscard]] serde::RawJson wire_feature_image() const
+    {
+        return m_feature_image.empty() ? serde::RawJson{"null"}
+                                       : serde::RawJson{std::string{"\"" + m_feature_image + "\""}};
+    }
+    [[nodiscard]] static std::string wire_email_segment() { return "all"; }
+    [[nodiscard]] bool wire_email_only() const { return false; }
+    [[nodiscard]] std::string wire_email_segment_value() const { return "all"; }
+    void set_wire_noop(serde::RawJson) {}
+    void set_wire_string_noop(std::string) {}
+
     std::int64_t m_id{};
     std::string m_uuid{};
     std::string m_title{};
@@ -117,7 +137,44 @@ namespace serde {
 template<>
 struct Serializable<blog::model::Post>
 {
+    using M = blog::model::Post;
     static constexpr auto fields()
+    {
+        return std::tuple{
+            FieldDesc<"id", &M::get_id, &M::set_id, FieldOptions::init().with_db(FieldOptionsDb::init().pk()), wire_id_normalizer{}>{},
+            FieldDesc<"uuid", &M::wire_uuid, &M::set_uuid>{},
+            FieldDesc<"title", &M::get_title, &M::set_title>{},
+            FieldDesc<"slug", &M::get_slug, &M::set_slug>{},
+            FieldDesc<"status", &M::get_status, &M::set_status>{},
+            FieldDesc<"mobiledoc", &M::get_mobiledoc, &M::set_mobiledoc>{},
+            FieldDesc<"lexical", &M::get_lexical, &M::set_lexical>{},
+            FieldDesc<"html", &M::get_html, &M::set_html>{},
+            FieldDesc<"comment_id", &M::get_comment_id, &M::set_comment_id>{},
+            FieldDesc<"excerpt", &M::wire_excerpt, &M::set_wire_string_noop>{},
+            FieldDesc<"custom_excerpt", &M::get_custom_excerpt, &M::set_custom_excerpt>{},
+            FieldDesc<"authors", &M::wire_empty_array, &M::set_wire_noop>{},
+            FieldDesc<"canonical_url", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"codeinjection_foot", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"codeinjection_head", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"count", &M::wire_count, &M::set_wire_noop>{},
+            FieldDesc<"created_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"published_at", &M::wire_timestamp, &M::set_wire_noop>{},
+            FieldDesc<"custom_template", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"email", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"email_only", &M::wire_email_only, &M::set_wire_noop>{},
+            FieldDesc<"email_segment", &M::wire_email_segment_value, &M::set_wire_string_noop>{},
+            FieldDesc<"email_subject", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"feature_image", &M::wire_feature_image, &M::set_wire_noop>{},
+            FieldDesc<"feature_image_alt", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"feature_image_caption", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"featured", &M::get_featured, &M::set_featured>{},
+            FieldDesc<"frontmatter", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"meta_description", &M::wire_null, &M::set_wire_noop>{},
+            FieldDesc<"meta_title", &M::wire_null, &M::set_wire_noop>{}
+        };
+    }
+    static constexpr auto db_fields()
     {
         return std::tuple{
             serde::FieldDesc<"id", &blog::model::Post::get_id, &blog::model::Post::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},

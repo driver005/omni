@@ -1074,10 +1074,10 @@ public:
             if (!e) return std::nullopt;
             return core_serde::JsonCodec{}.encode(*e);
         }
-        if (resource == "offers") return ::blog::dto::GhostFixtures::offer();
-        if (resource == "notifications") return ::blog::dto::GhostFixtures::notification();
-        if (resource == "webhooks") return ::blog::dto::GhostFixtures::webhook();
-        if (resource == "emails") return ::blog::dto::GhostFixtures::email();
+        if (resource == "offers") return ::blog::model::encode_offer_wire();
+        if (resource == "notifications") return ::blog::model::encode_notification_wire();
+        if (resource == "webhooks") return ::core_serde::JsonCodec{}.encode(blog::model::WebhookWire{});
+        if (resource == "emails") return core_serde::JsonCodec{}.encode(blog::model::EmailWire{});
         if (resource == "newsletters") {
             const auto e = find_entity<model::Newsletter>(id);
             if (!e) return std::nullopt;
@@ -1136,7 +1136,7 @@ public:
         if (resource == "members") return query_json(m_db.all<model::Member>(), params);
         if (resource == "comments") return query_json(m_db.all<model::Comment>(), params);
         if (resource == "offers") {
-            auto fixture = ::blog::dto::GhostFixtures::offer();
+            auto fixture = ::blog::model::encode_offer_wire();
             const auto stored = parse_array(m_resources.list("offers"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -1148,17 +1148,17 @@ public:
             }
             return "[" + fixture + "]";
         }
-        if (resource == "notifications") return "[" + ::blog::dto::GhostFixtures::notification() + "]";
-        if (resource == "webhooks") return "[" + ::blog::dto::GhostFixtures::webhook() + "]";
-        if (resource == "emails") return "[" + ::blog::dto::GhostFixtures::email() + "]";
-        if (resource == "labels") return "[" + ::blog::dto::GhostFixtures::label() + "]";
-        if (resource == "snippets") return "[" + ::blog::dto::GhostFixtures::snippet() + "]";
-        if (resource == "roles") return "[" + ::blog::dto::GhostFixtures::role() + "]";
-        if (resource == "recommendations") return "[" + ::blog::dto::GhostFixtures::recommendation() + "]";
-        if (resource == "links") return "[" + ::blog::dto::GhostFixtures::link() + "]";
-        if (resource == "automated_emails") return "[" + ::blog::dto::GhostFixtures::automated_email() + "]";
+        if (resource == "notifications") return "[" + ::blog::model::encode_notification_wire() + "]";
+        if (resource == "webhooks") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::WebhookWire{}) + "]";
+        if (resource == "emails") return "[" + core_serde::JsonCodec{}.encode(blog::model::EmailWire{}) + "]";
+        if (resource == "labels") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::LabelWire{}) + "]";
+        if (resource == "snippets") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::SnippetWire{}) + "]";
+        if (resource == "roles") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::RoleWire{}) + "]";
+        if (resource == "recommendations") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::RecommendationWire{}) + "]";
+        if (resource == "links") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::LinkWire{}) + "]";
+        if (resource == "automated_emails") return "[" + ::core_serde::JsonCodec{}.encode(blog::model::AutomatedEmailWire{}) + "]";
         if (resource == "automations") {
-            auto fixture = ::blog::dto::GhostFixtures::automation();
+            auto fixture = ::core_serde::JsonCodec{}.encode(blog::model::AutomationWire{});
             const auto stored = parse_array(m_resources.list("automations"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {
@@ -1168,7 +1168,7 @@ public:
             return "[" + fixture + "]";
         }
         if (resource == "db") {
-            auto fixture = ::blog::dto::GhostFixtures::db();
+            auto fixture = ::core_serde::JsonCodec{}.encode(blog::model::DbWire{});
             const auto stored = parse_array(m_resources.list("db"));
             if (!stored.empty()) {
                 if (const auto it = stored.back().find("name"); it != stored.back().end()) {

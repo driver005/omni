@@ -1,6 +1,7 @@
 export module blog_handlers:comments_comment_reports_step;
 import std;
 import core_workflow;
+import core_serde;
 import interfaces;
 import blog_context;
 
@@ -20,8 +21,8 @@ public:
         else if (path.ends_with("/reports")) key = "comment_reports";
         return std::pair<int, std::string>{200, std::format(
             R"({{"{}":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-            key, key == "comments" ? blog::dto::GhostFixtures::comment([]{ blog::model::Comment c; c.set_id(1); return c; }())
-                                   : blog::dto::GhostFixtures::comment_sub()
+            key, key == "comments" ? core_serde::JsonCodec{}.encode([]{ blog::model::Comment c; c.set_id(1); return c; }())
+                                   : core_serde::JsonCodec{}.encode(blog::model::CommentSubWire{})
         )};
     }("/comments/:id/reports");
   if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};

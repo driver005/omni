@@ -18,7 +18,6 @@ export import :member_subscription_input;
 export import :member_subscription_response;
 export import :pagination_envelope;
 export import :pagination_meta_dto;
-export import :fixtures;
 export import :scheduled_analytics_job;
 export import :signin_url;
 export import :signin_urls_response;

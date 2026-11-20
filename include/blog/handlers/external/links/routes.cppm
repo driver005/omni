@@ -17,7 +17,9 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/links"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            // Ghost api-framework content negotiation is relevant to the PUT body,
+            // not to the token-authenticated GET browse (which has no request body).
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -28,6 +30,7 @@ public:
             .summary("Ghost links GET")
             .add_route(
                 Route{"/bulk"}
+                    .use(blog::handlers::middleware::content_type_middleware)
                     .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

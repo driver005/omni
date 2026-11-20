@@ -12,12 +12,75 @@ export namespace blog::api {
 class PostsRoutes
 {
 public:
-    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handler)
+    /**
+     * @brief Installs the posts routes. `content=true` installs only the three
+     * public GET counterparts (content API); the default installs the full
+     * admin API set.
+     */
+    void install(
+        core::router::RouterContext<>& router,
+        blog::api::BlogHandlers& handler,
+        bool content = false
+    )
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        if (content) {
+            // Content API requests arrive anonymously; mark the context so the
+            // shared steps use the public option/transformer/gift behavior and
+            // core::auth::ghost grants the public read pass-through.
+            const auto content_context = +[](interfaces::io::IRequest& req,
+                                             interfaces::io::IResponse& res,
+                                             interfaces::NextFn&& next,
+                                             std::function<void()> send) {
+                req.set_header(blog::handlers::middleware::kGhostContextHeader, "CONTENT_API");
+                next(req, res, std::move(send));
+            };
+            Router{router, "/posts"}
+                .use(blog::handlers::middleware::content_type_middleware)
+                .use(content_context)
+                .use(blog::handlers::middleware::bearer_middleware)
+                .use(blog::handlers::middleware::optional_auth)
+                .get([&handler](
+            interfaces::io::IRequest& req,
+            interfaces::io::IResponse& res,
+            std::function<void()> send
+        ) {
+            handler.posts_browse().handle(req, res, std::move(send));
+        })
+                .summary("Ghost content posts GET")
+                .add_router(
+                    Router{router, "/:id"}
+                        .get([&handler](
+            interfaces::io::IRequest& req,
+            interfaces::io::IResponse& res,
+            std::function<void()> send
+        ) {
+            handler.posts_read_by_id().handle(req, res, std::move(send));
+        })
+                        .summary("Ghost content :id GET")
+                )
+                .add_router(
+                    Router{router, "/slug"}
+                        .add_route(
+                            Route{"/:slug"}
+                                .get([&handler](
+            interfaces::io::IRequest& req,
+            interfaces::io::IResponse& res,
+            std::function<void()> send
+        ) {
+            handler.posts_read_by_slug().handle(req, res, std::move(send));
+        })
+                                .summary("Ghost content :slug GET")
+                        )
+                );
+            return;
+        }
+
         Router{router, "/posts"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -132,7 +195,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:id"}
+                        Route{"/:slug"}
                             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -140,7 +203,7 @@ public:
     ) {
         handler.posts_read_by_slug().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id GET")
+                            .summary("Ghost :slug GET")
                     )
             )
             .add_route(

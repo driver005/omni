@@ -5,7 +5,6 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,8 +15,15 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost's admin app parses bodies globally and has no content-type gate on
+        // these no-input custom actions (admin/app.js:33-34). Both controllers declare
+        // permissions:{docName:'gifts', method:...} (gifts.js:16-19, 30-33), enforced
+        // inside each handler via blog_handlers_middleware::require_ghost_permission.
+        // Router-level content_type_middleware / bearer_middleware / require_auth would
+        // add a 415/406 gate and a token-presence-only path Ghost does not have, so
+        // they are intentionally absent here (same shape as external/slack/routes.cppm).
         Router{router, "/gifts"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .add_route(
                 Route{"/flush_deliveries"}
                     .put([&handler](

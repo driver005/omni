@@ -2,21 +2,146 @@ export module blog_handlers:automated_emails_read_by_id_step;
 import :domain_all;
 import std;
 import core_workflow;
+import core_query;
+import core_serde;
 import interfaces;
 
 export namespace blog::handlers::automated_emails::read_by_id::workflow {
+
+namespace local_mapping {
+[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
+                                      std::string_view meta = {})
+{
+    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+}
+[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
+[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
+                                            std::size_t pages, std::string_view prev,
+                                            std::string_view next)
+{
+    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+                       total, limit, page, pages,
+                       prev.empty() ? std::string{"null"} : std::string{prev},
+                       next.empty() ? std::string{"null"} : std::string{next});
+}
+} // namespace local_mapping
 class ExecuteStep {
 public:
- using Input=interfaces::io::IRequest&; using Output=std::string;
+ using Input=interfaces::io::IRequest&;
+ using Output=std::map<std::string,std::string>;
  static constexpr std::string_view name{"automated_emails_read_by_id_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; auto& mutations = ctx.store();
-  const auto one=ctx.store().find_by_resource("automated_emails", std::string{}.empty()?"1":std::string{});
-  if(one) return core::workflow::StepResponse<Output>{"{\"automated_emails\":[" + *one + "]}"};
-  return core::workflow::StepResponse<Output>{R"({"automated_emails":[]})"};
+   auto& ctx=*s_ctx;
+   const std::string path{in.get_path()};
+   const auto qpos=path.find('?');
+   const std::string clean=qpos==std::string::npos?path:path.substr(0,qpos);
+   const std::string id{clean.substr(clean.rfind('/')+1)};
+   if (id.empty()) {
+     return core::workflow::StepResponse<Output>{{{"status","422"},
+       {"body",blog::api::ApiError{}.validation("id is required","","id")}}};
+   }
+   // Ghost options:['fields'] + restrictAdminApiQueryOptions(frame.options).
+   static constexpr std::string_view kOptions[]{"fields"};
+   const auto q=core::query::parse(in.get_path(), kOptions);
+
+   // Automation.findOne({id}, restrict + withRelated) -> NotFoundError on a miss.
+   core::query::ParsedQuery by_id;
+   by_id.raw_filter="id:"+id;
+   std::string matched;
+   try {
+     matched=core::query::apply(ctx.store().json_for("automated_emails", {}), by_id, 15);
+   } catch (const std::exception&) {
+     return core::workflow::StepResponse<Output>{{{"status","400"},
+       {"body",blog::api::ApiError{}.json("Restricted fields cannot be used in order.","Bad Request")}}};
+   }
+   const auto parsed=core_serde::JsonCodec{}.decode<serde::Value>(matched);
+   const Object* automation=nullptr;
+   if (parsed) {
+     if (const auto* list=std::get_if<serde::Value::Array>(&parsed->get())) {
+       if (!list->empty()) automation=std::get_if<Object>(&list->front().get());
+     }
+   }
+   if (automation==nullptr) {
+     return core::workflow::StepResponse<Output>{{{"status","404"},
+       {"body",blog::api::ApiError{}.json("Automated email not found.","Not Found")}}};
+   }
+
+   // Ghost getDefaultEmailDesignSettings() -> NotFoundError if the shared default
+   // design row is absent; it supplies sender settings when the email has no own.
+   const auto defaults=ctx.store().json_for("email_design_settings", {{"filter","slug:default-automated-email"}});
+   const auto default_design=first_object(defaults);
+   if (default_design.empty()) {
+     return core::workflow::StepResponse<Output>{{{"status","404"},
+       {"body",blog::api::ApiError{}.json("Default automated email design setting not found","Not Found")}}};
+   }
+   std::string row=flatten(automation, &default_design);
+   if (!q.fields.empty()) row=core::query::apply("["+row+"]", q, 15);
+   const auto projected=core_serde::JsonCodec{}.decode<serde::Value>(row);
+   std::string data="[]";
+   if (projected) {
+     if (const auto* list=std::get_if<serde::Value::Array>(&projected->get())) {
+       data=core_serde::JsonCodec{}.encode(list->front());
+     } else {
+       data=row;
+     }
+   }
+   return core::workflow::StepResponse<Output>{{{"status","200"},
+     {"body",local_mapping::wrap("automated_emails", data)}}};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
  static blog::BlogContext* s_ctx;
+private:
+ using Object=serde::Value::Object;
+ static const serde::Value* value_for(const Object* object, std::string_view key) {
+   if (object==nullptr) return nullptr;
+   for (const auto& [name,value] : *object) if (name==key) return &value;
+   return nullptr;
+ }
+ static std::string field(const Object* object, std::string_view key) {
+   const auto* value=value_for(object,key);
+   if (value==nullptr) return {};
+   if (const auto* text=std::get_if<std::string>(&value->get())) return *text;
+   return {};
+ }
+ static std::string raw_value(const Object* object, std::string_view key) {
+   const auto* value=value_for(object,key);
+   return value==nullptr ? std::string{"null"} : core_serde::JsonCodec{}.encode(*value);
+ }
+ static Object first_object(std::string_view json) {
+   const auto parsed=core_serde::JsonCodec{}.decode<serde::Value>(json);
+   if (parsed) {
+     if (const auto* list=std::get_if<serde::Value::Array>(&parsed->get())) {
+       if (!list->empty()) {
+         if (const auto* object=std::get_if<Object>(&list->front().get())) return *object;
+       }
+     }
+   }
+   return {};
+ }
+ static std::string flatten(const Object* automation, const Object* design) {
+   const std::string design_id=field(design,"id");
+   const std::string email_design_id=[&]{
+     const std::string id=field(automation,"email_design_setting_id");
+     return id.empty()?design_id:id;
+   }();
+   const auto item=[](std::string_view key, std::string value) {
+     return "\""+std::string{key}+"\":"+std::move(value);
+   };
+   return "{"+
+     item("id", raw_value(automation,"id"))+","+
+     item("status", raw_value(automation,"status"))+","+
+     item("name", raw_value(automation,"name"))+","+
+     item("slug", raw_value(automation,"slug"))+","+
+     item("subject", raw_value(automation,"subject"))+","+
+     item("lexical", raw_value(automation,"lexical"))+","+
+     item("sender_name", raw_value(design,"sender_name"))+","+
+     item("sender_email", raw_value(design,"sender_email"))+","+
+     item("sender_reply_to", raw_value(design,"sender_reply_to"))+","+
+     item("email_design_setting_id", "\""+email_design_id+"\"")+","+
+     item("created_at", raw_value(automation,"created_at"))+","+
+     item("updated_at", raw_value(automation,"updated_at"))+"}";
+ }
 };
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
 }

@@ -5,10 +5,20 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
+/**
+ * Ghost mounts these seven routes under the Admin API prefix with a single
+ * `mw.authAdminApi` middleware and controller-level `permissions:true` /
+ * `permissions:{method:...}` (`admin/routes.js:360-378`, `themes.js:11-178`).
+ * Authentication and permission checks therefore live in the handlers through
+ * the registered `blog_handlers_middleware:ghost_permission` stage, not in a
+ * router-level `x-blog-permissions` helper. There is no JSON `Content-Type`
+ * gate: Ghost's `/themes/upload` is multipart/form-data, and the Admin API app
+ * uses body parsers only (mirroring `webhooks/routes.cppm` and
+ * `system/redirects/routes.cppm`).
+ */
 class ThemesRoutes
 {
 public:
@@ -17,7 +27,6 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/themes"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

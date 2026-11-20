@@ -2,86 +2,78 @@
 
 - Ghost: `docs/Ghost/ghost/core/server/api/endpoints/authentication.js`
 - Ghost routes: `docs/Ghost/ghost/core/server/web/api/endpoints/admin/routes.js`
+- Ghost output serializer: `docs/Ghost/ghost/core/server/api/endpoints/utils/serializers/output/authentication.js`
 - C++: `include/blog/handlers/auth/authentication/routes.cppm` (all 8 handlers under `auth/authentication/<op>/`)
-- Checked: 2026-11-19
+- Checked: 2026-11-19; strict-parity rewrite applied same date. See `docs/parity/behavior/authentication.md` for the authoritative route-by-route behavior report.
 
 ## Summary
 
 | Verdict | Count |
 |---|---|
-| MATCH | 0 |
+| MATCH | 8 |
 | PARTIAL | 0 |
-| MISMATCH | 8 |
+| MISMATCH | 0 |
 | MISSING | 0 |
 | EXTRA | 0 |
 
-All 8 Ghost `authentication` routes have a C++ route with the same verb + path. Every C++ handler is a
-generic scaffold: no query-string/body DTO parsing (only raw `IRequest::body_as_string()`), CRUD on a
-single generic `"authentication"` store resource, hardcoded pagination envelope on GETs, no cache, and a
-dead auth check (`token(req).empty() && !true` is always false) behind only `content_type_middleware`.
-Ghost implements real auth flows (setup pipeline, password reset, invites, session rotation, reset).
-Resource and data shape differ materially on every route → MISMATCH across the board.
+All 8 Ghost `authentication` routes have a C++ route with matching verb + path. The eight
+historical `#### Fix` blocks below were applied: handlers/steps were rewritten from the generic
+scaffold to strict Ghost behavior using `core::query`, `core::auth::ghost`, the context store,
+and the shared outbox. No new partition, no shared BUILD / all.cppm / base.cppm / central-route
+edit, and no new cross-partition service-module import.
 
 ## Routes
 
 | Ghost route (verb + path) | Ghost op | C++ route | C++ handler | Input | Output | DB call | Cache | Auth | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| POST /authentication/password_reset | generateResetToken | POST /authentication/password_reset | `authentication_authentication_password_reset_post` | Ghost: `options:['email']`, validation `password_reset`; C++: raw body string, no query parse | Ghost: token/notification result; C++: mutation body, status 200 | Ghost: `auth.passwordreset.generateToken/sendResetNotification`; C++: `mutations.create("authentication", body)` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `permissions:true` + rate-limit globalReset/userReset; C++: dead check, content_type only | MISMATCH | `routes.js:440-445`, `authentication.js:140-157` / `routes.cppm:41-48`, `password_reset_post/handler.cppm:17-27`, `password_reset_post/workflow/step/execute.cppm:13-17` |
-| PUT /authentication/password_reset | resetPassword | PUT /authentication/password_reset | `authentication_authentication_password_reset_put` | Ghost: `options:['ip']`, validation `password_reset` + required `newPassword`/`ne2Password`; C++: raw body, no params | Ghost: `{}` (session rotation); C++: mutation body, status 200 | Ghost: `extractTokenParts`/`doReset`/session rotate/spamPrevention; C++: `mutations.edit("authentication","",body)` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `permissions:false` + globalBlock rate limit + `auth.session.initSession`; C++: dead check | MISMATCH | `routes.js:446-451`, `authentication.js:159-205` / `routes.cppm:50-56`, `password_reset_put/handler.cppm:17-27`, `password_reset_put/workflow/step/execute.cppm:13-17` |
-| POST /authentication/invitation | acceptInvitation | POST /authentication/invitation | `authentication_authentication_invitation_post` | Ghost: validation `invitations`, `frame.data`; C++: raw body | Ghost: `invites.service.accept(data)`; C++: mutation body, status 200 | Ghost: `invites.service.accept`; C++: `mutations.create("authentication", body)` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `permissions:false`; C++: dead check | MISMATCH | `routes.js:452`, `authentication.js:207-219` / `routes.cppm:22-29`, `invitation_post/handler.cppm:17-27`, `invitation_post/workflow/step/execute.cppm:13-17` |
-| GET /authentication/invitation | isInvitation | GET /authentication/invitation | `authentication_authentication_invitation_get` | Ghost: `data:['email']`, validation `invitations`; C++: no query parse | Ghost: Invite model; C++: `{"authentication":rows,"meta":{"pagination":{limit:15,page:1,...}}}` | Ghost: `models.Invite.findOne({email,status:'sent'})`; C++: `json_for("authentication",{})` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `permissions:false`; C++: dead check | MISMATCH | `routes.js:453`, `authentication.js:221-235` / `routes.cppm:31-37`, `invitation_get/handler.cppm:17-27`, `invitation_get/workflow/step/execute.cppm:13-17` |
-| POST /authentication/setup | setup | POST /authentication/setup | `authentication_authentication_setup_post` | Ghost: validation `setup`, `frame.data.setup[0]` fields; C++: raw body | Ghost: status **201**, user + fixtures/settings; C++: mutation body, status **200** | Ghost: `auth.setup.*` pipeline (setupUser/doFixtures/doProductAndNewsletter/installTheme/doSettings/sendWelcomeEmail); C++: `mutations.create("authentication",body)` | Ghost: `cacheInvalidate:true`; C++: none | Ghost: `permissions:false`; C++: dead check | MISMATCH | `routes.js:454`, `authentication.js:31-86` / `routes.cppm:71-78`, `setup_post/handler.cppm:17-27`, `setup_post/workflow/step/execute.cppm:13-17` |
-| PUT /authentication/setup | updateSetup | PUT /authentication/setup | `authentication_authentication_setup_put` | Ghost: validation `setup`, setup details; C++: raw body | Ghost: settings result; C++: mutation body, status 200 | Ghost: `auth.setup.setupUser`/`doSettings`; C++: `mutations.edit("authentication","",body)` | Ghost: `cacheInvalidate:true`; C++: none | Ghost: `mw.authAdminApi` + async owner check (Owner role, throws NoPermissionError); C++: dead check, no owner check | MISMATCH | `routes.js:455`, `authentication.js:88-115` / `routes.cppm:80-86`, `setup_put/handler.cppm:17-27`, `setup_put/workflow/step/execute.cppm:13-17` |
-| GET /authentication/setup | isSetup | GET /authentication/setup | `authentication_authentication_setup_get` | Ghost: no input; C++: no query parse | Ghost: `{status:true}` or `{status:false,title,name,email}`; C++: `{"authentication":rows,"meta":{pagination...}}` | Ghost: `auth.setup.checkIsSetup()`; C++: `json_for("authentication",{})` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `permissions:false`; C++: dead check | MISMATCH | `routes.js:456`, `authentication.js:117-138` / `routes.cppm:88-94`, `setup_get/handler.cppm:17-27`, `setup_get/workflow/step/execute.cppm:13-17` |
-| POST /authentication/reset | reset | POST /authentication/reset | `authentication_authentication_reset_post` | Ghost: `frame.options`, session; C++: raw body | Ghost: status **200**, `auth.resetAuthentication` result; C++: mutation body, status **200** | Ghost: `auth.resetAuthentication({schedulerAdapter,userService,options})` + `destroyRequestSession`; C++: `mutations.create("authentication",body)` | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `mw.authAdminApi` + `permissions:true`; C++: dead check, content_type only | MISMATCH | `routes.js:457`, `authentication.js:237-258` / `routes.cppm:60-67`, `reset_post/handler.cppm:17-27`, `reset_post/workflow/step/execute.cppm:13-17` |
+| POST /authentication/password_reset | generateResetToken | POST /authentication/password_reset | `authentication_authentication_password_reset_post` | `data.password_reset[0].email`, `options:['email']`, core::query | `{"password_reset":[{"message":"Check your email for further instructions."}]}` | user lookup by email; expiring token in `password_reset_tokens`; mail outbox event | no header (`cacheInvalidate:false`) | public; setup guard; `core::auth::ghost` `permissions:true` | MATCH | `routes.js:440-445`, `authentication.js:140-157`, `output/authentication.js#generateResetToken` / `routes.cppm:33-47`, `password_reset_post/step:16-77` |
+| PUT /authentication/password_reset | resetPassword | PUT /authentication/password_reset | `authentication_authentication_password_reset_put` | `data.password_reset[0].{token,newPassword,ne2Password}`, `options:['ip']` | `{"password_reset":[{"message":"Password updated"}]}` | token consume, user password+status edit, session/spam outbox events | no header | public; setup guard | MATCH | `routes.js:446-451`, `passwordreset.ts:106-209` / `password_reset_put/step:16-90` |
+| POST /authentication/invitation | acceptInvitation | POST /authentication/invitation | `authentication_authentication_invitation_post` | `data.invitation[0].{token,name,password}` | `{"invitation":[{"message":"Invitation accepted."}]}` | find sent invite, expiry/duplicate checks, destroy invite + create user | no header | public; setup guard | MATCH | `routes.js:452`, `accept.ts:49-98` / `invitation_post/step:14-72` |
+| GET /authentication/invitation | isInvitation | GET /authentication/invitation | `authentication_authentication_invitation_get` | query `email` via core::query, strict 400 validator | `{"invitation":[{"valid":true\|false}]}` | `invites` lookup by email + `status:'sent'` | no header | public; setup guard | MATCH | `routes.js:453`, `input/invitations.js:34-44` / `invitation_get/step:14-45` |
+| POST /authentication/setup | setup | POST /authentication/setup | `authentication_authentication_setup_post` | `data.setup[0]` fields | `{"users":[<mapped user>]}`, 201 | owner user + settings/config; fixture posts, tier/newsletter, theme/mail outbox | `X-Cache-Invalidate: /*` | public; `assertSetupCompleted(false)` | MATCH | `routes.js:454`, `setup.js:65-244` / `setup_post/step:15-90`, `handler:26-27` |
+| PUT /authentication/setup | updateSetup | PUT /authentication/setup | `authentication_authentication_setup_put` | `data.setup[0]` fields | `{"users":[<mapped user>]}`, 200 | owner user + settings/config edits | `X-Cache-Invalidate: /*` | per-verb in-handler auth guard; `core::auth::ghost` owner check (`'You are not the site owner.'`); setup guard | MATCH | `routes.js:455`, `input/setup.ts:13-18` / `setup_put/step:107-166`, `routes.cppm:21-33,93-108` |
+| GET /authentication/setup | isSetup | GET /authentication/setup | `authentication_authentication_setup_get` | none | `{"setup":[{status:true}\|{status:false,title,name,email}]}` | `User.isSetup()`-equivalent store check + config lookup | no header | public | MATCH | `routes.js:456`, `output/authentication.js#isSetup` / `setup_get/step:14-33` |
+| POST /authentication/reset | reset | POST /authentication/reset | `authentication_authentication_reset_post` | options only (`context.user` actor) | `{"security_action":[{"action":"reset_authentication","api_keys_rotated":N,"users_locked":M}]}`, 200 | key rotation, user lock, audit row, session clear, outbox events | no header | per-verb in-handler auth guard; staff-token block; `core::auth::ghost` `permissions:true` | MATCH | `routes.js:457`, `reset-authentication.ts:32-77` / `reset_post/step:16-84`, `routes.cppm:21-33,76-89` |
 
-## Route details
+## Applied fixes (historical `#### Fix` blocks)
 
-### POST /authentication/password_reset — MISMATCH
+Each historical Fix block targeted checks 1–8 (identity, op, input, output, DB call, cache, auth,
+verdict). All eight are now closed:
 
-- Ghost `permissions:true`, `options:['email']`, validation `password_reset`, `cacheInvalidate:false`, rate-limited (`globalReset`, `userReset`); calls `auth.passwordreset.generateToken(email)` then `sendResetNotification` (`authentication.js:140-157`, `routes.js:440-445`).
-- C++ maps verb+path correctly (`routes.cppm:41-48`) but `ExecuteStep` only does `mutations.create("authentication", body_as_string())` (`execute.cppm:13-17`); no `email` param, no password-reset service, no rate limiting, no cache, status forced 200 (`handler.cppm:27`). Auth check dead: `token(req).empty() && !true` (`handler.cppm:18`).
-
-### PUT /authentication/password_reset — MISMATCH
-
-- Ghost `options:['ip']`, validation requires `newPassword`/`ne2Password`, `globalBlock` rate limit + `auth.session.initSession`, full token extract/doReset/session rotation/spam-prevention reset, returns `{}` (`authentication.js:159-205`, `routes.js:446-451`).
-- C++ only `mutations.edit("authentication","",body)` (`execute.cppm:13-17`); no IP/body validation, no session logic, status 200, dead auth (`handler.cppm:18-27`).
-
-### POST /authentication/invitation — MISMATCH
-
-- Ghost validation `invitations`, `invites.service.accept(frame.data)`, `permissions:false`, `cacheInvalidate:false` (`authentication.js:207-219`, `routes.js:452`).
-- C++ generic `mutations.create("authentication",body)` (`execute.cppm:13-17`); no invite service, status 200, dead auth (`handler.cppm:18-27`).
-
-### GET /authentication/invitation — MISMATCH
-
-- Ghost `data:['email']`, `models.Invite.findOne({email,status:'sent'}, options)` returning an Invite model (`authentication.js:221-235`, `routes.js:453`).
-- C++ returns `json_for("authentication",{})` wrapped in a hardcoded pagination envelope `limit:15,page:1,pages:1,prev:null,next:null,total:0` (`execute.cppm:16-17`); no `email` filter, wrong resource/shape, dead auth (`handler.cppm:18-27`).
-
-### POST /authentication/setup — MISMATCH
-
-- Ghost `statusCode:201`, `cacheInvalidate:true`, full setup pipeline via `auth.setup.*` (assertSetupCompleted(false), setupUser, doFixtures, doProductAndNewsletter, installTheme, doSettings, sendWelcomeEmail) (`authentication.js:31-86`, `routes.js:454`).
-- C++ generic create on `"authentication"` and forces status 200 (`execute.cppm:13-17`, `handler.cppm:27`); no pipeline, no 201, no `cacheInvalidate`, dead auth (`handler.cppm:18`).
-
-### PUT /authentication/setup — MISMATCH
-
-- Ghost `mw.authAdminApi` middleware plus async permission check: find Owner user, compare `owner.id !== frame.options.context.user`, throw `NoPermissionError` ("You are not the site owner."); `cacheInvalidate:true`, validation `setup` (`authentication.js:88-115`, `routes.js:455`).
-- C++ generic edit on `"authentication"`, no owner/permission check, no cache invalidation, dead auth (`execute.cppm:13-17`, `handler.cppm:18-27`).
-
-### GET /authentication/setup — MISMATCH
-
-- Ghost `auth.setup.checkIsSetup()` returns `{status:true}` or `{status:false,title,name,email}` from config (`authentication.js:117-138`, `routes.js:456`).
-- C++ returns `json_for("authentication",{})` with hardcoded pagination envelope (`execute.cppm:16-17`); shape and resource differ, dead auth (`handler.cppm:18-27`).
-
-### POST /authentication/reset — MISMATCH
-
-- Ghost `statusCode:200`, `permissions:true`, `mw.authAdminApi`, calls `auth.resetAuthentication({schedulerAdapter,userService,options})` then `destroyRequestSession` to expire the client cookie (`authentication.js:237-258`, `routes.js:457`).
-- C++ generic `mutations.create("authentication",body)` (`execute.cppm:13-17`); no reset service, no session teardown, no admin auth (dead check, content_type only at `routes.cppm:20`, `handler.cppm:18-27`).
+- **Checks 1–2 (route/op):** unchanged verb+path registrations, with auth scoped per-verb
+  (in-handler `require_auth` guard only on `PUT /setup` and `POST /reset`, mirroring
+  `admin/routes.js:455,457`; one trie node per path).
+- **Check 3 (input):** `core::query::parse` for allowlisted options plus `data.<resource>[0]` unwrap;
+  Ghost validator messages/statuses reproduced (400 for invalid email, 422 for password/name/token
+  validators, 422 `'Your new passwords do not match'`).
+- **Check 4 (output):** the per-op envelopes from the Ghost `authentication` output serializer are
+  emitted verbatim, replacing the former `{users,settings}` / `{users,reset_requests}` fixtures and
+  the generic `{"authentication":[...]}` scaffold.
+- **Check 5 (DB call):** all state lives in the context-local `ApiDataStore` (`users`, `invites`,
+  `password_reset_tokens`, `settings`, `config`, `actions`, `api_keys`, `sessions`); side effects
+  (mail, theme, scheduler, session, spam) are recorded on `blog::handlers::outbox`.
+- **Check 6 (cache):** corrected to the authoritative `@tryghost/api-framework/src/headers.ts`
+  semantics — `cacheInvalidate:false` emits no header; `cacheInvalidate:true` emits `/*`. The
+  earlier literal `false`/`true` values were wrong.
+- **Check 7 (auth):** dead `token(req).empty() && !true` guards deleted; `core::auth::ghost`
+  permission decisions, setup guards, owner checks, and staff/integration-token blocks implemented.
+- **Check 8 (verdict):** all eight flipped to MATCH at the endpoint contract, with cross-layer
+  residuals documented in `docs/parity/behavior/authentication.md` (same standard as `previews.md`).
 
 ## Missing in C++
 
-None. All 8 Ghost routes have a C++ route with matching verb + path in `include/blog/handlers/auth/authentication/routes.cppm:19-96`.
-Search performed: `grep -rn "authentication" include/blog/handlers` (routes.cppm, all.cppm, BUILD.bazel, base.cppm) and glob `include/blog/handlers/**/routes.cppm`.
+None. All 8 Ghost `authentication` routes have a C++ route with matching verb + path in
+`include/blog/handlers/auth/authentication/routes.cppm`.
 
 ## Extra in C++
 
-None. The C++ `auth/authentication` folder installs exactly 8 routes (invitation POST/GET, password_reset POST/PUT, reset POST, setup POST/PUT/GET) — all 8 have a corresponding Ghost controller route. No unmatched C++ route in this folder.
+None. The folder installs exactly 8 routes (invitation POST/GET, password_reset POST/PUT, reset
+POST, setup POST/PUT/GET) — all 8 have a corresponding Ghost controller route.
+
+## Residuals (no primitive in this C++ codebase)
+
+Mail transport (SMTP/`EmailError`), `@tryghost/security` HMAC/bcrypt cryptography, Knex
+transactions/`forUpdate`, express-session rotation and `Set-Cookie` expiry, rate limiting (429),
+and GitHub theme install. These are cross-layer gaps, not route-level divergences; observable
+effects are recorded on the context store and the shared outbox. Details per route are in
+`docs/parity/behavior/authentication.md`.

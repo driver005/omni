@@ -16,8 +16,11 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost parses bodies globally and serves GET /config without a Content-Type
+        // requirement (admin/app.js:33-44); no content_type_middleware 415/406 gate.
+        // config.read declares permissions:false, so no require_ghost_permission stage.
         Router{router, "/config"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

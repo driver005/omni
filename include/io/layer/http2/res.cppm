@@ -356,7 +356,7 @@ private:
     // TODO: make length a constant
     std::array<
         std::shared_ptr<interfaces::io::HeaderField<true>>,
-        std::to_underlying(interfaces::io::types::Token::WWW_AUTHENTICATE) + 1>
+        std::to_underlying(interfaces::io::types::Token::X_XSS_PROTECTION) + 1>
         m_static_headers{};
     hashmap::swiss::
         SwissHashMap<std::string_view, std::shared_ptr<interfaces::io::HeaderField<false>>>

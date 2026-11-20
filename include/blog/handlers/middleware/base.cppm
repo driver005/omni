@@ -5,3 +5,4 @@ export import :bearer;
 export import :auth;
 export import :error;
 export import :serde;
+export import :ghost_permission;

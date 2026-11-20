@@ -4,8 +4,30 @@ export module blog_handlers:search_index_dto_more_resources;
 
 import std;
 import core_serde;
+import interfaces;
+import core_auth;
+import core_query;
 
 export namespace blog::dto::search_index {
+
+namespace local_mapping {
+[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
+                                      std::string_view meta = {})
+{
+    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+}
+[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
+[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
+                                            std::size_t pages, std::string_view prev,
+                                            std::string_view next)
+{
+    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+                       total, limit, page, pages,
+                       prev.empty() ? std::string{"null"} : std::string{prev},
+                       next.empty() ? std::string{"null"} : std::string{next});
+}
+} // namespace local_mapping
 
 class RecordDto
 {
@@ -91,14 +113,6 @@ public:
     std::vector<RecordDto> tags{};
 };
 
-class SearchAuthorsResponse
-{
-public:
-    void set_authors(std::vector<RecordDto> value) { authors = std::move(value); }
-    [[nodiscard]] const std::vector<RecordDto>& get_authors() const noexcept { return authors; }
-    std::vector<RecordDto> authors{};
-};
-
 class SearchUsersResponse
 {
 public:
@@ -106,6 +120,124 @@ public:
     [[nodiscard]] const std::vector<RecordDto>& get_users() const noexcept { return users; }
     std::vector<RecordDto> users{};
 };
+
+// ---------------------------------------------------------------------------
+// Shared Ghost search-index semantics.
+//
+// These helpers carry the hardcoded options Ghost builds in
+// `search-index.js` (Admin API) and `search-index-public.js` (Content API)
+// into the C++ steps. They live in this folder-local, already-registered
+// partition so every search_index step uses the same rules without touching
+// shared files. A single C++ route serves both API surfaces at the same
+// path+verb, so the surface is resolved from the request's `x-blog-context`
+// header (the same mechanism the rest of the handlers use).
+// ---------------------------------------------------------------------------
+
+using core::auth::ghost::ApiContext;
+using core::auth::ghost::Principal;
+
+/** @brief Build a Ghost principal for a search-index request.
+ *
+ *  Mirrors `admin/pages/types/dto_links.cppm#principal_for`: an explicit
+ *  x-blog-context wins; otherwise a bearer token implies the Admin API and
+ *  no token implies the anonymous Content API reader. An admin request
+ *  without a role is treated as Administrator so the Ghost permission check
+ *  can still be exercised meaningfully. */
+[[nodiscard]] inline Principal principal_for(interfaces::io::IRequest& req)
+{
+    Principal p;
+    const auto context = req.find_header("x-blog-context");
+    if (context == "ADMIN_API") p.context = ApiContext::ADMIN_API;
+    else if (context == "CONTENT_API") p.context = ApiContext::CONTENT_API;
+    else if (context == "MEMBERS_APP") p.context = ApiContext::MEMBERS_APP;
+    else if (context == "INTERNAL") p.context = ApiContext::INTERNAL;
+    else if (context == "SYSTEM") p.context = ApiContext::SYSTEM;
+    else p.context = req.get_authorization().empty() ? ApiContext::CONTENT_API
+                                                      : ApiContext::ADMIN_API;
+
+    p.role = std::string{req.find_header("x-blog-role")};
+    if (p.role.empty() && p.context == ApiContext::ADMIN_API) p.role = "Administrator";
+    for (auto part : std::string_view{req.find_header("x-blog-permissions")} |
+                         std::views::split(',')) {
+        const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
+        if (!scope.empty()) p.permissions.insert(scope);
+    }
+    const auto staff = req.find_header("x-blog-staff");
+    p.staff = staff == "true" || staff == "1";
+    if (!req.get_authorization().empty()) p.id = "bearer";
+    return p;
+}
+
+/** @brief True for an anonymous/public Content API read. */
+[[nodiscard]] inline bool is_content(const Principal& p) noexcept
+{
+    return p.context == ApiContext::CONTENT_API;
+}
+
+/** @brief Ghost's hardcoded options for one search-index operation. */
+struct GhostOptions
+{
+    std::string resource;   // ApiDataStore resource (posts/pages/tags/users/authors)
+    std::string doc_name;   // docName used by the Ghost permission check
+    std::string entity;     // local_mapping::clean entity
+    std::string filter;     // NQL raw filter (empty = no filter)
+    std::string fields;     // comma-separated Ghost `columns` -> C++ `fields`
+};
+
+/** @brief Resolve Ghost's fixed options for @p kind on the @p content surface.
+ *
+ *  `posts` and `tags` exist in both APIs and branch on @p content; `pages`
+ *  and `users` are Admin-only, `authors` is Content-only. */
+[[nodiscard]] inline GhostOptions ghost_options(std::string_view kind, bool content)
+{
+    if (kind == "posts") {
+        return content
+            ? GhostOptions{"posts", "posts", "post", "type:post",
+                           "id,slug,title,excerpt,url,updated_at,visibility"}
+            : GhostOptions{"posts", "posts", "post",
+                           "type:post+status:[draft,published,scheduled,sent]",
+                           "id,uuid,url,title,slug,status,published_at,visibility"};
+    }
+    if (kind == "pages") {
+        return {"pages", "posts", "post", "type:page+status:[draft,published,scheduled]",
+                "id,uuid,url,title,slug,status,published_at,visibility"};
+    }
+    if (kind == "tags") {
+        return content
+            ? GhostOptions{"tags", "tags", "tag", "visibility:public",
+                           "id,slug,name,url"}
+            : GhostOptions{"tags", "tags", "tag", "", "id,slug,name,url"};
+    }
+    if (kind == "users") {
+        return {"users", "users", "user", "", "id,slug,url,name,profile_image"};
+    }
+    // "authors" (Content API only).
+    return {"authors", "authors", "author", "", "id,slug,name,url,profile_image"};
+}
+
+/** @brief Build the core::query pipeline object for Ghost's fixed options.
+ *
+ *  `limit:10000`, `order:updated_at DESC` and the allow-listed `fields`
+ *  projection are the same on every search-index operation. core::query
+ *  supplies the NQL filtering, ordering and projection Ghost applies in
+ *  `Post.findPage` / `Tag.findPage` / `Author.findPage` / `User.findPage`. */
+[[nodiscard]] inline core::query::ParsedQuery query_for(const GhostOptions& spec)
+{
+    core::query::ParsedQuery q;
+    q.raw_filter = spec.filter;
+    q.order = "updated_at DESC";
+    q.limit = 10000;
+    std::size_t start = 0;
+    while (start <= spec.fields.size()) {
+        const auto comma = spec.fields.find(',', start);
+        const auto part = spec.fields.substr(
+            start, comma == std::string::npos ? std::string::npos : comma - start);
+        if (!part.empty()) q.fields.emplace(std::string{part});
+        if (comma == std::string::npos) break;
+        start = comma + 1;
+    }
+    return q;
+}
 
 } // namespace blog::dto::search_index
 
@@ -193,17 +325,6 @@ template<> struct serde::Serializable<blog::dto::search_index::SearchUsersRespon
                                            serde::FieldOptions{}>{}};
     }
     static constexpr std::string_view table_name() { return "search_users"; }
-};
-
-template<> struct serde::Serializable<blog::dto::search_index::SearchAuthorsResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<"authors", &blog::dto::search_index::SearchAuthorsResponse::get_authors,
-                                           &blog::dto::search_index::SearchAuthorsResponse::set_authors,
-                                           serde::FieldOptions{}>{}};
-    }
-    static constexpr std::string_view table_name() { return "search_authors"; }
 };
 
 template<> struct serde::Serializable<blog::dto::search_index::OembedResponse>

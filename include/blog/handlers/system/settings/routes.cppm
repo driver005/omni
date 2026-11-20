@@ -16,8 +16,12 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost's admin app uses JSON/urlencoded body parsers, not a
+        // Content-Type/Accept gate; the yaml download/upload endpoints speak
+        // plain text / multipart. Each handler runs the Ghost permission gate
+        // (core_auth:ghost) after the router-level presence check.
         Router{router, "/settings"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

@@ -16,8 +16,13 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost binds this route with mw.authAdminApi; admin app parses bodies
+        // globally without requiring Content-Type/Accept (admin/app.js:33-34),
+        // so a bodyless GET must not be 415/406 gated. require_auth covers the
+        // authenticate step; the controller's members:browse permission gate
+        // runs in TinybirdTokenGetHandler::handle (tinybird.js:11-14).
         Router{router, "/tinybird"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/token"}
                     .get([&handler](

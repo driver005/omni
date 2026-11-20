@@ -18,6 +18,12 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/search-index"}
             .use(blog::handlers::middleware::content_type_middleware)
+            // Ghost mounts these paths in both the Admin API (authAdminApi +
+            // docName/method permissions) and the Content API
+            // (authenticatePublic + permissions:true). A single C++ route
+            // serves both, so auth is resolved per-request inside each step
+            // through core::auth::ghost::GhostAuthorizer. A router-wide
+            // bearer-token gate would wrongly reject anonymous public reads.
             .add_route(
                 Route{"/authors"}
                     .get([&handler](

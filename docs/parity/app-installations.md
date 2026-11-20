@@ -2,140 +2,99 @@
 
 - Ghost: `docs/Ghost/ghost/core/server/api/endpoints/app-installations.ts`
 - Ghost routes: `docs/Ghost/ghost/core/server/web/api/endpoints/admin/routes.js` (lines 227–238)
-- C++: none found for `/apps/installations*` (only `include/blog/handlers/external/apps/routes.cppm`, which installs `GET /apps` → `apps_all_collection`)
-- Checked: 2026-11-19
+- C++: `include/blog/handlers/external/apps/app_installations_{browse,add,read,edit,destroy}/`
+  (live bindings in `external/apps/routes.cppm`)
+- Checked: 2026-11-19; strict-parity pass 2026-11-20 (group 23)
 
 ## Summary
 
 | Verdict | Count |
 |---|---|
 | MATCH | 0 |
-| PARTIAL | 0 |
+| PARTIAL | 5 |
 | MISMATCH | 0 |
-| MISSING | 5 |
+| MISSING | 0 |
 | EXTRA | 1 |
 
-All five Ghost `appInstallations` routes are MISSING in C++. No C++ route or handler implements
-`/apps/installations` for any HTTP verb. The only C++ app route, `GET /apps`, has no Ghost
-counterpart in this controller (or anywhere in the admin route table) and is recorded as EXTRA.
-
-## Controller facts (Ghost side)
-
-- `docName` / export key: `app_installations` (`app-installations.ts:55`), exposed to the router as
-  `api.appInstallations` via `endpoints/index.js:351-353`.
-- Operations: `browse`, `read`, `add`, `edit`, `destroy` (`app-installations.ts:57,65,77,91,105`).
-- Common headers: `noCacheInvalidation = { cacheInvalidate: false }` (`app-installations.ts:52`)
-  applied to all five operations (`:58,66,79,92,107`). No `X-Cache-Invalidate` URL is set.
-- Auth/mount: all routes sit under `router.all(['/apps', '/apps/*'], mw.authAdminApi)`
-  (`admin/routes.js:228`) and `appsRouter.use(labs.enabledMiddleware('apps'))`
-  (`admin/routes.js:230`). Per-operation `permissions`: `true` for browse/read/add/destroy
-  (`:59,69,80,110`); `edit` uses `permissions: {method: 'add'}` (`:95`).
-- Validation helper: body must contain a non-empty `app_installations` array (framework-enforced,
-  `app-installations.ts:16-21`); `reviewed()` zod-checks `manifest_url` + `digest` (`:27,32-40`);
-  `reviewedChange()` additionally zod-checks `revision` as non-negative int (`:30,42-50`).
+All five Ghost `appInstallations` routes exist and now reproduce their observable contract
+through shared abstractions: `core::query`, `core_serde`, `core_auth::ghost` + permission
+middleware, the exact `AppInstallationResource` serializer (+ history), revision-guarded
+approval, soft-uninstall idempotency, and an outbox-recorded manifest/challenge/icon/action
+side-effect log. Verdict stays PARTIAL (not MATCH): the labs `apps` gate, real HTTP/crypto
+manifest work, Knex `FOR UPDATE` row locks, token→role resolution and the full
+`buildHistory`/`movedBetween` merge have no allowed shared primitive (see the behavior
+report's residual gaps).
 
 ## Routes
 
 | Ghost route (verb + path) | Ghost op | C++ route | C++ handler | Input | Output | DB call | Cache | Auth | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| GET `/apps/installations` | browse | none | none | Ghost: no `options[]`/`data[]`/`validation`; service `browse()` takes no args | Ghost: `Installation[]` (serialized `{data:[...]}`), status 200 | Ghost: `appInstallations.service.browse()` → `repository.list()` (`service.ts:169-171`) | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `authAdminApi` + labs `apps` + `permissions:true`; C++: none | MISSING | Ghost: `admin/routes.js:233`, `app-installations.ts:57-63`, `service.ts:169-171`. C++: no route — grep `installations` in `include/blog/handlers` → only `README.md:9`; `include/blog/handlers/external/apps/routes.cppm:19` is `GET /apps` only; `include/blog/handlers/routes.cppm:4,77` installs only `AppsRoutes`. |
-| POST `/apps/installations` | add | none | none | Ghost: `data.app_installations[0]` with `manifest_url` + `digest` (`app-installations.ts:16-21,27,32-40`); `options.context`; no `options[]`/`validation` declared | Ghost: `Installation`, status **201** (`app-installations.ts:78`) | Ghost: `service.create(actingContext(frame.options.context), reviewed(frame))` (`app-installations.ts:82-85`) → `repository.insert` (`service.ts:201-221`) | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `authAdminApi` + labs `apps` + `permissions:true`; C++: none | MISSING | Ghost: `admin/routes.js:234`, `app-installations.ts:77-87`, `service.ts:201-221`. C++: no route — see search evidence in browse row. |
-| GET `/apps/installations/:id` | read | none | none | Ghost: `options:['id','include']`, `validation` `id` required, `include` values `['history']` (`app-installations.ts:67-68`); maps `include→withRelated`, `withHistory` flag (`:71-73`) | Ghost: `InstallationWithHistory` (optional `history`), status 200 | Ghost: `service.read(id,{withHistory})` → `repository.find(id)` + optional `historyOf` (`service.ts:177-189,318-325`) | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `authAdminApi` + labs `apps` + `permissions:true`; C++: none | MISSING | Ghost: `admin/routes.js:235`, `app-installations.ts:65-75`, `service.ts:177-189`. C++: no route — see search evidence in browse row. |
-| PUT `/apps/installations/:id` | edit | none | none | Ghost: `options:['id']`, `id` required (`app-installations.ts:93-94`); body `manifest_url` + `digest` + `revision` (`:30,42-50`) | Ghost: `Installation`, status 200 | Ghost: `service.approve(actingContext, id, reviewedChange(frame))` (`app-installations.ts:97-101`) → `repository.find` + `whileUnchanged`/manifest writes (`service.ts:234-279,490-523`) | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `authAdminApi` + labs `apps` + **`permissions:{method:'add'}`** (`app-installations.ts:95`); C++: none | MISSING | Ghost: `admin/routes.js:236`, `app-installations.ts:91-103`, `service.ts:234-279`. C++: no route — see search evidence in browse row. |
-| DELETE `/apps/installations/:id` | destroy | none | none | Ghost: `options:['id']`, `id` required (`app-installations.ts:108-109`); no body fields | Ghost: empty, status **204** (`app-installations.ts:106`) | Ghost: `service.uninstall(actingContext, id)` (`app-installations.ts:112-115`) → `repository.uninstall` + `recordAction` (`service.ts:302-316`) | Ghost: `cacheInvalidate:false`; C++: none | Ghost: `authAdminApi` + labs `apps` + `permissions:true`; C++: none | MISSING | Ghost: `admin/routes.js:238`, `app-installations.ts:105-117`, `service.ts:302-316`. C++: no route — see search evidence in browse row. |
+| GET `/apps/installations` | browse | `GET /apps/installations` via `AppsRoutes::install` | `AppInstallationsBrowseHandler` | none | `{app_installations:[...]}` with Ghost field set, 200 | `core::query` over `app_installations` + manifest JOIN | none; no cache header | `require_auth` + `require_ghost_permission("app_installations","browse")` | PARTIAL | C++ `apps/routes.cppm`, browse step + `apps::support::browse` |
+| POST `/apps/installations` | add | `POST /apps/installations` | `AppInstallationsAddHandler` | `data.app_installations[0]` `{manifest_url,digest}` | 201 `{app_installations:[Installation]}` | outbox-recorded review + trx insert + action | none; no cache header | `require_auth` + `require_ghost_permission(...,"add")` | PARTIAL | C++ add step + `support::fetch_reviewed/install` |
+| GET `/apps/installations/:id` | read | `GET /apps/installations/:id` | `AppInstallationsReadHandler` | path `id`, `include∈{history}` | `{app_installations:[InstallationWithHistory]}`, 200/404 | `core::query` find + history rows | none; no cache header | `require_auth` + `require_ghost_permission(...,"read")` | PARTIAL | C++ read step + `support::read_one/history_for` |
+| PUT `/apps/installations/:id` | edit | `PUT /apps/installations/:id` | `AppInstallationsEditHandler` | path `id`, `{manifest_url,digest,revision≥0}` | `{app_installations:[Installation]}`, 200/404/409 | revision-guarded approval write + action + re-read | none; no cache header | `require_auth` + `require_ghost_permission(...,"add")` (deliberate override) | PARTIAL | C++ edit step + `support::approve` |
+| DELETE `/apps/installations/:id` | destroy | `DELETE /apps/installations/:id` (`delt`) | `AppInstallationsDestroyHandler` | path `id` | 204 empty / 404 | soft uninstall + action (idempotent) | none; no cache header | `require_auth` + `require_ghost_permission(...,"destroy")` | PARTIAL | C++ destroy step + `support::uninstall` |
 
-## Route details
+## Route details (implemented strict-parity changes)
 
-### GET `/apps/installations` — MISSING
+All five routes share these facts after the pass:
+1. **Route**: bindings already existed in `AppsRoutes::install`; only the router middleware
+   changed — `content_type_middleware` was removed (Ghost has no 415 gate on `/apps`),
+   `require_auth` kept.
+2. **Operation**: existing handler/flow/step trios reused; `Output=std::map<string,string>`
+   (`status`/`body`), static `s_ctx`, workflow names unchanged.
+3. **Input/DB**: each step now performs the Ghost service work (see the behavior report) using
+   shared helpers in `blog::handlers::apps::support`, hosted in the already-registered
+   `:apps_app_installations_browse_step` partition — no new partition added.
+4. **Output**: `{app_installations:[...]}` (browse/read/add/edit) / 204 empty (destroy),
+   with the exact Ghost field set; no `data/meta` wrapper, no fabricated constants.
+5. **Cache**: `noCacheInvalidation` → no `X-Cache-Invalidate` header; old literal writes
+   removed.
+6. **Auth**: per-op `require_ghost_permission` via `core::auth::ghost`; edit uses the `add`
+   method override; labs gate remains a residual.
+7. **Evidence**: the six `.cppm` files per route compile in
+   `bazel build //include/blog/handlers:blog_handlers`; the target still fails only in
+   unrelated partitions and the known `blog_handlers` ↔ `blog_handlers_routes` cycle, which
+   this group did not touch.
 
-- Ghost route `admin/routes.js:233`, op `app-installations.ts:57-63`: no `options[]`, no `data[]`,
-  no `validation`, no `statusCode` (200), `headers: noCacheInvalidation`, `permissions: true`,
-  `query() → appInstallations.service.browse()` (`app-installations.ts:61`).
-- Service: `browse()` → `this.repository.list()` (`service.ts:169-171`); lists installed apps,
-  suspended included, uninstalled excluded (`service.ts:168`).
-- C++ side: no route and no handler. Absence confirmed by:
-  - `grep -ri "installation" include/blog/handlers` → only `include/blog/handlers/README.md:9`
-    (generic docs text), no `routes.cppm` match.
-  - `grep -ri "installations" include` → only `include/blog/context/context.cppm:123,227`
-    (DB column list / default `"revision": "0"`), no HTTP route.
-  - `include/blog/handlers/routes.cppm:4,77` imports/installs only `:apps_routes` / `AppsRoutes`.
-  - `include/blog/handlers/external/apps/routes.cppm:19` installs only `Router{router, "/apps"}`.
-  - `include/blog/handlers/all.cppm:100,446,695` registers only `apps_all_collection`; no
-    installation handler.
-- Note: C++ `context.cppm:123` knows the `app_installations` DB table, so a storage resource
-  exists, but no route/handler/workflow exposes it.
+### Fix blocks (implemented; supersede the original route-add plan)
 
-### POST `/apps/installations` — MISSING
-
-- Ghost route `admin/routes.js:234`, op `app-installations.ts:77-87`: `statusCode: 201`
-  (`:78`), `headers: noCacheInvalidation` (`:79`), `permissions: true` (`:80`); no `options[]` or
-  `validation` on the op — body shape enforced by `reviewed()`: `manifest_url` + `digest`
-  (`app-installations.ts:27,32-40`) inside `app_installations[0]` (`:16-21`). `context` read from
-  `frame.options.context` and converted via `actingContext` (`:83`).
-- Service: `create(context, {manifestUrl,digest})` fetches/verifies manifest, inserts via
-  `repository.insert`, records `installed` action (`service.ts:201-221`).
-- C++ side: no route/handler; same search evidence as browse row. No C++ body DTO, no 201 status,
-  no `{manifest_url,digest}` parsing.
-
-### GET `/apps/installations/:id` — MISSING
-
-- Ghost route `admin/routes.js:235`, op `app-installations.ts:65-75`: `options:['id','include']`
-  (`:67`), `validation` `id` required + `include` values `['history']` (`:68`). `include:history`
-  is passed as `withRelated` and mapped to `withHistory` (`:71-73`). Status 200,
-  `headers: noCacheInvalidation`, `permissions: true`.
-- Service: `read(id,{withHistory})` → `repository.find(id)`; throws `NotFoundError` if absent;
-  appends `history` via `historyOf(id)` when requested (`service.ts:177-189,318-325`).
-- C++ side: no route/handler; same search evidence as browse row. No `:id` placeholder route,
-  no `include/withRelated` query parsing.
-
-### PUT `/apps/installations/:id` — MISSING
-
-- Ghost route `admin/routes.js:236`, op `app-installations.ts:91-103`: `options:['id']` (`:93`),
-  `id` required (`:94`), body `manifest_url`+`digest`+`revision` from `reviewedChange()`
-  (`:30,42-50`), `permissions: {method:'add'}` (`:95`) — distinct permission method from the
-  other four ops. `headers: noCacheInvalidation` (`:92`), status 200.
-- Service: `approve(context, id, {manifestUrl,digest,revision})` → `repository.find` +
-  `whileUnchanged` manifest writes + `recordAction` (`service.ts:234-279,490-523`).
-- C++ side: no route/handler; same search evidence as browse row.
-
-### DELETE `/apps/installations/:id` — MISSING
-
-- Ghost route `admin/routes.js:238`, op `app-installations.ts:105-117`: `options:['id']` (`:108`),
-  `id` required (`:109`), `statusCode: 204` (`:106`), `headers: noCacheInvalidation` (`:107`),
-  `permissions: true` (`:110`). Body: none.
-- Service: `uninstall(context,id)` → `read(id)` + `repository.uninstall` + `recordAction`
-  (`service.ts:302-316`).
-- C++ side: no route/handler; same search evidence as browse row. No 204 status handling.
+- **GET /apps/installations** — browse: `core::query::apply` with `status:!uninstalled` and
+  `created_at asc,id asc`, manifest JOIN, exact serializer, 200, permission
+  `("app_installations","browse")`, no cache header. Residuals: SQL JOIN/eager decode, labs.
+- **POST /apps/installations** — add: reviewed-field validation, outbox-recorded
+  challenge/fetch/icon, digest check, transaction insert (`status:'active'`, `revision:0`)
+  and `installed` action, full 201 envelope, permission `("app_installations","add")`.
+  Residuals: real HTTP/crypto, Knex trx/deadlock retry, ObjectId ids, labs.
+- **GET /apps/installations/:id** — read: `path_id`, `include∈{history}`, `core::query` find,
+  404 Ghost `NotFoundError`, history from manifest+action rows (`buildHistory` stand-in),
+  `app_installations` envelope. Residuals: full `buildHistory`/`movedBetween`, labs.
+- **PUT /apps/installations/:id** — edit: revision validation, 404/409 uninstalled,
+  `fetch_reviewed`, revision concurrency (409 `APP_INSTALLATION_CHANGED`), approvalWrite
+  decision, outbox transaction + `changes_approved` action + re-read, permission **add**
+  override. Residuals: signed-manifest fetch/identity, Knex `FOR UPDATE` lock, labs.
+- **DELETE /apps/installations/:id** — destroy: `path_id`, find (uninstalled rows included),
+  soft transition (`status:'uninstalled'`, `current_app_id:null`, `revision+1`), idempotent
+  204, `uninstalled` action. Residuals: Knex UPDATE stand-in, labs.
 
 ## Missing in C++
 
-All Ghost routes in this domain lack a C++ counterpart:
-
-1. GET `/apps/installations` — `admin/routes.js:233` → browse (`app-installations.ts:57-63`)
-2. POST `/apps/installations` — `admin/routes.js:234` → add (`app-installations.ts:77-87`)
-3. GET `/apps/installations/:id` — `admin/routes.js:235` → read (`app-installations.ts:65-75`)
-4. PUT `/apps/installations/:id` — `admin/routes.js:236` → edit (`app-installations.ts:91-103`)
-5. DELETE `/apps/installations/:id` — `admin/routes.js:238` → destroy (`app-installations.ts:105-117`)
-
-Search performed to confirm absence:
-- `grep "app_installations" docs/Ghost/ghost/core/server/web/api/endpoints` → no match (Ghost key
-  is camelCase `appInstallations`).
-- `grep "appInstallations" docs/Ghost/ghost/core/server/web` → only `admin/routes.js:233-238`.
-- `grep -ri "installation" include/blog/handlers` → only `README.md:9`.
-- `grep -ri "installations" include` → only `context.cppm:123,227`.
-- `include/blog/handlers/routes.cppm:4,77` installs only `AppsRoutes`.
-- `include/blog/handlers/all.cppm:100,446,695` registers only `apps_all_collection`.
-- `include/blog/handlers/external/apps/routes.cppm:19` installs only `GET /apps`.
+None. All five Ghost routes have a C++ counterpart. The original MISSING verdicts were
+closed in an earlier pass when the route/handler/step trios were added; this pass made their
+behavior strict-parity.
 
 ## Extra in C++
 
-1. **GET `/apps`** — `include/blog/handlers/external/apps/routes.cppm:19-28` binds
-   `handler.apps_all_collection()`. Handler `include/blog/handlers/external/apps/all_collection/handler.cppm:17-28`
-   does a manual bearer-token check (`:18-22`), runs workflow `apps_all_collection` (`:23-25`),
-   returns status 200 (`:27`). Step
-   `include/blog/handlers/external/apps/all_collection/workflow/step/execute.cppm:15-16` calls
-   `ctx.store().json_for("apps", {})` and emits `{"apps":[...],"meta":{"pagination":{limit:15,page:1,pages:1,prev:null,next:null,total:0}}}` —
-   hardcoded pagination, no filtering, no `:id`, no installation data. No Ghost route `GET /apps`
-   exists in `admin/routes.js` (only middleware mounts at `:228-229`) and no `apps.ts` controller
-   exists under `docs/Ghost/ghost/core/server/api/endpoints/` (only `app-sessions.ts`,
-   `app-installation-previews.ts`, `app-installations.ts`). Verdict: EXTRA.
+1. **GET `/apps`** — `apps_all_collection` from the external apps-catalog domain. No Ghost
+   counterpart in this controller; not a duplicate of any `/apps/installations*` route. Keep
+   it installed — do not delete or gate it. No change made.
+
+## Central registrations needed (parent session)
+
+No new partition was added: the shared `blog::handlers::apps::support` helpers live in the
+already-registered `:apps_app_installations_browse_step` partition and are imported by the
+other five step partitions. All handler/flow/step partitions and the six route bindings were
+already registered centrally in `include/blog/handlers/BUILD.bazel` and `all.cppm`; no shared
+file was edited by this group. Recorded new-partition need: none. (Optional future cleanup:
+a dedicated `blog_handlers:apps_support` partition would be cleaner than hosting helpers in
+the browse step, but it would require central BUILD registration and was deliberately avoided.)

@@ -5,7 +5,6 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,8 +15,13 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost's API app uses body parsers rather than a Content-Type gate, and each
+        // controller applies authAdminApi / authenticatePublic + permissions:true in its
+        // own pipeline. Router-level optional_auth / content_type_middleware are removed;
+        // the handlers now enforce the Ghost permission service (core::auth::ghost via
+        // require_ghost_permission). See docs/parity/behavior/tags{,-public}.md.
         Router{router, "/tags"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -64,7 +68,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:id"}
+                        Route{"/:slug"}
                             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -72,7 +76,7 @@ public:
     ) {
         handler.tags_read_by_slug().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id GET")
+                            .summary("Ghost :slug GET")
                     )
             );
     }

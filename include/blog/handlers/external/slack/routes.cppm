@@ -5,7 +5,6 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,8 +15,14 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost's admin app parses bodies globally (admin/app.js:33-34) and has no
+        // content-type rejection on POST /slack/test. The controller's only guard is
+        // mw.authAdminApi (permissions:false); it is enforced inside the handler via
+        // blog_handlers_middleware::require_ghost_permission (docName "slack").
+        // No router-level content_type_middleware / require_auth: those would add
+        // the 415/406 gate Ghost does not have on this route.
         Router{router, "/slack"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .add_route(
                 Route{"/test"}
                     .post([&handler](

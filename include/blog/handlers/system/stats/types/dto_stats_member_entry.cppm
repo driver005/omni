@@ -27,10 +27,10 @@ public:
     [[nodiscard]] const int& get_paid_subscribed() const noexcept { return paid_subscribed; }
 
     int comped{0};
-    std::string date{"1970-01-01"};
-    int free{3};
+    std::string date{};
+    int free{0};
     int gift{0};
-    int paid{5};
+    int paid{0};
     int paid_canceled{0};
     int paid_subscribed{0};
 };

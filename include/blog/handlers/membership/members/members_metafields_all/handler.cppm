@@ -22,6 +22,7 @@ import interfaces;
 import blog_handlers_middleware;
 import core_workflow;
 import memory_backends;
+import :members_operations;
 import :members_members_metafields_all_flow;
 export namespace blog::handlers::members::members_metafields_all {
 class MembersMetafieldsAllHandler {
@@ -32,10 +33,14 @@ public:
   m_workflow.register_workflow(workflow::MainFlow{}.build());
  }
  void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+  namespace support=blog::api::members::metafields_support;
+  // Ghost: mw.authAdminApi on the mount; permissions:false on browse. The
+  // 401 body is the shared UnauthorizedError envelope, not a hand-built one.
   if (blog::handlers::middleware::token(req).empty()) {
-   const std::string b{R"({"error":"Unauthorized"})"}; std::vector<std::byte> bytes;
+   const std::string b=support::unauthorized(); std::vector<std::byte> bytes;
    for(char c:b) bytes.push_back(static_cast<std::byte>(c));
-   res.set_status(interfaces::io::types::Status::UNAUTHORIZED); res.set_body(std::move(bytes)); send(); return;
+   res.set_status(interfaces::io::types::Status::UNAUTHORIZED);
+   res.set_body(std::move(bytes)); send(); return;
   }
   const auto ex=m_workflow.run("members_members_metafields_all", req);
   const auto* r=ex.result_of("members_members_metafields_all_execute");

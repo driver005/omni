@@ -11,22 +11,30 @@ import :stats_dto_stats_mrr_response;
 import :stats_dto_stats_mrr_total;
 import std;
 import core_workflow;
+import core_serde;
+import core_query;
 import interfaces;
 import blog_handlers_middleware;
 
 export namespace blog::handlers::stats::stats_posts_id_top_referrers_get::workflow {
 class ExecuteStep {
 public:
- using Input=interfaces::io::IRequest&; using Output=std::string;
- static constexpr std::string_view name{"stats_stats_posts_id_top_referrers_get_execute"};
+ using Input=interfaces::io::IRequest&; using Output=std::map<std::string,std::string>;
+ static constexpr std::string_view name{"stats_posts_id_top_referrers_get_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; auto& mutations = ctx.store();
-    const auto r=[&]()->std::pair<int,std::string>{
-        return {200, blog::handlers::middleware::encode(blog::dto::stats::StatsEmptyResponse{})};
-    }();
-  if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
-  const auto rows=ctx.store().json_for("stats", {});
-  return core::workflow::StepResponse<Output>{"{\"stats\":" + rows + ",\"meta\":{\"pagination\":{\"limit\":15,\"page\":1,\"pages\":1,\"prev\":null,\"next\":null,\"total\":0}}}}"};
+  auto& ctx=*s_ctx;
+  namespace s=blog::handlers::stats::support;
+  static constexpr std::string_view kOptions[]{"order","limit","date_from","date_to","timezone"};
+  const auto q=core::query::parse(in.get_path(), kOptions);
+  (void)q;
+  const std::string id=s::path_id(in.get_path());
+  if (id.empty())
+   return core::workflow::StepResponse<Output>{s::result("422",s::invalid("id required","id","path"))};
+  auto params=s::store_params(q);
+  params["filter[id]"]=id;
+  const auto rows=ctx.store().json_for("stats", params);
+  const std::string body=s::wrap(rows, "");
+  return core::workflow::StepResponse<Output>{s::result("200",body)};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
  static blog::BlogContext* s_ctx;

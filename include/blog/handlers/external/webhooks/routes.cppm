@@ -5,10 +5,16 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
+/**
+ * Ghost mounts these three routes under the Admin API prefix with a single
+ * `mw.authAdminApi` middleware and `permissions:true` / `permissions.before` in the
+ * controller pipeline (`routes.js:536-538`, `webhooks.js:23-123`). Authentication,
+ * permission and integration-ownership checks therefore live in the handlers, not in
+ * a router-level Content-Type/Accept gate — Ghost's API app uses body parsers only.
+ */
 class WebhooksRoutes
 {
 public:
@@ -16,8 +22,8 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
         Router{router, "/webhooks"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -26,14 +32,6 @@ public:
         handler.webhooks_create().handle(req, res, std::move(send));
     })
             .summary("Ghost webhooks POST")
-            .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.webhooks_destroy().handle(req, res, std::move(send));
-    })
-            .summary("Ghost webhooks bulk DELETE")
             .add_route(
                 Route{"/:id"}
                     .put([&handler](

@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/comments"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -34,6 +35,17 @@ public:
         handler.comments_create().handle(req, res, std::move(send));
     })
             .summary("Ghost comments POST")
+            .add_route(
+                Route{"/counts"}
+                    .get([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_counts().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost comments counts GET")
+            )
             .add_router(
                 Router{router, "/:id"}
                     .get([&handler](
@@ -52,6 +64,14 @@ public:
         handler.comments_edit().handle(req, res, std::move(send));
     })
                     .summary("Ghost :id PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/dislikes"}
                             .get([&handler](
@@ -75,6 +95,42 @@ public:
                             .summary("Ghost likes GET")
                     )
                     .add_route(
+                        Route{"/like"}
+                            .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_like().handle(req, res, std::move(send));
+    })
+                            .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_unlike().handle(req, res, std::move(send));
+    })
+                            .summary("Ghost like POST/DELETE")
+                    )
+                    .add_route(
+                        Route{"/dislike"}
+                            .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_dislike().handle(req, res, std::move(send));
+    })
+                            .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_undislike().handle(req, res, std::move(send));
+    })
+                            .summary("Ghost dislike POST/DELETE")
+                    )
+                    .add_route(
                         Route{"/replies"}
                             .get([&handler](
         interfaces::io::IRequest& req,
@@ -95,6 +151,17 @@ public:
         handler.comments_comment_reports().handle(req, res, std::move(send));
     })
                             .summary("Ghost reports GET")
+                    )
+                    .add_route(
+                        Route{"/report"}
+                            .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.comments_report().handle(req, res, std::move(send));
+    })
+                            .summary("Ghost report POST")
                     )
             )
             .add_router(

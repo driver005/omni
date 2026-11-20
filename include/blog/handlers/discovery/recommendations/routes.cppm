@@ -16,6 +16,11 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost enforces per-route auth in the controller pipeline: admin routes
+        // use mw.authAdminApi + permissions:true, the content browse is public,
+        // and the members tracking routes use loadMemberSession. Each C++ step
+        // evaluates the same policy through core::auth::ghost::GhostAuthorizer,
+        // so no router-wide bearer check is installed here.
         Router{router, "/recommendations"}
             .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
@@ -71,6 +76,30 @@ public:
         handler.recommendations_recommendations_check_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost check POST")
+            )
+            // Members-app click side effects (members/app.js:174-186). The
+            // members-app mount prefix is supplied by the host router.
+            .add_route(
+                Route{"/:id/clicked"}
+                    .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.recommendations_browse().handle_clicked(req, res, std::move(send));
+    })
+                    .summary("Ghost trackClicked POST")
+            )
+            .add_route(
+                Route{"/:id/subscribed"}
+                    .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.recommendations_browse().handle_subscribed(req, res, std::move(send));
+    })
+                    .summary("Ghost trackSubscribed POST")
             );
     }
 };

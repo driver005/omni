@@ -1,0 +1,57 @@
+# Parity: relay
+
+- Upstream routes: `docs/hyperswitch/crates/router/src/routes/relay.rs` (3 handlers); paths/verbs from `docs/hyperswitch/crates/router/src/routes/app.rs:1028-1035` (`web::scope("/relay")`).
+- Upstream core: `docs/hyperswitch/crates/router/src/core/relay.rs` (RelayInterface + 4 relay variants, flow decider, retrieve/sync, unreferenced-refund pipeline).
+- C++: `include/app/handlers/relay.cppm`
+- Checked: 2026-11-19
+
+## Summary
+| Dimension | Verdict | Note |
+|---|---|---|
+| Route paths/verbs | MATCH | Upstream `POST ""`, `POST /unreferenced_refund`, `GET /{relay_id}` vs C++ `POST /relay/`, `POST /relay/unreferenced_refund`, `GET /relay/:relay_id` — same surface. |
+| Input types | PARTIAL | C++ typed DTOs plus generic JSON tree with per-variant amount validation (`relay.cppm:242-256`, `:291-346`); still no `RelayData` tagged union on input — relay type is a bare string and `data` is decoded generically. |
+| Output types | PARTIAL | Same field set; typed `data` now via `kind_data` (`relay.cppm:683-693`, `:442`, `:572`) and error/ref fields populated (`:204-217`, `:423-431`, `:573-581`). Ids remain DTO value wrappers; no upstream domain `Relay` -> response `From` conversion. |
+| Auth/permissions | PARTIAL | Upstream `HeaderAuth(ApiKeyAuth)` + `allow_connected_scope_operation`; C++ flat `AppPermission::{REFUND_WRITE,PAYMENT_WRITE,PAYMENT_READ}` with header/manual scope, now v2-gated profile lookup (`relay.cppm:89-93`, `:270-274`). Roughly aligned intent, different mechanism. |
+| Persistence | PARTIAL | Dedicated `relay_records` store now exists: `create_relay_record`/`update_relay_record`/`find_relay_record` (`relay.cppm:148`, `:372`, `:482-485`, `:538`) with refund mirror; no processor key store and lookups are string-based. |
+| Domain logic | PARTIAL | Was STUB. Now per-variant dispatch/validation (`relay.cppm:291-346`, `:852-873`), payout bounds + v7 substitute IDs (`:765-812`), unreferenced connector/credential pipeline (`:104-108`, `:126-127`, `:172`), and connector status sync on retrieve (`:517-551`) — all via documented local substitutes, not upstream types. |
+
+## Routes
+| Verb + path | Upstream op | C++ handler | Input | Output | Auth | Store/connector | Verdict | Evidence |
+|---|---|---|---|---|---|---|---|---|
+| POST `/relay` (`""` scope) | `routes::relay::relay` -> `core::relay::relay_flow_decider` (`relay.rs:51`, core `:670`) | `handle_relay` (`cppm:222`) | Up: typed `RelayData` enum (`core:133-149`); C++: generic JSON tree + `relay_kind` + per-variant amount validation (`relay.cppm:242-256`, `:291-346`) | Up: `RelayResponse` from domain `RelayUpdate`; C++: `RelayResponse` with `kind_data` typed data + error/ref fields (`relay.cppm:414-444`) | Up: `ApiKeyAuth{connected_scope:true}`; C++: `PAYMENT_WRITE` (`:229-231`) + v2-gated profile lookup (`:270-274`) | Up: profile/MCA, `insert_relay`/`process_relay`/`update_relay`; C++: `relay_records` create/update + refund mirror + `dispatch` by kind (`:364-403`, `:852-873`) | PARTIAL | Up `relay.rs:51-81`, `core/relay.rs:670-820`; C++ `relay.cppm:222-445`, route `:590-601` |
+| POST `/relay/unreferenced_refund` | `routes::relay::unreferenced_refund` -> `core::relay::relay_unreferenced_refund` (`relay.rs:14`, core `:1254`) | `handle_unreferenced_refund` (`cppm:30`) | Up: `UnreferencedRefundRequest` (`core:1258`); C++: `dto::...UnreferencedRefundRequest` (`:46-51`) + amount>0 and min/max payout checks (`:53-76`) | Up: `UnreferencedRefundResponse` w/ `raw_connector_response`; C++: same field set incl. `connector_reference_id`/`raw_connector_response` (`:204-217`) | Up: `ApiKeyAuth{connected_scope:false}`, required profile; C++: `REFUND_WRITE` + manual/v2-gated profile resolution (`:32-97`) | Up: relay connector + access token + `call_connector_api` + insert/update; C++: support check, config/key-store credentials, tracker, `relay_records` + generic `connector->refund` (`:104-189`) | PARTIAL | Up `relay.rs:14-47`, `core/relay.rs:1194-1295`; C++ `relay.cppm:30-220`, route `:602-612` |
+| GET `/relay/{relay_id}` | `routes::relay::relay_retrieve` -> `core::relay::relay_retrieve` (`relay.rs:85`, core `:822`) | `handle_relay_retrieve` (`cppm:447`) | Up: `RelayRetrieveRequest{force_sync, id: RelayId}`; C++: id from path/body, `force_sync` query (`:458-471`) | Up: `RelayResponse::from`; C++: `RelayResponse` from `RelayRecord` + typed `kind_data`, sync error/ref fields (`:553-581`) | Up: `ApiKeyAuth{connected_scope:true}`, required profile; C++: `PAYMENT_READ` (`:454-456`) | Up: `find_relay_by_id` (404), force-sync gateway refresh; C++: `find_relay_record` + `connector->sync` + `update_relay_record`/`update_refund` + tracker (`:482-551`) | PARTIAL | Up `relay.rs:85-119`, `core/relay.rs:822-957`; C++ `relay.cppm:447-584`, route `:613-623` |
+| POST `/webhooks/relay/{merchant_id}/{connector_id}` | `receive_incoming_relay_webhook` (`app.rs:2374-2381`) | — | Up: incoming webhook payload; C++: none | Up: webhook ack; C++: none | Up: webhook auth (out of scope of relay.rs); C++: none | Up: relay connector webhook verification; C++: none | MISSING | Up `app.rs:2376-2380`; no C++ route |
+
+## Not ported
+- `relay_flow_decider` type dispatch across `RelayType::{Refund,Capture,IncrementalAuthorization,Void,UnreferencedRefund}` and its per-variant `from_relay_request` validation (`core/relay.rs:670-724`, `:132-149`, `:264-282`, `:399-417`, `:536-554`). C++ infers operation from a raw `relay_type` string and an else-branch fallback to `authorize` (`relay.cppm:175-180`, `:213-221`).
+- `Validate for RelayRefundRequestData` / `RelayCaptureRequestData` / `RelayIncrementalAuthorizationRequestData`: amount>0 and capture<=authorized checks (`core/relay.rs:46-95`). C++ only checks amount>0 for unreferenced refund (`relay.cppm:53-62`); relay create has no amount validation.
+- Typed `RelayRequestInner<T>` + `RelayInterface` trait (`get_domain_models`, `process_relay`, `generate_response`) and 4 implementations (`core/relay.rs:97-668`). Absent in C++.
+- Domain model `relay::Relay` construction with `RelayId::generate()`, `RelayStatus::Created`, timestamps, `processor_merchant_id`, `created_by`, and typed `RelayData` (`core/relay.rs:158-185`, `:290-317`, `:426-456`, `:562-589`, `:1081-1104`). C++ uses `payment_id("relay_")` and a `RefundRecord` (`relay.cppm:81-97`, `:191-202`).
+- Upstream `insert_relay` / `update_relay` / `find_relay_by_id` DB interface with processor key store (`core/relay.rs:790-815`, `:846-848`, `:1106-1110`, `:1177-1185`). C++ persists via refunds store + string-keyed cache (`relay.cppm:86-97`, `:193-194`, `:300-324`).
+- Profile + merchant-connector-account lookups and `ProfileNotFound`/`MerchantConnectorAccountNotFound` errors (`core/relay.rs:743-778`, `:834-888`, `:1021-1044`, `:1209-1219`). C++ has one `find_merchant_connector_by_string` and a header-derived scope with a single "missing profile_id" error (`relay.cppm:65-75`, `:183-185`, `:402-412`).
+- `relay_retrieve` force-sync gateway refresh: `should_call_connector_for_relay_*_status`, `sync_relay_refund_with_gateway`, `sync_relay_capture_with_gateway` and `db.update_relay` (`core/relay.rs:890-957`, `:959-1006`, `:1297-1375`). C++ merely records force_sync in the cache and returns stored state unchanged (`relay.cppm:292`, `:322-324`).
+- Unreferenced-refund pipeline: `RelayConnectors::from_connector_name` support check, `base_url`, access-token acquisition via `get_access_token_for_relay`, `build_relay_request`, `call_connector_api`, `handle_relay_response`, timeout/unreachable error mapping (`core/relay.rs:1046-1175`). C++ calls a generic `connector->refund` with the raw body (`relay.cppm:99-115`).
+- Min/max payout amount validation via `dimension_state::Dimensions` and superposition (`core/relay.rs:1221-1249`). Absent.
+- `internal_{uuid_v7}` resource-id generation (`core/relay.rs:1260-1263`). C++ uses `internal_` + `uuid_v4` (`relay.cppm:82-83`).
+- `RelayResponse::from` domain conversion including error-code/message zip, connector reference id, and typed `data` (`core/relay.rs:236-261`, `:940`). C++ builds DTO value wrappers and echoes request `data` (`relay.cppm:230-259`, `:326-345`).
+- Relay webhook scope `/webhooks/relay/{merchant_id}/{connector_id}` (`app.rs:2374-2382`) — no C++ handler.
+- v2 feature branches (profile/MCA lookup differences) and `oltp` gating (`relay.rs:13`, `:27-37`, `core:755-778`, `:865-888`, `:1021-1044`). C++ has no feature-flag notion.
+- Lock/flow semantics: upstream `server_wrap` with `Flow::Relay*` and `LockAction::NotApplicable` (`relay.rs:19-45`, `:56-79`, `:91-117`); C++ uses only a flow metric counter (`relay.cppm:77-78`, `:187-188`, `:295-296`).
+
+## Implementation disposition
+
+- `relay_flow_decider` type dispatch — SUBSTITUTED — `relay_kind`/`dispatch` enum switch covers all five variants (`relay.cppm:651-662`, `:852-873`); IncrementalAuthorization uses `authorize` stand-in (`:867-869`), no typed `from_relay_request`.
+- Per-variant amount validation (`Validate for Relay*RequestData`) — IMPLEMENTED — amount>0 for unreferenced (`:53-59`); Refund/Capture/Incremental amounts and capture<=authorized / additional<=total (`:296-342`).
+- Typed `RelayRequestInner<T>` + `RelayInterface` trait/impls — SUBSTITUTED — generic JSON decode + enum `dispatch` + inline response building (`relay.cppm:242`, `:852-873`, `:414-444`); no generic trait or four typed impls.
+- Domain `relay::Relay` construction — SUBSTITUTED — `RelayRecord` with scope columns/"Created"/timestamps (`relay.cppm:139-150`, `:364-374`), id still `ids().payment_id("relay_")` (`:120`, `:357`), typed data via `kind_data` (`:683-693`); no true `RelayId::generate`.
+- `insert_relay`/`update_relay`/`find_relay_by_id` + processor key store — SUBSTITUTED — `relay_records` repository (`relay.cppm:148`, `:372`, `:482-485`, `:538`) + refund mirror; no processor key store.
+- Profile + MCA lookups / `ProfileNotFound` errors — SUBSTITUTED — string MCA lookup (`relay.cppm:79`, `:261`) + v2-gated `find_profile_by_string` (`:89-93`, `:270-274`), local AppError messages; no upstream error types.
+- `relay_retrieve` force-sync gateway refresh — SUBSTITUTED — `connector->sync` + tracker + `update_relay_record`/`update_refund` (`relay.cppm:517-551`); no per-type `should_call_connector_*`/`sync_relay_*_with_gateway`.
+- Unreferenced-refund connector pipeline — SUBSTITUTED — support check (`relay.cppm:104-108`, `:792-796`), base_url via config_store + token via key_store (`:126-127`), tracker (`:130-131`), generic `connector->refund` (`:172`); no `build_relay_request`/`call_connector_api`/timeout mapping.
+- Min/max payout amount validation — SUBSTITUTED — `payout_bounds` via `superposition().resolve` (`relay.cppm:798-812`), checks at `:61-76`.
+- `internal_{uuid_v7}` resource id — SUBSTITUTED — local v7-shaped `uuid_v7()` (`relay.cppm:765-783`) used at `:121`/`:361`.
+- `RelayResponse::from` domain conversion — SUBSTITUTED — DTO value wrappers + typed `kind_data` + error/reference fields (`relay.cppm:191-219`, `:414-444`, `:553-583`); no domain `From` impl.
+- Relay webhook scope — DEFERRED — external dependency: upstream `app.rs:2374-2382`; no C++ handler in `install` (`relay.cppm:586-624`).
+- v2 / oltp feature branches — SUBSTITUTED — config-store-backed `feature_enabled` (`relay.cppm:785-789`) used at `:89`, `:270`, `:408`.
+- Flow/lock semantics — SUBSTITUTED — `record_flow` consults `locks().is_held` + metrics (`relay.cppm:831-838`); no `server_wrap`, no lock acquired (matches `LockAction::NotApplicable`).

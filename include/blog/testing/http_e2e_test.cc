@@ -73,14 +73,14 @@ int main()
         return std::pair<int, std::string>{sent ? status : -1, std::move(output)};
     };
 
-    const auto posts = run("GET", "/posts");
+    const auto posts = run("GET", "/posts", "{}", "admin");
     if (posts.first != 200 || !posts.second.contains("Hello Ghost")) {
         std::println("posts {} {}", posts.first, posts.second.substr(0,160));
         return 1;
     }
     if (!posts.second.contains("\"meta\":{\"pagination\":")) return 2;
 
-    const auto filtered = run("GET", "/posts?fields=title");
+    const auto filtered = run("GET", "/posts?fields=title", "{}", "admin");
     if (filtered.first != 200 || !filtered.second.contains("\"title\"") ||
         filtered.second.contains("\"html\"")) return 3;
 
@@ -92,7 +92,7 @@ int main()
     if (created.first != 201 && created.first != 200) return 4;
     if (!created.second.contains("E2E Post")) return 5;
 
-    const auto browse = run("GET", "/posts");
+    const auto browse = run("GET", "/posts", "{}", "admin");
     if (!browse.second.contains("E2E Post")) return 6;
 
     const auto unauthorized = run("GET", "/members");

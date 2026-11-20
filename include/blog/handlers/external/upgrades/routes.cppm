@@ -16,8 +16,10 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost: no per-route content-type gate (admin app parses JSON globally)
+        // and no bare token check. Each handler applies the shared Ghost
+        // permission gate (core_auth:ghost + blog_handlers_middleware).
         Router{router, "/upgrades"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

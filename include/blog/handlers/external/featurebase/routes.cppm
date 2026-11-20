@@ -16,8 +16,13 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost binds this route with mw.authAdminApi but the op declares
+        // permissions:false (featurebase.js:36), so no permission gate belongs
+        // here — require_ghost_permission is deliberately not installed. Ghost's
+        // admin app parses bodies globally without requiring Content-Type/Accept
+        // (admin/app.js:33-34), so a bodyless GET must not be 415/406 gated.
         Router{router, "/featurebase"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/token"}
                     .get([&handler](

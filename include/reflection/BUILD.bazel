@@ -4,8 +4,8 @@ load("//toolchain:cc_rules.bzl", "cc_library")
 
 cc_library(
     name = "reflection_lib",
+    tags = ["manual"],
     srcs = glob(["*.cppm"]),
-    hdrs = glob(["*.cppm"]),
     includes = [".", "reflection"],
     copts = [
         "-std=c++20",

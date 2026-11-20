@@ -22,7 +22,7 @@ public:
 
 struct RouteCatalog
 {
-    static constexpr std::array<RouteInfo, 261> values{
+    static constexpr std::array<RouteInfo, 259> values{
         RouteInfo{"GET","/posts","posts","get",false},
         RouteInfo{"GET","/posts/:id","posts","get",false},
         RouteInfo{"GET","/posts/slug/:slug","posts","get",false},
@@ -137,7 +137,6 @@ struct RouteCatalog
         RouteInfo{"GET","/members/upload","members","get",true},
         RouteInfo{"POST","/members/upload","members","post",true},
         RouteInfo{"GET","/members/stripe_connect","members","get",true},
-        RouteInfo{"ALL","/members/metafields","members","all",true},
         RouteInfo{"ALL","/apps","apps","all",true},
         RouteInfo{"GET","/members/:id","members","get",true},
         RouteInfo{"PUT","/members/:id","members","put",true},
@@ -183,7 +182,6 @@ struct RouteCatalog
         RouteInfo{"PUT","/automations/poll","automations","put",true},
         RouteInfo{"POST","/automations","automations","post",true},
         RouteInfo{"PUT","/automations/:id","automations","put",true},
-        RouteInfo{"GET","/automated_emails","automated_emails","get",true},
         RouteInfo{"GET","/automated_emails/design","automated_emails","get",true},
         RouteInfo{"PUT","/automated_emails/senders","automated_emails","put",true},
         RouteInfo{"PUT","/automated_emails/verifications","automated_emails","put",true},

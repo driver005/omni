@@ -16,8 +16,12 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost: router.get('/oembed', mw.authAdminApi, http(api.oembed.read)).
+        // No content-negotiation gate on this GET; controller permissions:false
+        // means no docName/permission middleware — only admin API auth.
         Router{router, "/oembed"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::bearer_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

@@ -14,52 +14,53 @@ LinkingContext = provider(
     fields = ["linkopts", "libraries"],
 )
 
+def _compile_args(ctx, includes, defines, copts):
+    args = ["clang++", "-std=c++20"]
+    args.extend(["-I" + inc for inc in includes])
+    args.extend(["-D" + d for d in defines])
+    # Legacy BUILD files pass GCC's -fmodules-ts; clang uses -fmodules instead.
+    args.extend([c for c in copts if c != "-fmodules-ts"])
+    return args
+
+def _dep_files(deps):
+    files = []
+    for dep in deps:
+        files.extend(dep[DefaultInfo].files.to_list())
+    return files
+
 # cc_library rule
 def _cc_library_impl(ctx):
-    # Collect all source files
     srcs = ctx.files.srcs
     hdrs = ctx.files.hdrs
-    
-    # Get includes
     includes = ctx.attr.includes
-    
-    # Get copts
     copts = ctx.attr.copts
-    
-    # Get defines
     defines = ctx.attr.defines
-    
-    # Get linkopts
     linkopts = ctx.attr.linkopts
-    
-    # Get deps
     deps = ctx.attr.deps
-    
-    # Build compile command
-    cmd = ["clang++", "-std=c++20", "-fmodules-ts", "-c"]
-    cmd.extend(["-I" + inc for inc in includes])
-    cmd.extend(["-D" + d for d in defines])
-    cmd.extend(copts)
-    
-    # Compile each source file
+
+    cmd = _compile_args(ctx, includes, defines, copts)
+
+    objects = []
     for src in srcs:
-        out = "%s.o" % src.basename
-        ctx.actions.run(
+        obj = ctx.actions.declare_file(src.basename + ".o")
+        ctx.actions.run_shell(
             inputs = [src] + hdrs,
-            outputs = [out],
-            command = " ".join(cmd + [src.path, "-o", out]),
+            outputs = [obj],
+            command = " ".join(cmd + ["-c", src.path, "-o", obj.path]),
+            mnemonic = "CcCompile",
         )
-    
-    # Create static library
-    lib_name = "lib%s.a" % ctx.label.name
-    ctx.actions.run(
-        inputs = ["%s.o" % src.basename for src in srcs],
-        outputs = [lib_name],
-        command = "ar rcs %s %s" % (lib_name, " ".join(["%s.o" % src.basename for src in srcs])),
+        objects.append(obj)
+
+    lib = ctx.actions.declare_file("lib%s.a" % ctx.label.name)
+    ctx.actions.run_shell(
+        inputs = objects,
+        outputs = [lib],
+        command = "ar rcs %s %s" % (lib.path, " ".join([o.path for o in objects])),
+        mnemonic = "CcArchive",
     )
-    
+
     return [
-        DefaultInfo(files = depset([lib_name])),
+        DefaultInfo(files = depset([lib] + _dep_files(deps))),
         CcInfo(
             compilation_context = CompilationContext(
                 includes = includes,
@@ -67,7 +68,7 @@ def _cc_library_impl(ctx):
             ),
             linking_context = LinkingContext(
                 linkopts = linkopts,
-                libraries = [lib_name],
+                libraries = [lib.path],
             ),
         ),
     ]
@@ -86,7 +87,7 @@ cc_library = rule(
     provides = [CcInfo, DefaultInfo],
 )
 
-# cc_binary rule
+# cc_binary / cc_test rule
 def _cc_binary_impl(ctx):
     srcs = ctx.files.srcs
     hdrs = ctx.files.hdrs
@@ -95,43 +96,34 @@ def _cc_binary_impl(ctx):
     defines = ctx.attr.defines
     linkopts = ctx.attr.linkopts
     deps = ctx.attr.deps
-    
-    # Build compile command
-    cmd = ["clang++", "-std=c++20", "-fmodules-ts"]
-    cmd.extend(["-I" + inc for inc in includes])
-    cmd.extend(["-D" + d for d in defines])
-    cmd.extend(copts)
-    
-    # Compile each source file
-    objs = []
+
+    cmd = _compile_args(ctx, includes, defines, copts)
+
+    objects = []
     for src in srcs:
-        out = "%s.o" % src.basename
-        ctx.actions.run(
+        obj = ctx.actions.declare_file(src.basename + ".o")
+        ctx.actions.run_shell(
             inputs = [src] + hdrs,
-            outputs = [out],
-            command = " ".join(cmd + ["-c", src.path, "-o", out]),
+            outputs = [obj],
+            command = " ".join(cmd + ["-c", src.path, "-o", obj.path]),
+            mnemonic = "CcCompile",
         )
-        objs.append(out)
-    
-    # Link
-    out_name = ctx.label.name
-    link_cmd = ["clang++"]
-    link_cmd.extend(objs)
-    link_cmd.extend(linkopts)
-    
-    # Add library dependencies
-    for dep in deps:
-        link_cmd.append(dep.path)
-    
-    ctx.actions.run(
-        inputs = objs,
-        outputs = [out_name],
-        command = " ".join(link_cmd + ["-o", out_name]),
+        objects.append(obj)
+
+    binary = ctx.actions.declare_file(ctx.label.name)
+    dep_files = _dep_files(deps)
+    ctx.actions.run_shell(
+        inputs = objects + dep_files,
+        outputs = [binary],
+        command = " ".join(
+            ["clang++"] + [o.path for o in objects] +
+            [f.path for f in dep_files if f.basename.endswith(".a")] +
+            linkopts + ["-o", binary.path]
+        ),
+        mnemonic = "CcLink",
     )
-    
-    return [
-        DefaultInfo(files = depset([out_name]), executable = out_name),
-    ]
+
+    return [DefaultInfo(files = depset([binary]), executable = binary)]
 
 cc_binary = rule(
     implementation = _cc_binary_impl,
@@ -148,13 +140,8 @@ cc_binary = rule(
     executable = True,
 )
 
-# cc_test rule
-def _cc_test_impl(ctx):
-    # Tests are just binaries with test_main
-    return _cc_binary_impl(ctx)
-
 cc_test = rule(
-    implementation = _cc_test_impl,
+    implementation = _cc_binary_impl,
     attrs = {
         "srcs": attr.label_list(allow_files = [".cppm", ".cpp", ".cc", ".cxx", ".c++", ".C"]),
         "hdrs": attr.label_list(allow_files = [".hpp", ".h", ".hh", ".hxx", ".h++", ".H"]),

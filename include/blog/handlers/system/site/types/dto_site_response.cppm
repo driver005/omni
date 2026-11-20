@@ -34,6 +34,10 @@ public:
     [[nodiscard]] const rfl::Generic& get_icon() const noexcept { return icon; }
     void set_logo(rfl::Generic value) { logo = std::move(value); }
     [[nodiscard]] const rfl::Generic& get_logo() const noexcept { return logo; }
+    void set_sentry_dsn(std::string value) { sentry_dsn = std::move(value); }
+    [[nodiscard]] const std::string& get_sentry_dsn() const noexcept { return sentry_dsn; }
+    void set_sentry_env(std::string value) { sentry_env = std::move(value); }
+    [[nodiscard]] const std::string& get_sentry_env() const noexcept { return sentry_env; }
 
     std::string title{"Ghost"};
     std::string description{"Thoughts, stories and ideas"};
@@ -47,6 +51,8 @@ public:
     bool allow_external_signup{true};
     rfl::Generic icon{};
     rfl::Generic logo{};
+    std::string sentry_dsn{};
+    std::string sentry_env{};
 };
 
 } // namespace blog::dto::site
@@ -68,7 +74,9 @@ struct serde::Serializable<blog::dto::site::SiteResponse>
             serde::FieldDesc<"cover_image", &blog::dto::site::SiteResponse::get_cover_image, &blog::dto::site::SiteResponse::set_cover_image, serde::FieldOptions{}>{},
             serde::FieldDesc<"allow_external_signup", &blog::dto::site::SiteResponse::get_allow_external_signup, &blog::dto::site::SiteResponse::set_allow_external_signup, serde::FieldOptions{}>{},
             serde::FieldDesc<"icon", &blog::dto::site::SiteResponse::get_icon, &blog::dto::site::SiteResponse::set_icon, serde::FieldOptions{}>{},
-            serde::FieldDesc<"logo", &blog::dto::site::SiteResponse::get_logo, &blog::dto::site::SiteResponse::set_logo, serde::FieldOptions{}>{}
+            serde::FieldDesc<"logo", &blog::dto::site::SiteResponse::get_logo, &blog::dto::site::SiteResponse::set_logo, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sentry_dsn", &blog::dto::site::SiteResponse::get_sentry_dsn, &blog::dto::site::SiteResponse::set_sentry_dsn, serde::FieldOptions{}>{},
+            serde::FieldDesc<"sentry_env", &blog::dto::site::SiteResponse::get_sentry_env, &blog::dto::site::SiteResponse::set_sentry_env, serde::FieldOptions{}>{}
         };
     }
     static constexpr std::string_view table_name() { return "site_response"; }

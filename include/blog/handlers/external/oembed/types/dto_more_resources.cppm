@@ -48,12 +48,53 @@ public:
 class OembedResponse
 {
 public:
+    void set_type(std::string value) { type = std::move(value); }
+    [[nodiscard]] const std::string& get_type() const noexcept { return type; }
+    void set_version(std::string value) { version = std::move(value); }
+    [[nodiscard]] const std::string& get_version() const noexcept { return version; }
     void set_html(std::string value) { html = std::move(value); }
     [[nodiscard]] const std::string& get_html() const noexcept { return html; }
     void set_url(std::string value) { url = std::move(value); }
     [[nodiscard]] const std::string& get_url() const noexcept { return url; }
+    void set_title(std::string value) { title = std::move(value); }
+    [[nodiscard]] const std::string& get_title() const noexcept { return title; }
+    void set_width(std::int64_t value) { width = value; }
+    [[nodiscard]] const std::int64_t& get_width() const noexcept { return width; }
+    void set_height(std::int64_t value) { height = value; }
+    [[nodiscard]] const std::int64_t& get_height() const noexcept { return height; }
+    void set_author_name(std::string value) { author_name = std::move(value); }
+    [[nodiscard]] const std::string& get_author_name() const noexcept { return author_name; }
+    void set_author_url(std::string value) { author_url = std::move(value); }
+    [[nodiscard]] const std::string& get_author_url() const noexcept { return author_url; }
+    void set_provider_name(std::string value) { provider_name = std::move(value); }
+    [[nodiscard]] const std::string& get_provider_name() const noexcept { return provider_name; }
+    void set_provider_url(std::string value) { provider_url = std::move(value); }
+    [[nodiscard]] const std::string& get_provider_url() const noexcept { return provider_url; }
+    void set_thumbnail_url(std::string value) { thumbnail_url = std::move(value); }
+    [[nodiscard]] const std::string& get_thumbnail_url() const noexcept { return thumbnail_url; }
+    void set_thumbnail_width(std::int64_t value) { thumbnail_width = value; }
+    [[nodiscard]] const std::int64_t& get_thumbnail_width() const noexcept { return thumbnail_width; }
+    void set_thumbnail_height(std::int64_t value) { thumbnail_height = value; }
+    [[nodiscard]] const std::int64_t& get_thumbnail_height() const noexcept { return thumbnail_height; }
+    void set_thumbnail_url_original(std::string value) { thumbnail_url_original = std::move(value); }
+    [[nodiscard]] const std::string& get_thumbnail_url_original() const noexcept { return thumbnail_url_original; }
+
+    std::string type{"rich"};
+    std::string version{"1.0"};
     std::string html{"<iframe src=\"https://ghost.local/embed\"></iframe>"};
     std::string url{"https://ghost.local/embed"};
+    std::string title{};
+    std::int64_t width{};
+    std::int64_t height{};
+    std::string author_name{};
+    std::string author_url{};
+    std::string provider_name{};
+    std::string provider_url{};
+    std::string thumbnail_url{};
+    std::int64_t thumbnail_width{};
+    std::int64_t thumbnail_height{};
+    // Ghost fetchOembedDataFromUrl: the provider URL before storeThumbnail rewrote it.
+    std::string thumbnail_url_original{};
 };
 
 class FeedbackResponse
@@ -211,8 +252,21 @@ template<> struct serde::Serializable<blog::dto::oembed::OembedResponse>
     static constexpr auto fields()
     {
         return std::tuple{
+            serde::FieldDesc<"type", &blog::dto::oembed::OembedResponse::get_type, &blog::dto::oembed::OembedResponse::set_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"version", &blog::dto::oembed::OembedResponse::get_version, &blog::dto::oembed::OembedResponse::set_version, serde::FieldOptions{}>{},
             serde::FieldDesc<"html", &blog::dto::oembed::OembedResponse::get_html, &blog::dto::oembed::OembedResponse::set_html, serde::FieldOptions{}>{},
-            serde::FieldDesc<"url", &blog::dto::oembed::OembedResponse::get_url, &blog::dto::oembed::OembedResponse::set_url, serde::FieldOptions{}>{}
+            serde::FieldDesc<"url", &blog::dto::oembed::OembedResponse::get_url, &blog::dto::oembed::OembedResponse::set_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"title", &blog::dto::oembed::OembedResponse::get_title, &blog::dto::oembed::OembedResponse::set_title, serde::FieldOptions{}>{},
+            serde::FieldDesc<"width", &blog::dto::oembed::OembedResponse::get_width, &blog::dto::oembed::OembedResponse::set_width, serde::FieldOptions{}>{},
+            serde::FieldDesc<"height", &blog::dto::oembed::OembedResponse::get_height, &blog::dto::oembed::OembedResponse::set_height, serde::FieldOptions{}>{},
+            serde::FieldDesc<"author_name", &blog::dto::oembed::OembedResponse::get_author_name, &blog::dto::oembed::OembedResponse::set_author_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"author_url", &blog::dto::oembed::OembedResponse::get_author_url, &blog::dto::oembed::OembedResponse::set_author_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"provider_name", &blog::dto::oembed::OembedResponse::get_provider_name, &blog::dto::oembed::OembedResponse::set_provider_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"provider_url", &blog::dto::oembed::OembedResponse::get_provider_url, &blog::dto::oembed::OembedResponse::set_provider_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"thumbnail_url", &blog::dto::oembed::OembedResponse::get_thumbnail_url, &blog::dto::oembed::OembedResponse::set_thumbnail_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"thumbnail_width", &blog::dto::oembed::OembedResponse::get_thumbnail_width, &blog::dto::oembed::OembedResponse::set_thumbnail_width, serde::FieldOptions{}>{},
+            serde::FieldDesc<"thumbnail_height", &blog::dto::oembed::OembedResponse::get_thumbnail_height, &blog::dto::oembed::OembedResponse::set_thumbnail_height, serde::FieldOptions{}>{},
+            serde::FieldDesc<"thumbnail_url_original", &blog::dto::oembed::OembedResponse::get_thumbnail_url_original, &blog::dto::oembed::OembedResponse::set_thumbnail_url_original, serde::FieldOptions{}>{}
         };
     }
     static constexpr std::string_view table_name() { return "oembed_response"; }

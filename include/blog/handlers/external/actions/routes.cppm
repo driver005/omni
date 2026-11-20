@@ -17,7 +17,9 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/actions"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            // Ghost routes.js:544 registers only mw.authAdminApi; there is no
+            // body/content-type requirement on this GET (no 415 gate).
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

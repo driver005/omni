@@ -9546,6 +9546,210 @@ public:
     std::vector<PaymentsResponse> data{};
 };
 
+// ─── Dedicated payments list/query DTOs (parity SR-6) ────────────────────────
+// These are the typed, deserializable query/list shapes used by the payments
+// handlers instead of decoding query strings into the oversized PaymentsRequest
+// body DTO. Field names mirror the upstream `web::Query<T>` / `web::Path<T>`
+// structs in docs/hyperswitch/crates/router/src/routes/payments.rs.
+
+/** Typed query for the v1/v2 payments list families (`payments_list`,
+ *  `profile_payments_list`, `payments_list_by_filter`, `payments_list_for_platform`). */
+class PaymentsListRequest
+{
+public:
+    void set_merchant_id(std::optional<std::string> value) { merchant_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_merchant_id() const noexcept { return merchant_id; }
+    void set_profile_id(std::optional<std::string> value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_profile_id() const noexcept { return profile_id; }
+    void set_status(std::optional<std::string> value) { status = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_status() const noexcept { return status; }
+    void set_connector(std::optional<std::string> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_connector() const noexcept { return connector; }
+    void set_payment_method(std::optional<std::string> value) { payment_method = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method() const noexcept { return payment_method; }
+    void set_payment_method_type(std::optional<std::string> value) { payment_method_type = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method_type() const noexcept { return payment_method_type; }
+    void set_offset(std::optional<std::int64_t> value) { offset = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_offset() const noexcept { return offset; }
+    void set_limit(std::optional<std::int64_t> value) { limit = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_limit() const noexcept { return limit; }
+    void set_force_sync(std::optional<bool> value) { force_sync = std::move(value); }
+    [[nodiscard]] const std::optional<bool>& get_force_sync() const noexcept { return force_sync; }
+    void set_expand_attempts(std::optional<bool> value) { expand_attempts = std::move(value); }
+    [[nodiscard]] const std::optional<bool>& get_expand_attempts() const noexcept { return expand_attempts; }
+    std::optional<std::string> merchant_id{};
+    std::optional<std::string> profile_id{};
+    std::optional<std::string> status{};
+    std::optional<std::string> connector{};
+    std::optional<std::string> payment_method{};
+    std::optional<std::string> payment_method_type{};
+    std::optional<std::int64_t> offset{};
+    std::optional<std::int64_t> limit{};
+    std::optional<bool> force_sync{};
+    std::optional<bool> expand_attempts{};
+};
+
+/** Typed query for the filter endpoints (`get_payment_filters`,
+ *  `get_payment_filters_profile`, `get_filters_for_payments`). */
+class PaymentsFilterRequest
+{
+public:
+    void set_status(std::optional<std::string> value) { status = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_status() const noexcept { return status; }
+    void set_connector(std::optional<std::string> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_connector() const noexcept { return connector; }
+    void set_payment_method(std::optional<std::string> value) { payment_method = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method() const noexcept { return payment_method; }
+    void set_payment_method_type(std::optional<std::string> value) { payment_method_type = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method_type() const noexcept { return payment_method_type; }
+    void set_merchant_reference_id(std::optional<std::string> value) { merchant_reference_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_merchant_reference_id() const noexcept { return merchant_reference_id; }
+    void set_profile_id(std::optional<std::string> value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_profile_id() const noexcept { return profile_id; }
+    void set_offset(std::optional<std::int64_t> value) { offset = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_offset() const noexcept { return offset; }
+    void set_limit(std::optional<std::int64_t> value) { limit = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_limit() const noexcept { return limit; }
+    std::optional<std::string> status{};
+    std::optional<std::string> connector{};
+    std::optional<std::string> payment_method{};
+    std::optional<std::string> payment_method_type{};
+    std::optional<std::string> merchant_reference_id{};
+    std::optional<std::string> profile_id{};
+    std::optional<std::int64_t> offset{};
+    std::optional<std::int64_t> limit{};
+};
+
+/** Typed query for the aggregate endpoints (`get_payments_aggregates{,_profile}`). */
+class PaymentsAggregateRequest
+{
+public:
+    void set_start(std::optional<std::string> value) { start = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_start() const noexcept { return start; }
+    void set_end(std::optional<std::string> value) { end = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_end() const noexcept { return end; }
+    void set_status(std::optional<std::string> value) { status = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_status() const noexcept { return status; }
+    void set_profile_id(std::optional<std::string> value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_profile_id() const noexcept { return profile_id; }
+    std::optional<std::string> start{};
+    std::optional<std::string> end{};
+    std::optional<std::string> status{};
+    std::optional<std::string> profile_id{};
+};
+
+/** Typed query for `list_payment_attempts` (typed attempt-list fields, SR-6). */
+class PaymentAttemptListFilterRequest
+{
+public:
+    void set_payment_id(std::optional<std::string> value) { payment_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_id() const noexcept { return payment_id; }
+    void set_status(std::optional<std::string> value) { status = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_status() const noexcept { return status; }
+    void set_connector(std::optional<std::string> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_connector() const noexcept { return connector; }
+    void set_offset(std::optional<std::int64_t> value) { offset = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_offset() const noexcept { return offset; }
+    void set_limit(std::optional<std::int64_t> value) { limit = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_limit() const noexcept { return limit; }
+    std::optional<std::string> payment_id{};
+    std::optional<std::string> status{};
+    std::optional<std::string> connector{};
+    std::optional<std::int64_t> offset{};
+    std::optional<std::int64_t> limit{};
+};
+
+/** Typed body for the OpenSearch advanced-list routes. Mirrors upstream
+ *  `PaymentListFilterConstraints` (api_models/src/payments.rs:9888-9951); every
+ *  field is optional so a sparse filter body round-trips without synthetic
+ *  defaults. */
+class PaymentsAdvancedListRequest
+{
+public:
+    void set_query(std::optional<std::string> value) { query = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_query() const noexcept { return query; }
+    void set_payment_id(std::optional<std::string> value) { payment_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_id() const noexcept { return payment_id; }
+    void set_profile_id(std::optional<std::string> value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_profile_id() const noexcept { return profile_id; }
+    void set_customer_id(std::optional<std::string> value) { customer_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_customer_id() const noexcept { return customer_id; }
+    void set_limit(std::optional<std::int64_t> value) { limit = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_limit() const noexcept { return limit; }
+    void set_offset(std::optional<std::int64_t> value) { offset = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_offset() const noexcept { return offset; }
+    void set_connector(std::optional<std::vector<std::string>> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_connector() const noexcept { return connector; }
+    void set_currency(std::optional<std::vector<std::string>> value) { currency = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_currency() const noexcept { return currency; }
+    void set_status(std::optional<std::vector<std::string>> value) { status = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_status() const noexcept { return status; }
+    void set_payment_method(std::optional<std::vector<std::string>> value) { payment_method = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_payment_method() const noexcept { return payment_method; }
+    void set_payment_method_type(std::optional<std::vector<std::string>> value) { payment_method_type = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_payment_method_type() const noexcept { return payment_method_type; }
+    void set_order(std::optional<std::string> value) { order = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_order() const noexcept { return order; }
+    std::optional<std::string> query{};
+    std::optional<std::string> payment_id{};
+    std::optional<std::string> profile_id{};
+    std::optional<std::string> customer_id{};
+    std::optional<std::int64_t> limit{};
+    std::optional<std::int64_t> offset{};
+    std::optional<std::vector<std::string>> connector{};
+    std::optional<std::vector<std::string>> currency{};
+    std::optional<std::vector<std::string>> status{};
+    std::optional<std::vector<std::string>> payment_method{};
+    std::optional<std::vector<std::string>> payment_method_type{};
+    std::optional<std::string> order{};
+};
+
+/** Typed response for the OpenSearch advanced-list routes. Mirrors the upstream
+ *  `SearchResponse` envelope (`count` + `hits`) with typed payment rows. */
+class PaymentsAdvancedListResponse
+{
+public:
+    void set_count(std::size_t value) { count = std::move(value); }
+    [[nodiscard]] const std::size_t& get_count() const noexcept { return count; }
+    void set_total_count(std::int64_t value) { total_count = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_total_count() const noexcept { return total_count; }
+    void set_data(std::vector<PaymentsResponse> value) { data = std::move(value); }
+    [[nodiscard]] const std::vector<PaymentsResponse>& get_data() const noexcept { return data; }
+    std::size_t count{};
+    std::int64_t total_count{};
+    std::vector<PaymentsResponse> data{};
+};
+
+/** Typed row of the `/payments/{id}/client` payment-methods listing. */
+class PaymentsClientMethod
+{
+public:
+    void set_payment_method(std::optional<std::string> value) { payment_method = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method() const noexcept { return payment_method; }
+    void set_payment_method_type(std::optional<std::string> value) { payment_method_type = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_payment_method_type() const noexcept { return payment_method_type; }
+    void set_connector(std::optional<std::string> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_connector() const noexcept { return connector; }
+    void set_enabled(std::optional<bool> value) { enabled = std::move(value); }
+    [[nodiscard]] const std::optional<bool>& get_enabled() const noexcept { return enabled; }
+    std::optional<std::string> payment_method{};
+    std::optional<std::string> payment_method_type{};
+    std::optional<std::string> connector{};
+    std::optional<bool> enabled{};
+};
+
+/** Typed response for `list_payment_methods_for_payments_client`. */
+class PaymentsClientMethodsResponse
+{
+public:
+    void set_count(std::size_t value) { count = std::move(value); }
+    [[nodiscard]] const std::size_t& get_count() const noexcept { return count; }
+    void set_data(std::vector<PaymentsClientMethod> value) { data = std::move(value); }
+    [[nodiscard]] const std::vector<PaymentsClientMethod>& get_data() const noexcept { return data; }
+    std::size_t count{};
+    std::vector<PaymentsClientMethod> data{};
+};
+
 class GooglePayWalletDetails
 {
 public:
@@ -12794,6 +12998,142 @@ struct serde::Serializable<app::model::payments::PaymentListResponseV2>
         };
     }
     static constexpr std::string_view table_name() { return "payment_list_response_v2"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsListRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"merchant_id", &app::model::payments::PaymentsListRequest::get_merchant_id, &app::model::payments::PaymentsListRequest::set_merchant_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::model::payments::PaymentsListRequest::get_profile_id, &app::model::payments::PaymentsListRequest::set_profile_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &app::model::payments::PaymentsListRequest::get_status, &app::model::payments::PaymentsListRequest::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::payments::PaymentsListRequest::get_connector, &app::model::payments::PaymentsListRequest::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method", &app::model::payments::PaymentsListRequest::get_payment_method, &app::model::payments::PaymentsListRequest::set_payment_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method_type", &app::model::payments::PaymentsListRequest::get_payment_method_type, &app::model::payments::PaymentsListRequest::set_payment_method_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"offset", &app::model::payments::PaymentsListRequest::get_offset, &app::model::payments::PaymentsListRequest::set_offset, serde::FieldOptions{}>{},
+            serde::FieldDesc<"limit", &app::model::payments::PaymentsListRequest::get_limit, &app::model::payments::PaymentsListRequest::set_limit, serde::FieldOptions{}>{},
+            serde::FieldDesc<"force_sync", &app::model::payments::PaymentsListRequest::get_force_sync, &app::model::payments::PaymentsListRequest::set_force_sync, serde::FieldOptions{}>{},
+            serde::FieldDesc<"expand_attempts", &app::model::payments::PaymentsListRequest::get_expand_attempts, &app::model::payments::PaymentsListRequest::set_expand_attempts, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_list_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsFilterRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"status", &app::model::payments::PaymentsFilterRequest::get_status, &app::model::payments::PaymentsFilterRequest::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::payments::PaymentsFilterRequest::get_connector, &app::model::payments::PaymentsFilterRequest::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method", &app::model::payments::PaymentsFilterRequest::get_payment_method, &app::model::payments::PaymentsFilterRequest::set_payment_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method_type", &app::model::payments::PaymentsFilterRequest::get_payment_method_type, &app::model::payments::PaymentsFilterRequest::set_payment_method_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"merchant_reference_id", &app::model::payments::PaymentsFilterRequest::get_merchant_reference_id, &app::model::payments::PaymentsFilterRequest::set_merchant_reference_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::model::payments::PaymentsFilterRequest::get_profile_id, &app::model::payments::PaymentsFilterRequest::set_profile_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"offset", &app::model::payments::PaymentsFilterRequest::get_offset, &app::model::payments::PaymentsFilterRequest::set_offset, serde::FieldOptions{}>{},
+            serde::FieldDesc<"limit", &app::model::payments::PaymentsFilterRequest::get_limit, &app::model::payments::PaymentsFilterRequest::set_limit, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_filter_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsAggregateRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"start", &app::model::payments::PaymentsAggregateRequest::get_start, &app::model::payments::PaymentsAggregateRequest::set_start, serde::FieldOptions{}>{},
+            serde::FieldDesc<"end", &app::model::payments::PaymentsAggregateRequest::get_end, &app::model::payments::PaymentsAggregateRequest::set_end, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &app::model::payments::PaymentsAggregateRequest::get_status, &app::model::payments::PaymentsAggregateRequest::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::model::payments::PaymentsAggregateRequest::get_profile_id, &app::model::payments::PaymentsAggregateRequest::set_profile_id, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_aggregate_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentAttemptListFilterRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"payment_id", &app::model::payments::PaymentAttemptListFilterRequest::get_payment_id, &app::model::payments::PaymentAttemptListFilterRequest::set_payment_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &app::model::payments::PaymentAttemptListFilterRequest::get_status, &app::model::payments::PaymentAttemptListFilterRequest::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::payments::PaymentAttemptListFilterRequest::get_connector, &app::model::payments::PaymentAttemptListFilterRequest::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"offset", &app::model::payments::PaymentAttemptListFilterRequest::get_offset, &app::model::payments::PaymentAttemptListFilterRequest::set_offset, serde::FieldOptions{}>{},
+            serde::FieldDesc<"limit", &app::model::payments::PaymentAttemptListFilterRequest::get_limit, &app::model::payments::PaymentAttemptListFilterRequest::set_limit, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payment_attempt_list_filter_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsAdvancedListRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"query", &app::model::payments::PaymentsAdvancedListRequest::get_query, &app::model::payments::PaymentsAdvancedListRequest::set_query, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_id", &app::model::payments::PaymentsAdvancedListRequest::get_payment_id, &app::model::payments::PaymentsAdvancedListRequest::set_payment_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::model::payments::PaymentsAdvancedListRequest::get_profile_id, &app::model::payments::PaymentsAdvancedListRequest::set_profile_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"customer_id", &app::model::payments::PaymentsAdvancedListRequest::get_customer_id, &app::model::payments::PaymentsAdvancedListRequest::set_customer_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"limit", &app::model::payments::PaymentsAdvancedListRequest::get_limit, &app::model::payments::PaymentsAdvancedListRequest::set_limit, serde::FieldOptions{}>{},
+            serde::FieldDesc<"offset", &app::model::payments::PaymentsAdvancedListRequest::get_offset, &app::model::payments::PaymentsAdvancedListRequest::set_offset, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::payments::PaymentsAdvancedListRequest::get_connector, &app::model::payments::PaymentsAdvancedListRequest::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"currency", &app::model::payments::PaymentsAdvancedListRequest::get_currency, &app::model::payments::PaymentsAdvancedListRequest::set_currency, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &app::model::payments::PaymentsAdvancedListRequest::get_status, &app::model::payments::PaymentsAdvancedListRequest::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method", &app::model::payments::PaymentsAdvancedListRequest::get_payment_method, &app::model::payments::PaymentsAdvancedListRequest::set_payment_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method_type", &app::model::payments::PaymentsAdvancedListRequest::get_payment_method_type, &app::model::payments::PaymentsAdvancedListRequest::set_payment_method_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"order", &app::model::payments::PaymentsAdvancedListRequest::get_order, &app::model::payments::PaymentsAdvancedListRequest::set_order, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_advanced_list_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsAdvancedListResponse>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"count", &app::model::payments::PaymentsAdvancedListResponse::get_count, &app::model::payments::PaymentsAdvancedListResponse::set_count, serde::FieldOptions{}>{},
+            serde::FieldDesc<"total_count", &app::model::payments::PaymentsAdvancedListResponse::get_total_count, &app::model::payments::PaymentsAdvancedListResponse::set_total_count, serde::FieldOptions{}>{},
+            serde::FieldDesc<"data", &app::model::payments::PaymentsAdvancedListResponse::get_data, &app::model::payments::PaymentsAdvancedListResponse::set_data, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_advanced_list_response"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsClientMethod>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"payment_method", &app::model::payments::PaymentsClientMethod::get_payment_method, &app::model::payments::PaymentsClientMethod::set_payment_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method_type", &app::model::payments::PaymentsClientMethod::get_payment_method_type, &app::model::payments::PaymentsClientMethod::set_payment_method_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::payments::PaymentsClientMethod::get_connector, &app::model::payments::PaymentsClientMethod::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"enabled", &app::model::payments::PaymentsClientMethod::get_enabled, &app::model::payments::PaymentsClientMethod::set_enabled, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_client_method"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payments::PaymentsClientMethodsResponse>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"count", &app::model::payments::PaymentsClientMethodsResponse::get_count, &app::model::payments::PaymentsClientMethodsResponse::set_count, serde::FieldOptions{}>{},
+            serde::FieldDesc<"data", &app::model::payments::PaymentsClientMethodsResponse::get_data, &app::model::payments::PaymentsClientMethodsResponse::set_data, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "payments_client_methods_response"; }
 };
 
 template<>

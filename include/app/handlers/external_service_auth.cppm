@@ -52,52 +52,18 @@ inline constexpr std::string_view kAccessForbiddenCode{"IR_22"};
 inline constexpr std::string_view kAccessForbiddenMessage{
     "Access forbidden. Not authorized to access this resource offer_engine"};
 
-/**
- * @brief Local wire shape for api_models::external_service_auth::ValidateTokenRequest.
+/*
+ * Request/response wire shapes are owned by the typed DTO partition.
  *
- * The DTO partition models `service` as a C++ enum whose serde mapping uses the
- * enumerator name, while upstream `ValidatingService` is
- * `#[serde(rename_all = "snake_case")]` + `strum::Display`. Keeping the field as
- * text here accepts the exact upstream snake_case value ("offer_engine"), then
- * maps to the typed DTO. See "## Shared contract requests" in the report.
+ * `app::dto::external_service_auth::ValidateTokenRequest` now carries a real
+ * snake_case serde for `ValidatingService` (FieldConverter maps the typed enum to
+ * "offer_engine"), so this handler deserializes the upstream request shape
+ * directly — no local wire normalizer. Likewise
+ * `app::dto::external_service_auth::ExternalVerifyTokenResponse` is now the real
+ * typed OfferEngine arm (the upstream enum is `#[serde(untagged)]`), so the
+ * response is emitted straight from the DTO with the exact upstream field order.
+ * See the parity report for the DTO promotion evidence.
  */
-class ValidateTokenWire
-{
-public:
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
-    void set_service(std::string value) { service = std::move(value); }
-    [[nodiscard]] const std::string& get_service() const noexcept { return service; }
-
-    std::string token{};
-    std::string service{};
-};
-
-/**
- * @brief Typed OfferEngine arm of api_models::ExternalVerifyTokenResponse.
- *
- * The DTO declares the response variant as an empty enum marker
- * (dto/external_service_auth.cppm:36-40), so the four upstream fields
- * (api_models/external_service_auth.rs:40-45) are normalized here and emitted
- * through serde. `token` is masked because upstream types it as `Secret<String>`.
- */
-class OfferEngineVerifyResponse
-{
-public:
-    void set_merchant_id(std::string value) { merchant_id = std::move(value); }
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept { return merchant_id; }
-    void set_context(std::string value) { context = std::move(value); }
-    [[nodiscard]] const std::string& get_context() const noexcept { return context; }
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
-    void set_permissions(std::vector<std::string> value) { permissions = std::move(value); }
-    [[nodiscard]] const std::vector<std::string>& get_permissions() const noexcept { return permissions; }
-
-    std::string merchant_id{};
-    std::string context{};
-    std::string token{};
-    std::vector<std::string> permissions{};
-};
 
 /** @brief Port of authentication::AuthToken (authentication.rs:322-331). */
 struct AuthToken
@@ -177,36 +143,6 @@ enum class BlacklistOutcome
 
 } // namespace app::handlers::external_service_auth
 
-template<>
-struct serde::Serializable<::app::handlers::external_service_auth::ValidateTokenWire>
-{
-    static constexpr auto fields()
-    {
-        using W = ::app::handlers::external_service_auth::ValidateTokenWire;
-        return std::tuple{
-            serde::FieldDesc<"token", &W::get_token, &W::set_token, serde::FieldOptions{}>{},
-            serde::FieldDesc<"service", &W::get_service, &W::set_service, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "validate_token_wire"; }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::external_service_auth::OfferEngineVerifyResponse>
-{
-    static constexpr auto fields()
-    {
-        using R = ::app::handlers::external_service_auth::OfferEngineVerifyResponse;
-        return std::tuple{
-            serde::FieldDesc<"merchant_id", &R::get_merchant_id, &R::set_merchant_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"context", &R::get_context, &R::set_context, serde::FieldOptions{}>{},
-            serde::FieldDesc<"token", &R::get_token, &R::set_token, serde::FieldOptions{}>{},
-            serde::FieldDesc<"permissions", &R::get_permissions, &R::set_permissions, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "offer_engine_verify_response"; }
-};
-
 export namespace app::handlers::external_service_auth {
 
 class ExternalServiceAuthRouteHandlers
@@ -244,29 +180,18 @@ public:
             return;
         }
 
-        using Wire = ::app::handlers::external_service_auth::ValidateTokenWire;
-        auto parsed = serde::Ser::deserialize<Wire>("application/json", body);
+        // Deserialize the exact upstream request shape directly. The typed DTO's
+        // `ValidatingService` FieldConverter accepts the snake_case wire value
+        // "offer_engine" and rejects anything else, matching upstream
+        // `#[serde(rename_all = "snake_case")]` (api_models:18-29).
+        using Input = app::dto::external_service_auth::ValidateTokenRequest;
+        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
             send_error(res, send, core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-        if (parsed->get_service().empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST, "missing validating service"));
-            return;
-        }
-        const auto service = parse_service(parsed->get_service());
-        if (!service) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST, "unsupported validating service"));
-            return;
-        }
-
-        using Input = app::dto::external_service_auth::ValidateTokenRequest;
-        Input request{};
-        request.set_token(parsed->get_token());
-        request.set_service(*service);
+        const auto& request = *parsed;
 
         // core/external_service_auth.rs:111 — req.token.expose().
         const app::crypto::SecretString token_secret{request.get_token()};
@@ -315,7 +240,7 @@ public:
         }
 
         // core/external_service_auth.rs:123-136 — match ValidatingService::OfferEngine.
-        switch (*service) {
+        switch (request.get_service()) {
         case app::dto::external_service_auth::ValidatingService::OfferEngine: {
             // core:125 — resolve_offer_engine_merchant_id.
             const auto merchant_id = resolve_offer_engine_merchant_id(payload);
@@ -331,7 +256,10 @@ public:
             m_context->metrics().record_flow("ExternalServiceValidateToken");
             m_context->metrics().counter("EXTERNAL_SERVICE_TOKEN_VALIDATED").increment();
 
-            OfferEngineVerifyResponse response{};
+            // Typed OfferEngine arm of the untagged upstream response enum; the
+            // DTO's Serializable emits the exact field order from api_models:40-45.
+            using Response = app::dto::external_service_auth::ExternalVerifyTokenResponse;
+            Response response{};
             response.set_merchant_id(*merchant_id);
             response.set_context(std::string{kOfferEngineContext});
             response.set_token(
@@ -835,21 +763,6 @@ private:
         return std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch()
         ).count();
-    }
-
-    /** @brief api_models:18-23 ValidatingService is snake_case-serialized. */
-    [[nodiscard]] std::optional<app::dto::external_service_auth::ValidatingService>
-    parse_service(std::string_view value) const noexcept
-    {
-        if (value == "offer_engine") {
-            return app::dto::external_service_auth::ValidatingService::OfferEngine;
-        }
-        // strum::Display spelling and kebab-case are accepted as local aliases for
-        // hand-written JSON clients; the upstream wire value above is exact.
-        if (value == "OfferEngine" || value == "offer-engine") {
-            return app::dto::external_service_auth::ValidatingService::OfferEngine;
-        }
-        return std::nullopt;
     }
 
     [[nodiscard]] static std::vector<std::string> parse_grants(std::string_view value)

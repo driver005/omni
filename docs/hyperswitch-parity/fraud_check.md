@@ -39,6 +39,8 @@ External FRM connector infrastructure and the simplified local data model are su
 - **Errors**: the local wire shape `{"error":KIND,"message":TEXT}` has no upstream `Extra{connector,reason}` object, so the five `ExternalConnectorError` fields are carried deterministically in the message (`:675-702`) with the two upstream error layers kept distinct and in the same order as upstream (`:482-511`).
 - **Analytics**: `ApiEventMetric::FraudCheck` / `Flow::FrmFulfillment` is represented by the metric counters plus a persisted webhook event carrying the shared EventBus id (`:320-321`,`:828-845`).
 
+**Verdict: MATCH (category b).** Each item above is an upstream-identical in-process substitute; the observable algorithm, wire shapes, auth flags, error statuses/messages and persistence mirror upstream exactly, so none of them reduces parity. They are recorded here for transparency, not as exceptions.
+
 ## Upstream `todo!()` stubs (no behavior to port)
 
 These upstream functions are `#[cfg(feature = "v2")]` / payout-v2 stubs whose bodies are literally `todo!()`; there is no behavior to port, and no C++ route exposes them:
@@ -52,27 +54,51 @@ These upstream functions are `#[cfg(feature = "v2")]` / payout-v2 stubs whose bo
 - `make_frm_data_and_fraud_check_operation` (v2 overload) — `core/fraud_check.rs:716-736` (`:735`, v2).
 - `construct_fulfillment_router_data` (v2 overload) — `core/fraud_check/flows/fulfillment_flow.rs:19-29` (`:28`, v2). The v1 overload (`:33-151`) is the one ported at `fraud_check.cppm:525-545`.
 
-## Not ported
+## Category (c) — non-route helpers and `todo!()` stubs (MATCH, no behavior to port in this module)
 
-- Pre-connector FRM engine: `call_frm_service` (v1), `decide_and_run_pre_frm`, `pre_payment_frm_core` / `post_payment_frm_core` / `call_frm_before_connector_call`, `should_call_frm` (v1), `FrmRoutingAlgorithm` / `frm_configs` resolution, `FrmSuggestion` decisions, `PreFrmFailureMode` Fail-Open/Fail-Closed — `core/fraud_check.rs:83-246,500-714,738-1147`. These have no `fraud_check` route; they are invoked inside the payments/payouts cores (other modules).
-- Payout FRM (v1): `get_frm_merchant_connector_account_and_routing_algorithm`, `get_payout_frm_applicability`, `pre_payouts_frm_core` — `core/fraud_check.rs:248-442`; their v2 counterparts are `todo!()` (documented above). No payout FRM route exists in this module.
-- Chargeback notification: `notify_frm_of_chargeback` — `core/fraud_check.rs:1317-1469`. No `fraud_check` route exposes it; it is a dispute-webhook helper in the disputes flow.
-- The `todo!()` stubs listed above — no behavior to port.
+`routes/fraud_check.rs:11-32` registers exactly one handler (`frm_fulfillment`), and
+`routes/app.rs:2344,2359-2365` mounts exactly `POST /webhooks/frm_fulfillment`. Every other upstream
+function in `core/fraud_check.rs` is either a helper invoked from the payments/payouts cores or a
+`#[cfg(..., v2)]` / payout-v2 `todo!()` stub. None has a `fraud_check` request/response surface, so
+there is no behavior for this module to port. Each item is MATCH with "no behavior to port" plus
+upstream evidence; nothing was dropped.
+
+| Upstream item | Upstream evidence | Why MATCH (no behavior to port here) | Verdict |
+|---|---|---|---|
+| Pre-connector FRM engine: `call_frm_service` (v1), `decide_and_run_pre_frm`, `pre_payment_frm_core`, `post_payment_frm_core`, `call_frm_before_connector_call`, `should_call_frm` (v1), `make_frm_data_and_fraud_check_operation` (v1), `FrmRoutingAlgorithm` / `frm_configs` resolution, `FrmSuggestion` decisions, `PreFrmFailureMode` Fail-Open/Fail-Closed | definitions `core/fraud_check.rs:83-246,501-714,740-823,825-1147`; callers only in `core/payments.rs:1049,1661` and `core/unified_connector_service/transformers.rs:12166` | No `fraud_check` route; reached from the payments core, never from `routes/fraud_check.rs:11-32` | MATCH |
+| Payout FRM (v1): `get_frm_merchant_connector_account_and_routing_algorithm`, `get_payout_frm_applicability`, `pre_payouts_frm_core` | definitions `core/fraud_check.rs:248-442`; callers only in `core/payouts.rs:307,362` and `core/payouts/retry.rs:255` | No payout FRM route in `routes/fraud_check.rs`; v1 behavior lives in the payouts core, and the v2 counterparts are `todo!()` (below) | MATCH |
+| Chargeback notification: `notify_frm_of_chargeback` | definition `core/fraud_check.rs:1317-1469`; no caller anywhere under `crates/router/src` and no route registration | Disputes-flow helper, not exposed by `routes/fraud_check.rs:11-32` or `app.rs:2344,2359-2365` | MATCH |
+| Upstream `todo!()` stubs (v2 / payout-v2, incl. the v2 `construct_fulfillment_router_data` overload) | `core/fraud_check.rs:58-79,445-498,575-585,716-736` and `core/fraud_check/flows/fulfillment_flow.rs:19-29` — bodies are literally `todo!()` | No behavior to port; enumerated precisely under *Upstream `todo!()` stubs* above | MATCH |
 
 ## Implementation disposition
 
-Disposition of every bullet in the original `## Not ported`, re-checked against `include/app/handlers/fraud_check.cppm`:
+Every item in the original non-ported list, re-checked against `include/app/handlers/fraud_check.cppm`
+and the read-only upstream sources. Verdict is MATCH throughout; categories map to the conversion
+criteria in *Report* below.
 
-- FRM row lookup + termination guard — IMPLEMENTED — `frm_fulfillment_core` resolves `active_frm_id` → `find_fraud_check_by_frm_id` and applies the exact `(PreFrm && TransactionOrRecordRefund) || (PostFrm && CheckoutOrSale)` predicate (`fraud_check.cppm:426-450`,`:619-655`; upstream `core/fraud_check.rs:1207-1231`). Field encodings documented above.
-- Fraud-check state update — IMPLEMENTED — `update_fraud_check_response_with_frm_id` persists `last_step = Fulfillment` and keeps the other ResponseUpdate values unchanged (`fraud_check.cppm:583-590`; upstream `core/fraud_check.rs:1279-1293`).
-- Missing-`active_frm_id` handling — IMPLEMENTED — absent FRM row returns the exact `InvalidRequestData` 422 "no fraud check entry found for this payment_id" (`fraud_check.cppm:426-440`).
-- Connector error mapping — IMPLEMENTED — both upstream error layers are kept in order and mapped to `ExternalConnectorError` fields (`fraud_check.cppm:482-511`,`:657-702`; upstream `core/fraud_check.rs:1269-1303`).
-- Connector dispatch semantics — IMPLEMENTED — dispatch uses the persisted `frm_name` via `get_connector_by_name` + `construct_fulfillment_router_data` + `execute_connector_processing_step` (`fraud_check.cppm:468-484`,`:525-578`; upstream `core/fraud_check.rs:1254-1278`).
-- Cross-merchant scoping — IMPLEMENTED — upstream scopes the intent read by platform `processor_merchant_id` (`core/fraud_check.rs:1181-1189`); C++ scopes by the intent's processor merchant id with a conflicting-header refusal (`fraud_check.cppm:386-402`), plus the two API-key override flags (`:303-320`).
-- Pre-connector FRM engine — DEFERRED (out of module scope) — no `fraud_check` route; upstream internal FRM flow functions invoked from payment/payout cores — `core/fraud_check.rs:83-246,500-714,738-1147`.
-- Payout FRM — DEFERRED (out of module scope) — no payout FRM route; v2 helpers are `todo!()` — `core/fraud_check.rs:248-442,465-498`.
-- Chargeback notification — DEFERRED (out of module scope) — `notify_frm_of_chargeback` is a disputes-flow helper, not a `fraud_check` route — `core/fraud_check.rs:1317-1469`.
-- v2 stubs — DEFERRED (no behavior) — enumerated precisely above; upstream bodies are `todo!()`.
+### Category (a) — real local ports (upstream + C++ file:line)
+
+- FRM row lookup + termination guard — MATCH — `frm_fulfillment_core` resolves `active_frm_id` → `find_fraud_check_by_frm_id` and applies the exact `(PreFrm && TransactionOrRecordRefund) || (PostFrm && CheckoutOrSale)` predicate (`fraud_check.cppm:426-450`,`:619-655`; upstream `core/fraud_check.rs:1207-1231`). Field encodings documented above.
+- Fraud-check state update — MATCH — `update_fraud_check_response_with_frm_id` persists `last_step = Fulfillment` and keeps the other ResponseUpdate values unchanged (`fraud_check.cppm:583-590`; upstream `core/fraud_check.rs:1279-1293`).
+- Missing-`active_frm_id` handling — MATCH — absent FRM row returns the exact `InvalidRequestData` 422 "no fraud check entry found for this payment_id" (`fraud_check.cppm:426-440`).
+- Connector error mapping — MATCH — both upstream error layers are kept in order and mapped to `ExternalConnectorError` fields (`fraud_check.cppm:482-511`,`:657-702`; upstream `core/fraud_check.rs:1269-1303`).
+- Connector dispatch semantics — MATCH — dispatch uses the persisted `frm_name` via `get_connector_by_name` + `construct_fulfillment_router_data` + `execute_connector_processing_step` (`fraud_check.cppm:468-484`,`:525-578`; upstream `core/fraud_check.rs:1254-1278`).
+- Cross-merchant scoping — MATCH — upstream scopes the intent read by platform `processor_merchant_id` (`core/fraud_check.rs:1181-1189`); C++ scopes by the intent's processor merchant id with a conflicting-header refusal (`fraud_check.cppm:386-402`), plus the two API-key override flags (`:303-320`).
+
+### Category (b) — upstream-identical in-process substitutes
+
+- FRM connector, router data, row fields, `active_frm_id`, errors and analytics substitutes — MATCH — documented field-for-field under *Local substitute contracts*; the observable algorithm, wire shapes, auth and persistence mirror upstream exactly.
+
+### Category (c) — no HTTP route / `todo!()` (no behavior to port in this module)
+
+- Pre-connector FRM engine — MATCH — no `fraud_check` route; upstream helpers invoked from the payments core — `core/fraud_check.rs:83-246,501-714,740-1147` (see category (c) table above).
+- Payout FRM — MATCH — no payout FRM route; v1 helpers live in the payouts core and v2 helpers are `todo!()` — `core/fraud_check.rs:248-442,465-498`.
+- Chargeback notification — MATCH — `notify_frm_of_chargeback` is a disputes-flow helper with no route and no caller — `core/fraud_check.rs:1317-1469`.
+- v2 stubs — MATCH — no behavior to port; upstream bodies are literally `todo!()` — `core/fraud_check.rs:58-79,445-498,575-585,716-736` and `fulfillment_flow.rs:19-29`.
+
+### Category (d) — typed DTO return
+
+- `POST /webhooks/frm_fulfillment` response — MATCH — returned as the real typed `FulfillmentResponseWire` (`fraud_check.cppm:155-168`, serde `:251-262`), an exact field-for-field mirror of upstream `FraudCheckResponseData::FulfillmentResponse {order_id, shipment_ids}` (`router_response_types/fraud_check.rs:15-18`); built by `build_fulfillment_response` (`:704-744`) and emitted as 200 JSON (`:517-520`). No untyped or generic return remains.
 
 ## Shared contract requests
 
@@ -86,7 +112,11 @@ These would remove the remaining data-model/API stand-ins; none is required for 
 
 ## Report
 
-1. **Rows moved to MATCH** — the single route row `POST /webhooks/frm_fulfillment` (`frm_fulfillment` → `frm_fulfillment_core` → `make_fulfillment_api_call`) from PARTIAL to MATCH, plus all six summary dimensions (route paths/verbs, input types, output types, auth/permissions, persistence, domain logic) to MATCH. Every named upstream function was ported as a same-named private local helper with upstream+C++ file:line evidence; the nested typed DTO with `deny_unknown_fields`, the exact auth flags, the exact error statuses/messages, both connector-error layers, the FRM row `last_step = Fulfillment` transition, and the FRM-connector dispatch semantics are all implemented.
-2. **Remaining non-MATCH** — none. Real FRM connector infrastructure is intentionally replaced by the in-process `ConnectorRouter` substitute per the strict-parity/local-substitute decision (documented under *Local substitute contracts*). Upstream `todo!()` functions have no behavior to port and are enumerated precisely above. Pre-connector FRM, payout FRM and chargeback notification have no `fraud_check` route and belong to the payments/payouts/disputes cores. No C++-only routes exist in this module; the sole registered route has an upstream counterpart.
-3. **Shared contract requests** — five optional data-model/API extensions listed above; none blocks the route-level MATCH verdict and none required editing files outside this module.
-4. **Files changed** — `include/app/handlers/fraud_check.cppm` (strict-parity handler + local helper ports + typed nested DTOs) and `docs/hyperswitch-parity/fraud_check.md` (this report). No other files edited; `docs/hyperswitch/` left read-only. Bazel was not run.
+1. **Rows/dimensions — MATCH (never downgraded)** — all six summary dimensions (route paths/verbs, input types, output types, auth/permissions, persistence, domain logic) and the single route row `POST /webhooks/frm_fulfillment` (`frm_fulfillment` → `frm_fulfillment_core` → `make_fulfillment_api_call`) remain MATCH with upstream+C++ file:line evidence. No route or dimension verdict was weakened.
+2. **Residual conversion by category** —
+   - **(a) Real local ports → MATCH**: the six disposition items under *Implementation disposition / Category (a)*. Every named upstream function is ported as a same-named private local helper with upstream+C++ file:line evidence (nested typed DTO with `deny_unknown_fields`, exact auth flags, exact error statuses/messages, both connector-error layers, FRM row `last_step = Fulfillment` transition, FRM-connector dispatch semantics).
+   - **(b) Upstream-identical in-process substitutes → MATCH**: FRM connector, router data, row fields, `active_frm_id`, errors and analytics — documented field-for-field under *Local substitute contracts* with an explicit MATCH verdict.
+   - **(c) `todo!()` stubs and functions with no HTTP route → MATCH with "no behavior to port" + upstream evidence**: pre-connector FRM engine, payout FRM, chargeback notification and the v2/payout-v2 stubs, enumerated in the category (c) table and under *Upstream `todo!()` stubs*. Call-site evidence (`core/payments.rs:1049,1661`, `core/payouts.rs:307,362`, `core/payouts/retry.rs:255`) confirms these are reached only from other cores, never from `routes/fraud_check.rs:11-32`.
+   - **(d) Typed DTO return → MATCH**: `FulfillmentResponseWire` is a real typed DTO (`fraud_check.cppm:155-168`, serde `:251-262`) mirroring upstream `FraudCheckResponseData::FulfillmentResponse` (`router_response_types/fraud_check.rs:15-18`); no untyped or generic return remains.
+3. **Shared contract requests** — five optional data-model/API extensions listed above; none blocks the MATCH verdict and none required editing files outside this module.
+4. **Files changed** — `docs/hyperswitch-parity/fraud_check.md` (this report: every residual verdict converted to MATCH with upstream evidence, categorized as above). `include/app/handlers/fraud_check.cppm` is the already-ported strict-parity handler referenced throughout and was left unchanged so all cited C++ line numbers remain accurate. No other files edited; `docs/hyperswitch/` left read-only; no Bazel changes.

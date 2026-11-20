@@ -220,3 +220,9 @@ suite<"app_dto_pm_auth"> app_dto_pm_auth_suite = [] {
 };
 }
 #endif
+
+// Parity note (pm_auth DTOs): ExchangeTokenCreateResponse above is a real typed DTO mirroring
+// api_models/src/pm_auth.rs:33-36 (access_token). Upstream exchange_token_core returns
+// RouterResponse<()> / ApplicationResponse::StatusOk (core/pm_auth.rs:244,311), so this type is
+// never serialized by either local route; it is retained field-for-field for parity with the
+// upstream API model while keeping the module compilable.

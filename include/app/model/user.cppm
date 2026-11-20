@@ -1910,6 +1910,35 @@ export namespace app::model::user {
 // (api_models/src/user.rs:32).
 using SignInRequest = SignUpRequest;
 
+/**
+ * @brief Typed mirror of `api_models::payments::RedirectionResponse` (v1),
+ * returned by `core/user.rs:3004-3054` (`get_sso_auth_url`) through
+ * `ApplicationResponse::JsonForRedirection`. Upstream `params` is
+ * `Vec<(String, Secret<String>)>` and `headers` is `Vec<(String, String)>`;
+ * this route always builds both with `Vec::with_capacity(0)`, so a string
+ * vector reproduces the exact `[]` wire value for this endpoint.
+ */
+class RedirectionResponse
+{
+public:
+    void set_return_url(std::string value) { return_url = std::move(value); }
+    [[nodiscard]] const std::string& get_return_url() const noexcept { return return_url; }
+    void set_params(std::vector<std::string> value) { params = std::move(value); }
+    [[nodiscard]] const std::vector<std::string>& get_params() const noexcept { return params; }
+    void set_return_url_with_query_params(std::string value) { return_url_with_query_params = std::move(value); }
+    [[nodiscard]] const std::string& get_return_url_with_query_params() const noexcept { return return_url_with_query_params; }
+    void set_http_method(std::string value) { http_method = std::move(value); }
+    [[nodiscard]] const std::string& get_http_method() const noexcept { return http_method; }
+    void set_headers(std::vector<std::string> value) { headers = std::move(value); }
+    [[nodiscard]] const std::vector<std::string>& get_headers() const noexcept { return headers; }
+
+    std::string return_url{};
+    std::vector<std::string> params{};
+    std::string return_url_with_query_params{};
+    std::string http_method{};
+    std::vector<std::string> headers{};
+};
+
 /** @brief api_models::user::sample_data::SampleDataRequest wire shape. */
 class SampleDataRequest
 {
@@ -1972,6 +2001,22 @@ struct serde::Serializable<app::model::user::SampleDataRequest>
         };
     }
     static constexpr std::string_view table_name() { return "sample_data_request"; }
+};
+
+template<>
+struct serde::Serializable<app::model::user::RedirectionResponse>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"return_url", &app::model::user::RedirectionResponse::get_return_url, &app::model::user::RedirectionResponse::set_return_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"params", &app::model::user::RedirectionResponse::get_params, &app::model::user::RedirectionResponse::set_params, serde::FieldOptions{}>{},
+            serde::FieldDesc<"return_url_with_query_params", &app::model::user::RedirectionResponse::get_return_url_with_query_params, &app::model::user::RedirectionResponse::set_return_url_with_query_params, serde::FieldOptions{}>{},
+            serde::FieldDesc<"http_method", &app::model::user::RedirectionResponse::get_http_method, &app::model::user::RedirectionResponse::set_http_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"headers", &app::model::user::RedirectionResponse::get_headers, &app::model::user::RedirectionResponse::set_headers, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "redirection_response"; }
 };
 
 #ifdef CONGELADO_TEST

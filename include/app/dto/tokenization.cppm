@@ -9,6 +9,21 @@ import boost.ut;
 
 export namespace app::dto::tokenization {
 
+/**
+ * @brief Route wire contract (api_models/src/tokenization.rs:8-46).
+ *
+ * Upstream id newtypes (`GlobalTokenId`, `GlobalCustomerId`,
+ * `GlobalPaymentMethodSessionId`), `time::PrimitiveDateTime` and
+ * `common_enums::TokenizationFlag` all serialize as plain JSON scalars. The four
+ * route DTOs below therefore store those values as plain `std::string` fields so the
+ * shared `serde`/rfl reflector emits the exact upstream wire shape:
+ *   GenericTokenizationResponse -> {"id":...,"created_at":...,"flag":...}
+ *   DeleteTokenDataResponse     -> {"id":...}
+ * This mirrors the typed-DTO pattern already used by `app::dto::client_secret`.
+ * The `*Value` newtypes further down are retained for other consumers; they are not
+ * the route wire surface (their `value` field would emit a `{"value":...}` wrapper).
+ */
+
 class GlobalCustomerIdValue
 {
 public:
@@ -52,45 +67,47 @@ public:
 class DeleteTokenDataRequest
 {
 public:
-    void set_customer_id(GlobalCustomerIdValue value) { customer_id = std::move(value); }
-    [[nodiscard]] const GlobalCustomerIdValue& get_customer_id() const noexcept { return customer_id; }
-    void set_session_id(GlobalPaymentMethodSessionIdValue value) { session_id = std::move(value); }
-    [[nodiscard]] const GlobalPaymentMethodSessionIdValue& get_session_id() const noexcept { return session_id; }
-    GlobalCustomerIdValue customer_id{};
-    GlobalPaymentMethodSessionIdValue session_id{};
+    // Upstream: customer_id/session_id are id newtypes -> plain strings on the wire.
+    void set_customer_id(std::string value) { customer_id = std::move(value); }
+    [[nodiscard]] const std::string& get_customer_id() const noexcept { return customer_id; }
+    void set_session_id(std::string value) { session_id = std::move(value); }
+    [[nodiscard]] const std::string& get_session_id() const noexcept { return session_id; }
+    std::string customer_id{};
+    std::string session_id{};
 };
 
 class DeleteTokenDataResponse
 {
 public:
-    void set_id(GlobalTokenIdValue value) { id = std::move(value); }
-    [[nodiscard]] const GlobalTokenIdValue& get_id() const noexcept { return id; }
-    GlobalTokenIdValue id{};
+    void set_id(std::string value) { id = std::move(value); }
+    [[nodiscard]] const std::string& get_id() const noexcept { return id; }
+    std::string id{};
 };
 
 class GenericTokenizationRequest
 {
 public:
-    void set_customer_id(GlobalCustomerIdValue value) { customer_id = std::move(value); }
-    [[nodiscard]] const GlobalCustomerIdValue& get_customer_id() const noexcept { return customer_id; }
+    void set_customer_id(std::string value) { customer_id = std::move(value); }
+    [[nodiscard]] const std::string& get_customer_id() const noexcept { return customer_id; }
+    // Secret<serde_json::Value> is transparent on the wire: opaque JSON text.
     void set_token_request(std::string value) { token_request = std::move(value); }
     [[nodiscard]] const std::string& get_token_request() const noexcept { return token_request; }
-    GlobalCustomerIdValue customer_id{};
+    std::string customer_id{};
     std::string token_request{};
 };
 
 class GenericTokenizationResponse
 {
 public:
-    void set_id(GlobalTokenIdValue value) { id = std::move(value); }
-    [[nodiscard]] const GlobalTokenIdValue& get_id() const noexcept { return id; }
-    void set_created_at(PrimitiveDateTimeValue value) { created_at = std::move(value); }
-    [[nodiscard]] const PrimitiveDateTimeValue& get_created_at() const noexcept { return created_at; }
-    void set_flag(TokenizationFlagValue value) { flag = std::move(value); }
-    [[nodiscard]] const TokenizationFlagValue& get_flag() const noexcept { return flag; }
-    GlobalTokenIdValue id{};
-    PrimitiveDateTimeValue created_at{};
-    TokenizationFlagValue flag{};
+    void set_id(std::string value) { id = std::move(value); }
+    [[nodiscard]] const std::string& get_id() const noexcept { return id; }
+    void set_created_at(std::string value) { created_at = std::move(value); }
+    [[nodiscard]] const std::string& get_created_at() const noexcept { return created_at; }
+    void set_flag(std::string value) { flag = std::move(value); }
+    [[nodiscard]] const std::string& get_flag() const noexcept { return flag; }
+    std::string id{};
+    std::string created_at{};
+    std::string flag{};
 };
 }
 
@@ -211,7 +228,18 @@ namespace app::dto::tokenization::tests {
 using namespace boost::ut;
 suite<"app_dto_tokenization"> app_dto_tokenization_suite = [] {
     "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::tokenization::GenericTokenizationResponse>::fields())> > 0);
+        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::tokenization::GenericTokenizationResponse>::fields())> == 3);
+        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::tokenization::DeleteTokenDataResponse>::fields())> == 1);
+    };
+    "route DTOs are the transparent wire surface"_test = [] {
+        GenericTokenizationResponse response{};
+        response.set_id("0a_tok_01926c58bc6e77c09e809964e72af8c8");
+        response.set_created_at("2024-02-24 11:04:09.922000000");
+        response.set_flag("enabled");
+        const auto json = serde::Ser::encode_json(response);
+        expect(json.find(R"("id":"0a_tok_)") != std::string::npos);
+        expect(json.find(R"("flag":"enabled")") != std::string::npos);
+        expect(json.find("value") == std::string::npos); // no {"value":...} wrapper
     };
 };
 }

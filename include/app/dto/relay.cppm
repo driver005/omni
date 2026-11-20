@@ -171,38 +171,6 @@ public:
     std::optional<RelayData> data{};
 };
 
-class RelayResponse
-{
-public:
-    void set_id(RelayIdValue value) { id = std::move(value); }
-    [[nodiscard]] const RelayIdValue& get_id() const noexcept { return id; }
-    void set_status(RelayStatusValue value) { status = std::move(value); }
-    [[nodiscard]] const RelayStatusValue& get_status() const noexcept { return status; }
-    void set_connector_resource_id(std::string value) { connector_resource_id = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_resource_id() const noexcept { return connector_resource_id; }
-    void set_error(std::optional<RelayError> value) { error = std::move(value); }
-    [[nodiscard]] const std::optional<RelayError>& get_error() const noexcept { return error; }
-    void set_connector_reference_id(std::optional<std::string> value) { connector_reference_id = std::move(value); }
-    [[nodiscard]] const std::optional<std::string>& get_connector_reference_id() const noexcept { return connector_reference_id; }
-    void set_connector_id(MerchantConnectorAccountIdValue value) { connector_id = std::move(value); }
-    [[nodiscard]] const MerchantConnectorAccountIdValue& get_connector_id() const noexcept { return connector_id; }
-    void set_profile_id(ProfileIdValue value) { profile_id = std::move(value); }
-    [[nodiscard]] const ProfileIdValue& get_profile_id() const noexcept { return profile_id; }
-    void set_relay_type(RelayTypeValue value) { relay_type = std::move(value); }
-    [[nodiscard]] const RelayTypeValue& get_relay_type() const noexcept { return relay_type; }
-    void set_data(std::optional<serde::Value> value) { data = std::move(value); }
-    [[nodiscard]] const std::optional<serde::Value>& get_data() const noexcept { return data; }
-    RelayIdValue id{};
-    RelayStatusValue status{};
-    std::string connector_resource_id{};
-    std::optional<RelayError> error{};
-    std::optional<std::string> connector_reference_id{};
-    MerchantConnectorAccountIdValue connector_id{};
-    ProfileIdValue profile_id{};
-    RelayTypeValue relay_type{};
-    std::optional<serde::Value> data{};
-};
-
 class RelayRetrieveRequest
 {
 public:
@@ -244,7 +212,191 @@ public:
     std::optional<CurrencyValue> currency{};
     std::optional<std::string> cancellation_reason{};
 };
+
+/**
+ * @brief Typed `RelayResponse::data` — upstream `api_models::relay::RelayData`
+ * (api_models/src/relay.rs:23-32). Serde emits Rust enum variants as an externally
+ * tagged object such as `{"refund": {...}}`; each set_* below takes the typed
+ * variant payload and emits exactly that shape via `to_wire()`. An unset value
+ * maps to upstream `Option::None` (JSON `null`).
+ */
+class RelayResponseData
+{
+public:
+    void clear() noexcept
+    {
+        tag_.clear();
+        inner_ = serde::Value{};
+    }
+
+    void set_refund(const RelayRefundRequestData& value)
+    {
+        serde::Value::Object object{};
+        object["amount"] = minor_unit(value.get_amount().get_value());
+        object["currency"] = serde::Value{value.get_currency().get_value()};
+        object["reason"] = optional_text(value.get_reason());
+        assign("refund", serde::Value{std::move(object)});
+    }
+
+    void set_capture(const RelayCaptureRequestData& value)
+    {
+        serde::Value::Object object{};
+        object["authorized_amount"] = minor_unit(value.get_authorized_amount().get_value());
+        object["amount_to_capture"] = minor_unit(value.get_amount_to_capture().get_value());
+        object["currency"] = serde::Value{value.get_currency().get_value()};
+        if (value.get_capture_method()) {
+            object["capture_method"] = serde::Value{value.get_capture_method()->get_value()};
+        } else {
+            object["capture_method"] = serde::Value{};
+        }
+        assign("capture", serde::Value{std::move(object)});
+    }
+
+    void set_incremental_authorization(const RelayIncrementalAuthorizationRequestData& value)
+    {
+        serde::Value::Object object{};
+        object["total_amount"] = minor_unit(value.get_total_amount().get_value());
+        object["additional_amount"] = minor_unit(value.get_additional_amount().get_value());
+        object["currency"] = serde::Value{value.get_currency().get_value()};
+        assign("incremental_authorization", serde::Value{std::move(object)});
+    }
+
+    void set_void(const RelayVoidRequestData& value)
+    {
+        serde::Value::Object object{};
+        object["amount"] = value.get_amount()
+            ? minor_unit(value.get_amount()->get_value()) : serde::Value{};
+        object["currency"] = value.get_currency()
+            ? serde::Value{value.get_currency()->get_value()} : serde::Value{};
+        object["cancellation_reason"] = optional_text(value.get_cancellation_reason());
+        assign("void", serde::Value{std::move(object)});
+    }
+
+    void set_unreferenced_refund(const RelayUnreferencedRefundData& value)
+    {
+        serde::Value::Object object{};
+        object["amount"] = minor_unit(value.get_amount().get_value());
+        object["currency"] = serde::Value{value.get_currency().get_value()};
+        object["customer_id"] = optional_text(value.get_customer_id());
+        if (value.get_recipient_payment_method_data()) {
+            object["recipient_payment_method_data"] =
+                nested_object(value.get_recipient_payment_method_data()->get_value());
+        } else {
+            object["recipient_payment_method_data"] = serde::Value{};
+        }
+        assign("unreferenced_refund", serde::Value{std::move(object)});
+    }
+
+    /** @brief Wire round-trip entry point used by FieldConverter::from_rfl. */
+    void set_variant(std::string tag, serde::Value inner)
+    {
+        tag_ = std::move(tag);
+        inner_ = std::move(inner);
+    }
+
+    [[nodiscard]] std::string_view tag() const noexcept { return tag_; }
+    [[nodiscard]] bool present() const noexcept { return !tag_.empty(); }
+    [[nodiscard]] const serde::Value& inner() const noexcept { return inner_; }
+
+    /** @brief Externally tagged `RelayData`; empty DTO -> upstream `null`. */
+    [[nodiscard]] serde::Value to_wire() const
+    {
+        if (tag_.empty()) { return serde::Value{}; }
+        serde::Value::Object object{};
+        object[tag_] = inner_;
+        return serde::Value{std::move(object)};
+    }
+
+private:
+    static serde::Value minor_unit(std::string_view text)
+    {
+        std::int64_t parsed{};
+        const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), parsed);
+        return ec == std::errc{} && end == text.data() + text.size()
+            ? serde::Value{parsed} : serde::Value{};
+    }
+
+    static serde::Value optional_text(const std::optional<std::string>& value)
+    {
+        return value ? serde::Value{*value} : serde::Value{};
+    }
+
+    static serde::Value nested_object(std::string_view json)
+    {
+        if (json.empty()) { return serde::Value{}; }
+        const auto parsed = serde::Ser::decode_generic("application/json", json);
+        return parsed ? *parsed : serde::Value{};
+    }
+
+    void assign(std::string tag, serde::Value inner)
+    {
+        tag_ = std::move(tag);
+        inner_ = std::move(inner);
+    }
+
+    std::string tag_{};
+    serde::Value inner_{};
+};
+
+class RelayResponse
+{
+public:
+    void set_id(RelayIdValue value) { id = std::move(value); }
+    [[nodiscard]] const RelayIdValue& get_id() const noexcept { return id; }
+    void set_status(RelayStatusValue value) { status = std::move(value); }
+    [[nodiscard]] const RelayStatusValue& get_status() const noexcept { return status; }
+    void set_connector_resource_id(std::string value) { connector_resource_id = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_resource_id() const noexcept { return connector_resource_id; }
+    void set_error(std::optional<RelayError> value) { error = std::move(value); }
+    [[nodiscard]] const std::optional<RelayError>& get_error() const noexcept { return error; }
+    void set_connector_reference_id(std::optional<std::string> value) { connector_reference_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_connector_reference_id() const noexcept { return connector_reference_id; }
+    void set_connector_id(MerchantConnectorAccountIdValue value) { connector_id = std::move(value); }
+    [[nodiscard]] const MerchantConnectorAccountIdValue& get_connector_id() const noexcept { return connector_id; }
+    void set_profile_id(ProfileIdValue value) { profile_id = std::move(value); }
+    [[nodiscard]] const ProfileIdValue& get_profile_id() const noexcept { return profile_id; }
+    void set_relay_type(RelayTypeValue value) { relay_type = std::move(value); }
+    [[nodiscard]] const RelayTypeValue& get_relay_type() const noexcept { return relay_type; }
+    void set_data(RelayResponseData value) { data = std::move(value); }
+    [[nodiscard]] const RelayResponseData& get_data() const noexcept { return data; }
+    RelayIdValue id{};
+    RelayStatusValue status{};
+    std::string connector_resource_id{};
+    std::optional<RelayError> error{};
+    std::optional<std::string> connector_reference_id{};
+    MerchantConnectorAccountIdValue connector_id{};
+    ProfileIdValue profile_id{};
+    RelayTypeValue relay_type{};
+    RelayResponseData data{};
+};
 } // namespace app::dto::relay
+
+/**
+ * @brief rfl bridge for the typed response data: the reflected field value is
+ * the externally tagged `serde::Value` produced by `RelayResponseData::to_wire`,
+ * so `rfl::json::write(RelayResponse)` emits upstream's `data` shape verbatim.
+ */
+template<>
+struct serde::FieldConverter<app::dto::relay::RelayResponseData>
+{
+    using rfl_type = serde::Value;
+
+    static rfl_type to_rfl(const app::dto::relay::RelayResponseData& value)
+    {
+        return value.to_wire();
+    }
+
+    static app::dto::relay::RelayResponseData from_rfl(const rfl_type& value)
+    {
+        app::dto::relay::RelayResponseData result{};
+        const auto* object = std::get_if<serde::Value::Object>(&value.get());
+        if (object != nullptr && object->begin() != object->end()) {
+            const auto& first = *object->begin();
+            result.set_variant(first.first, first.second);
+        }
+        return result;
+    }
+};
 
 template<>
 struct serde::Serializable<app::dto::relay::RelayRequest>

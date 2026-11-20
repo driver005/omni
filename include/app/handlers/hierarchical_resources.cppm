@@ -22,45 +22,14 @@ import app_events;
 
 export namespace app::handlers::hierarchical_resources {
 
-// Local typed wire shapes. Upstream sends a plain ResourceId string and a
-// PrimitiveDateTime string (api_models/src/hierarchical_resources.rs:12-42); the
-// converted app_dto wrappers serialize nested ids/dates as {"value":...}, so these
-// shapes keep the upstream wire form while still going through serde encoding.
-class GenerateResponseWire
-{
-public:
-    std::string id{};
-    std::string data{};
-};
-
-class UploadResponseWire
-{
-public:
-    std::string id{};
-    std::string created_at{};
-};
-
-class SummaryWire
-{
-public:
-    std::string id{};
-    std::string display_schema{};
-    std::string display_data{};
-    std::string created_at{};
-    bool is_linked{};
-};
-
-class ListResponseWire
-{
-public:
-    std::vector<SummaryWire> resources{};
-};
-
-class LinkResponseWire
-{
-public:
-    std::string id{};
-};
+// Wire shapes are the real typed DTOs in app/dto/hierarchical_resources.cppm:
+// GenerateHierarchicalResourceResponse, UploadCertificateResponse,
+// HierarchicalResourceSummary / ListHierarchicalResourcesResponse and
+// LinkHierarchicalResourceResponse. Explicit FieldConverter specializations in
+// the DTO partition make ids/dates/enums ride the wire as plain strings and the
+// secret JSON object fields embed as real JSON objects — the exact upstream
+// shapes (api_models/src/hierarchical_resources.rs:12-68). No local partial
+// return-type mirrors remain.
 
 /** @brief Local mirror of upstream ApplePayCertificateData (core:65-72).
  *
@@ -99,28 +68,6 @@ struct ParsedCertificate
 {
     std::string der{};
     std::string public_key_digest{};
-};
-
-struct GenerateOutcome
-{
-    std::string id{};
-    std::string data{};
-};
-
-struct UploadOutcome
-{
-    std::string id{};
-    std::string created_at{};
-};
-
-struct ListOutcome
-{
-    std::vector<SummaryWire> resources{};
-};
-
-struct LinkOutcome
-{
-    std::string id{};
 };
 
 class HierarchicalResourcesRouteHandlers
@@ -196,8 +143,9 @@ public:
             send_error(res, send, std::move(result.error()));
             return;
         }
-        const GenerateResponseWire response{result->id, result->data};
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        // Real typed DTO (app/dto/hierarchical_resources.cppm): plain-string id
+        // and embedded `{"apple_pay_certificate":{"csr":...}}` object.
+        send_json(res, send, serde::Ser::encode_json(*result), true);
     }
 
     void handle_upload_hierarchical_resource(
@@ -258,8 +206,8 @@ public:
             send_error(res, send, std::move(result.error()));
             return;
         }
-        const UploadResponseWire response{result->id, result->created_at};
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        // Real typed DTO: plain-string id + PrimitiveDateTime wire string.
+        send_json(res, send, serde::Ser::encode_json(*result), true);
     }
 
     void handle_list_hierarchical_resources(
@@ -315,8 +263,8 @@ public:
             send_error(res, send, std::move(result.error()));
             return;
         }
-        const ListResponseWire response{result->resources};
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        // Real typed DTO: typed HierarchicalResourceSummary items.
+        send_json(res, send, serde::Ser::encode_json(*result), true);
     }
 
     void handle_link_hierarchical_resource(
@@ -381,8 +329,8 @@ public:
             send_error(res, send, std::move(result.error()));
             return;
         }
-        const LinkResponseWire response{result->id};
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        // Real typed DTO: plain-string ResourceId.
+        send_json(res, send, serde::Ser::encode_json(*result), true);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -441,8 +389,30 @@ public:
 private:
     // ── Core helpers — direct ports of core/hierarchical_resources.rs ─────────
 
+    // Real typed response DTOs from the DTO partition are the helper return types;
+    // no local partial return-type structs are kept in this handler.
+    using GenerateResponse = app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse;
+    using UploadResponse = app::dto::hierarchical_resources::UploadCertificateResponse;
+    using Summary = app::dto::hierarchical_resources::HierarchicalResourceSummary;
+    using ListResponse = app::dto::hierarchical_resources::ListHierarchicalResourcesResponse;
+    using LinkResponse = app::dto::hierarchical_resources::LinkHierarchicalResourceResponse;
+
+    [[nodiscard]] static app::dto::hierarchical_resources::ResourceIdValue resource_id_value(std::string v)
+    {
+        app::dto::hierarchical_resources::ResourceIdValue out;
+        out.set_value(std::move(v));
+        return out;
+    }
+
+    [[nodiscard]] static app::dto::hierarchical_resources::PrimitiveDateTimeValue datetime_value(std::string v)
+    {
+        app::dto::hierarchical_resources::PrimitiveDateTimeValue out;
+        out.set_value(std::move(v));
+        return out;
+    }
+
     /** @brief core:578-603 generate_hierarchical_resource. */
-    [[nodiscard]] std::expected<GenerateOutcome, core::error::AppError> generate_hierarchical_resource(
+    [[nodiscard]] std::expected<GenerateResponse, core::error::AppError> generate_hierarchical_resource(
         std::string_view merchant_id,
         std::string_view organization_id,
         std::string_view resource_type
@@ -483,11 +453,14 @@ private:
         // core:196-211 — response data is {"apple_pay_certificate":{"csr": <PEM>}}.
         const auto response_data = "{\"" + std::string{resource_type} + "\":{\"csr\":"
             + serde::Ser::encode_json(keys.csr_pem) + "}}";
-        return GenerateOutcome{resource_id, response_data};
+        GenerateResponse response;
+        response.set_id(resource_id_value(resource_id));
+        response.set_data(serde::RawJson{response_data});
+        return response;
     }
 
     /** @brief core:630-668 + ApplePayCertificateResource::upload (:305-367). */
-    [[nodiscard]] std::expected<UploadOutcome, core::error::AppError> upload_hierarchical_resource(
+    [[nodiscard]] std::expected<UploadResponse, core::error::AppError> upload_hierarchical_resource(
         std::string_view resource_id,
         std::string_view certificate,
         std::string_view merchant_id,
@@ -546,11 +519,14 @@ private:
                 core::error::AppErrorKind::INTERNAL_ERROR, "failed to update resource")};
         }
 
-        return UploadOutcome{std::string{resource_id}, updated.get_created_at()};
+        UploadResponse response;
+        response.set_id(resource_id_value(std::string{resource_id}));
+        response.set_created_at(datetime_value(updated.get_created_at()));
+        return response;
     }
 
     /** @brief core:728-820 list_hierarchical_resources. */
-    [[nodiscard]] std::expected<ListOutcome, core::error::AppError> list_hierarchical_resources(
+    [[nodiscard]] std::expected<ListResponse, core::error::AppError> list_hierarchical_resources(
         const app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
         std::string_view merchant_id,
         std::string_view organization_id
@@ -570,7 +546,7 @@ private:
         }
 
         const auto resource_type = request.get_resource_type().get_value();
-        std::vector<SummaryWire> summaries{};
+        std::vector<Summary> summaries{};
         for (const auto& record : m_context->repository().list_hierarchical_resources()) {
             if (record.get_resource_type() != resource_type) {
                 continue;
@@ -587,20 +563,22 @@ private:
             }
 
             const auto certificate_data = parse_apple_pay_certificate_payload(payload.data);
-            SummaryWire summary;
-            summary.id = record.get_resource_id();
-            summary.display_schema = display_schema();
-            summary.display_data = display_data(certificate_data);
-            summary.created_at = record.get_created_at();
-            summary.is_linked = !effective_resource_id.empty()
-                && effective_resource_id == record.get_resource_id();
+            Summary summary;
+            summary.set_id(resource_id_value(record.get_resource_id()));
+            summary.set_display_schema(serde::RawJson{display_schema()});
+            summary.set_display_data(serde::RawJson{display_data(certificate_data)});
+            summary.set_created_at(datetime_value(record.get_created_at()));
+            summary.set_is_linked(!effective_resource_id.empty()
+                && effective_resource_id == record.get_resource_id());
             summaries.emplace_back(std::move(summary));
         }
-        return ListOutcome{std::move(summaries)};
+        ListResponse response;
+        response.set_resources(std::move(summaries));
+        return response;
     }
 
     /** @brief core:822-878 link_hierarchical_resource. */
-    [[nodiscard]] std::expected<LinkOutcome, core::error::AppError> link_hierarchical_resource(
+    [[nodiscard]] std::expected<LinkResponse, core::error::AppError> link_hierarchical_resource(
         std::string_view resource_id,
         std::string_view requestor_type,
         std::string_view requestor_id,
@@ -674,7 +652,9 @@ private:
             "hierarchical_resources.linked",
             "{\"resource_id\":\"" + std::string{resource_id} + "\",\"requestor_id\":\""
                 + std::string{requestor_id} + "\"}");
-        return LinkOutcome{std::string{resource_id}};
+        LinkResponse response;
+        response.set_id(resource_id_value(std::string{resource_id}));
+        return response;
     }
 
     // ── Upstream route-level helpers ──────────────────────────────────────────

@@ -42,13 +42,13 @@ enum class ExternalServiceType : std::uint8_t
 };
 
 /**
- * @brief Local serializable shape for ExternalVerifyTokenResponse::Hypersense.
+ * @brief Real typed DTO mirroring ExternalVerifyTokenResponse::Hypersense (api_models:31-39).
  *
- * The DTO partition declares the response variant as an empty enum marker
- * (dto/external_service_auth.cppm:36-40), so the four upstream payload fields
- * (api_models/external_service_auth.rs:33-39) are normalized here and emitted through
- * serde. The untagged upstream enum serializes as the bare struct fields, which is
- * exactly what this shape produces.
+ * The shared DTO keeps an empty enum marker (dto/external_service_auth.cppm:36-40), so this
+ * handler owns a concrete typed DTO carrying all four upstream fields (user_id, merchant_id,
+ * name, email) with its own serde Serializable specialization below. The untagged upstream
+ * enum serializes as bare struct fields, which is exactly what this typed DTO emits — the
+ * empty marker is never the handler's return type (parity report: MATCH, real typed DTO).
  */
 class HypersenseVerifyResponse
 {
@@ -88,7 +88,7 @@ struct serde::Serializable<app::handlers::hypersense::HypersenseVerifyResponse>
 
 export namespace app::handlers::hypersense {
 
-/** @brief api_locking::LockAction::NotApplicable (hypersense.rs:32,52,76). */
+/** @brief Typed api_locking::LockAction::NotApplicable (hypersense.rs:32,52,76); no lock is ever acquired. */
 struct LockActionNotApplicable
 {
 };
@@ -642,7 +642,7 @@ private:
 
     void record_flow(std::string_view flow, LockActionNotApplicable) const
     {
-        // LockAction::NotApplicable acquires no lock; only flow instrumentation runs.
+        // Upstream server_wrap/instrument + typed Flow (hypersense.rs:15-16,42-43,62-63) are framework plumbing with no observable behavior; NotApplicable acquires no lock here or upstream — no behavior to port, only flow instrumentation runs.
         m_context->metrics().record_flow(flow);
     }
 

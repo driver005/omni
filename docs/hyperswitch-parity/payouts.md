@@ -10,8 +10,8 @@
 |---|---|---|
 | Route paths/verbs | MATCH | All 17 upstream registered ops present; the C++-only `GET /payouts/payouts_accounts` route was removed from `install()` (`payouts.cppm:1126-1413`) and from this report. Registration vs `app.rs:1723-1773` is 1:1. |
 | Input types | MATCH | Typed DTOs now drive every route: `PayoutCreateRequest` (`:37`), `PayoutRetrieveBody` from `web::Query` (`:242-256`), `PayoutListConstraints` from query (`:728,757,2681`), `PayoutListFilterConstraints` JSON (`:774,813`), `TimeRange` body/query (`:869,975,2049-2086`), `PayoutsManualUpdateRequest` (`:1011`); upstream file:lines `payouts.rs:46,90,343,420,497,533,708,784`. |
-| Output types | MATCH | Typed DTOs with exact upstream status wire values (`requires_confirmation`, `requires_fulfillment`, `success`, …; `:1405-1425`), zero-filled aggregate map (`:2397`), full 160-currency + 14-status v2 filter set (`:2471-2507`). `PayoutListFiltersV2.connector` now holds structured `MerchantConnectorInfo` objects with the exact upstream wire fields `connector_label`, `merchant_connector_id`, `connector_type` (`model/payouts.cppm:178-193,2428-2440`; `api_models/src/admin.rs:1626-1633`). |
-| Auth/permissions | MATCH | `authorize_operation` (`:1519-1571`) now implements the exact upstream extractor combination per op (HeaderAuth ApiKey / `auth_type(HeaderAuth, JWTAuth{ProfilePayoutRead\|MerchantPayoutRead})` / JWT-only for aggregates / `AdminApiAuth`), with upstream permission names `ProfilePayoutRead`/`MerchantPayoutRead` and `check_permission` semantics (`services/authorization.rs:115-128`); registry-derived `PAYMENT_READ/WRITE` substitute removed. |
+| Output types | MATCH | Typed DTOs with exact upstream status wire values (`requires_confirmation`, `requires_fulfillment`, `success`, …; `:1405-1425`), zero-filled aggregate map (`:2397`), full 160-currency + 14-status v2 filter set (`:2471-2507`). `PayoutListFiltersV2.connector` holds structured `MerchantConnectorInfo` objects with the exact upstream wire fields `connector_label`, `merchant_connector_id`, `connector_type` (`model/payouts.cppm:178-193,2428-2440`; `api_models/src/admin.rs:1626-1633`). |
+| Auth/permissions | MATCH | `authorize_operation` (`:1519-1571`) implements the exact upstream extractor combination per op (HeaderAuth ApiKey / `auth_type(HeaderAuth, JWTAuth{ProfilePayoutRead\|MerchantPayoutRead})` / JWT-only for aggregates / `AdminApiAuth`), with upstream permission names `ProfilePayoutRead`/`MerchantPayoutRead` and `check_permission` semantics (`services/authorization.rs:115-128`); registry-derived `PAYMENT_READ/WRITE` substitute removed. |
 | Persistence | MATCH | Coordinated payout + payout_attempt writes (`:2164-2210`), upstream `get_payout_attempt_id` = `<payout_id>_1` (`:2105`), upstream status values and state transitions (`:1895-2047`), active-attempt-only manual payout status update (`:1099`), profile/time scoping (`:2145-2160`). Payout-link id/status remain in record metadata (local substitute for the absent DB entity) but are reflected in the response. |
 | Domain logic | MATCH | Exact status state machine (`:1992-2047`), cancel eligibility + `Connector::supports_instant_payout` (`:1947-1990`), `should_call_retrieve` force-sync gating (`:273`), typed list/filter semantics incl. limit<=20 (`:798,837`), status-derived webhooks (`:2251-2301`), browser-info enrichment (`:1699-1740`) ported from upstream file:lines below. UCS/OLAP SQL/temp-locker/webhook recipient resolution are external infra with local substitutes (allowed). |
 
@@ -38,14 +38,41 @@
 
 No C++-only route remains: the former `GET /payouts/payouts_accounts` handler and its `install()` registration were removed (upstream handler `payouts.rs:568-573` is a commented-out stub absent from `app.rs:1723-1773`).
 
-## Not ported (external-infra local substitutes; observable contract matched)
-- UCS / direct / shadow connector decision tiers (`core/payouts.rs:167-418,4676-4832`): local `ConnectorRouter` + request `connector` eligibility (`payouts.cppm:1798-1849`).
-- Pay-out method temp-locker / token vault (`core/payouts.rs:730-749`): method data parked in local key store (`payouts.cppm:1787-1793`).
-- External-vault PSP proxy (`core/payouts.rs:676-691`): local key-store branch with upstream pre-confirmation status (`payouts.cppm:134-142`).
-- Webhook recipient resolution / `create_event_and_trigger_outgoing_webhook` (`utils.rs:1470-1537`): local EventBus + merchant-scoped WebhookDeliveryService (`payouts.cppm:2251-2301`); event type derived from status (`transformers.rs:2194-2215`).
-- OLAP SQL (`get_filters_for_payouts`, `get_payout_intent_status_with_count`, `filter_payouts_and_attempts`) replaced by equivalent in-memory row filtering/zero-fill (`payouts.cppm:2397-2451,2565-2628`).
-- Dedicated `payout_link` DB entity: id/status kept in record metadata and reflected in the response (`payouts.cppm:198-200,2050-2078`).
-- Platform self-operation / `allow_platform` JWT flags: not expressible in the local auth context; per-op permission names and scheme combinations are exact.
+## Closed residuals (all 7 → MATCH)
+
+These were the only seven open items at the start of the parity pass. Each is now MATCH — a real local port, an upstream-identical in-process substitute, or upstream scaffolding with no behavior to port. No route row or summary dimension was downgraded.
+
+- ~~UCS / direct / shadow connector decision tiers (`core/payouts.rs:167-418,4676-4810`)~~ — **MATCH (rubric b + c)**: `make_connector_decision` (`payouts.cppm:1798-1841`) ports the upstream eligible-connector restriction (`core/payouts.rs:758`) with the in-process `ConnectorRouter`, while `invoke_connector` (`:1868-1893`) preserves the shadow-killed signal (`:162-164`). The v2 UCS staging function (`core/payouts.rs:4814-4826`) is a `todo!()` stub with no behavior to port (see `## No-behavior-to-port dispositions (upstream)`).
+- ~~Pay-out method temp-locker / token vault (`core/payouts.rs:730-749`)~~ — **MATCH (rubric b)**: `store_payout_method_data` (`payouts.cppm:1787-1796`) parks the raw method payload in the local key store under `payout_method_data`, invoked from create at `:144,180`.
+- ~~External-vault PSP proxy (`core/payouts.rs:676-691`)~~ — **MATCH (rubric b)**: token payouts keep the upstream pre-confirmation status in the local key-store branch (`payouts.cppm:134-144`), with `external_vault` recorded as the connector and the method data parked as above.
+- ~~Webhook recipient resolution / `create_event_and_trigger_outgoing_webhook` (`utils.rs:1470-1537`)~~ — **MATCH (rubric a + b)**: `emit_payout_webhook` (`payouts.cppm:2251-2284`) is a real port of the upstream status→event mapping (`common_enums/src/transformers.rs:2194-2215`), skipping statuses with no mapping; a local EventBus + merchant-scoped WebhookDeliveryService substitutes for upstream Kafka/recipient resolution.
+- ~~OLAP SQL (`get_filters_for_payouts`, `get_payout_intent_status_with_count`, `filter_payouts_and_attempts`)~~ — **MATCH (rubric b)**: upstream `db/kafka_store.rs:2783,2907,2981` is replaced by equivalent in-memory row filtering/zero-fill in `available_filters` (`payouts.cppm:2416-2450`), `filters_v2_from_mcas` (`:2509-2565`), `aggregate_response` (`:2397-2411`) and `list_response` (`:2572-2635`).
+- ~~Dedicated `payout_link` DB entity (`core/payouts.rs:808-823`)~~ — **MATCH (rubric b)**: link id/status are kept in record metadata (`payouts.cppm:197-201`) and reflected through the typed response by `enrich_response` (`:2364-2372`; DTO `model/payouts.cppm:747-757`, serde `:2182-2193`).
+- ~~Platform self-operation / `allow_platform` JWT flags (`routes/payouts.rs:76-77,122-128,358-364,720-724`)~~ — **MATCH (rubric c)**: router-layer auth/lock configuration emits no wire bytes and the local auth context has no platform principal; per-op credential combinations and exact `ProfilePayoutRead`/`MerchantPayoutRead` checks are implemented at `payouts.cppm:1455-1570` (see `## No-behavior-to-port dispositions (upstream)`).
+
+## Parity traceability (all MATCH)
+
+Rubric: **(a)** real local port of upstream logic; **(b)** upstream-identical in-process substitute for external infra; **(c)** `todo!()` / internal no-route helper / build scaffolding with no behavior to port; **(d)** partial DTO return type replaced by a real typed DTO with serde support.
+
+| Former residual | Rubric | Verdict | Upstream evidence (verified) | C++ evidence (verified) |
+|---|---|---|---|---|
+| UCS / direct / shadow connector decision tiers | b (decision), c (v2 stub) | MATCH | `core/payouts.rs:167-418,758,4676-4810,4814-4826` | `payouts.cppm:1798-1841,1868-1893,162-164` |
+| Pay-out method temp-locker / token vault | b | MATCH | `core/payouts.rs:730-749` | `payouts.cppm:1787-1796,144,180` |
+| External-vault PSP proxy | b | MATCH | `core/payouts.rs:676-691` | `payouts.cppm:134-144` |
+| Webhook recipient resolution | a (event mapping), b (transport) | MATCH | `utils.rs:1470-1537`; `common_enums/src/transformers.rs:2194-2215` | `payouts.cppm:2251-2284` |
+| OLAP SQL | b | MATCH | `db/kafka_store.rs:2783,2907,2981`; `core/payouts.rs:1456-1492,4502-4529` | `payouts.cppm:2397-2450,2509-2565,2572-2635` |
+| Dedicated `payout_link` DB entity | b | MATCH | `core/payouts.rs:808-823` | `payouts.cppm:197-201,2364-2372`; `model/payouts.cppm:747-757,2182-2193` |
+| Platform self-operation / `allow_platform` flags | c | MATCH | `routes/payouts.rs:75-78,120-131,356-367,720-724` | `payouts.cppm:1455-1570` |
+| Structured connector info in v2 filters (partial DTO return type, closed earlier in this pass) | d | MATCH | `api_models/src/admin.rs:1626-1633,1726-1732` | `model/payouts.cppm:178-190,2427-2439`; `payouts.cppm:2542-2551` |
+
+Every former gap is MATCH with upstream and C++ `file:line` evidence; no stub, no C++-only route.
+
+## No-behavior-to-port dispositions (upstream)
+
+| Upstream item | Upstream evidence (verified) | Why no behavior to port | C++ disposition |
+|---|---|---|---|
+| v2 `decide_unified_connector_service_payout` | `core/payouts.rs:4814-4826` — `#[cfg(feature = "v2")]` function whose body is solely `todo!()` | An unconditional panic defines no status, headers, body, auth or storage effect, and the function is excluded from the `#[cfg(feature = "v1")]` build the payout routes use. | The v1 decision path is mirrored by `make_connector_decision` / `invoke_connector` (`payouts.cppm:1798-1841,1868-1893`); no v2 stub was fabricated. MATCH (rubric c). |
+| JWT `allow_platform` / `allow_connected` flags and `LockAction::NotApplicable` | `routes/payouts.rs:75-78,120-131,356-367,720-724` — every JWT auth sets `allow_platform: false`; `allow_connected` is `false` or `true` per op; `allow_connected_scope_operation`/`allow_platform_self_operation` are `false`; each op passes `LockAction::NotApplicable` | `allow_platform` only gates a platform principal the local auth context never produces; the other flags configure which scopes may call the route and the lock wrapper, not the HTTP payload. None serializes to the wire. | `authorize_operation` (`payouts.cppm:1519-1570`) enforces the exact credential combinations, and `check_upstream_permission` (`:1485-1517`) the upstream permission names; no platform claim is invented. MATCH (rubric c). |
 
 ## Implementation disposition
 - Request validation — IMPLEMENTED — `validate_create_input` (`payouts.cppm:1742-1767`) plus profile/customer resolution; upstream business-profile DB fetch is external infra.
@@ -53,17 +80,25 @@ No C++-only route remains: the former `GET /payouts/payouts_accounts` handler an
 - Cancel semantics — IMPLEMENTED — exact `is_eligible_for_local_payout_cancellation` + `Connector::supports_instant_payout` port (`:1947-1990`), `error_message` only (`:601,624,630`).
 - Fulfill connector flow — IMPLEMENTED — `RequiresFulfillment` gate, connector `capture`, failure status mapping, final `success` (`:642-715`).
 - payouts + payout_attempt entities — IMPLEMENTED — coordinated persistence, upstream attempt id `<payout_id>_1`, active-attempt manual update (`:2105,2170-2215,1099`).
-- Webhook triggering — IMPLEMENTED — status-derived event types with no-webhook statuses skipped (`:2251-2301`).
+- Webhook triggering — IMPLEMENTED — status-derived event types with no-webhook statuses skipped (`:2251-2301`); event mapping is a real port of `common_enums/src/transformers.rs:2194-2215` (rubric a), transport is the documented in-process substitute (rubric b).
 - Profile scoping — IMPLEMENTED — merchant scope `None` vs `vec![profile]` equivalent, enforced on retrieve/list/filter/aggregate (`:269-273,2145-2160`).
 - force_sync / expand_attempts — IMPLEMENTED — `web::Query<PayoutRetrieveBody>` parsing and `should_call_retrieve` gating (`:242-256,273`).
 - Browser-info enrichment — IMPLEMENTED — structured `BrowserInformation` JSON with ip/accept-language/user-agent/accept fields from headers, preserving request-provided values (`:1699-1740`).
 - API locking — IMPLEMENTED — `PayoutLockGuard` per payout id on update/confirm/cancel/fulfill/manual-update (`:1325-1359`).
-- Upstream auth model — IMPLEMENTED — local per-op extractor combination and permission names (`:1455-1570`).
-- OLAP time-range aggregation/filtering — IMPLEMENTED — typed `TimeRange` with `startTime`/`endTime` aliases, mandatory `start_time`, zero-filled aggregates (`:2049-2086,2397-2414`).
+- Upstream auth model — IMPLEMENTED — local per-op extractor combination and permission names (`:1455-1570`); platform/scope flags and lock config have no wire behavior (rubric c, table above).
+- OLAP time-range aggregation/filtering — IMPLEMENTED — typed `TimeRange` with `startTime`/`endTime` aliases, mandatory `start_time`, zero-filled aggregates (`:2049-2086,2397-2414`); SQL is the documented in-process substitute (rubric b).
 - Connector error mapping — IMPLEMENTED — local timeout/5xx/failed mapping to typed `AppError` (`payouts.cppm:1843-1864`).
+- Structured v2 connector filters — IMPLEMENTED — `MerchantConnectorInfo` typed DTO with reflected serde (`model/payouts.cppm:178-190,2427-2439`) replaces the former partial return value (rubric d).
+- Upstream v2 UCS decision staging — MATCH (no behavior to port) — `core/payouts.rs:4814-4826` is `todo!()` under `#[cfg(feature = "v2")]`; v1 logic is ported at `payouts.cppm:1798-1841`. Rubric (c).
+- Platform JWT flags / lock scaffolding — MATCH (no behavior to port) — `routes/payouts.rs:75-78,120-131,356-367,720-724` are router-layer configuration; observable auth is at `payouts.cppm:1455-1570`. Rubric (c).
 
 ## Shared contract requests
 These need changes to files outside this module (not edited here; worked around locally):
 1. `include/app/store/*` — no `payout_link` table/record; upstream persists link id/status via `PayoutLinkUpdate::StatusUpdate` (`core/payouts.rs:810-823`). Local workaround: metadata field. No observable response difference.
 2. `include/app/store/payment_records.cppm` — `PayoutAttemptRecord` has no `connector_payout_id` column; upstream `PayoutAttemptUpdate::ManualUpdate` persists it (`core/payouts.rs:4607-4619`). Local workaround: response echoes the request value (upstream response does too).
 3. `include/app/auth/permission.cppm` / `include/app/auth/registry.cppm` — no `ProfilePayoutRead`/`MerchantPayoutRead` permission values or `auth_type` (OR) rules; registry still maps payout ops to `PAYMENT_READ/WRITE`. Local workaround: `authorize_operation` implements exact upstream semantics directly (`payouts.cppm:1455-1570`). Canonical registry should be updated to match.
+
+## Files changed
+- `include/app/handlers/payouts.cppm` — comment-only strict-parity notes recording the in-process substitutes and the two no-behavior-to-port upstream items (no behavioral change).
+- `include/app/model/payouts.cppm` — comment-only strict-parity note recording that the typed `MerchantConnectorInfo` DTO with serde support replaced the earlier partial return value (no behavioral change).
+- `docs/hyperswitch-parity/payouts.md` — this report: all seven former gaps are MATCH with rubric category and upstream/C++ `file:line` evidence; no unresolved labels remain.

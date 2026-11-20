@@ -22,6 +22,33 @@ import app_services;
 export namespace app::handlers::profiles {
 
 /**
+ * Profile-owned wire type for upstream `api_models::admin::ProfileResponse`
+ * (`docs/hyperswitch/crates/api_models/src/admin.rs:2838-3062` (v1) /
+ * `:3066-...` (v2)). The shared `app::dto::admin::ProfileResponse` keeps its
+ * ids as `*Value` wrapper objects, which rfl serializes as `{"value": "..."}`
+ * instead of the plain id strings upstream puts on the wire. This module owns
+ * its response wire shape, so it derives the shared field bag but overrides
+ * the two id accessors with plain `std::string`. Every other field keeps its
+ * shared nested type, so no shared DTO has to be edited. Upstream's
+ * domain-only extended-card flag (`business_profile.is_extended_card_info_enabled`,
+ * `core/admin.rs:4922-4929`) has no `ProfileResponse` field upstream either;
+ * the upstream-exposed `extended_card_info_config` field is inherited below
+ * and the toggle state stays in the profile's scoped config.
+ */
+class ProfileWireResponse : public app::dto::admin::ProfileResponse
+{
+public:
+    void set_merchant_id(std::string value) { m_merchant_id = std::move(value); }
+    [[nodiscard]] const std::string& get_merchant_id() const noexcept { return m_merchant_id; }
+    void set_profile_id(std::string value) { m_profile_id = std::move(value); }
+    [[nodiscard]] const std::string& get_profile_id() const noexcept { return m_profile_id; }
+
+private:
+    std::string m_merchant_id{};
+    std::string m_profile_id{};
+};
+
+/**
  * Strict port of upstream `routes/profiles.rs` + the profile functions of
  * `core/admin.rs`. Upstream external infrastructure (accounts_store, master
  * key, key store, decision engine, outbound destination resolver) is replaced
@@ -480,7 +507,8 @@ public:
 
 private:
     using JsonResult = std::expected<std::string, core::error::AppError>;
-    using Response = app::dto::admin::ProfileResponse;
+    // Profile-owned typed wire DTO (plain id strings, no shared *Value wrapper).
+    using Response = ProfileWireResponse;
     using CreateInput = app::dto::admin::ProfileCreate;
     using UpdateInput = app::dto::admin::ProfileUpdate;
 
@@ -513,7 +541,7 @@ private:
         if (!domain) {
             return std::unexpected(domain.error());
         }
-        const std::string profile_id = domain->get_profile_id().get_value();
+        const std::string profile_id = domain->get_profile_id();
 
         // core/admin.rs:4088-4098 — insert_business_profile + duplicate mapping
         // (GenericDuplicateError -> ALREADY_EXISTS / HTTP 409).
@@ -577,7 +605,7 @@ private:
             return std::unexpected(profile_not_found(profile_id));
         }
         // core/admin.rs:4167-4179 — cache hits preserve the DB ownership constraint.
-        if (profile->get_merchant_id().get_value() != merchant_id && !merchant_id.empty()) {
+        if (profile->get_merchant_id() != merchant_id && !merchant_id.empty()) {
             return std::unexpected(profile_not_found(profile_id));
         }
         return serde::Ser::encode_json(*profile);
@@ -666,8 +694,10 @@ private:
             return std::unexpected(profile_not_found(profile_id));
         }
         // core/admin.rs:4922-4938 — conditional ExtendedCardInfoUpdate. The
-        // upstream domain flag has no ProfileResponse field in the C++ DTO, so
-        // the persisted scoped config row is its in-process representation.
+        // upstream domain flag has no ProfileResponse field on the wire either
+        // (admin.rs:2838-3062), so the persisted scoped config row is its
+        // in-process representation; the profile-owned wire type keeps only
+        // the upstream-exposed `extended_card_info_config` field.
         const auto key = card_config_key(profile_id);
         const auto current = m_context->repository().get_config(key);
         if (!current || *current != (choice.get_enabled() ? "true" : "false")) {
@@ -699,7 +729,7 @@ private:
             return std::unexpected(profile_not_found(profile_id));
         }
         // core/admin.rs:4962-4966 — AccessForbidden on owner mismatch.
-        if (stored->get_merchant_id().get_value() != merchant_id && !merchant_id.empty()) {
+        if (stored->get_merchant_id() != merchant_id && !merchant_id.empty()) {
             return std::unexpected(make_error(
                 core::error::AppErrorKind::FORBIDDEN,
                 std::format("Access forbidden for resource {}", profile_id)
@@ -759,12 +789,10 @@ private:
         const auto account = repository.find_merchant_account_by_string(merchant_id);
         Response domain;
         const std::string profile_id = m_context->ids().payment_id("profile_");
-        app::dto::admin::ProfileIdValue id;
-        id.set_value(profile_id);
-        domain.set_profile_id(std::move(id));
-        app::dto::admin::MerchantIdValue mid;
-        mid.set_value(account ? account->get_merchant_id() : std::string{merchant_id});
-        domain.set_merchant_id(std::move(mid));
+        // Plain id strings on the profile-owned wire type — upstream emits
+        // id_type::MerchantId/ProfileId as plain strings (`admin.rs:2841,2845`).
+        domain.set_profile_id(profile_id);
+        domain.set_merchant_id(account ? account->get_merchant_id() : std::string{merchant_id});
 
         // core/admin.rs:3603 — profile_name defaults to "default".
         domain.set_profile_name(request.get_profile_name().value_or("default"));
@@ -1345,7 +1373,7 @@ private:
         }
         std::vector<Response> out{};
         for (auto& profile : profiles) {
-            const auto& id = profile.get_profile_id().get_value();
+            const auto& id = profile.get_profile_id();
             if (std::find(ids->begin(), ids->end(), id) != ids->end()) {
                 out.push_back(std::move(profile));
             }
@@ -1649,3 +1677,70 @@ private:
 };
 
 } // namespace app::handlers::profiles
+
+template<>
+struct serde::Serializable<app::handlers::profiles::ProfileWireResponse>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"merchant_id", &app::handlers::profiles::ProfileWireResponse::get_merchant_id, &app::handlers::profiles::ProfileWireResponse::set_merchant_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::handlers::profiles::ProfileWireResponse::get_profile_id, &app::handlers::profiles::ProfileWireResponse::set_profile_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_name", &app::handlers::profiles::ProfileWireResponse::get_profile_name, &app::handlers::profiles::ProfileWireResponse::set_profile_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"return_url", &app::handlers::profiles::ProfileWireResponse::get_return_url, &app::handlers::profiles::ProfileWireResponse::set_return_url, serde::FieldOptions{}>{},
+            serde::FieldDesc<"enable_payment_response_hash", &app::handlers::profiles::ProfileWireResponse::get_enable_payment_response_hash, &app::handlers::profiles::ProfileWireResponse::set_enable_payment_response_hash, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_response_hash_key", &app::handlers::profiles::ProfileWireResponse::get_payment_response_hash_key, &app::handlers::profiles::ProfileWireResponse::set_payment_response_hash_key, serde::FieldOptions{}>{},
+            serde::FieldDesc<"redirect_to_merchant_with_http_post", &app::handlers::profiles::ProfileWireResponse::get_redirect_to_merchant_with_http_post, &app::handlers::profiles::ProfileWireResponse::set_redirect_to_merchant_with_http_post, serde::FieldOptions{}>{},
+            serde::FieldDesc<"webhook_details", &app::handlers::profiles::ProfileWireResponse::get_webhook_details, &app::handlers::profiles::ProfileWireResponse::set_webhook_details, serde::FieldOptions{}>{},
+            serde::FieldDesc<"metadata", &app::handlers::profiles::ProfileWireResponse::get_metadata, &app::handlers::profiles::ProfileWireResponse::set_metadata, serde::FieldOptions{}>{},
+            serde::FieldDesc<"routing_algorithm", &app::handlers::profiles::ProfileWireResponse::get_routing_algorithm, &app::handlers::profiles::ProfileWireResponse::set_routing_algorithm, serde::FieldOptions{}>{},
+            serde::FieldDesc<"intent_fulfillment_time", &app::handlers::profiles::ProfileWireResponse::get_intent_fulfillment_time, &app::handlers::profiles::ProfileWireResponse::set_intent_fulfillment_time, serde::FieldOptions{}>{},
+            serde::FieldDesc<"frm_routing_algorithm", &app::handlers::profiles::ProfileWireResponse::get_frm_routing_algorithm, &app::handlers::profiles::ProfileWireResponse::set_frm_routing_algorithm, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payout_routing_algorithm", &app::handlers::profiles::ProfileWireResponse::get_payout_routing_algorithm, &app::handlers::profiles::ProfileWireResponse::set_payout_routing_algorithm, serde::FieldOptions{}>{},
+            serde::FieldDesc<"applepay_verified_domains", &app::handlers::profiles::ProfileWireResponse::get_applepay_verified_domains, &app::handlers::profiles::ProfileWireResponse::set_applepay_verified_domains, serde::FieldOptions{}>{},
+            serde::FieldDesc<"session_expiry", &app::handlers::profiles::ProfileWireResponse::get_session_expiry, &app::handlers::profiles::ProfileWireResponse::set_session_expiry, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_link_config", &app::handlers::profiles::ProfileWireResponse::get_payment_link_config, &app::handlers::profiles::ProfileWireResponse::set_payment_link_config, serde::FieldOptions{}>{},
+            serde::FieldDesc<"authentication_connector_details", &app::handlers::profiles::ProfileWireResponse::get_authentication_connector_details, &app::handlers::profiles::ProfileWireResponse::set_authentication_connector_details, serde::FieldOptions{}>{},
+            serde::FieldDesc<"use_billing_as_payment_method_billing", &app::handlers::profiles::ProfileWireResponse::get_use_billing_as_payment_method_billing, &app::handlers::profiles::ProfileWireResponse::set_use_billing_as_payment_method_billing, serde::FieldOptions{}>{},
+            serde::FieldDesc<"extended_card_info_config", &app::handlers::profiles::ProfileWireResponse::get_extended_card_info_config, &app::handlers::profiles::ProfileWireResponse::set_extended_card_info_config, serde::FieldOptions{}>{},
+            serde::FieldDesc<"collect_shipping_details_from_wallet_connector", &app::handlers::profiles::ProfileWireResponse::get_collect_shipping_details_from_wallet_connector, &app::handlers::profiles::ProfileWireResponse::set_collect_shipping_details_from_wallet_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"collect_billing_details_from_wallet_connector", &app::handlers::profiles::ProfileWireResponse::get_collect_billing_details_from_wallet_connector, &app::handlers::profiles::ProfileWireResponse::set_collect_billing_details_from_wallet_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"always_collect_shipping_details_from_wallet_connector", &app::handlers::profiles::ProfileWireResponse::get_always_collect_shipping_details_from_wallet_connector, &app::handlers::profiles::ProfileWireResponse::set_always_collect_shipping_details_from_wallet_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"always_collect_billing_details_from_wallet_connector", &app::handlers::profiles::ProfileWireResponse::get_always_collect_billing_details_from_wallet_connector, &app::handlers::profiles::ProfileWireResponse::set_always_collect_billing_details_from_wallet_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_connector_agnostic_mit_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_connector_agnostic_mit_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_connector_agnostic_mit_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payout_link_config", &app::handlers::profiles::ProfileWireResponse::get_payout_link_config, &app::handlers::profiles::ProfileWireResponse::set_payout_link_config, serde::FieldOptions{}>{},
+            serde::FieldDesc<"outgoing_webhook_custom_http_headers", &app::handlers::profiles::ProfileWireResponse::get_outgoing_webhook_custom_http_headers, &app::handlers::profiles::ProfileWireResponse::set_outgoing_webhook_custom_http_headers, serde::FieldOptions{}>{},
+            serde::FieldDesc<"tax_connector_id", &app::handlers::profiles::ProfileWireResponse::get_tax_connector_id, &app::handlers::profiles::ProfileWireResponse::set_tax_connector_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_tax_connector_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_tax_connector_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_tax_connector_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_network_tokenization_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_network_tokenization_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_network_tokenization_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_auto_retries_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_auto_retries_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_auto_retries_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"max_auto_retries_enabled", &app::handlers::profiles::ProfileWireResponse::get_max_auto_retries_enabled, &app::handlers::profiles::ProfileWireResponse::set_max_auto_retries_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"always_request_extended_authorization", &app::handlers::profiles::ProfileWireResponse::get_always_request_extended_authorization, &app::handlers::profiles::ProfileWireResponse::set_always_request_extended_authorization, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_click_to_pay_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_click_to_pay_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_click_to_pay_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"authentication_product_ids", &app::handlers::profiles::ProfileWireResponse::get_authentication_product_ids, &app::handlers::profiles::ProfileWireResponse::set_authentication_product_ids, serde::FieldOptions{}>{},
+            serde::FieldDesc<"card_testing_guard_config", &app::handlers::profiles::ProfileWireResponse::get_card_testing_guard_config, &app::handlers::profiles::ProfileWireResponse::set_card_testing_guard_config, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_clear_pan_retries_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_clear_pan_retries_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_clear_pan_retries_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"force_3ds_challenge", &app::handlers::profiles::ProfileWireResponse::get_force_3ds_challenge, &app::handlers::profiles::ProfileWireResponse::set_force_3ds_challenge, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_debit_routing_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_debit_routing_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_debit_routing_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"merchant_business_country", &app::handlers::profiles::ProfileWireResponse::get_merchant_business_country, &app::handlers::profiles::ProfileWireResponse::set_merchant_business_country, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_pre_network_tokenization_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_pre_network_tokenization_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_pre_network_tokenization_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"acquirer_configs", &app::handlers::profiles::ProfileWireResponse::get_acquirer_configs, &app::handlers::profiles::ProfileWireResponse::set_acquirer_configs, serde::FieldOptions{}>{},
+            serde::FieldDesc<"acquirer_config_bucket", &app::handlers::profiles::ProfileWireResponse::get_acquirer_config_bucket, &app::handlers::profiles::ProfileWireResponse::set_acquirer_config_bucket, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_iframe_redirection_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_iframe_redirection_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_iframe_redirection_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"merchant_category_code", &app::handlers::profiles::ProfileWireResponse::get_merchant_category_code, &app::handlers::profiles::ProfileWireResponse::set_merchant_category_code, serde::FieldOptions{}>{},
+            serde::FieldDesc<"merchant_country_code", &app::handlers::profiles::ProfileWireResponse::get_merchant_country_code, &app::handlers::profiles::ProfileWireResponse::set_merchant_country_code, serde::FieldOptions{}>{},
+            serde::FieldDesc<"dispute_polling_interval", &app::handlers::profiles::ProfileWireResponse::get_dispute_polling_interval, &app::handlers::profiles::ProfileWireResponse::set_dispute_polling_interval, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_manual_retry_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_manual_retry_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_manual_retry_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"auto_fallback_capture_method", &app::handlers::profiles::ProfileWireResponse::get_auto_fallback_capture_method, &app::handlers::profiles::ProfileWireResponse::set_auto_fallback_capture_method, serde::FieldOptions{}>{},
+            serde::FieldDesc<"always_enable_overcapture", &app::handlers::profiles::ProfileWireResponse::get_always_enable_overcapture, &app::handlers::profiles::ProfileWireResponse::set_always_enable_overcapture, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_external_vault_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_external_vault_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_external_vault_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"external_vault_connector_details", &app::handlers::profiles::ProfileWireResponse::get_external_vault_connector_details, &app::handlers::profiles::ProfileWireResponse::set_external_vault_connector_details, serde::FieldOptions{}>{},
+            serde::FieldDesc<"billing_processor_id", &app::handlers::profiles::ProfileWireResponse::get_billing_processor_id, &app::handlers::profiles::ProfileWireResponse::set_billing_processor_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"surcharge_connector_details", &app::handlers::profiles::ProfileWireResponse::get_surcharge_connector_details, &app::handlers::profiles::ProfileWireResponse::set_surcharge_connector_details, serde::FieldOptions{}>{},
+            serde::FieldDesc<"is_l2_l3_enabled", &app::handlers::profiles::ProfileWireResponse::get_is_l2_l3_enabled, &app::handlers::profiles::ProfileWireResponse::set_is_l2_l3_enabled, serde::FieldOptions{}>{},
+            serde::FieldDesc<"network_tokenization_credentials", &app::handlers::profiles::ProfileWireResponse::get_network_tokenization_credentials, &app::handlers::profiles::ProfileWireResponse::set_network_tokenization_credentials, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_method_blocking", &app::handlers::profiles::ProfileWireResponse::get_payment_method_blocking, &app::handlers::profiles::ProfileWireResponse::set_payment_method_blocking, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "profile_response"; }
+};

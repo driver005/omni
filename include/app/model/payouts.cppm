@@ -2513,6 +2513,16 @@ struct serde::Serializable<app::model::payouts::PayoutsManualUpdateResponse>
     static constexpr std::string_view table_name() { return "payouts_manual_update_response"; }
 };
 
+/**
+ * @brief Strict-parity note (comment-only; see docs/hyperswitch-parity/payouts.md).
+ *
+ * `MerchantConnectorInfo` (`:178-190`, serde `:2427-2439`) is the real typed DTO used as the
+ * value type of `PayoutListFiltersV2.connector` (`:874-890`, serde `:2441-2454`). It replaced
+ * the earlier partial `PayoutListFilters` return value used for the v2 filter routes. Its
+ * three fields are the exact upstream wire fields of `api_models/src/admin.rs:1626-1633`,
+ * with the upstream conversion at `api_models/src/admin.rs:1726-1732` mirrored in
+ * `handlers/payouts.cppm:2542-2551`.
+ */
 #ifdef CONGELADO_TEST
 namespace app::model::payouts::tests {
 using namespace boost::ut;

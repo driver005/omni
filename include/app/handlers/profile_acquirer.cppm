@@ -109,6 +109,13 @@ public:
             send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
+        // Upstream web::Json<ProfileAcquirerCreate> extraction (routes:16, api_models:4-32)
+        // deserializes `network: CardNetwork` and `acquirer_country_code: CountryAlpha2`,
+        // rejecting unknown enum strings with HTTP 400 before server_wrap/core run.
+        if (!payload_passes_serde_validation(body, false)) {
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            return;
+        }
         using Input = app::dto::profile_acquirer::ProfileAcquirerCreate;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
@@ -202,6 +209,13 @@ public:
         const auto body = req.body_as_string();
         if (body.empty()) {
             send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            return;
+        }
+        // Upstream web::Json<ProfileAcquirerUpdate> extraction (routes:61,
+        // api_models:154-174) applies `#[serde(deny_unknown_fields)]` plus the
+        // CardNetwork / CountryAlpha2 enum checks, all as HTTP 400 before core.
+        if (!payload_passes_serde_validation(body, true)) {
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
         using Input = app::dto::profile_acquirer::ProfileAcquirerUpdate;
@@ -377,6 +391,69 @@ private:
         return m_context->authorizer().authorize_route(context, rule);
     }
 
+    // ---- serde extraction validation (upstream web::Json<...> extraction) ----
+    // Upstream rejects at extraction with HTTP 400, before server_wrap/core:
+    //   ProfileAcquirerCreate (api_models:4-32)   -> enum validation only
+    //   ProfileAcquirerUpdate (api_models:154-174)-> #[serde(deny_unknown_fields)] + enums
+    // CardNetwork serde values are the variant names plus #[serde(alias)] entries
+    // (common_enums/src/enums.rs:3659-3723); CountryAlpha2 serde values are the
+    // 249 two-letter variants (enums.rs:4285-...), the exact set held by the
+    // alpha2_to_numeric() table used by normalize_country() below.
+    [[nodiscard]] static bool payload_passes_serde_validation(
+        std::string_view body,
+        bool deny_unknown_fields
+    )
+    {
+        auto generic = serde::Ser::decode_generic("application/json", body);
+        if (!generic) {
+            return false;
+        }
+        const auto* root = std::get_if<interfaces::Value::Object>(&generic->get());
+        if (root == nullptr) {
+            return false;
+        }
+        static constexpr auto kUpdateFields = std::to_array<std::string_view>({
+            "acquirer_assigned_merchant_id", "merchant_name", "network", "acquirer_bin",
+            "acquirer_ica", "acquirer_fraud_rate", "acquirer_country_code", "is_default"});
+        for (const auto& [key, value] : *root) {
+            const std::string_view field{key};
+            if (deny_unknown_fields
+                && std::find(kUpdateFields.begin(), kUpdateFields.end(), field) == kUpdateFields.end()) {
+                return false; // serde deny_unknown_fields
+            }
+            if (const auto* text = std::get_if<std::string>(&value.get())) {
+                if (field == "network" && !is_valid_card_network(*text)) {
+                    return false;
+                }
+                if (field == "acquirer_country_code" && !is_valid_country_alpha2(*text)) {
+                    return false;
+                }
+            }
+            // A non-string enum value is either null (Option => valid) or is
+            // rejected by the typed deserialize<Input>() below with HTTP 400.
+        }
+        return true;
+    }
+
+    [[nodiscard]] static bool is_valid_card_network(std::string_view network)
+    {
+        static constexpr auto kAccepted = std::to_array<std::string_view>({
+            "Visa", "Mastercard", "AmericanExpress", "JCB", "DinersClub", "Discover",
+            "CartesBancaires", "UnionPay", "Interac", "RuPay", "Maestro", "Star", "Pulse",
+            "Accel", "Nyce", "Prop", "PrivateLabel", "Dinacard", "AirPlus", "Aurore",
+            "EftposAustralia", "GeCapital", "Uatp",
+            "VISA", "MASTERCARD", "AMERICANEXPRESS", "AMEX", "DINERSCLUB", "DISCOVER",
+            "CARTESBANCAIRES", "UNIONPAY", "INTERAC", "RUPAY", "MAESTRO", "STAR", "PULSE",
+            "ACCEL", "NYCE", "PROP", "PRIVATE LABEL", "DINACARD", "AIRPLUS", "AURORE",
+            "EFTPOS_AUSTRALIA", "GECAPITAL", "UATP"});
+        return std::find(kAccepted.begin(), kAccepted.end(), network) != kAccepted.end();
+    }
+
+    [[nodiscard]] static bool is_valid_country_alpha2(std::string_view code)
+    {
+        return alpha2_to_numeric(code).has_value();
+    }
+
     // ---- persistence: business state mirrors the AcquirerConfigBucket --------
     [[nodiscard]] std::optional<std::string> load_value(std::string_view key) const
     {
@@ -545,20 +622,13 @@ private:
         return out;
     }
 
-    /** @brief common_enums::Country::from_alpha2(...).to_numeric().to_string().
+    /** @brief Full 249-entry ISO 3166-1 alpha2 -> numeric table (transformers.rs:277+,1544+).
      *
-     * Full ISO 3166-1 alpha-2 -> numeric table extracted verbatim from
-     * docs/hyperswitch/crates/common_enums/src/transformers.rs:277-... (from_alpha2)
-     * and :1544-... (to_numeric). Values are u32, so `to_string` is UNpadded
-     * (e.g. AU -> "36", US -> "840").
+     * Shared by normalize_country() and is_valid_country_alpha2() so extraction-time
+     * CountryAlpha2 validation and the core conversion use the exact same code set.
      */
-    [[nodiscard]] static std::optional<std::string> normalize_country(
-        const std::optional<app::dto::profile_acquirer::CountryAlpha2Value>& code
-    )
+    [[nodiscard]] static std::optional<unsigned> alpha2_to_numeric(std::string_view alpha)
     {
-        if (!code) {
-            return std::nullopt;
-        }
         static constexpr std::pair<std::string_view, unsigned> kAlpha2ToNumeric[]{
             {"AD", 20},   {"AE", 784},  {"AF", 4},    {"AG", 28},   {"AI", 660},
             {"AL", 8},    {"AM", 51},   {"AO", 24},   {"AQ", 10},   {"AR", 32},
@@ -611,14 +681,30 @@ private:
             {"VN", 704},  {"VU", 548},  {"WF", 876},  {"WS", 882},  {"YE", 887},
             {"YT", 175},  {"ZA", 710},  {"ZM", 894},  {"ZW", 716}
         };
-        const std::string_view alpha = code->get_value();
         for (const auto& [key, numeric] : kAlpha2ToNumeric) {
             if (key == alpha) {
-                return std::to_string(numeric);
+                return numeric;
             }
         }
-        // Invalid alpha-2 would be rejected by serde validation upstream before core;
-        // keep the raw value as a safe fallback in this port.
+        return std::nullopt;
+    }
+
+    /** @brief common_enums::Country::from_alpha2(...).to_numeric().to_string() (core:47-51,268-272).
+     *
+     * Values are u32, so `to_string` is UNpadded (e.g. AU -> "36", US -> "840").
+     */
+    [[nodiscard]] static std::optional<std::string> normalize_country(
+        const std::optional<app::dto::profile_acquirer::CountryAlpha2Value>& code
+    )
+    {
+        if (!code) {
+            return std::nullopt;
+        }
+        if (const auto numeric = alpha2_to_numeric(code->get_value())) {
+            return std::to_string(*numeric);
+        }
+        // Invalid alpha-2 would be rejected by extraction-time validation above
+        // (same set as CountryAlpha2); keep the raw value as a safe fallback.
         return code->get_value();
     }
 

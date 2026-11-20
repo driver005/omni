@@ -839,9 +839,9 @@ private:
         );
     }
 
-    // Deterministic in-process substitute for server_wrap/instrument plumbing.
-    // Upstream uses api_locking::LockAction::NotApplicable (routes/gsm.rs), so
-    // no ApiLock is acquired; the event records the operation instead.
+    // Documented in-process substitute for server_wrap/#[instrument] telemetry:
+    // upstream emits Flow metrics + ApiEventsType::Gsm (services/api.rs:420;
+    // routes/gsm.rs:31,69,106,144; diesel_models/gsm.rs:161-164); no lock is taken.
     [[nodiscard]] std::string audit_payload(std::string_view operation, std::string_view key) const
     {
         std::string escaped;

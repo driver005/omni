@@ -456,7 +456,8 @@ public:
         ::app::dto::relay::RelayTypeValue response_type{};
         response_type.set_value(std::string{relay_type_wire(kind)});
         response.set_relay_type(std::move(response_type));
-        response.set_data(tagged_relay_data(kind, relay_data));
+        response.set_data(tagged_relay_data(kind, relay_data)
+                              .value_or(::app::dto::relay::RelayResponseData{}));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -589,7 +590,8 @@ public:
         relay_type.set_value(std::string{relay_type_wire(
             kind == RelayKind::Unknown ? RelayKind::Refund : kind)});
         response.set_relay_type(std::move(relay_type));
-        response.set_data(reconstruct_relay_data(kind, record.get_payload()));
+        response.set_data(reconstruct_relay_data(kind, record.get_payload())
+                              .value_or(::app::dto::relay::RelayResponseData{}));
         if (!sync_response.get_message().empty()) {
             ::app::dto::relay::RelayError relay_error{};
             relay_error.set_code(sync_response.get_status());
@@ -1256,24 +1258,112 @@ private:
         }
     }
 
-    /** @brief Upstream RelayResponse.data: Some(RelayData) externally tagged. */
-    [[nodiscard]] std::optional<serde::Value> tagged_relay_data(
+    /**
+     * @brief Upstream RelayResponse.data: Some(RelayData) externally tagged.
+     * Decodes the persisted generic request payload into the typed response DTO
+     * (include/app/dto/relay.cppm); `RelayResponseData::to_wire` then emits the
+     * exact `{"<variant>": {...}}` shape through its serde field converter.
+     */
+    [[nodiscard]] std::optional<::app::dto::relay::RelayResponseData> tagged_relay_data(
         RelayKind kind,
         const serde::Value& inner
     ) const
     {
-        const auto key = relay_data_key(kind);
-        if (key.empty()) { return std::nullopt; }
-        serde::Value::Object object{};
-        object[std::string{key}] = inner;
-        return serde::Value{std::move(object)};
+        namespace DTO = ::app::dto::relay;
+        DTO::RelayResponseData result{};
+        switch (kind) {
+            case RelayKind::Refund: {
+                DTO::RelayRefundRequestData data{};
+                DTO::MinorUnitValue amount{};
+                amount.set_value(std::to_string(field_number(inner, "amount").value_or(0)));
+                data.set_amount(std::move(amount));
+                DTO::CurrencyValue currency{};
+                currency.set_value(field_string(inner, "currency").value_or(""));
+                data.set_currency(std::move(currency));
+                data.set_reason(field_string(inner, "reason"));
+                result.set_refund(data);
+                break;
+            }
+            case RelayKind::Capture: {
+                DTO::RelayCaptureRequestData data{};
+                DTO::MinorUnitValue authorized{};
+                authorized.set_value(std::to_string(
+                    field_number(inner, "authorized_amount").value_or(0)));
+                data.set_authorized_amount(std::move(authorized));
+                DTO::MinorUnitValue to_capture{};
+                to_capture.set_value(std::to_string(
+                    field_number(inner, "amount_to_capture").value_or(0)));
+                data.set_amount_to_capture(std::move(to_capture));
+                DTO::CurrencyValue currency{};
+                currency.set_value(field_string(inner, "currency").value_or(""));
+                data.set_currency(std::move(currency));
+                if (const auto method = field_string(inner, "capture_method")) {
+                    DTO::CaptureMethodValue value{};
+                    value.set_value(*method);
+                    data.set_capture_method(std::move(value));
+                }
+                result.set_capture(data);
+                break;
+            }
+            case RelayKind::IncrementalAuthorization: {
+                DTO::RelayIncrementalAuthorizationRequestData data{};
+                DTO::MinorUnitValue total{};
+                total.set_value(std::to_string(field_number(inner, "total_amount").value_or(0)));
+                data.set_total_amount(std::move(total));
+                DTO::MinorUnitValue additional{};
+                additional.set_value(std::to_string(
+                    field_number(inner, "additional_amount").value_or(0)));
+                data.set_additional_amount(std::move(additional));
+                DTO::CurrencyValue currency{};
+                currency.set_value(field_string(inner, "currency").value_or(""));
+                data.set_currency(std::move(currency));
+                result.set_incremental_authorization(data);
+                break;
+            }
+            case RelayKind::Void: {
+                DTO::RelayVoidRequestData data{};
+                if (const auto parsed = field_number(inner, "amount")) {
+                    DTO::MinorUnitValue amount{};
+                    amount.set_value(std::to_string(*parsed));
+                    data.set_amount(std::move(amount));
+                }
+                if (const auto currency = field_string(inner, "currency")) {
+                    DTO::CurrencyValue value{};
+                    value.set_value(*currency);
+                    data.set_currency(std::move(value));
+                }
+                data.set_cancellation_reason(field_string(inner, "cancellation_reason"));
+                result.set_void(data);
+                break;
+            }
+            case RelayKind::UnreferencedRefund: {
+                DTO::RelayUnreferencedRefundData data{};
+                DTO::MinorUnitValue amount{};
+                amount.set_value(std::to_string(field_number(inner, "amount").value_or(0)));
+                data.set_amount(std::move(amount));
+                DTO::CurrencyValue currency{};
+                currency.set_value(field_string(inner, "currency").value_or(""));
+                data.set_currency(std::move(currency));
+                data.set_customer_id(field_string(inner, "customer_id"));
+                if (const auto method = field_value(inner, "recipient_payment_method_data")) {
+                    DTO::RecipientPaymentMethodDataValue value{};
+                    value.set_value(serde::Ser::encode_json(*method));
+                    data.set_recipient_payment_method_data(std::move(value));
+                }
+                result.set_unreferenced_refund(data);
+                break;
+            }
+            default:
+                return std::nullopt;
+        }
+        return result;
     }
 
     /**
-     * @brief Rebuilds the tagged response data from the persisted
+     * @brief Rebuilds the typed response data from the persisted
      * "Kind|<request body>" payload on retrieve (RelayResponse::from).
      */
-    [[nodiscard]] std::optional<serde::Value> reconstruct_relay_data(
+    [[nodiscard]] std::optional<::app::dto::relay::RelayResponseData> reconstruct_relay_data(
         RelayKind kind,
         std::string_view payload
     ) const

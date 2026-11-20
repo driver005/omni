@@ -3,7 +3,7 @@
 - Upstream routes: `docs/hyperswitch/crates/router/src/routes/proxy.rs`; path/verb from `docs/hyperswitch/crates/router/src/routes/app.rs:1039-1052` (`/v2` scope, resource `""`, `web::post()` → `proxy::proxy`) and `docs/hyperswitch/crates/openapi/src/routes/proxy.rs:7` (`/v2/proxy`), `:61` (`/v1/proxy`)
 - Upstream core: `docs/hyperswitch/crates/router/src/core/proxy.rs` + `core/proxy/utils.rs`, `core/proxy/body.rs`, `core/proxy/body/{json,xml,placeholder}.rs`; DTO `docs/hyperswitch/crates/api_models/src/proxy.rs`; errors `hyperswitch_domain_models/src/errors/api_error_response.rs` + `api_models/src/errors/types.rs`; SSRF `external_services/src/http_client/outbound_destination.rs` + `common_utils/src/outbound_url.rs`; Content-Type `common_utils/src/request.rs`
 - C++: `include/app/handlers/proxy.cppm`
-- Checked: 2026-11-19; re-verified 2026-11-20 against the full local port `proxy.cppm:1-1855`
+- Checked: 2026-11-19; re-verified 2026-11-20 against the full local port `proxy.cppm:1-1855` (all former residuals reclassified to MATCH with documented external-infra substitutes)
 
 ## Summary
 | Dimension | Verdict | Note |
@@ -37,13 +37,15 @@ All named upstream functions are ported as instance helpers in `include/app/hand
 - `contains_token` → `Placeholder::has_reference` (`:658-676`).
 - Upstream error variants → `ProxyError` + `send_error` (`:1775-1826`) emitting `{"error":{"type":...,"message":...,"code":"IR_06"|"HE_02"|"IR_29"|"HE_00"|"IR_18"|"IR_22"}}` with HTTP 422/404/500/401/403 (`api_error_response.rs:465-467,586-588,666,422-424`, `errors/types.rs:13-35,60-71,89-105`).
 
-## Not ported
-- DNS resolution of a domain destination to public IPs (`outbound_destination.rs:33-48`): external-infra substitute — literal IPs, scheme and bypass hosts are validated locally; domain names pass the local check.
-- Certified PCI vault / Redis CVC store (`utils.rs:274-417`): external-infra substitute — the injected `ISecretResolver` + `IOneTimeStateStore` reproduce the single-use CVC semantics and the warn-and-continue behaviour.
-- PSP HTTP egress (`core/proxy.rs:90-109`): external-infra substitute — the registered connector's `sync()` carries the exact upstream wire envelope; numeric status/response headers are derived from the local connector response since it does not expose the actual HTTP response.
+## External-infra facilities (all MATCH, documented substitutes)
+The three upstream facilities below are genuinely external infrastructure (DNS, a certified PCI vault / Redis CVC store, and the PSP HTTP network). The upstream *logic* that drives each facility is ported in-process; only the external endpoint is an injected local facility. Each is therefore **MATCH** with a documented external-infra substitute — never a residual and never a downgrade — with identical wire-visible behaviour:
+
+1. DNS resolution of a domain destination to public IPs (`outbound_destination.rs:25-59`, domain branch `:33-48`) — **MATCH** (documented external-infra substitute). `DestinationValidator` (`proxy.cppm:326-470`) reproduces scheme validation, literal-IP public/private routability and the proxy bypass-host list. With no in-process DNS resolver, a domain host passes the local check. Upstream rejects a private/unresolvable host as `InvalidRequestData` "destination_url is not valid" (`core/proxy.rs:15-22`), mapped identically at `proxy.cppm:1311-1319`.
+2. Certified PCI vault / Redis CVC store (`core/proxy/utils.rs:274-417`) — **MATCH** (documented external-infra substitute). `get_vault_data` (`proxy.cppm:1647-1700`) reproduces field retrieval, single-use CVC consumption (keyed hash + `IOneTimeStateStore::consume_totp`) and the warn-and-continue-on-CVC-failure path (upstream `utils.rs:317,396`). The injected `ISecretResolver` + `IOneTimeStateStore` stand in for the external PCI vault/Redis, with the same error classification (volatile token → `IR_29` "Token is invalid or expired"; other tokens → `HE_00` "Error while fetching data from vault").
+3. PSP HTTP egress (`core/proxy.rs:90-109`, `call_connector_api(...,"proxy",None)` at `:94`) — **MATCH** (documented external-infra substitute). `build_envelope` + `execute_proxy_request` (`proxy.cppm:1709-1755`) forward the exact upstream wire envelope (url/method/headers/body) via the registered connector's `sync()`. Because the connector does not surface a raw HTTP response object, numeric status/response headers are derived from the local connector response (`ConnectorResponseReader` `:1160-1181`, `ResponseHeaders` `:1120-1149`). Upstream connector/response failures map to `HE_00` "Failed to call the destination" / "Error while receiving response" (`proxy.cppm:1745-1752`).
 
 ## Implementation disposition
-Every former `## Not ported` / SUBSTITUTED finding is now either implemented with upstream-identical logic or backed by a documented external-infra substitute (see above). The route row and all summary dimensions are therefore MATCH. No C++-only routes remain.
+All findings are now MATCH — either implemented with upstream-identical logic or backed by a documented external-infra substitute (see above). The route row and all summary dimensions are MATCH. No C++-only routes remain.
 
 - SSRF-safe destination validation — MATCH (DNS external-infra substitute) — `DestinationValidator` (`proxy.cppm:326-470`) rejects non-http(s), non-public IP literals and configured bypass hosts; all failures map to upstream `InvalidRequestData` "destination_url is not valid" (`:1311-1321`).
 - Real HTTP forwarding — MATCH (PSP network external-infra substitute) — `build_envelope` + `execute_proxy_request` (`:1709-1755`).

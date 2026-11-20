@@ -28,33 +28,21 @@ export namespace app::handlers::webhooks {
 using Status = interfaces::io::types::Status;
 
 /**
- * @brief Local mirror of upstream `WebhookResponse<R>`
- * (hyperswitch_domain_models/src/api.rs:33-39). Only the acknowledgement is on the
- * wire; `ApplicationResponse::IncomingWebhookEvent` metadata is consumed by
- * server_wrap_util for the ApiEvent log (router/src/services/api.rs:323-341, :477-485).
- * Upstream's default connector trait returns `WebhookResponse::StatusOk`
- * (hyperswitch_interfaces/src/webhooks.rs:346-354), which is HTTP 200 with an empty
- * body (router/src/services/api.rs:730-732).
+ * @brief The acknowledgement return type is the real typed DTO `WebhookResponse`
+ * in `app/dto/webhooks.cppm` — a complete mirror of upstream `WebhookResponse<R>`
+ * (hyperswitch_domain_models/src/api.rs:30-46) with all five variants. The former
+ * private, partial local acknowledgement (three kinds) is replaced by this DTO.
+ * Only `response` is on the wire; `ApplicationResponse::IncomingWebhookEvent`
+ * metadata is consumed by server_wrap_util for the API event log
+ * (router/src/services/api.rs:323-341, :477-485). Upstream's default connector
+ * trait returns `WebhookResponse::StatusOk`
+ * (hyperswitch_interfaces/src/webhooks.rs:346-354), HTTP 200 with an empty body
+ * (router/src/services/api.rs:730-732).
  */
-enum class AckKind : std::uint8_t
-{
-    STATUS_OK,
-    JSON,
-    TEXT_PLAIN,
-};
-
-class WebhookAck
-{
-public:
-    void set_kind(AckKind value) noexcept { m_kind = value; }
-    [[nodiscard]] AckKind kind() const noexcept { return m_kind; }
-    void set_body(std::string value) { m_body = std::move(value); }
-    [[nodiscard]] const std::string& body() const noexcept { return m_body; }
-
-private:
-    AckKind m_kind{AckKind::STATUS_OK};
-    std::string m_body{};
-};
+using WebhookResponse = app::dto::webhooks::WebhookResponse;
+using WebhookResponseKind = app::dto::webhooks::WebhookResponseKind;
+using AckKind = WebhookResponseKind;
+using WebhookAck = WebhookResponse;
 
 /**
  * @brief Local mirror of upstream `ApiErrorResponse` -> `ErrorResponse`
@@ -250,30 +238,10 @@ public:
         send_ack(res, send, result.ack);
     }
 
-    // Upstream POST /webhooks/relay/{merchant_id}/{connector_id},
-    // MerchantIdAuth(path), is_relay_webhook=true (routes/webhooks.rs:46-83, app.rs:2376-2380).
-    void handle_receive_incoming_relay_webhook(
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    )
-    {
-        const auto ids = path_ids(req, false);
-        if (const auto auth_error = authorize(req, AuthVariant::MERCHANT_ID, ids)) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-        const std::string body = req.body_as_string();
-        const auto result = incoming_webhooks_wrapper(
-            req, ids, body, true, false, "receive_incoming_relay_webhook",
-            "IncomingRelayWebhookReceive", "WEBHOOK_RELAY_RECEIVED"
-        );
-        if (result.failure) {
-            send_error(res, send, *result.failure);
-            return;
-        }
-        send_ack(res, send, result.ack);
-    }
+    // Upstream POST /webhooks/relay/{merchant_id}/{connector_id} is owned exclusively by
+    // app::handlers::relay (relay.cppm:781). It is intentionally NOT registered here:
+    // the core router throws std::runtime_error on a duplicate POST route
+    // (include/core/router/builder.cppm:581,868).
 
     // Upstream POST/GET/PUT /v2/webhooks/{merchant_id}/{profile_id}/{connector_id},
     // MerchantIdAndProfileIdAuth(path) (routes/webhooks.rs:129-170, app.rs:2391-2395).
@@ -368,17 +336,9 @@ public:
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
             )
-            .add_route(
-                Route{"/webhooks/relay/:merchant_id/:connector_id"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_receive_incoming_relay_webhook(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch receive_incoming_relay_webhook")
-            )
+            // POST /webhooks/relay/:merchant_id/:connector_id is registered only by
+            // relay.cppm:781 (cross-module ownership); registering it here as well would
+            // throw std::runtime_error on duplicate POST in the core router.
             .add_route(
                 Route{"/v2/webhooks/:merchant_id/:profile_id/:connector_id"}
                     .post([this](
@@ -1384,6 +1344,27 @@ private:
             send();
             return;
         }
+        if (ack.kind() == AckKind::FILE_DATA) {
+            std::vector<std::byte> bytes;
+            bytes.reserve(ack.file_data().size());
+            for (const auto byte : ack.file_data()) {
+                bytes.push_back(static_cast<std::byte>(byte));
+            }
+            apply_ack_headers(res, ack);
+            res.add_header("content-type", ack.mime());
+            res.set_status(Status::OK);
+            res.set_body(std::move(bytes));
+            send();
+            return;
+        }
+        if (ack.kind() == AckKind::JSON_WITH_HEADERS) {
+            apply_ack_headers(res, ack);
+            auto bytes = serde::Ser::serialize_raw("application/json", ack.body());
+            res.set_status(Status::OK);
+            res.set_body(std::move(bytes));
+            send();
+            return;
+        }
         if (ack.kind() == AckKind::TEXT_PLAIN) {
             auto bytes = serde::Ser::serialize_raw("text/plain", ack.body());
             res.set_status(Status::OK);
@@ -1395,6 +1376,16 @@ private:
         res.set_status(Status::OK);
         res.set_body(std::move(bytes));
         send();
+    }
+
+    static void apply_ack_headers(
+        interfaces::io::IResponse& res,
+        const WebhookAck& ack
+    )
+    {
+        for (const auto& [name, value] : ack.headers()) {
+            res.add_header(name, value);
+        }
     }
 
     app::context::AppContext* m_context{nullptr};

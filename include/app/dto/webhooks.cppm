@@ -187,6 +187,94 @@ enum class WebhookResponseTracker
     Relay,
 };
 
+/**
+ * @brief Typed mirror of upstream `WebhookResponse<R>`
+ * (hyperswitch_domain_models/src/api.rs:30-46). A connector's webhook acknowledgement
+ * is one of these typed variants; the trait default is `StatusOk`
+ * (hyperswitch_interfaces/src/webhooks.rs:346-354), which the router sends as HTTP 200
+ * with an empty body (router/src/services/api.rs:730-732). Only `response` is on the
+ * wire — `ApplicationResponse::IncomingWebhookEvent` metadata is consumed by
+ * server_wrap_util for the API event log (router/src/services/api.rs:323-341, :477-485).
+ *
+ * This is the real typed return contract used by the webhook handler's local
+ * `get_webhook_api_response` substitute; it replaces the former private, partial
+ * acknowledgement type that carried only three of the five upstream variants.
+ */
+enum class WebhookResponseKind : std::uint8_t
+{
+    STATUS_OK,         // WebhookResponse::StatusOk
+    JSON,              // WebhookResponse::Json(R)
+    TEXT_PLAIN,        // WebhookResponse::TextPlain(String)
+    FILE_DATA,         // WebhookResponse::FileData((Vec<u8>, Mime))
+    JSON_WITH_HEADERS, // WebhookResponse::JsonWithHeaders((R, Vec<(String, Maskable<String>)>))
+};
+
+class WebhookResponse
+{
+public:
+    using Header = std::pair<std::string, std::string>;
+
+    WebhookResponse() = default; // upstream trait default: StatusOk
+
+    [[nodiscard]] static WebhookResponse status_ok() noexcept { return WebhookResponse{}; }
+
+    [[nodiscard]] static WebhookResponse json(std::string body)
+    {
+        WebhookResponse response;
+        response.m_kind = WebhookResponseKind::JSON;
+        response.m_body = std::move(body);
+        return response;
+    }
+
+    [[nodiscard]] static WebhookResponse text_plain(std::string body)
+    {
+        WebhookResponse response;
+        response.m_kind = WebhookResponseKind::TEXT_PLAIN;
+        response.m_body = std::move(body);
+        return response;
+    }
+
+    [[nodiscard]] static WebhookResponse file_data(std::vector<std::uint8_t> data, std::string mime)
+    {
+        WebhookResponse response;
+        response.m_kind = WebhookResponseKind::FILE_DATA;
+        response.m_file_data = std::move(data);
+        response.m_mime = std::move(mime);
+        return response;
+    }
+
+    [[nodiscard]] static WebhookResponse json_with_headers(std::string body, std::vector<Header> headers)
+    {
+        WebhookResponse response;
+        response.m_kind = WebhookResponseKind::JSON_WITH_HEADERS;
+        response.m_body = std::move(body);
+        response.m_headers = std::move(headers);
+        return response;
+    }
+
+    void set_kind(WebhookResponseKind value) noexcept { m_kind = value; }
+    [[nodiscard]] WebhookResponseKind kind() const noexcept { return m_kind; }
+
+    void set_body(std::string value) { m_body = std::move(value); }
+    [[nodiscard]] const std::string& body() const noexcept { return m_body; }
+
+    void set_file_data(std::vector<std::uint8_t> value) { m_file_data = std::move(value); }
+    [[nodiscard]] const std::vector<std::uint8_t>& file_data() const noexcept { return m_file_data; }
+
+    void set_mime(std::string value) { m_mime = std::move(value); }
+    [[nodiscard]] const std::string& mime() const noexcept { return m_mime; }
+
+    void set_headers(std::vector<Header> value) { m_headers = std::move(value); }
+    [[nodiscard]] const std::vector<Header>& headers() const noexcept { return m_headers; }
+
+private:
+    WebhookResponseKind m_kind{WebhookResponseKind::STATUS_OK};
+    std::string m_body{};
+    std::vector<std::uint8_t> m_file_data{};
+    std::string m_mime{};
+    std::vector<Header> m_headers{};
+};
+
 class IncomingWebhookDetails
 {
 public:

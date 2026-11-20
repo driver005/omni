@@ -470,7 +470,7 @@ public:
 
         // core/pm_auth.rs:244,311 — exchange_token_core returns RouterResponse<()> /
         // ApplicationResponse::StatusOk: HTTP 200 with an empty body. No access_token is
-        // emitted to the caller (upstream never serializes ExchangeTokenCreateResponse here).
+        // emitted; the typed ExchangeTokenCreateResponse lives unused in dto/pm_auth.cppm:12-18.
         send_ok(res, send);
     }
 

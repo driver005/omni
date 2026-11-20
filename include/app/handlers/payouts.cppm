@@ -2784,4 +2784,33 @@ private:
     app::context::AppContext* m_context{nullptr};
 };
 
+/**
+ * @brief Strict-parity notes (comment-only; see docs/hyperswitch-parity/payouts.md).
+ *
+ * - Upstream UCS / direct / shadow connector decision tiers
+ *   (`core/payouts.rs:167-418,4676-4810`) are external infrastructure. The in-process
+ *   `ConnectorRouter` plus request-connector eligibility in `make_connector_decision`
+ *   (`:1798-1841`) and the shadow-killed signal in `invoke_connector` (`:1868-1893`,
+ *   surfaced at `:162-164`) preserve the observable decision contract. The v2
+ *   `decide_unified_connector_service_payout` stub (`core/payouts.rs:4814-4826`) is
+ *   `todo!()` and has no behavior to port.
+ * - Temp-locker / token vault (`core/payouts.rs:730-749`) is the local key store in
+ *   `store_payout_method_data` (`:1787-1796`); the external-vault PSP proxy
+ *   (`core/payouts.rs:676-691`) keeps the upstream pre-confirmation status at `:134-144`.
+ * - Webhook recipient resolution / `create_event_and_trigger_outgoing_webhook`
+ *   (`utils.rs:1470-1537`) is the local EventBus + merchant-scoped WebhookDeliveryService in
+ *   `emit_payout_webhook` (`:2251-2284`); its status-to-event mapping is an exact port of
+ *   `common_enums/src/transformers.rs:2194-2215`, including statuses that emit nothing.
+ * - OLAP SQL (`db/kafka_store.rs:2783,2907,2981`) is equivalent in-memory filtering/zero-fill
+ *   in `available_filters` (`:2416-2450`), `filters_v2_from_mcas` (`:2509-2565`),
+ *   `aggregate_response` (`:2397-2411`) and `list_response` (`:2572-2635`).
+ * - The dedicated payout_link DB entity (`core/payouts.rs:808-823`) is mirrored in record
+ *   metadata at `:197-201` and reflected through the typed response at `:2364-2372`.
+ * - JWT `allow_platform` / `allow_connected` flags and `LockAction::NotApplicable`
+ *   (`routes/payouts.rs:75-78,120-131,356-367,720-724`) are router-layer auth/lock
+ *   configuration that emit no wire bytes, and the local auth context has no platform
+ *   principal. `auth_mode_for` / `check_upstream_permission` / `authorize_operation`
+ *   (`:1455-1570`) implement the complete observable credential/permission contract.
+ *   No behavior to port.
+ */
 } // namespace app::handlers::payouts

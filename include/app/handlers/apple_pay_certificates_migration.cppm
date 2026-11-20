@@ -206,6 +206,17 @@ public:
         send_json(res, send, text, true);
     }
 
+    /** @brief Installs the single upstream route.
+     *
+     *  Upstream registers this scope under `#[cfg(all(feature = "olap", feature =
+     *  "v1"))]` (routes/app.rs:2459) and gates the core function with
+     *  `#[cfg(feature = "v1")]` (core/apple_pay_certificates_migration.rs:17).
+     *  Both are compile-time gates: they emit no bytes and create no runtime
+     *  branch. This port always installs the route (`Route{""}` + `.post`), which
+     *  is the identical surface of a release build with both features compiled
+     *  in; no status, header, body, auth or store outcome depends on the gate
+     *  (no wire bytes differ). There is therefore no behavior to port here.
+     */
     void install(core::router::RouterContext<>& router)
     {
         using Route = utils::openapi::ApiRoute;

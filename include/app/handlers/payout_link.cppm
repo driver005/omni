@@ -27,6 +27,14 @@ export namespace app::handlers::payout_link {
  * infrastructure the in-process store does not provide (a payout_link/address table,
  * a translation table, the HTML shell and the env/config registries). Those are listed
  * in `docs/hyperswitch-parity/payout_link.md` under "Shared contract requests".
+ *
+ * No-behavior-to-port upstream items (tracked as MATCH in the report):
+ *  - v2 `initiate_payout_link` (`core/payout_link.rs:28-37`) is `#[cfg(feature = "v2")]`
+ *    with `_`-prefixed args and a body that is exactly `todo!()`; it emits no wire bytes
+ *    and is absent from the v1 build the route uses. Only the v1 function is ported here.
+ *  - `#[cfg(feature = "v1")]` (`routes/payout_link.rs:13`, `core/payout_link.rs:39`) is a
+ *    compile-time gate and `LockAction::NotApplicable` (`routes/payout_link.rs:36`) is
+ *    router-layer API-lock config; neither serializes into an HTTP response.
  */
 class PayoutLinkRouteHandlers
 {

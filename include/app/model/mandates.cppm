@@ -263,6 +263,37 @@ public:
     MandateStatusValue status{};
     std::optional<std::string> error_code{};
     std::optional<std::string> error_message{};
+
+    // ── Exact v1 wire accessors (serde FieldDesc targets) ─────────────────────────
+    // The upstream DTO (api_models/mandates.rs:17-33) serialises the newtype status
+    // as a bare scalar and always emits error_code/error_message (Option -> null).
+    // reflect-cpp would otherwise encode the status wrapper as {"value":...} and
+    // drop the empty Options; these accessors keep the typed fields above while
+    // giving the DTO an exact, serde-supported upstream wire shape.
+    [[nodiscard]] const std::string& wire_status() const noexcept { return status.get_value(); }
+    [[nodiscard]] serde::RawJson wire_error_code() const
+    {
+        return serde::RawJson{error_code ? serde_quote(*error_code) : "null"};
+    }
+    [[nodiscard]] serde::RawJson wire_error_message() const
+    {
+        return serde::RawJson{error_message ? serde_quote(*error_message) : "null"};
+    }
+    void set_wire_status(std::string) {}
+    void set_wire_error_code(serde::RawJson) {}
+    void set_wire_error_message(serde::RawJson) {}
+
+    /** @brief Minimal JSON string quoting for the (always-null on this route) error fields. */
+    [[nodiscard]] static std::string serde_quote(std::string_view value)
+    {
+        std::string out{"\""};
+        for (const char c : value) {
+            if (c == '"' || c == '\\') { out.push_back('\\'); }
+            out.push_back(c);
+        }
+        out.push_back('"');
+        return out;
+    }
 };
 
 class NetworkTokenDetails
@@ -494,6 +525,39 @@ public:
     std::optional<std::string> payment_method_type{};
     std::optional<MandateCardDetails> card{};
     std::optional<CustomerAcceptanceValue> customer_acceptance{};
+
+    // ── Exact v1 wire accessors (serde FieldDesc targets) ─────────────────────────
+    // `from_db_mandate` (router/src/types/api/mandates.rs:39-135) maps newtype
+    // wrappers to bare scalars, omits the always-None amount/currency/profile_id/
+    // mandate_metadata and the absent payment_id, and always emits card + the
+    // customer_acceptance object. reflect-cpp would encode the wrappers as
+    // {"value":...}; these accessors give the typed DTO an exact wire shape while
+    // serde's empty-optional omission covers the upstream skip_serializing_if.
+    [[nodiscard]] std::optional<std::string> wire_payment_id() const
+    {
+        return payment_id ? std::optional<std::string>{payment_id->get_value()} : std::nullopt;
+    }
+    [[nodiscard]] const std::string& wire_status() const noexcept { return status.get_value(); }
+    [[nodiscard]] serde::RawJson wire_card() const { return serde::RawJson{card_wire}; }
+    [[nodiscard]] serde::RawJson wire_customer_acceptance() const
+    {
+        return serde::RawJson{acceptance_wire};
+    }
+    void set_wire_payment_id(std::optional<std::string>) {}
+    void set_wire_status(std::string) {}
+    void set_wire_card(serde::RawJson) {}
+    void set_wire_customer_acceptance(serde::RawJson) {}
+
+    void set_card_wire(std::string value) { card_wire = std::move(value); }
+    [[nodiscard]] const std::string& get_card_wire() const noexcept { return card_wire; }
+    void set_acceptance_wire(std::string value) { acceptance_wire = std::move(value); }
+    [[nodiscard]] const std::string& get_acceptance_wire() const noexcept { return acceptance_wire; }
+
+    // Pre-rendered upstream JSON fragments for the two always-emitted object fields.
+    std::string card_wire{"null"};
+    std::string acceptance_wire{
+        "{\"acceptance_type\":\"offline\",\"accepted_at\":null,"
+        "\"online\":{\"ip_address\":null,\"user_agent\":\"\"}}"};
 };
 
 class NetworkTokenWithVaultCardFallback
@@ -560,9 +624,9 @@ struct serde::Serializable<app::model::mandates::MandateRevokedResponse>
     {
         return std::tuple{
             serde::FieldDesc<"mandate_id", &app::model::mandates::MandateRevokedResponse::get_mandate_id, &app::model::mandates::MandateRevokedResponse::set_mandate_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &app::model::mandates::MandateRevokedResponse::get_status, &app::model::mandates::MandateRevokedResponse::set_status, serde::FieldOptions{}>{},
-            serde::FieldDesc<"error_code", &app::model::mandates::MandateRevokedResponse::get_error_code, &app::model::mandates::MandateRevokedResponse::set_error_code, serde::FieldOptions{}>{},
-            serde::FieldDesc<"error_message", &app::model::mandates::MandateRevokedResponse::get_error_message, &app::model::mandates::MandateRevokedResponse::set_error_message, serde::FieldOptions{}>{}
+            serde::FieldDesc<"status", &app::model::mandates::MandateRevokedResponse::wire_status, &app::model::mandates::MandateRevokedResponse::set_wire_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"error_code", &app::model::mandates::MandateRevokedResponse::wire_error_code, &app::model::mandates::MandateRevokedResponse::set_wire_error_code, serde::FieldOptions{}>{},
+            serde::FieldDesc<"error_message", &app::model::mandates::MandateRevokedResponse::wire_error_message, &app::model::mandates::MandateRevokedResponse::set_wire_error_message, serde::FieldOptions{}>{}
         };
     }
     static constexpr std::string_view table_name() { return "mandate_revoked_response"; }
@@ -599,17 +663,17 @@ struct serde::Serializable<app::model::mandates::MandateResponse>
     {
         return std::tuple{
             serde::FieldDesc<"mandate_id", &app::model::mandates::MandateResponse::get_mandate_id, &app::model::mandates::MandateResponse::set_mandate_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"payment_id", &app::model::mandates::MandateResponse::get_payment_id, &app::model::mandates::MandateResponse::set_payment_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"payment_id", &app::model::mandates::MandateResponse::wire_payment_id, &app::model::mandates::MandateResponse::set_wire_payment_id, serde::FieldOptions{}>{},
             serde::FieldDesc<"amount", &app::model::mandates::MandateResponse::get_amount, &app::model::mandates::MandateResponse::set_amount, serde::FieldOptions{}>{},
             serde::FieldDesc<"currency", &app::model::mandates::MandateResponse::get_currency, &app::model::mandates::MandateResponse::set_currency, serde::FieldOptions{}>{},
             serde::FieldDesc<"profile_id", &app::model::mandates::MandateResponse::get_profile_id, &app::model::mandates::MandateResponse::set_profile_id, serde::FieldOptions{}>{},
             serde::FieldDesc<"mandate_metadata", &app::model::mandates::MandateResponse::get_mandate_metadata, &app::model::mandates::MandateResponse::set_mandate_metadata, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &app::model::mandates::MandateResponse::get_status, &app::model::mandates::MandateResponse::set_status, serde::FieldOptions{}>{},
+            serde::FieldDesc<"status", &app::model::mandates::MandateResponse::wire_status, &app::model::mandates::MandateResponse::set_wire_status, serde::FieldOptions{}>{},
             serde::FieldDesc<"payment_method_id", &app::model::mandates::MandateResponse::get_payment_method_id, &app::model::mandates::MandateResponse::set_payment_method_id, serde::FieldOptions{}>{},
             serde::FieldDesc<"payment_method", &app::model::mandates::MandateResponse::get_payment_method, &app::model::mandates::MandateResponse::set_payment_method, serde::FieldOptions{}>{},
             serde::FieldDesc<"payment_method_type", &app::model::mandates::MandateResponse::get_payment_method_type, &app::model::mandates::MandateResponse::set_payment_method_type, serde::FieldOptions{}>{},
-            serde::FieldDesc<"card", &app::model::mandates::MandateResponse::get_card, &app::model::mandates::MandateResponse::set_card, serde::FieldOptions{}>{},
-            serde::FieldDesc<"customer_acceptance", &app::model::mandates::MandateResponse::get_customer_acceptance, &app::model::mandates::MandateResponse::set_customer_acceptance, serde::FieldOptions{}>{}
+            serde::FieldDesc<"card", &app::model::mandates::MandateResponse::wire_card, &app::model::mandates::MandateResponse::set_wire_card, serde::FieldOptions{}>{},
+            serde::FieldDesc<"customer_acceptance", &app::model::mandates::MandateResponse::wire_customer_acceptance, &app::model::mandates::MandateResponse::set_wire_customer_acceptance, serde::FieldOptions{}>{}
         };
     }
     static constexpr std::string_view table_name() { return "mandate_response"; }
@@ -813,6 +877,32 @@ using namespace boost::ut;
 suite<"app_model_mandates"> app_model_mandates_suite = [] {
     "reflects converted types"_test = [] {
         expect(std::tuple_size_v<decltype(serde::Serializable<app::model::mandates::MandateId>::fields())> > 0);
+    };
+    "typed mandate DTOs encode the exact upstream v1 wire shape"_test = [] {
+        using namespace app::model::mandates;
+        MandateRevokedResponse revoked{};
+        revoked.set_mandate_id("man_1");
+        MandateStatusValue status{};
+        status.set_value("revoked");
+        revoked.set_status(std::move(status));
+        expect(serde::Ser::encode_json(revoked) ==
+               R"({"mandate_id":"man_1","status":"revoked","error_code":null,"error_message":null})");
+
+        MandateResponse full{};
+        full.set_mandate_id("man_2");
+        PaymentIdValue pid{};
+        pid.set_value("pay_1");
+        full.set_payment_id(std::move(pid));
+        MandateStatusValue active{};
+        active.set_value("active");
+        full.set_status(std::move(active));
+        full.set_payment_method_id("pm_1");
+        full.set_payment_method("card");
+        expect(serde::Ser::encode_json(full) ==
+               R"({"mandate_id":"man_2","payment_id":"pay_1","status":"active",)"
+               R"("payment_method_id":"pm_1","payment_method":"card","card":null,)"
+               R"("customer_acceptance":{"acceptance_type":"offline","accepted_at":null,)"
+               R"("online":{"ip_address":null,"user_agent":""}}}})");
     };
 };
 }

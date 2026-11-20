@@ -2092,7 +2092,8 @@ public:
         }
 
         // Local OIDC substitute: configured IdP base URL + persisted state,
-        // emitting the exact upstream RedirectionResponse wire shape.
+        // emitting the exact upstream RedirectionResponse wire shape as a real
+        // typed DTO (app/model/user.cppm:1921-1940, serde :2007-2020).
         const auto sso_state = m_context->ids().uuid_v4();
         const auto base_url = m_context->repository().get_config("sso.base_url")
             .value_or(std::string{"/sso/authorize"});
@@ -2102,9 +2103,12 @@ public:
         m_context->metrics().record_flow("get_sso_auth_url");
         m_context->metrics().counter("user.get_sso_auth_url").increment();
 
-        const auto text = std::format(
-            R"({{"return_url":"","params":[],"return_url_with_query_params":"{}","http_method":"","headers":[]}})",
-            authorization_url);
+        using Response = app::model::user::RedirectionResponse;
+        Response response{};
+        response.set_return_url("");
+        response.set_return_url_with_query_params(authorization_url);
+        response.set_http_method("");
+        auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
 

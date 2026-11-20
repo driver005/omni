@@ -432,11 +432,10 @@ private:
         std::string event_id{};
     };
 
-    struct EventListResult
-    {
-        std::vector<app::dto::webhook_events::EventListItemResponse> items{};
-        std::int64_t total_count{0};
-    };
+    // Real typed DTO in app/dto/webhook_events.cppm. The former local ad-hoc
+    // return-type struct is gone: every caller uses the exported DTO, which
+    // carries typed EventListItemResponse items plus the separate COUNT.
+    using EventListResult = app::dto::webhook_events::EventListResult;
 
     [[nodiscard]] core::error::AppError error(core::error::AppErrorKind kind, std::string message) const
     {

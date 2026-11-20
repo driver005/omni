@@ -124,7 +124,7 @@ public:
         m_context->metrics().record_flow("payments.get_payment_filters");
         m_context->metrics().counter("payments.get_payment_filters").increment();
 
-        using Input = app::model::payments::PaymentsRequest;
+        using Input = app::model::payments::PaymentsFilterRequest;
         auto typed = parse_query_as<Input>(
             req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
         );
@@ -157,7 +157,7 @@ public:
         m_context->metrics().record_flow("payments.get_payment_filters_profile");
         m_context->metrics().counter("payments.get_payment_filters_profile").increment();
 
-        using Input = app::model::payments::PaymentsRequest;
+        using Input = app::model::payments::PaymentsFilterRequest;
         auto typed = parse_query_as<Input>(
             req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
         );
@@ -190,16 +190,10 @@ public:
         m_context->metrics().record_flow("payments.get_payments_aggregates");
         m_context->metrics().counter("payments.get_payments_aggregates").increment();
 
-        const auto body = std::format(R"({{"start":{},"end":{}}})", serde::Ser::encode_json(query_value(req, "start")), serde::Ser::encode_json(query_value(req, "end")));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsStatusRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsAggregateRequest;
+        auto typed = parse_query_as<Input>(req, {"start", "end", "status", "profile_id"});
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -244,16 +238,10 @@ public:
         m_context->metrics().record_flow("payments.get_payments_aggregates_profile");
         m_context->metrics().counter("payments.get_payments_aggregates_profile").increment();
 
-        const auto body = std::format(R"({{"start":{},"end":{}}})", serde::Ser::encode_json(query_value(req, "start")), serde::Ser::encode_json(query_value(req, "end")));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsStatusRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsAggregateRequest;
+        auto typed = parse_query_as<Input>(req, {"start", "end", "status", "profile_id"});
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -298,16 +286,12 @@ public:
         m_context->metrics().record_flow("payments.list_payment_attempts");
         m_context->metrics().counter("payments.list_payment_attempts").increment();
 
-        const auto body = std::format(R"({{"payment_id":{}}})", serde::Ser::encode_json(payment_id_from_path(req)));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentAttemptListRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentAttemptListFilterRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"payment_id", "status", "connector", "offset", "limit"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -1512,16 +1496,13 @@ public:
         m_context->metrics().record_flow("payments.payments_list");
         m_context->metrics().counter("payments.payments_list").increment();
 
-        const auto body = std::format(R"({{"offset":{},"limit":{}}})", query_uint(req, "offset"), query_uint(req, "limit"));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsListRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"merchant_id", "profile_id", "status", "connector", "payment_method",
+                  "payment_method_type", "offset", "limit", "force_sync", "expand_attempts"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -1608,16 +1589,13 @@ public:
         m_context->metrics().record_flow("payments.payments_list_for_platform");
         m_context->metrics().counter("payments.payments_list_for_platform").increment();
 
-        const auto body = std::format(R"({{"offset":{},"limit":{}}})", query_uint(req, "offset"), query_uint(req, "limit"));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsListRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"merchant_id", "profile_id", "status", "connector", "payment_method",
+                  "payment_method_type", "offset", "limit", "force_sync", "expand_attempts"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -1656,7 +1634,7 @@ public:
         m_context->metrics().record_flow("payments.payments_list_for_platform_filters");
         m_context->metrics().counter("payments.payments_list_for_platform_filters").increment();
 
-        using Input = app::model::payments::PaymentsRequest;
+        using Input = app::model::payments::PaymentsFilterRequest;
         auto typed = parse_query_as<Input>(
             req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
         );
@@ -2441,16 +2419,13 @@ public:
         m_context->metrics().record_flow("payments.profile_payments_list");
         m_context->metrics().counter("payments.profile_payments_list").increment();
 
-        const auto body = std::format(R"({{"offset":{},"limit":{}}})", query_uint(req, "offset"), query_uint(req, "limit"));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsListRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"merchant_id", "profile_id", "status", "connector", "payment_method",
+                  "payment_method_type", "offset", "limit", "force_sync", "expand_attempts"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -2731,16 +2706,13 @@ public:
         m_context->metrics().record_flow("payments.revenue_recovery_invoices_list");
         m_context->metrics().counter("payments.revenue_recovery_invoices_list").increment();
 
-        const auto body = std::format(R"({{"offset":{},"limit":{}}})", query_uint(req, "offset"), query_uint(req, "limit"));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsListRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"merchant_id", "profile_id", "status", "connector", "payment_method",
+                  "payment_method_type", "offset", "limit", "force_sync", "expand_attempts"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -2779,16 +2751,13 @@ public:
         m_context->metrics().record_flow("payments.revenue_recovery_invoices_list_profile");
         m_context->metrics().counter("payments.revenue_recovery_invoices_list_profile").increment();
 
-        const auto body = std::format(R"({{"offset":{},"limit":{}}})", query_uint(req, "offset"), query_uint(req, "limit"));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::payments::PaymentsListRequest;
+        auto typed = parse_query_as<Input>(
+            req, {"merchant_id", "profile_id", "status", "connector", "payment_method",
+                  "payment_method_type", "offset", "limit", "force_sync", "expand_attempts"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
@@ -2812,6 +2781,77 @@ public:
 
         auto text = payment_list_response(records);
         send_json(res, send, text, true);
+    }
+
+    /** POST /payments/advanced/list — upstream
+     *  `analytics::get_payment_list_from_opensearch` (app.rs:1092-1095). */
+    void handle_get_payment_list_from_opensearch(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (!authorize_operation_mapped(
+                req, res, send, "payments_list", "get_payment_list_from_opensearch")) {
+            return;
+        }
+        m_context->metrics().record_flow("payments.get_payment_list_from_opensearch");
+        m_context->metrics().counter("payments.get_payment_list_from_opensearch").increment();
+        auto text = advanced_list_response(req, false);
+        if (!text) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+                core::error::AppErrorKind::INVALID_REQUEST, "Invalid payment list constraints"
+            ));
+            return;
+        }
+        send_json(res, send, *text, true);
+    }
+
+    /** POST /payments/profile/advanced/list — upstream
+     *  `analytics::get_profile_payment_list_from_opensearch` (app.rs:1096-1099). */
+    void handle_get_profile_payment_list_from_opensearch(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (!authorize_operation_mapped(
+                req, res, send, "profile_payments_list", "get_profile_payment_list_from_opensearch")) {
+            return;
+        }
+        m_context->metrics().record_flow("payments.get_profile_payment_list_from_opensearch");
+        m_context->metrics().counter("payments.get_profile_payment_list_from_opensearch").increment();
+        auto text = advanced_list_response(req, true);
+        if (!text) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+                core::error::AppErrorKind::INVALID_REQUEST, "Invalid profile payment list constraints"
+            ));
+            return;
+        }
+        send_json(res, send, *text, true);
+    }
+
+    /** GET /payments/{id}/client — upstream
+     *  `payment_methods::list_payment_methods_for_payments_client` (app.rs:1188-1190). */
+    void handle_list_payment_methods_for_payments_client(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (!authorize_extractor_only(req, res, send, "list_payment_methods_for_payments_client")) {
+            return;
+        }
+        m_context->metrics().record_flow("payments.list_payment_methods_for_payments_client");
+        m_context->metrics().counter("payments.list_payment_methods_for_payments_client").increment();
+        auto text = client_payment_methods_response(req);
+        if (!text) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+                core::error::AppErrorKind::UNAUTHORIZED, "Invalid client secret"
+            ));
+            return;
+        }
+        send_json(res, send, *text, true);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -3276,6 +3316,42 @@ public:
             );
         Router{router, "/payments"}
             .add_route(
+                Route{"/advanced/list"}
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_get_payment_list_from_opensearch(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch get_payment_list_from_opensearch")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/profile/advanced/list"}
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_get_profile_payment_list_from_opensearch(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch get_profile_payment_list_from_opensearch")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/client"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_list_payment_methods_for_payments_client(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch list_payment_methods_for_payments_client")
+            );
+        Router{router, "/payments"}
+            .add_route(
                 Route{"/v2/profile/filter"}
                     .get([this](
                         interfaces::io::IRequest& req,
@@ -3718,6 +3794,110 @@ public:
                     })
                     .summary("Hyperswitch post_3ds_payments_authorize")
             );
+
+        // Legacy callback resources (upstream app.rs:1196-1201;
+        // callback_routes.rs:76-121,181-209). Same handlers, original tokenless
+        // paths, kept for the compatibility rollout.
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/redirect/:payment_id/:merchant_id/:attempt_id"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_start(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_start (legacy)")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/:merchant_id/redirect/response/:connector"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_redirect_response(req, res, std::move(send));
+                    })
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_redirect_response(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_redirect_response (legacy)")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/:merchant_id/redirect/response/:connector/:creds_identifier"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_redirect_response_with_creds_identifier(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_redirect_response_with_credentials (legacy)")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/:merchant_id/redirect/complete/:connector"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                    })
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_redirect_complete (legacy)")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/:merchant_id/redirect/complete/:connector/:creds_identifier"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                    })
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_redirect_complete_with_credentials (legacy)")
+            );
+        Router{router, "/payments"}
+            .add_route(
+                Route{"/:payment_id/:merchant_id/authorize/:connector"}
+                    .get([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_post_3ds_payments_authorize(req, res, std::move(send));
+                    })
+                    .post([this](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    ) {
+                        handle_post_3ds_payments_authorize(req, res, std::move(send));
+                    })
+                    .summary("Hyperswitch payment_callback_authorize (legacy)")
+            );
     }
 
     explicit PaymentsRouteHandlers(app::context::AppContext& context) noexcept
@@ -3728,14 +3908,15 @@ public:
 private:
     [[nodiscard]] std::string payment_id_from_path(interfaces::io::IRequest& req) const
     {
+        // Upstream callback paths place the payment id after `redirect` on the
+        // legacy Start route (`/payments/redirect/{payment_id}/...`), so resolve
+        // the first `pay_` segment anywhere under /payments rather than only the
+        // immediate successor. Named/tokenized callback routes keep the same shape.
         const auto segments = app::http::RequestPath{}(req);
-        for (std::size_t i = 0; i + 1 < segments.count(); ++i) {
-            const auto current = segments.at(i);
-            if (current && *current == "payments") {
-                const auto next = segments.at(i + 1);
-                if (next && next->starts_with("pay_")) {
-                    return std::string{*next};
-                }
+        for (std::size_t i = 0; i < segments.count(); ++i) {
+            const auto segment = segments.at(i);
+            if (segment && segment->starts_with("pay_")) {
+                return std::string{*segment};
             }
         }
         return {};
@@ -3844,6 +4025,317 @@ private:
             return false;
         }
         return fallback;
+    }
+
+    /** ===== Local helpers for the upstream endpoints whose backend is external =====
+     *  OpenSearch search, the payment-methods listing service and the callback
+     *  token/URL Redis service have no first-class backend in this port. Each
+     *  helper below reproduces the upstream *observable* contract (request DTO,
+     *  filter semantics, response envelope, single-use token) over the in-process
+     *  repository/config/cache services already available to this handler.
+     */
+
+    [[nodiscard]] static std::int64_t parse_numeric(
+        std::string_view text,
+        std::int64_t fallback = 0
+    ) noexcept
+    {
+        std::int64_t value{};
+        const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+        return result.ec == std::errc{} ? value : fallback;
+    }
+
+    /** Byte-length framing shared by callback hash inputs and key derivation. */
+    [[nodiscard]] static std::string frame_field(std::string_view field)
+    {
+        return std::format("{}:{}", field.size(), field);
+    }
+
+    /** Upstream filter vectors decode as `Option<Vec<String>>`; an absent or
+     *  empty vector means "no filter". */
+    [[nodiscard]] static bool matches_string_list(
+        const std::optional<std::vector<std::string>>& values,
+        std::string_view actual
+    ) noexcept
+    {
+        if (!values || values->empty() || actual.empty()) {
+            return true;
+        }
+        for (const auto& value : *values) {
+            if (value == actual) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *  Local in-process substitute for `analytics::get_payment_list_from_opensearch`
+     *  / `get_profile_payment_list_from_opensearch` (routes/app.rs:1092-1099;
+     *  analytics.rs:2335-2429). The upstream `PaymentListFilterConstraints`
+     *  request shape is ported as a dedicated all-optional DTO; the OpenSearch
+     *  client is replaced by a deterministic scan of the profile-scoped
+     *  repository with the same query/id/customer/status/connector/currency/
+     *  payment-method/offset/limit semantics, and the `count` + `hits` envelope
+     *  is a typed response DTO.
+     */
+    [[nodiscard]] std::optional<std::string> advanced_list_response(
+        interfaces::io::IRequest& req,
+        bool profile_scoped
+    ) const
+    {
+        using namespace app::model::payments;
+        const auto body = req.body_as_string();
+        auto constraints = serde::Ser::deserialize<PaymentsAdvancedListRequest>("application/json", body);
+        if (!constraints) {
+            return std::nullopt;
+        }
+
+        auto records = list_payments_scoped(req);
+        if (profile_scoped) {
+            const std::string ctx_profile = profile_for(req);
+            const std::string filter_profile = constraints->get_profile_id().value_or(std::string{});
+            // Upstream `UserErrors::JwtProfileIdMissing` for the profile route.
+            if (ctx_profile.empty() && filter_profile.empty()) {
+                return std::nullopt;
+            }
+            const std::string effective = ctx_profile.empty() ? filter_profile : ctx_profile;
+            std::vector<app::store::payments::PaymentIntentRecord> scoped{};
+            for (const auto& record : records) {
+                const auto it = m_profile_scope.find(
+                    scope_key(record.get_merchant_id(), record.get_payment_id())
+                );
+                if (it == m_profile_scope.end() || it->second == effective) {
+                    scoped.push_back(record);
+                }
+            }
+            records = std::move(scoped);
+        }
+
+        const std::string query = constraints->get_query().value_or(std::string{});
+        const std::string id_filter = constraints->get_payment_id().value_or(std::string{});
+        const std::string customer_filter = constraints->get_customer_id().value_or(std::string{});
+        std::unordered_map<std::string, std::string> connector_by_payment{};
+        for (const auto& attempt : m_context->repository().list_payment_attempts()) {
+            connector_by_payment[attempt.get_payment_id()] = attempt.get_connector();
+        }
+        std::vector<app::store::payments::PaymentIntentRecord> filtered{};
+        for (const auto& record : records) {
+            if (!id_filter.empty() && record.get_payment_id() != id_filter) {
+                continue;
+            }
+            if (!customer_filter.empty() && record.get_customer_id() != customer_filter) {
+                continue;
+            }
+            if (!query.empty() &&
+                record.get_payment_id().find(query) == std::string::npos &&
+                record.get_merchant_reference_id().find(query) == std::string::npos &&
+                record.get_description().find(query) == std::string::npos) {
+                continue;
+            }
+            if (!matches_string_list(constraints->get_status(), record.get_status()) ||
+                !matches_string_list(constraints->get_currency(), record.get_currency()) ||
+                !matches_string_list(constraints->get_connector(), connector_by_payment[record.get_payment_id()]) ||
+                !matches_string_list(constraints->get_payment_method(),
+                                     metadata_value(record.get_metadata(), "payment_method")) ||
+                !matches_string_list(constraints->get_payment_method_type(),
+                                     metadata_value(record.get_metadata(), "payment_method_type"))) {
+                continue;
+            }
+            filtered.push_back(record);
+        }
+
+        // Upstream `Order` is accepted; the local substitute applies a stable
+        // created_at ordering in place of the OpenSearch sort DSL.
+        const std::string order = constraints->get_order().value_or(std::string{});
+        const bool descending = order == "Desc" || order == "desc" || order == "DESC";
+        std::ranges::stable_sort(filtered, [descending](const auto& lhs, const auto& rhs) {
+            return descending ? lhs.get_created_at() > rhs.get_created_at()
+                              : lhs.get_created_at() < rhs.get_created_at();
+        });
+
+        const std::int64_t total = static_cast<std::int64_t>(filtered.size());
+        const std::int64_t offset = std::max<std::int64_t>(0, constraints->get_offset().value_or(0));
+        // Upstream PageSize defaults to 10 and is capped at 20.
+        std::int64_t limit = constraints->get_limit().value_or(10);
+        if (limit <= 0 || limit > 20) {
+            limit = 10;
+        }
+        std::vector<PaymentsResponse> data{};
+        for (std::int64_t i = offset; i < total && i - offset < limit; ++i) {
+            const auto& record = filtered[static_cast<std::size_t>(i)];
+            PaymentsResponse item{};
+            PaymentIdValue id{};
+            id.set_value(record.get_payment_id());
+            item.set_payment_id(id);
+            MerchantIdValue merchant{};
+            merchant.set_value(record.get_merchant_id());
+            item.set_merchant_id(merchant);
+            item.set_processor_merchant_id(merchant);
+            IntentStatusValue status{};
+            status.set_value(record.get_status());
+            item.set_status(status);
+            MinorUnitValue amount{};
+            amount.set_value(std::to_string(record.get_amount()));
+            item.set_amount(amount);
+            item.set_net_amount(amount);
+            item.set_amount_capturable(amount);
+            item.set_currency(record.get_currency().empty() ? std::string{"USD"} : record.get_currency());
+            data.push_back(std::move(item));
+        }
+
+        PaymentsAdvancedListResponse response{};
+        response.set_count(data.size());
+        response.set_total_count(total);
+        response.set_data(std::move(data));
+        return serde::Ser::encode_json(response);
+    }
+
+    /**
+     *  Local in-process substitute for
+     *  `payment_methods::list_payment_methods_for_payments_client`
+     *  (routes/app.rs:1188-1190; payment_methods.rs:2190-2246). The upstream
+     *  `PaymentMethodListRequest` query DTO is reused; the external PM service is
+     *  replaced by a config-driven enabled-method list over the payment's
+     *  recorded connector, with the same client-secret gate and limit semantics.
+     */
+    [[nodiscard]] std::optional<std::string> client_payment_methods_response(
+        interfaces::io::IRequest& req
+    ) const
+    {
+        using ClientRequest = app::model::payment_methods::PaymentMethodListRequest;
+        auto request = parse_query_as<ClientRequest>(
+            req, {"client_secret", "amount", "recurring_enabled",
+                  "installment_payment_enabled", "limit"}
+        );
+        if (!request) {
+            return std::nullopt;
+        }
+        const std::string id = payment_id_from_path(req);
+        const auto record = find_payment_record(req, id);
+        if (record && request->get_client_secret() && !request->get_client_secret()->empty()) {
+            const std::string expected = metadata_value(record->get_metadata(), "client_secret");
+            if (!expected.empty() && expected != *request->get_client_secret()) {
+                return std::nullopt; // upstream IR_09 client-secret mismatch
+            }
+        }
+        std::string connector{};
+        for (const auto& attempt : m_context->repository().list_payment_attempts()) {
+            if (attempt.get_payment_id() == id) {
+                connector = attempt.get_connector();
+                break;
+            }
+        }
+        const std::string merchant = app::http::merchant_id_from_header{}(req);
+        const std::string enabled = m_context->config_store()
+                                        .get_value("payments_client_payment_methods", merchant)
+                                        .value_or(std::string{"card"});
+        const std::int64_t limit = request->get_limit().value_or(10);
+
+        using namespace app::model::payments;
+        PaymentsClientMethodsResponse response{};
+        std::vector<PaymentsClientMethod> methods{};
+        std::size_t cursor = 0;
+        while (cursor < enabled.size() && static_cast<std::int64_t>(methods.size()) < limit) {
+            const auto comma = enabled.find(',', cursor);
+            const std::string name = std::string{enabled.substr(
+                cursor, comma == std::string::npos ? std::string::npos : comma - cursor
+            )};
+            cursor = comma == std::string::npos ? enabled.size() : comma + 1;
+            if (name.empty()) {
+                continue;
+            }
+            PaymentsClientMethod method{};
+            method.set_payment_method(name);
+            method.set_payment_method_type(name);
+            if (!connector.empty()) {
+                method.set_connector(connector);
+            }
+            method.set_enabled(true);
+            methods.push_back(std::move(method));
+        }
+        response.set_count(methods.size());
+        response.set_data(std::move(methods));
+        return serde::Ser::encode_json(response);
+    }
+
+    /** Upstream `callback_tokens.rs`: a UUID v4 token is canonical lowercase and
+     *  version nibble 4. Legacy/migration callback URLs carry no token at all. */
+    [[nodiscard]] static bool is_uuid_v4(std::string_view token) noexcept
+    {
+        if (token.size() != 36 || token[8] != '-' || token[13] != '-' || token[18] != '-' ||
+            token[23] != '-' || token[14] != '4') {
+            return false;
+        }
+        for (std::size_t i = 0; i < token.size(); ++i) {
+            if (i == 8 || i == 13 || i == 18 || i == 23) {
+                continue;
+            }
+            const char ch = token[i];
+            const bool hex = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+            if (!hex) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Upstream `CallbackHashInput::callback_key`: `payment_callback_token:<digest>`
+     *  over the length-framed route name + path fields + token. The local keyed
+     *  hasher substitutes for SHA-256; the framing and key namespace are kept. */
+    [[nodiscard]] std::string callback_token_key(
+        std::string_view route_name,
+        std::string_view payment_id,
+        std::string_view merchant_id,
+        std::string_view hash_tail,
+        std::string_view token
+    ) const
+    {
+        const auto frame = [](std::string_view field) {
+            return std::format("{}:{}", field.size(), field);
+        };
+        const std::string input = std::format(
+            "{}{}{}{}{}", frame(route_name), frame(payment_id),
+            frame(merchant_id), frame(hash_tail), token
+        );
+        const std::string secret = m_context->config_store()
+                                       .get_value("callback_token_secret", merchant_id)
+                                       .value_or(std::string{"local_callback_secret"});
+        app::crypto::KeyedHasher hasher{secret};
+        return std::format(
+            "payment_callback_token:{}", hasher.hash_with_domain("callback_token", input)
+        );
+    }
+
+    /** Internal (no-route) helper mirroring `PaymentCallbackFields::create_url`:
+     *  token mode emits `/payments/{id}/{merchant}/redirect/token/{uuid}/{tail}`
+     *  and registers a single-use key; legacy mode emits the original path. */
+    [[nodiscard]] std::string callback_url(
+        std::string_view base_url,
+        std::string_view payment_id,
+        std::string_view merchant_id,
+        std::string_view route_name,
+        std::string_view tokenized_tail,
+        std::string_view hash_tail,
+        std::string_view legacy_path
+    ) const
+    {
+        const std::string mode = m_context->config_store()
+                                     .get_value("payment_callback_mode", merchant_id)
+                                     .value_or(std::string{"legacy"});
+        if (mode != "enabled" && mode != "forced") {
+            return std::format("{}/payments{}", base_url, legacy_path);
+        }
+        const std::string token = m_context->ids().uuid_v4();
+        const auto ttl = core::cache::Ttl{}.seconds(900); // DEFAULT_INTENT_FULFILLMENT_TIME
+        m_context->cache().put(
+            callback_token_key(route_name, payment_id, merchant_id, hash_tail, token),
+            std::string{"UNUSED"}, ttl
+        );
+        return std::format(
+            "{}/payments/{}/{}/redirect/token/{}/{}",
+            base_url, payment_id, merchant_id, token, tokenized_tail
+        );
     }
 
     /**
@@ -3989,6 +4481,25 @@ private:
             spec.permission = "ProfilePaymentRead";
             return spec;
         }
+        if (op == "list_payment_methods_for_payments_client") {
+            // payment_methods.rs:2199-2216 — ApiKeyAuth with connected/platform
+            // scopes, SDK client-secret header fallback (client route).
+            spec.kind = ExtractorKind::ApiOrClientOrJwt;
+            spec.permission = "ProfilePaymentRead";
+            spec.allow_connected = true;
+            spec.allow_platform = true;
+            return spec;
+        }
+        if (in_set(op, {"get_payment_list_from_opensearch",
+                        "get_profile_payment_list_from_opensearch"})) {
+            // analytics.rs:2390-2394 — JWTAuth MerchantPaymentRead with both
+            // connected and platform scopes allowed.
+            spec.kind = ExtractorKind::Jwt;
+            spec.permission = "MerchantPaymentRead";
+            spec.allow_connected = true;
+            spec.allow_platform = true;
+            return spec;
+        }
         if (in_set(op, {
                 "payments_create_intent", "get_payment_filters", "payments_list",
                 "revenue_recovery_invoices_list", "revenue_recovery_invoices_list_profile",
@@ -4034,25 +4545,108 @@ private:
         return expected.empty() || expected == *secret; // IR_09 on mismatch
     }
 
+    /**  Client method listing uses upstream's own `check_sdk_auth_or_client_secret_auth`
+     *   combination; there is no separate audited registry rule to layer, so the
+     *   extractor combination is applied directly (payment_methods.rs:2196-2216). */
+    [[nodiscard]] bool client_secret_query_matches(interfaces::io::IRequest& req) const
+    {
+        const std::string secret = query_value(req, "client_secret");
+        if (secret.empty()) {
+            return false;
+        }
+        const auto record = find_payment_record(req, payment_id_from_path(req));
+        if (!record) {
+            return true;
+        }
+        const std::string expected = metadata_value(record->get_metadata(), "client_secret");
+        return expected.empty() || expected == secret; // IR_09 on mismatch
+    }
+
+    [[nodiscard]] bool authorize_extractor_only(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view operation
+    ) const
+    {
+        const auto ctx = app::auth::AuthContextBuilder{}(req);
+        if (!apply_extractor(req, ctx, auth_spec_for(operation), operation)) {
+            send_api_error(
+                res, send, ApiVariant::Unauthorized,
+                "Authentication information is missing or invalid", "IR_08",
+                payment_id_from_path(req)
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**  Local port of `PaymentCallbackAuth::authenticate_and_fetch`
+     *   (callback_tokens.rs:226-312): in legacy/migration mode the original
+     *   tokenless URL is accepted; in token mode a canonical UUID v4 is required
+     *   and its single-use key is consumed from the in-process cache. */
     [[nodiscard]] bool verify_callback_token(interfaces::io::IRequest& req) const
     {
+        const std::string merchant = app::http::merchant_id_from_header{}(req);
+        const std::string mode = m_context->config_store()
+                                     .get_value("payment_callback_mode", merchant)
+                                     .value_or(std::string{"legacy"});
+        const bool issues_tokens = mode == "enabled" || mode == "forced";
         const auto segments = app::http::RequestPath{}(req);
         std::string token{};
-        for (std::size_t i = 0; i < segments.count(); ++i) {
-            if (segments.at(i) && *segments.at(i) == "token" && i + 1 < segments.count()) {
+        std::size_t token_index = segments.count();
+        for (std::size_t i = 0; i + 1 < segments.count(); ++i) {
+            if (segments.at(i) && *segments.at(i) == "token") {
                 token = std::string{*segments.at(i + 1)};
+                token_index = i + 1;
                 break;
             }
         }
-        if (token.empty()) {
+        if (!issues_tokens) {
+            return true; // legacy / migration mode accepts the original URL
+        }
+        if (token.empty() || !is_uuid_v4(token) || token_index + 2 > segments.count()) {
             return false;
         }
-        const std::string merchant = app::http::merchant_id_from_header{}(req);
-        const std::string secret = m_context->config_store()
-                                       .get_value("callback_token_secret", merchant)
-                                       .value_or(std::string{"local_callback_secret"});
-        app::crypto::KeyedHasher hasher{secret};
-        return token == hasher.hash(payment_id_from_path(req) + ":" + merchant);
+
+        // Resolve the named route and its length-framed hash fields from the
+        // segment following the token, mirroring `PaymentCallbackRoute::path()`.
+        std::string route_name{"payment_callback_redirect_response"};
+        std::string hash_tail{};
+        if (token_index + 1 < segments.count()) {
+            const std::string kind = std::string{*segments.at(token_index + 1)};
+            const std::string first = token_index + 2 < segments.count()
+                                          ? std::string{*segments.at(token_index + 2)}
+                                          : std::string{};
+            const std::string second = token_index + 3 < segments.count()
+                                           ? std::string{*segments.at(token_index + 3)}
+                                           : std::string{};
+            const bool with_creds = !second.empty();
+            if (kind == "start") {
+                route_name = "payment_callback_start";
+                hash_tail = first; // attempt_id
+            } else if (kind == "response") {
+                route_name = with_creds ? "payment_callback_redirect_response_with_credentials"
+                                        : "payment_callback_redirect_response";
+                hash_tail = with_creds ? std::format("{}{}", frame_field(first), frame_field(second))
+                                       : first; // connector[ + creds_identifier]
+            } else if (kind == "complete") {
+                route_name = with_creds ? "payment_callback_redirect_complete_with_credentials"
+                                        : "payment_callback_redirect_complete";
+                hash_tail = with_creds ? std::format("{}{}", frame_field(first), frame_field(second))
+                                       : first;
+            } else if (kind == "authorize") {
+                route_name = "payment_callback_authorize";
+                hash_tail = first;
+            }
+        }
+        const std::string key = callback_token_key(
+            route_name, payment_id_from_path(req), merchant, hash_tail, token
+        );
+        const auto cached = m_context->cache().get(key);
+        const bool valid = cached.hit && cached.value_or<std::string>({}) == "UNUSED";
+        m_context->cache().erase(key); // consume once, like `consume_key`
+        return valid;
     }
 
     /**  Applies the upstream extractor semantics on top of the audited registry rule. */
@@ -4078,10 +4672,12 @@ private:
         case ExtractorKind::V2Client:
             return client_secret.has_value() || publishable.has_value();
         case ExtractorKind::ApiOrClientOrJwt:
-            return api_key || jwt || client_secret_matches(req, ctx) ||
+            return api_key || sdk || jwt || client_secret_matches(req, ctx) ||
+                   client_secret_query_matches(req) ||
                    (publishable.has_value() && publishable->starts_with("pk_"));
         case ExtractorKind::ApiOrClient:
-            return api_key || client_secret_matches(req, ctx);
+            return api_key || client_secret_matches(req, ctx) ||
+                   client_secret_query_matches(req);
         case ExtractorKind::ApiOrJwt:
             return api_key || jwt;
         case ExtractorKind::Jwt:
@@ -4276,6 +4872,36 @@ private:
             return false;
         }
         if (!apply_extractor(req, ctx, auth_spec_for(operation), operation)) {
+            send_api_error(
+                res, send, ApiVariant::Unauthorized,
+                "Authentication information is missing or invalid", "IR_08",
+                payment_id_from_path(req)
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**  The advanced-list ops are not in the shared auth registry table (which
+     *   fails closed for unknown names), so the audited rule is taken from the
+     *   equivalent registered list op while the extractor combination comes
+     *   from this operation's exact upstream contract. No shared file is edited. */
+    [[nodiscard]] bool authorize_operation_mapped(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view registry_operation,
+        std::string_view extractor_operation
+    ) const
+    {
+        const auto rule = m_context->auth_rules().rule_for(registry_operation);
+        const auto ctx = app::auth::AuthContextBuilder{}(req);
+        const auto auth = m_context->authorizer().authorize_route(ctx, rule);
+        if (auth) {
+            send_error(res, send, *auth);
+            return false;
+        }
+        if (!apply_extractor(req, ctx, auth_spec_for(extractor_operation), extractor_operation)) {
             send_api_error(
                 res, send, ApiVariant::Unauthorized,
                 "Authentication information is missing or invalid", "IR_08",

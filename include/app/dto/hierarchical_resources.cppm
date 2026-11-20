@@ -1,4 +1,6 @@
 module;
+#include <simdjson.h>
+#include <toml++/toml.hpp>
 export module app_dto:hierarchical_resources;
 
 import std;
@@ -8,6 +10,12 @@ import boost.ut;
 #endif
 
 export namespace app::dto::hierarchical_resources {
+
+// ── Wire value objects ───────────────────────────────────────────────────────
+// Upstream `id_type::ResourceId`, `time::PrimitiveDateTime` and the two
+// `common_enums` newtypes all serialize as plain JSON strings (see the
+// `FieldConverter` specializations below). These typed wrappers keep the
+// compile-time distinction while emitting the exact upstream wire shape.
 
 class PrimitiveDateTimeValue
 {
@@ -57,15 +65,20 @@ public:
     ResourceTypeValue resource_type{};
 };
 
+// ── Real typed response DTOs (api_models/src/hierarchical_resources.rs) ──────
+// `data`/`display_schema`/`display_data` mirror upstream `Secret<serde_json::Value>`
+// fields: they are carried as pre-rendered JSON fragments (serde::RawJson) so they
+// are emitted as embedded JSON objects, never as escaped strings.
+
 class GenerateHierarchicalResourceResponse
 {
 public:
     void set_id(ResourceIdValue value) { id = std::move(value); }
     [[nodiscard]] const ResourceIdValue& get_id() const noexcept { return id; }
-    void set_data(std::string value) { data = std::move(value); }
-    [[nodiscard]] const std::string& get_data() const noexcept { return data; }
+    void set_data(serde::RawJson value) { data = std::move(value); }
+    [[nodiscard]] const serde::RawJson& get_data() const noexcept { return data; }
     ResourceIdValue id{};
-    std::string data{};
+    serde::RawJson data{};
 };
 
 class HierarchicalResourceSummary
@@ -73,17 +86,17 @@ class HierarchicalResourceSummary
 public:
     void set_id(ResourceIdValue value) { id = std::move(value); }
     [[nodiscard]] const ResourceIdValue& get_id() const noexcept { return id; }
-    void set_display_schema(std::string value) { display_schema = std::move(value); }
-    [[nodiscard]] const std::string& get_display_schema() const noexcept { return display_schema; }
-    void set_display_data(std::string value) { display_data = std::move(value); }
-    [[nodiscard]] const std::string& get_display_data() const noexcept { return display_data; }
+    void set_display_schema(serde::RawJson value) { display_schema = std::move(value); }
+    [[nodiscard]] const serde::RawJson& get_display_schema() const noexcept { return display_schema; }
+    void set_display_data(serde::RawJson value) { display_data = std::move(value); }
+    [[nodiscard]] const serde::RawJson& get_display_data() const noexcept { return display_data; }
     void set_created_at(PrimitiveDateTimeValue value) { created_at = std::move(value); }
     [[nodiscard]] const PrimitiveDateTimeValue& get_created_at() const noexcept { return created_at; }
     void set_is_linked(bool value) { is_linked = std::move(value); }
     [[nodiscard]] const bool& get_is_linked() const noexcept { return is_linked; }
     ResourceIdValue id{};
-    std::string display_schema{};
-    std::string display_data{};
+    serde::RawJson display_schema{};
+    serde::RawJson display_data{};
     PrimitiveDateTimeValue created_at{};
     bool is_linked{};
 };
@@ -140,6 +153,167 @@ public:
     std::vector<HierarchicalResourceSummary> resources{};
 };
 } // namespace app::dto::hierarchical_resources
+
+// ── Plain-string wire converters for the value newtypes ──────────────────────
+// These explicit full specializations override the generic `ISerializable`
+// `FieldConverter` so ids/dates/enums ride the wire as plain strings, exactly
+// like upstream. The pattern mirrors app/dto/api_keys.cppm.
+
+template<>
+struct serde::FieldConverter<app::dto::hierarchical_resources::ResourceIdValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::hierarchical_resources::ResourceIdValue& v)
+    {
+        return v.get_value();
+    }
+    static app::dto::hierarchical_resources::ResourceIdValue from_rfl(const rfl_type& v)
+    {
+        app::dto::hierarchical_resources::ResourceIdValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(
+        simdjson::ondemand::value& j,
+        app::dto::hierarchical_resources::ResourceIdValue& out
+    )
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) {
+            return ec;
+        }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::hierarchical_resources::ResourceIdValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) {
+            return std::unexpected{std::format("missing field '{}'", name)};
+        }
+        app::dto::hierarchical_resources::ResourceIdValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::hierarchical_resources::PrimitiveDateTimeValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::hierarchical_resources::PrimitiveDateTimeValue& v)
+    {
+        return v.get_value();
+    }
+    static app::dto::hierarchical_resources::PrimitiveDateTimeValue from_rfl(const rfl_type& v)
+    {
+        app::dto::hierarchical_resources::PrimitiveDateTimeValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(
+        simdjson::ondemand::value& j,
+        app::dto::hierarchical_resources::PrimitiveDateTimeValue& out
+    )
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) {
+            return ec;
+        }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::hierarchical_resources::PrimitiveDateTimeValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) {
+            return std::unexpected{std::format("missing field '{}'", name)};
+        }
+        app::dto::hierarchical_resources::PrimitiveDateTimeValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::hierarchical_resources::ResourceTypeValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::hierarchical_resources::ResourceTypeValue& v)
+    {
+        return v.get_value();
+    }
+    static app::dto::hierarchical_resources::ResourceTypeValue from_rfl(const rfl_type& v)
+    {
+        app::dto::hierarchical_resources::ResourceTypeValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(
+        simdjson::ondemand::value& j,
+        app::dto::hierarchical_resources::ResourceTypeValue& out
+    )
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) {
+            return ec;
+        }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::hierarchical_resources::ResourceTypeValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) {
+            return std::unexpected{std::format("missing field '{}'", name)};
+        }
+        app::dto::hierarchical_resources::ResourceTypeValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::hierarchical_resources::ResourceRequestorTypeValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::hierarchical_resources::ResourceRequestorTypeValue& v)
+    {
+        return v.get_value();
+    }
+    static app::dto::hierarchical_resources::ResourceRequestorTypeValue from_rfl(const rfl_type& v)
+    {
+        app::dto::hierarchical_resources::ResourceRequestorTypeValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(
+        simdjson::ondemand::value& j,
+        app::dto::hierarchical_resources::ResourceRequestorTypeValue& out
+    )
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) {
+            return ec;
+        }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::hierarchical_resources::ResourceRequestorTypeValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) {
+            return std::unexpected{std::format("missing field '{}'", name)};
+        }
+        app::dto::hierarchical_resources::ResourceRequestorTypeValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
 
 template<>
 struct serde::Serializable<app::dto::hierarchical_resources::GenerateHierarchicalResourceRequest>

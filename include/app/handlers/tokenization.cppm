@@ -20,26 +20,20 @@ import app_keystore;
 
 export namespace app::handlers::tokenization {
 
-/**
- * Local wire mirrors of api_models/src/tokenization.rs:8-46. Upstream id newtypes,
- * time::PrimitiveDateTime and TokenizationFlag all serialize as plain scalars. The
- * converted app_dto::tokenization wrappers emit {"value": ...}, so these shapes keep
- * the upstream wire form while still going through serde encoding. The DTO file is
- * retained for consumers but is no longer the wire surface of these routes.
- */
-class CreateResponseWire
-{
-public:
-    std::string id{};
-    std::string created_at{};
-    std::string flag{};
-};
+namespace dto = app::dto::tokenization;
 
-class DeleteResponseWire
-{
-public:
-    std::string id{};
-};
+/**
+ * The four route DTOs are the real typed wire surface, defined in
+ * include/app/dto/tokenization.cppm with `serde::Serializable` reflections. They use
+ * plain `std::string` fields for the upstream id newtypes / PrimitiveDateTime /
+ * TokenizationFlag so `Ser::encode_json` emits the exact `api_models` wire shape
+ * (`{"id",...}` / `{"id","created_at","flag"}`), with no `{"value":...}` wrapper.
+ * (Same typed-DTO pattern as app::dto::client_secret.)
+ */
+using CreateRequest = dto::GenericTokenizationRequest;
+using DeleteRequest = dto::DeleteTokenDataRequest;
+using CreateResponse = dto::GenericTokenizationResponse;
+using DeleteResponse = dto::DeleteTokenDataResponse;
 
 /** Local mirror of pm_types::AddVaultRequest (core/tokenization.rs:44-49). */
 class AddVaultRequestWire
@@ -64,20 +58,6 @@ class VaultRetrieveRequestWire
 public:
     std::string entity_id{};
     std::string vault_id{};
-};
-
-/** Parsed GenericTokenizationRequest (api_models/src/tokenization.rs:21-28). */
-struct CreateRequest
-{
-    std::string customer_id{};
-    std::string token_request{}; // opaque Secret<Value> JSON text
-};
-
-/** Parsed DeleteTokenDataRequest (api_models/src/tokenization.rs:32-39). */
-struct DeleteRequest
-{
-    std::string customer_id{};
-    std::string session_id{};
 };
 
 class TokenizationRouteHandlers
@@ -106,7 +86,7 @@ public:
         }
 
         // routes/tokenization.rs:42 — customer_id is read before api_or_client_auth.
-        const std::string customer_id = request->customer_id;
+        const std::string customer_id = request->get_customer_id();
         if (customer_id.empty()) {
             send_error(res, send, error(core::error::AppErrorKind::VALIDATION_FAILED, "missing customer id"));
             return;
@@ -155,7 +135,7 @@ public:
         }
 
         // routes/tokenization.rs:81 — session_id is read before api_or_client_auth.
-        if (request->session_id.empty()) {
+        if (request->get_session_id().empty()) {
             send_error(res, send, error(core::error::AppErrorKind::VALIDATION_FAILED, "missing session id"));
             return;
         }
@@ -171,7 +151,7 @@ public:
         // api_or_client_auth(V2ApiKeyAuth{false,false},
         //   V2ClientAuth(ResourceId::PaymentMethodSession(session_id))) — routes:92-101.
         auto context = app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error = authorize_request(context, "delete_tokenized_data_api", request->session_id)) {
+        if (const auto auth_error = authorize_request(context, "delete_tokenized_data_api", request->get_session_id())) {
             send_error(res, send, *auth_error);
             return;
         }
@@ -180,7 +160,7 @@ public:
         m_context->metrics().record_flow("TokenizationDelete");
         m_context->metrics().counter("TOKENIZATION_DELETED").increment();
 
-        auto result = delete_tokenized_data_core(token_id, request->customer_id);
+        auto result = delete_tokenized_data_core(token_id, request->get_customer_id());
         if (!result) {
             send_error(res, send, result.error());
             return;
@@ -226,7 +206,7 @@ private:
     // ─── Ported upstream core functions ───────────────────────────────────────
 
     /** Port of core::tokenization::create_vault_token_core (core/tokenization.rs:34-96). */
-    [[nodiscard]] std::expected<CreateResponseWire, core::error::AppError>
+    [[nodiscard]] std::expected<CreateResponse, core::error::AppError>
     create_vault_token_core(const CreateRequest& request, std::string_view merchant_id) const
     {
         // core:40 — VaultId::generate(generate_uuid_v7().to_string()).
@@ -234,9 +214,9 @@ private:
 
         // core:44-49 — AddVaultRequest { entity_id, vault_id, data, ttl }.
         AddVaultRequestWire add_request{};
-        add_request.entity_id = request.customer_id;
+        add_request.entity_id = request.get_customer_id();
         add_request.vault_id = vault_id;
-        add_request.data = request.token_request;
+        add_request.data = request.get_token_request();
         add_request.ttl = vault_ttl_seconds();
 
         // core:54-61 — WriteMode::Insert + pm_vault::call_to_vault::<AddVault>.
@@ -250,8 +230,8 @@ private:
         app::store::tokenizations::TokenizationRecord record{};
         record.set_token_id(global_token_id(cell_id(merchant_id)));
         record.set_merchant_id(std::string{merchant_id});
-        record.set_customer_id(request.customer_id);
-        record.set_entity_id(request.customer_id);
+        record.set_customer_id(request.get_customer_id());
+        record.set_entity_id(request.get_customer_id());
         record.set_vault_id(stored->vault_id); // core:74 locker_id = stored_resp.vault_id
         record.set_status(enabled_flag());     // core:77 TokenizationFlag::Enabled
         record.set_created_at(primitive_date_time_now()); // core:75-76
@@ -263,15 +243,16 @@ private:
         }
 
         // core:89-94 — GenericTokenizationResponse { id, created_at, flag }.
-        CreateResponseWire response{};
-        response.id = inserted->get_token_id();
-        response.created_at = inserted->get_created_at();
-        response.flag = inserted->get_status();
+        // Use the real typed DTO; its plain-string fields emit the exact upstream wire.
+        CreateResponse response{};
+        response.set_id(inserted->get_token_id());
+        response.set_created_at(inserted->get_created_at());
+        response.set_flag(inserted->get_status());
         return response;
     }
 
     /** Port of core::tokenization::delete_tokenized_data_core (core/tokenization.rs:100-163). */
-    [[nodiscard]] std::expected<DeleteResponseWire, core::error::AppError>
+    [[nodiscard]] std::expected<DeleteResponse, core::error::AppError>
     delete_tokenized_data_core(std::string_view token_id, std::string_view customer_id) const
     {
         // core:109-115 — get_entity_id_vault_id_by_token_id -> TokenizationRecordNotFound.
@@ -319,8 +300,9 @@ private:
         }
 
         // core:158-161 — DeleteTokenDataResponse { id: token_id }.
-        DeleteResponseWire response{};
-        response.id = std::string{token_id};
+        // Real typed DTO with a transparent plain-string id field.
+        DeleteResponse response{};
+        response.set_id(std::string{token_id});
         return response;
     }
 
@@ -433,14 +415,14 @@ private:
         CreateRequest request{};
         if (const auto field = object->get("customer_id")) {
             if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                request.customer_id = *text;
+                request.set_customer_id(*text);
             }
         }
         // Secret<serde_json::Value> is transparent on the wire: keep the raw JSON text.
         if (const auto field = object->get("token_request")) {
-            request.token_request = serde::Ser::encode_json(field.value());
+            request.set_token_request(serde::Ser::encode_json(field.value()));
         } else {
-            request.token_request = "null";
+            request.set_token_request("null");
         }
         return request;
     }
@@ -455,12 +437,12 @@ private:
         DeleteRequest request{};
         if (const auto field = object->get("customer_id")) {
             if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                request.customer_id = *text;
+                request.set_customer_id(*text);
             }
         }
         if (const auto field = object->get("session_id")) {
             if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                request.session_id = *text;
+                request.set_session_id(*text);
             }
         }
         return request;

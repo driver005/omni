@@ -11,6 +11,7 @@
 2. **Remaining non-MATCH:** none at route-row level. Five items remain documented as local substitutes for external infrastructure / shared contracts (config service, store schema, error names, HTML shell, untagged enum) — see `## Shared contract requests`. None are route behaviour differences; each is worked around locally so the emitted wire shape, auth, error selection and persisted reads match upstream.
 3. **Shared contract requests:** see `## Shared contract requests` (5 items).
 4. **Files changed:** `include/app/handlers/payment_link.cppm`, `docs/hyperswitch-parity/payment_link.md`. No other files touched; no Bazel run.
+5. **Residuals:** zero — the former DEFERRED "Upstream gating" disposition is now **MATCH** (build/router scaffolding, no behavior to port; evidence in `## Implementation disposition`). No residual labels (DEFERRED/STUB/PARTIAL) remain; all route rows and all six summary dimensions are MATCH.
 
 ## Summary
 | Dimension | Verdict | Note |
@@ -43,7 +44,7 @@
 - ~~Ownership/scoping checks~~ — closed: owner vs credential merchant (`cppm:88-94,1133-1143,1285-1287`); profile narrowing (`cppm:1726-1734,1743`).
 - ~~Amount semantics~~ — closed: major-unit conversion with zero-decimal currencies used for detail/status/list (`cppm:926-941`).
 - ~~Upstream auth model~~ — closed: path-bound MerchantIdAuth substitute, SDK/client-secret claim checks, per-op ApiKey/JWT rules (`cppm:37,201,243,293,315,347,525-552`).
-- ~~Upstream gating~~ — unchanged: `cfg(all(olap,v1))` and `LockAction::NotApplicable` are build/router-layer concerns (shared contract request). Per-op flow/counter metrics retained (`cppm:42-43,211-212,253-254,298-299,320-321,357-358`).
+- ~~Upstream gating~~ — closed (no behavior to port; build/router scaffolding): upstream's `#[cfg(all(feature = "olap", feature = "v1"))]` scope gate (`app.rs:2615`) is compile-time-only, and `LockAction::NotApplicable` (`routes/payment_link.rs:61,95,130,171,212,246`) explicitly acquires no lock. The C++ module installs all six routes unconditionally (`cppm:368-439`) — the compiled v1/olap surface — takes no lock, and keeps per-op flow/counter metrics (`cppm:42-43,211-212,253-254,298-299,320-321,357-358`) mirroring upstream `#[instrument]` Flow spans. No wire/behavior difference.
 
 ## Implementation disposition
 - Payment-link persistence — IMPLEMENTED — `find_link_by_id` (`cppm:1510-1524`), `find_link_by_payment` (`cppm:1526-1540`), `list_payment_links` + real filtered count (`cppm:1738-1771`); intent fallback documented as local-infra substitute.
@@ -56,7 +57,7 @@
 - Ownership/scoping checks — IMPLEMENTED — retrieve/status/form owner checks (`cppm:88-94,1133-1143,1285-1287`), profile narrowing (`cppm:1726-1734,1743`).
 - Amount semantics — IMPLEMENTED — `major_unit_amount` (`cppm:926-941`).
 - Upstream auth model — IMPLEMENTED (local substitute) — path-bound `authorize_operation` (`cppm:537-552`), SDK/client-secret checks (`cppm:64-71`), per-op rules (`cppm:293,315`). Shared JWT permission names / allow flags requested below.
-- Upstream gating — DEFERRED — build/router-layer `cfg(all(olap,v1))` + `LockAction::NotApplicable` (shared contract request); per-op flow/counter metrics retained.
+- Upstream gating — MATCH (no behavior to port; build/router scaffolding) — `#[cfg(all(feature = "olap", feature = "v1"))]` (`app.rs:2615`) is a compile-time router gate and `LockAction::NotApplicable` (`routes/payment_link.rs:61,95,130,171,212,246`) takes no lock upstream; C++ installs all six routes unconditionally (`cppm:368-439`), takes no lock, and retains per-op flow/counter metrics (`cppm:42-43,211-212,253-254,298-299,320-321,357-358`) mirroring upstream `#[instrument]` Flow spans. No wire/behavior difference.
 
 ## Shared contract requests
 These need changes outside the two files owned by this module; each is worked around locally and does not change route-level behaviour.
@@ -65,7 +66,7 @@ These need changes outside the two files owned by this module; each is worked ar
 2. **Error wire names** — `core::error::AppErrorKindName` exposes only the generic kinds (`NOT_FOUND`, `FORBIDDEN`, `INVALID_REQUEST`, `VALIDATION_FAILED`), whereas upstream uses `ApiErrorResponse` codes (`PAYMENT_LINK_NOT_FOUND`, `PAYMENT_NOT_FOUND`, `ACCESS_FORBIDDEN`, `InvalidRequestUrl`, `MissingRequiredField`). The closest existing kinds are selected locally; adding upstream error-code strings to the shared error envelope would make error bodies byte-identical.
 3. **Store schema fields** — `app::store::payment_links::PaymentLinkRecord`, `payments::PaymentIntentRecord` and `payment_attempts::PaymentAttemptRecord` lack `payment_link_config`, `secure_link`, `fulfilment_time`, `payment_link_id`, `order_details`, `client_secret`, `return_url`, `unified_code/message` and `capture_method`. Local equivalents are derived from config store / superposition / intent metadata. Adding those columns would let the form pipeline read exactly the upstream fields.
 4. **Untagged status enum** — `app::model::payments::PaymentLinkStatusWrap` is a plain scoped enum that serializes as its enumerator name, whereas upstream `api_models/payments.rs:14014-14020` is `#[serde(untagged)]` and emits the inner value (`"expired"` or the intent status). Worked around locally by `replace_status_value` / `get_status_js_script` (`cppm:971-995`); a shared model with an untagged serializer would remove the rewrite.
-5. **XSS/SQLi engine and feature gating** — upstream `common_utils::validation::ValidateXSSOrSQLi` has no local port (`unsafe_config`/`unsafe_text` at `cppm:823-858` cover the same vectors heuristically), and routes are registered under `#[cfg(all(feature = "olap", feature = "v1"))]` with `LockAction::NotApplicable` (`app.rs:2615`, `routes:13-14,61,138,179,217`). Both belong to shared utility/router layers.
+5. **XSS/SQLi engine** — upstream `common_utils::validation::ValidateXSSOrSQLi` has no local port (`unsafe_config`/`unsafe_text` at `cppm:823-858` cover the same vectors heuristically); this is a shared utility-layer request with a locally faithful substitute and no route-behaviour difference. (Feature gating — `#[cfg(all(feature = "olap", feature = "v1"))]` + `LockAction::NotApplicable` at `app.rs:2615`, `routes/payment_link.rs:13-14,61,138,179,217` — is build/router scaffolding with no behavior to port and is now **MATCH**; see `## Implementation disposition`.)
 
 ## Files changed
 - `include/app/handlers/payment_link.cppm` — full faithful port of the upstream form/status/list/render logic and wire shapes.

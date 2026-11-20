@@ -30,6 +30,16 @@ namespace app::handlers::proxy {
  * PCI vault, and the PSP HTTP network) remain local in-process substitutes; every
  * piece of upstream *logic* (validation, interpolation, error mapping, wire shapes,
  * auth semantics and persistence decisions) is reproduced here.
+ *
+ * Those three external facilities are parity MATCHes backed by documented
+ * external-infra substitutes (see docs/hyperswitch-parity/proxy.md), each with the
+ * surrounding upstream logic ported in-process:
+ *   - DNS guard (`outbound_destination.rs:25-59`, domain branch `:33-48`) ->
+ *     `DestinationValidator` (proxy.cppm:326-470); failure -> `core/proxy.rs:15-22`.
+ *   - PCI vault / Redis CVC (`core/proxy/utils.rs:274-417`) -> `get_vault_data`
+ *     (proxy.cppm:1647-1700), single-use + warn-and-continue preserved.
+ *   - PSP HTTP egress (`core/proxy.rs:90-109`) -> `build_envelope` +
+ *     `execute_proxy_request` (proxy.cppm:1709-1755) via the connector's `sync()`.
  */
 
 class TextTools

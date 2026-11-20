@@ -299,12 +299,69 @@ struct serde::Serializable<app::dto::three_ds_decision_rule::ThreeDsDecisionRule
     static constexpr std::string_view table_name() { return "three_ds_decision_rule_execute_response"; }
 };
 
+namespace app::dto::three_ds_decision_rule {
+
+/**
+ * @brief Explicit wire-name contract for the typed `ThreeDSDecision` enum.
+ *
+ * Upstream `ThreeDSDecision` uses serde `rename_all = "snake_case"`
+ * (common_types/three_ds_decision_rule_engine.rs:13-30), emitting the seven strings below.
+ * The production enum already uses those exact snake_case strings as its enumerator names,
+ * so rfl's enum-by-name reflection emits them directly and the response DTO stays a real
+ * typed DTO (`ThreeDsDecisionRuleExecuteResponse::decision` is `ThreeDSDecision`, not a
+ * stringly-typed substitute). This helper makes that wire contract explicit and locally
+ * verifiable without depending on an external serializer feature — the same pattern as
+ * `app/dto/poll.cppm` `PollStatusWireName`.
+ */
+class ThreeDSDecisionWireName
+{
+public:
+    [[nodiscard]] constexpr const char* operator()(ThreeDSDecision decision) const noexcept
+    {
+        switch (decision) {
+        case ThreeDSDecision::no_three_ds:
+            return "no_three_ds";
+        case ThreeDSDecision::challenge_requested:
+            return "challenge_requested";
+        case ThreeDSDecision::challenge_preferred:
+            return "challenge_preferred";
+        case ThreeDSDecision::no_preference:
+            return "no_preference";
+        case ThreeDSDecision::three_ds_exemption_requested_tra:
+            return "three_ds_exemption_requested_tra";
+        case ThreeDSDecision::three_ds_exemption_requested_low_value:
+            return "three_ds_exemption_requested_low_value";
+        case ThreeDSDecision::issuer_three_ds_exemption_requested:
+            return "issuer_three_ds_exemption_requested";
+        }
+        return "no_three_ds";
+    }
+};
+
+} // namespace app::dto::three_ds_decision_rule
+
 #ifdef CONGELADO_TEST
 namespace app::dto::three_ds_decision_rule::tests {
 using namespace boost::ut;
 suite<"app_dto_three_ds_decision_rule"> app_dto_three_ds_decision_rule_suite = [] {
     "reflects converted types"_test = [] {
         expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::three_ds_decision_rule::PaymentData>::fields())> > 0);
+    };
+    "typed decision wire names match upstream snake_case"_test = [] {
+        const ThreeDSDecisionWireName name;
+        using E = app::dto::three_ds_decision_rule::ThreeDSDecision;
+        expect(std::string_view{name(E::no_three_ds)} == "no_three_ds");
+        expect(std::string_view{name(E::challenge_requested)} == "challenge_requested");
+        expect(std::string_view{name(E::challenge_preferred)} == "challenge_preferred");
+        expect(std::string_view{name(E::no_preference)} == "no_preference");
+        expect(std::string_view{name(E::three_ds_exemption_requested_tra)} == "three_ds_exemption_requested_tra");
+        expect(std::string_view{name(E::three_ds_exemption_requested_low_value)} == "three_ds_exemption_requested_low_value");
+        expect(std::string_view{name(E::issuer_three_ds_exemption_requested)} == "issuer_three_ds_exemption_requested");
+    };
+    "execute response is a real typed DTO"_test = [] {
+        using R = app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse;
+        static_assert(std::is_same_v<decltype(std::declval<R&>().get_decision()), app::dto::three_ds_decision_rule::ThreeDSDecision>);
+        expect(std::tuple_size_v<decltype(serde::Serializable<R>::fields())> == 1u);
     };
 };
 }

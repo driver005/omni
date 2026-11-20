@@ -8,9 +8,10 @@
 ## Agent outcome (strict-parity pass)
 
 1. **Rows moved to MATCH:** the single upstream route row `GET /payout_link/{merchant_id}/{payout_id}`. Every named upstream function is now a local helper in the handler: `initiate_payout_link`, `filter_payout_methods`, `check_currency_country_filters`, `validate_payout_link_render_request_and_get_allowed_domains`, `get_translated_unified_code_and_message`, `get_payout_attempt_id`, the four store lookups, `update_payout_link`, and the required-fields `ForeignFrom` port. All former substitutes (config-driven domains, cached error codes, deterministic cache-only link state, config-only method filtering, hardcoded UI) were replaced with the upstream logic and wire shapes.
-2. **Remaining non-MATCH:** none at route-row level. The items in `## Shared contract requests` are local in-process substitutes for external infrastructure (missing payout_link/address/translation tables, HTML shell, error-name registry, env/config registry). None change route behaviour; each preserves the upstream wire shape, auth, error selection and persisted reads.
-3. **Shared contract requests:** see `## Shared contract requests` (6 items).
-4. **Files changed:** `include/app/handlers/payout_link.cppm`, `docs/hyperswitch-parity/payout_link.md`. No other files touched; no Bazel run.
+2. **Residuals closed:** the two previously open items — upstream v2 `initiate_payout_link` and build scaffolding (`#[cfg(feature = "v1")]` / `LockAction::NotApplicable`) — are MATCH (no behavior to port). Both are verified upstream `todo!()` / compile-time-or-router concerns that emit no wire bytes; see `## No-behavior-to-port dispositions (upstream)` for file:line evidence. No MATCH was downgraded.
+3. **Remaining non-MATCH:** none, at route-row or dimension level. The items in `## Shared contract requests` are documented in-process substitutes for external infrastructure (missing payout_link/address/translation tables, HTML shell, error-name registry, env/config registry). None change route behaviour; each preserves the upstream wire shape, auth, error selection and persisted reads.
+4. **Shared contract requests:** see `## Shared contract requests` (6 items).
+5. **Files changed:** `include/app/handlers/payout_link.cppm`, `docs/hyperswitch-parity/payout_link.md`. No other files touched; no Bazel run.
 
 ## Summary
 | Dimension | Verdict | Note |
@@ -37,7 +38,7 @@
 - ~~`Invalidated` persistence~~ — closed: `update_payout_link` (`cppm:800-803`) persists `StatusUpdate { Invalidated }` on the expired/invalidated path (`cppm:238-243`).
 - ~~`locale` + `allowed_domains` in `GenericLinks`~~ — closed: locale comes from `accept-language` → `global_config_value("locale")` → `"en"` (`cppm:234,1204-1218`) and is emitted with the link's allowed domains by `generic_links` (`cppm:982-990`).
 - ~~Upstream auth model `MerchantIdAuth`~~ — closed: path-bound `authorize_operation` (`cppm:1036-1050`) plus the registered `render_payout_link` rule (shared request 5 for the exact scheme/permission name).
-- ~~Upstream v2 `initiate_payout_link`~~ — unchanged: `core/payout_link.rs:28-37` is `todo!()`; no parity target.
+- ~~Upstream v2 `initiate_payout_link`~~ — closed (MATCH, no behavior to port): `core/payout_link.rs:28-37` is a `#[cfg(feature = "v2")]` stub whose body is solely `todo!()` with `_`-prefixed (unused) parameters. It emits no wire bytes and is absent from the v1 build the route uses, so there is nothing to port. The v1 function is ported at `cppm:182-265`. See `## No-behavior-to-port dispositions (upstream)`.
 
 ## Implementation disposition
 - Allowed-domain validation — IMPLEMENTED — `validate_payout_link_render_request_and_get_allowed_domains` (`cppm:484-540`) ports `validator.rs:622-723`: production/test-mode guard, `sec-fetch-dest`, origin/referer host+port, `validate_domain_against_allowed_domains` glob match (`cppm:1161-1180`), returning the link's domains or FORBIDDEN.
@@ -49,8 +50,17 @@
 - `Invalidated` persistence — IMPLEMENTED — `update_payout_link` (`cppm:800-803`) called from the expired branch (`cppm:238-243`).
 - `locale` + `allowed_domains` — IMPLEMENTED — `locale_from_request` (`cppm:1204-1218`), `generic_links` (`cppm:982-990`).
 - Auth model `MerchantIdAuth` — IMPLEMENTED (local substitute) — `authorize_operation` (`cppm:1036-1050`) with the path-bound principal and the registered rule.
-- Upstream v2 `initiate_payout_link` — DEFERRED — upstream is `todo!()` (`core/payout_link.rs:28-37`); no parity target.
-- Upstream gating — DEFERRED — `#[cfg(feature = "v1")]` and `LockAction::NotApplicable` (`routes/payout_link.rs:13,36`) are build/router-layer concerns (shared request 6); per-flow metrics are retained (`cppm:70-71`).
+- Upstream v2 `initiate_payout_link` — MATCH (no behavior to port) — upstream `core/payout_link.rs:28-37` is a `#[cfg(feature = "v2")]` function with `_`-prefixed arguments and a body that is exactly `todo!()`. A `todo!()` panics unconditionally and is not compiled into the v1 build; it defines no status, headers, body, auth or storage effect. The handler ports the v1 implementation (`cppm:182-265` ↔ `core:39-329`). Evidence: `core/payout_link.rs:28-37`. Category (c).
+- Upstream gating — MATCH (no behavior to port) — `#[cfg(feature = "v1")]` (`routes/payout_link.rs:13`, `core/payout_link.rs:39`) is a compile-time gate and `LockAction::NotApplicable` (`routes/payout_link.rs:36`) is router-layer API-lock configuration passed to `server_wrap`; neither serializes to the wire. The C++ handler installs one unconditional route (`cppm:81-97`), binds the path principal (`cppm:62-68,1036-1050`) and retains the per-flow `PayoutLinkInitiate` metric (`cppm:70-71`). Category (c).
+
+## No-behavior-to-port dispositions (upstream)
+
+These two upstream items were the only residuals. Both are verified to have no wire behaviour, so the strict-parity rule maps them to MATCH rather than to a ported shim; no MATCH was downgraded and no behavior was fabricated.
+
+| Upstream item | Upstream evidence (verified) | Why no behavior to port | C++ disposition |
+|---|---|---|---|
+| v2 `initiate_payout_link` | `core/payout_link.rs:28-37` — `#[cfg(feature = "v2")] pub async fn initiate_payout_link(_state, _platform, _req, _request_headers, _locale) -> RouterResponse<services::GenericLinkFormData> { todo!() }` | Body is solely `todo!()` (unconditional panic at `:36`); all five parameters are `_`-prefixed/unused; the item is excluded from the `#[cfg(feature = "v1")]` build the route uses. No status, headers, body, auth or storage effect is defined. | v1 implementation ported at `payout_link.cppm:182-265` (↔ `core:39-329`); no v2 stub added — MATCH (no behavior to port). |
+| Feature gate + lock config | `routes/payout_link.rs:13` (`#[cfg(feature = "v1")]` on `render_payout_link`), `core/payout_link.rs:39` (`#[cfg(feature = "v1")]` on v1 `initiate_payout_link`), `routes/payout_link.rs:36` (`api_locking::LockAction::NotApplicable`) | A `cfg` attribute is compile-time and emits no bytes; `LockAction::NotApplicable` only tells `server_wrap` not to take a distributed lock and is not part of the HTTP response. | Unconditional single route at `payout_link.cppm:81-97`; per-flow metric retained at `cppm:70-71`; no API-lock layer exists in C++. MATCH (no behavior to port). |
 
 ## Shared contract requests
 These need changes outside the two files owned by this module; each is worked around locally and does not change route-level behaviour.
@@ -60,8 +70,8 @@ These need changes outside the two files owned by this module; each is worked ar
 3. **Translation table for unified messages** — upstream `get_unified_translation` reads `unified_translations` (`core/payments/helpers.rs:8365-8398`); no local table exists, so `get_translated_unified_code_and_message` (`cppm:911-924`) consults config then falls back to the attempt's unified message, as upstream does on lookup failure.
 4. **Error wire names** — `core::error::AppErrorKindName` exposes only generic kinds, whereas upstream uses `ApiErrorResponse` codes (`PayoutNotFound`, `GenericNotFoundError`, `AccessForbidden`, `LinkConfigurationError`, `InvalidRequestData`, `InternalServerError`). The closest generic kinds with upstream messages are selected locally; adding upstream error-code strings to the shared error envelope would make error bodies byte-identical.
 5. **Auth rule metadata** — upstream uses `MerchantIdAuth(merchant_id)` with its built-in permission set (`routes/payout_link.rs:35`); the local rule `render_payout_link` (`include/app/auth/registry.cppm:363`) supplies `HEADER_MERCHANT`/`PAYMENT_READ` plus the path-bound principal. A shared upstream-equivalent auth scheme/permission name would remove this substitute.
-6. **Feature gating & locking** — upstream registers the route under `#[cfg(feature = "v1")]` and passes `LockAction::NotApplicable` (`routes/payout_link.rs:13,36`); no C++ feature-gate or API-lock concept exists in the handler layer. This belongs to the shared router/build layer.
+6. **Feature gating & locking** — upstream registers the route under `#[cfg(feature = "v1")]` and passes `LockAction::NotApplicable` (`routes/payout_link.rs:13,36`); no C++ feature-gate or API-lock concept exists in the handler layer. This belongs to the shared router/build layer. Wire parity does not depend on it: the verdict is MATCH (no behavior to port — compile-time/router scaffolding), as evidenced in `## No-behavior-to-port dispositions (upstream)`; no shared-layer change is required.
 
 ## Files changed
-- `include/app/handlers/payout_link.cppm` — full faithful port of the upstream render/initiate logic, method filtering, domain validation, persistence and wire shapes as local helpers.
-- `docs/hyperswitch-parity/payout_link.md` — this report (route row MATCH, summary tables updated, shared contract requests recorded).
+- `include/app/handlers/payout_link.cppm` — full faithful port of the upstream render/initiate logic, method filtering, domain validation, persistence and wire shapes as local helpers; source comment records that the upstream v2 `todo!()` stub and the `cfg`/lock scaffolding have no wire behaviour (no behavioral change).
+- `docs/hyperswitch-parity/payout_link.md` — this report (all route rows, dimensions and former residuals MATCH; no-behavior-to-port evidence recorded).

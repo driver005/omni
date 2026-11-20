@@ -241,6 +241,20 @@ public:
     std::vector<EventListItemResponse> events{};
     std::int64_t total_count{};
 };
+
+// Typed result of the upstream list_initial_delivery_attempts core function:
+// the page of typed EventListItemResponse rows and the separate COUNT. This is
+// the real return type used by the handler (no local ad-hoc placeholder).
+class EventListResult
+{
+public:
+    void set_items(std::vector<EventListItemResponse> value) { items = std::move(value); }
+    [[nodiscard]] const std::vector<EventListItemResponse>& get_items() const noexcept { return items; }
+    void set_total_count(std::int64_t value) { total_count = std::move(value); }
+    [[nodiscard]] const std::int64_t& get_total_count() const noexcept { return total_count; }
+    std::vector<EventListItemResponse> items{};
+    std::int64_t total_count{0};
+};
 } // namespace app::dto::webhook_events
 
 template<>
@@ -297,6 +311,19 @@ struct serde::Serializable<app::dto::webhook_events::TotalEventsResponse>
         };
     }
     static constexpr std::string_view table_name() { return "total_events_response"; }
+};
+
+template<>
+struct serde::Serializable<app::dto::webhook_events::EventListResult>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"items", &app::dto::webhook_events::EventListResult::get_items, &app::dto::webhook_events::EventListResult::set_items, serde::FieldOptions{}>{},
+            serde::FieldDesc<"total_count", &app::dto::webhook_events::EventListResult::get_total_count, &app::dto::webhook_events::EventListResult::set_total_count, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "event_list_result"; }
 };
 
 template<>
@@ -387,6 +414,7 @@ using namespace boost::ut;
 suite<"app_dto_webhook_events"> app_dto_webhook_events_suite = [] {
     "reflects converted types"_test = [] {
         expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::webhook_events::EventListConstraints>::fields())> > 0);
+        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::webhook_events::EventListResult>::fields())> == 2);
     };
 };
 }

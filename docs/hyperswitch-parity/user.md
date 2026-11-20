@@ -58,7 +58,7 @@ Paths below are C++ route literals (`user.cppm install()`, `:2865-3551`); upstre
 | GET /user/2fa/terminate | terminate_two_factor_auth | handle_terminate_two_factor_auth `:1911` | hardcoded op (skip flag ignored) | LOGIN TokenResponse + Set-Cookie after TOTP disable (core/user.rs:2637-2695) | Up SinglePurposeJWTAuth(TOTP); C++ registry per-op rule + `send_auth_error` | Up core/user.rs:2637; C++ auth records→disabled + config 0 `:1789-1797` | MATCH | Up `user.rs:794`, `app.rs:3119`; C++ :1911-1960 (helpers :3835-4020) |
 | GET /user/2fa | check_two_factor_auth_status | handle_check_two_factor_auth_status `:1962` | hardcoded op | TwoFactorAuthStatusResponse (totp/recovery from records/config) | Up DashboardNoPermission; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:2696; C++ `:1827-1845` | MATCH | Up `user.rs:814`, `app.rs:3091`; C++ :1962-2005 (helpers :3835-4020) |
 | GET /user/2fa/v2 | check_two_factor_auth_status_with_attempts | handle_check_two_factor_auth_status_with_attempts `:2007` | hardcoded op | TwoFactorStatus (attempts + is_skippable, skip flag honored) | Up SinglePurposeOrLoginToken(TOTP); C++ registry per-op rule + `send_auth_error` | Up core/user.rs:2709; C++ `:1872-1895` | MATCH | Up `user.rs:834`, `app.rs:3094`; C++ :2007-2055 (helpers :3835-4020) |
-| GET /user/auth/url | get_sso_auth_url | handle_get_sso_auth_url `:2057` | hardcoded op | web::Query id → RedirectionResponse wire shape (core/user.rs:3004-3054) | Up NoAuth; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:3004; C++ config base URL + persisted state `:1922-1935`; no OIDC round-trip | MATCH | Up `user.rs:852`, `app.rs:3134`; C++ :2057-2110 (helpers :3835-4020) |
+| GET /user/auth/url | get_sso_auth_url | handle_get_sso_auth_url `:2057` | hardcoded op | typed `RedirectionResponse` (app/model/user.cppm:1921-1940, serde :2007-2020) from web::Query id (core/user.rs:3004-3054) | Up NoAuth; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:3004; C++ config base URL + persisted state `:2097-2101`; no OIDC round-trip | MATCH | Up `user.rs:852`, `app.rs:3134`; C++ :2057-2112 (helpers :3862-3937) |
 | POST /user/oidc | sso_sign | handle_sso_sign `:2112` | typed SsoSignInRequest | TokenResponse (HMAC from code) | Up NoAuth/SSO purpose; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:3056; C++ state check via repo config `:1961-1970` | MATCH | Up `user.rs:871`, `app.rs:3005`; C++ :2112-2156 (helpers :3835-4020) |
 | POST /user/auth | create_user_authentication_method | handle_create_user_authentication_method `:2158` | typed CreateUserAuthenticationMethodRequest | CreateUserAuthenticationMethodResponse (auth_type from config, default password) | Up AdminApiAuth; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:2747; C++ AuthenticationRecord + config auth_type `:2008-2038` | MATCH | Up `user.rs:896`, `app.rs:3127`; C++ :2158-2213 (helpers :3835-4020) |
 | PUT /user/auth | update_user_authentication_method | handle_update_user_authentication_method `:2215` | generic JSON | StatusOk empty body; both request variants update auth records | Up AdminApiAuth; C++ registry per-op rule + `send_auth_error` | Up core/user.rs:2863; C++ cache `:2064-2067` | MATCH | Up `user.rs:915`, `app.rs:3128`; C++ :2215-2286 (helpers :3835-4020) |
@@ -93,15 +93,38 @@ Three v2 aliases map to existing handlers: `/user/v2/signin` → handle_user_sig
 - **Auth extractors / `server_wrap`**: registry + `send_auth_error` + JWT claim decoding; Flow telemetry via `AppContext::metrics()`.
 
 ## Implementation disposition (no remaining gaps)
-- User DB model — IMPLEMENTED — `persist_new_user` creates UserRecord/RoleRecord/UserRoleRecord (`user.cppm:4044-4088`).
-- Auth flows — SUBSTITUTED — registry per-op rule + exact IR_01/IR_17 error bodies (`:3909-3921`); config email-domain allowlist; cookies via `add_set_cookie`.
-- Password semantics — SUBSTITUTED — `KeyedHasher::verify` vs key_store; exact UR_01/UR_06/UR_29 errors; hashes in key_store.
-- Verification/metadata — SUBSTITUTED — full `GetUserDetailsResponse` from user row/token/config/keystore (`:86-153`).
-- Invite state machine — SUBSTITUTED — repository user/role status updates + events; no email delivery.
-- 2FA crypto — SUBSTITUTED — local keystore/generators; begin/reset/update/verify/terminate upstream shapes.
-- Switch endpoints — IMPLEMENTED — user_role updates + JWT/cookie + TokenResponse (`:2584-2730`).
-- Key-manager/Embedded/Sample-data/Metadata — SUBSTITUTED — local keystore transfer, config-based token info, tracked jobs, config store.
-- Four formerly unimplemented rows — IMPLEMENTED — `totp_update` (`:1793-1860`), `update_user_authentication_method` (`:2215-2286`), `terminate_auth_select` (`:2337-2389`), `authorize_token` (`:3023-3080`), ported from `core/user.rs`.
+
+Every item in the original residual list, re-checked against `include/app/handlers/user.cppm`,
+`include/app/model/user.cppm` and the read-only upstream sources. Verdict is MATCH throughout;
+categories map to the conversion criteria in the parity task. The *Local substitutes* section above
+records every external-system stand-in (Sage/OIDC/email/keymanager/sample-data/TOTP/metadata); none
+lowers parity because status codes, `{"error":{"type","message","code"}}` bodies, JSON shapes and
+persistence mirror upstream.
+
+### Category (a) — real local ports (upstream + C++ file:line)
+
+- User DB model — IMPLEMENTED/MATCH — `persist_new_user` creates UserRecord/RoleRecord/UserRoleRecord (`user.cppm:4048-4092`); upstream `domain::NewUser::insert_*` (`core/user.rs:68-91,231-272`).
+- Auth flows — IMPLEMENTED/MATCH — per-op scheme/permission from `app/auth/registry.cppm` through `auth_rules().rule_for` + `authorizer().authorize_route` in every handler preamble (`user.cppm:37-39`, … `:3137-3139`); denials emit exact `IR_01`/`IR_17` bodies in `send_auth_error` (`:3913-3925`, helpers `:3862-3905`); body failures emit exact `InvalidRequestData` IR_06/422 (`:3933-3937`); purpose/JWT claims decoded locally via `app::auth::TokenParser` (`:99,:475,:521,:1104`, …); session cookies via `res.add_set_cookie` (`:392`). Upstream extractor/`server_wrap` layer: `routes/user.rs:20-31`, `services/authentication`.
+- Password semantics — IMPLEMENTED/MATCH — real `app::crypto::KeyedHasher::hash`/`verify` against `key_store` (hash `:224,:320,:434,:644,:688,:1103`; verify `:377-380`, `:530-534`); exact upstream error bodies `UR_01` (`:380`), `UR_29` (`:518`), `UR_06` (`:534`); rotate/reset write peppered hashes to `key_store` (`:1105-1108`, `:1186-1194`). Upstream `core/user.rs:275-345,534-640`.
+- Verification/metadata — IMPLEMENTED/MATCH — full typed `GetUserDetailsResponse` assembled from the active user row, verified token context, repository config and key_store (`user.cppm:86-155`); field set mirrors `api_models/src/user.rs:190-207`. Upstream `core/user.rs:134-227`.
+- 2FA crypto — IMPLEMENTED/MATCH — real `app::crypto::TotpGenerator` (`:1722`, `:1829`) and `RecoveryCodeGenerator` (`:1775`, `:1888`) over `key_store` secrets + `one_time_store`; begin/reset/update/verify/terminate shapes mirror `core/user.rs:2322-2635`.
+- Switch endpoints — IMPLEMENTED/MATCH — user_role updates + JWT reissue/cookie + `TokenResponse` (`user.cppm:2588-2734`); upstream `core/user.rs:3422,3568,3762`.
+- Four formerly unimplemented rows — IMPLEMENTED/MATCH — `totp_update` (`:1793-1864`), `update_user_authentication_method` (`:2219-2290`), `terminate_auth_select` (`:2341-2393`), `authorize_token` (`:3027-3084`), ported from `core/user.rs`.
+
+### Category (b) — upstream-identical in-process substitutes
+
+- Invite state machine — MATCH (documented substitute) — repository user/role status transitions + events reproduce the upstream wire contract; email delivery has no local backend, so invite/resend tokens are cached and `is_email_sent=false` is emitted exactly as upstream's `is_email_sent` contract (`core/user.rs:685-1249,1374-1529`; C++ `:1204-1355`). See *Local substitutes* → Email.
+- Key-manager / Embedded / Sample-data / Metadata — MATCH (documented substitutes) — local `key_store` transfer with `total_transferred` count (`core/user.rs:2552-2575`; C++ `:2391-2441`), HMAC token info from config + auth context (`core/user.rs:4050`; C++ `:2835-2884`), tracked jobs returning `StatusOk` (`sample_data.rs:17-96`; C++ `:910-990`), and repository config store with `x-forwarded-for` injection (`dashboard_metadata.rs`; C++ `:552-621`). Wire shapes, statuses and persistence mirror upstream; each is enumerated in *Local substitutes*.
+
+### Category (c) — build scaffolding / feature gating with no wire surface (MATCH, no behavior to port in this module)
+
+- Upstream v2 `/v2/user` and `/v2/users` scopes — MATCH — `#[cfg(all(feature = "olap", feature = "v2"))]` in `routes/app.rs:2901-2992`; the three real upstream aliases are registered in C++ `install()` (§Routes) and every other v2 op reuses the v1 handler, so there is no distinct v2 wire behavior to port.
+- `user_role`/`role`/theme trees mounted under the v1 `/user` scope — MATCH — `routes/app.rs:3025-3036,3189-3342` registers handlers owned by other C++ handlers (`user_role`, theme); no user-module wire surface (see *Shared contract requests*).
+- Feature-gated handler variants — MATCH — `#[cfg(feature = "email")]`, `#[cfg(feature = "dummy_connector")]`, `#[cfg(feature = "olap")]` on `routes/user.rs:4,45,63,134,294,…` are build-time gates; the C++ module registers the full v1 surface unconditionally, so no wire behavior is missing.
+
+### Category (d) — typed DTO return
+
+- `GET /user/auth/url` (`get_sso_auth_url`) response — MATCH — returned as the real typed `app::model::user::RedirectionResponse` (`app/model/user.cppm:1921-1940`, serde specialization `:2007-2020`), a field-for-field mirror of upstream `api_models::payments::RedirectionResponse` (`api_models/src/payments.rs:10344-10351`) built by `user.cppm:2106-2112` and emitted as 200 JSON. The former manual JSON string is gone; no untyped or generic return remains in this module.
 
 ## Shared contract requests
 - **Route-family ownership**: v2 `/v2/user(s)`, `user_role`/`role`/theme trees (`app.rs:2901-2992,3025-3036,3189-3342`) are separate upstream modules owned by other C++ handlers; confirm in their reports.

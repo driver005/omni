@@ -72,7 +72,7 @@ public:
         }
 
         // MandateResponse::from_db_mandate (types/api/mandates.rs:39-135).
-        send_json(res, send, from_db_mandate(*record), true);
+        send_json(res, send, serde::Ser::encode_json(from_db_mandate(*record)), true);
     }
 
     /** @brief Upstream revoke_mandate (core/mandate.rs:60-165). */
@@ -176,7 +176,7 @@ public:
         record.set_status("revoked");
         m_context->repository().update_mandate(record);
 
-        send_json(res, send, revoked_response_json(record.get_mandate_id(), record.get_status()), true);
+        send_json(res, send, serde::Ser::encode_json(revoked_response(record.get_mandate_id(), record.get_status())), true);
     }
 
     /** @brief Upstream retrieve_mandates_list (core/mandate.rs:403-426). */
@@ -272,7 +272,7 @@ public:
             if (!first) {
                 data.push_back(',');
             }
-            data += from_db_mandate(record);
+            data += serde::Ser::encode_json(from_db_mandate(record));
             first = false;
         }
         data.push_back(']');
@@ -579,58 +579,73 @@ private:
      *  always emits customer_acceptance, and emits card only for the Card payment method.
      *  Card/acceptance details are read from the in-process KeyStore stand-in for the
      *  processor key store / locker using (purpose, mandate_id) as the natural key.
+     *
+     *  Returns the real typed `MandateResponse` DTO (include/app/model/mandates.cppm).
+     *  Its serde wire accessors reproduce the exact upstream v1 field shape: bare-scalar
+     *  newtypes, serde-omitted empty Options (upstream skip_serializing_if), and verbatim
+     *  card/acceptance objects. `serde::Ser::encode_json` is the single wire encoder.
      */
-    [[nodiscard]] std::string from_db_mandate(const Record& record) const
+    [[nodiscard]] ::app::model::mandates::MandateResponse from_db_mandate(const Record& record) const
     {
-        std::string out{"{"};
-        out += "\"mandate_id\":" + json_quote(record.get_mandate_id());
-        // original_payment_id, Option -> skipped when absent.
+        using DTO = ::app::model::mandates::MandateResponse;
+
+        DTO dto{};
+        dto.set_mandate_id(record.get_mandate_id());
+        // original_payment_id, Option -> omitted by serde when absent.
         if (!record.get_payment_id().empty()) {
-            out += ",\"payment_id\":" + json_quote(record.get_payment_id());
+            ::app::model::mandates::PaymentIdValue payment_id{};
+            payment_id.set_value(record.get_payment_id());
+            dto.set_payment_id(std::move(payment_id));
         }
-        // amount / currency / profile_id / mandate_metadata: always None in v1.
-        out += ",\"status\":" + json_quote(record.get_status());
-        out += ",\"payment_method_id\":" + json_quote(record.get_payment_method_id());
-        out += ",\"payment_method\":" + json_quote(record.get_payment_method());
+        // amount / currency / profile_id / mandate_metadata: always None in v1, left
+        // empty so serde omits them (upstream `skip_serializing_if = Option::is_none`).
+        ::app::model::mandates::MandateStatusValue status{};
+        status.set_value(record.get_status());
+        dto.set_status(std::move(status));
+        dto.set_payment_method_id(record.get_payment_method_id());
+        dto.set_payment_method(record.get_payment_method());
         if (!record.get_payment_method_type().empty()) {
-            out += ",\"payment_method_type\":" + json_quote(record.get_payment_method_type());
+            dto.set_payment_method_type(record.get_payment_method_type());
         }
 
-        out += ",\"card\":";
+        // "card": null unless the method is Card and the locker stand-in holds an object.
+        std::string card{"null"};
         if (is_card(record.get_payment_method())) {
             if (const auto secret = m_context->key_store().get("mandate_card", record.get_mandate_id());
                 secret.has_value() && !secret->value().empty() && secret->value().front() == '{') {
-                out += secret->value();
-            } else {
-                out += "null";
+                card = secret->value();
             }
-        } else {
-            out += "null";
         }
+        dto.set_card_wire(std::move(card));
 
-        out += ",\"customer_acceptance\":";
+        // "customer_acceptance" is always emitted (types/api/mandates.rs:117-128).
+        // acceptance_type from ip address (unavailable locally -> offline), accepted_at
+        // from the mandate (unavailable -> null), online object always present.
+        std::string acceptance{
+            "{\"acceptance_type\":\"offline\",\"accepted_at\":null,"
+            "\"online\":{\"ip_address\":null,\"user_agent\":\"\"}}"};
         if (const auto secret = m_context->key_store().get("customer_acceptance", record.get_mandate_id());
             secret.has_value() && !secret->value().empty() && secret->value().front() == '{') {
-            out += secret->value();
-        } else {
-            // types/api/mandates.rs:117-128: acceptance_type from ip address (unavailable
-            // locally -> offline), accepted_at from mandate (unavailable -> null), online
-            // object always present with the extended user agent.
-            out += "{\"acceptance_type\":\"offline\",\"accepted_at\":null,"
-                   "\"online\":{\"ip_address\":null,\"user_agent\":\"\"}}";
+            acceptance = secret->value();
         }
-        out.push_back('}');
-        return out;
+        dto.set_acceptance_wire(std::move(acceptance));
+        return dto;
     }
 
-    [[nodiscard]] std::string revoked_response_json(
+    /** @brief MandateRevokedResponse (api_models/mandates.rs:15-33). */
+    [[nodiscard]] ::app::model::mandates::MandateRevokedResponse revoked_response(
         std::string_view mandate_id,
         std::string_view status
     ) const
     {
-        return std::format(
-            "{{\"mandate_id\":{},\"status\":{},\"error_code\":null,\"error_message\":null}}",
-            json_quote(mandate_id), json_quote(status));
+        ::app::model::mandates::MandateRevokedResponse dto{};
+        dto.set_mandate_id(std::string{mandate_id});
+        ::app::model::mandates::MandateStatusValue value{};
+        value.set_value(std::string{status});
+        dto.set_status(std::move(value));
+        // error_code / error_message remain empty -> wire accessors emit null, matching
+        // upstream's `Option<String>` fields (no skip_serializing_if) on the Ok(_) path.
+        return dto;
     }
 
     // ── small primitives ────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/stripe"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .add_router(
                 Router{router, "/checkout"}
                     .add_route(

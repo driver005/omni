@@ -5,7 +5,6 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
@@ -16,10 +15,16 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost: router.put('/schedules/:resource/:id', mw.authAdminApiWithUrl,
+        // http(api.schedules.publish)). Ghost admin uses body parsers, not a
+        // Content-Type gate; the auth/permission pipeline (validation ->
+        // permissions -> query) is enforced inside PutDetailHandler through the
+        // registered core_auth:ghost helper, so no router-level middleware is
+        // installed here.
         Router{router, "/schedules"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .add_router(
-                Router{router, "/:id"}
+                Router{router, "/:resource"}
                     .add_route(
                         Route{"/:id"}
                             .put([&handler](
@@ -29,7 +34,7 @@ public:
     ) {
         handler.schedules_put_detail().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id PUT")
+                            .summary("Ghost :resource/:id PUT")
                     )
             );
     }

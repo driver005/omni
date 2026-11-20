@@ -16,8 +16,15 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost's admin app uses body parsers, not a Content-Type gate, and the
+        // controller applies `mw.authAdminApi` + `permissions: true` (docName
+        // "recommendations", method "browse") inside its own pipeline. The old
+        // router-level content_type_middleware / bearer_middleware / require_auth
+        // chain is removed; BrowseHandler now enforces the Ghost permission service
+        // via core::auth::ghost + require_ghost_permission. See
+        // docs/parity/behavior/incoming-recommendations.md.
         Router{router, "/incoming_recommendations"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

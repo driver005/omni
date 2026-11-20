@@ -18,6 +18,8 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/invites"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::bearer_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

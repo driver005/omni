@@ -1,42 +1,49 @@
 export module blog_handlers:members_members_events_get_step;
 import :domain_all;
-import :members_dto_member_subscription;
-import :members_dto_member_subscription_input;
-import :members_dto_member_subscription_response;
-import :members_dto_signin_url;
-import :members_dto_signin_urls_response;
-import :members_dto_stats_member_entry;
-import :members_dto_stats_member_meta;
-import :members_dto_stats_member_response;
-import :members_dto_stats_member_totals;
-import :members_dto_stats_mrr_entry;
-import :members_dto_stats_mrr_meta;
-import :members_dto_stats_mrr_response;
-import :members_dto_stats_mrr_total;
-import :members_dto_subscription_member;
-import :members_dto_subscription_tier;
-import :members_model_member;
-import :members_model_wire_fixtures;
 import std;
 import core_workflow;
-import core_serde;
+import core_query;
 import interfaces;
+import :members_operations;
 
+// Strict-parity GET /members/events (activityFeed). Ghost options limit/filter
+// with NQL (M:487), getEventTimeline default limit 10, meta page/next/prev:null
+// (ER:77-188, OS:24,83-88). The `events` resource is the C++ stand-in for the
+// ~20 event sources; events are sorted by created_at before slicing.
 export namespace blog::handlers::members::members_events_get::workflow {
+namespace support=blog::api::members::members_support;
 class ExecuteStep {
 public:
- using Input=interfaces::io::IRequest&; using Output=std::string;
+ using Input=interfaces::io::IRequest&;
+ using Output=std::map<std::string,std::string>;
  static constexpr std::string_view name{"members_members_events_get_execute"};
  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; auto& mutations = ctx.store();
-    const auto r=[&]()->std::pair<int,std::string>{
-        return {200, std::format(
-            R"({{"events":[{}],"meta":{{"pagination":{{"limit":15,"page":1,"pages":1,"prev":null,"next":null,"total":1}}}}}})",
-            core_serde::JsonCodec{}.encode(blog::model::members::EventWire{}))};
-    }();
-  if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
-  const auto rows=ctx.store().json_for("members", {});
-  return core::workflow::StepResponse<Output>{"{\"members\":" + rows + ",\"meta\":{\"pagination\":{\"limit\":15,\"page\":1,\"pages\":1,\"prev\":null,\"next\":null,\"total\":0}}}}"};
+  auto& ctx=*s_ctx;
+  static constexpr std::string_view kOptions[]{"limit","filter"};
+  auto q=core::query::parse(in.get_path(), kOptions);
+  if (core::query::has_restricted_field(q.raw_filter))
+   return core::workflow::StepResponse<Output>{{{"status","400"},
+     {"body",support::bad_request("Restricted fields cannot be used in a filter.")}}};
+  if (!q.options.contains("limit")) q.limit=10; // Ghost getEventTimeline default
+  q.order="created_at desc";
+  std::string available=ctx.store().json_for("events", {});
+  auto count_q=q;
+  count_q.limit=std::numeric_limits<std::size_t>::max();
+  count_q.page=1; count_q.offset=0; count_q.fields.clear();
+  std::string rows, filtered;
+  try {
+   filtered=core::query::apply(available, count_q);
+   rows=core::query::apply(available, q);
+  } catch (...) {
+   return core::workflow::StepResponse<Output>{{{"status","400"},
+     {"body",support::bad_request("The NQL filter you passed was invalid.")}}};
+  }
+  const auto total=support::rows_of(filtered).size();
+  const auto meta=std::format(
+    R"({{"pagination":{{"page":null,"limit":{},"pages":{},"total":{},"next":null,"prev":null}}}})",
+    q.limit, total==0?1:(total+q.limit-1)/q.limit, total);
+  const auto body=std::format(R"({{"events":{},"meta":{}}})", rows.empty()?"[]":rows, meta);
+  return core::workflow::StepResponse<Output>{{{"status","200"},{"body",body}}};
  }
  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
  static blog::BlogContext* s_ctx;

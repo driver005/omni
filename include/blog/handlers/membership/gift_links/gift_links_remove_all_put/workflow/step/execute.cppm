@@ -1,28 +1,23 @@
 export module blog_handlers:gift_links_gift_links_remove_all_put_step;
 import :domain_all;
-import :gift_links_dto_links;
+import :gift_links_ops;
 import std;
 import core_workflow;
 import interfaces;
-import blog_handlers_middleware;
 
 export namespace blog::handlers::gift_links::gift_links_remove_all_put::workflow {
 class ExecuteStep {
 public:
- using Input=interfaces::io::IRequest&; using Output=std::string;
- static constexpr std::string_view name{"gift_links_gift_links_remove_all_put_execute"};
- [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx; auto& mutations = ctx.store();
-    const auto r=[&]()->std::pair<int,std::string>{
-        blog::dto::gift_links::GiftLinksResponse response;
-        response.gift_links.push_back(blog::dto::gift_links::LinkRecord{});
-        return {200, blog::handlers::middleware::encode(response)};
-    }();
-  if(r.first!=0) return core::workflow::StepResponse<Output>{r.second};
-  return core::workflow::StepResponse<Output>{mutations.edit("gift_links", std::string{}, in.body_as_string().empty()?"{}":in.body_as_string()).body()};
- }
- void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx;
+  using Input=interfaces::io::IRequest&;
+  using Output=std::map<std::string, std::string>;
+  static constexpr std::string_view name{"gift_links_gift_links_remove_all_put_execute"};
+  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
+   const auto actor = blog::api::gift_links_ops::actor_from_request(in);
+   const auto result = blog::api::gift_links_ops::remove_all(s_ctx->store(), actor);
+   return core::workflow::StepResponse<Output>{{{"status", std::to_string(result.first)}, {"body", result.second}}};
+  }
+  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+  static blog::BlogContext* s_ctx;
 };
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
 }

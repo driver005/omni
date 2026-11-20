@@ -16,8 +16,11 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Ghost's admin API applies only authAdminApi + permissions here. There is
+        // no content-type/Accept negotiation gate, so the 415/406 branch that
+        // content_type_middleware adds on every GET is intentionally omitted.
         Router{router, "/stats"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/member_count"}
                     .get([&handler](

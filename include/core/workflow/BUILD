@@ -40,5 +40,9 @@ congelado_module_library(
 congelado_cc_test(
     name = "workflow",
     srcs = ["test.cc"],
-    deps = [":core_workflow"],
+    deps = [
+        ":core_workflow",
+        "//plugins/memory:memory_backends",
+    ],
+    linkopts = ["-lcrypto", "-lssl"],
 )

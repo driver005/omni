@@ -1,0 +1,25 @@
+load("//bazel:build_defs.bzl", "congelado_cc_test", "congelado_module_library")
+
+congelado_module_library(
+    name = "core_error",
+    primary_interface = "base.cppm",
+    partitions = [
+        "kind.cppm",
+        "error.cppm",
+    ],
+    deps = [
+        "//include/core/serde:core_serde",
+        "//include/interfaces:interfaces",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+congelado_cc_test(
+    name = "error",
+    srcs = ["test.cc"],
+    deps = [
+        ":core_error",
+        "//include/core/serde:core_serde",
+    ],
+    linkopts = ["-lcrypto", "-lssl"],
+)

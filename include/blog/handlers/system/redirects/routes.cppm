@@ -5,10 +5,23 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
+/**
+ * Ghost `admin/routes.js:505-512` installs exactly two redirects routes:
+ *
+ *   GET  /redirects/download  -> mw.authAdminApi + http(api.redirects.download)
+ *   POST /redirects/upload    -> mw.authAdminApi + upload.single('redirects')
+ *                                + upload.validation({type:'redirects'})
+ *                                + http(api.redirects.upload)
+ *
+ * Neither route declares an input-shape middleware on the C++ side: the shared
+ * Ghost permission stage and the multipart/file validation live in the handler
+ * and step partitions (see the group 53 implementation record). In particular
+ * there is no JSON `Content-Type` gate — Ghost's download is a plain GET with
+ * no body, and its upload is multipart/form-data.
+ */
 class RedirectsRoutes
 {
 public:
@@ -17,7 +30,6 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/redirects"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .add_route(
                 Route{"/download"}
                     .get([&handler](

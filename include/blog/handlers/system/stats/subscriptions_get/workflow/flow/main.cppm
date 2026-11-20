@@ -6,6 +6,6 @@ import :stats_subscriptions_get_step;
 export namespace blog::handlers::stats::subscriptions_get::workflow {
 class MainFlow { public:
  [[nodiscard]] core::workflow::WorkflowDefinition build() const {
-  return core::workflow::WorkflowBuilder{}.name("stats_subscriptions_get").step<ExecuteStep>().build();
+  return core::workflow::WorkflowBuilder{}.name("subscriptions_get").step<ExecuteStep>().build();
  }};
 }

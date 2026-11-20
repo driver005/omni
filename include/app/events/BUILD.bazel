@@ -1,0 +1,20 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "app_events",
+    primary_interface = "base.cppm",
+    partitions = [
+        "event_record.cppm",
+        "event_bus.cppm",
+        "webhook_delivery_attempt.cppm",
+        "webhook_delivery_service.cppm",
+    ],
+    deps = [
+        "//include/app/metrics:app_metrics",
+        "//include/app/workflow:app_workflow",
+        "//include/core/database:core_database",
+        "//include/core/error:core_error",
+        "//include/core/serde:core_serde",
+    ],
+    visibility = ["//visibility:public"],
+)

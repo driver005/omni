@@ -1,6 +1,11 @@
 export module blog_handlers_routes;
 
 export import :actions_routes;
+export import :announcements_routes;
+export import :app_sessions_routes;
+export import :gifts_members_routes;
+export import :member_metafields_members_routes;
+export import :previews_routes;
 export import :apps_routes;
 export import :authentication_routes;
 export import :authors_routes;
@@ -125,6 +130,10 @@ public:
         TinybirdRoutes{}.install(router, handlers);
         UpgradesRoutes{}.install(router, handlers);
         UsersRoutes{}.install(router, handlers);
+        AnnouncementsRoutes{}.install(router, handlers);
+        GiftsMembersRoutes{}.install(router, handlers);
+        MemberMetafieldsMembersRoutes{}.install(router, handlers);
+        PreviewsRoutes{}.install(router, handlers);
         WebhooksRoutes{}.install(router, handlers);
     }
 };

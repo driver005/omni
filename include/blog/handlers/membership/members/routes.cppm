@@ -171,8 +171,12 @@ public:
     })
                     .summary("Ghost events GET")
             )
+            // Ghost registers no bare GET /members/metafields handler — every
+            // metafields route under admin/routes.js:206-219 requires :namespace.
+            // The legacy bare route (with its fabricated "basic" namespace) is
+            // removed so no EXTRA C++ route remains.
             .add_route(
-                Route{"/metafields"}
+                Route{"/metafields/:namespace"}
                     .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -181,6 +185,60 @@ public:
         handler.members_members_metafields_all().handle(req, res, std::move(send));
     })
                     .summary("Ghost metafields ALL")
+                    .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_create().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields POST")
+                    .put([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_reorder().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields PUT")
+            )
+            .add_route(
+                Route{"/metafields/:namespace/:key"}
+                    .get([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_read().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields read GET")
+                    .put([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_edit().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields edit PUT")
+                    .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_destroy().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields DELETE")
+            )
+            .add_route(
+                Route{"/metafields/:namespace/:key/values"}
+                    .get([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_metafields_values().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost metafields values GET")
             )
             .add_router(
                 Router{router, "/stats"}
@@ -236,6 +294,36 @@ public:
         handler.members_members_upload_post().handle(req, res, std::move(send));
     })
                     .summary("Ghost upload POST")
+            )
+            .add_router(
+                Router{router, "/api/member"}
+                    .get([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_account_read().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost member account GET")
+                    .put([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_account_update().handle(req, res, std::move(send));
+    })
+                    .summary("Ghost member account PUT")
+                    .add_route(
+                        Route{"/suppression"}
+                            .delt([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.members_account_destroy_suppression().handle(req, res, std::move(send));
+    })
+                            .summary("Ghost member suppression DELETE")
+                    )
             );
     }
 };

@@ -39,7 +39,7 @@ public:
         std::uint16_t middleware_offset,
         std::uint8_t middleware_size,
         std::uint16_t handler_offset,
-        std::size_t handler_mask
+        const HandlerMask& handler_mask
     ) :
         m_kind{kind},
         m_path{path},
@@ -230,7 +230,7 @@ public:
      * dispatch state through what looks like a read-only accessor. Handle with care.
      * @return mutable reference to the handler mask.
      */
-    constexpr std::size_t& get_handler_mask() noexcept
+    constexpr HandlerMask& get_handler_mask() noexcept
     {
         return m_handler_mask;
     }
@@ -261,13 +261,13 @@ private:
     std::uint16_t m_middleware_offset{};
     std::uint8_t m_middleware_length{};
     std::uint16_t m_handler_offset{};
-    std::size_t m_handler_mask{};
+    HandlerMask m_handler_mask{HANDLER_MASK};
 };
 
 template<
     std::size_t RouterSize = 1024,
     std::size_t HandlerSize = 512,
-    std::size_t MiddlewareSize = 64>
+    std::size_t MiddlewareSize = 192>
 class RouteHandler
 {
 public:
@@ -525,7 +525,7 @@ public:
         std::println(
             "Adding route: {}, kind: {}, children offset: {}, children size: {}, "
             "middleware offset: {}, "
-            "middleware size: {}, handler offset: {}, handler mask: {:016X}",
+            "middleware size: {}, handler offset: {}, handler mask[GET]: {:04X}",
             path,
             std::to_underlying(kind),
             node.get_data_offset(),
@@ -533,7 +533,7 @@ public:
             node.get_middleware_offset(),
             node.get_middleware_length(),
             node.get_handler_offset(),
-            node.get_handler_mask()
+            node.get_handler_mask()[0]
         );
 
         // copy this node's middleware entries into the shared pool, in order
@@ -616,7 +616,7 @@ suite<"RouterNode"> router_node_suite = []
         expect(node.get_middleware_offset() == 1);
         expect(node.get_middleware_length() == 4);
         expect(node.get_handler_offset() == 5);
-        expect(node.get_handler_mask() == 0xFF);
+        expect(node.get_handler_mask()[0] == 0xFFFF);
     };
 
     "find_child returns nullopt when the node has no children"_test = []

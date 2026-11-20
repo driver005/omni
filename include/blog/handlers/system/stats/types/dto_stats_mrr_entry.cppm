@@ -18,8 +18,8 @@ public:
     void set_mrr(int value) { mrr = std::move(value); }
     [[nodiscard]] const int& get_mrr() const noexcept { return mrr; }
 
-    std::string currency{"usd"};
-    std::string date{"1970-01-01"};
+    std::string currency{};
+    std::string date{};
     int mrr{0};
 };
 

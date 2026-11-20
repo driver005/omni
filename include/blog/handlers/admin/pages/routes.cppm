@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/pages"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -121,7 +122,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:id"}
+                        Route{"/:slug"}
                             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -129,7 +130,7 @@ public:
     ) {
         handler.pages_read_by_slug().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id GET")
+                            .summary("Ghost :slug GET")
                     )
             );
     }

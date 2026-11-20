@@ -9,6 +9,24 @@ import blog_handlers_middleware;
 
 export namespace blog::api {
 
+namespace detail {
+
+// Ghost content/routes.js: the Content API router runs CORS then
+// authenticatePublic; the controller then declares `permissions:true`.
+// core_auth::ghost resolves public content reads for the CONTENT_API surface,
+// so mark the request as that surface before the shared permission guard.
+inline void mark_content_surface(interfaces::io::IRequest& req,
+                                 interfaces::io::IResponse& res)
+{
+    res.set_header(std::string_view{"access-control-allow-origin"}, std::string_view{"*"});
+    if (req.find_header(blog::handlers::middleware::kGhostContextHeader).empty()) {
+        req.set_header(blog::handlers::middleware::kGhostContextHeader,
+                       std::string_view{"CONTENT_API"});
+    }
+}
+
+} // namespace detail
+
 class AuthorsRoutes
 {
 public:
@@ -17,7 +35,14 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/authors"}
-            .use(blog::handlers::middleware::content_type_middleware)
+            .use([](interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    interfaces::NextFn&& next,
+                    std::function<void()> send) {
+                detail::mark_content_surface(req, res);
+                blog::handlers::middleware::require_ghost_permission(
+                    req, res, std::move(next), std::move(send), "authors", "browse");
+            })
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -40,7 +65,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:id"}
+                        Route{"/:slug"}
                             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -48,7 +73,7 @@ public:
     ) {
         handler.authors_read_by_slug().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id GET")
+                            .summary("Ghost :slug GET")
                     )
             );
     }

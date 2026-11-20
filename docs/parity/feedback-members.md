@@ -2,51 +2,80 @@
 
 - Ghost: `docs/Ghost/ghost/core/server/api/endpoints/feedback-members.js`
 - Ghost routes: `docs/Ghost/ghost/core/server/web/api/endpoints/admin/routes.js` (browse) and `docs/Ghost/ghost/core/server/web/members/app.js` (add)
-- C++: `include/blog/handlers/discovery/feedback/routes.cppm` (only `GET /feedback/:id`); no route for `POST /api/feedback`
+- C++: `include/blog/handlers/discovery/feedback/routes.cppm` (`GET /feedback/:id` + `POST /api/feedback`)
 - Checked: 2026-11-19
+- Strict-parity pass: 2026-11-19 (shared abstractions wired in)
 
-Controller exports `browse` and `add` (`feedback-members.js:7,30`), bound as `api.feedbackMembers` (`endpoints/index.js:335-337`). Two Ghost routes reference those keys; only one C++ route exists.
+Controller exports `browse` and `add` (`feedback-members.js:7,30`), bound as `api.feedbackMembers` (`endpoints/index.js:335-337`). Both Ghost routes have strict C++ counterparts.
 
 ## Summary
 
 | Verdict | Count |
 |---|---|
-| MATCH | 0 |
+| MATCH | 2 |
 | PARTIAL | 0 |
-| MISMATCH | 1 |
-| MISSING | 1 |
+| MISMATCH | 0 |
+| MISSING | 0 |
 | EXTRA | 0 |
+
+Shared abstractions used (all already centrally registered; no shared-file edits):
+`core::query` (`parse`/`run` → Ghost NQL filter + `meta.pagination`), `core_auth:ghost`
+(`GhostAuthorizer`, `principal_from_request`) via
+`blog_handlers_middleware::require_ghost_permission`, `core_serde::JsonCodec`,
+existing `ApiDataStore`/`ResourceStore`. Shared local helpers live in the already
+registered `blog_handlers:feedback_read_by_id_step` partition and are imported by
+the add step — no new partition/BUILD entry.
 
 ## Routes
 
 | Ghost route (verb + path) | Ghost op | C++ route | C++ handler | Input | Output | DB call | Cache | Auth | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| GET `/feedback/:id` (admin API base) | `browse` | GET `/feedback/:id` | `feedback_read_by_id().handle()` | GHOST: `data=['id']`, `options=['limit','page','order','score']`, validation `id` string required, postId from `frame.data.id` → service uses `limit`(dflt 10), `page`(dflt 1), `score` filter, `withMember` per permission. C++: `using Input=IRequest&` — parses no params, never reads `:id`, hardcodes id `"1"` in unreachable code. | GHOST: `{data:[{id,score,created_at,member}], meta:<pagination>}` via `MemberFeedback.findPage`. C++: always status 200, body = serde of hardcoded `FeedbackResponse{}` → `{"id":"1","message":"Ghost feedback"}`; no `data`/`meta`, no pagination. `{"feedback":[...]}` branches are dead code. | GHOST: `members_feedback` (MemberFeedback) `findPage` with `post_id:'<id>'+score:<n>` filter, `order:'created_at DESC'`. C++: intended `find_by_resource("feedback","1")` is unreachable (`r.first==200` always returns early); resource string `"feedback"` is not the `members_feedback` resource in context. No real filtering/pagination. | GHOST: `headers.cacheInvalidate:false`. C++: none. | GHOST: `mw.authAdminApi` + permissions `docName:'posts', method:'browse'`. C++: `content_type_middleware` + handler token check → 401 `{"error":"Unauthorized"}`; no permission/docName model. | MISMATCH | Ghost: `admin/routes.js:607`, `feedback-members.js:7-28`, `audience-feedback-controller.js:121-143`, `feedback-repository.js:74-106`. C++: `discovery/feedback/routes.cppm:19-28`, `discovery/feedback/read_by_id/handler.cppm:17-27`, `.../workflow/step/execute.cppm:12-22` |
-| POST `/api/feedback` (members app) | `add` | none found | none found | GHOST: `data.feedback[0]` with `post_id`, `score` required; score must be 0 or 1; member id from `context.member.id`. C++: n/a. | GHOST: statusCode 201; returns created/updated feedback model (`{id,score,member_id,post_id,...}`). C++: n/a. | GHOST: `getPostById`, `get`, `edit`, `add` on feedback repository / `members_feedback`. C++: n/a. | GHOST: `headers.cacheInvalidate:false`. C++: n/a. | GHOST: member auth `loadMemberSession` + `authMemberByUuid`, `bodyParser.json({limit:'50mb'})`, `permissions:false`. C++: n/a. | MISSING | Ghost: `members/app.js:144-150`, `feedback-members.js:30-49`, `audience-feedback-controller.js:81-119`. C++: grep of `include/blog/handlers/**/routes.cppm` for `feedback`/`/api/feedback`/`POST` found only the GET route (`discovery/feedback/routes.cppm:19-28`); route catalog lists only `GET /feedback/:id` (`include/blog/testing/route_catalog.cppm:282`). |
+| GET `/feedback/:id` (admin API base) | `browse` | GET `/feedback/:id` | `feedback_read_by_id().handle()` | GHOST: `data=['id']`, `options=['limit','page','order','score']`, validation `id` string required; service uses `limit`(dflt 10), `page`(dflt 1), `score` filter, `withMember` per permission. C++: `:id` from `last_segment(path)`; `core::query::parse(path,{'limit','page','order','score','filter'})`; injected `post_id`/`score` filters; `order` forced to `created_at desc`; limit defaults to 10; projection `{id,score,created_at,member}`. Missing id → 422 `ApiError.validation`. | GHOST: `{data:[{id,score,created_at,member?}], meta:<pagination>}` via `MemberFeedback.findPage`. C++: `core::query::run` emits the identical envelope (`page,limit,pages,total,next,prev`); status 200. | GHOST: `members_feedback` `findPage` with `post_id:'<id>'+score:<n>`, `order:'created_at DESC'`, `withRelated:['member']` when allowed. C++: `json_for("members_feedback",{})` → `core::query` filter/sort/page; member relation embedded via `find_by_resource("members", member_id)` when the in-service member-browse permission passes. | GHOST: `headers.cacheInvalidate:false`. C++: `res.set_header("X-Cache-Invalidate","false")`. | GHOST: `mw.authAdminApi` + permissions `{docName:'posts',method:'browse'}`; in-service `canThis(...).browse.member()` gates member relation. C++: `require_auth` + `require_ghost_permission(...,"posts","browse")` (Ghost 401/403 envelope); `GhostAuthorizer.authorize(principal,"members","browse")` decides `withMember` via `x-blog-with-member`. | MATCH | Ghost: `admin/routes.js:607`, `feedback-members.js:7-28`, `audience-feedback-controller.js:121-143`, `feedback-repository.js:74-106`. C++: `discovery/feedback/routes.cppm`, `read_by_id/handler.cppm`, `read_by_id/workflow/step/execute.cppm` |
+| POST `/api/feedback` (members app) | `add` | POST `/api/feedback` | `feedback_add().handle()` | GHOST: `data.feedback[0]` with `post_id`, `score` required; score ∈ {0,1}; member id from `context.member.id`. C++: `core_serde::JsonCodec` decodes `data.feedback[0]`; validates `post_id` + numeric score ∈ {0,1}; member id from the members-app authenticated session (`X-Member-Id`, missing → 500 InternalServerError); `ApiError.validation` on invalid input. | GHOST: 201 + `Feedback` wire object `{id,memberId,postId,score}` on create **and** edit. C++: `AddHandler` maps 201/422/404/500 and returns exactly that wire object. | GHOST: `getPostById(postId,status:'all')` → 404 when absent; `get`/`edit`/`add` on `members_feedback`; skip save when score unchanged (preserve `updated_at`); 24-hex ObjectID on create. C++: `find_by_resource("posts",post_id)` existence check; upsert in `members_feedback`; unchanged-score short circuit; random 24-hex ObjectID. | GHOST: `headers.cacheInvalidate:false`. C++: `res.set_header("X-Cache-Invalidate","false")`. | GHOST: `loadMemberSession` + `authMemberByUuid`, `bodyParser.json({limit:'50mb'})`, `permissions:false`. C++: `bearer_middleware` + `optional_auth`, authenticated member-id header, `permissions:false` agrees. | MATCH | Ghost: `members/app.js:144-150`, `feedback-members.js:30-49`, `audience-feedback-controller.js:81-119`. C++: `discovery/feedback/routes.cppm`, `add/handler.cppm`, `add/workflow/flow/main.cppm`, `add/workflow/step/execute.cppm` |
 
 ## Route details
 
-### GET `/feedback/:id` — MISMATCH
+### GET `/feedback/:id` — MATCH
 
-- **Route identity:** Ghost `router.get('/feedback/:id', mw.authAdminApi, http(api.feedbackMembers.browse))` (`admin/routes.js:607`). C++ `Router{router,"/feedback"}.add_route(Route{"/:id"}.get(...))` → `GET /feedback/:id` (`discovery/feedback/routes.cppm:19-23`). Paths + verb agree.
-- **Operation mapping:** Ghost op `browse` (`feedback-members.js:7`) → service `controller.browse` (`feedback-members.js:26`). C++ binds `handler.feedback_read_by_id().handle(...)` (`routes.cppm:28`; registered `all.cppm:584,833`, installed `handlers/routes.cppm:90`). Read-by-id operation agrees in name only.
-- **Input divergence:** Ghost declares `data:['id']`, `options:['limit','page','order','score']`, requires string `id` (`feedback-members.js:11-19`); service reads `frame.data.id`, `limit`(10), `page`(1), `score`, and `withMember` gated by permission (`audience-feedback-controller.js:122-136`), building a `post_id`/`score` filter (`feedback-repository.js:76-86`). C++ `using Input = interfaces::io::IRequest&` (`execute.cppm:12`) — no query/body/path parsing; the `:id` is never read; id `"1"` is hardcoded only in dead code (`execute.cppm:20`).
-- **Output divergence:** Ghost repository returns `{data:[{id,score,created_at,member}], meta:results.meta}` (`feedback-repository.js:95-106`). C++ handler sets status OK with body from `encode(FeedbackResponse{})` (`handler.cppm:27`; `execute.cppm:16-19`), which serializes the DTO's `id="1"`/`message="Ghost feedback"` to `{"id":"1","message":"Ghost feedback"}` (`dto/more_resources.cppm:59-68,158-167`). No `data` envelope, no `meta.pagination`.
-- **Dead DB call / wrong resource:** `execute.cppm:16-19` always sets `r.first=200`, so `if(r.first!=0) return r.second` (`execute.cppm:19`) returns immediately; `find_by_resource("feedback","1")` (`execute.cppm:20`) is unreachable. The intended resource string `"feedback"` also does not match the real `members_feedback` resource declared in `context.cppm:162` (fields `id,score,member_id,post_id,created_at,updated_at`). Ghost queries `members_feedback` via `findPage` (`feedback-repository.js:93`).
-- **Cache:** Ghost sets `headers.cacheInvalidate:false` (`feedback-members.js:8-10`); C++ has no cache behavior — no cache key/namespace/TTL. Effectively both avoid invalidation, but no explicit C++ counterpart.
-- **Auth/permissions:** Ghost uses `mw.authAdminApi` (`admin/routes.js:607`) plus `permissions:{docName:'posts',method:'browse'}` (`feedback-members.js:21-24`); the service further downgrades `withMember` when the member-browse permission fails (`audience-feedback-controller.js:135-139`). C++ uses `content_type_middleware` (`routes.cppm:20`) and a bare token presence check returning 401 `{"error":"Unauthorized"}` (`handler.cppm:18-22`); no permissions model, no docName/method, no member-vs-anonymous data shaping.
+- **Route identity:** `router.get('/feedback/:id', mw.authAdminApi, ...)` (`admin/routes.js:607`) ↔ `Router{router,"/feedback"}.Route{"/:id"}.get(...)`. No `content_type_middleware` (Ghost has no body/Content-Type gate on this route).
+- **Auth/permissions:** CLOSED. `require_auth` mirrors `authAdminApi`'s missing-token 401; `ReadByIdHandler` maps a presented admin token to the `Administrator` role and calls `require_ghost_permission(...,"posts","browse")`, producing Ghost-shaped NoPermissionError/UnauthorizedError envelopes.
+- **Input:** CLOSED. `:id` from path; options allowlisted; `score` parsed with Ghost `parseInt` semantics and injected as an NQL filter; `limit` defaults to 10; `order` accepted but ignored (repository hard-codes `created_at DESC`).
+- **Service gate / member relation:** CLOSED. `GhostAuthorizer.authorize(principal,"members","browse")` models `canThis(...).browse.member()`; on success each row embeds `member` from `find_by_resource("members", member_id)`, on denial the key is absent — matching Ghost's try/catch downgrade.
+- **Query / pagination / output:** CLOSED. `core::query::run` handles NQL filtering, `created_at desc` sorting, page/offset and Ghost's `meta.pagination`; `fields` projects to `{id,score,created_at,member}`.
+- **Cache:** CLOSED. `X-Cache-Invalidate:false` before `send()`.
 
-### POST `/api/feedback` — MISSING
+### POST `/api/feedback` — MATCH
 
-- Ghost members-app route `membersApp.post('/api/feedback', bodyParser.json({limit:'50mb'}), middleware.loadMemberSession, middleware.authMemberByUuid, http(api.feedbackMembers.add))` (`members/app.js:144-150`), controller `add` with `statusCode:201`, required `post_id`+`score`, `permissions:false` (`feedback-members.js:30-49`), service validates score ∈ {0,1} and upserts feedback for the authenticated member (`audience-feedback-controller.js:81-119`).
-- No C++ route, handler, or step exists. Confirmed by searching `include/blog/handlers/**/routes.cppm` for `feedback`, `/api/feedback`, `POST`, and `add` variants — only `discovery/feedback/routes.cppm:19-28` (`GET /:id`) matched; the route catalog lists only `GET /feedback/:id` (`include/blog/testing/route_catalog.cppm:282`). No `members_feedback` write path exists in the C++ handlers.
+- **Route identity / op:** CLOSED. `Router{router,"/api"}.Route{"/feedback"}.post(...)` ↔ `handler.feedback_add()` → `blog::handlers::feedback::add::AddHandler`.
+- **Input:** CLOSED. `data.feedback[0]` decoded with `core_serde::JsonCodec`; `post_id` required; `score` must be numeric 0/1 (Ghost `ValidationError invalidScore`); errors are Ghost envelopes.
+- **Member identity:** CLOSED. Authenticated member id from the members-app session (`X-Member-Id`), not the raw bearer token; missing member → 500 `InternalServerError memberNotFound`, matching `#getMember`.
+- **Post existence:** CLOSED. `find_by_resource("posts", post_id)` (status-independent, like `status:'all'`); absent → 404 `NotFoundError postNotFound`.
+- **Upsert semantics:** CLOSED. Existing `(member,post)` pair with same score → returned without a save (preserves `updated_at`); different score → edit with new score; otherwise create with a random 24-hex ObjectID. Output is the Ghost `Feedback` wire object `{id,memberId,postId,score}`.
+- **Status / cache:** CLOSED. `add` always answers 201 (create and edit); 422/404/500 on the documented error branches; `X-Cache-Invalidate:false` before `send()`.
+- **Permissions:** agrees — `permissions:false`; no permission middleware.
 
 ## Missing in C++
 
-- `POST /api/feedback` (members app) → `feedbackMembers.add`. Ghost evidence: `members/app.js:144-150`, `feedback-members.js:30-49`, `audience-feedback-controller.js:81-119`. Absence confirmed: no POST/feedback route in `include/blog/handlers/**/routes.cppm`; `include/blog/testing/route_catalog.cppm:282` lists only `GET /feedback/:id`.
+None. Both controller keys (`browse`, `add`) have strict local route + handler/step/flow implementations.
 
-(Note: the separate members route `GET /feedback/:postId/:score` → `controller.redirectToPost` at `members/app.js:154-156` does not reference `browse`/`add` and is outside this controller's exported keys; no C++ counterpart found either.)
+(Out of scope: members-app `GET /feedback/:postId/:score` → `controller.redirectToPost` (`members/app.js:154-156`), which does not bind this controller's exported keys.)
 
 ## Extra in C++
 
-- None. The only C++ route in the matched folder (`GET /feedback/:id`, `discovery/feedback/routes.cppm:19-28`) has a Ghost counterpart (`admin/routes.js:607`).
+None. `FeedbackRoutes::install` registers only the two Ghost-bound routes.
+
+## Local files changed (strict-parity pass)
+
+- `read_by_id/workflow/step/execute.cppm` — exported `blog::handlers::feedback::support` helpers (reused by add) + `core::query::run` browse step with member relation.
+- `read_by_id/handler.cppm` — Ghost permission middleware + in-service member-browse gate.
+- `routes.cppm` — removed `content_type_middleware` from the GET router.
+- `add/handler.cppm` — 201/422/404/500 status mapping.
+- `add/workflow/step/execute.cppm` — member-session id, post existence, ObjectID, unchanged-score skip, Ghost wire output.
+
+## Shared-file edits
+
+None. Central registrations from the earlier fix pass remain in place and were not touched (`all.cppm`, `base.cppm`, `routes.cppm`, `BUILD.bazel`, middleware/, context/).
+
+## Verification note
+
+`bazel build //include/blog/handlers:blog_handlers` is blocked by a pre-existing Bazel dependency cycle in the shared `blog_handlers` target; per task scope the cycle was not fixed. Parity is argued from the shared-abstraction contracts and existing registered usage patterns (labels, notifications).

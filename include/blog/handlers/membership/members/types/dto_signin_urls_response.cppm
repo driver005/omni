@@ -27,7 +27,7 @@ struct serde::Serializable<blog::dto::members::SigninUrlsResponse>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"signin_urls", &blog::dto::members::SigninUrlsResponse::get_signin_urls, &blog::dto::members::SigninUrlsResponse::set_signin_urls, serde::FieldOptions{}>{}
+            serde::FieldDesc<"member_signin_urls", &blog::dto::members::SigninUrlsResponse::get_signin_urls, &blog::dto::members::SigninUrlsResponse::set_signin_urls, serde::FieldOptions{}>{}
         };
     }
 

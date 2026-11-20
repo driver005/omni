@@ -4,14 +4,15 @@
 - Ghost routes: `docs/Ghost/ghost/core/server/web/api/endpoints/admin/routes.js`
 - C++: `include/blog/handlers/admin/labels/routes.cppm`
 - Checked: 2026-11-19
+- Strict-parity pass: 2026-11-19 (manifest group 2)
 
 ## Summary
 
 | Verdict | Count |
 |---|---|
 | MATCH | 0 |
-| PARTIAL | 4 |
-| MISMATCH | 2 |
+| PARTIAL | 6 |
+| MISMATCH | 0 |
 | MISSING | 0 |
 | EXTRA | 0 |
 
@@ -19,79 +20,79 @@
 
 | Ghost route (verb + path) | Ghost op | C++ route | C++ handler | Input | Output | DB call | Cache | Auth | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| GET `/labels` | `browse` | GET `/labels` | `labels_browse()` | Ghost `options: include,filter,fields,limit,order,page`, `include` ∈ `['count.members']`; C++ reads none (`Input=IRequest&`, no query parse) | Ghost `Label.findPage` `{data,meta}`; C++ fixed `{"labels":rows,"meta":{"pagination":{limit:15,page:1,pages:1,prev:null,next:null,total:0}}}` + status 200 | Ghost `models.Label.findPage(restrictAdminApiQueryOptions(...))`; C++ `json_for("labels", {})` empty params, no filter/paginate | Ghost `cacheInvalidate:false`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | PARTIAL | G `routes.js:294`, `labels.js:32-48`; C++ `routes.cppm:19-28`, `browse/handler.cppm:17-27`, `browse/.../execute.cppm:13-17` |
-| GET `/labels/:id` | `read` | GET `/labels/:id` | `labels_read_by_id()` | Ghost `data: id,slug`, `options: include,filter,fields`; C++ ignores `:id` (hardcoded `"1"`) | Ghost single label model, 404 if missing; C++ `{"labels":[one]}` or `{"labels":[]}`, status 200 (no 404) | Ghost `models.Label.findOne(frame.data, ...)`; C++ `find_by_resource("labels", "1")` | Ghost `cacheInvalidate:false`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | MISMATCH | G `routes.js:295`, `labels.js:50-77`; C++ `routes.cppm:37-46`, `read_by_id/handler.cppm:17-27`, `read_by_id/.../execute.cppm:16-18` |
-| GET `/labels/slug/:slug` | `read` | GET `/labels/slug/:id` | `labels_read_by_slug()` | Ghost `data: id,slug` (slug path); C++ ignores slug (`json_for("labels", {})`) | Ghost single label model, 404 if missing; C++ full list with fixed pagination meta (same as browse), status 200 | Ghost `models.Label.findOne(frame.data, ...)` by slug; C++ `json_for("labels", {})` returns all rows, no slug filter | Ghost `cacheInvalidate:false`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | MISMATCH | G `routes.js:296`, `labels.js:50-77`; C++ `routes.cppm:64-76`, `read_by_slug/handler.cppm:17-27`, `read_by_slug/.../execute.cppm:16-17` |
-| POST `/labels` | `add` | POST `/labels` | `labels_create()` | Ghost `data.labels[0]`, `options: include`; C++ raw `in.body_as_string()` (`"{}"` when empty), no `data.labels[0]` unwrap/include parse | Ghost created label, status 201, duplicate→ValidationError; C++ raw mutation body, status 200, no duplicate handling | Ghost `models.Label.add(...).catch(handleDuplicateNameError)`; C++ `mutations.create("labels", body).body()` | Ghost `cacheInvalidate:false`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | PARTIAL | G `routes.js:297`, `labels.js:79-96`; C++ `routes.cppm:29-36`, `create/handler.cppm:17-27`, `create/.../execute.cppm:15` |
-| PUT `/labels/:id` | `edit` | PUT `/labels/:id` | `labels_edit()` | Ghost `options: id,include`, `id` required, `data.labels[0]`; C++ empty id `""`, raw body, no id/include parse | Ghost edited label, 404 if missing, sets `X-Cache-Invalidate: /*` on change; C++ raw mutation body, status 200, no invalidate header | Ghost `models.Label.edit(...).catch(handleDuplicateNameError)`; C++ `mutations.edit("labels", "", body).body()` | Ghost `cacheInvalidate:false` + dynamic `X-Cache-Invalidate: /*`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | PARTIAL | G `routes.js:298`, `labels.js:98-131`; C++ `routes.cppm:47-54`, `edit/handler.cppm:17-27`, `edit/.../execute.cppm:16` |
-| DELETE `/labels/:id` | `destroy` | DELETE `/labels/:id` (`.delt`) | `labels_destroy()` | Ghost `options: id`, `require:true`; C++ empty id `""`, no id option | Ghost empty body, status 204; C++ mutation body, status 200 | Ghost `models.Label.destroy({...frame.options, require:true})`; C++ `mutations.destroy("labels", "").body()` | Ghost `cacheInvalidate:true`; C++ none | Ghost `mw.authAdminApi`+`permissions:true`; C++ `content_type_middleware`+token-presence check | PARTIAL | G `routes.js:299`, `labels.js:133-153`; C++ `routes.cppm:55-62`, `destroy/handler.cppm:17-27`, `destroy/.../execute.cppm:16` |
+| GET `/labels` | `browse` | GET `/labels` | `labels_browse()` | `core::query::parse` allowlists include/filter/fields/limit/order/page; include ∈ `count.members`; restricted-field guard | `{"labels":[...],"meta":{"pagination":...}}` via `blog::mapping::wrap`/`pagination`; filtered total from real rows | `core::query::apply` over `ctx.store().resources().list("labels")`, default order `name asc,created_at desc`, `count.members` from `members_labels` | no X-Cache header (`cacheInvalidate:false`) | `require_ghost_permission("labels","browse")` | PARTIAL | G `routes.js:294`, `labels.js:32-48`; C++ `browse/.../execute.cppm`, `browse/handler.cppm` |
+| GET `/labels/:id` | `read` | GET `/labels/:id` | `labels_read_by_id()` | path id (numeric ↔ wire id), `core::query` options + `filter[id]=`, include validation, restricted guard | `{"labels":[{full model}]}` or 404 `Label not found.` | `core::query::apply` over real stored labels | no X-Cache header | `require_ghost_permission("labels","read")` | PARTIAL | G `routes.js:295`, `labels.js:50-77`; C++ `read_by_id/.../execute.cppm`, `read_by_id/handler.cppm` |
+| GET `/labels/slug/:slug` | `read` | GET `/labels/slug/:slug` | `labels_read_by_slug()` | path slug via `filter[slug]=`, same options/validation | `{"labels":[{full model}]}` or 404 `Label not found.` | `core::query::apply` over real stored labels | no X-Cache header | `require_ghost_permission("labels","read")` | PARTIAL | G `routes.js:296`, `labels.js:50-77`; C++ `read_by_slug/.../execute.cppm`, `read_by_slug/handler.cppm` |
+| POST `/labels` | `add` | POST `/labels` | `labels_create()` | `data.labels[0]` unwrap, `include` validation, name required/≤191/trimmed, duplicate → `ValidationError("Label already exists")`, slug generated + deduped | 201 `{"labels":[{full model}]}` + `Location`; `label.added` outbox event | `ctx.store().resources().create("labels", ...)` | no X-Cache header | `require_ghost_permission("labels","add")` | PARTIAL | G `routes.js:297`, `labels.js:79-96`; C++ `create/.../execute.cppm`, `create/handler.cppm` |
+| PUT `/labels/:id` | `edit` | PUT `/labels/:id` | `labels_edit()` | path id + `data.labels[0]` unwrap, include/duplicate validation | 200 `{"labels":[{full model}]}`; 404 `Label not found.`; `X-Cache-Invalidate: /*` only on change; `label.edited` event | `ctx.store().resources().edit("labels", ...)` | `/*` only when `wasChanged()` | `require_ghost_permission("labels","edit")` | PARTIAL | G `routes.js:298`, `labels.js:98-131`; C++ `edit/.../execute.cppm`, `edit/handler.cppm` |
+| DELETE `/labels/:id` | `destroy` | DELETE `/labels/:id` (`.delt`) | `labels_destroy()` | path id, `require:true` | 204 empty body, 404 `Label not found.` on miss; `label.deleted` outbox event in transaction | `ctx.store().resources().destroy("labels", ...)` | `/*` (`cacheInvalidate:true`) | `require_ghost_permission("labels","destroy")` | PARTIAL | G `routes.js:299`, `labels.js:133-153`; C++ `destroy/.../execute.cppm`, `destroy/handler.cppm` |
 
-## Route details
+## Fix implementation record
 
-### GET `/labels` — PARTIAL
+Applied on 2026-11-19 to `include/blog/handlers/admin/labels/`:
 
-- Route identity: Ghost `router.get('/labels', ..., http(api.labels.browse))` (`routes.js:294`); C++ `Router{router, "/labels"}.get(...)` (`routes.cppm:19-28`). Match.
-- Operation: Ghost `browse` (`labels.js:32`); C++ `handler.labels_browse()` (`routes.cppm:26`, registry `all.cppm:474`). Match.
-- Input: Ghost options `include,filter,fields,limit,order,page` with `include` validated against `['count.members']` (`labels.js:11,36-43`); C++ `Input=IRequest&` but step parses no query params (`browse/.../execute.cppm:11-15`). Divergent: all six Ghost params absent in C++.
-- Output: Ghost `models.Label.findPage` result with real pagination (`labels.js:46`); C++ hardcodes `limit:15,page:1,pages:1,total:0` and `prev/next:null` (`browse/.../execute.cppm:16`), status 200 (`browse/handler.cppm:27`). Divergent meta.
-- DB call: Ghost `models.Label.findPage(restrictAdminApiQueryOptions(frame.options))` (`labels.js:46`); C++ `json_for("labels", {})` with empty params, no filtering/pagination (`browse/.../execute.cppm:15`). Resource string `"labels"` agrees; semantics differ.
-- Cache: Ghost `cacheInvalidate:false` (`labels.js:33-35`); C++ none (no `core::cache::Cache` use in labels steps; cache only wired for members/emails/automations in `all.cppm:836-839`). Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:294`) + `permissions:true` (`labels.js:44`); C++ `.use(content_type_middleware)` (`routes.cppm:20`) + inline token-presence check returning 401 `{"error":"Unauthorized"}` (`browse/handler.cppm:18-22`). No permissions/docName/unsafeAttrs model in C++.
+1. Input: every step now parses its query through `core::query::parse(path,
+   allowlist)`; `include` is validated against `count.members`; browse applies
+   restricted-field guard + NQL filter/order/fields/pagination via
+   `core::query::apply`; read-by-id/slug use `filter[id]=`/`filter[slug]=`;
+   create/edit unwrap `data.labels[0]`; destroy parses `id`.
+2. DB call: the broken shared-store branches (`json_for("labels")` fixture,
+   `find_by_resource("labels")` nullopt, fabricated `edit`) are bypassed. Labels
+   use `ctx.store().resources()` directly with Ghost-shaped serialization
+   (`support::rows`/`canonical`). Shared store files were NOT edited.
+3. Output: `blog::mapping::wrap`/`pagination` produce Ghost envelopes;
+   `support::canonical` emits id/name/slug/count/created_at/updated_at; `fields`
+   narrows via `core::query`; 404/422/400 errors are Ghost-shaped envelopes
+   (`NotFoundError`, `ValidationError`, `BadRequestError`).
+4. Cache: `X-Cache-Invalidate` is no longer emitted on browse/read/create
+   (`cacheInvalidate:false`); edit emits `/*` only when the record changed;
+   destroy emits `/*` on 204.
+5. Side effects: `core::outbox::global_outbox()` records `label.added`,
+   `label.edited` (on change) and `label.deleted` (inside a transaction).
+6. Auth: router-level `content_type_middleware`/`require_auth` removed; each
+   handler enforces `core::auth::ghost` via `require_ghost_permission` with
+   `docName = "labels"` and the Ghost op. An admin token is mapped to the
+   Administrator role since no token store exists in this folder.
+7. Headers: create sets `Location: .../labels/<id>/` on 201.
 
-### GET `/labels/:id` — MISMATCH
+### Verdict flip
 
-- Route identity: Ghost `router.get('/labels/:id', ..., http(api.labels.read))` (`routes.js:295`); C++ `Route{"/:id"}.get(...)` (`routes.cppm:37-46`). Match.
-- Operation: Ghost `read` (`labels.js:50`); C++ `handler.labels_read_by_id()` (`routes.cppm:44`, registry `all.cppm:475`). Match.
-- Input: Ghost `data:['id','slug']` + options `include,filter,fields` (`labels.js:54-61`); C++ step ignores the path id entirely and calls `find_by_resource("labels", std::string{}.empty()?"1":std::string{})`, i.e. hardcoded `"1"` (`read_by_id/.../execute.cppm:16`). Materially broken id lookup.
-- Output: Ghost returns single label model, throws `NotFoundError` when absent (`labels.js:64-76`); C++ wraps result in `{"labels":[...]}` or returns `{"labels":[]}` with status 200 and no 404 (`read_by_id/.../execute.cppm:17-18`, `read_by_id/handler.cppm:27`). Material data-shape/status divergence.
-- DB call: Ghost `models.Label.findOne(frame.data, ...)` (`labels.js:65-68`); C++ `find_by_resource("labels", "1")` (`read_by_id/.../execute.cppm:16`). Resource agrees; id source diverges.
-- Cache: Ghost `cacheInvalidate:false` (`labels.js:51-53`); C++ none. Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:295`) + `permissions:true` (`labels.js:63`); C++ `content_type_middleware` (`routes.cppm:20`) + token-presence check (`read_by_id/handler.cppm:18-22`). Divergent.
+Two routes flip: read-by-id and read-by-slug move from **MISMATCH** to
+**PARTIAL** (real id/slug lookup with proper 404 replaces the hardcoded
+`nullopt`/fixture behavior). Browse/create/edit/destroy stay **PARTIAL**: all
+documented divergences are closed, but the infrastructure residuals below have
+no C++ primitive in this folder, so no route is promoted to MATCH.
 
-### GET `/labels/slug/:slug` — MISMATCH
+## Needs central registration
 
-- Route identity: Ghost `router.get('/labels/slug/:slug', ..., http(api.labels.read))` (`routes.js:296`); C++ `Router{router, "/slug"}.add_route(Route{"/:id"}.get(...))` (`routes.cppm:64-76`). Path matches after normalizing `:slug` ↔ `:id` placeholder names.
-- Operation: Ghost `read` by slug (`labels.js:50`); C++ `handler.labels_read_by_slug()` (`routes.cppm:73`, registry `all.cppm:476`). Match.
-- Input: Ghost `data:['id','slug']` with slug supplied via path (`labels.js:55`); C++ step never reads the slug and calls `json_for("labels", {})` (`read_by_slug/.../execute.cppm:16`). No slug filter.
-- Output: Ghost single label model + 404 when missing (`labels.js:64-76`); C++ returns the full label list with the same fixed pagination envelope as `browse` and status 200 (`read_by_slug/.../execute.cppm:17`, `read_by_slug/handler.cppm:27`). Material data-shape divergence.
-- DB call: Ghost `models.Label.findOne(frame.data, ...)` (`labels.js:65-68`); C++ `json_for("labels", {})` returns all rows (`read_by_slug/.../execute.cppm:16`). Material operation divergence.
-- Cache: Ghost `cacheInvalidate:false` (`labels.js:51-53`); C++ none. Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:296`) + `permissions:true` (`labels.js:63`); C++ `content_type_middleware` (`routes.cppm:20`) + token-presence check (`read_by_slug/handler.cppm:18-22`). Divergent.
+None. No new partition was created — shared label helpers live in the existing
+`blog_handlers:labels_browse_step` partition, which is already listed in
+`include/blog/handlers/BUILD.bazel` and imported transitively by the other five
+steps. `blog_handlers:mapping`, `core_query`, `core_outbox`, `core_auth:ghost`
+and `blog_handlers_middleware:ghost_permission` are already centrally wired
+(`base.cppm` `export import :mapping`, `all.cppm` imports, `BUILD.bazel` deps).
+No `all.cppm` / `base.cppm` / central `routes.cppm` / BUILD change is required.
 
-### POST `/labels` — PARTIAL
+## Remaining gaps (residual, no C++ primitive here)
 
-- Route identity: Ghost `router.post('/labels', ..., http(api.labels.add))` (`routes.js:297`); C++ `.post(...)` on `/labels` (`routes.cppm:29-36`). Match.
-- Operation: Ghost `add` (`labels.js:79`); C++ `handler.labels_create()` (`routes.cppm:34`, registry `all.cppm:477`). Match.
-- Input: Ghost reads `frame.data.labels[0]` with `options:['include']` validated (`labels.js:84-95`); C++ sends raw `in.body_as_string()` (`"{}"` fallback) with no envelope unwrap and no include parse (`create/.../execute.cppm:15`). Divergent body shape.
-- Output: Ghost returns created model with `statusCode:201` and converts unique-constraint violations to `ValidationError` (`labels.js:80,20-26,94`); C++ returns raw `mutations.create(...).body()` with status 200 and no duplicate handling (`create/.../execute.cppm:15`, `create/handler.cppm:27`). Divergent status and error shape.
-- DB call: Ghost `models.Label.add(frame.data.labels[0], frame.options)` (`labels.js:94`); C++ `mutations.create("labels", body)` (`create/.../execute.cppm:15`). Resource `"labels"` agrees.
-- Cache: Ghost `cacheInvalidate:false` (`labels.js:81-83`); C++ none. Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:297`) + `permissions:true` (`labels.js:92`); C++ `content_type_middleware` (`routes.cppm:20`) + token-presence check (`create/handler.cppm:18-22`). Divergent.
-
-### PUT `/labels/:id` — PARTIAL
-
-- Route identity: Ghost `router.put('/labels/:id', ..., http(api.labels.edit))` (`routes.js:298`); C++ `.put(...)` on `Route{"/:id"}` (`routes.cppm:47-54`). Match.
-- Operation: Ghost `edit` (`labels.js:98`); C++ `handler.labels_edit()` (`routes.cppm:52`, registry `all.cppm:478`). Match.
-- Input: Ghost `options:['id','include']`, `id` required, uses `frame.data.labels[0]` (`labels.js:102-115`); C++ passes empty id `std::string{}` and raw body, ignores `:id` and all options (`edit/.../execute.cppm:16`). Divergent.
-- Output: Ghost returns edited model, throws `NotFoundError` if absent, and sets `X-Cache-Invalidate: /*` when `model.wasChanged()` (`labels.js:115-130`); C++ returns raw `mutations.edit(...).body()` with status 200 and no invalidate header (`edit/.../execute.cppm:16`, `edit/handler.cppm:27`). Divergent.
-- DB call: Ghost `models.Label.edit(frame.data.labels[0], frame.options)` (`labels.js:115`); C++ `mutations.edit("labels", "", body)` (`edit/.../execute.cppm:16`). Resource agrees; id/body diverge.
-- Cache: Ghost `cacheInvalidate:false` + dynamic `X-Cache-Invalidate: /*` on change (`labels.js:99-101,125-127`); C++ none. Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:298`) + `permissions:true` (`labels.js:113`); C++ `content_type_middleware` (`routes.cppm:20`) + token-presence check (`edit/handler.cppm:18-22`). Divergent.
-
-### DELETE `/labels/:id` — PARTIAL
-
-- Route identity: Ghost `router.delete('/labels/:id', ..., http(api.labels.destroy))` (`routes.js:299`); C++ `.delt(...)` on `Route{"/:id"}` (`routes.cppm:55-62`) — delete verb. Match.
-- Operation: Ghost `destroy` (`labels.js:133`); C++ `handler.labels_destroy()` (`routes.cppm:60`, registry `all.cppm:479`). Match.
-- Input: Ghost `options:['id']` with `id` required and `require:true` (`labels.js:138-151`); C++ passes empty id `std::string{}`, reads no id option (`destroy/.../execute.cppm:16`). Divergent.
-- Output: Ghost empty body with `statusCode:204` (`labels.js:134`); C++ returns `mutations.destroy("labels", "").body()` with status 200 (`destroy/.../execute.cppm:16`, `destroy/handler.cppm:27`). Divergent status/body.
-- DB call: Ghost `models.Label.destroy({...frame.options, require:true})` (`labels.js:151`); C++ `mutations.destroy("labels", "")` (`destroy/.../execute.cppm:16`). Resource agrees; id diverges.
-- Cache: Ghost `cacheInvalidate:true` (`labels.js:135-137`); C++ none. Divergent.
-- Auth: Ghost `mw.authAdminApi` (`routes.js:299`) + `permissions:true` (`labels.js:149`); C++ `content_type_middleware` (`routes.cppm:20`) + token-presence check (`destroy/handler.cppm:18-22`). Divergent.
+- Real Knex `labels` table / `Label.findPage` SQL; outbox events are not
+  Ghost's cache-invalidation bus; in-memory `ResourceStore` instead of DB.
+- JSON-schema `labels-add`/`labels-edit`: name presence/1..191/no-comma checked
+  locally with Ghost-shaped errors; exact `@tryghost/admin-api-schema` wording
+  approximated.
+- `count.posts` is always `0`; `include=count.members` reads real
+  `members_labels` rows when present.
+- Destroy has no SQL row lock on `members_labels` or member detach; the
+  transaction is the shared outbox transaction.
+- Token→role mapping is presence-based; real admin-token verification and
+  allowlisting stay in the main agent's shared auth middleware.
+- `core_adapters` is not used: labels have no Stripe/Tinybird/SMTP/webmention
+  side effects.
 
 ## Missing in C++
 
-None. All 6 Ghost label routes have a C++ route in `include/blog/handlers/admin/labels/routes.cppm`.
+None. All six Ghost label routes have a C++ route.
 
 ## Extra in C++
 
-None. The C++ folder installs exactly 6 routes (`routes.cppm:19-77`), matching the 6 Ghost label routes; no additional C++ label routes exist. LabelsRoutes is installed once via `include/blog/handlers/routes.cppm:99`.
+None. `LabelsRoutes::install` mounts exactly the six Ghost label routes.

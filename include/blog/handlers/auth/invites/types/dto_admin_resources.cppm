@@ -1,11 +1,35 @@
 module;
 #include <rfl/Generic.hpp>
+#include <ctime>
 export module blog_handlers:invites_dto_admin_resources;
 
 import std;
 import core_serde;
+import :domain_all;
+import core_query;
+import core_auth;
+import :outbox_shim;
 
 export namespace blog::dto::invites {
+
+namespace local_mapping {
+[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
+                                      std::string_view meta = {})
+{
+    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+}
+[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
+[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
+                                            std::size_t pages, std::string_view prev,
+                                            std::string_view next)
+{
+    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+                       total, limit, page, pages,
+                       prev.empty() ? std::string{"null"} : std::string{prev},
+                       next.empty() ? std::string{"null"} : std::string{next});
+}
+} // namespace local_mapping
 
 class RoleDto
 {
@@ -99,6 +123,129 @@ public:
 };
 
 } // namespace blog::dto::invites
+
+
+// ---------------------------------------------------------------------------
+// Shared invite helpers. Kept in this already-registered partition so every
+// invite step/handler uses the same Ghost-shaped primitives (CONTRACTS.md):
+//   core::query  - NQL / option parsing, filtering, pagination
+//   core::auth   - Ghost permission service
+//   blog::mapping- output clean (token stripping) + envelopes
+//   outbox_shim  - observable invite-mail side effects
+// No shared file outside include/blog/handlers/auth/invites/ is modified.
+// ---------------------------------------------------------------------------
+export namespace blog::handlers::invites::support {
+
+inline constexpr std::string_view kDocName{"invites"};
+
+[[nodiscard]] inline std::string quote(std::string_view text)
+{
+    return blog::api::JsonBody{}.quote(text);
+}
+
+[[nodiscard]] inline std::string unquote(std::string_view value)
+{
+    auto text = value;
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) text.remove_prefix(1);
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) text.remove_suffix(1);
+    if (text.size() >= 2 && text.front() == '"' && text.back() == '"') {
+        std::string out;
+        for (std::size_t i = 1; i + 1 < text.size(); ++i) {
+            if (text[i] == '\\' && i + 2 < text.size()) { out.push_back(text[i + 1]); ++i; }
+            else out.push_back(text[i]);
+        }
+        return out;
+    }
+    return std::string{text};
+}
+
+[[nodiscard]] inline std::string plain_field(const blog::api::RecordDto& record, std::string_view key)
+{
+    const auto it = record.find(std::string{key});
+    return it == record.end() ? std::string{} : unquote(it->second);
+}
+
+/** @brief model/invite.js#toJSON deletes `token` before serialisation. */
+[[nodiscard]] inline std::string clean(std::string_view json)
+{
+    return blog::dto::invites::local_mapping::clean(json, "invite");
+}
+
+[[nodiscard]] inline std::string wrap(std::string_view rows, std::string_view meta = {})
+{
+    return blog::dto::invites::local_mapping::wrap(kDocName, rows, meta);
+}
+
+/** @brief Opaque stand-in for security.tokens.generateFromEmail. */
+[[nodiscard]] inline std::string new_token()
+{
+    std::random_device rd;
+    std::mt19937_64 rng{rd() ^ static_cast<std::uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count())};
+    std::ostringstream out;
+    out << std::hex << std::setw(32) << std::setfill('0') << rng()
+        << std::setw(32) << std::setfill('0') << rng();
+    return "it_" + out.str();
+}
+
+[[nodiscard]] inline std::string now_iso()
+{
+    const auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    const std::tm tm = *std::gmtime(&t);
+    char buf[32]{};
+    std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return std::string{buf};
+}
+
+/** @brief moment().add(1,'week').valueOf() - epoch milliseconds. */
+[[nodiscard]] inline std::string expires_millis()
+{
+    constexpr long long kWeekMs = 7LL * 24 * 60 * 60 * 1000;
+    const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    return std::to_string(now + kWeekMs);
+}
+
+/** @brief Full invite wire record (includes the internal `token`). */
+[[nodiscard]] inline std::string full_invite(
+    std::string_view id, std::string_view role_id, std::string_view email,
+    std::string_view status, std::string_view expires,
+    std::string_view created, std::string_view updated, std::string_view token)
+{
+    return "{\"id\":" + quote(id)
+         + ",\"role_id\":" + quote(role_id)
+         + ",\"status\":" + quote(status)
+         + ",\"token\":" + quote(token)
+         + ",\"email\":" + quote(email)
+         + ",\"expires\":" + std::string{expires}
+         + ",\"created_at\":" + quote(created)
+         + ",\"updated_at\":" + quote(updated) + "}";
+}
+
+/** @brief Ghost api-framework Location: <request path>/<id>/ (headers.ts:146-178). */
+[[nodiscard]] inline std::string location_for(std::string_view path, std::string_view id)
+{
+    auto request_path = path.substr(0, path.find('?'));
+    while (!request_path.empty() && request_path.back() == '/') request_path.remove_suffix(1);
+    std::string out{request_path};
+    if (out.empty()) out = "/invites";
+    out += "/";
+    out += id;
+    out += "/";
+    return out;
+}
+
+/** @brief Emit an invite side effect to the context-local outbox. */
+inline void emit(std::string_view type, std::string_view payload, std::string_view aggregate_id)
+{
+    blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
+        .type = std::string{type},
+        .payload = std::string{payload},
+        .aggregate_id = std::string{aggregate_id}
+    });
+}
+
+} // namespace blog::handlers::invites::support
 
 
 template<> struct serde::Serializable<blog::dto::invites::RoleDto>

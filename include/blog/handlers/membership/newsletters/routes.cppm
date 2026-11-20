@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/newsletters"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -36,6 +37,7 @@ public:
             .summary("Ghost newsletters POST")
             .add_route(
                 Route{"/:id"}
+                    .use(blog::handlers::middleware::require_auth)
                     .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -55,6 +57,7 @@ public:
             )
             .add_route(
                 Route{"/verifications"}
+                    .use(blog::handlers::middleware::require_auth)
                     .put([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

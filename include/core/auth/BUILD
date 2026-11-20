@@ -19,6 +19,7 @@ congelado_module_library(
         "runtime.cppm",
         "auth.cppm",
         "builder.cppm",
+        "ghost.cppm",
     ],
     deps = ["@libsodium//:libsodium"],
     visibility = ["//visibility:public"],

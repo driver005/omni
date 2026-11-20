@@ -25,9 +25,13 @@ public:
   }
   const auto ex=m_workflow.run("comments_read_by_id", req);
   const auto* r=ex.result_of("comments_read_by_id_execute");
-  auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{"{}"};
+  const auto payload=r&&r->typed_output.has_value()
+   ? std::any_cast<std::map<std::string,std::string>>(r->typed_output)
+   : std::map<std::string,std::string>{{"status","200"},{"body","{}"}};
+  const int status=payload.contains("status")?std::stoi(payload.at("status")):200;
+  const auto body=payload.contains("body")?payload.at("body"):std::string{"{}"};
   std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));
-  res.set_status(interfaces::io::types::Status::OK); res.set_body(std::move(bytes)); send();
+  res.set_status(static_cast<interfaces::io::types::Status>(status)); res.set_body(std::move(bytes)); send();
  }
 private: core::workflow::Workflow m_workflow{};
 };

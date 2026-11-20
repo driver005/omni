@@ -13,6 +13,7 @@ export import :session_store;
 export import :permission;
 export import :role;
 export import :rbac;
+export import :ghost;
 export import :api_key;
 export import :auth;
 export import :builder;

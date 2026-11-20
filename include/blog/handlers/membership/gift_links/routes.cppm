@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/gift_links"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/remove_all"}
                     .put([&handler](

@@ -5,10 +5,17 @@ import std;
 import interfaces;
 import core_router;
 import utils_openapi;
-import blog_handlers_middleware;
 
 export namespace blog::api {
 
+/**
+ * Ghost mounts both operations under the Admin API prefix with `mw.authAdminApi`
+ * and controller permissions `{docName:'db', method:'exportContent'}`
+ * (`admin/routes.js:404-405`; `exports.js:129-132,185-188`). Authentication and
+ * permission checks therefore live in the handlers via the shared
+ * `blog_handlers_middleware::require_ghost_permission` gate — not in a
+ * router-level Content-Type/Accept gate, which Ghost's API app does not impose.
+ */
 class ExportsRoutes
 {
 public:
@@ -17,7 +24,6 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/exports"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .post([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,

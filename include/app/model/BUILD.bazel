@@ -1,0 +1,28 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "app_model",
+    primary_interface = "base.cppm",
+    partitions = [
+        "blocklist.cppm",
+        "cards_info.cppm",
+        "customers.cppm",
+        "disputes.cppm",
+        "events.cppm",
+        "mandates.cppm",
+        "open_router.cppm",
+        "organization.cppm",
+        "payment_methods.cppm",
+        "payments.cppm",
+        "payouts.cppm",
+        "refunds.cppm",
+        "routing.cppm",
+        "subscription.cppm",
+        "user.cppm",
+    ],
+    deps = [
+        "//include/core/database:core_database",
+        "//include/core/serde:core_serde",
+    ],
+    visibility = ["//visibility:public"],
+)

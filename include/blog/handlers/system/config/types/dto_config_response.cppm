@@ -44,6 +44,14 @@ public:
     [[nodiscard]] const rfl::Generic& get_security() const noexcept { return security; }
     void set_signupForm(rfl::Generic value) { signupForm = std::move(value); }
     [[nodiscard]] const rfl::Generic& get_signupForm() const noexcept { return signupForm; }
+    void set_hostSettings(rfl::Generic value) { hostSettings = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_hostSettings() const noexcept { return hostSettings; }
+    void set_pintura(rfl::Generic value) { pintura = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_pintura() const noexcept { return pintura; }
+    void set_stats(rfl::Generic value) { stats = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_stats() const noexcept { return stats; }
+    void set_featurebase(rfl::Generic value) { featurebase = std::move(value); }
+    [[nodiscard]] const rfl::Generic& get_featurebase() const noexcept { return featurebase; }
 
     ConfigAuth auth{};
     rfl::Generic clientExtensions{rfl::Object<rfl::Generic>{}};
@@ -61,6 +69,10 @@ public:
     rfl::Generic klipy{rfl::Object<rfl::Generic>{}};
     rfl::Generic security{rfl::Object<rfl::Generic>{}};
     rfl::Generic signupForm{rfl::Object<rfl::Generic>{}};
+    rfl::Generic hostSettings{rfl::Object<rfl::Generic>{}};
+    rfl::Generic pintura{rfl::Object<rfl::Generic>{}};
+    rfl::Generic stats{rfl::Object<rfl::Generic>{}};
+    rfl::Generic featurebase{rfl::Object<rfl::Generic>{}};
 };
 
 
@@ -97,7 +109,11 @@ struct serde::Serializable<blog::dto::config::ConfigResponse>
             serde::FieldDesc<"exploreTestimonialsUrl", &blog::dto::config::ConfigResponse::get_exploreTestimonialsUrl, &blog::dto::config::ConfigResponse::set_exploreTestimonialsUrl, serde::FieldOptions{}>{},
             serde::FieldDesc<"klipy", &blog::dto::config::ConfigResponse::get_klipy, &blog::dto::config::ConfigResponse::set_klipy, serde::FieldOptions{}>{},
             serde::FieldDesc<"security", &blog::dto::config::ConfigResponse::get_security, &blog::dto::config::ConfigResponse::set_security, serde::FieldOptions{}>{},
-            serde::FieldDesc<"signupForm", &blog::dto::config::ConfigResponse::get_signupForm, &blog::dto::config::ConfigResponse::set_signupForm, serde::FieldOptions{}>{}
+            serde::FieldDesc<"signupForm", &blog::dto::config::ConfigResponse::get_signupForm, &blog::dto::config::ConfigResponse::set_signupForm, serde::FieldOptions{}>{},
+            serde::FieldDesc<"hostSettings", &blog::dto::config::ConfigResponse::get_hostSettings, &blog::dto::config::ConfigResponse::set_hostSettings, serde::FieldOptions{}>{},
+            serde::FieldDesc<"pintura", &blog::dto::config::ConfigResponse::get_pintura, &blog::dto::config::ConfigResponse::set_pintura, serde::FieldOptions{}>{},
+            serde::FieldDesc<"stats", &blog::dto::config::ConfigResponse::get_stats, &blog::dto::config::ConfigResponse::set_stats, serde::FieldOptions{}>{},
+            serde::FieldDesc<"featurebase", &blog::dto::config::ConfigResponse::get_featurebase, &blog::dto::config::ConfigResponse::set_featurebase, serde::FieldOptions{}>{}
         };
     }
 

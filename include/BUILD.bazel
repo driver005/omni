@@ -4,6 +4,7 @@ load("//toolchain:cc_rules.bzl", "cc_library")
 
 cc_library(
     name = "database_lib",
+    tags = ["manual"],
     srcs = glob(["database/*.cppm"]),
     hdrs = glob(["database/*.cppm"]),
     includes = [".", "database"],
@@ -24,6 +25,7 @@ cc_library(
 
 cc_library(
     name = "reflection_lib",
+    tags = ["manual"],
     srcs = glob(["reflection/*.cppm"]),
     hdrs = glob(["reflection/*.cppm"]),
     includes = [".", "reflection"],
@@ -41,8 +43,8 @@ cc_library(
 
 cc_library(
     name = "router_lib",
+    tags = ["manual"],
     srcs = glob(["router/*.cppm"]),
-    hdrs = glob(["router/*.cppm"]),
     includes = [".", "router"],
     copts = [
         "-std=c++20",
@@ -58,8 +60,8 @@ cc_library(
 
 cc_library(
     name = "http_lib",
+    tags = ["manual"],
     srcs = glob(["http/*.cppm"]),
-    hdrs = glob(["http/*.cppm"]),
     includes = [".", "http"],
     copts = [
         "-std=c++20",
@@ -75,6 +77,7 @@ cc_library(
 
 cc_library(
     name = "all_lib",
+    tags = ["manual"],
     srcs = [],
     deps = [
         ":database_lib",

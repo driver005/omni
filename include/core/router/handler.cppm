@@ -46,17 +46,16 @@ public:
         }
 
         // each method owns its own byte-wide lane in the mask, picked by its underlying value
-        const std::uint8_t SHIFT = std::to_underlying(method) * 8;
+        const std::size_t SLOT = std::to_underlying(method);
 
         // lane already claimed (not the 0xFF "unset" sentinel) means a dupe registration — cooked
-        if (((m_handler_mask >> SHIFT) & 0xFF) != 0xFF) {
+        if (m_handler_mask[SLOT] != 0xFFFF) {
             throw std::runtime_error("Handler for method already exists");
         }
 
         // clear this method's lane, then pack in the slot index we're about to store the
         // handler at — mask and array stay in sync this way
-        m_handler_mask &= ~(0xFFULL << SHIFT);
-        m_handler_mask |= (static_cast<std::uint64_t>(m_handler_index) << SHIFT);
+        m_handler_mask[SLOT] = static_cast<std::uint16_t>(m_handler_index);
         m_handler[m_handler_index++] = std::move(
             handler
         ); // FIXME(clang-tidy): unchecked operator[], consider .at(); non-constant array index
@@ -71,8 +70,8 @@ public:
     [[nodiscard]] constexpr interfaces::HandlerFn
     find(interfaces::io::types::Method method) const noexcept
     {
-        const std::uint8_t IDX = (m_handler_mask >> (std::to_underlying(method) * 8)) & 0xFF;
-        return IDX != 0xFF ? m_handler[IDX] : nullptr; // FIXME(clang-tidy): unchecked operator[],
+        const std::uint16_t IDX = m_handler_mask[std::to_underlying(method)];
+        return IDX != 0xFFFF ? m_handler[IDX] : nullptr; // FIXME(clang-tidy): unchecked operator[],
                                                        // consider .at(); non-constant array index
     }
 
@@ -80,7 +79,7 @@ public:
      * @brief Gets how many handlers are currently registered.
      * @return the handler count.
      */
-    [[nodiscard]] constexpr const std::uint8_t& get_size() const noexcept
+    [[nodiscard]] constexpr const std::uint16_t& get_size() const noexcept
     {
         return m_handler_index;
     }
@@ -89,7 +88,7 @@ public:
      * @brief Gets the raw packed method-to-slot mask.
      * @return the handler mask.
      */
-    [[nodiscard]] constexpr const std::size_t& get_mask() const noexcept
+    [[nodiscard]] constexpr const HandlerMask& get_mask() const noexcept
     {
         return m_handler_mask;
     }
@@ -106,8 +105,8 @@ public:
 
 private:
     std::array<interfaces::HandlerFn, MaxHandlerSize> m_handler{};
-    std::size_t m_handler_mask{HANDLER_MASK};
-    std::uint8_t m_handler_index{0};
+    HandlerMask m_handler_mask{HANDLER_MASK};
+    std::uint16_t m_handler_index{0};
 };
 
 template<std::size_t MaxHandlerSize>
@@ -134,12 +133,12 @@ public:
      */
     [[nodiscard]] constexpr interfaces::HandlerFn find(
         std::size_t idx,
-        std::size_t handler_mask,
+        const HandlerMask& handler_mask,
         interfaces::io::types::Method method
     ) const noexcept
     {
-        const std::uint8_t OFFSET = (handler_mask >> (std::to_underlying(method) * 8)) & 0xFF;
-        return OFFSET != 0xFF ? m_handler[idx + OFFSET]
+        const std::uint16_t OFFSET = handler_mask[std::to_underlying(method)];
+        return OFFSET != 0xFFFF ? m_handler[idx + OFFSET]
                               : nullptr; // FIXME(clang-tidy): unchecked operator[], consider .at();
                                          // non-constant array index
     }
@@ -210,14 +209,14 @@ public:
      * door to a cooked pool state if someone's not careful with it.
      * @return reference to the handler index/count.
      */
-    constexpr std::uint8_t& get_size() noexcept
+    constexpr std::uint16_t& get_size() noexcept
     {
         return m_handler_index;
     }
 
 private:
     std::array<interfaces::HandlerFn, MaxHandlerSize> m_handler{};
-    std::uint8_t m_handler_index{0};
+    std::uint16_t m_handler_index{0};
 };
 
 } // namespace core::router

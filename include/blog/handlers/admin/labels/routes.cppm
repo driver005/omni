@@ -16,8 +16,13 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+
+        // Ghost's admin app uses body parsers, not a Content-Type gate, and each
+        // controller applies authAdminApi + permissions:true in its pipeline.
+        // Router-level content_type_middleware / require_auth are removed; each
+        // labels handler now enforces the Ghost permission service via
+        // core::auth::ghost + require_ghost_permission (docName "labels").
         Router{router, "/labels"}
-            .use(blog::handlers::middleware::content_type_middleware)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -64,7 +69,7 @@ public:
             .add_router(
                 Router{router, "/slug"}
                     .add_route(
-                        Route{"/:id"}
+                        Route{"/:slug"}
                             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -72,7 +77,7 @@ public:
     ) {
         handler.labels_read_by_slug().handle(req, res, std::move(send));
     })
-                            .summary("Ghost :id GET")
+                            .summary("Ghost :slug GET")
                     )
             );
     }

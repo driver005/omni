@@ -1,0 +1,14 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "app_locking",
+    primary_interface = "base.cppm",
+    partitions = [
+        "api_lock.cppm",
+        "lock_registry.cppm",
+    ],
+    deps = [
+        "//include/core/cache:core_cache",
+    ],
+    visibility = ["//visibility:public"],
+)

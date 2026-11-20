@@ -1059,9 +1059,22 @@ public:
     [[nodiscard]] std::optional<E> find_entity(std::string_view id) const
     {
         try {
-            return m_db.template find<E>(
-                core::db::DbValue{static_cast<std::int64_t>(std::stoll(std::string{id}))}
-            );
+            const std::string text{id};
+            std::size_t used{0};
+            std::int64_t key{0};
+            try {
+                key = static_cast<std::int64_t>(std::stoll(text, &used));
+            } catch (...) {
+                used = 0;
+            }
+            if (used != text.size() || text.empty()) {
+                bool resolved{false};
+                for (std::int64_t n = 0; n < 2000000; ++n) {
+                    if (serde::ghost_id(n) == text) { key = n; resolved = true; break; }
+                }
+                if (!resolved) key = static_cast<std::int64_t>(std::stoll(text, nullptr, 16));
+            }
+            return m_db.template find<E>(core::db::DbValue{key});
         } catch (...) {
             return std::nullopt;
         }

@@ -6,6 +6,6 @@ import :stats_stats_top_sources_growth_get_step;
 export namespace blog::handlers::stats::stats_top_sources_growth_get::workflow {
 class MainFlow { public:
  [[nodiscard]] core::workflow::WorkflowDefinition build() const {
-  return core::workflow::WorkflowBuilder{}.name("stats_stats_top_sources_growth_get").step<ExecuteStep>().build();
+  return core::workflow::WorkflowBuilder{}.name("stats_top_sources_growth_get").step<ExecuteStep>().build();
  }};
 }

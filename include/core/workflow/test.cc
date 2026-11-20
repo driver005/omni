@@ -1,5 +1,6 @@
 import std;
 import core_workflow;
+import memory_backends;
 
 using namespace core::workflow;
 
@@ -151,6 +152,7 @@ int main()
         definition.hooks[0].set_handler([&](const WorkflowValue&, WorkflowContext&) { hook_fired = true; });
 
         Workflow workflow;
+        workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
         workflow.register_workflow(definition);
         const auto execution = workflow.run("create-thing", std::string{"acme"});
         check.yes(execution.succeeded(), "happy path succeeds");
@@ -170,6 +172,7 @@ int main()
                                     .build();
 
         Workflow workflow;
+        workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
         workflow.register_workflow(definition);
         const auto execution = workflow.run("failing-flow", std::string{"x"});
         check.yes(!execution.succeeded(), "failure does not succeed");
@@ -190,6 +193,7 @@ int main()
                                     .step<SkipStep>()
                                     .build();
         Workflow workflow;
+        workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
         workflow.register_workflow(definition);
         const auto execution = workflow.run("skip-flow", std::string{"ignored"});
         check.yes(execution.succeeded(), "skip keeps workflow successful");

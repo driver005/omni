@@ -1,0 +1,72 @@
+# Behavior report: tiers-public
+
+- Ghost controller: `docs/Ghost/ghost/core/server/api/endpoints/tiers-public.js`
+- Ghost route table: `docs/Ghost/ghost/core/server/web/api/endpoints/content/routes.js` (router `express.Router('content api')` at `:12`, router-level CORS at `:14`; only binding at `:41`). Resolution via `apiFramework.pipeline(require('./tiers-public'), localUtils, 'content')` at `docs/Ghost/ghost/core/server/api/endpoints/index.js:319-321`.
+- C++ folders: `include/blog/handlers/membership/tiers/` — `routes.cppm`, `browse/handler.cppm`, `browse/workflow/flow/main.cppm`, `browse/workflow/step/execute.cppm`; store/model in `include/blog/handlers/context/context_context.cppm` and `include/blog/handlers/model/model_tier.cppm`. Counterpart chosen by exact path+verb `GET /tiers`: `membership/tiers/routes.cppm:29-43` (content/public branch) and `:45-54` (admin branch) both bind `handler.tiers_browse()`. Declared public at `include/blog/testing/route_catalog.cppm:40` (`admin=false`) and admin at `:118` (`admin=true`) — one C++ browse handler serves both.
+- Analyzed: 2026-11-19
+
+## Summary
+
+| Verdict | Count |
+|---|---|
+| MATCH | 0 |
+| PARTIAL | 1 |
+| MISMATCH | 0 |
+| MISSING | 0 |
+| EXTRA | 0 |
+
+Strict-parity rewrite applied 2026-11-20 on the shared browse path: `core_query`
+allowlist/NQL/filter-syntax validation + restricted-field guard, `core_auth:ghost`
+permission middleware (admin pass; content route is `permissions:true`),
+`blog_handlers:mapping` `clean`/`wrap`/`pagination` with Ghost's fixed page,
+`x-blog-context=CONTENT_API` forcing `active:true` and suppressing
+`X-Cache-Invalidate`, and free-tier price omission. No verdict flip: the content
+route set is still not installed globally (shared `routes.cppm` wiring is owned
+by the main agent), so the shipped handler still takes the admin path, and
+requirements/labs plus real product-model values remain residual gaps.
+
+## Route behavior table
+
+| Verb + path | Op | Input | Auth | Status/headers | Ghost call chain | Cache | Output | C++ files | C++ behavior | Verdict | Evidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| GET `/tiers` | `browse`, docName `tiers` | `options[] = limit,fields,filter,order,debug,page,include`; `validation{options.include.values=['requirements']}`; no `data[]`/body/multipart/path params/header reads | `permissions:true` public pass-through; router `authenticatePublic` (rate limit, content-api auth+z, cors, redirects, prettyUrls) | 200; no `X-Cache-Invalidate` (`cacheInvalidate:false`); 400 `BadRequestError` (invalid NQL) / `IncorrectUsageError` (string filter) | `query` → `tiers.service.api.browse(frame.options)` → `TiersAPI.browse` → `repository.getAll(options)` → `#copiesOf` → `Tier.create` + optional `TierRequirements.forTiers`; fixed page meta; output serializer `tiers.browse` | no cache service/key/TTL in controller; tier store cached in-memory at boot, requirements read fresh per request; CORS maxAge from config | `{tiers:[...], meta.pagination}` with `SerializedTier` field set; free tiers drop price fields; `requirements` only when asked + labs flag | `membership/tiers/routes.cppm`, `browse/handler.cppm`, `browse/workflow/flow/main.cppm`, `browse/workflow/step/execute.cppm`, `context/context_context.cppm`, `model/model_tier.cppm` | 200 with `{"tiers":[...],"meta":{"pagination":{page:1,pages:1,limit:N,total:N,prev:null,next:null}}}` via `core::query::run` + `blog::mapping::clean/wrap`; 400 on bad NQL/filter, 422 on bad `include`; content path (`x-blog-context=CONTENT_API`) ANDs `active:true` and omits `X-Cache-Invalidate` (admin path still emits `false`); free-tier price omission; requirements/labs and real product-model values absent | PARTIAL | Ghost `tiers-public.js:5-22`, `content/routes.js:12,14,41`, `content/middleware.js:18-25`, `tiers-api.js:53-74`, `tier-repository.js:47-58,115-124`, `serializers/input/tiers.js:12-27,60-111`, `serializers/output/tiers.js:5,18-25,43-84`, `headers.ts:135-144`; C++ `routes.cppm:16-43,45-54`, `handler.cppm:17-24`, `execute.cppm:12-50`, `context_context.cppm:1140-1150,1163,1464-1472,1560-1636`, `model_tier.cppm:52-88`, `auth.cppm:12-40`, `bearer.cppm:11-24`, `serde.cppm:90-126` |
+
+## Route details
+
+### GET /tiers — PARTIAL
+
+**Ghost** (numbered facts 1–8):
+
+1. **Identity**: `router.get('/tiers', mw.authenticatePublic, http(api.tiersPublic.browse))` at `docs/Ghost/ghost/core/server/web/api/endpoints/content/routes.js:41`; router named `content api` at `:12`; router-level `router.use(cors({maxAge: config.get('caching:cors:maxAge')}))` at `:14`. Route middleware `mw.authenticatePublic` (`content/middleware.js:18-25`) = `[shared.middleware.rateLimiting.contentApiKey, auth.authenticate.authenticateContentApi, auth.authorize.authorizeContentApi, cors(), shared.middleware.urlRedirects.adminSSLAndHostRedirect, shared.middleware.prettyUrls]`. `api.tiersPublic` is built via `apiFramework.pipeline(require('./tiers-public'), localUtils, 'content')` (`api/endpoints/index.js:319-321`). No admin-table mount for this controller (admin `GET /tiers` binds `api.tiers.browse`, `index.js:151-153`).
+2. **Operation**: exported key `browse` (`tiers-public.js:7`); `docName:'tiers'` (`:5`); `query(frame)` (`:17-21`) calls `tiers.service.api.browse(frame.options)` (`:18`) and returns the page unchanged (`:20`).
+3. **Input**: `options: ['limit','fields','filter','order','debug','page','include']` (`tiers-public.js:11`); `validation: {options:{include:{values:['requirements']}}}` (`:15`). No `data[]`, no body shape (`data.<resource>[0]`), no multipart, no path params, no direct header reads. Framework translates `include` → `withRelated` (`packages/api-framework/src/serializers/input/all.ts:21-24`) and `fields` → `columns` (`:26-29`); validator silently drops disallowed `include` values rather than erroring (`packages/api-framework/src/validators/input/all.ts:84-94`). The tiers input serializer `all` (`utils/serializers/input/tiers.js:60-111`) parses the `filter` string as NQL (`:62-72`, `BadRequestError` "The NQL filter you passed was invalid." at `:66-68`), forces `{active:true}` for the content API (`:12-27,74-77`), sets default `withRelated = ['monthly_price','yearly_price','benefits']` for content API (`:79-88`), sets `withRequirements = withRelated.includes('requirements') && labs.isSet(COLLECTION_FLAG)` (`:91-94`), and renames `stripe_prices/monthly_price/yearly_price` → camelCase (`:99-110`).
+4. **Auth/permissions**: `permissions: true` (`tiers-public.js:16`) → public pass-through, no permission service called inside `query`. Content-API key auth, authorization, rate limiting, redirects and prettyUrls come from `mw.authenticatePublic` (`content/middleware.js:18-25`). No `unsafeAttrs`; no labs flag in the controller (labs is consulted only in the input serializer at `input/tiers.js:94`).
+5. **Status + headers**: no `statusCode` → default 200. `headers.cacheInvalidate: false` (`tiers-public.js:8-10`) makes `headers.get` skip `X-Cache-Invalidate` entirely (`headers.ts:135-144`). No `Content-Disposition`, `Cache-Control`, `Location`, `format`/`stream` overrides; JSON via the `http` wrapper (`content/routes.js:41`). Error branches: `BadRequestError` 400 for invalid NQL (`input/tiers.js:66-68`), `IncorrectUsageError` for a string `filter` that survives to the service (`tiers-api.js:54-58`).
+6. **Full call chain**: `query` (`tiers-public.js:17-21`) → `tiers.service.api.browse(frame.options)`. `tiers.service` is the `defineService('Tiers', ...)` export (`services/tiers/index.ts:9,45`); `api = new TiersAPI({repository, slugService})` (`:40-43`), repository wired with `ProductModel`, `DomainEvents`, `requirements` (`:26-30`) and `await repository.init()` (`:38`). `TiersAPI.browse` (`tiers-api.js:53-74`): rejects a string `filter` with `IncorrectUsageError` (`:54-58`), calls `#repository.getAll(options)` (`:59`), returns `{data:tiers, meta:{pagination:{page:1,pages:1,limit:tiers.length,total:tiers.length,prev:null,next:null}}}` (`:61-73`). `TierRepository.getAll` (`tier-repository.js:115-124`) builds `nql()` with `filter = options.filter || {}` (`:116-117`) and filters the in-memory `#store` via `filter.queryJSON(this.toPrimitive(item))` (`:118-122`). `#copiesOf` (`:47-58`) reads `requirements.forTiers(...)` only when `options.withRequirements` (`:48-52`) and re-creates each `Tier` via `Tier.create({...tier.toJSON(), requirements})` (`:53-57`). Store loaded at boot from `ProductModel.findAll({withRelated:['benefits']})` (`:60-72`); `mapToTier` maps snake_case product JSON to domain fields and `benefits` as `string[]` (`:90-109`). No events/jobs/mail/webhooks on browse; no Knex transaction on this path (read uses cached store). Result → output serializer `tiers.browse` (`utils/serializers/output/tiers.js:5,18-25`).
+7. **Cache**: no cache service/key/TTL in the controller; `headers.cacheInvalidate:false` deliberately omits `X-Cache-Invalidate` (`tiers-public.js:8-10`, `headers.ts:135-144`). The domain keeps tiers in an in-memory store loaded at boot (`tier-repository.js:60-72`) and re-reads requirements on every call that asks (`index.ts:17-24`, `tier-repository.js:48-52`). Router-level CORS `maxAge` from `config.get('caching:cors:maxAge')` (`content/routes.js:14`).
+8. **Output**: `tiers.browse` serializer (`output/tiers.js:5`) → `paginatedTiers` (`:18-25`) produces `{tiers: page.data.map(serializeTier), meta: page.meta}`. `serializeTier` (`:43-84`) field set: `id, name, description, slug, active(=status==='active'), type, welcome_page_url, created_at, updated_at, visibility, benefits, currency, monthly_price, yearly_price, trial_days`; `benefits` coerced to `null` if not an array (`:64-66`); `requirements` added only when `json.requirements` is an array (`:68-75`); for `type==='free'`, `currency/monthly_price/yearly_price` are deleted (`:77-81`). Pagination meta is the fixed one from `tiers-api.js:61-73` (always page 1, pages 1, prev/next null, limit/total = result count). Empty result → `{tiers:[], meta:{pagination:{...limit:0,total:0...}}}`, not an error.
+
+**C++** (numbered facts):
+
+1. **Files/symbols**: `TiersRoutes::install` at `membership/tiers/routes.cppm:12-86`; content branch `:29-43`, admin branch `:45-83`. Both bind `handler.tiers_browse()`; the route lambda stamps `x-blog-context=CONTENT_API|ADMIN_API`. Global install (`include/blog/handlers/routes.cppm:129`) still omits `content=true`, so only the admin variant is shipped — shared wiring gap. `BrowseHandler` at `browse/handler.cppm:10-50`; step `ExecuteStep` at `browse/workflow/step/execute.cppm:11-172` with `Output=std::map<std::string,std::string>` and `static BlogContext* s_ctx`.
+2. **Input**: `core::query::parse(in.get_path(), {limit,fields,filter,order,debug,page,include})`; `valid_option` checks reject malformed filter/NQL (400 `BadRequestError`) and bad option values (422); restricted-field guard via `core::query::run`; `include∈{requirements}` else 422. `limit/page/order/fields` are cleared to reproduce Ghost's fixed page.
+3. **Status/body/header**: handler maps 200/400/422; admin writes `X-Cache-Invalidate:false`, content writes no `X-Cache-Invalidate` (mirrors `headers.cacheInvalidate:false`). Bad-NQL/invalid-include errors are real 4xx envelopes, not HTTP 200.
+4. **`ctx.store()` calls / cache**: `ctx.store().json_for("tiers",{})` → `blog::mapping::clean(rows,"tier")` → `serialize_tiers()` (benefits non-array→null, free-tier price omission) → `core::query::run` with `limit=all` → fixed `{page:1,pages:1,limit:N,total:N,prev:null,next:null}`; `blog::mapping::wrap("tiers",data,...)`. No `core::cache::Cache` on either side.
+5. **Middleware chain**: content branch `content_type_middleware + bearer_middleware + optional_auth`; admin branch `content_type_middleware + require_auth` + `require_ghost_permission("products","browse")`. No content-API key auth/rate-limiting/CORS maxAge (shared middleware gap).
+6. **Side effects**: none on browse; outbox used only on add/edit.
+7. **Output**: `{"tiers":[{Ghost-allow-listed fields}],"meta":{"pagination":{...}}}`; free tiers drop currency/prices.
+8. **Still NOT implemented**: requirements via `TierRequirements.forTiers` + `COLLECTION_FLAG` labs gate; real product-model field values (C++ `model::Tier` stores id/name/slug/price); content-API key auth/rate-limiting/CORS; global content-route installation.
+
+**Diff**:
+
+- **Divergences (block MATCH)**: single C++ browse handler serves both declared public/admin routes; global router installs only the admin variant (`routes.cppm:129`) — needs shared wiring. Ghost silently drops invalid `include` values while C++ returns 422. Real product-model field values remain fixture-derived.
+- **Residual gaps (no C++ primitive)**: `TierRequirements.forTiers` + labs gating; product-model `findAll({withRelated:['benefits']})` boot cache; content-API key auth/authorization/rate-limiting/redirects/prettyUrls/CORS maxAge; permission pass-through model.
+- Closed by the rewrite: fixed Ghost pagination, NQL/filter validation + restricted-field guard, forced content-API `active:true`, content header omission, free-tier price omission, and real 4xx status for validation errors.
+
+## Module-level notes
+
+- `tiers-public.js` exposes exactly one route (browse). The C++ `TiersRoutes` installs `GET /tiers` plus admin `POST /tiers`, `GET /tiers/:id`, `PUT /tiers/:id` (`membership/tiers/routes.cppm:56-82`); the non-browse routes correspond to the Ghost admin controller `tiers.js` (`api/endpoints/tiers.js`) and are out of scope for this module's verdict.
+- Unlike `offers`, C++ tiers are backed by a real in-memory DB (`m_db.all<model::Tier>()` / `m_db.count<model::Tier>()`, `context_context.cppm:1148,1163,1464-1472`) rather than a hardcoded wire fixture; `find_by_resource("tiers", id)` for read-by-id is a separate path (`:1115-1119`) and is not used by browse.
+- Both C++ route variants (`content=true` at `routes.cppm:29-43` and default at `:45-54`) dispatch to the same `tiers_browse()` handler, so the behavioral findings above are independent of which variant is mounted.
+- The C++ `order`/`debug` allowed params (`execute.cppm:15`) are accepted but not applied: no ordering and no debug metadata are produced; Ghost accepts these options too (`tiers-public.js:11`) and the tiers output serializer emits no debug field (`output/tiers.js:18-25`).
+- Side-effect surface on browse is empty on both sides: no events, jobs, mail/outbox, webhooks, or third-party calls in either implementation.

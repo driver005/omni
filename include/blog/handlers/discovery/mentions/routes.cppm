@@ -18,6 +18,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/mentions"}
             .use(blog::handlers::middleware::content_type_middleware)
+            .use(blog::handlers::middleware::require_auth)
             .get([&handler](
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -26,6 +27,19 @@ public:
         handler.mentions_browse().handle(req, res, std::move(send));
     })
             .summary("Ghost mentions GET");
+
+        // Ghost's webmentions router parses application/x-www-form-urlencoded and
+        // gates with webmentionsLimiter + cacheControl('private'); no JSON
+        // Content-Type/Accept requirement and no authentication on this route.
+        Router{router, "/receive"}
+            .post([&handler](
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) {
+        handler.mentions_receive().handle(req, res, std::move(send));
+    })
+            .summary("Ghost webmention receive POST");
     }
 };
 

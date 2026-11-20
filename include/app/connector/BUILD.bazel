@@ -1,0 +1,24 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "app_connector",
+    primary_interface = "base.cppm",
+    partitions = [
+        "request.cppm",
+        "response.cppm",
+        "interface.cppm",
+        "local.cppm",
+        "selector.cppm",
+        "retry.cppm",
+        "router.cppm",
+    ],
+    deps = [
+        "//include/core/error:core_error",
+        "//include/core/serde:core_serde",
+        "//include/interfaces:interfaces",
+        "//include/app/store:app_store",
+        "//include/app/metrics:app_metrics",
+        "//include/app/services:app_services",
+    ],
+    visibility = ["//visibility:public"],
+)

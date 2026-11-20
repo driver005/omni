@@ -1,9 +1,16 @@
 export module blog_handlers:all;
 import :domain_all;
+import :announcements_announcement_get_handler;
+import :app_sessions_sessions_create_handler;
+import :gifts_members_redeem_get_handler;
+import :gifts_members_redeem_post_handler;
+import :member_metafields_members_metafields_browse_handler;
+import :previews_preview_get_handler;
 
 import std;
 import blog_handlers_middleware;
 import core_cache;
+import :outbox_shim;
 import memory_backends;
 import :members_operations;
 import :emails_operations;
@@ -29,6 +36,7 @@ import :site_browse_handler;
 import :config_browse_handler;
 import :config_config_featurebase_get_handler;
 import :mentions_browse_handler;
+import :mentions_receive_handler;
 import :comments_browse_handler;
 import :comments_read_by_id_handler;
 import :comments_comment_replies_handler;
@@ -38,6 +46,13 @@ import :comments_comment_dislikes_handler;
 import :comments_get_detail_handler;
 import :comments_create_handler;
 import :comments_edit_handler;
+import :comments_counts_handler;
+import :comments_destroy_handler;
+import :comments_like_handler;
+import :comments_unlike_handler;
+import :comments_dislike_handler;
+import :comments_undislike_handler;
+import :comments_report_handler;
 import :pages_bulk_destroy_handler;
 import :pages_bulk_edit_handler;
 import :pages_create_handler;
@@ -98,6 +113,12 @@ import :members_members_upload_post_handler;
 import :members_members_stripe_connect_get_handler;
 import :members_members_metafields_all_handler;
 import :apps_all_collection_handler;
+import :apps_app_installations_browse_handler;
+import :apps_app_installations_add_handler;
+import :apps_app_installations_read_handler;
+import :apps_app_installations_edit_handler;
+import :apps_app_installations_destroy_handler;
+import :apps_app_installation_previews_add_handler;
 import :members_read_by_id_handler;
 import :members_edit_handler;
 import :members_destroy_handler;
@@ -106,6 +127,15 @@ import :members_members_id_suppression_delete_handler;
 import :members_subscriptions_post_handler;
 import :members_put_detail_handler;
 import :members_signin_urls_handler;
+import :members_members_metafields_read_handler;
+import :members_members_metafields_values_handler;
+import :members_members_metafields_create_handler;
+import :members_members_metafields_reorder_handler;
+import :members_members_metafields_edit_handler;
+import :members_members_metafields_destroy_handler;
+import :members_account_read_handler;
+import :members_account_update_handler;
+import :members_account_destroy_suppression_handler;
 import :members_members_id_commenting_disable_post_handler;
 import :members_members_id_commenting_enable_post_handler;
 import :stats_stats_member_count_get_handler;
@@ -236,6 +266,7 @@ import :recommendations_edit_handler;
 import :recommendations_destroy_handler;
 import :incoming_recommendations_browse_handler;
 import :feedback_read_by_id_handler;
+import :feedback_add_handler;
 import :search_index_search_index_pages_get_handler;
 import :search_index_search_index_users_get_handler;
 
@@ -373,8 +404,10 @@ public:
  [[nodiscard]] blog::handlers::search_index::search_index_tags_get::SearchIndexTagsGetHandler& search_index_search_index_tags_get() noexcept { return m_search_index_search_index_tags_get; }
  [[nodiscard]] blog::handlers::site::browse::BrowseHandler& site_browse() noexcept { return m_site_browse; }
  [[nodiscard]] blog::handlers::config::browse::BrowseHandler& config_browse() noexcept { return m_config_browse; }
+ [[nodiscard]] blog::handlers::config::browse::BrowseHandler& config_read() noexcept { return m_config_browse; }
  [[nodiscard]] blog::handlers::config::config_featurebase_get::ConfigFeaturebaseGetHandler& config_config_featurebase_get() noexcept { return m_config_config_featurebase_get; }
  [[nodiscard]] blog::handlers::mentions::browse::BrowseHandler& mentions_browse() noexcept { return m_mentions_browse; }
+ [[nodiscard]] blog::handlers::mentions::receive::ReceiveHandler& mentions_receive() noexcept { return m_mentions_receive; }
  [[nodiscard]] blog::handlers::comments::browse::BrowseHandler& comments_browse() noexcept { return m_comments_browse; }
  [[nodiscard]] blog::handlers::comments::read_by_id::ReadByIdHandler& comments_read_by_id() noexcept { return m_comments_read_by_id; }
  [[nodiscard]] blog::handlers::comments::comment_replies::CommentRepliesHandler& comments_comment_replies() noexcept { return m_comments_comment_replies; }
@@ -384,6 +417,13 @@ public:
  [[nodiscard]] blog::handlers::comments::get_detail::GetDetailHandler& comments_get_detail() noexcept { return m_comments_get_detail; }
  [[nodiscard]] blog::handlers::comments::create::CreateHandler& comments_create() noexcept { return m_comments_create; }
  [[nodiscard]] blog::handlers::comments::edit::EditHandler& comments_edit() noexcept { return m_comments_edit; }
+ [[nodiscard]] blog::handlers::comments::counts::CountsHandler& comments_counts() noexcept { return m_comments_counts; }
+ [[nodiscard]] blog::handlers::comments::destroy::DestroyHandler& comments_destroy() noexcept { return m_comments_destroy; }
+ [[nodiscard]] blog::handlers::comments::like::LikeHandler& comments_like() noexcept { return m_comments_like; }
+ [[nodiscard]] blog::handlers::comments::unlike::UnlikeHandler& comments_unlike() noexcept { return m_comments_unlike; }
+ [[nodiscard]] blog::handlers::comments::dislike::DislikeHandler& comments_dislike() noexcept { return m_comments_dislike; }
+ [[nodiscard]] blog::handlers::comments::undislike::UndislikeHandler& comments_undislike() noexcept { return m_comments_undislike; }
+ [[nodiscard]] blog::handlers::comments::report::ReportHandler& comments_report() noexcept { return m_comments_report; }
  [[nodiscard]] blog::handlers::pages::bulk_destroy::BulkDestroyHandler& pages_bulk_destroy() noexcept { return m_pages_bulk_destroy; }
  [[nodiscard]] blog::handlers::pages::bulk_edit::BulkEditHandler& pages_bulk_edit() noexcept { return m_pages_bulk_edit; }
  [[nodiscard]] blog::handlers::pages::create::CreateHandler& pages_create() noexcept { return m_pages_create; }
@@ -444,6 +484,12 @@ public:
  [[nodiscard]] blog::handlers::members::members_stripe_connect_get::MembersStripeConnectGetHandler& members_members_stripe_connect_get() noexcept { return m_members_members_stripe_connect_get; }
  [[nodiscard]] blog::handlers::members::members_metafields_all::MembersMetafieldsAllHandler& members_members_metafields_all() noexcept { return m_members_members_metafields_all; }
  [[nodiscard]] blog::handlers::apps::all_collection::AllCollectionHandler& apps_all_collection() noexcept { return m_apps_all_collection; }
+ [[nodiscard]] blog::handlers::apps::app_installations_browse::AppInstallationsBrowseHandler& apps_app_installations_browse() noexcept { return m_apps_app_installations_browse; }
+ [[nodiscard]] blog::handlers::apps::app_installations_add::AppInstallationsAddHandler& apps_app_installations_add() noexcept { return m_apps_app_installations_add; }
+ [[nodiscard]] blog::handlers::apps::app_installations_read::AppInstallationsReadHandler& apps_app_installations_read() noexcept { return m_apps_app_installations_read; }
+ [[nodiscard]] blog::handlers::apps::app_installations_edit::AppInstallationsEditHandler& apps_app_installations_edit() noexcept { return m_apps_app_installations_edit; }
+ [[nodiscard]] blog::handlers::apps::app_installations_destroy::AppInstallationsDestroyHandler& apps_app_installations_destroy() noexcept { return m_apps_app_installations_destroy; }
+ [[nodiscard]] blog::handlers::apps::app_installation_previews_add::AppInstallationPreviewsAddHandler& apps_app_installation_previews_add() noexcept { return m_apps_app_installation_previews_add; }
  [[nodiscard]] blog::handlers::members::read_by_id::ReadByIdHandler& members_read_by_id() noexcept { return m_members_read_by_id; }
  [[nodiscard]] blog::handlers::members::edit::EditHandler& members_edit() noexcept { return m_members_edit; }
  [[nodiscard]] blog::handlers::members::destroy::DestroyHandler& members_destroy() noexcept { return m_members_destroy; }
@@ -452,6 +498,15 @@ public:
  [[nodiscard]] blog::handlers::members::subscriptions_post::SubscriptionsPostHandler& members_subscriptions_post() noexcept { return m_members_subscriptions_post; }
  [[nodiscard]] blog::handlers::members::put_detail::PutDetailHandler& members_put_detail() noexcept { return m_members_put_detail; }
  [[nodiscard]] blog::handlers::members::signin_urls::SigninUrlsHandler& members_signin_urls() noexcept { return m_members_signin_urls; }
+ [[nodiscard]] blog::handlers::members::members_metafields_read::MembersMetafieldsReadHandler& members_metafields_read() noexcept { return m_members_metafields_read; }
+ [[nodiscard]] blog::handlers::members::members_metafields_values::MembersMetafieldsValuesHandler& members_metafields_values() noexcept { return m_members_metafields_values; }
+ [[nodiscard]] blog::handlers::members::members_metafields_create::MembersMetafieldsCreateHandler& members_metafields_create() noexcept { return m_members_metafields_create; }
+ [[nodiscard]] blog::handlers::members::members_metafields_reorder::MembersMetafieldsReorderHandler& members_metafields_reorder() noexcept { return m_members_metafields_reorder; }
+ [[nodiscard]] blog::handlers::members::members_metafields_edit::MembersMetafieldsEditHandler& members_metafields_edit() noexcept { return m_members_metafields_edit; }
+ [[nodiscard]] blog::handlers::members::members_metafields_destroy::MembersMetafieldsDestroyHandler& members_metafields_destroy() noexcept { return m_members_metafields_destroy; }
+ [[nodiscard]] blog::handlers::members::members_account::read::MembersAccountReadHandler& members_account_read() noexcept { return m_members_account_read; }
+ [[nodiscard]] blog::handlers::members::members_account::update::MembersAccountUpdateHandler& members_account_update() noexcept { return m_members_account_update; }
+ [[nodiscard]] blog::handlers::members::members_account::destroy_suppression::MembersAccountDestroySuppressionHandler& members_account_destroy_suppression() noexcept { return m_members_account_destroy_suppression; }
  [[nodiscard]] blog::handlers::members::members_id_commenting_disable_post::MembersIdCommentingDisablePostHandler& members_members_id_commenting_disable_post() noexcept { return m_members_members_id_commenting_disable_post; }
  [[nodiscard]] blog::handlers::members::members_id_commenting_enable_post::MembersIdCommentingEnablePostHandler& members_members_id_commenting_enable_post() noexcept { return m_members_members_id_commenting_enable_post; }
  [[nodiscard]] blog::handlers::stats::stats_member_count_get::StatsMemberCountGetHandler& stats_stats_member_count_get() noexcept { return m_stats_stats_member_count_get; }
@@ -525,6 +580,7 @@ public:
  [[nodiscard]] blog::handlers::session::session_verify_post::SessionVerifyPostHandler& session_session_verify_post() noexcept { return m_session_session_verify_post; }
  [[nodiscard]] blog::handlers::session::session_verify_put::SessionVerifyPutHandler& session_session_verify_put() noexcept { return m_session_session_verify_put; }
  [[nodiscard]] blog::handlers::identities::browse::BrowseHandler& identities_browse() noexcept { return m_identities_browse; }
+ [[nodiscard]] blog::handlers::identities::browse::BrowseHandler& identities_read() noexcept { return m_identities_browse; }
  [[nodiscard]] blog::handlers::authentication::authentication_password_reset_post::AuthenticationPasswordResetPostHandler& authentication_authentication_password_reset_post() noexcept { return m_authentication_authentication_password_reset_post; }
  [[nodiscard]] blog::handlers::authentication::authentication_password_reset_put::AuthenticationPasswordResetPutHandler& authentication_authentication_password_reset_put() noexcept { return m_authentication_authentication_password_reset_put; }
  [[nodiscard]] blog::handlers::authentication::authentication_invitation_post::AuthenticationInvitationPostHandler& authentication_authentication_invitation_post() noexcept { return m_authentication_authentication_invitation_post; }
@@ -551,6 +607,12 @@ public:
  [[nodiscard]] blog::handlers::webhooks::destroy::DestroyHandler& webhooks_destroy() noexcept { return m_webhooks_destroy; }
  [[nodiscard]] blog::handlers::oembed::browse::BrowseHandler& oembed_browse() noexcept { return m_oembed_browse; }
  [[nodiscard]] blog::handlers::actions::browse::BrowseHandler& actions_browse() noexcept { return m_actions_browse; }
+ [[nodiscard]] blog::handlers::announcements::announcement_get::AnnouncementGetHandler& announcements_announcement_get() noexcept { return m_announcements_announcement_get; }
+ [[nodiscard]] blog::handlers::app_sessions::sessions_create::AppSessionsCreateHandler& app_sessions_sessions_create() noexcept { return m_app_sessions_sessions_create; }
+ [[nodiscard]] blog::handlers::gifts_members::redeem_get::RedeemGetHandler& gifts_members_redeem_get() noexcept { return m_gifts_members_redeem_get; }
+ [[nodiscard]] blog::handlers::gifts_members::redeem_post::RedeemPostHandler& gifts_members_redeem_post() noexcept { return m_gifts_members_redeem_post; }
+ [[nodiscard]] blog::handlers::member_metafields_members::metafields_browse::MemberMetafieldsMembersMetafieldsBrowseHandler& member_metafields_members_metafields_browse() noexcept { return m_member_metafields_members_metafields_browse; }
+ [[nodiscard]] blog::handlers::previews::preview_get::PreviewGetHandler& previews_preview_get() noexcept { return m_previews_preview_get; }
  [[nodiscard]] blog::handlers::email_previews::get_detail::GetDetailHandler& email_previews_get_detail() noexcept { return m_email_previews_get_detail; }
  [[nodiscard]] blog::handlers::email_previews::post_detail::PostDetailHandler& email_previews_post_detail() noexcept { return m_email_previews_post_detail; }
  [[nodiscard]] blog::handlers::emails::browse::BrowseHandler& emails_browse() noexcept { return m_emails_browse; }
@@ -582,6 +644,7 @@ public:
  [[nodiscard]] blog::handlers::recommendations::destroy::DestroyHandler& recommendations_destroy() noexcept { return m_recommendations_destroy; }
  [[nodiscard]] blog::handlers::incoming_recommendations::browse::BrowseHandler& incoming_recommendations_browse() noexcept { return m_incoming_recommendations_browse; }
  [[nodiscard]] blog::handlers::feedback::read_by_id::ReadByIdHandler& feedback_read_by_id() noexcept { return m_feedback_read_by_id; }
+ [[nodiscard]] blog::handlers::feedback::add::AddHandler& feedback_add() noexcept { return m_feedback_add; }
  [[nodiscard]] blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler& search_index_search_index_pages_get() noexcept { return m_search_index_search_index_pages_get; }
  [[nodiscard]] blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler& search_index_search_index_users_get() noexcept { return m_search_index_search_index_users_get; }
 
@@ -624,6 +687,7 @@ private:
  blog::handlers::config::browse::BrowseHandler m_config_browse{m_ctx};
  blog::handlers::config::config_featurebase_get::ConfigFeaturebaseGetHandler m_config_config_featurebase_get{m_ctx};
  blog::handlers::mentions::browse::BrowseHandler m_mentions_browse{m_ctx};
+ blog::handlers::mentions::receive::ReceiveHandler m_mentions_receive{m_ctx};
  blog::handlers::comments::browse::BrowseHandler m_comments_browse{m_ctx};
  blog::handlers::comments::read_by_id::ReadByIdHandler m_comments_read_by_id{m_ctx};
  blog::handlers::comments::comment_replies::CommentRepliesHandler m_comments_comment_replies{m_ctx};
@@ -633,6 +697,13 @@ private:
  blog::handlers::comments::get_detail::GetDetailHandler m_comments_get_detail{m_ctx};
  blog::handlers::comments::create::CreateHandler m_comments_create{m_ctx};
  blog::handlers::comments::edit::EditHandler m_comments_edit{m_ctx};
+ blog::handlers::comments::counts::CountsHandler m_comments_counts{m_ctx};
+ blog::handlers::comments::destroy::DestroyHandler m_comments_destroy{m_ctx};
+ blog::handlers::comments::like::LikeHandler m_comments_like{m_ctx};
+ blog::handlers::comments::unlike::UnlikeHandler m_comments_unlike{m_ctx};
+ blog::handlers::comments::dislike::DislikeHandler m_comments_dislike{m_ctx};
+ blog::handlers::comments::undislike::UndislikeHandler m_comments_undislike{m_ctx};
+ blog::handlers::comments::report::ReportHandler m_comments_report{m_ctx};
  blog::handlers::pages::bulk_destroy::BulkDestroyHandler m_pages_bulk_destroy{m_ctx};
  blog::handlers::pages::bulk_edit::BulkEditHandler m_pages_bulk_edit{m_ctx};
  blog::handlers::pages::create::CreateHandler m_pages_create{m_ctx};
@@ -693,6 +764,12 @@ private:
  blog::handlers::members::members_stripe_connect_get::MembersStripeConnectGetHandler m_members_members_stripe_connect_get{m_ctx};
  blog::handlers::members::members_metafields_all::MembersMetafieldsAllHandler m_members_members_metafields_all{m_ctx, m_members_ops};
  blog::handlers::apps::all_collection::AllCollectionHandler m_apps_all_collection{m_ctx};
+ blog::handlers::apps::app_installations_browse::AppInstallationsBrowseHandler m_apps_app_installations_browse{m_ctx};
+ blog::handlers::apps::app_installations_add::AppInstallationsAddHandler m_apps_app_installations_add{m_ctx};
+ blog::handlers::apps::app_installations_read::AppInstallationsReadHandler m_apps_app_installations_read{m_ctx};
+ blog::handlers::apps::app_installations_edit::AppInstallationsEditHandler m_apps_app_installations_edit{m_ctx};
+ blog::handlers::apps::app_installations_destroy::AppInstallationsDestroyHandler m_apps_app_installations_destroy{m_ctx};
+ blog::handlers::apps::app_installation_previews_add::AppInstallationPreviewsAddHandler m_apps_app_installation_previews_add{m_ctx};
  blog::handlers::members::read_by_id::ReadByIdHandler m_members_read_by_id{m_ctx};
  blog::handlers::members::edit::EditHandler m_members_edit{m_ctx};
  blog::handlers::members::destroy::DestroyHandler m_members_destroy{m_ctx};
@@ -701,6 +778,15 @@ private:
  blog::handlers::members::subscriptions_post::SubscriptionsPostHandler m_members_subscriptions_post{m_ctx, m_members_ops};
  blog::handlers::members::put_detail::PutDetailHandler m_members_put_detail{m_ctx, m_members_ops};
  blog::handlers::members::signin_urls::SigninUrlsHandler m_members_signin_urls{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_read::MembersMetafieldsReadHandler m_members_metafields_read{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_values::MembersMetafieldsValuesHandler m_members_metafields_values{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_create::MembersMetafieldsCreateHandler m_members_metafields_create{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_reorder::MembersMetafieldsReorderHandler m_members_metafields_reorder{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_edit::MembersMetafieldsEditHandler m_members_metafields_edit{m_ctx, m_members_ops};
+ blog::handlers::members::members_metafields_destroy::MembersMetafieldsDestroyHandler m_members_metafields_destroy{m_ctx, m_members_ops};
+ blog::handlers::members::members_account::read::MembersAccountReadHandler m_members_account_read{m_ctx, m_members_ops};
+ blog::handlers::members::members_account::update::MembersAccountUpdateHandler m_members_account_update{m_ctx, m_members_ops};
+ blog::handlers::members::members_account::destroy_suppression::MembersAccountDestroySuppressionHandler m_members_account_destroy_suppression{m_ctx, m_members_ops};
  blog::handlers::members::members_id_commenting_disable_post::MembersIdCommentingDisablePostHandler m_members_members_id_commenting_disable_post{m_ctx, m_members_ops};
  blog::handlers::members::members_id_commenting_enable_post::MembersIdCommentingEnablePostHandler m_members_members_id_commenting_enable_post{m_ctx, m_members_ops};
  blog::handlers::stats::stats_member_count_get::StatsMemberCountGetHandler m_stats_stats_member_count_get{m_ctx};
@@ -800,6 +886,12 @@ private:
  blog::handlers::webhooks::destroy::DestroyHandler m_webhooks_destroy{m_ctx};
  blog::handlers::oembed::browse::BrowseHandler m_oembed_browse{m_ctx};
  blog::handlers::actions::browse::BrowseHandler m_actions_browse{m_ctx};
+ blog::handlers::announcements::announcement_get::AnnouncementGetHandler m_announcements_announcement_get{m_ctx};
+ blog::handlers::app_sessions::sessions_create::AppSessionsCreateHandler m_app_sessions_sessions_create{m_ctx};
+ blog::handlers::gifts_members::redeem_get::RedeemGetHandler m_gifts_members_redeem_get{m_ctx};
+ blog::handlers::gifts_members::redeem_post::RedeemPostHandler m_gifts_members_redeem_post{m_ctx};
+ blog::handlers::member_metafields_members::metafields_browse::MemberMetafieldsMembersMetafieldsBrowseHandler m_member_metafields_members_metafields_browse{m_ctx};
+ blog::handlers::previews::preview_get::PreviewGetHandler m_previews_preview_get{m_ctx};
  blog::handlers::email_previews::get_detail::GetDetailHandler m_email_previews_get_detail{m_ctx};
  blog::handlers::email_previews::post_detail::PostDetailHandler m_email_previews_post_detail{m_ctx};
  blog::handlers::emails::browse::BrowseHandler m_emails_browse{m_ctx};
@@ -831,6 +923,7 @@ private:
  blog::handlers::recommendations::destroy::DestroyHandler m_recommendations_destroy{m_ctx};
  blog::handlers::incoming_recommendations::browse::BrowseHandler m_incoming_recommendations_browse{m_ctx};
  blog::handlers::feedback::read_by_id::ReadByIdHandler m_feedback_read_by_id{m_ctx};
+ blog::handlers::feedback::add::AddHandler m_feedback_add{m_ctx};
  blog::handlers::search_index::search_index_pages_get::SearchIndexPagesGetHandler m_search_index_search_index_pages_get{m_ctx};
  blog::handlers::search_index::search_index_users_get::SearchIndexUsersGetHandler m_search_index_search_index_users_get{m_ctx};
     core::cache::Cache m_cache{make_cache()};

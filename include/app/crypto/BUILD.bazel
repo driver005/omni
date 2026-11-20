@@ -1,0 +1,25 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "app_crypto",
+    primary_interface = "base.cppm",
+    partitions = [
+        "ids.cppm",
+        "hash.cppm",
+        "secret.cppm",
+        "token.cppm",
+        "otp.cppm",
+        "encrypt.cppm",
+    ],
+    # Lane D kept the dependency set unchanged on purpose: JwtSigner resolves
+    # secrets through the ISecretResolver interface declared in :token, and the
+    # one-time generators use IOneTimeStateStore declared in :otp. Concrete
+    # repository-backed implementations live in //include/app/keystore, which
+    # depends on this target (never the reverse), so no dependency cycle exists.
+    deps = [
+        "//include/core/error:core_error",
+        "//include/core/serde:core_serde",
+        "//include/interfaces:interfaces",
+    ],
+    visibility = ["//visibility:public"],
+)

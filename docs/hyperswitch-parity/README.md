@@ -11,7 +11,7 @@ original gap: IMPLEMENTED, SUBSTITUTED, or DEFERRED with evidence.
 
 | Verdict | Route rows | Summary dimensions |
 |---|---|---|
-| MATCH | 476 | 342 |
+| MATCH | 506 | 342 |
 | PARTIAL | 0 | 0 |
 | MISSING | 0 | 0 |
 | STUB | 0 | 0 |

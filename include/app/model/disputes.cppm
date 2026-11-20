@@ -25,12 +25,52 @@ public:
     std::string value{};
 };
 
+/**
+ * @brief Upstream `DisputeFetchQueryData` (types/api/disputes.rs).
+ * @note Upstream parses the timestamps as `YYYY-MM-DDTHH:MM:SS`; the handler
+ * validates them with `parse_fetch_window` before the connector step.
+ */
+class DisputeFetchQueryData
+{
+public:
+    void set_fetch_from(std::string value) { fetch_from = std::move(value); }
+    [[nodiscard]] const std::string& get_fetch_from() const noexcept { return fetch_from; }
+    void set_fetch_till(std::string value) { fetch_till = std::move(value); }
+    [[nodiscard]] const std::string& get_fetch_till() const noexcept { return fetch_till; }
+    std::string fetch_from{};
+    std::string fetch_till{};
+};
+
+/**
+ * @brief Upstream `common_utils::types::TimeRange` used by dispute aggregates
+ * and flattened into `DisputeListGetConstraints` (api_models/disputes.rs:174-176).
+ */
+class TimeRange
+{
+public:
+    void set_start_time(std::optional<std::string> value) { start_time = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_start_time() const noexcept { return start_time; }
+    void set_end_time(std::optional<std::string> value) { end_time = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_end_time() const noexcept { return end_time; }
+    std::optional<std::string> start_time{};
+    std::optional<std::string> end_time{};
+};
+
 class DisputeRetrieveBody
 {
 public:
     void set_force_sync(std::optional<bool> value) { force_sync = std::move(value); }
     [[nodiscard]] const std::optional<bool>& get_force_sync() const noexcept { return force_sync; }
     std::optional<bool> force_sync{};
+};
+
+/** @brief Upstream `types::api::disputes::DisputeId` path payload. */
+class DisputeId
+{
+public:
+    void set_dispute_id(std::string value) { dispute_id = std::move(value); }
+    [[nodiscard]] const std::string& get_dispute_id() const noexcept { return dispute_id; }
+    std::string dispute_id{};
 };
 
 class DisputeRetrieveRequest
@@ -82,12 +122,30 @@ enum class EvidenceType
     UncategorizedFile,
 };
 
+/**
+ * @brief Upstream `api_models::files::FileMetadataResponse` wire shape
+ * (api_models/files.rs:10-16): file_id, file_name, file_size, file_type,
+ * available. Formerly a single opaque string, which did not match upstream
+ * `DisputeEvidenceBlock.file_metadata_response`.
+ */
 class FileMetadataResponseValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
+    void set_file_id(std::string value) { file_id = std::move(value); }
+    [[nodiscard]] const std::string& get_file_id() const noexcept { return file_id; }
+    void set_file_name(std::optional<std::string> value) { file_name = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_file_name() const noexcept { return file_name; }
+    void set_file_size(std::int32_t value) { file_size = std::move(value); }
+    [[nodiscard]] const std::int32_t& get_file_size() const noexcept { return file_size; }
+    void set_file_type(std::string value) { file_type = std::move(value); }
+    [[nodiscard]] const std::string& get_file_type() const noexcept { return file_type; }
+    void set_available(bool value) { available = std::move(value); }
+    [[nodiscard]] const bool& get_available() const noexcept { return available; }
+    std::string file_id{};
+    std::optional<std::string> file_name{};
+    std::int32_t file_size{};
+    std::string file_type{};
+    bool available{};
 };
 
 class MerchantConnectorAccountIdValue
@@ -642,6 +700,48 @@ struct serde::Serializable<app::model::disputes::DisputeResponsePaymentsRetrieve
 };
 
 template<>
+struct serde::Serializable<app::model::disputes::FileMetadataResponseValue>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"file_id", &app::model::disputes::FileMetadataResponseValue::get_file_id, &app::model::disputes::FileMetadataResponseValue::set_file_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"file_name", &app::model::disputes::FileMetadataResponseValue::get_file_name, &app::model::disputes::FileMetadataResponseValue::set_file_name, serde::FieldOptions{}>{},
+            serde::FieldDesc<"file_size", &app::model::disputes::FileMetadataResponseValue::get_file_size, &app::model::disputes::FileMetadataResponseValue::set_file_size, serde::FieldOptions{}>{},
+            serde::FieldDesc<"file_type", &app::model::disputes::FileMetadataResponseValue::get_file_type, &app::model::disputes::FileMetadataResponseValue::set_file_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"available", &app::model::disputes::FileMetadataResponseValue::get_available, &app::model::disputes::FileMetadataResponseValue::set_available, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "file_metadata_response_value"; }
+};
+
+template<>
+struct serde::Serializable<app::model::disputes::DisputeFetchQueryData>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"fetch_from", &app::model::disputes::DisputeFetchQueryData::get_fetch_from, &app::model::disputes::DisputeFetchQueryData::set_fetch_from, serde::FieldOptions{}>{},
+            serde::FieldDesc<"fetch_till", &app::model::disputes::DisputeFetchQueryData::get_fetch_till, &app::model::disputes::DisputeFetchQueryData::set_fetch_till, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "dispute_fetch_query_data"; }
+};
+
+template<>
+struct serde::Serializable<app::model::disputes::TimeRange>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"start_time", &app::model::disputes::TimeRange::get_start_time, &app::model::disputes::TimeRange::set_start_time, serde::FieldOptions{}>{},
+            serde::FieldDesc<"end_time", &app::model::disputes::TimeRange::get_end_time, &app::model::disputes::TimeRange::set_end_time, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "time_range"; }
+};
+
+template<>
 struct serde::Serializable<app::model::disputes::DisputeEvidenceBlock>
 {
     static constexpr auto fields()
@@ -850,6 +950,18 @@ struct serde::Serializable<app::model::disputes::DisputesAggregateResponse>
         };
     }
     static constexpr std::string_view table_name() { return "disputes_aggregate_response"; }
+};
+
+template<>
+struct serde::Serializable<app::model::disputes::DisputeId>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"dispute_id", &app::model::disputes::DisputeId::get_dispute_id, &app::model::disputes::DisputeId::set_dispute_id, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "dispute_id"; }
 };
 
 template<>

@@ -190,8 +190,8 @@ public:
     [[nodiscard]] const ProfileIdValue& get_profile_id() const noexcept { return profile_id; }
     void set_relay_type(RelayTypeValue value) { relay_type = std::move(value); }
     [[nodiscard]] const RelayTypeValue& get_relay_type() const noexcept { return relay_type; }
-    void set_data(std::optional<RelayData> value) { data = std::move(value); }
-    [[nodiscard]] const std::optional<RelayData>& get_data() const noexcept { return data; }
+    void set_data(std::optional<serde::Value> value) { data = std::move(value); }
+    [[nodiscard]] const std::optional<serde::Value>& get_data() const noexcept { return data; }
     RelayIdValue id{};
     RelayStatusValue status{};
     std::string connector_resource_id{};
@@ -200,7 +200,7 @@ public:
     MerchantConnectorAccountIdValue connector_id{};
     ProfileIdValue profile_id{};
     RelayTypeValue relay_type{};
-    std::optional<RelayData> data{};
+    std::optional<serde::Value> data{};
 };
 
 class RelayRetrieveRequest

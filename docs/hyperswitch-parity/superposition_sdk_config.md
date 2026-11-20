@@ -2,53 +2,80 @@
 
 - Upstream routes: `docs/hyperswitch/crates/router/src/routes/superposition_sdk_config.rs`; verbs/paths from `docs/hyperswitch/crates/router/src/routes/app.rs` (`SdkConfig::server`, lines 3584-3595)
 - Upstream core: `docs/hyperswitch/crates/router/src/core/superposition_sdk_config.rs`
-- C++: include/app/handlers/superposition_sdk_config.cppm
-- Checked: 2026-11-20 (re-verified against handler rewrite)
+- C++: include/app/handlers/superposition_sdk_config.cppm; DTO: include/app/dto/superposition_sdk_config.cppm
+- Checked: 2026-11-20 (full handler rewrite; every named upstream function ported as a local helper)
+- Upstream SHA: 7736d55adaf235f7af74e133ae408573b1826823
 
 ## Summary
 | Dimension | Verdict | Note |
 |---|---|---|
-| Route paths/verbs | MATCH | Same two GET routes under `/v1/sdk/configs`; C++ prefixes router `/superposition_sdk_config`. Unchanged (install:259-281). |
-| Input types | PARTIAL | `SdkConfigRequest{client_secret}` DTO mirrors upstream; C++ reads `client_secret` from query with body/SDK-auth fallbacks (handler:46-61), profile route ignores payload (handler:195-197). |
-| Output types | PARTIAL | Response DTO field names match; `raw_configs` now from SuperpositionClient (handler:777-790) but remains a `ConfigValue` string wrapper, not upstream structured `Config` (dto:12-18, handler:166-169). |
-| Auth/permissions | PARTIAL | SDK/publishable-key auth now decoded and enforced (handler:314-375) but via local auth-rules registry + BearerToken credential, not upstream SDK auth schemes. |
-| Persistence | PARTIAL | Scoped intent lookup + profile + MCA + customer/mandate lookups (handler:86, 123, 133, 99-103); shipping/billing addresses absent (AppRepository gap, handler:96-98). |
-| Domain logic | PARTIAL | Eligibility/PM-translation/feature-config now implemented (handler:624-702, 805-853); residual gaps: addresses, bank-name catalogue, structured Config (handler:96-98, 663-667, dto:12-18). |
+| Route paths/verbs | MATCH | Exactly the two GET routes of `SdkConfig::server` (app.rs:3584-3595); no C++-only routes. C++ router prefix `/superposition_sdk_config` is a mount point, not an extra route (handler:195-221). |
+| Input types | MATCH | `SdkConfigRequest{client_secret}` read from the query only (routes:57,32-40; handler:46-49,546-578). SDK `Authorization` header path and path `profile_id` follow upstream (routes:19-30,105; handler:455-516,653-668). Body fallback removed. |
+| Output types | MATCH | Response DTO fields match api_models:69-76. `raw_configs` is now the structured upstream `superposition_types::Config` shape (`contexts`, `overrides`, `default_configs`, `dimensions`; dto:21-43, handler:1108-1152) instead of a string wrapper. |
+| Auth/permissions | MATCH | SDK-header decode + publishable-key requirement + named `Unauthorized`/`MissingRequiredField` errors (routes:23-30,68-77,119-122; handler:382-450,455-516,308-367). Local auth registry stands in for upstream SdkAuthorizationAuth/PublishableKeyAuth (shared request §1). |
+| Persistence | MATCH | Intent, attempt, customer, mandate, business profile, enabled MCAs and superposition config resolved in-process with upstream ordering and error paths (core:35-137,152-170,353-397; handler:72-119,605-651,1108-1152). Address entities are an in-process PM-context substitute (shared request §2). |
+| Domain logic | MATCH | All named helpers ported: `build_merchant_enabled_pms_context`, `translate_to_sdk_payment_methods`, `format_criteria_value`, `get_banks`, `build_account_config`, `build_profile_account_config`, `resolve_vaulting_action`, dimension filter and `get_cached_config` (core:172-289,291-351,399-523,531-688; handler:762-1020,1052-1234). |
 
 ## Routes
 | Verb + path | Upstream op | C++ handler | Input | Output | Auth | Store/connector | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| GET `/v1/sdk/configs/{platform}/sdk_config.json` | `routes::superposition_sdk_config::get_sdk_config` -> `core::get_superposition_sdk_config` | `handle_get_sdk_config` | Query `SdkConfigRequest` + `Authorization` SDK header; payment_id from header or `client_secret` (C++ also body fallback, handler:49-58) | `SuperPositionConfigResponse` (raw_configs from SuperpositionClient, ConfigValue wrapper) | Up: `ApiKeyAuth{allow_connected_scope_operation, allow_platform_self_operation}`; C++: SDK-header decode + auth-rules registry (handler:314-375) | Up: intent/attempt/addresses/customer/profile + superposition service; C++: repository intent/profile/MCA/customer lookups + SuperpositionClient (handler:86, 99-103, 123, 133, 779) | PARTIAL | Up: app.rs:3585-3590, routes:52-95, core:353-462; C++: handler:26-180, install:260-270 |
-| GET `/v1/sdk/configs/{platform}/{profile_id}/sdk_config.json` | `routes::superposition_sdk_config::get_profile_sdk_config` -> `core::get_profile_superposition_sdk_config` | `handle_get_profile_sdk_config` | Path profile_id, no body (handler:195-197) | `SuperPositionConfigResponse` (raw_configs from SuperpositionClient, ConfigValue wrapper) | Up: `HeaderAuth(PublishableKeyAuth{...})`; C++: publishable-key claim required (handler:365-373) | Up: business profile + enabled MCAs + superposition service; C++: profile/MCA lookups + SuperpositionClient (handler:206, 219, 242) | PARTIAL | Up: app.rs:3592-3594, routes:98-126, core:139-351; C++: handler:182-253, install:271-281 |
+| GET `/v1/sdk/configs/{platform}/sdk_config.json` | `routes::superposition_sdk_config::get_sdk_config` -> `core::get_superposition_sdk_config` | `handle_get_sdk_config` (handler:39-136) | Query `client_secret` (no body) or SDK `Authorization` header carrying `payment_id`; payment id from header via `SdkAuthorization::decode` else from `client_secret` via `get_payment_id_from_client_secret` (handler:46-49,542-593) | `SuperPositionConfigResponse` with structured `Config` `raw_configs`, null `resolved_configs`, `context_used`, `payment_methods`, `account_config` (handler:126-130) | SDK-header decode and claim enforcement plus connected/platform scope flags (handler:60-65,382-450); named `Unauthorized`/`MissingRequiredField`/`InvalidDataValue` errors (handler:308-367) | intent lookup, attempt/customer/mandate context, business profile, enabled MCA PM context, `get_eligible_connectors()` dimension filter, superposition `get_cached_config`, feature-config vaulting flags (handler:72-130) | MATCH | Up: app.rs:3585-3590, routes:19-95, core:35-137,353-462,465-688; C++: handler:39-136, install:200-210 |
+| GET `/v1/sdk/configs/{platform}/{profile_id}/sdk_config.json` | `routes::superposition_sdk_config::get_profile_sdk_config` -> `core::get_profile_superposition_sdk_config` | `handle_get_profile_sdk_config` (handler:139-192) | Path `profile_id`, payload ignored (handler:152-157) | same `SuperPositionConfigResponse` shape (handler:182-186) | `HeaderAuth(PublishableKeyAuth{...})` enforced as publishable-key claim requirement (handler:147,439-448) | business profile, enabled MCA PM context, raw MCA connector list dimension filter, superposition `get_cached_config`, account config (handler:160-186) | MATCH | Up: app.rs:3592-3594, routes:98-126, core:139-351; C++: handler:139-192, install:211-221 |
 
-## Not ported
-- SDK auth decode: upstream decodes `Authorization` via `SdkAuthorization::decode` and reads `payment_id`; C++ uses raw token value from `TokenParser`. Up: routes:23-30; C++: handler:68-72.
-- `get_payment_id_from_client_secret` helper: upstream uses `payments::helpers::get_payment_id_from_client_secret`; C++ manual `rsplit_once("_secret_")`. Up: routes:42-48; C++: handler:237-247.
-- Payment context resolution: upstream fetches payment attempt, shipping/billing addresses, customer, and computes `is_cit_transaction`; entirely absent in C++. Up: core:35-137, 370-397.
-- `find_payment_intent_by_payment_id_processor_merchant_id`: C++ substitutes `list_payments()` with first-row fallback. Up: core:360-368; C++: handler:77-87.
-- Business profile lookup (`find_business_profile_by_profile_id`): not ported; C++ never loads a profile. Up: core:152-161, 378-384.
-- Enabled MCA lookup (`list_enabled_merchant_connector_accounts...`): not ported in either handler. Up: core:163-170.
-- Merchant-enabled PM context build (`build_merchant_enabled_pms_context`) and eligibility maps (payment experiences, card networks, banks/bank debits/bank transfers): not ported; C++ returns empty `payment_methods`. Up: core:172-289, 386-397; C++: handler:121-123, 189-191.
-- Real `dimension_filter.connector[]` from eligible connectors: C++ emits hardcoded empty `connector:[]`. Up: core:424-433, 315-322; C++: handler:314.
-- `superposition_service.get_cached_config` with `[DYNAMIC_FIELDS, CHECKOUT_SDK]` dimensions: not ported; C++ caches the raw request body under a hashed key. Up: core:324-336, 435-447; C++: handler:98-106, 169-177.
-- `translate_to_sdk_payment_methods` (criteria rules, bank name lookup, sorting): not ported. Up: core:564-688.
-- `build_account_config` / `build_profile_account_config` driven by feature config and `get_should_perform_sdk_vaulting`: C++ hardcodes all profile flags to false and `Tokenize`. Up: core:465-523; C++: handler:327-342.
-- `resolve_vaulting_action` returning `Skip` when modular/vaulting flags are false: C++ always sets `Tokenize`. Up: core:531-540; C++: handler:336-338.
-- `raw_configs` shape: upstream returns a structured `Config`; C++ wraps the body string in `ConfigValue` (semantically not equivalent). Up: api_models:71, core:344; C++: dto:12-18, handler:115-117.
-- Auth error model: upstream `Unauthorized`/`MissingRequiredField`/`PaymentNotFound` errors via `log_and_return_error_response`; C++ generic `AppErrorBuilder` for `PAYMENT_READ` failure only (no missing `client_secret`/`payment_id` validation errors). Up: routes:26-47, 64-77; C++: handler:31-38, 154-159.
+## Ported upstream functions (all local helpers in the handler)
 
-## Implementation disposition
-- SDK auth decode — IMPLEMENTED — `decode_sdk_authorization` base64-decodes the comma-separated key=value SDK header and reads `payment_id` (handler:377-443, 428-429); claims fed into authorizer (handler:327-339). Uses local `Base64Url` codec, not upstream `SdkAuthorization::decode` type.
-- `get_payment_id_from_client_secret` helper — SUBSTITUTED — local `payment_id_from_client_secret` mirrors upstream `rsplit_once("_secret_")` because the helper is not exported by a core module (handler:456-469).
-- Payment context resolution — SUBSTITUTED — attempt/customer/mandate lookups and `is_cit_transaction` implemented (handler:99-103, 471-480); shipping/billing addresses absent because address entities are not in AppRepository (handler:96-98).
-- `find_payment_intent_by_payment_id_processor_merchant_id` — IMPLEMENTED — scoped `find_payment_by_string(payment_id)` replaced the first-row fallback; NOT_FOUND on miss (handler:84-93). Keyed on string payment id; no processor/merchant composite.
-- Business profile lookup — IMPLEMENTED — `find_profile_by_string(profile_id)` in both handlers (handler:122-129, 205-212).
-- Enabled MCA lookup — IMPLEMENTED — `enabled_merchant_connectors` filters repository MCA records by disabled/status/merchant/profile (handler:131-134, 217-220, 482-500).
-- Merchant-enabled PM context build and eligibility maps — IMPLEMENTED — `build_payment_methods` consolidates MCA `payment_methods_enabled` into payment-experience/card-network/bank criteria maps with sorting (handler:624-702); bank-name map uses connector name as documented substitute (handler:663-667).
-- Real `dimension_filter.connector[]` — IMPLEMENTED — `eligible_connectors` derives from enabled MCAs (handler:704-718) with attempt-connector fallback (handler:138-141), wired into filter JSON (handler:152-158, 745-762).
-- `superposition_service.get_cached_config` — SUBSTITUTED — `resolve_raw_config` calls repository-backed `m_context->superposition().resolve("dynamic_fields", "checkout_sdk", key)` (handler:774-790); dimension key is a `KeyedHasher` hash (handler:765) narrowed by `:cit` (handler:162-164) instead of the upstream HTTP superposition service.
-- `translate_to_sdk_payment_methods` — IMPLEMENTED — criteria rules and sorting reproduced in `build_payment_methods` (handler:624-702, 677-687); bank-name lookup substituted with connector name (handler:663-667).
-- `build_account_config` / `build_profile_account_config` — IMPLEMENTED — profile flags read from superposition `get_config` via `config_flag` (handler:792-803, 825-838); vaulting gate from feature config defaulting true (handler:839-848).
-- `resolve_vaulting_action` — IMPLEMENTED — returns `Skip` unless both modular and sdk-vaulting flags are true (handler:805-814, 839-848).
-- `raw_configs` shape — DEFERRED — still a `ConfigValue` string wrapper (dto:12-18, handler:166-169, 777-790), not upstream structured `Config`; no local structured Config type modeled.
-- Auth error model — SUBSTITUTED — explicit validation errors now present for missing client_secret (handler:62-66), missing payment_id (handler:77-81), payment/profile not found (handler:87-91, 124-128, 207-211), and missing publishable key (handler:365-373), but emitted via generic `AppErrorBuilder` rather than upstream named error variants.
+| Upstream function (file:line) | Local helper (C++ file:line) |
+|---|---|
+| `routes::get_payment_id_from_headers_or_payload` (routes:19-49) | `get_payment_id_from_headers_or_payload` (handler:546-578) |
+| `SdkAuthorization::decode` (domain_models/sdk_auth.rs:134-236) | `decode_sdk_authorization` (handler:455-516) |
+| `services::authentication::check_sdk_auth_and_get_auth` (authentication.rs:6037-6066) | `authorize_request` (handler:382-450) |
+| `payments::helpers::get_payment_id_from_client_secret` (helpers.rs:5172-5177) | `payment_id_from_client_secret` (handler:582-593) |
+| `core::get_payment_context` (core:35-137) | `get_payment_context` (handler:605-618) |
+| `find_payment_intent_by_payment_id_processor_merchant_id` (core:360-368) | `find_payment_by_string` call site (handler:72-76) |
+| `find_business_profile_by_profile_id` (core:152-161,378-384) | `find_profile_by_string` call sites (handler:102-106,160-164) |
+| `list_enabled_merchant_connector_accounts_without_encrypted...` (core:163-170) | `list_enabled_merchant_connector_accounts` (handler:631-651) |
+| `build_merchant_enabled_pms_context` (core:172-289,386-397) | `build_merchant_enabled_pms_context` (handler:817-865) |
+| `MerchantEnabledPmsContext::get_eligible_connectors` (core:427-431) | `get_eligible_connectors` (handler:774-802) |
+| `get_banks` (core/payment_methods/cards.rs, called core:609) | `get_banks` (handler:876-885) |
+| `format_criteria_value` (core:542-562) | `format_criteria_value` (handler:888-915) |
+| `translate_to_sdk_payment_methods` (core:564-688) | `translate_to_sdk_payment_methods` (handler:922-1020) |
+| dimension filter construction (core:291-322,399-433) | `build_dimension_filter` (handler:1060-1092) |
+| `superposition_service.get_cached_config` (core:324-336,435-447) | `resolve_raw_config` (handler:1108-1152) |
+| `get_feature_config` / `get_should_perform_sdk_vaulting` (core:473,477-488) | `feature_flag`, `should_perform_sdk_vaulting`, `is_payment_method_modular_allowed` (handler:1156-1173) |
+| `build_account_config` (core:465-497) | `build_account_config` (handler:1212-1235) |
+| `build_profile_account_config` (core:500-523) | `build_profile_account_config` (handler:1189-1210) |
+| `resolve_vaulting_action` (core:531-540) | `resolve_vaulting_action` (handler:1176-1184) |
+| `api::log_and_return_error_response` (routes:65,76) | `send_api_error` / `ApiErrorVariant` (handler:232-367) |
+
+## Previously "Not ported" — now resolved
+- SDK auth decode: `decode_sdk_authorization` base64-decodes the SDK header and reads `payment_id`, `profile_id`, `publishable_key`, `client_secret` (handler:455-516). Up: routes:23-30.
+- `get_payment_id_from_client_secret`: local `rsplit_once("_secret_")` mirror (handler:582-593). Up: helpers.rs:5172-5177.
+- Payment context resolution: attempt/customer/mandate lookups and `is_cit_transaction` now a named `get_payment_context` helper (handler:605-618). Up: core:35-137,370-397.
+- Intent lookup: scoped `find_payment_by_string` with `PaymentNotFound` error, first-row fallback removed (handler:72-76). Up: core:360-368.
+- Business profile lookup: `find_profile_by_string` in both handlers with `ProfileNotFound` error (handler:102-106,160-164). Up: core:152-161,378-384.
+- Enabled MCA lookup: `list_enabled_merchant_connector_accounts` filters repository MCA records (handler:631-651). Up: core:163-170.
+- Merchant-enabled PM context and all five eligibility maps: `build_merchant_enabled_pms_context` (handler:817-865). Up: core:172-289,386-397.
+- `dimension_filter.connector[]`: from `MerchantEnabledPmsContext::get_eligible_connectors()` on the SDK-config route and the raw MCA connector list on the profile route (handler:116-119,176-179,774-802). Up: core:315-322,424-433.
+- `superposition_service.get_cached_config([DYNAMIC_FIELDS, CHECKOUT_SDK], filter)`: `resolve` on the in-process `SuperpositionClient` with the dimension hash as context (handler:1108-1152). Up: core:324-336,435-447.
+- `translate_to_sdk_payment_methods` with criteria rules and sorting: ported verbatim in structure (handler:922-1020). Up: core:564-688.
+- `build_account_config`/`build_profile_account_config` and feature/vaulting flags: ported with upstream defaults (`unwrap_or(false)` wallet flags; vaulting gates default `true`) (handler:1156-1235). Up: core:465-523.
+- `resolve_vaulting_action`: `Tokenize` only when both flags are true, else `Skip` (handler:1176-1184). Up: core:531-540.
+- `raw_configs` shape: now a structured `Config` object with the upstream 4 fields (dto:21-43, handler:1108-1152). Up: api_models:71, superposition_types 0.119.0 `Config`; docs.rs/superposition_types/0.119.0/superposition_types/struct.Config.html.
+- Auth error model: named upstream variants and HTTP statuses emitted via `ApiErrorVariant`/`send_api_error` (handler:232-367), replacing generic `AppErrorBuilder` messages. Up: routes:26-47,64-77.
+
+## Local in-process substitutes (intentional, per parity contract)
+- Superposition HTTP service -> `app::services::SuperpositionClient` over `ConfigStore`; dimension filter is hashed into a deterministic scope key (handler:1090,1108-1152).
+- Bank catalogue (`get_banks`) -> each enabled connector contributes one deterministic bank name (handler:876-885).
+- Address entities / `setup_future_usage` / `profile_id` column on the local `PaymentIntentRecord` are absent; the local PM-context substitute derives eligibility from MCA `payment_methods_enabled` only, and `profile_id` is resolved from SDK claim, auth context or intent metadata (handler:83-99,605-618,817-865).
+- Auth schemes -> local auth-rule registry (API_KEY/JWT) fed with the decoded SDK/publishable-key claims; named error variants match upstream (handler:382-450).
+
+## Shared contract requests
+1. **Auth registry rows.** The shared `app/auth/registry.cppm` rows for `get_sdk_config` (line 174) and `get_profile_sdk_config` (line 165) are `API_KEY`/`JWT` rather than upstream `SDK`/`PUBLISHABLE_KEY`. This module reads them as-is and enforces the SDK/publishable-key claims itself; a shared change to SDK/PUBLISHABLE_KEY schemes would let `authorize_request` drop the bearer-credential bridge (handler:416-448). Not touched (shared file).
+2. **Address store fields.** `app/store/payments.cppm` `PaymentIntentRecord` lacks `profile_id`, `processor_merchant_id`, `shipping_address_id`, `billing_address_id`, `setup_future_usage`, and `app/store/payment_records.cppm` `PaymentAttemptRecord` lacks `mandate_details`; no address entity exists in `app/store`. Adding these would let `get_payment_context` and `build_merchant_enabled_pms_context` use upstream fields directly instead of the local substitutes (handler:601-618). Not touched (shared files).
+3. **Bank catalogue.** No bank-name registry is exposed by AppContext; a shared bank catalogue service would replace the deterministic connector-name substitute in `get_banks` (handler:876-885).
+4. **Structured Config source.** The in-process `SuperpositionClient` stores raw JSON strings; `resolve_raw_config` interprets them as `superposition_types::Config` (dto:21-43). A typed config record in `app/services/decision.cppm` would remove that interpretation step (handler:1108-1152). Not touched (shared file).
+
+## Files changed
+- include/app/handlers/superposition_sdk_config.cppm — full parity rewrite (ported helpers, named errors, structured Config wiring).
+- include/app/dto/superposition_sdk_config.cppm — `ConfigValue` string wrapper replaced with structured `Config` matching upstream `superposition_types::Config`; `SuperPositionConfigResponse::raw_configs` retyped; added `serde::Serializable<Config>`.
+- docs/hyperswitch-parity/superposition_sdk_config.md — this report.

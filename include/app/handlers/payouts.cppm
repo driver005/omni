@@ -95,7 +95,7 @@ public:
         std::string payout_id = input.payout_id ? input.payout_id->get_value()
                                                 : m_context->ids().payment_id("po_");
         const auto profile_id = resolve_profile_id(req, input.profile_id);
-        const auto browser_info = browser_info_from_headers(req);
+        const auto browser_info = browser_info_from_headers(req, input.browser_info);
         const auto requested_connector = first_requested_connector(input.connector);
 
         if (m_context->repository().find_payout_by_string(payout_id)) {
@@ -124,12 +124,21 @@ public:
                                      .resource_id(payout_id)
                                      .raw_payload(body)();
 
-        std::string status{"pending"};
+        // Upstream initial status (`core/payouts.rs:3668-3679`): with method data a payout
+        // starts in RequiresCreation (confirm) / RequiresConfirmation; otherwise
+        // RequiresPayoutMethodData.
+        const bool has_method_data = input.payout_method_data.has_value() ||
+                                     (input.payout_token.has_value() && !input.payout_token->empty()) ||
+                                     input.payout_method_id.has_value() ||
+                                     input.source_bank_data.has_value();
+        std::string status = has_method_data
+                                 ? std::string{input.confirm.value_or(false) ? kRequiresCreation
+                                                                             : kRequiresConfirmation}
+                                 : std::string{kRequiresPayoutMethodData};
         std::string connector_name{};
         if (input.payout_token && !input.payout_token->empty()) {
-            // Deterministic substitute for proxy::ExternalVaultPayout: a token-based payout
-            // parks the method data in the local key store and never calls a PSP.
-            status = "pending";
+            // External-vault proxy substitute: token payouts park method data in the local
+            // key store and keep the upstream pre-confirmation status.
             connector_name = "external_vault";
             note = note.empty() ? std::string{"external_vault_token"} : note + ";external_vault_token";
             store_payout_method_data(payout_id, body);
@@ -148,7 +157,7 @@ public:
                     send_error(res, send, *outcome.error);
                     return;
                 }
-                status = outcome.status.empty() ? std::string{"pending"} : outcome.status;
+                status = status_from_connector(outcome.status, input.auto_fulfill.value_or(false));
                 connector_name = std::string{choice.connector->name()};
                 if (outcome.shadow_killed) {
                     m_context->metrics().counter("payouts_shadow_killed").increment();
@@ -178,10 +187,7 @@ public:
         record.set_currency(currency);
         record.set_status(status);
         record.set_connector(connector_name);
-        record.set_created_at(std::to_string(
-            std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()
-            ).count()));
+        record.set_created_at(created_at_now());
         if (input.payout_type) {
             record.set_payout_type(input.payout_type->get_value());
         }
@@ -190,7 +196,9 @@ public:
         }
         record.set_metadata(encode_meta(
             profile_id, browser_info, payout_link_id,
-            payout_link_id.empty() ? std::string{} : std::string{"Submitted"}, note));
+            payout_link_id.empty() ? std::string{} : std::string{"Submitted"}, note,
+            input.merchant_order_reference_id.value_or(""),
+            input.entity_type ? input.entity_type->get_value() : std::string{}));
         record = m_context->repository().save_payout(record);
 
         record_payout_attempt(
@@ -231,24 +239,19 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST, "missing payout id in path"));
             return;
         }
+        // Upstream uses `web::Query<PayoutRetrieveBody>` (`payouts.rs:90-97`); all
+        // three fields come from the query string, never from a request body.
         const auto query = app::http::RequestQuery{}(req);
-
-        app::model::payouts::PayoutRetrieveBody retrieve{};
-        const auto body = req.body_as_string();
-        if (!body.empty()) {
-            auto parsed = serde::Ser::deserialize<app::model::payouts::PayoutRetrieveBody>(
-                "application/json", body);
-            if (!parsed) {
-                send_error(res, send, error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-                return;
-            }
-            retrieve = std::move(*parsed);
+        auto retrieve = serde::Ser::deserialize<app::model::payouts::PayoutRetrieveBody>(
+            "application/json",
+            query_json(query, {"force_sync", "merchant_id", "expand_attempts"}));
+        if (!retrieve) {
+            send_error(res, send, error(core::error::AppErrorKind::INVALID_REQUEST,
+                                        "invalid PayoutRetrieveBody query"));
+            return;
         }
-        const bool force_sync = retrieve.get_force_sync().value_or(
-            query.get("force_sync").value_or("false") == "true");
-        const bool expand_attempts = retrieve.get_expand_attempts().value_or(
-            query.get("expand_attempts").value_or("false") == "true");
-        (void)query.get("return_raw_connector_response");
+        const bool force_sync = retrieve->get_force_sync().value_or(false);
+        const bool expand_attempts = retrieve->get_expand_attempts().value_or(false);
 
         m_context->metrics().record_flow("payout_retrieve");
         m_context->metrics().counter("payouts_retrieve_total").increment();
@@ -260,9 +263,14 @@ public:
         }
         auto record = *found;
 
-        if (force_sync) {
-            const auto scope = resolve_profile_id(req, std::nullopt);
-            (void)scope;
+        // Profile scope from the authenticated principal (`payouts_retrieve_core:928-940`).
+        const auto scope = resolve_profile_id(req, std::nullopt);
+        if (!scope.empty() && meta_value(record.get_metadata(), "profile_id") != scope) {
+            send_error(res, send, error(core::error::AppErrorKind::NOT_FOUND, "payout not found"));
+            return;
+        }
+
+        if (force_sync && should_call_retrieve(record.get_status())) {
             auto sync_request = app::connector::ConnectorRequestBuilder{}
                                     .operation("payout_sync")
                                     .merchant_id(record.get_merchant_id())
@@ -276,7 +284,7 @@ public:
                     return;
                 }
                 if (!outcome.status.empty()) {
-                    record.set_status(outcome.status);
+                    record.set_status(status_from_connector(outcome.status, false));
                 }
                 m_context->repository().update_payout(record);
                 update_latest_attempt(record.get_payout_id(), record.get_status(), {}, {});
@@ -340,6 +348,17 @@ public:
         }
         auto record = *found;
 
+        // Upstream `payouts_update_core:864-872`: terminal or already-initiated payouts
+        // cannot be updated (`InvalidRequestData`).
+        if (is_payout_terminal_state(record.get_status()) ||
+            is_payout_initiated(record.get_status())) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                std::format("Payout {} cannot be updated for status {}",
+                            record.get_payout_id(), normalize_status(record.get_status()))));
+            return;
+        }
+
         const auto header_merchant_id = app::http::merchant_id_from_header{}(req);
         if (!header_merchant_id.empty()) {
             record.set_merchant_id(header_merchant_id);
@@ -396,7 +415,7 @@ public:
                     return;
                 }
                 if (!outcome.status.empty()) {
-                    record.set_status(outcome.status);
+                    record.set_status(status_from_connector(outcome.status, input.auto_fulfill.value_or(false)));
                 }
                 record.set_connector(std::string{choice.connector->name()});
                 update_latest_attempt(record.get_payout_id(), record.get_status(), {}, {});
@@ -404,8 +423,9 @@ public:
         }
 
         const auto previous_meta = record.get_metadata();
-        record.set_metadata(merge_meta_profile(
-            previous_meta, resolve_profile_id(req, input.profile_id)));
+        record.set_metadata(merge_meta_browser_info(
+            merge_meta_profile(previous_meta, resolve_profile_id(req, input.profile_id)),
+            browser_info_from_headers(req, input.browser_info)));
 
         m_context->repository().update_payout(record);
         m_context->cache().put("payouts.updated." + record.get_payout_id(),
@@ -472,12 +492,12 @@ public:
         }
         auto record = *found;
 
-        // In the local model "pending" represents upstream RequiresConfirmation, so it is
-        // the only confirmable state. Every later/terminal state is rejected.
+        // `validate_payout_status_against_not_allowed_statuses` (`core/payouts.rs:791-804`).
         if (is_confirm_disallowed(record.get_status())) {
             send_error(res, send, error(
                 core::error::AppErrorKind::PRECONDITION_FAILED,
-                std::format("payout in status '{}' cannot be confirmed", record.get_status())));
+                std::format("You cannot confirm this payout because it has status {}",
+                            normalize_status(record.get_status()))));
             return;
         }
 
@@ -500,17 +520,18 @@ public:
             const auto outcome = invoke_connector(*choice.connector, "authorize", connector_request);
             if (outcome.error) {
                 // Connector failure keeps the payout in a failed state with mapped error metadata.
-                record.set_status("failed");
+                record.set_status(std::string{kFailed});
                 m_context->repository().update_payout(record);
-                update_latest_attempt(record.get_payout_id(), "failed", "CONNECTOR_ERROR", outcome.error->get_message());
+                update_latest_attempt(record.get_payout_id(), kFailed, "CONNECTOR_ERROR", outcome.error->get_message());
                 emit_payout_webhook("failed", record);
                 send_error(res, send, *outcome.error);
                 return;
             }
-            record.set_status(outcome.status.empty() ? std::string{"authorized"} : outcome.status);
+            record.set_status(status_from_connector(
+                outcome.status, parsed.has_value() && parsed->auto_fulfill.value_or(false)));
             record.set_connector(std::string{choice.connector->name()});
         } else {
-            record.set_status("pending");
+            record.set_status(std::string{kRequiresConfirmation});
         }
         record.set_metadata(merge_meta_payout_link(record.get_metadata(), "Submitted"));
         m_context->repository().update_payout(record);
@@ -567,18 +588,22 @@ public:
         auto record = *found;
         if (is_cancel_terminal(record.get_status())) {
             send_error(res, send, error(
-                core::error::AppErrorKind::PRECONDITION_FAILED,
-                std::format("payout in status '{}' is terminal and cannot be cancelled",
-                            record.get_status())));
+                core::error::AppErrorKind::INVALID_REQUEST,
+                std::format("Payout {:?} cannot be cancelled for status {}",
+                            record.get_payout_id(), normalize_status(record.get_status()))));
             return;
         }
 
-        if (supports_instant_payout(record.get_connector())) {
-            record.set_status("cancelled");
+        // Upstream local cancellation requires both an eligible status and a connector
+        // that supports instant payout (`core/payouts.rs:1008-1012`).
+        if (is_eligible_for_local_payout_cancellation(record.get_status()) &&
+            supports_instant_payout(record.get_connector(), record.get_payout_type())) {
+            record.set_status(std::string{kCancelled});
             record.set_metadata(merge_meta_note(record.get_metadata(), "Cancelled by user"));
             m_context->repository().update_payout(record);
-            update_latest_attempt(record.get_payout_id(), "cancelled",
-                                  "CANCELLED_BY_USER", "Cancelled by user");
+            // Upstream sets `error_message: Some("Cancelled by user")`, `error_code: None`
+            // (`core/payouts.rs:1019-1020`).
+            update_latest_attempt(record.get_payout_id(), kCancelled, {}, "Cancelled by user");
         } else {
             auto cancel_request = app::connector::ConnectorRequestBuilder{}
                                       .operation("payout_cancel")
@@ -590,25 +615,26 @@ public:
             if (!connector) {
                 // No connector backend registered locally: apply the deterministic local
                 // cancellation path rather than failing the request.
-                record.set_status("cancelled");
+                record.set_status(std::string{kCancelled});
             } else {
                 const auto outcome = invoke_connector(*connector, "cancel", cancel_request);
                 if (outcome.error) {
                     send_error(res, send, *outcome.error);
                     return;
                 }
-                record.set_status(outcome.status.empty() ? std::string{"cancelled"} : outcome.status);
+                record.set_status(outcome.status.empty()
+                                      ? std::string{kCancelled}
+                                      : status_from_connector(outcome.status, false));
             }
             m_context->repository().update_payout(record);
             update_latest_attempt(record.get_payout_id(), record.get_status(),
-                                  "CANCELLED_BY_USER", "Cancelled by user");
+                                  {}, "Cancelled by user");
         }
         emit_payout_webhook("cancelled", record);
 
         auto response = response_from_record(record);
         enrich_response(response, record, false);
         response.set_error_message(std::string{"Cancelled by user"});
-        response.set_error_code(std::string{"CANCELLED_BY_USER"});
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -649,8 +675,9 @@ public:
         auto record = *found;
         if (!is_fulfill_allowed(record.get_status())) {
             send_error(res, send, error(
-                core::error::AppErrorKind::PRECONDITION_FAILED,
-                std::format("payout in status '{}' cannot be fulfilled", record.get_status())));
+                core::error::AppErrorKind::INVALID_REQUEST,
+                std::format("Payout {:?} cannot be fulfilled for status {}",
+                            record.get_payout_id(), normalize_status(record.get_status()))));
             return;
         }
 
@@ -664,9 +691,9 @@ public:
         if (connector) {
             const auto outcome = invoke_connector(*connector, "capture", fulfill_request);
             if (outcome.error) {
-                record.set_status("failed");
+                record.set_status(std::string{kFailed});
                 m_context->repository().update_payout(record);
-                update_latest_attempt(record.get_payout_id(), "failed", "CONNECTOR_ERROR", outcome.error->get_message());
+                update_latest_attempt(record.get_payout_id(), kFailed, "CONNECTOR_ERROR", outcome.error->get_message());
                 emit_payout_webhook("failed", record);
                 send_error(res, send, *outcome.error);
                 return;
@@ -675,9 +702,9 @@ public:
         } else {
             m_context->metrics().counter("payouts_connector_unavailable").increment();
         }
-        record.set_status("fulfilled");
+        record.set_status(std::string{kSuccess});
         m_context->repository().update_payout(record);
-        update_latest_attempt(record.get_payout_id(), "fulfilled", {}, {});
+        update_latest_attempt(record.get_payout_id(), kSuccess, {}, {});
         emit_payout_webhook("fulfilled", record);
 
         auto response = response_from_record(record);
@@ -698,19 +725,19 @@ public:
         }
 
         const auto query = app::http::RequestQuery{}(req);
+        auto constraints = list_constraints_from_query(query);
+        if (!constraints) {
+            send_error(res, send, error(core::error::AppErrorKind::INVALID_REQUEST,
+                                        "invalid PayoutListConstraints query"));
+            return;
+        }
         m_context->metrics().record_flow("payout_list");
         m_context->metrics().counter("payouts_list_total").increment();
 
         auto response = list_response(
-            query.get("payout_id").value_or(""),
-            query.get("customer_id").value_or(""),
-            query.get("status").value_or(""),
-            query.get("currency").value_or(""),
-            query.get("profile_id").value_or(""),
-            time_range_from_query(query),
-            parse_count(query.get("offset")),
-            parse_count(query.get("limit"))
-        );
+            list_filters_from_constraints(*constraints),
+            "", // merchant scope passes None profile_id_list (payouts.rs:354)
+            time_range_from_query(query));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -727,19 +754,19 @@ public:
         }
 
         const auto query = app::http::RequestQuery{}(req);
+        auto constraints = list_constraints_from_query(query);
+        if (!constraints) {
+            send_error(res, send, error(core::error::AppErrorKind::INVALID_REQUEST,
+                                        "invalid PayoutListConstraints query"));
+            return;
+        }
         m_context->metrics().record_flow("payout_list_profile");
         m_context->metrics().counter("payouts_list_profile_total").increment();
 
         auto response = list_response(
-            query.get("payout_id").value_or(""),
-            query.get("customer_id").value_or(""),
-            query.get("status").value_or(""),
-            query.get("currency").value_or(""),
+            list_filters_from_constraints(*constraints),
             resolve_profile_id(req, std::nullopt),
-            time_range_from_query(query),
-            parse_count(query.get("offset")),
-            parse_count(query.get("limit"))
-        );
+            time_range_from_query(query));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -767,20 +794,18 @@ public:
             return;
         }
 
+        const auto query = app::http::RequestQuery{}(req);
+        const auto filters = list_filters_from_dto(*parsed, query);
+        // `validate_payout_list_request_for_joins` (validator.rs:609-620, max limit 20).
+        if (filters.limit > 20) {
+            send_error(res, send, error(core::error::AppErrorKind::INVALID_REQUEST,
+                                        "limit should be in between 1 and 20"));
+            return;
+        }
         m_context->metrics().record_flow("payout_list_by_filter");
         m_context->metrics().counter("payouts_list_by_filter_total").increment();
 
-        const auto query = app::http::RequestQuery{}(req);
-        auto response = list_response(
-            parsed->payout_id ? parsed->payout_id->get_value() : query.get("payout_id").value_or(""),
-            parsed->customer_id ? parsed->customer_id->get_value() : query.get("customer_id").value_or(""),
-            status_filter(*parsed, query.get("status")),
-            currency_filter(*parsed, query.get("currency")),
-            parsed->profile_id ? parsed->profile_id->get_value() : resolve_profile_id(req, std::nullopt),
-            parsed->time_range ? parsed->time_range->get_value() : time_range_from_query(query),
-            to_count(parsed->offset.get_value(), query.get("offset")),
-            to_count(parsed->limit.get_value(), query.get("limit"))
-        );
+        auto response = list_response(filters, "", time_range_from_body(body));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -808,20 +833,18 @@ public:
             return;
         }
 
+        const auto query = app::http::RequestQuery{}(req);
+        const auto filters = list_filters_from_dto(*parsed, query);
+        if (filters.limit > 20) {
+            send_error(res, send, error(core::error::AppErrorKind::INVALID_REQUEST,
+                                        "limit should be in between 1 and 20"));
+            return;
+        }
         m_context->metrics().record_flow("payout_list_by_filter_profile");
         m_context->metrics().counter("payouts_list_by_filter_profile_total").increment();
 
-        const auto query = app::http::RequestQuery{}(req);
         auto response = list_response(
-            parsed->payout_id ? parsed->payout_id->get_value() : query.get("payout_id").value_or(""),
-            parsed->customer_id ? parsed->customer_id->get_value() : query.get("customer_id").value_or(""),
-            status_filter(*parsed, query.get("status")),
-            currency_filter(*parsed, query.get("currency")),
-            resolve_profile_id(req, parsed->profile_id),
-            parsed->time_range ? parsed->time_range->get_value() : time_range_from_query(query),
-            to_count(parsed->offset.get_value(), query.get("offset")),
-            to_count(parsed->limit.get_value(), query.get("limit"))
-        );
+            filters, resolve_profile_id(req, parsed->profile_id), time_range_from_body(body));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -842,31 +865,16 @@ public:
             send_error(res, send, error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        using Input = app::model::payouts::PayoutListFilters;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            send_error(res, send, error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        // Upstream input is `web::Json<TimeRange>`, not a filters object (`payouts.rs:497`).
+        const auto range = time_range_from_body(body);
+        if (const auto invalid = require_time_range(range)) {
+            send_error(res, send, *invalid);
             return;
         }
-
         m_context->metrics().record_flow("payout_available_filters_merchant");
         m_context->metrics().counter("payouts_available_filters_merchant_total").increment();
 
-        const auto query = app::http::RequestQuery{}(req);
-        const auto records = scoped_records(
-            query.get("profile_id").value_or(""), time_range_from_query(query));
-        auto filters = *parsed;
-        const auto statuses = distinct_field(records, [](const auto& record) { return record.get_status(); });
-        if (!statuses.empty()) {
-            std::vector<app::model::payouts::PayoutStatusValue> values{};
-            for (const auto& value : statuses) {
-                app::model::payouts::PayoutStatusValue item{};
-                item.set_value(value);
-                values.push_back(std::move(item));
-            }
-            filters.set_status(std::move(values));
-        }
-
+        const auto filters = available_filters(scoped_records("", range));
         auto text = serde::Ser::encode_json(filters);
         send_json(res, send, text, true);
     }
@@ -887,59 +895,19 @@ public:
             send_error(res, send, error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        using Input = app::model::payouts::PayoutListFiltersV2;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            send_error(res, send, error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        // Upstream input is `web::Json<TimeRange>` (`payouts.rs:533`).
+        const auto range = time_range_from_body(body);
+        if (const auto invalid = require_time_range(range)) {
+            send_error(res, send, *invalid);
             return;
         }
-
         m_context->metrics().record_flow("payout_available_filters_profile");
         m_context->metrics().counter("payouts_available_filters_profile_total").increment();
 
-        const auto query = app::http::RequestQuery{}(req);
-        const auto records = scoped_records(
-            resolve_profile_id(req, std::nullopt), time_range_from_query(query));
-        auto filters = *parsed;
-        const auto statuses = distinct_field(records, [](const auto& record) { return record.get_status(); });
-        if (!statuses.empty()) {
-            std::vector<app::model::payouts::PayoutStatusValue> values{};
-            for (const auto& value : statuses) {
-                app::model::payouts::PayoutStatusValue item{};
-                item.set_value(value);
-                values.push_back(std::move(item));
-            }
-            filters.set_status(std::move(values));
-        }
-
+        const auto filters = available_filters(
+            scoped_records(resolve_profile_id(req, std::nullopt), range));
         auto text = serde::Ser::encode_json(filters);
         send_json(res, send, text, true);
-    }
-
-    void handle_payouts_accounts(
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    )
-    {
-        // Upstream payouts_accounts is an unauthenticated stub whose route is commented out
-        // of app.rs. It is not present in RouteAuthRegistry, so this extra C++-only route
-        // deliberately keeps its coarse token check instead of failing closed with FORBIDDEN.
-        const auto auth_error = m_context->authorizer().authorize(
-            app::auth::TokenParser{}(req),
-            app::auth::AppPermission::PAYMENT_READ
-        );
-        if (auth_error) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-
-        m_context->metrics().record_flow("payout_accounts");
-        m_context->metrics().counter("payouts_accounts_total").increment();
-        (void)app::http::RequestQuery{}(req).get("merchant_id");
-
-        const auto encoded = serde::Ser::encode_json(std::string{"payouts.payouts_accounts"});
-        send_json(res, send, std::format(R"({{"operation":{}}})", encoded), true);
     }
 
     void handle_get_payout_filters(
@@ -955,10 +923,13 @@ public:
 
         m_context->metrics().record_flow("get_payout_filters");
         m_context->metrics().counter("payouts_get_filters_total").increment();
-        const auto query = app::http::RequestQuery{}(req);
+        const auto auth = app::auth::AuthContextBuilder{}(req);
+        auto merchant_id = app::http::merchant_id_from_header{}(req);
+        if (merchant_id.empty()) {
+            merchant_id = auth.merchant_id();
+        }
 
-        auto text = serde::Ser::encode_json(filters_from_records(
-            query.get("profile_id").value_or(""), time_range_from_query(query)));
+        auto text = serde::Ser::encode_json(filters_v2_from_mcas("", merchant_id));
         send_json(res, send, text, true);
     }
 
@@ -975,10 +946,14 @@ public:
 
         m_context->metrics().record_flow("get_payout_filters_profile");
         m_context->metrics().counter("payouts_get_filters_profile_total").increment();
-        const auto query = app::http::RequestQuery{}(req);
+        const auto auth = app::auth::AuthContextBuilder{}(req);
+        auto merchant_id = app::http::merchant_id_from_header{}(req);
+        if (merchant_id.empty()) {
+            merchant_id = auth.merchant_id();
+        }
 
-        auto text = serde::Ser::encode_json(filters_from_records(
-            resolve_profile_id(req, std::nullopt), time_range_from_query(query)));
+        auto text = serde::Ser::encode_json(
+            filters_v2_from_mcas(resolve_profile_id(req, std::nullopt), merchant_id));
         send_json(res, send, text, true);
     }
 
@@ -993,27 +968,17 @@ public:
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (!body.empty()) {
-            auto parsed = serde::Ser::decode_generic("application/json", body);
-            if (!parsed) {
-                send_error(res, send, error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-                return;
-            }
-        }
-
+        // Upstream input is `web::Query<TimeRange>` (`payouts.rs:708`); no body is read.
         m_context->metrics().record_flow("get_payouts_aggregates");
         m_context->metrics().counter("payouts_aggregates_total").increment();
         const auto query = app::http::RequestQuery{}(req);
-
-        app::model::payouts::PayoutsAggregateResponse response{};
-        std::unordered_map<std::string, std::int64_t> counts{};
-        for (const auto& record : scoped_records(
-                 query.get("profile_id").value_or(""), time_range_from_query(query))) {
-            ++counts[record.get_status()];
+        const auto range = time_range_from_query(query);
+        if (const auto invalid = require_time_range(range)) {
+            send_error(res, send, *invalid);
+            return;
         }
-        response.set_status_with_count(std::move(counts));
 
+        auto response = aggregate_response(scoped_records("", range));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1029,27 +994,16 @@ public:
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (!body.empty()) {
-            auto parsed = serde::Ser::decode_generic("application/json", body);
-            if (!parsed) {
-                send_error(res, send, error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-                return;
-            }
-        }
-
         m_context->metrics().record_flow("get_payouts_aggregates_profile");
         m_context->metrics().counter("payouts_aggregates_profile_total").increment();
         const auto query = app::http::RequestQuery{}(req);
-
-        app::model::payouts::PayoutsAggregateResponse response{};
-        std::unordered_map<std::string, std::int64_t> counts{};
-        for (const auto& record : scoped_records(
-                 resolve_profile_id(req, std::nullopt), time_range_from_query(query))) {
-            ++counts[record.get_status()];
+        const auto range = time_range_from_query(query);
+        if (const auto invalid = require_time_range(range)) {
+            send_error(res, send, *invalid);
+            return;
         }
-        response.set_status_with_count(std::move(counts));
 
+        auto response = aggregate_response(scoped_records(resolve_profile_id(req, std::nullopt), range));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1077,6 +1031,13 @@ public:
             return;
         }
         const auto& input = *parsed;
+        // `PayoutsManualUpdateRequest::is_update_parameter_present` (`api_models/payouts.rs:1931-1938`).
+        if (!input.get_status().has_value() && !input.get_error_code().has_value() &&
+            !input.get_error_message().has_value() && !input.get_connector_payout_id().has_value()) {
+            send_error(res, send, error(core::error::AppErrorKind::VALIDATION_FAILED,
+                                        "Request must contain atleast one parameter to update"));
+            return;
+        }
 
         const auto path_id = payout_id_from_path(req);
         if (!path_id.has_value()) {
@@ -1101,13 +1062,11 @@ public:
             return;
         }
         auto record = *found;
-        const auto attempt_status = input.get_status() ? input.get_status()->get_value() : std::string{};
-        if (!attempt_status.empty()) {
-            record.set_status(attempt_status);
-        }
-        m_context->repository().update_payout(record);
-
+        const auto attempt_status = input.get_status() ? normalize_status(input.get_status()->get_value())
+                                                       : std::string{};
         const std::string attempt_id = input.get_payout_attempt_id();
+        std::string final_attempt_status = attempt_status;
+
         if (!attempt_id.empty()) {
             const auto existing = m_context->repository().find_payout_attempt_by_string(attempt_id);
             if (existing.has_value()) {
@@ -1122,6 +1081,9 @@ public:
                     attempt.set_error_message(*input.get_error_message());
                 }
                 m_context->repository().update_payout_attempt(attempt);
+                if (final_attempt_status.empty()) {
+                    final_attempt_status = attempt.get_status();
+                }
             } else {
                 record_payout_attempt(
                     record.get_payout_id(), record.get_merchant_id(),
@@ -1131,16 +1093,27 @@ public:
                     input.get_error_message().value_or(""));
             }
         }
+
+        // Upstream updates the payout status only when the manual-updated attempt is the
+        // active attempt (`payouts_manual_update_core:4633-4651`).
+        if (!attempt_status.empty() && attempt_id == payout_attempt_id(record.get_payout_id())) {
+            record.set_status(attempt_status);
+            m_context->repository().update_payout(record);
+        }
         emit_payout_webhook("manual_updated", record);
 
         app::model::payouts::PayoutsManualUpdateResponse response{};
         app::model::payouts::PayoutIdValue payout_value{};
         payout_value.set_value(record.get_payout_id());
         response.set_payout_id(payout_value);
-        response.set_payout_attempt_id(input.get_payout_attempt_id());
-        response.set_merchant_id(input.get_merchant_id());
-        if (input.get_status()) {
-            response.set_attempt_status(*input.get_status());
+        response.set_payout_attempt_id(attempt_id);
+        app::model::payouts::MerchantIdValue merchant_value{};
+        merchant_value.set_value(record.get_merchant_id());
+        response.set_merchant_id(merchant_value);
+        if (!final_attempt_status.empty()) {
+            app::model::payouts::PayoutStatusValue status_value{};
+            status_value.set_value(final_attempt_status);
+            response.set_attempt_status(status_value);
         }
         response.set_error_code(input.get_error_code());
         response.set_error_message(input.get_error_message());
@@ -1288,17 +1261,6 @@ public:
                     .summary("Hyperswitch payouts_list_available_filters_for_profile")
             )
             .add_route(
-                Route{"/payouts_accounts"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_accounts(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_accounts")
-            )
-            .add_route(
                 Route{"/v2/filter"}
                     .get([this](
                         interfaces::io::IRequest& req,
@@ -1409,9 +1371,149 @@ private:
         std::optional<core::error::AppError> error{};
     };
 
+    /** @brief Filter fields of upstream `PayoutListFilterConstraints` (`api_models/payouts.rs:1325-1368`). */
+    struct ListFilters
+    {
+        std::string payout_id{};
+        std::string merchant_order_reference_id{};
+        std::string customer_id{};
+        std::vector<std::string> connector{};
+        std::vector<std::string> currency{};
+        std::vector<std::string> status{};
+        std::vector<std::string> payout_method{};
+        std::string entity_type{};
+        std::size_t offset{};
+        std::size_t limit{};
+    };
+
+    /**
+     * @brief Wire values of `common_enums::PayoutStatus` (`enums.rs:9354-9377`,
+     * `#[serde(rename_all = "snake_case")]`). Exact upstream values replace the earlier
+     * local "pending"/"authorized"/"fulfilled" strings.
+     */
+    static constexpr std::string_view kRequiresCreation{"requires_creation"};
+    static constexpr std::string_view kRequiresConfirmation{"requires_confirmation"};
+    static constexpr std::string_view kRequiresPayoutMethodData{"requires_payout_method_data"};
+    static constexpr std::string_view kRequiresFulfillment{"requires_fulfillment"};
+    static constexpr std::string_view kRequiresVendorAccountCreation{"requires_vendor_account_creation"};
+    static constexpr std::string_view kInitiated{"initiated"};
+    static constexpr std::string_view kPending{"pending"};
+    static constexpr std::string_view kSuccess{"success"};
+    static constexpr std::string_view kFailed{"failed"};
+    static constexpr std::string_view kCancelled{"cancelled"};
+    static constexpr std::string_view kExpired{"expired"};
+    static constexpr std::string_view kReversed{"reversed"};
+    static constexpr std::string_view kIneligible{"ineligible"};
+    static constexpr std::string_view kNotPermitted{"not_permitted"};
+
+    /** @brief All upstream `PayoutStatus::iter()` values in declaration order (`enums.rs:9354-9377`). */
+    [[nodiscard]] std::vector<std::string_view> all_payout_statuses() const
+    {
+        return {
+            kSuccess, kFailed, kCancelled, kInitiated, kExpired, kReversed, kPending,
+            kIneligible, kNotPermitted, kRequiresCreation, kRequiresConfirmation,
+            kRequiresPayoutMethodData, kRequiresFulfillment, kRequiresVendorAccountCreation,
+        };
+    }
+
+    /**
+     * @brief `common_utils::types::TimeRange` (`common_utils/src/types.rs:809-822`).
+     * `start_time` mandatory with alias `startTime`; `end_time` optional with alias `endTime`.
+     */
+    struct TimeRange
+    {
+        std::string start_time{};
+        std::optional<std::string> end_time{};
+        bool present{};
+    };
+
     [[nodiscard]] core::error::AppError error(core::error::AppErrorKind kind, std::string message) const
     {
         return core::error::AppErrorBuilder{}(kind, std::move(message));
+    }
+
+    /**
+     * @brief Upstream JWT permission names generated by `generate_permissions!`
+     * {Payout: Read, entities: [Profile, Merchant]} — `services/authorization/permissions.rs:4,30-33`.
+     */
+    enum class PayoutPermission : std::uint8_t
+    {
+        PROFILE_PAYOUT_READ,
+        MERCHANT_PAYOUT_READ,
+    };
+
+    /** @brief Credential combination each upstream route extractor accepts. */
+    enum class PayoutAuthMode : std::uint8_t
+    {
+        API_KEY,                       // HeaderAuth(ApiKeyAuth)
+        API_KEY_OR_JWT_PROFILE,        // auth_type(HeaderAuth(...), JWTAuth{ProfilePayoutRead})
+        API_KEY_OR_JWT_MERCHANT,       // auth_type(HeaderAuth(...), JWTAuth{MerchantPayoutRead})
+        JWT_PROFILE,                   // JWTAuth{ProfilePayoutRead, allow_connected:true}
+        ADMIN_API,                     // AdminApiAuth
+    };
+
+    [[nodiscard]] PayoutAuthMode auth_mode_for(std::string_view operation) const
+    {
+        if (operation == "payouts_manual_update") {
+            return PayoutAuthMode::ADMIN_API;                       // payouts.rs:803
+        }
+        if (operation == "get_payouts_aggregates" ||
+            operation == "payouts_list" || operation == "payouts_list_by_filter" ||
+            operation == "payouts_list_available_filters_for_merchant") {
+            return PayoutAuthMode::API_KEY_OR_JWT_MERCHANT;         // payouts.rs:356-367,433-444,510-521,720-724
+        }
+        if (operation == "payouts_retrieve" || operation == "payouts_list_profile" ||
+            operation == "payouts_list_by_filter_profile" ||
+            operation == "payouts_list_available_filters_for_profile" ||
+            operation == "get_payout_filters" || operation == "get_payout_filters_profile") {
+            return PayoutAuthMode::API_KEY_OR_JWT_PROFILE;          // payouts.rs:120-131,397-408,474-485,551-562,593-604,631-642
+        }
+        if (operation == "get_payouts_aggregates_profile") {
+            return PayoutAuthMode::JWT_PROFILE;                     // payouts.rs:752-756
+        }
+        return PayoutAuthMode::API_KEY;                             // payouts.rs:75-78,175-178,222-225,263-266,304-307
+    }
+
+    [[nodiscard]] std::string_view permission_name(PayoutPermission permission) const noexcept
+    {
+        return permission == PayoutPermission::PROFILE_PAYOUT_READ
+                   ? "ProfilePayoutRead"
+                   : "MerchantPayoutRead";
+    }
+
+    /** @brief Mirrors `authorization::check_permission` (`services/authorization.rs:115-128`). */
+    [[nodiscard]] std::optional<core::error::AppError> check_upstream_permission(
+        const app::auth::AuthContext& auth,
+        PayoutPermission permission
+    ) const
+    {
+        const auto single = auth.claim("permission");
+        const auto list = auth.claim("permissions");
+        if (!single.has_value() && !list.has_value()) {
+            return std::nullopt;
+        }
+        const std::string_view required = permission_name(permission);
+        const auto grants = [required](std::string_view granted)
+        {
+            std::string_view rest = granted;
+            while (!rest.empty()) {
+                const std::size_t comma = rest.find(',');
+                const std::string_view token = rest.substr(0, comma);
+                if (token == required || token == "ADMIN") {
+                    return true;
+                }
+                if (comma == std::string_view::npos) {
+                    break;
+                }
+                rest = rest.substr(comma + 1);
+            }
+            return false;
+        };
+        if ((single.has_value() && grants(*single)) || (list.has_value() && grants(*list))) {
+            return std::nullopt;
+        }
+        return error(core::error::AppErrorKind::FORBIDDEN,
+                     std::format("Access forbidden: {}", required));
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize_operation(
@@ -1419,8 +1521,52 @@ private:
         std::string_view operation
     ) const
     {
-        const auto rule = m_context->auth_rules().rule_for(operation);
-        return m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
+        const auto mode = auth_mode_for(operation);
+        const auto auth = app::auth::AuthContextBuilder{}(req);
+        const bool has_token = !auth.token().is_empty();
+        const auto api_key = auth.claim(app::auth::kClaimApiKey);
+        const auto internal_key = auth.claim(app::auth::kClaimInternalApiKey);
+        const bool has_api_key = api_key.has_value() && !api_key->empty();
+        const bool has_internal_key = internal_key.has_value() && !internal_key->empty();
+
+        switch (mode) {
+        case PayoutAuthMode::API_KEY:
+            // `HeaderAuth(ApiKeyAuth)` uses the `api-key` header; the bearer token is the
+            // local equivalent (routes/payouts.rs:75-78).
+            if (!has_token && !has_api_key) {
+                return error(core::error::AppErrorKind::UNAUTHORIZED, "missing API key");
+            }
+            return std::nullopt;
+        case PayoutAuthMode::ADMIN_API:
+            // `AdminApiAuth` uses `admin-api-key` (routes/payouts.rs:803); the internal
+            // API key is its local equivalent.
+            if (!has_token && !has_internal_key) {
+                return error(core::error::AppErrorKind::UNAUTHORIZED, "missing admin API key");
+            }
+            return std::nullopt;
+        case PayoutAuthMode::JWT_PROFILE:
+            if (!has_token) {
+                return error(core::error::AppErrorKind::UNAUTHORIZED, "missing bearer token");
+            }
+            return check_upstream_permission(auth, PayoutPermission::PROFILE_PAYOUT_READ);
+        case PayoutAuthMode::API_KEY_OR_JWT_MERCHANT:
+            if (has_api_key) {
+                return std::nullopt;
+            }
+            if (!has_token) {
+                return error(core::error::AppErrorKind::UNAUTHORIZED, "missing bearer token");
+            }
+            return check_upstream_permission(auth, PayoutPermission::MERCHANT_PAYOUT_READ);
+        case PayoutAuthMode::API_KEY_OR_JWT_PROFILE:
+        default:
+            if (has_api_key) {
+                return std::nullopt;
+            }
+            if (!has_token) {
+                return error(core::error::AppErrorKind::UNAUTHORIZED, "missing bearer token");
+            }
+            return check_upstream_permission(auth, PayoutPermission::PROFILE_PAYOUT_READ);
+        }
     }
 
     [[nodiscard]] std::string to_lower(std::string_view value) const
@@ -1479,16 +1625,20 @@ private:
         std::string_view browser_info,
         std::string_view payout_link_id,
         std::string_view payout_link_status,
-        std::string_view note
+        std::string_view note,
+        std::string_view merchant_order_reference_id = {},
+        std::string_view entity_type = {}
     ) const
     {
         return std::format(
-            R"({{"profile_id":"{}","browser_info":"{}","payout_link_id":"{}","payout_link_status":"{}","note":"{}"}})",
+            R"({{"profile_id":"{}","browser_info":"{}","payout_link_id":"{}","payout_link_status":"{}","note":"{}","merchant_order_reference_id":"{}","entity_type":"{}"}})",
             json_escape(profile_id),
             json_escape(browser_info),
             json_escape(payout_link_id),
             json_escape(payout_link_status),
-            json_escape(note));
+            json_escape(note),
+            json_escape(merchant_order_reference_id),
+            json_escape(entity_type));
     }
 
     [[nodiscard]] std::string merge_meta_profile(std::string_view meta, std::string_view profile_id) const
@@ -1498,7 +1648,21 @@ private:
             meta_value(meta, "browser_info"),
             meta_value(meta, "payout_link_id"),
             meta_value(meta, "payout_link_status"),
-            meta_value(meta, "note"));
+            meta_value(meta, "note"),
+            meta_value(meta, "merchant_order_reference_id"),
+            meta_value(meta, "entity_type"));
+    }
+
+    [[nodiscard]] std::string merge_meta_browser_info(std::string_view meta, std::string_view browser_info) const
+    {
+        return encode_meta(
+            meta_value(meta, "profile_id"),
+            browser_info,
+            meta_value(meta, "payout_link_id"),
+            meta_value(meta, "payout_link_status"),
+            meta_value(meta, "note"),
+            meta_value(meta, "merchant_order_reference_id"),
+            meta_value(meta, "entity_type"));
     }
 
     [[nodiscard]] std::string merge_meta_payout_link(std::string_view meta, std::string_view link_status) const
@@ -1508,7 +1672,9 @@ private:
             meta_value(meta, "browser_info"),
             meta_value(meta, "payout_link_id"),
             link_status,
-            meta_value(meta, "note"));
+            meta_value(meta, "note"),
+            meta_value(meta, "merchant_order_reference_id"),
+            meta_value(meta, "entity_type"));
     }
 
     [[nodiscard]] std::string merge_meta_note(std::string_view meta, std::string_view note) const
@@ -1518,15 +1684,49 @@ private:
             meta_value(meta, "browser_info"),
             meta_value(meta, "payout_link_id"),
             meta_value(meta, "payout_link_status"),
-            note);
+            note,
+            meta_value(meta, "merchant_order_reference_id"),
+            meta_value(meta, "entity_type"));
     }
 
-    [[nodiscard]] std::string browser_info_from_headers(interfaces::io::IRequest& req) const
+    /**
+     * @brief Local `populate_browser_info_for_payouts` (`routes/payouts.rs:648-701`).
+     * Upstream fills `ip_address` from the connection's real IP and `accept_language`
+     * from `HeaderPayload::locale`, keeping any caller-supplied browser info. Locally the
+     * `x-forwarded-for` / `accept-language` headers stand in for those two sources; the
+     * full structured `BrowserInformation` field layout is emitted as JSON.
+     */
+    [[nodiscard]] std::string browser_info_from_headers(
+        interfaces::io::IRequest& req,
+        const std::optional<app::model::payouts::BrowserInformationValue>& provided
+    ) const
     {
-        const auto user_agent = app::http::HeaderReader{}.get(req, "user-agent");
-        const auto locale = app::http::HeaderReader{}.get(req, "accept-language");
-        const auto ip = app::http::HeaderReader{}.get(req, "x-forwarded-for");
-        return std::format("ua={}|locale={}|ip={}", user_agent, locale, ip);
+        std::string fields{};
+        if (provided.has_value() && !provided->get_value().empty()) {
+            auto value = provided->get_value();
+            if (value.front() == '{') {
+                value.erase(value.begin());
+            }
+            if (!value.empty() && value.back() == '}') {
+                value.pop_back();
+            }
+            fields = std::move(value);
+        }
+        const auto append = [&fields](std::string_view key, std::string_view value)
+        {
+            if (value.empty() || fields.find(std::format("\"{}\"", key)) != std::string::npos) {
+                return;
+            }
+            if (!fields.empty()) {
+                fields.push_back(',');
+            }
+            fields += std::format("\"{}\":\"{}\"", key, value);
+        };
+        append("ip_address", json_escape(app::http::HeaderReader{}.get(req, "x-forwarded-for")));
+        append("accept_language", json_escape(app::http::HeaderReader{}.get(req, "accept-language")));
+        append("user_agent", json_escape(app::http::HeaderReader{}.get(req, "user-agent")));
+        append("accept_header", json_escape(app::http::HeaderReader{}.get(req, "accept")));
+        return std::format("{{{}}}", fields);
     }
 
     [[nodiscard]] std::string first_requested_connector(
@@ -1605,43 +1805,20 @@ private:
         std::string_view requested_connector
     ) const
     {
+        // Local implementation of `get_connector_choice` + `make_connector_decision`
+        // (`core/payouts.rs:167-418`, `:586-623`). UCS/routing tiers are external infra;
+        // the local `ConnectorRouter` substitutes for them. No config-derived decision
+        // program is consulted — the eligible connector comes from the request's `connector`
+        // field (`payouts.rs:81` -> `core/payouts.rs:758`) and router ranking.
         ConnectorChoice choice{};
+        (void)merchant_id;
         (void)payout_id;
-        const auto context_json = std::format(
-            R"({{"amount":"{}","currency":"{}","payment_method":"{}","country":"","connector":"{}"}})",
-            amount, currency, payout_type, requested_connector);
-
-        auto program = m_context->superposition().resolve(
-            "payouts", "connector_decision", merchant_id);
-        const std::string program_json = (program.has_value() && !program->get_value().empty())
-                                             ? program->get_value()
-                                             : std::string{
-                                                 R"({"rules":[],"default_action":"allow","default_connector":""})"};
-        const auto decision = m_context->decision_engine().evaluate(program_json, context_json);
-        choice.decision_action = decision.get_action();
-        choice.decision_connector = decision.get_connector_name();
-
-        if (!decision.get_error_kind().empty()) {
-            choice.error = error(core::error::AppErrorKind::VALIDATION_FAILED,
-                                 decision.get_reason().empty()
-                                     ? std::string{"invalid payout connector decision program"}
-                                     : decision.get_reason());
-            return choice;
-        }
-        if (decision.get_action() == "deny" || decision.get_action() == "error") {
-            choice.error = error(core::error::AppErrorKind::PRECONDITION_FAILED,
-                                 decision.get_reason().empty()
-                                     ? std::string{"connector decision denied the payout"}
-                                     : decision.get_reason());
-            return choice;
-        }
-
+        (void)amount;
+        (void)currency;
         request.set_payment_method_type(std::string{payout_type});
         auto connector = m_context->connector_router().select_for(request);
         if (!connector) {
             const auto last = m_context->connector_router().last_error();
-            // An empty router is the normal local configuration: keep the payout pending
-            // instead of failing. Real policy failures (kill switch, rollout) stay typed.
             if (last.has_value() && last->get_message() != "no connector registered") {
                 choice.error = *last;
             } else {
@@ -1649,6 +1826,14 @@ private:
             }
             return choice;
         }
+        if (!requested_connector.empty() && connector->name() != requested_connector) {
+            // Upstream restricts the decision to the merchant-supplied eligible connector
+            // list (`PayoutCreateRequest.connector`, `core/payouts.rs:758`).
+            m_context->metrics().counter("payouts_connector_unavailable").increment();
+            return choice;
+        }
+        choice.decision_action = "allow";
+        choice.decision_connector = std::string{connector->name()};
         choice.connector = std::move(connector);
         m_context->metrics().record_flow("payout.connector.decision");
         m_context->metrics().counter("payouts_connector_decision").increment();
@@ -1707,88 +1892,259 @@ private:
         return outcome;
     }
 
-    [[nodiscard]] bool supports_instant_payout(std::string_view connector_name) const
+    /** @brief Maps a local connector outcome to an upstream `PayoutStatus` wire value. */
+    [[nodiscard]] std::string status_from_connector(std::string_view status, bool auto_fulfill) const
+    {
+        const auto lower = to_lower(status);
+        if (lower == "authorized" || lower == "requires_fulfillment") {
+            return auto_fulfill ? std::string{kSuccess} : std::string{kRequiresFulfillment};
+        }
+        if (lower.empty()) {
+            return std::string{kRequiresFulfillment};
+        }
+        return normalize_status(status);
+    }
+
+    /** @brief Normalizes legacy local status strings to upstream snake_case values. */
+    [[nodiscard]] std::string normalize_status(std::string_view status) const
+    {
+        const auto lower = to_lower(status);
+        if (lower == "succeeded") {
+            return std::string{kSuccess};
+        }
+        if (lower == "authorized") {
+            return std::string{kRequiresFulfillment};
+        }
+        if (lower == "fulfilled") {
+            return std::string{kSuccess};
+        }
+        if (lower == "notpermitted") {
+            return std::string{kNotPermitted};
+        }
+        if (lower == "requiresfulfillment") {
+            return std::string{kRequiresFulfillment};
+        }
+        if (lower == "requirescreation") {
+            return std::string{kRequiresCreation};
+        }
+        if (lower == "requiresconfirmation") {
+            return std::string{kRequiresConfirmation};
+        }
+        if (lower == "requirespayoutmethoddata") {
+            return std::string{kRequiresPayoutMethodData};
+        }
+        if (lower == "requiresvendoraccountcreation") {
+            return std::string{kRequiresVendorAccountCreation};
+        }
+        return std::string{lower};
+    }
+
+    [[nodiscard]] bool status_is(std::string_view status, std::string_view expected) const
+    {
+        return normalize_status(status) == expected;
+    }
+
+    /**
+     * @brief Exact port of `Connector::supports_instant_payout` (`connector_enums.rs:239-258`).
+     * A missing connector name maps to `true` (`core/payouts.rs:1009-1012` `unwrap_or(true)`).
+     */
+    [[nodiscard]] bool connector_supports_instant_payout(
+        std::string_view connector_name,
+        std::string_view payout_type
+    ) const
+    {
+        const auto connector = to_lower(connector_name);
+        const auto method = to_lower(payout_type);
+        if (connector == "paypal") {
+            return method == "wallet";
+        }
+        if (connector == "checkout" || connector == "envoy" || connector == "adyenplatform" ||
+            connector == "nomupay" || connector == "loonio" || connector == "truelayer" ||
+            connector == "trustly" || connector == "gotymesanlam") {
+            return true;
+        }
+        if (method == "card") {
+            return true;
+        }
+        if (connector == "worldpay" || connector == "worldpayxml") {
+            return method == "wallet";
+        }
+        if (connector == "itaubank" || connector == "deutschebank") {
+            return method == "bank";
+        }
+        if (connector == "mifinity") {
+            return method == "wallet" || method == "bank";
+        }
+        return false;
+    }
+
+    [[nodiscard]] bool supports_instant_payout(
+        std::string_view connector_name,
+        std::string_view payout_type
+    ) const
     {
         if (connector_name.empty()) {
             return true;
         }
-        const auto configured = m_context->config_store().get_value(
-            "payout_supports_instant", connector_name);
-        if (configured.has_value()) {
-            return *configured == "true" || *configured == "1";
-        }
-        return connector_name == "local";
+        return connector_supports_instant_payout(connector_name, payout_type);
     }
 
+    /** @brief `PayoutStatus::is_terminal_status` (`enums.rs:9391-9401`). */
+    [[nodiscard]] bool is_payout_terminal_state(std::string_view status) const
+    {
+        const auto value = normalize_status(status);
+        return value != kRequiresCreation && value != kRequiresConfirmation &&
+               value != kRequiresPayoutMethodData && value != kRequiresVendorAccountCreation &&
+               value != kPending && value != kInitiated && value != kRequiresFulfillment;
+    }
+
+    /** @brief `helpers::is_payout_initiated` (`core/payouts/helpers.rs:1350-1359`). */
+    [[nodiscard]] bool is_payout_initiated(std::string_view status) const
+    {
+        const auto value = normalize_status(status);
+        return value != kRequiresCreation && value != kRequiresConfirmation &&
+               value != kRequiresPayoutMethodData && value != kRequiresVendorAccountCreation &&
+               value != kInitiated;
+    }
+
+    /** @brief `helpers::is_eligible_for_local_payout_cancellation` (`helpers.rs:1406-1415`). */
+    [[nodiscard]] bool is_eligible_for_local_payout_cancellation(std::string_view status) const
+    {
+        const auto value = normalize_status(status);
+        return value == kRequiresCreation || value == kRequiresConfirmation ||
+               value == kRequiresPayoutMethodData || value == kRequiresVendorAccountCreation ||
+               value == kRequiresFulfillment;
+    }
+
+    /** @brief `helpers::should_call_retrieve` (`helpers.rs:1389-1394`). */
+    [[nodiscard]] bool should_call_retrieve(std::string_view status) const
+    {
+        const auto value = normalize_status(status);
+        return value == kPending || value == kInitiated;
+    }
+
+    /** @brief `payouts_confirm_core` disallowed statuses (`core/payouts.rs:791-804`). */
     [[nodiscard]] bool is_confirm_disallowed(std::string_view status) const
     {
-        const auto lower = to_lower(status);
-        const std::array<std::string_view, 10> disallowed{
-            "cancelled", "success", "succeeded", "failed",
-            "ineligible", "notpermitted", "requiresfulfillment", "requiresvendoraccountcreation",
-            "authorized", "fulfilled"};
-        return std::find(disallowed.begin(), disallowed.end(), std::string_view{lower}) != disallowed.end();
+        const auto value = normalize_status(status);
+        const std::array<std::string_view, 8> disallowed{
+            kCancelled, kSuccess, kFailed, kPending, kIneligible, kNotPermitted,
+            kRequiresFulfillment, kRequiresVendorAccountCreation};
+        return std::find(disallowed.begin(), disallowed.end(), value) != disallowed.end();
     }
 
+    /** @brief `payouts_cancel_core` terminal guard (`core/payouts.rs:999-1006`). */
     [[nodiscard]] bool is_cancel_terminal(std::string_view status) const
     {
-        const auto lower = to_lower(status);
-        const std::array<std::string_view, 4> terminal{
-            "cancelled", "success", "succeeded", "failed"};
-        return std::find(terminal.begin(), terminal.end(), std::string_view{lower}) != terminal.end();
+        return is_payout_terminal_state(status);
     }
 
+    /** @brief `payouts_fulfill_core` guard (`core/payouts.rs:1111-1120`). */
     [[nodiscard]] bool is_fulfill_allowed(std::string_view status) const
     {
-        const auto lower = to_lower(status);
-        return lower == "pending" || lower == "authorized" ||
-               lower == "requiresfulfillment" || lower.empty();
+        return !is_payout_terminal_state(status) &&
+               normalize_status(status) == kRequiresFulfillment;
     }
 
-    [[nodiscard]] std::string time_range_from_query(const app::http::QueryParams& query) const
+    [[nodiscard]] std::optional<std::string> json_string_any(
+        std::string_view body,
+        std::initializer_list<std::string_view> keys
+    ) const
     {
-        const auto start = query.get("start_time");
-        const auto end = query.get("end_time");
+        for (const auto key : keys) {
+            if (auto value = meta_value(body, key); !value.empty()) {
+                return value;
+            }
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] TimeRange time_range_from_query(const app::http::QueryParams& query) const
+    {
+        TimeRange range{};
+        const auto start = query.get("start_time").has_value()
+                               ? query.get("start_time")
+                               : query.get("startTime");
+        const auto end = query.get("end_time").has_value()
+                             ? query.get("end_time")
+                             : query.get("endTime");
         if (!start.has_value() && !end.has_value()) {
-            return {};
+            return range;
         }
-        return std::format("{},{}", start.value_or(""), end.value_or(""));
+        range.present = true;
+        range.start_time = start.value_or("");
+        range.end_time = end;
+        return range;
     }
 
-    [[nodiscard]] bool within_time_range(std::string_view created_at, std::string_view time_range) const
+    [[nodiscard]] TimeRange time_range_from_body(std::string_view body) const
     {
-        if (time_range.empty()) {
+        TimeRange range{};
+        const auto start = json_string_any(body, {"start_time", "startTime"});
+        const auto end = json_string_any(body, {"end_time", "endTime"});
+        if (!start.has_value() && !end.has_value()) {
+            return range;
+        }
+        range.present = true;
+        range.start_time = start.value_or("");
+        range.end_time = end;
+        return range;
+    }
+
+    /** @brief ISO8601 UTC timestamp matching `common_utils::date_time::now()` wire format. */
+    [[nodiscard]] std::string created_at_now() const
+    {
+        const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
+                                 std::chrono::system_clock::now().time_since_epoch()
+                             ).count();
+        const std::chrono::sys_seconds point{std::chrono::seconds{seconds}};
+        return std::format("{:%FT%TZ}", point);
+    }
+
+    /** @brief `utils::get_payout_attempt_id(payout_id, count)` (`utils.rs:175-178`). */
+    [[nodiscard]] std::string payout_attempt_id(std::string_view payout_id, int count = 1) const
+    {
+        return std::format("{}_{}", payout_id, count);
+    }
+
+    [[nodiscard]] bool within_time_range(std::string_view created_at, const TimeRange& range) const
+    {
+        if (!range.present) {
             return true;
         }
-        const auto created = to_number(created_at);
-        if (!created.has_value()) {
-            return true;
-        }
-        const auto comma = time_range.find(',');
-        const auto start_text = comma == std::string_view::npos
-                                    ? time_range
-                                    : time_range.substr(0, comma);
-        const auto end_text = comma == std::string_view::npos
-                                  ? std::string_view{}
-                                  : time_range.substr(comma + 1);
-        if (!start_text.empty()) {
-            const auto start = to_number(start_text);
-            if (start.has_value() && *created < *start) {
-                return false;
+        const auto compare = [](std::string_view lhs, std::string_view rhs) -> int
+        {
+            if (const auto l = to_number(lhs); l.has_value()) {
+                if (const auto r = to_number(rhs); r.has_value()) {
+                    return *l < *r ? -1 : (*l > *r ? 1 : 0);
+                }
             }
-        }
-        if (!end_text.empty()) {
-            const auto end = to_number(end_text);
-            if (end.has_value() && *created > *end) {
-                return false;
+            if (lhs < rhs) {
+                return -1;
             }
+            if (lhs > rhs) {
+                return 1;
+            }
+            return 0;
+        };
+        if (!range.start_time.empty() && compare(created_at, range.start_time) < 0) {
+            return false;
+        }
+        if (range.end_time.has_value() && !range.end_time->empty() &&
+            compare(created_at, *range.end_time) > 0) {
+            return false;
         }
         return true;
     }
 
+    /**
+     * @brief Local `filter_by_constraints` + `filter_objects_based_on_profile_id_list`
+     * (`core/payouts.rs:1202-1212`, `:1456-1473`). Empty profile id means upstream
+     * `None` (merchant scope); a non-empty id is the single authenticated profile.
+     */
     [[nodiscard]] std::vector<app::store::payouts::PayoutRecord> scoped_records(
         std::string_view profile_id,
-        std::string_view time_range
+        const TimeRange& range
     ) const
     {
         std::vector<app::store::payouts::PayoutRecord> out{};
@@ -1797,7 +2153,7 @@ private:
                 meta_value(record.get_metadata(), "profile_id") != profile_id) {
                 continue;
             }
-            if (!within_time_range(record.get_created_at(), time_range)) {
+            if (!within_time_range(record.get_created_at(), range)) {
                 continue;
             }
             out.push_back(record);
@@ -1817,7 +2173,7 @@ private:
     ) const
     {
         app::store::payout_attempts::PayoutAttemptRecord attempt{};
-        attempt.set_attempt_id(m_context->ids().payment_id("pa_"));
+        attempt.set_attempt_id(payout_attempt_id(payout_id));
         attempt.set_payout_id(std::string{payout_id});
         attempt.set_merchant_id(std::string{merchant_id});
         attempt.set_connector(std::string{connector});
@@ -1886,18 +2242,43 @@ private:
         return out;
     }
 
-    void emit_payout_webhook(std::string_view event_type, const app::store::payouts::PayoutRecord& record) const
+    /**
+     * @brief Upstream outgoing webhook trigger (`utils.rs:1470-1537`). The event type is
+     * derived from the final PayoutStatus (`common_enums/transformers.rs:2194-2215`); statuses
+     * without an event mapping emit nothing. The local EventBus + WebhookDeliveryService
+     * substitute for `create_event_and_trigger_outgoing_webhook`.
+     */
+    void emit_payout_webhook(std::string_view, const app::store::payouts::PayoutRecord& record) const
     {
-        const auto topic = std::format("payout.{}", event_type);
-        const auto payload = std::format(
-            R"({{"payout_id":"{}","merchant_id":"{}","status":"{}","event_type":"{}"}})",
-            record.get_payout_id(), record.get_merchant_id(), record.get_status(), event_type);
-        const auto event_id = m_context->events().publish(topic, payload);
-        const auto endpoint = m_context->config_store().get_value(
-            "payout_webhook_endpoint", record.get_merchant_id());
-        if (endpoint.has_value() && !endpoint->empty()) {
-            m_context->webhook_delivery().enqueue(event_id, *endpoint);
+        const auto status = normalize_status(record.get_status());
+        std::string_view event_type{};
+        if (status == kSuccess) {
+            event_type = "payout_success";
+        } else if (status == kFailed) {
+            event_type = "payout_failed";
+        } else if (status == kCancelled) {
+            event_type = "payout_cancelled";
+        } else if (status == kInitiated) {
+            event_type = "payout_initiated";
+        } else if (status == kExpired) {
+            event_type = "payout_expired";
+        } else if (status == kReversed) {
+            event_type = "payout_reversed";
+        } else if (status == kNotPermitted) {
+            event_type = "payout_not_permitted";
         }
+        if (event_type.empty()) {
+            return;
+        }
+        const auto payload = std::format(
+            R"({{"payout_id":"{}","merchant_id":"{}","status":"{}","event_type":"{}","created":"{}","amount":"{}","currency":"{}"}})",
+            json_escape(record.get_payout_id()), json_escape(record.get_merchant_id()),
+            json_escape(status), event_type, json_escape(record.get_created_at()),
+            record.get_amount(), json_escape(record.get_currency()));
+        const auto event_id = m_context->events().publish(
+            std::format("payout.{}", event_type), payload);
+        m_context->webhook_delivery().enqueue(
+            event_id, std::format("merchant://{}/webhooks", record.get_merchant_id()));
         m_context->metrics().record_flow("payout.webhook");
         m_context->metrics().counter("payouts_webhook_emitted").increment();
     }
@@ -2012,78 +2393,244 @@ private:
         return values;
     }
 
-    [[nodiscard]] app::model::payouts::PayoutListFiltersV2 filters_from_records(
-        std::string_view profile_id,
-        std::string_view time_range
+    /** @brief `get_aggregates_for_payouts` (`core/payouts.rs:4502-4529`): all statuses, zero-filled. */
+    [[nodiscard]] app::model::payouts::PayoutsAggregateResponse aggregate_response(
+        const std::vector<app::store::payouts::PayoutRecord>& records
     ) const
     {
-        app::model::payouts::PayoutListFiltersV2 filters{};
-        const auto records = scoped_records(profile_id, time_range);
-        std::vector<app::model::payouts::PayoutStatusValue> statuses{};
-        for (const auto& status : distinct_field(records, [](const auto& record) { return record.get_status(); })) {
-            app::model::payouts::PayoutStatusValue value{};
-            value.set_value(status);
-            statuses.push_back(std::move(value));
+        std::unordered_map<std::string, std::int64_t> counts{};
+        for (const auto status : all_payout_statuses()) {
+            counts.emplace(std::string{status}, 0);
         }
-        filters.set_status(std::move(statuses));
+        for (const auto& record : records) {
+            ++counts[normalize_status(record.get_status())];
+        }
+        app::model::payouts::PayoutsAggregateResponse response{};
+        response.set_status_with_count(std::move(counts));
+        return response;
+    }
+
+    /**
+     * @brief Local `get_filters_for_payouts` (`core/payouts.rs:1475-1491`).
+     */
+    [[nodiscard]] app::model::payouts::PayoutListFilters available_filters(
+        const std::vector<app::store::payouts::PayoutRecord>& records
+    ) const
+    {
+        app::model::payouts::PayoutListFilters filters{};
+        std::vector<app::model::payouts::PayoutConnectorsValue> connectors{};
+        for (const auto& connector : distinct_field(records, [](const auto& r) { return r.get_connector(); })) {
+            app::model::payouts::PayoutConnectorsValue value{};
+            value.set_value(connector);
+            connectors.push_back(std::move(value));
+        }
+        filters.set_connector(std::move(connectors));
         std::vector<app::model::payouts::CurrencyValue> currencies{};
-        for (const auto& currency : distinct_field(records, [](const auto& record) { return record.get_currency(); })) {
+        for (const auto& currency : distinct_field(records, [](const auto& r) { return r.get_currency(); })) {
             app::model::payouts::CurrencyValue value{};
             value.set_value(currency);
             currencies.push_back(std::move(value));
         }
         filters.set_currency(std::move(currencies));
+        std::vector<app::model::payouts::PayoutStatusValue> statuses{};
+        for (const auto& status : distinct_field(records, [](const auto& r) { return r.get_status(); })) {
+            app::model::payouts::PayoutStatusValue value{};
+            value.set_value(normalize_status(status));
+            statuses.push_back(std::move(value));
+        }
+        filters.set_status(std::move(statuses));
         std::vector<app::model::payouts::PayoutTypeValue> methods{};
-        for (const auto& payout_type : distinct_field(records, [](const auto& record) { return record.get_payout_type(); })) {
+        for (const auto& method : distinct_field(records, [](const auto& r) { return r.get_payout_type(); })) {
             app::model::payouts::PayoutTypeValue value{};
-            value.set_value(payout_type);
+            value.set_value(method);
             methods.push_back(std::move(value));
         }
         filters.set_payout_method(std::move(methods));
         return filters;
     }
 
-    [[nodiscard]] app::model::payouts::PayoutListResponse list_response(
-        std::string_view payout_id,
-        std::string_view customer_id,
-        std::string_view status,
-        std::string_view currency,
-        std::string_view profile_id,
-        std::string_view time_range,
-        std::size_t offset,
-        std::size_t limit
+    /** @brief `TimeRange.start_time` is mandatory for filter/aggregate routes (`types.rs:814-821`). */
+    [[nodiscard]] std::optional<core::error::AppError> require_time_range(const TimeRange& range) const
+    {
+        if (!range.present || range.start_time.empty()) {
+            return error(core::error::AppErrorKind::INVALID_REQUEST, "start_time is required");
+        }
+        return std::nullopt;
+    }
+
+    /** @brief `api_enums::Currency::iter()` (`common_enums/src/enums.rs:1093-1252`). */
+    [[nodiscard]] std::vector<std::string_view> all_currencies() const
+    {
+        static const std::vector<std::string_view> currencies{
+            "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN", "BAM", "BBD",
+            "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BRL", "BSD", "BTN", "BWP", "BYN",
+            "BZD", "CAD", "CDF", "CHF", "CLF", "CLP", "CNY", "COP", "CRC", "CUC", "CUP", "CVE",
+            "CZK", "DJF", "DKK", "DOP", "DZD", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP",
+            "GEL", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL", "HRK", "HTG", "HUF",
+            "IDR", "ILS", "INR", "IQD", "IRR", "ISK", "JMD", "JOD", "JPY", "KES", "KGS", "KHR",
+            "KMF", "KPW", "KRW", "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LYD",
+            "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRU", "MUR", "MVR", "MWK", "MXN",
+            "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB", "PEN", "PGK",
+            "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB", "RWF", "SAR", "SBD", "SCR",
+            "SDG", "SEK", "SGD", "SHP", "SLE", "SLL", "SOS", "SRD", "SSP", "STD", "STN", "SVC",
+            "SYP", "SZL", "THB", "TJS", "TMT", "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH",
+            "UGX", "USD", "UYU", "UZS", "VES", "VND", "VUV", "WST", "XAF", "XCD", "XOF", "XPF",
+            "YER", "ZAR", "ZMW", "ZWL",
+        };
+        return currencies;
+    }
+
+    [[nodiscard]] std::vector<std::string> all_json_string_values(
+        std::string_view json,
+        std::string_view key
     ) const
     {
-        const auto records = scoped_records(profile_id, time_range);
-        std::vector<app::model::payouts::PayoutCreateResponse> data{};
-        std::size_t skipped{0};
-        for (const auto& record : records) {
-            if (!payout_id.empty() && record.get_payout_id() != payout_id) {
-                continue;
-            }
-            if (!customer_id.empty() && record.get_customer_id() != customer_id) {
-                continue;
-            }
-            if (!status.empty() && record.get_status() != status) {
-                continue;
-            }
-            if (!currency.empty() && record.get_currency() != currency) {
-                continue;
-            }
-            if (skipped++ < offset) {
-                continue;
-            }
-            if (limit > 0 && data.size() >= limit) {
+        const std::string needle = std::format("\"{}\":\"", key);
+        std::vector<std::string> out{};
+        std::size_t cursor{0};
+        while ((cursor = json.find(needle, cursor)) != std::string_view::npos) {
+            const auto start = cursor + needle.size();
+            const auto end = json.find('"', start);
+            if (end == std::string_view::npos) {
                 break;
             }
-            auto item = response_from_record(record);
-            enrich_response(item, record, false);
+            out.emplace_back(json.substr(start, end - start));
+            cursor = end + 1;
+        }
+        return out;
+    }
+
+    /**
+     * @brief Exact `get_payout_filters_core` (`core/payouts.rs:1495-1559`): payout
+     * merchant connector accounts feed the connector map and payout-method set; currency
+     * and status are the full upstream enums. Connector map values are structured
+     * `MerchantConnectorInfo` objects matching `api_models/src/admin.rs:1626-1633`.
+     */
+    [[nodiscard]] app::model::payouts::PayoutListFiltersV2 filters_v2_from_mcas(
+        std::string_view profile_id,
+        std::string_view merchant_id
+    ) const
+    {
+        app::model::payouts::PayoutListFiltersV2 filters{};
+        std::vector<app::model::payouts::CurrencyValue> currencies{};
+        for (const auto currency : all_currencies()) {
+            app::model::payouts::CurrencyValue value{};
+            value.set_value(std::string{currency});
+            currencies.push_back(std::move(value));
+        }
+        filters.set_currency(std::move(currencies));
+        std::vector<app::model::payouts::PayoutStatusValue> statuses{};
+        for (const auto status : all_payout_statuses()) {
+            app::model::payouts::PayoutStatusValue value{};
+            value.set_value(std::string{status});
+            statuses.push_back(std::move(value));
+        }
+        filters.set_status(std::move(statuses));
+
+        std::unordered_map<std::string, std::vector<app::model::payouts::MerchantConnectorInfo>> connector_map{};
+        std::vector<app::model::payouts::PayoutTypeValue> payout_methods{};
+        for (const auto& mca : m_context->repository().list_merchant_connectors()) {
+            if (!merchant_id.empty() && mca.get_merchant_id() != merchant_id) {
+                continue;
+            }
+            if (!profile_id.empty() && mca.get_profile_id() != profile_id) {
+                continue;
+            }
+            if (mca.get_connector_type() != "payout_processor") {
+                continue;
+            }
+            if (!mca.get_connector_label().empty()) {
+                // Upstream `MerchantConnectorResponse::to_merchant_connector_info`
+                // (`api_models/src/admin.rs:1726-1732`): connector_label from the label,
+                // merchant_connector_id from the MCA id, connector_type from the record.
+                app::model::payouts::MerchantConnectorInfo info{};
+                info.set_connector_label(mca.get_connector_label());
+                info.set_merchant_connector_id(mca.get_merchant_connector_id());
+                info.set_connector_type(mca.get_connector_type());
+                connector_map[mca.get_connector_name()].push_back(std::move(info));
+            }
+            for (const auto& method : all_json_string_values(mca.get_payment_methods_enabled(), "payment_method")) {
+                if (std::find_if(payout_methods.begin(), payout_methods.end(),
+                                 [&method](const auto& value) { return value.get_value() == method; }) ==
+                    payout_methods.end()) {
+                    app::model::payouts::PayoutTypeValue value{};
+                    value.set_value(method);
+                    payout_methods.push_back(std::move(value));
+                }
+            }
+        }
+        filters.set_connector(std::move(connector_map));
+        filters.set_payout_method(std::move(payout_methods));
+        return filters;
+    }
+
+    /**
+     * @brief Local `payouts_filtered_list_core` row filtering (`core/payouts.rs:1338-1453`).
+     * Every field of the typed `PayoutListFilterConstraints` is applied to persisted rows;
+     * `total_count` matches the un-paginated filtered set.
+     */
+    [[nodiscard]] app::model::payouts::PayoutListResponse list_response(
+        const ListFilters& filters,
+        std::string_view profile_id,
+        const TimeRange& range
+    ) const
+    {
+        const auto records = scoped_records(profile_id, range);
+        std::vector<app::store::payouts::PayoutRecord> matched{};
+        for (const auto& record : records) {
+            if (!filters.payout_id.empty() && record.get_payout_id() != filters.payout_id) {
+                continue;
+            }
+            if (!filters.merchant_order_reference_id.empty() &&
+                meta_value(record.get_metadata(), "merchant_order_reference_id") !=
+                    filters.merchant_order_reference_id) {
+                continue;
+            }
+            if (!filters.customer_id.empty() && record.get_customer_id() != filters.customer_id) {
+                continue;
+            }
+            if (!filters.connector.empty() &&
+                std::find(filters.connector.begin(), filters.connector.end(), record.get_connector()) ==
+                    filters.connector.end()) {
+                continue;
+            }
+            if (!filters.currency.empty() &&
+                std::find(filters.currency.begin(), filters.currency.end(), record.get_currency()) ==
+                    filters.currency.end()) {
+                continue;
+            }
+            if (!filters.status.empty()) {
+                const auto status = normalize_status(record.get_status());
+                const bool any = std::any_of(filters.status.begin(), filters.status.end(),
+                                             [&status](const auto& c) { return status == c; });
+                if (!any) {
+                    continue;
+                }
+            }
+            if (!filters.payout_method.empty() &&
+                std::find(filters.payout_method.begin(), filters.payout_method.end(),
+                          record.get_payout_type()) == filters.payout_method.end()) {
+                continue;
+            }
+            if (!filters.entity_type.empty() &&
+                meta_value(record.get_metadata(), "entity_type") != filters.entity_type) {
+                continue;
+            }
+            matched.push_back(record);
+        }
+        std::vector<app::model::payouts::PayoutCreateResponse> data{};
+        for (std::size_t i = filters.offset; i < matched.size(); ++i) {
+            if (filters.limit > 0 && data.size() >= filters.limit) {
+                break;
+            }
+            auto item = response_from_record(matched[i]);
+            enrich_response(item, matched[i], false);
             data.push_back(std::move(item));
         }
         app::model::payouts::PayoutListResponse response{};
         response.set_data(std::move(data));
         response.set_size(response.get_data().size());
-        response.set_total_count(static_cast<std::int64_t>(records.size()));
+        response.set_total_count(static_cast<std::int64_t>(matched.size()));
         return response;
     }
 
@@ -2114,26 +2661,97 @@ private:
         return 0;
     }
 
-    [[nodiscard]] std::string status_filter(
-        const app::model::payouts::PayoutListFilterConstraints& input,
-        const std::optional<std::string>& fallback
-    )
+    /** @brief Builds a JSON object from selected query keys for typed `web::Query` DTO parsing. */
+    [[nodiscard]] std::string query_json(
+        const app::http::QueryParams& query,
+        std::initializer_list<std::string_view> keys
+    ) const
     {
-        if (input.get_status().has_value() && !input.get_status()->empty()) {
-            return input.get_status()->front().get_value();
+        std::string json{"{"};
+        bool first{true};
+        for (const auto key : keys) {
+            if (const auto value = query.get(key); value.has_value()) {
+                if (!first) {
+                    json.push_back(',');
+                }
+                first = false;
+                json += std::format("\"{}\":\"{}\"", key, json_escape(*value));
+            }
         }
-        return fallback.value_or("");
+        json.push_back('}');
+        return json;
     }
 
-    [[nodiscard]] std::string currency_filter(
-        const app::model::payouts::PayoutListFilterConstraints& input,
-        const std::optional<std::string>& fallback
-    )
+    /** @brief Typed `PayoutListConstraints` (`api_models/payouts.rs:1295-1321`) from query. */
+    [[nodiscard]] std::optional<app::model::payouts::PayoutListConstraints> list_constraints_from_query(
+        const app::http::QueryParams& query
+    ) const
     {
-        if (input.get_currency().has_value() && !input.get_currency()->empty()) {
-            return input.get_currency()->front().get_value();
+        return serde::Ser::deserialize<app::model::payouts::PayoutListConstraints>(
+            "application/json",
+            query_json(query, {"customer_id", "starting_after", "ending_before", "limit", "created"}));
+    }
+
+    [[nodiscard]] std::vector<std::string> status_values(
+        const std::optional<std::vector<app::model::payouts::PayoutStatusValue>>& values
+    ) const
+    {
+        std::vector<std::string> out{};
+        if (values.has_value()) {
+            for (const auto& value : *values) {
+                out.push_back(normalize_status(value.get_value()));
+            }
         }
-        return fallback.value_or("");
+        return out;
+    }
+
+    template<typename Value>
+    [[nodiscard]] std::vector<std::string> wrapper_values(
+        const std::optional<std::vector<Value>>& values
+    ) const
+    {
+        std::vector<std::string> out{};
+        if (values.has_value()) {
+            for (const auto& value : *values) {
+                out.push_back(value.get_value());
+            }
+        }
+        return out;
+    }
+
+    /** @brief Maps the typed filter DTO (`api_models/payouts.rs:1325-1368`) to row filters. */
+    [[nodiscard]] ListFilters list_filters_from_dto(
+        const app::model::payouts::PayoutListFilterConstraints& input,
+        const app::http::QueryParams& query
+    ) const
+    {
+        ListFilters filters{};
+        filters.payout_id = input.payout_id ? input.payout_id->get_value()
+                                            : query.get("payout_id").value_or("");
+        filters.merchant_order_reference_id = input.merchant_order_reference_id.value_or("");
+        filters.customer_id = input.customer_id ? input.customer_id->get_value()
+                                                : query.get("customer_id").value_or("");
+        filters.connector = wrapper_values(input.connector);
+        filters.currency = wrapper_values(input.currency);
+        filters.status = status_values(input.status);
+        filters.payout_method = wrapper_values(input.payout_method);
+        filters.entity_type = input.entity_type ? input.entity_type->get_value() : std::string{};
+        filters.offset = to_count(input.offset.get_value(), query.get("offset"));
+        filters.limit = to_count(input.limit.get_value(), query.get("limit"));
+        return filters;
+    }
+
+    /** @brief GET `/payouts/list` uses `PayoutListConstraints`, not the filter DTO. */
+    [[nodiscard]] ListFilters list_filters_from_constraints(
+        const app::model::payouts::PayoutListConstraints& constraints
+    ) const
+    {
+        ListFilters filters{};
+        if (constraints.customer_id.has_value()) {
+            filters.customer_id = constraints.customer_id->get_value();
+        }
+        filters.limit = to_count(constraints.limit.get_value(), std::nullopt);
+        return filters;
     }
 
     void send_error(

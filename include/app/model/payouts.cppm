@@ -169,6 +169,26 @@ public:
     std::string value{};
 };
 
+/**
+ * @brief Wire mirror of upstream `admin::MerchantConnectorInfo`
+ * (`api_models/src/admin.rs:1626-1633`). Used as the value type of
+ * `PayoutListFiltersV2.connector` so `GET /payouts/v2/{profile/}filter` emits the exact
+ * upstream JSON shape: `{connector_label, merchant_connector_id, connector_type}`.
+ */
+class MerchantConnectorInfo
+{
+public:
+    void set_connector_label(std::string value) { connector_label = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_label() const noexcept { return connector_label; }
+    void set_merchant_connector_id(std::string value) { merchant_connector_id = std::move(value); }
+    [[nodiscard]] const std::string& get_merchant_connector_id() const noexcept { return merchant_connector_id; }
+    void set_connector_type(std::string value) { connector_type = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_type() const noexcept { return connector_type; }
+    std::string connector_label{};
+    std::string merchant_connector_id{};
+    std::string connector_type{};
+};
+
 class MerchantIdValue
 {
 public:
@@ -854,15 +874,15 @@ public:
 class PayoutListFiltersV2
 {
 public:
-    void set_connector(std::unordered_map<std::string, std::vector<MerchantConnectorInfoValue>> value) { connector = std::move(value); }
-    [[nodiscard]] const std::unordered_map<std::string, std::vector<MerchantConnectorInfoValue>>& get_connector() const noexcept { return connector; }
+    void set_connector(std::unordered_map<std::string, std::vector<MerchantConnectorInfo>> value) { connector = std::move(value); }
+    [[nodiscard]] const std::unordered_map<std::string, std::vector<MerchantConnectorInfo>>& get_connector() const noexcept { return connector; }
     void set_currency(std::vector<CurrencyValue> value) { currency = std::move(value); }
     [[nodiscard]] const std::vector<CurrencyValue>& get_currency() const noexcept { return currency; }
     void set_status(std::vector<PayoutStatusValue> value) { status = std::move(value); }
     [[nodiscard]] const std::vector<PayoutStatusValue>& get_status() const noexcept { return status; }
     void set_payout_method(std::vector<PayoutTypeValue> value) { payout_method = std::move(value); }
     [[nodiscard]] const std::vector<PayoutTypeValue>& get_payout_method() const noexcept { return payout_method; }
-    std::unordered_map<std::string, std::vector<MerchantConnectorInfoValue>> connector{};
+    std::unordered_map<std::string, std::vector<MerchantConnectorInfo>> connector{};
     std::vector<CurrencyValue> currency{};
     std::vector<PayoutStatusValue> status{};
     std::vector<PayoutTypeValue> payout_method{};
@@ -2402,6 +2422,20 @@ struct serde::Serializable<app::model::payouts::PayoutListFilters>
         };
     }
     static constexpr std::string_view table_name() { return "payout_list_filters"; }
+};
+
+template<>
+struct serde::Serializable<app::model::payouts::MerchantConnectorInfo>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"connector_label", &app::model::payouts::MerchantConnectorInfo::get_connector_label, &app::model::payouts::MerchantConnectorInfo::set_connector_label, serde::FieldOptions{}>{},
+            serde::FieldDesc<"merchant_connector_id", &app::model::payouts::MerchantConnectorInfo::get_merchant_connector_id, &app::model::payouts::MerchantConnectorInfo::set_merchant_connector_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector_type", &app::model::payouts::MerchantConnectorInfo::get_connector_type, &app::model::payouts::MerchantConnectorInfo::set_connector_type, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "merchant_connector_info"; }
 };
 
 template<>

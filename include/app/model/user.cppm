@@ -1904,6 +1904,76 @@ struct serde::Serializable<app::model::user::AuthorizeTokenRequest>
     static constexpr std::string_view table_name() { return "authorize_token_request"; }
 };
 
+export namespace app::model::user {
+
+// Upstream `SignInRequest` is a type alias of `SignUpRequest`
+// (api_models/src/user.rs:32).
+using SignInRequest = SignUpRequest;
+
+/** @brief api_models::user::sample_data::SampleDataRequest wire shape. */
+class SampleDataRequest
+{
+public:
+    void set_record(std::optional<std::size_t> value) { record = std::move(value); }
+    [[nodiscard]] const std::optional<std::size_t>& get_record() const noexcept { return record; }
+    void set_connector(std::optional<std::vector<std::string>> value) { connector = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_connector() const noexcept { return connector; }
+    void set_start_time(std::optional<std::string> value) { start_time = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_start_time() const noexcept { return start_time; }
+    void set_end_time(std::optional<std::string> value) { end_time = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_end_time() const noexcept { return end_time; }
+    void set_min_amount(std::optional<std::int64_t> value) { min_amount = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_min_amount() const noexcept { return min_amount; }
+    void set_max_amount(std::optional<std::int64_t> value) { max_amount = std::move(value); }
+    [[nodiscard]] const std::optional<std::int64_t>& get_max_amount() const noexcept { return max_amount; }
+    void set_currency(std::optional<std::vector<std::string>> value) { currency = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_currency() const noexcept { return currency; }
+    void set_auth_type(std::optional<std::vector<std::string>> value) { auth_type = std::move(value); }
+    [[nodiscard]] const std::optional<std::vector<std::string>>& get_auth_type() const noexcept { return auth_type; }
+    void set_business_country(std::optional<std::string> value) { business_country = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_business_country() const noexcept { return business_country; }
+    void set_business_label(std::optional<std::string> value) { business_label = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_business_label() const noexcept { return business_label; }
+    void set_profile_id(std::optional<std::string> value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_profile_id() const noexcept { return profile_id; }
+
+    std::optional<std::size_t> record{};
+    std::optional<std::vector<std::string>> connector{};
+    std::optional<std::string> start_time{};
+    std::optional<std::string> end_time{};
+    std::optional<std::int64_t> min_amount{};
+    std::optional<std::int64_t> max_amount{};
+    std::optional<std::vector<std::string>> currency{};
+    std::optional<std::vector<std::string>> auth_type{};
+    std::optional<std::string> business_country{};
+    std::optional<std::string> business_label{};
+    std::optional<std::string> profile_id{};
+};
+
+} // namespace app::model::user
+
+template<>
+struct serde::Serializable<app::model::user::SampleDataRequest>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"record", &app::model::user::SampleDataRequest::get_record, &app::model::user::SampleDataRequest::set_record, serde::FieldOptions{}>{},
+            serde::FieldDesc<"connector", &app::model::user::SampleDataRequest::get_connector, &app::model::user::SampleDataRequest::set_connector, serde::FieldOptions{}>{},
+            serde::FieldDesc<"start_time", &app::model::user::SampleDataRequest::get_start_time, &app::model::user::SampleDataRequest::set_start_time, serde::FieldOptions{}>{},
+            serde::FieldDesc<"end_time", &app::model::user::SampleDataRequest::get_end_time, &app::model::user::SampleDataRequest::set_end_time, serde::FieldOptions{}>{},
+            serde::FieldDesc<"min_amount", &app::model::user::SampleDataRequest::get_min_amount, &app::model::user::SampleDataRequest::set_min_amount, serde::FieldOptions{}>{},
+            serde::FieldDesc<"max_amount", &app::model::user::SampleDataRequest::get_max_amount, &app::model::user::SampleDataRequest::set_max_amount, serde::FieldOptions{}>{},
+            serde::FieldDesc<"currency", &app::model::user::SampleDataRequest::get_currency, &app::model::user::SampleDataRequest::set_currency, serde::FieldOptions{}>{},
+            serde::FieldDesc<"auth_type", &app::model::user::SampleDataRequest::get_auth_type, &app::model::user::SampleDataRequest::set_auth_type, serde::FieldOptions{}>{},
+            serde::FieldDesc<"business_country", &app::model::user::SampleDataRequest::get_business_country, &app::model::user::SampleDataRequest::set_business_country, serde::FieldOptions{}>{},
+            serde::FieldDesc<"business_label", &app::model::user::SampleDataRequest::get_business_label, &app::model::user::SampleDataRequest::set_business_label, serde::FieldOptions{}>{},
+            serde::FieldDesc<"profile_id", &app::model::user::SampleDataRequest::get_profile_id, &app::model::user::SampleDataRequest::set_profile_id, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "sample_data_request"; }
+};
+
 #ifdef CONGELADO_TEST
 namespace app::model::user::tests {
 using namespace boost::ut;

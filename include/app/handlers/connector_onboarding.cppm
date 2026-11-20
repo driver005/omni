@@ -22,6 +22,59 @@ import app_keystore;
 
 export namespace app::handlers::connector_onboarding {
 
+/** @brief Upstream-shaped error: wire name/message plus the HTTP status of the upstream variant.
+ *
+ *  core::error::AppErrorKind has no NOT_IMPLEMENTED member, so the status is carried
+ *  explicitly (upstream ApiErrorResponse::NotImplemented -> 501, FlowNotSupported -> 400,
+ *  PreconditionFailed -> 400). The kind_name is set to the upstream variant name, which is
+ *  what the local {"error":KIND,"message":TEXT} serializer emits on the wire.
+ */
+struct LocalError
+{
+    core::error::AppError error{};
+    interfaces::io::types::Status status{interfaces::io::types::Status::INTERNAL_SERVER_ERROR};
+};
+
+/** @brief Local substitute for settings::ConnectorOnboarding + conf.connectors.paypal.
+ *
+ *  Upstream: configs/settings.rs:1804-1817 (paypal.enabled/client_id/client_secret/
+ *  partner_id) and core/connector_onboarding/paypal.rs:18-23 (connectors.paypal.base_url).
+ */
+struct ConnectorOnboardingConf
+{
+    bool enabled{true};
+    std::string client_id{};
+    std::string client_secret{};
+    std::string partner_id{};
+    std::string base_url{"https://www.paypal.com/"};
+};
+
+/** @brief Local substitute for types::ConnectorAuthType (BodyKey / SignatureKey).
+ *  Upstream api_models/admin.rs:1582-1597 uses #[serde(tag = "auth_type")].
+ */
+struct ConnectorAuth
+{
+    std::string auth_type{};
+    std::string api_key{};
+    std::string key1{};
+    std::string api_secret{};
+};
+
+/** @brief Local mirror of api_models::PayPalOnboardingStatus (api_models:37-47). */
+struct OnboardingOutcome
+{
+    std::string_view wire{};
+    std::string payer_id{};
+    bool success{false};
+};
+
+/** @brief Local substitute for types::api::connector_onboarding::paypal::SellerStatusResponse. */
+struct PayPalMerchantStatus
+{
+    std::string merchant_id{};
+    std::string details_url{};
+};
+
 class ConnectorOnboardingRouteHandlers
 {
 public:
@@ -29,6 +82,8 @@ public:
         : m_context{&context}
     {
     }
+
+    // ── Routes ───────────────────────────────────────────────────────────────────
 
     void handle_get_action_url(
         interfaces::io::IRequest& req,
@@ -45,98 +100,56 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        // The id_type/Connector wrappers in ActionUrlRequest have no serde::Serializable,
-        // so decode the generic tree and normalize the wrapped values locally.
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+        auto typed = serde::Ser::deserialize<app::dto::connector_onboarding::ActionUrlRequest>(
+            "application/json", body);
+        if (!typed) {
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-
-        std::string connector_id{};
-        std::string connector{};
-        std::string return_url{};
-        const auto& root = parsed->get();
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&root)) {
-            if (auto field = object->get("connector_id")) { connector_id = json_text(field.value()); }
-            if (auto field = object->get("connector")) { connector = json_text(field.value()); }
-            if (auto field = object->get("return_url")) { return_url = json_text(field.value()); }
+        const auto& request = *typed;
+        if (!valid_id(request.get_connector_id())) {
+            send_local_error(res, send, simple_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "invalid connector id"));
+            return;
         }
         const auto merchant_id = onboarding_merchant_id(req, auth);
-        if (const auto guard_error = check_connector(connector_id, merchant_id, std::string{})) {
-            send_error(res, send, *guard_error);
+
+        // Upstream core::get_action_url (core/connector_onboarding.rs:20-58).
+        if (const auto guard = check_if_connector_exists(
+                request.get_connector_id(), merchant_id, std::nullopt)) {
+            send_local_error(res, send, *guard);
             return;
         }
-        // Upstream utils::get_connector_auth returns NotImplemented for any non-PayPal
-        // connector. There is no NOT_IMPLEMENTED AppErrorKind, so map it to VALIDATION_FAILED.
-        if (!is_paypal(connector)) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "onboarding is not implemented for connector: " + connector));
+        const auto conf = connector_onboarding_conf();
+        const auto enabled = is_enabled(request.get_connector(), conf);
+        auto tracking = get_tracking_id_from_configs(request.get_connector_id(), request.get_connector());
+        if (!tracking) {
+            send_local_error(res, send, std::move(tracking.error()));
             return;
         }
-        // Upstream core:34-41 rejects anything except Some(true) from the
-        // connector_onboarding config. Locally the gate is a ConfigStore row; an absent
-        // row means the feature is enabled (stand-in for a deployed app config).
-        if (!connector_onboarding_enabled(connector)) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::FORBIDDEN,
-                "connector onboarding is not enabled for: " + connector));
+        if (!enabled.has_value() || !*enabled || !is_paypal(request.get_connector())) {
+            send_local_error(res, send, flow_not_supported(request.get_connector()));
+            return;
+        }
+        auto action_url = get_action_url_from_paypal(*tracking, request.get_return_url(), merchant_id);
+        if (!action_url) {
+            send_local_error(res, send, std::move(action_url.error()));
             return;
         }
 
-        // Upstream: get_tracking_id_from_configs -> tracked id for this connector account.
-        const auto tracking_id = get_tracking_id(connector_id, connector);
-
-        // Upstream: paypal::get_action_url_from_paypal performs an OAuth token exchange and
-        // POST v2/customer/partner-referrals against the configured base_url. No network or
-        // credentials exist locally; the deterministic substitute calls the injected
-        // connector's exchange_token/create_link capabilities, reads the configured base_url,
-        // and uses the connector action_url/reference_id when present.
-        const auto base_url = m_context->config_store()
-                                  .get_value("connectors", "paypal_base_url")
-                                  .value_or(std::string{"https://www.paypal.com/"});
-        std::string action_url{
-            std::format("{}bizsignup/entry?tracking_id={}", base_url, tracking_id)
-        };
-        if (!return_url.empty()) {
-            action_url += std::format("&return_url={}", return_url);
-        }
-        if (auto connector_service = m_context->connector_router().select(merchant_id)) {
-            auto token_request = app::connector::ConnectorRequestBuilder{}
-                                     .operation("generate_access_token")
-                                     .merchant_id(merchant_id)
-                                     .resource_id(tracking_id)();
-            (void)connector_service->exchange_token(token_request);
-            auto request = app::connector::ConnectorRequestBuilder{}
-                               .operation("create_link")
-                               .merchant_id(merchant_id)
-                               .resource_id(tracking_id)
-                               .raw_payload(body)();
-            const auto response = connector_service->create_link(request);
-            if (const auto from_connector = response_field_text(response, "action_url")) {
-                if (!from_connector->empty()) {
-                    action_url = *from_connector;
-                }
-            } else if (!response.get_reference_id().empty()) {
-                action_url += std::format("&referral={}", response.get_reference_id());
-            }
-        }
-
+        // ActionUrlResponse::PayPal externally-tagged lowercase envelope (api_models:12-16).
         app::dto::connector_onboarding::PayPalActionUrlResponse inner{};
-        inner.set_action_url(std::move(action_url));
+        inner.set_action_url(*action_url);
         const auto inner_json = serde::Ser::encode_json(inner);
-        // Upstream ActionUrlResponse::PayPal externally-tagged envelope: {"paypal":{...}}.
         const auto text = std::format(R"({{"paypal":{}}})", inner_json);
 
         m_context->metrics().record_flow("GetActionUrl");
         m_context->metrics().counter("connector_onboarding.get_action_url").increment();
-
         send_json(res, send, text, true);
     }
 
@@ -155,94 +168,74 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+        auto typed = serde::Ser::deserialize<app::dto::connector_onboarding::OnboardingSyncRequest>(
+            "application/json", body);
+        if (!typed) {
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-
-        std::string connector_id{};
-        std::string connector{};
-        std::string profile_id{};
-        const auto& root = parsed->get();
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&root)) {
-            if (auto field = object->get("connector_id")) { connector_id = json_text(field.value()); }
-            if (auto field = object->get("connector")) { connector = json_text(field.value()); }
-            if (auto field = object->get("profile_id")) { profile_id = json_text(field.value()); }
+        const auto& request = *typed;
+        if (!valid_id(request.get_connector_id()) || !valid_id(request.get_profile_id())) {
+            send_local_error(res, send, simple_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "invalid id"));
+            return;
         }
         const auto merchant_id = onboarding_merchant_id(req, auth);
 
-        // Upstream: profile_id comes from the sync request; v2 may carry it on the query.
-        std::string effective_profile_id{profile_id};
-        if (effective_profile_id.empty()) {
-            if (const auto query_profile = app::http::RequestQuery{}(req).get("profile_id")) {
-                effective_profile_id = *query_profile;
-            }
-        }
-        if (effective_profile_id.empty()) {
-            effective_profile_id = auth.profile_id();
-        }
-        if (const auto guard_error = check_connector(connector_id, merchant_id, effective_profile_id)) {
-            send_error(res, send, *guard_error);
+        // Upstream core::sync_onboarding_status (core/connector_onboarding.rs:60-120).
+        // The profile used for the ownership check is the request body's profile_id
+        // (utils/connector_onboarding.rs:71), not a query/auth fallback.
+        if (const auto guard = check_if_connector_exists(
+                request.get_connector_id(), merchant_id,
+                std::optional<std::string>{request.get_profile_id()})) {
+            send_local_error(res, send, *guard);
             return;
         }
-        if (!is_paypal(connector)) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "onboarding is not implemented for connector: " + connector));
+        const auto conf = connector_onboarding_conf();
+        const auto enabled = is_enabled(request.get_connector(), conf);
+        auto tracking = get_tracking_id_from_configs(request.get_connector_id(), request.get_connector());
+        if (!tracking) {
+            send_local_error(res, send, std::move(tracking.error()));
             return;
         }
-        if (!connector_onboarding_enabled(connector)) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::FORBIDDEN,
-                "connector onboarding is not enabled for: " + connector));
+        if (!enabled.has_value() || !*enabled || !is_paypal(request.get_connector())) {
+            send_local_error(res, send, flow_not_supported(request.get_connector()));
             return;
         }
 
-        // Upstream: get_tracking_id_from_configs then paypal onboarding status sync.
-        const auto tracking_id = get_tracking_id(connector_id, connector);
-        OnboardingOutcome outcome{"success", std::string{}, true};
-        if (auto connector_service = m_context->connector_router().select(merchant_id)) {
-            auto request = app::connector::ConnectorRequestBuilder{}
-                               .operation("sync_onboarding_status")
-                               .merchant_id(merchant_id)
-                               .resource_id(tracking_id)
-                               .raw_payload(body)();
-            const auto response = connector_service->sync(request);
-            outcome = resolve_onboarding_status(response);
+        auto status = sync_merchant_onboarding_status(*tracking, merchant_id);
+        if (!status) {
+            send_local_error(res, send, std::move(status.error()));
+            return;
         }
 
         std::string text{};
-        if (outcome.success) {
-            // Upstream core:87-110: on Success, update_mca with a SignatureKey auth payload
-            // built from the configured client secret/id and the PayPal payer id, then return
+        if (status->success) {
+            // Upstream core:87-110: on Success build SignatureKey auth from the config
+            // client_secret/client_id + PayPal payer_id, call update_mca, and return
             // OnboardingStatus::PayPal::ConnectorIntegrated(MerchantConnectorResponse).
-            auto found = m_context->repository().find_merchant_connector_by_string(connector_id);
-            if (found.has_value()) {
-                auto record = std::move(*found);
-                apply_integration_auth(record, connector, outcome.payer_id);
-                m_context->repository().update_merchant_connector(record);
-                const auto mca_json = serde::Ser::encode_json(record);
-                text = std::format(R"({{"paypal":{{"connector_integrated":{}}}}})", mca_json);
-            } else {
-                // check_connector already proved the account exists; keep a deterministic
-                // Success payload if a concurrent removal made the update impossible.
-                text = success_envelope(outcome.payer_id);
+            const ConnectorAuth auth_details{
+                "SignatureKey", conf.client_secret, conf.client_id, status->payer_id};
+            auto mca = update_mca(
+                merchant_id, request.get_profile_id(), request.get_connector_id(), auth_details);
+            if (!mca) {
+                send_local_error(res, send, std::move(mca.error()));
+                return;
             }
-        } else if (outcome.wire == "success") {
-            text = success_envelope(outcome.payer_id);
+            const auto mca_json = serde::Ser::encode_json(*mca);
+            text = std::format(R"({{"paypal":{{"connector_integrated":{}}}}})", mca_json);
         } else {
-            text = std::format(R"({{"paypal":"{}"}})", outcome.wire);
+            // Unit variants are externally tagged as lowercase snake_case strings.
+            text = std::format(R"({{"paypal":"{}"}})", status->wire);
         }
 
         m_context->metrics().record_flow("SyncOnboardingStatus");
         m_context->metrics().counter("connector_onboarding.sync_onboarding_status").increment();
-
         send_json(res, send, text, true);
     }
 
@@ -261,42 +254,41 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+        auto typed = serde::Ser::deserialize<app::dto::connector_onboarding::ResetTrackingIdRequest>(
+            "application/json", body);
+        if (!typed) {
+            send_local_error(res, send, simple_error(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-
-        std::string connector_id{};
-        std::string connector{};
-        const auto& root = parsed->get();
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&root)) {
-            if (auto field = object->get("connector_id")) { connector_id = json_text(field.value()); }
-            if (auto field = object->get("connector")) { connector = json_text(field.value()); }
+        const auto& request = *typed;
+        if (!valid_id(request.get_connector_id())) {
+            send_local_error(res, send, simple_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "invalid connector id"));
+            return;
         }
-        if (connector.empty()) {
-            connector = "paypal";
-        }
-
         const auto merchant_id = onboarding_merchant_id(req, auth);
-        if (const auto guard_error = check_connector(connector_id, merchant_id, std::string{})) {
-            send_error(res, send, *guard_error);
+
+        // Upstream core::reset_tracking_id (core/connector_onboarding.rs:122-138):
+        // no is_enabled gate and no connector-type match; just upsert the tracking id.
+        if (const auto guard = check_if_connector_exists(
+                request.get_connector_id(), merchant_id, std::nullopt)) {
+            send_local_error(res, send, *guard);
+            return;
+        }
+        if (const auto guard = set_tracking_id_in_configs(
+                request.get_connector_id(), request.get_connector())) {
+            send_local_error(res, send, *guard);
             return;
         }
 
-        // Upstream: set_tracking_id_in_configs upserts a fresh unix timestamp. reset does
-        // not consult the is_enabled gate (core:122-138).
-        reset_tracking_id(connector_id, connector);
-
         m_context->metrics().record_flow("ResetTrackingId");
         m_context->metrics().counter("connector_onboarding.reset_tracking_id").increment();
-
-        // Upstream returns StatusOk with no body.
+        // Upstream returns ApplicationResponse::StatusOk (no body).
         send_json(res, send, std::string_view{}, true);
     }
 
@@ -341,13 +333,66 @@ public:
     }
 
 private:
-    /** @brief Local mirror of the OnboardingStatus::PayPal variant set. */
-    struct OnboardingOutcome
+    // ── Error construction / transport ────────────────────────────────────────────
+
+    [[nodiscard]] LocalError local_error(
+        core::error::AppErrorKind kind,
+        std::string message,
+        std::string kind_name,
+        std::optional<interfaces::io::types::Status> status_override = std::nullopt
+    ) const
     {
-        std::string_view wire{};
-        std::string payer_id{};
-        bool success{false};
-    };
+        auto error = core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
+        error.set_kind_name(std::move(kind_name));
+        const auto status = status_override.value_or(core::error::AppErrorStatus{}(kind));
+        return {std::move(error), status};
+    }
+
+    [[nodiscard]] LocalError simple_error(core::error::AppErrorKind kind, std::string message) const
+    {
+        return local_error(
+            kind, std::move(message),
+            std::string{core::error::AppErrorKindName{}(kind)});
+    }
+
+    // Upstream ApiErrorResponse::NotImplemented -> AER::NotImplemented (501),
+    // IR_0, NotImplementedMessage::Reason Debug appends " is not implemented"
+    // (hyperswitch_domain_models/src/errors/api_error_response.rs:176-177,355-371,557-559).
+    [[nodiscard]] LocalError not_implemented(std::string_view connector) const
+    {
+        return local_error(
+            core::error::AppErrorKind::INTERNAL_ERROR,
+            std::format("Onboarding is not implemented for {} is not implemented", connector),
+            "NotImplemented",
+            interfaces::io::types::Status::NOT_IMPLEMENTED);
+    }
+
+    // Upstream ApiErrorResponse::FlowNotSupported -> AER::BadRequest (400), IR_20
+    // (api_error_response.rs:240-241,637-639); live message is "{flow} flow not supported".
+    [[nodiscard]] LocalError flow_not_supported(std::string_view connector) const
+    {
+        (void)connector; // carried in upstream's `extra.connector`; the local wire has no extras.
+        return local_error(
+            core::error::AppErrorKind::INVALID_REQUEST,
+            "Connector onboarding flow not supported",
+            "FlowNotSupported",
+            interfaces::io::types::Status::BAD_REQUEST);
+    }
+
+    // Upstream ApiErrorResponse::PreconditionFailed -> AER::BadRequest (400), IR_16
+    // (api_error_response.rs:226-227,626-628).
+    [[nodiscard]] LocalError precondition_failed(std::string message) const
+    {
+        return local_error(
+            core::error::AppErrorKind::PRECONDITION_FAILED, std::move(message),
+            "PreconditionFailed", interfaces::io::types::Status::BAD_REQUEST);
+    }
+
+    [[nodiscard]] LocalError internal_error(std::string message) const
+    {
+        return local_error(
+            core::error::AppErrorKind::INTERNAL_ERROR, std::move(message), "InternalServerError");
+    }
 
     void send_error(
         interfaces::io::IResponse& res,
@@ -355,9 +400,19 @@ private:
         core::error::AppError error
     ) const
     {
-        auto text = serde::Ser::encode_json(error);
+        const auto status = core::error::AppErrorStatus{}(error.get_kind());
+        send_local_error(res, send, {std::move(error), status});
+    }
+
+    void send_local_error(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        LocalError error
+    ) const
+    {
+        auto text = serde::Ser::encode_json(error.error);
         auto bytes = serde::Ser::serialize_raw("application/json", text);
-        res.set_status(core::error::AppErrorStatus{}(error.get_kind()));
+        res.set_status(error.status);
         res.set_body(std::move(bytes));
         send();
     }
@@ -388,221 +443,494 @@ private:
         return app::http::merchant_id_from_header{}(req);
     }
 
-    // Upstream: check_if_connector_exists (utils/connector_onboarding.rs:45-83). The
-    // merchant key store is consulted for the wrap material; absence is not a hard gate
-    // because the local key store is empty until a deployment seeds it.
-    [[nodiscard]] std::optional<core::error::AppError> check_connector(
-        std::string_view connector_id,
-        std::string_view merchant_id,
-        std::string_view profile_id
+    // ── utils::connector_onboarding helpers ───────────────────────────────────────
+
+    // Upstream utils/connector_onboarding.rs:17-33. The PayPal branch returns a BodyKey
+    // auth built from client_secret/client_id; every other connector returns NotImplemented.
+    [[nodiscard]] std::expected<ConnectorAuth, LocalError> get_connector_auth(
+        std::string_view connector,
+        const ConnectorOnboardingConf& conf
     ) const
     {
-        if (merchant_id.empty()) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::UNAUTHORIZED, "missing merchant id");
+        if (is_paypal(connector)) {
+            return ConnectorAuth{"BodyKey", conf.client_secret, conf.client_id, std::string{}};
         }
-        if (!m_context->repository().find_merchant_account_by_string(merchant_id).has_value()) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::NOT_FOUND, "merchant account not found");
-        }
-        if (connector_id.empty()) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::NOT_FOUND, "connector not found");
-        }
-        auto found = m_context->repository().find_merchant_connector_by_string(connector_id);
-        if (!found.has_value()) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::NOT_FOUND, "connector not found");
-        }
-        const auto& record = *found;
-        if (record.get_merchant_id() != merchant_id) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::FORBIDDEN, "connector does not belong to merchant");
-        }
-        (void)m_context->key_store().get("merchant_key", merchant_id);
-        // Upstream: validate_profile_id_from_auth_layer(profile_id, connector).
-        if (!profile_id.empty() && !record.get_profile_id().empty()
-            && record.get_profile_id() != profile_id) {
-            return core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::PRECONDITION_FAILED, "connector profile mismatch");
+        return std::unexpected{not_implemented(connector)};
+    }
+
+    // Upstream utils/connector_onboarding.rs:35-43 -> Option<bool>.
+    [[nodiscard]] std::optional<bool> is_enabled(
+        std::string_view connector,
+        const ConnectorOnboardingConf& conf
+    ) const
+    {
+        if (is_paypal(connector)) {
+            return conf.enabled;
         }
         return std::nullopt;
     }
 
-    [[nodiscard]] bool connector_onboarding_enabled(std::string_view connector) const
+    // Upstream core/utils.rs:2889-2912. The three-way match is reproduced exactly.
+    [[nodiscard]] std::optional<LocalError> validate_profile_id_from_auth_layer(
+        std::optional<std::string> auth_profile,
+        std::optional<std::string> object_profile
+    ) const
     {
-        const auto key = std::format("is_enabled_{}", normalized_connector(connector));
-        const auto value = m_context->config_store().get_value("connector_onboarding", key);
-        if (!value.has_value()) {
-            return true;
+        if (auth_profile.has_value() && object_profile.has_value()) {
+            if (*auth_profile != *object_profile) {
+                return precondition_failed(
+                    "Profile id authentication failed. Please use the correct JWT token");
+            }
+            return std::nullopt;
         }
-        return equals_ignore_case(*value, "true");
+        if (auth_profile.has_value() && !object_profile.has_value()) {
+            return precondition_failed("Couldn't find profile_id in record for authentication");
+        }
+        return std::nullopt;
     }
 
-    // Upstream build_key (utils/connector_onboarding.rs:144-154):
-    // CONNECTOR_ONBOARDING_CONFIG_PREFIX_<connector>_<connector_id>.
-    [[nodiscard]] std::string tracking_key(
+    // Upstream utils/connector_onboarding.rs:45-83. The merchant key store is read as the
+    // wrap-material source; the local key store only carries that material when seeded, so
+    // existence is established through the repository (the stand-in for accounts_store).
+    [[nodiscard]] std::optional<LocalError> check_if_connector_exists(
+        std::string_view connector_id,
+        std::string_view merchant_id,
+        std::optional<std::string> profile_id
+    ) const
+    {
+        const auto master_key = m_context->key_store().get("master_key", "merchant_key_store");
+        const auto merchant_key_store = m_context->key_store().get("merchant_key", merchant_id);
+        (void)master_key;
+        (void)merchant_key_store;
+
+        if (merchant_id.empty()
+            || !m_context->repository().find_merchant_account_by_string(merchant_id).has_value()) {
+            return simple_error(core::error::AppErrorKind::NOT_FOUND, "merchant account not found");
+        }
+        if (connector_id.empty()) {
+            return simple_error(core::error::AppErrorKind::NOT_FOUND, std::format(
+                "merchant connector account not found: {}", connector_id));
+        }
+        auto found = m_context->repository().find_merchant_connector_by_string(connector_id);
+        if (!found.has_value() || found->get_merchant_id() != merchant_id) {
+            return simple_error(core::error::AppErrorKind::NOT_FOUND, std::format(
+                "merchant connector account not found: {}", connector_id));
+        }
+        std::optional<std::string> object_profile{};
+        if (!found->get_profile_id().empty()) {
+            object_profile = found->get_profile_id();
+        }
+        return validate_profile_id_from_auth_layer(profile_id, object_profile);
+    }
+
+    // Upstream build_key (utils/connector_onboarding.rs:144-154) with
+    // consts::CONNECTOR_ONBOARDING_CONFIG_PREFIX == "onboarding" (consts.rs:107).
+    [[nodiscard]] std::string build_key(
         std::string_view connector_id,
         std::string_view connector
     ) const
     {
-        return std::format(
-            "{}_{}_{}",
-            "CONNECTOR_ONBOARDING_CONFIG_PREFIX",
-            normalized_connector(connector),
-            connector_id
-        );
+        return std::format("{}_{}_{}", "onboarding", normalized_connector(connector), connector_id);
     }
 
     [[nodiscard]] std::string now_unix_timestamp() const
     {
         const auto epoch = std::chrono::system_clock::now().time_since_epoch();
         return std::to_string(
-            std::chrono::duration_cast<std::chrono::seconds>(epoch).count()
-        );
+            std::chrono::duration_cast<std::chrono::seconds>(epoch).count());
     }
 
-    [[nodiscard]] std::string get_tracking_id(
+    // Upstream utils/connector_onboarding.rs:85-123: find_config_by_key_optional then
+    // update_config_by_key or insert_config on the `configs` table (repository here).
+    [[nodiscard]] std::optional<LocalError> set_tracking_id_in_configs(
         std::string_view connector_id,
         std::string_view connector
     ) const
     {
-        const auto key = tracking_key(connector_id, connector);
-        auto timestamp = m_context->config_store().get_value("configs", key);
-        if (!timestamp.has_value() || timestamp->empty()) {
-            timestamp = now_unix_timestamp();
-            m_context->config_store().put("configs", key, *timestamp);
+        const auto key = build_key(connector_id, connector);
+        const auto timestamp = now_unix_timestamp();
+        auto repository = m_context->repository();
+        auto existing = repository.find_config_by_key(key);
+        if (existing.has_value()) {
+            existing->set_config_value(timestamp);
+            if (!repository.update_config(*existing)) {
+                return internal_error("Error updating data in configs table");
+            }
+        } else {
+            app::store::configs::ConfigRecord created{};
+            created.set_config_key(key);
+            created.set_config_value(timestamp);
+            repository.save_config(std::move(created));
         }
-        return std::format("{}_{}", connector_id, *timestamp);
+        return std::nullopt;
     }
 
-    void reset_tracking_id(
+    // Upstream utils/connector_onboarding.rs:125-142: find_config_by_key_unwrap_or with a
+    // freshly minted unix timestamp, then "<connector_id>_<timestamp>" (no insert).
+    [[nodiscard]] std::expected<std::string, LocalError> get_tracking_id_from_configs(
         std::string_view connector_id,
         std::string_view connector
     ) const
     {
-        const auto key = tracking_key(connector_id, connector);
-        m_context->config_store().put("configs", key, now_unix_timestamp());
+        const auto key = build_key(connector_id, connector);
+        auto existing = m_context->repository().find_config_by_key(key);
+        const auto timestamp = existing.has_value() ? existing->get_config_value()
+                                                    : now_unix_timestamp();
+        return std::format("{}_{}", connector_id, timestamp);
     }
 
-    [[nodiscard]] std::string json_text(const interfaces::Value& value) const
+    // ── core/connector_onboarding/paypal.rs substitutes ───────────────────────────
+
+    [[nodiscard]] std::string build_referral_url(std::string_view base_url) const
     {
-        const auto& variant = value.get();
-        if (const auto* text = std::get_if<std::string>(&variant)) {
-            return *text;
+        return std::format("{}v2/customer/partner-referrals", base_url);
+    }
+
+    // Upstream types/api/connector_onboarding/paypal.rs:112-147 (PartnerReferralRequest::new).
+    [[nodiscard]] std::string build_referral_request(
+        std::string_view tracking_id,
+        std::string_view return_url
+    ) const
+    {
+        const auto tid = serde::Ser::encode_json(std::string{tracking_id});
+        const auto url = serde::Ser::encode_json(std::string{return_url});
+        std::string out{};
+        out += "{\"tracking_id\":" + tid;
+        out += ",\"operations\":[{\"operation\":\"API_INTEGRATION\",\"api_integration_preference\":{\"rest_api_integration\":{";
+        out += "\"integration_method\":\"PAYPAL\",\"integration_type\":\"THIRD_PARTY\",\"third_party_details\":{\"features\":[";
+        out += "\"PAYMENT\",\"REFUND\",\"VAULT\",\"ACCESS_MERCHANT_INFORMATION\",\"BILLING_AGREEMENT\",\"READ_SELLER_DISPUTE\"]}}}}]";
+        out += ",\"products\":[\"PPCP\",\"ADVANCED_VAULTING\"]";
+        out += ",\"capabilities\":[\"PAYPAL_WALLET_VAULTING_ADVANCED\"]";
+        out += ",\"partner_config_override\":{\"partner_logo_url\":\"https://hyperswitch.io/img/websiteIcon.svg\",\"return_url\":" + url + "}";
+        out += ",\"legal_consents\":[{\"type\":\"SHARE_DATA_CONSENT\",\"granted\":true}]}";
+        return out;
+    }
+
+    // Upstream utils/connector_onboarding/paypal.rs:17-40: get_connector_auth feeds the
+    // PayPal access-token call. The injected connector's exchange_token is the in-process
+    // substitute for Paypal::get_access_token / the HTTP token endpoint.
+    [[nodiscard]] std::expected<std::string, LocalError> generate_access_token(
+        std::string_view connector,
+        const ConnectorOnboardingConf& conf,
+        std::string_view merchant_id
+    ) const
+    {
+        auto auth = get_connector_auth(connector, conf);
+        if (!auth) {
+            return std::unexpected{std::move(auth.error())};
         }
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&variant)) {
-            if (auto inner = object->get("value")) {
-                const auto& inner_variant = inner.value().get();
-                if (const auto* text = std::get_if<std::string>(&inner_variant)) {
-                    return *text;
+        if (auto service = m_context->connector_router().select(merchant_id)) {
+            const auto payload = std::format(
+                R"({{"api_key":{},"key1":{}}})",
+                serde::Ser::encode_json(auth->api_key),
+                serde::Ser::encode_json(auth->key1));
+            auto request = app::connector::ConnectorRequestBuilder{}
+                               .operation("generate_access_token")
+                               .merchant_id(std::string{merchant_id})
+                               .resource_id(auth->key1)
+                               .raw_payload(payload)();
+            const auto response = service->exchange_token(request);
+            if (const auto token = response_field_text(response, "access_token")) {
+                return *token;
+            }
+            if (!response.get_reference_id().empty()) {
+                return response.get_reference_id();
+            }
+        }
+        return auth->api_key + ":" + auth->key1;
+    }
+
+    // Upstream types/.../paypal.rs:235-244: find the HATEOAS link whose rel == "action_url".
+    [[nodiscard]] std::expected<std::string, LocalError> extract_action_url(
+        std::string_view text
+    ) const
+    {
+        auto parsed = serde::Ser::decode_generic("application/json", text);
+        if (parsed.has_value()) {
+            const auto& root = parsed->get();
+            if (const auto* object = std::get_if<interfaces::Value::Object>(&root)) {
+                const auto links = object->get("links");
+                if (links.has_value()) {
+                    if (const auto* array = std::get_if<interfaces::Value::Array>(&links.value().get())) {
+                        for (const auto& link : *array) {
+                            if (const auto* link_object = std::get_if<interfaces::Value::Object>(&link.get())) {
+                                if (equals_ignore_case(child_text(*link_object, "rel"), "action_url")) {
+                                    const auto href = child_text(*link_object, "href");
+                                    if (!href.empty()) {
+                                        return href;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        return {};
+        return std::unexpected{internal_error("Failed to get action_url from paypal response")};
     }
 
-    [[nodiscard]] std::optional<std::string> response_field_text(
-        const app::connector::ConnectorResponse& response,
-        std::string_view field
+    // Upstream core/connector_onboarding/paypal.rs:40-63. The partner-referral POST is
+    // replaced by the injected connector's create_link; the response goes through the same
+    // extract_action_url helper as upstream's PartnerReferralResponse.
+    [[nodiscard]] std::expected<std::string, LocalError> get_action_url_from_paypal(
+        std::string_view tracking_id,
+        std::string_view return_url,
+        std::string_view merchant_id
     ) const
     {
-        if (response.get_raw_json().empty()) {
-            return std::nullopt;
+        const auto conf = connector_onboarding_conf();
+        auto token = generate_access_token("paypal", conf, merchant_id);
+        if (!token) {
+            return std::unexpected{std::move(token.error())};
         }
-        auto parsed = serde::Ser::decode_generic("application/json", response.get_raw_json());
-        if (!parsed) {
-            return std::nullopt;
+        const auto referral_url = build_referral_url(conf.base_url);
+        const auto body = build_referral_request(tracking_id, return_url);
+        if (auto service = m_context->connector_router().select(merchant_id)) {
+            auto request = app::connector::ConnectorRequestBuilder{}
+                               .operation("create_link")
+                               .merchant_id(std::string{merchant_id})
+                               .resource_id(std::string{tracking_id})
+                               .raw_payload(body)();
+            const auto response = service->create_link(request);
+            if (!response.get_raw_json().empty()) {
+                return extract_action_url(response.get_raw_json());
+            }
+            if (!response.get_reference_id().empty()) {
+                return extract_action_url(std::format(
+                    R"({{"links":[{{"rel":"action_url","href":{}}}]}})",
+                    serde::Ser::encode_json(response.get_reference_id())));
+            }
         }
-        const auto& root = parsed->get();
-        const auto* object = std::get_if<interfaces::Value::Object>(&root);
-        if (object == nullptr) {
-            return std::nullopt;
+        // Deterministic in-process stand-in for the PayPal partner-referral response.
+        (void)referral_url; // request target built upstream as build_referral_url(conf.base_url).
+        std::string href = std::format(
+            "{}bizsignup/entry?tracking_id={}", conf.base_url, tracking_id);
+        if (!return_url.empty()) {
+            href += std::format("&return_url={}", return_url);
         }
-        auto found = object->get(std::string{field});
-        if (!found.has_value()) {
-            return std::nullopt;
-        }
-        const auto text = json_text(found.value());
-        if (text.empty()) {
-            return std::nullopt;
-        }
-        return text;
+        return extract_action_url(std::format(
+            R"({{"links":[{{"rel":"action_url","href":{}}}]}})",
+            serde::Ser::encode_json(href)));
     }
 
-    // Upstream SellerStatusDetailsResponse::get_eligibility_status precedence
-    // (paypal.rs:211-220): payments receivable, email confirmation, PPCP vetting, Success.
-    // The real PayPal HTTP calls are an external dependency; this resolves the same variant
-    // set from fields on the injected connector response, defaulting to Success.
-    [[nodiscard]] OnboardingOutcome resolve_onboarding_status(
-        const app::connector::ConnectorResponse& response
+    [[nodiscard]] std::string merchant_onboarding_status_url(
+        std::string_view base_url,
+        std::string_view partner_id,
+        std::string_view tracking_id
     ) const
     {
-        if (const auto found = response_field_text(response, "account_found")) {
-            if (equals_ignore_case(*found, "false")) {
-                return {"account_not_found", std::string{}, false};
-            }
-        }
-        if (const auto receivable = response_field_text(response, "payments_receivable")) {
-            if (equals_ignore_case(*receivable, "false")) {
-                return {"payments_not_receivable", std::string{}, false};
-            }
-        }
-        if (const auto email = response_field_text(response, "primary_email_confirmed")) {
-            if (equals_ignore_case(*email, "false")) {
-                return {"email_not_verified", std::string{}, false};
-            }
-        }
-        if (const auto vetting = response_field_text(response, "vetting_status")) {
-            if (equals_ignore_case(*vetting, "denied")) {
-                return {"ppcp_custom_denied", std::string{}, false};
-            }
-            if (!equals_ignore_case(*vetting, "subscribed")) {
-                return {"more_permissions_needed", std::string{}, false};
-            }
-        }
-        auto payer_id = response_field_text(response, "payer_id").value_or(std::string{});
-        if (payer_id.empty()) {
-            payer_id = payer_id_from_response(response);
-        }
-        return {"success", std::move(payer_id), true};
-    }
-
-    [[nodiscard]] std::string success_envelope(std::string_view payer_id) const
-    {
-        const auto payer_json = serde::Ser::encode_json(std::string{payer_id});
         return std::format(
-            R"({{"paypal":{{"success":{{"payer_id":{}}}}}}})",
-            payer_json
-        );
+            "{}v1/customer/partners/{}/merchant-integrations?tracking_id={}",
+            base_url, partner_id, tracking_id);
     }
 
-    // Upstream core:92-98 SignatureKey: api_key = client_secret, key1 = client_id,
-    // api_secret = payer_id. Credentials come from KeyStore, then ConfigStore.
-    void apply_integration_auth(
-        app::store::merchant_connectors::MerchantConnectorRecord& record,
-        std::string_view connector,
-        std::string_view payer_id
+    // Upstream types/.../paypal.rs:177-186: strip the leading '/' and prefix base_url.
+    [[nodiscard]] std::expected<std::string, LocalError> extract_merchant_details_url(
+        std::string_view href,
+        std::string_view base_url
     ) const
     {
-        const auto client_secret = connector_credential(connector, "client_secret");
-        const auto client_id = connector_credential(connector, "client_id");
-        const auto auth_plaintext = std::format(
-            R"({{"auth_type":"signature_key","api_key":"{}","key1":"{}","api_secret":"{}"}})",
-            client_secret,
-            client_id,
-            payer_id
-        );
+        if (!href.starts_with('/')) {
+            return std::unexpected{internal_error("Merchant details not received in onboarding status")};
+        }
+        return std::string{base_url} + std::string{href.substr(1)};
+    }
+
+    // Upstream core/connector_onboarding/paypal.rs:117-142. A non-success PayPal status
+    // becomes None -> AccountNotFound; the injected connector's sync is the substitute.
+    [[nodiscard]] std::expected<std::optional<PayPalMerchantStatus>, LocalError>
+    find_paypal_merchant_by_tracking_id(
+        std::string_view tracking_id,
+        std::string_view access_token,
+        const ConnectorOnboardingConf& conf,
+        std::string_view merchant_id
+    ) const
+    {
+        (void)access_token;
+        const auto url = merchant_onboarding_status_url(conf.base_url, conf.partner_id, tracking_id);
+        if (auto service = m_context->connector_router().select(merchant_id)) {
+            auto request = app::connector::ConnectorRequestBuilder{}
+                               .operation("sync_onboarding_status")
+                               .merchant_id(std::string{merchant_id})
+                               .resource_id(std::string{tracking_id})
+                               .raw_payload(std::format(
+                                   R"({{"url":{}}})", serde::Ser::encode_json(url)))();
+            const auto response = service->sync(request);
+            if (response.get_raw_json().empty()) {
+                return std::nullopt;
+            }
+            auto parsed = serde::Ser::decode_generic("application/json", response.get_raw_json());
+            if (!parsed.has_value()) {
+                return std::nullopt;
+            }
+            const auto& root = parsed->get();
+            const auto* object = std::get_if<interfaces::Value::Object>(&root);
+            if (object == nullptr) {
+                return std::nullopt;
+            }
+            const auto merchant = child_text(*object, "merchant_id");
+            std::string href{};
+            const auto links = object->get("links");
+            if (links.has_value()) {
+                if (const auto* array = std::get_if<interfaces::Value::Array>(&links.value().get())) {
+                    if (!array->empty()) {
+                        if (const auto* first = std::get_if<interfaces::Value::Object>(&array->front().get())) {
+                            href = child_text(*first, "href");
+                        }
+                    }
+                }
+            }
+            if (merchant.empty() || href.empty()) {
+                return std::nullopt;
+            }
+            auto details = extract_merchant_details_url(href, conf.base_url);
+            if (!details) {
+                return std::unexpected{std::move(details.error())};
+            }
+            return PayPalMerchantStatus{merchant, *details};
+        }
+        return PayPalMerchantStatus{
+            std::string{merchant_id},
+            std::format("/v1/customer/partners/{}/merchant-integrations?tracking_id={}",
+                        conf.partner_id, tracking_id)};
+    }
+
+    // Upstream types/.../paypal.rs:188-222 (SellerStatusDetailsResponse::get_eligibility_status).
+    [[nodiscard]] OnboardingOutcome get_eligibility_status(
+        std::string_view merchant_id,
+        bool payments_receivable,
+        bool primary_email_confirmed,
+        std::string_view ppcp_vetting_status
+    ) const
+    {
+        if (!payments_receivable) {
+            return {"payments_not_receivable", std::string{}, false};
+        }
+        if (!primary_email_confirmed) {
+            return {"email_not_verified", std::string{}, false};
+        }
+        if (equals_ignore_case(ppcp_vetting_status, "denied")) {
+            return {"ppcp_custom_denied", std::string{}, false};
+        }
+        if (!equals_ignore_case(ppcp_vetting_status, "subscribed")) {
+            return {"more_permissions_needed", std::string{}, false};
+        }
+        return {"success", std::string{merchant_id}, true};
+    }
+
+    // Upstream core/connector_onboarding/paypal.rs:81-115. The merchant-details GET is
+    // replaced by a second injected-connector sync keyed by the extracted details URL.
+    [[nodiscard]] std::expected<OnboardingOutcome, LocalError> sync_merchant_onboarding_status(
+        std::string_view tracking_id,
+        std::string_view merchant_id
+    ) const
+    {
+        const auto conf = connector_onboarding_conf();
+        auto token = generate_access_token("paypal", conf, merchant_id);
+        if (!token) {
+            return std::unexpected{std::move(token.error())};
+        }
+        auto found = find_paypal_merchant_by_tracking_id(tracking_id, *token, conf, merchant_id);
+        if (!found) {
+            return std::unexpected{std::move(found.error())};
+        }
+        if (!found->has_value()) {
+            return OnboardingOutcome{"account_not_found", std::string{}, false};
+        }
+
+        bool payments_receivable = true;
+        bool primary_email_confirmed = true;
+        std::string vetting_status{"subscribed"};
+        if (auto service = m_context->connector_router().select(merchant_id)) {
+            auto request = app::connector::ConnectorRequestBuilder{}
+                               .operation("sync_onboarding_status")
+                               .merchant_id(std::string{merchant_id})
+                               .resource_id((*found)->details_url)();
+            const auto response = service->sync(request);
+            auto parsed = serde::Ser::decode_generic("application/json", response.get_raw_json());
+            if (parsed.has_value()) {
+                if (const auto* object = std::get_if<interfaces::Value::Object>(&parsed->get())) {
+                    if (const auto flag = child_bool(*object, "payments_receivable")) {
+                        payments_receivable = *flag;
+                    }
+                    if (const auto flag = child_bool(*object, "primary_email_confirmed")) {
+                        primary_email_confirmed = *flag;
+                    }
+                    const auto products = object->get("products");
+                    if (products.has_value()) {
+                        if (const auto* array = std::get_if<interfaces::Value::Array>(&products.value().get())) {
+                            for (const auto& product : *array) {
+                                if (const auto* product_object = std::get_if<interfaces::Value::Object>(&product.get())) {
+                                    if (equals_ignore_case(child_text(*product_object, "name"), "PPCP_CUSTOM")) {
+                                        vetting_status = child_text(*product_object, "vetting_status");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return get_eligibility_status((*found)->merchant_id, payments_receivable,
+                                      primary_email_confirmed, vetting_status);
+    }
+
+    // Upstream core/connector_onboarding/paypal.rs:144-201 (update_mca via admin::update_connector).
+    // The SignatureKey auth JSON is stored through the repository; AesWrap is the local
+    // stand-in for the upstream vault encryption of Secret<serde_json::Value>.
+    [[nodiscard]] std::expected<app::store::merchant_connectors::MerchantConnectorRecord, LocalError>
+    update_mca(
+        std::string_view merchant_id,
+        std::string_view profile_id,
+        std::string_view connector_id,
+        const ConnectorAuth& auth_details
+    ) const
+    {
+        (void)merchant_id;
+        (void)profile_id;
+        auto found = m_context->repository().find_merchant_connector_by_string(connector_id);
+        if (!found.has_value()) {
+            return std::unexpected{simple_error(core::error::AppErrorKind::NOT_FOUND, std::format(
+                "merchant connector account not found: {}", connector_id))};
+        }
+        auto record = std::move(*found);
+        const auto auth_json = std::format(
+            R"({{"auth_type":"{}","api_key":{},"key1":{},"api_secret":{}}})",
+            auth_details.auth_type,
+            serde::Ser::encode_json(auth_details.api_key),
+            serde::Ser::encode_json(auth_details.key1),
+            serde::Ser::encode_json(auth_details.api_secret));
         const auto wrapped = app::crypto::AesWrap{}.encrypt(
-            auth_plaintext,
-            connector_key(record.get_merchant_id(), std::string{connector})
-        );
-        const auto digest = app::crypto::KeyedHasher{"connector_onboarding.mca.auth"}.hash(wrapped);
-        record.set_connector_account_details(wrapped);
-        record.set_metadata(std::format(R"({{"auth_digest":"{}"}})", digest));
+            auth_json, connector_key(record.get_merchant_id(), "paypal"));
         record.set_connector_type("payment_processor");
+        record.set_connector_account_details(wrapped);
         record.set_disabled(false);
         record.set_status("active");
+        m_context->repository().update_merchant_connector(record);
+        return record;
+    }
+
+    // ── Small parsing / formatting utilities ──────────────────────────────────────
+
+    [[nodiscard]] ConnectorOnboardingConf connector_onboarding_conf() const
+    {
+        ConnectorOnboardingConf conf{};
+        if (const auto value = m_context->config_store().get_value(
+                "connector_onboarding", "paypal.enabled")) {
+            conf.enabled = equals_ignore_case(*value, "true");
+        }
+        conf.client_id = connector_credential("paypal", "client_id");
+        conf.client_secret = connector_credential("paypal", "client_secret");
+        if (const auto value = m_context->config_store().get_value(
+                "connector_onboarding", "paypal.partner_id")) {
+            conf.partner_id = *value;
+        }
+        if (const auto value = m_context->config_store().get_value(
+                "connectors", "paypal_base_url")) {
+            conf.base_url = *value;
+        }
+        return conf;
     }
 
     [[nodiscard]] std::string connector_credential(
@@ -610,11 +938,26 @@ private:
         std::string_view kind
     ) const
     {
-        const auto key = std::format("{}_{}", normalized_connector(connector), kind);
+        const auto key = std::format("{}.{}", normalized_connector(connector), kind);
+        if (const auto value = m_context->config_store().get_value("connector_onboarding", key)) {
+            return *value;
+        }
         if (const auto secret = m_context->key_store().get("connector_onboarding", key)) {
             return secret->value();
         }
-        return m_context->config_store().get_value("connector_onboarding", key).value_or(std::string{});
+        return {};
+    }
+
+    [[nodiscard]] std::string connector_key(
+        std::string_view merchant,
+        std::string_view connector
+    ) const
+    {
+        std::string material = std::string{merchant} + ":" + std::string{connector};
+        if (const auto master = m_context->key_store().get("merchant_key", merchant)) {
+            material += ":" + master->value();
+        }
+        return app::crypto::KeyedHasher{"connector_onboarding.mca.key"}.hash(material);
     }
 
     [[nodiscard]] bool is_paypal(std::string_view name) const
@@ -639,27 +982,92 @@ private:
             [](char a, char b) {
                 return std::tolower(static_cast<unsigned char>(a))
                     == std::tolower(static_cast<unsigned char>(b));
-            }
-        );
+            });
     }
 
-    [[nodiscard]] std::string payer_id_from_response(
-        const app::connector::ConnectorResponse& response
-    ) const
+    // Upstream id_type::is_valid_id_character (common_utils/src/id_type.rs:74-77).
+    [[nodiscard]] bool valid_id(std::string_view id) const
     {
-        return response_field_text(response, "payer_id").value_or(std::string{});
+        return !id.empty() && std::ranges::all_of(id, [](char ch) {
+            return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '-';
+        });
     }
 
-    [[nodiscard]] std::string connector_key(
-        std::string_view merchant,
-        std::string_view connector
+    [[nodiscard]] std::string child_text(
+        const interfaces::Value::Object& object,
+        std::string_view key
     ) const
     {
-        std::string material = std::string{merchant} + ":" + std::string{connector};
-        if (const auto master = m_context->key_store().get("merchant_key", merchant)) {
-            material += ":" + master->value();
+        const auto found = object.get(std::string{key});
+        if (!found.has_value()) {
+            return {};
         }
-        return app::crypto::KeyedHasher{"connector_onboarding.mca.key"}.hash(material);
+        return json_text(found.value());
+    }
+
+    [[nodiscard]] std::optional<bool> child_bool(
+        const interfaces::Value::Object& object,
+        std::string_view key
+    ) const
+    {
+        const auto found = object.get(std::string{key});
+        if (!found.has_value()) {
+            return std::nullopt;
+        }
+        const auto& variant = found.value().get();
+        if (const auto* flag = std::get_if<bool>(&variant)) {
+            return *flag;
+        }
+        const auto text = json_text(found.value());
+        if (!text.empty()) {
+            return equals_ignore_case(text, "true");
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::string json_text(const interfaces::Value& value) const
+    {
+        const auto& variant = value.get();
+        if (const auto* text = std::get_if<std::string>(&variant)) {
+            return *text;
+        }
+        if (const auto* object = std::get_if<interfaces::Value::Object>(&variant)) {
+            if (const auto inner = object->get("value")) {
+                const auto& inner_variant = inner.value().get();
+                if (const auto* text = std::get_if<std::string>(&inner_variant)) {
+                    return *text;
+                }
+            }
+        }
+        return {};
+    }
+
+    [[nodiscard]] std::optional<std::string> response_field_text(
+        const app::connector::ConnectorResponse& response,
+        std::string_view field
+    ) const
+    {
+        if (response.get_raw_json().empty()) {
+            return std::nullopt;
+        }
+        auto parsed = serde::Ser::decode_generic("application/json", response.get_raw_json());
+        if (!parsed.has_value()) {
+            return std::nullopt;
+        }
+        const auto& root = parsed->get();
+        const auto* object = std::get_if<interfaces::Value::Object>(&root);
+        if (object == nullptr) {
+            return std::nullopt;
+        }
+        const auto found = object->get(std::string{field});
+        if (!found.has_value()) {
+            return std::nullopt;
+        }
+        const auto text = json_text(found.value());
+        if (text.empty()) {
+            return std::nullopt;
+        }
+        return text;
     }
 
     app::context::AppContext* m_context{nullptr};

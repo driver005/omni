@@ -9,12 +9,30 @@ import boost.ut;
 
 export namespace app::dto::superposition_sdk_config {
 
-class ConfigValue
+// Upstream superposition_types::Config (superposition_types 0.119.0):
+//   pub struct Config {
+//       pub contexts: Vec<Context>,
+//       pub overrides: HashMap<String, Overrides>,
+//       pub default_configs: ExtendedMap,
+//       pub dimensions: HashMap<String, DimensionInfo>,
+//   }
+// The structured fields are modelled as serde::Value (rfl::Generic) so the JSON wire shape
+// matches the upstream object instead of wrapping the raw JSON in a string.
+class Config
 {
 public:
-    void set_value(std::string value) { this->value = std::move(value); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
+    void set_contexts(serde::Value value) { contexts = std::move(value); }
+    [[nodiscard]] const serde::Value& get_contexts() const noexcept { return contexts; }
+    void set_overrides(serde::Value value) { overrides = std::move(value); }
+    [[nodiscard]] const serde::Value& get_overrides() const noexcept { return overrides; }
+    void set_default_configs(serde::Value value) { default_configs = std::move(value); }
+    [[nodiscard]] const serde::Value& get_default_configs() const noexcept { return default_configs; }
+    void set_dimensions(serde::Value value) { dimensions = std::move(value); }
+    [[nodiscard]] const serde::Value& get_dimensions() const noexcept { return dimensions; }
+    serde::Value contexts{serde::Value::Array{}};
+    serde::Value overrides{serde::Value::Object{}};
+    serde::Value default_configs{serde::Value::Object{}};
+    serde::Value dimensions{serde::Value::Object{}};
 };
 
 enum class PaymentMethodCriteria
@@ -129,8 +147,8 @@ public:
 class SuperPositionConfigResponse
 {
 public:
-    void set_raw_configs(ConfigValue value) { raw_configs = std::move(value); }
-    [[nodiscard]] const ConfigValue& get_raw_configs() const noexcept { return raw_configs; }
+    void set_raw_configs(Config value) { raw_configs = std::move(value); }
+    [[nodiscard]] const Config& get_raw_configs() const noexcept { return raw_configs; }
     void set_resolved_configs(std::optional<serde::Value> value) { resolved_configs = std::move(value); }
     [[nodiscard]] const std::optional<serde::Value>& get_resolved_configs() const noexcept { return resolved_configs; }
     void set_context_used(serde::Value value) { context_used = std::move(value); }
@@ -139,7 +157,7 @@ public:
     [[nodiscard]] const std::optional<std::vector<SdkPaymentMethod>>& get_payment_methods() const noexcept { return payment_methods; }
     void set_account_config(AccountConfig value) { account_config = std::move(value); }
     [[nodiscard]] const AccountConfig& get_account_config() const noexcept { return account_config; }
-    ConfigValue raw_configs{};
+    Config raw_configs{};
     std::optional<serde::Value> resolved_configs{};
     serde::Value context_used{};
     std::optional<std::vector<SdkPaymentMethod>> payment_methods{};
@@ -157,6 +175,21 @@ struct serde::Serializable<app::dto::superposition_sdk_config::SdkConfigRequest>
         };
     }
     static constexpr std::string_view table_name() { return "sdk_config_request"; }
+};
+
+template<>
+struct serde::Serializable<app::dto::superposition_sdk_config::Config>
+{
+    static constexpr auto fields()
+    {
+        return std::tuple{
+            serde::FieldDesc<"contexts", &app::dto::superposition_sdk_config::Config::get_contexts, &app::dto::superposition_sdk_config::Config::set_contexts, serde::FieldOptions{}>{},
+            serde::FieldDesc<"overrides", &app::dto::superposition_sdk_config::Config::get_overrides, &app::dto::superposition_sdk_config::Config::set_overrides, serde::FieldOptions{}>{},
+            serde::FieldDesc<"default_configs", &app::dto::superposition_sdk_config::Config::get_default_configs, &app::dto::superposition_sdk_config::Config::set_default_configs, serde::FieldOptions{}>{},
+            serde::FieldDesc<"dimensions", &app::dto::superposition_sdk_config::Config::get_dimensions, &app::dto::superposition_sdk_config::Config::set_dimensions, serde::FieldOptions{}>{}
+        };
+    }
+    static constexpr std::string_view table_name() { return "config"; }
 };
 
 template<>

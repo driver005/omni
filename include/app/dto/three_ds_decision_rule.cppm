@@ -81,12 +81,21 @@ public:
     std::string value{};
 };
 
-class ThreeDSDecisionValue
+/**
+ * @brief Upstream `common_types::three_ds_decision_rule_engine::ThreeDSDecision`.
+ * Enumerator names are the upstream `#[serde(rename_all = "snake_case")]` wire values, so
+ * rfl's enum-by-name serialization emits the exact upstream JSON strings
+ * (no_three_ds, challenge_requested, ...). Source: common_types/three_ds_decision_rule_engine.rs:9-30.
+ */
+enum class ThreeDSDecision
 {
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
+    no_three_ds,
+    challenge_requested,
+    challenge_preferred,
+    no_preference,
+    three_ds_exemption_requested_tra,
+    three_ds_exemption_requested_low_value,
+    issuer_three_ds_exemption_requested,
 };
 
 class AcquirerData
@@ -159,9 +168,9 @@ public:
 class ThreeDsDecisionRuleExecuteResponse
 {
 public:
-    void set_decision(ThreeDSDecisionValue value) { decision = std::move(value); }
-    [[nodiscard]] const ThreeDSDecisionValue& get_decision() const noexcept { return decision; }
-    ThreeDSDecisionValue decision{};
+    void set_decision(ThreeDSDecision value) { decision = value; }
+    [[nodiscard]] ThreeDSDecision get_decision() const noexcept { return decision; }
+    ThreeDSDecision decision{ThreeDSDecision::no_three_ds};
 };
 
 class ThreeDsDecisionRuleExecuteRequest

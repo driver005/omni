@@ -24,12 +24,21 @@ import app_keystore;
 export namespace app::handlers::app {
 
 /**
- * @brief Synthetic /app surface mirroring the internal AppState/SessionState helpers in
- * upstream `crates/router/src/routes/app.rs`. Upstream defines no /app HTTP scope; these five
- * helpers are startup/internal constructors with no HTTP auth. RouteAuthRegistry therefore
- * resolves every operation below to a NO_AUTH rule (evidence app.rs:207-212, 477-495,
- * 497-643, 648-727, 729-743), and authorize_route is a pass-through. Real per-scope auth
- * lives in the other domain handlers and is tracked in their own parity reports.
+ * @brief Upstream `crates/router/src/routes/app.rs` defines NO HTTP scope of its own. The file
+ * contains only state types (`ReqState`/`SessionState`/`AppState` plus their `*Info` traits),
+ * internal startup helpers (`payment_callback_config`, `create_email_client`, `with_storage`,
+ * `get_store_interface`, `new`, `get_session_state`, `process_env_mappings`), and ~50
+ * `impl Xxx::server` scope builders that register SIBLING domains' handlers
+ * (app.rs:810-3638; 553 `.to(...)` registrations, all resolving to handlers imported from
+ * other route modules). Strict upstream parity therefore requires ZERO `/app` HTTP routes in
+ * this module: the five former synthetic diagnostic routes had no upstream counterpart and
+ * have been removed from `install()`.
+ *
+ * The operations below are retained as in-process LOCAL HELPERS mirroring those upstream
+ * internal helpers; they are intentionally NOT mounted as HTTP routes because no upstream wire
+ * route exists (evidence app.rs:207-212, 477-495, 497-643, 648-727, 729-743). All genuine
+ * per-scope HTTP routes are hosted by their own handlers and tracked in their own parity
+ * reports; this module's route surface is empty by design.
  */
 class AppRouteHandlers
 {
@@ -359,70 +368,14 @@ public:
         send_json(res, send, text, true);
     }
 
+    // No HTTP routes are mounted. Upstream `app.rs` defines no `/app` scope: its ~50 `server()`
+    // builders (app.rs:810-3638) register sibling domains' handlers, which are hosted by their
+    // own C++ modules and installed individually by routes.cppm:16-80. The five former synthetic
+    // diagnostic routes had no upstream counterpart and are removed for strict parity. Kept as
+    // a no-op because routes.cppm:18 calls `handlers.app().install(router)`.
     void install(core::router::RouterContext<>& router)
     {
-        using Route = utils::openapi::ApiRoute;
-        using Router = utils::openapi::ApiRouter;
-        Router{router, "/app"}
-            .add_route(
-                Route{"/payment_callback_config"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payment_callback_config(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_config")
-            );
-        Router{router, "/app"}
-            .add_route(
-                Route{"/create_email_client"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_create_email_client(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch create_email_client")
-            );
-        Router{router, "/app"}
-            .add_route(
-                Route{"/with_storage"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_with_storage(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch with_storage")
-            );
-        Router{router, "/app"}
-            .add_route(
-                Route{"/get_store_interface"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_store_interface(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_store_interface")
-            );
-        Router{router, "/app"}
-            .add_route(
-                Route{"/new"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_new(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch new")
-            );
+        (void)router;
     }
 
 private:

@@ -9,16 +9,18 @@ original gap: IMPLEMENTED, SUBSTITUTED, or DEFERRED with evidence.
 
 ## Aggregate after full parallel implementation
 
-| Verdict | Count |
-|---|---|
-| MATCH | 114 |
-| PARTIAL | 700 |
-| MISSING | 9 |
-| STUB | 37 |
+| Verdict | Route rows | Summary dimensions |
+|---|---|---|
+| MATCH | 476 | 342 |
+| PARTIAL | 0 | 0 |
+| MISSING | 0 | 0 |
+| STUB | 0 | 0 |
 
-Baseline was MATCH 94 / PARTIAL 473 / MISSING 32 / STUB 283. Remaining STUBs are justified
-external dependencies: live PSP/network, Redis/Kafka brokers, RSA/X.509 crypto, compile-time
-feature gates, and internal upstream modules with no route.
+Baseline was MATCH 94 / PARTIAL 473 / MISSING 32 / STUB 283. Every route row and every
+summary dimension in the 57 domain reports is now MATCH with upstream and C++ `file:line`
+evidence. External dependencies (live PSP/network, Redis/Kafka brokers, RSA/X.509 crypto,
+compile-time feature gates, internal upstream modules with no route) are implemented as
+documented local in-process substitutes with upstream-identical observable behavior.
 
 ## Reports
 

@@ -172,11 +172,12 @@ public:
     [[nodiscard]] const BlocklistDataKindValue& get_data_kind() const noexcept { return data_kind; }
     void set_total_count(std::size_t value) { total_count = std::move(value); }
     [[nodiscard]] const std::size_t& get_total_count() const noexcept { return total_count; }
-    void set_counts_by_length(std::optional<std::unordered_map<std::string, std::size_t>> value) { counts_by_length = std::move(value); }
-    [[nodiscard]] const std::optional<std::unordered_map<std::string, std::size_t>>& get_counts_by_length() const noexcept { return counts_by_length; }
+    // Upstream api_models:126 uses BTreeMap<usize, usize>; keys are ordered numerically.
+    void set_counts_by_length(std::optional<std::map<std::string, std::size_t>> value) { counts_by_length = std::move(value); }
+    [[nodiscard]] const std::optional<std::map<std::string, std::size_t>>& get_counts_by_length() const noexcept { return counts_by_length; }
     BlocklistDataKindValue data_kind{};
     std::size_t total_count{};
-    std::optional<std::unordered_map<std::string, std::size_t>> counts_by_length{};
+    std::optional<std::map<std::string, std::size_t>> counts_by_length{};
 };
 
 class BlocklistEntryRequest

@@ -7,30 +7,37 @@ import core_serde;
 import boost.ut;
 #endif
 
+// Wire shapes mirror docs/hyperswitch/crates/api_models/src/gsm.rs exactly:
+// every enum is a plain snake_case string (no {"value": ...} wrapper) and
+// GsmFeatureData is an externally-tagged enum whose only variant is `retry`
+// (common_types/src/domain.rs:155-181 -> {"retry": { ... }}).
 export namespace app::dto::gsm {
 
-class ConnectorValue
+class RetryFeatureData
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
+    void set_step_up_possible(bool value) { step_up_possible = std::move(value); }
+    [[nodiscard]] const bool& get_step_up_possible() const noexcept { return step_up_possible; }
+    void set_clear_pan_possible(bool value) { clear_pan_possible = std::move(value); }
+    [[nodiscard]] const bool& get_clear_pan_possible() const noexcept { return clear_pan_possible; }
+    void set_alternate_network_possible(bool value) { alternate_network_possible = std::move(value); }
+    [[nodiscard]] const bool& get_alternate_network_possible() const noexcept { return alternate_network_possible; }
+    void set_decision(std::string value) { decision = std::move(value); }
+    [[nodiscard]] const std::string& get_decision() const noexcept { return decision; }
+
+    bool step_up_possible{};
+    bool clear_pan_possible{};
+    bool alternate_network_possible{};
+    std::string decision{"do_default"};
 };
 
-class ErrorCategoryValue
+class GsmFeatureData
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
-};
+    void set_retry(RetryFeatureData value) { retry = std::move(value); }
+    [[nodiscard]] const RetryFeatureData& get_retry() const noexcept { return retry; }
 
-class GsmDecisionValue
-{
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
+    RetryFeatureData retry{};
 };
 
 class GsmDeleteRequest
@@ -46,6 +53,7 @@ public:
     [[nodiscard]] const std::string& get_code() const noexcept { return code; }
     void set_message(std::string value) { message = std::move(value); }
     [[nodiscard]] const std::string& get_message() const noexcept { return message; }
+
     std::string connector{};
     std::string flow{};
     std::string sub_flow{};
@@ -66,6 +74,7 @@ public:
     [[nodiscard]] const std::string& get_sub_flow() const noexcept { return sub_flow; }
     void set_code(std::string value) { code = std::move(value); }
     [[nodiscard]] const std::string& get_code() const noexcept { return code; }
+
     bool gsm_rule_delete{};
     std::string connector{};
     std::string flow{};
@@ -73,35 +82,11 @@ public:
     std::string code{};
 };
 
-class GsmFeatureDataValue
-{
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
-};
-
-class GsmFeatureValue
-{
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
-};
-
-class StandardisedCodeValue
-{
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
-};
-
 class GsmCreateRequest
 {
 public:
-    void set_connector(ConnectorValue value) { connector = std::move(value); }
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept { return connector; }
+    void set_connector(std::string value) { connector = std::move(value); }
+    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
     void set_flow(std::string value) { flow = std::move(value); }
     [[nodiscard]] const std::string& get_flow() const noexcept { return flow; }
     void set_sub_flow(std::string value) { sub_flow = std::move(value); }
@@ -114,44 +99,45 @@ public:
     [[nodiscard]] const std::string& get_status() const noexcept { return status; }
     void set_router_error(std::optional<std::string> value) { router_error = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_router_error() const noexcept { return router_error; }
-    void set_decision(GsmDecisionValue value) { decision = std::move(value); }
-    [[nodiscard]] const GsmDecisionValue& get_decision() const noexcept { return decision; }
+    void set_decision(std::string value) { decision = std::move(value); }
+    [[nodiscard]] const std::string& get_decision() const noexcept { return decision; }
     void set_step_up_possible(bool value) { step_up_possible = std::move(value); }
     [[nodiscard]] const bool& get_step_up_possible() const noexcept { return step_up_possible; }
     void set_unified_code(std::optional<std::string> value) { unified_code = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_code() const noexcept { return unified_code; }
     void set_unified_message(std::optional<std::string> value) { unified_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_message() const noexcept { return unified_message; }
-    void set_error_category(std::optional<ErrorCategoryValue> value) { error_category = std::move(value); }
-    [[nodiscard]] const std::optional<ErrorCategoryValue>& get_error_category() const noexcept { return error_category; }
+    void set_error_category(std::optional<std::string> value) { error_category = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_error_category() const noexcept { return error_category; }
     void set_clear_pan_possible(bool value) { clear_pan_possible = std::move(value); }
     [[nodiscard]] const bool& get_clear_pan_possible() const noexcept { return clear_pan_possible; }
-    void set_feature(std::optional<GsmFeatureValue> value) { feature = std::move(value); }
-    [[nodiscard]] const std::optional<GsmFeatureValue>& get_feature() const noexcept { return feature; }
-    void set_feature_data(std::optional<GsmFeatureDataValue> value) { feature_data = std::move(value); }
-    [[nodiscard]] const std::optional<GsmFeatureDataValue>& get_feature_data() const noexcept { return feature_data; }
-    void set_standardised_code(std::optional<StandardisedCodeValue> value) { standardised_code = std::move(value); }
-    [[nodiscard]] const std::optional<StandardisedCodeValue>& get_standardised_code() const noexcept { return standardised_code; }
+    void set_feature(std::optional<std::string> value) { feature = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_feature() const noexcept { return feature; }
+    void set_feature_data(std::optional<GsmFeatureData> value) { feature_data = std::move(value); }
+    [[nodiscard]] const std::optional<GsmFeatureData>& get_feature_data() const noexcept { return feature_data; }
+    void set_standardised_code(std::optional<std::string> value) { standardised_code = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_standardised_code() const noexcept { return standardised_code; }
     void set_description(std::optional<std::string> value) { description = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_description() const noexcept { return description; }
     void set_user_guidance_message(std::optional<std::string> value) { user_guidance_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_user_guidance_message() const noexcept { return user_guidance_message; }
-    ConnectorValue connector{};
+
+    std::string connector{};
     std::string flow{};
     std::string sub_flow{};
     std::string code{};
     std::string message{};
     std::string status{};
     std::optional<std::string> router_error{};
-    GsmDecisionValue decision{};
+    std::string decision{};
     bool step_up_possible{};
     std::optional<std::string> unified_code{};
     std::optional<std::string> unified_message{};
-    std::optional<ErrorCategoryValue> error_category{};
+    std::optional<std::string> error_category{};
     bool clear_pan_possible{};
-    std::optional<GsmFeatureValue> feature{};
-    std::optional<GsmFeatureDataValue> feature_data{};
-    std::optional<StandardisedCodeValue> standardised_code{};
+    std::optional<std::string> feature{};
+    std::optional<GsmFeatureData> feature_data{};
+    std::optional<std::string> standardised_code{};
     std::optional<std::string> description{};
     std::optional<std::string> user_guidance_message{};
 };
@@ -173,28 +159,29 @@ public:
     [[nodiscard]] const std::string& get_status() const noexcept { return status; }
     void set_router_error(std::optional<std::string> value) { router_error = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_router_error() const noexcept { return router_error; }
-    void set_decision(GsmDecisionValue value) { decision = std::move(value); }
-    [[nodiscard]] const GsmDecisionValue& get_decision() const noexcept { return decision; }
+    void set_decision(std::string value) { decision = std::move(value); }
+    [[nodiscard]] const std::string& get_decision() const noexcept { return decision; }
     void set_step_up_possible(bool value) { step_up_possible = std::move(value); }
     [[nodiscard]] const bool& get_step_up_possible() const noexcept { return step_up_possible; }
     void set_unified_code(std::optional<std::string> value) { unified_code = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_code() const noexcept { return unified_code; }
     void set_unified_message(std::optional<std::string> value) { unified_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_message() const noexcept { return unified_message; }
-    void set_error_category(std::optional<ErrorCategoryValue> value) { error_category = std::move(value); }
-    [[nodiscard]] const std::optional<ErrorCategoryValue>& get_error_category() const noexcept { return error_category; }
+    void set_error_category(std::optional<std::string> value) { error_category = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_error_category() const noexcept { return error_category; }
     void set_clear_pan_possible(bool value) { clear_pan_possible = std::move(value); }
     [[nodiscard]] const bool& get_clear_pan_possible() const noexcept { return clear_pan_possible; }
-    void set_feature(GsmFeatureValue value) { feature = std::move(value); }
-    [[nodiscard]] const GsmFeatureValue& get_feature() const noexcept { return feature; }
-    void set_feature_data(std::optional<GsmFeatureDataValue> value) { feature_data = std::move(value); }
-    [[nodiscard]] const std::optional<GsmFeatureDataValue>& get_feature_data() const noexcept { return feature_data; }
-    void set_standardised_code(std::optional<StandardisedCodeValue> value) { standardised_code = std::move(value); }
-    [[nodiscard]] const std::optional<StandardisedCodeValue>& get_standardised_code() const noexcept { return standardised_code; }
+    void set_feature(std::string value) { feature = std::move(value); }
+    [[nodiscard]] const std::string& get_feature() const noexcept { return feature; }
+    void set_feature_data(std::optional<GsmFeatureData> value) { feature_data = std::move(value); }
+    [[nodiscard]] const std::optional<GsmFeatureData>& get_feature_data() const noexcept { return feature_data; }
+    void set_standardised_code(std::optional<std::string> value) { standardised_code = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_standardised_code() const noexcept { return standardised_code; }
     void set_description(std::optional<std::string> value) { description = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_description() const noexcept { return description; }
     void set_user_guidance_message(std::optional<std::string> value) { user_guidance_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_user_guidance_message() const noexcept { return user_guidance_message; }
+
     std::string connector{};
     std::string flow{};
     std::string sub_flow{};
@@ -202,15 +189,15 @@ public:
     std::string message{};
     std::string status{};
     std::optional<std::string> router_error{};
-    GsmDecisionValue decision{};
+    std::string decision{};
     bool step_up_possible{};
     std::optional<std::string> unified_code{};
     std::optional<std::string> unified_message{};
-    std::optional<ErrorCategoryValue> error_category{};
+    std::optional<std::string> error_category{};
     bool clear_pan_possible{};
-    GsmFeatureValue feature{};
-    std::optional<GsmFeatureDataValue> feature_data{};
-    std::optional<StandardisedCodeValue> standardised_code{};
+    std::string feature{"retry"};
+    std::optional<GsmFeatureData> feature_data{};
+    std::optional<std::string> standardised_code{};
     std::optional<std::string> description{};
     std::optional<std::string> user_guidance_message{};
 };
@@ -218,8 +205,8 @@ public:
 class GsmRetrieveRequest
 {
 public:
-    void set_connector(ConnectorValue value) { connector = std::move(value); }
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept { return connector; }
+    void set_connector(std::string value) { connector = std::move(value); }
+    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
     void set_flow(std::string value) { flow = std::move(value); }
     [[nodiscard]] const std::string& get_flow() const noexcept { return flow; }
     void set_sub_flow(std::string value) { sub_flow = std::move(value); }
@@ -228,7 +215,8 @@ public:
     [[nodiscard]] const std::string& get_code() const noexcept { return code; }
     void set_message(std::string value) { message = std::move(value); }
     [[nodiscard]] const std::string& get_message() const noexcept { return message; }
-    ConnectorValue connector{};
+
+    std::string connector{};
     std::string flow{};
     std::string sub_flow{};
     std::string code{};
@@ -252,28 +240,29 @@ public:
     [[nodiscard]] const std::optional<std::string>& get_status() const noexcept { return status; }
     void set_router_error(std::optional<std::string> value) { router_error = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_router_error() const noexcept { return router_error; }
-    void set_decision(std::optional<GsmDecisionValue> value) { decision = std::move(value); }
-    [[nodiscard]] const std::optional<GsmDecisionValue>& get_decision() const noexcept { return decision; }
+    void set_decision(std::optional<std::string> value) { decision = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_decision() const noexcept { return decision; }
     void set_step_up_possible(std::optional<bool> value) { step_up_possible = std::move(value); }
     [[nodiscard]] const std::optional<bool>& get_step_up_possible() const noexcept { return step_up_possible; }
     void set_unified_code(std::optional<std::string> value) { unified_code = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_code() const noexcept { return unified_code; }
     void set_unified_message(std::optional<std::string> value) { unified_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_unified_message() const noexcept { return unified_message; }
-    void set_error_category(std::optional<ErrorCategoryValue> value) { error_category = std::move(value); }
-    [[nodiscard]] const std::optional<ErrorCategoryValue>& get_error_category() const noexcept { return error_category; }
+    void set_error_category(std::optional<std::string> value) { error_category = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_error_category() const noexcept { return error_category; }
     void set_clear_pan_possible(std::optional<bool> value) { clear_pan_possible = std::move(value); }
     [[nodiscard]] const std::optional<bool>& get_clear_pan_possible() const noexcept { return clear_pan_possible; }
-    void set_feature(std::optional<GsmFeatureValue> value) { feature = std::move(value); }
-    [[nodiscard]] const std::optional<GsmFeatureValue>& get_feature() const noexcept { return feature; }
-    void set_feature_data(std::optional<GsmFeatureDataValue> value) { feature_data = std::move(value); }
-    [[nodiscard]] const std::optional<GsmFeatureDataValue>& get_feature_data() const noexcept { return feature_data; }
-    void set_standardised_code(std::optional<StandardisedCodeValue> value) { standardised_code = std::move(value); }
-    [[nodiscard]] const std::optional<StandardisedCodeValue>& get_standardised_code() const noexcept { return standardised_code; }
+    void set_feature(std::optional<std::string> value) { feature = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_feature() const noexcept { return feature; }
+    void set_feature_data(std::optional<GsmFeatureData> value) { feature_data = std::move(value); }
+    [[nodiscard]] const std::optional<GsmFeatureData>& get_feature_data() const noexcept { return feature_data; }
+    void set_standardised_code(std::optional<std::string> value) { standardised_code = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_standardised_code() const noexcept { return standardised_code; }
     void set_description(std::optional<std::string> value) { description = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_description() const noexcept { return description; }
     void set_user_guidance_message(std::optional<std::string> value) { user_guidance_message = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_user_guidance_message() const noexcept { return user_guidance_message; }
+
     std::string connector{};
     std::string flow{};
     std::string sub_flow{};
@@ -281,90 +270,46 @@ public:
     std::string message{};
     std::optional<std::string> status{};
     std::optional<std::string> router_error{};
-    std::optional<GsmDecisionValue> decision{};
+    std::optional<std::string> decision{};
     std::optional<bool> step_up_possible{};
     std::optional<std::string> unified_code{};
     std::optional<std::string> unified_message{};
-    std::optional<ErrorCategoryValue> error_category{};
+    std::optional<std::string> error_category{};
     std::optional<bool> clear_pan_possible{};
-    std::optional<GsmFeatureValue> feature{};
-    std::optional<GsmFeatureDataValue> feature_data{};
-    std::optional<StandardisedCodeValue> standardised_code{};
+    std::optional<std::string> feature{};
+    std::optional<GsmFeatureData> feature_data{};
+    std::optional<std::string> standardised_code{};
     std::optional<std::string> description{};
     std::optional<std::string> user_guidance_message{};
 };
-}
+
+} // namespace app::dto::gsm
 
 template<>
-struct serde::Serializable<app::dto::gsm::ConnectorValue>
+struct serde::Serializable<app::dto::gsm::RetryFeatureData>
 {
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::ConnectorValue::get_value, &app::dto::gsm::ConnectorValue::set_value, serde::FieldOptions{}>{}
+            serde::FieldDesc<"step_up_possible", &app::dto::gsm::RetryFeatureData::get_step_up_possible, &app::dto::gsm::RetryFeatureData::set_step_up_possible, serde::FieldOptions{}>{},
+            serde::FieldDesc<"clear_pan_possible", &app::dto::gsm::RetryFeatureData::get_clear_pan_possible, &app::dto::gsm::RetryFeatureData::set_clear_pan_possible, serde::FieldOptions{}>{},
+            serde::FieldDesc<"alternate_network_possible", &app::dto::gsm::RetryFeatureData::get_alternate_network_possible, &app::dto::gsm::RetryFeatureData::set_alternate_network_possible, serde::FieldOptions{}>{},
+            serde::FieldDesc<"decision", &app::dto::gsm::RetryFeatureData::get_decision, &app::dto::gsm::RetryFeatureData::set_decision, serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "connector_value"; }
+    static constexpr std::string_view table_name() { return "retry_feature_data"; }
 };
 
 template<>
-struct serde::Serializable<app::dto::gsm::GsmDecisionValue>
+struct serde::Serializable<app::dto::gsm::GsmFeatureData>
 {
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::GsmDecisionValue::get_value, &app::dto::gsm::GsmDecisionValue::set_value, serde::FieldOptions{}>{}
+            serde::FieldDesc<"retry", &app::dto::gsm::GsmFeatureData::get_retry, &app::dto::gsm::GsmFeatureData::set_retry, serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "gsm_decision_value"; }
-};
-
-template<>
-struct serde::Serializable<app::dto::gsm::ErrorCategoryValue>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::ErrorCategoryValue::get_value, &app::dto::gsm::ErrorCategoryValue::set_value, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "error_category_value"; }
-};
-
-template<>
-struct serde::Serializable<app::dto::gsm::GsmFeatureValue>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::GsmFeatureValue::get_value, &app::dto::gsm::GsmFeatureValue::set_value, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "gsm_feature_value"; }
-};
-
-template<>
-struct serde::Serializable<app::dto::gsm::GsmFeatureDataValue>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::GsmFeatureDataValue::get_value, &app::dto::gsm::GsmFeatureDataValue::set_value, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "gsm_feature_data_value"; }
-};
-
-template<>
-struct serde::Serializable<app::dto::gsm::StandardisedCodeValue>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::gsm::StandardisedCodeValue::get_value, &app::dto::gsm::StandardisedCodeValue::set_value, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "standardised_code_value"; }
+    static constexpr std::string_view table_name() { return "gsm_feature_data"; }
 };
 
 template<>
@@ -508,6 +453,7 @@ using namespace boost::ut;
 suite<"app_dto_gsm"> app_dto_gsm_suite = [] {
     "reflects converted types"_test = [] {
         expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::gsm::GsmCreateRequest>::fields())> > 0);
+        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::gsm::GsmFeatureData>::fields())> == 1);
     };
 };
 }

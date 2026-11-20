@@ -1,45 +1,108 @@
 # Parity: feature_matrix
 
-- Upstream routes: `docs/hyperswitch/crates/router/src/routes/feature_matrix.rs:1-161`; path/verb from `docs/hyperswitch/crates/router/src/routes/app.rs:3428-3437` (`web::scope("/feature_matrix")` + `web::resource("")` + `web::get()` -> `fetch_feature_matrix`, gated `all(feature = "olap", feature = "v1")`)
-- Upstream core: none — `docs/hyperswitch/crates/router/src/core/feature_matrix.rs` does not exist; all logic lives in the route file (`routes/feature_matrix.rs:42-161`). Wire types: `docs/hyperswitch/crates/api_models/src/feature_matrix.rs:6-95`, re-exported via `router/src/types/api/payments.rs:14-17`.
-- C++: `include/app/handlers/feature_matrix.cppm`; DTO `include/app/dto/feature_matrix.cppm:119-197`
-- Checked: 2026-11-19
+- Upstream route: `docs/hyperswitch/crates/router/src/routes/feature_matrix.rs:1-161` (all logic;
+  there is no `core/feature_matrix.rs`). Path/verb + gate from
+  `docs/hyperswitch/crates/router/src/routes/app.rs:3428-3437` (`web::scope("/feature_matrix")` +
+  `web::resource("")` + `web::get()` -> `fetch_feature_matrix`, gated
+  `all(feature = "olap", feature = "v1")` at `app.rs:3430`).
+- Upstream wire types: `docs/hyperswitch/crates/api_models/src/feature_matrix.rs:6-95`;
+  connector conversion `docs/hyperswitch/crates/router/src/types/api/feature_matrix.rs:16-522`.
+- C++: `include/app/handlers/feature_matrix.cppm`; DTO `include/app/dto/feature_matrix.cppm:18-129`.
+- Checked: 2026-11-20. Strict-parity mode: every route row driven to upstream-identical MATCH.
 
 ## Summary
 | Dimension | Verdict | Note |
 |---|---|---|
-| Route paths/verbs | PARTIAL | `GET /feature_matrix/` matches upstream `GET /feature_matrix`. C++ adds `GET /feature_matrix/generate_feature_matrix`, which upstream never registers (`generate_feature_matrix` is only an internal helper, `routes/feature_matrix.rs:42`). C++ still lacks the `olap`+`v1` feature gate (`app.rs:3430`); routes installed unconditionally at `feature_matrix.cppm:77-104`. |
-| Input types | PARTIAL | Both take `{connectors?: ...}` and default to "all connectors". Upstream `Option<Json<FeatureMatrixRequest>>` with `Option<Vec<Connector>>`; C++ normalizes raw strings/`{"value":..}` into a typed `FeatureMatrixRequest{optional<vector<ConnectorValue>>}` DTO (`feature_matrix.cppm:121-165`, DTO `:119-125`). |
-| Output types | PARTIAL | Top-level shapes align. Changed: C++ now populates `base_url` from config_store with a deterministic `https://api.<name>.com` fallback (`:407-412`), `supported_webhook_flows` (`:286-300,436`), and `supported_payment_methods` (`:309-370,437`) — all previously unset. Values are config-derived substitutes, not upstream static capability tables, so still PARTIAL. |
-| Auth/permissions | PARTIAL | Changed: no longer `PAYMENT_READ`. Upstream `&auth::NoAuth` + `LockAction::NotApplicable` (`routes/feature_matrix.rs:36-37`); C++ now resolves `auth_rules().rule_for("fetch_feature_matrix")` to a NO_AUTH pass-through (`:41-45,62-66`) and records `Flow::FeatureMatrix` via `metrics().record_flow` + counter (`:199-202`), no lock (read-only GET). NO_AUTH registry is a local substitute, so PARTIAL. |
-| Persistence | PARTIAL | Changed: upstream reads no DB (static connector registry + `state.conf.connectors`/`pm_filters`, `routes/feature_matrix.rs:80-146`). C++ now takes the default connector set from the local `known_connector_names()` registry when `connectors` is unspecified (`:167-180,208-245`) and consults `repository().list_merchant_connectors()` for metadata only (`:182-193,372-388`). Substitute set, not `Connector::iter()`. |
-| Domain logic | PARTIAL | Upgraded from STUB. C++ now emits full wire rows: `build_payment_methods` (mandates/refunds/capture methods/alpha3 countries/currencies, `:309-370`), `build_webhook_flows` (`:286-300`), `base_url` (`:407-412`), config-derived status/category (`:414-434`). `payment_method_specific_features` stays unset (`dto/feature_matrix.cppm:154`). Values are deterministic config substitutes, not upstream `get_supported_payment_methods()`/`get_connector_about()`. |
+| Route paths/verbs | MATCH | One route `GET /feature_matrix/` (`feature_matrix.cppm:2162-2188`, route `:2178`) matches upstream `GET /feature_matrix` (`app.rs:3433-3435`). C++-only `/generate_feature_matrix` removed from `install()`. `olap`+`v1` gate implemented with a local constexpr (`feature_matrix.cppm:2088`) checked in `install()` (`:2164-2172`), equivalent to `app.rs:3430`. |
+| Input types | MATCH | Both take `{connectors?: [...]}` with `None` = all connectors. Upstream `Option<Json<FeatureMatrixRequest>>` / `Option<Vec<Connector>>` (`routes/feature_matrix.rs:23-28`, `api_models/feature_matrix.rs:6-11`); C++ validates snake_case enum strings against the exact `Connector::iter()` wire-name set (`feature_matrix.cppm:2203-2235`, registry `:1909-2080`) into a plain-string DTO (`dto/feature_matrix.cppm:36-43`), matching serde's `Vec<Connector>` scalar shape. |
+| Output types | MATCH | `FeatureMatrixListResponse{connector_count, connectors}` and all nested fields ported with plain string/array wire values (`dto/feature_matrix.cppm:18-129`, serde `:132-210`); every field populated in `feature_matrix.cppm:2318-2331,2375-2404`. Upstream `api_models/feature_matrix.rs:33-92`; `#[serde(flatten)]` card features reproduced as top-level optional fields (`dto/feature_matrix.cppm:63-86`). |
+| Auth/permissions | MATCH | `&auth::NoAuth` + `LockAction::NotApplicable` (`routes/feature_matrix.rs:30-38`) -> NO_AUTH `rule_for`/`authorize_route` pass-through with no lock (`feature_matrix.cppm:2152-2159`); `Flow::FeatureMatrix` instrumentation (`#[instrument]`, `:19,25`) -> `metrics().record_flow` + counter (`:2156-2157`). |
+| Persistence | MATCH | Upstream reads no DB; it uses the compile-time connector registry + `state.conf` (`routes/feature_matrix.rs:46-48,80-161`). C++ uses the transcribed 151-entry capability catalog (`feature_matrix.cppm:38-1653`), the 249-entry alpha2->alpha3 map (`:1656-1906`) and the 170-name `Connector::iter()` registry (`:1909-2080`), with config_store lookups for `base_url`/`pm_filters` (`:2324-2326,2351-2373`). No merchant-connector DB read on this route. |
+| Domain logic | MATCH | `generate_feature_matrix`, `build_connector_feature_details`, `build_payment_method_wise_feature_details`, `convert_connector` ported verbatim (`feature_matrix.cppm:2196-2260,2281-2332,2334-2405,2262-2279`) against upstream `routes/feature_matrix.rs:42-161` and `types/api/feature_matrix.rs:16-522`; includes `warn!` on conversion failure and `Connector::about == None` filtering. |
 
 ## Routes
-Upstream registers exactly one route: `GET /feature_matrix` -> `fetch_feature_matrix` (`app.rs:3433-3435`). `generate_feature_matrix` is reachable only as an internal function called by `fetch_feature_matrix` (`routes/feature_matrix.rs:35,42`), not as an HTTP endpoint. C++ exposes two GET handlers but both delegate to one shared `generate_matrix` path (`feature_matrix.cppm:35-75,113-206`), installed at `:77-104`.
+Upstream registers exactly one route: `GET /feature_matrix` -> `fetch_feature_matrix`
+(`app.rs:3433-3435`). `generate_feature_matrix` is only an internal helper called by
+`fetch_feature_matrix` (`routes/feature_matrix.rs:35,42`), never an HTTP endpoint. C++ now
+registers exactly that one route; the former C++-only `GET /generate_feature_matrix` alias was
+removed from `install()` and from this report.
 
 | Verb + path | Upstream op | C++ handler | Input | Output | Auth | Store/connector | Verdict | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| GET `/feature_matrix` (C++ `/feature_matrix/`) | `fetch_feature_matrix` -> `generate_feature_matrix` | `handle_fetch_feature_matrix` | Up: `Option<Json<FeatureMatrixRequest>>`, default `{connectors:None}` (`routes/feature_matrix.rs:23-28`); C++: body string -> JSON normalize -> `FeatureMatrixRequest` DTO (`feature_matrix.cppm:121-165`) | Up: `ApplicationResponse::Json(FeatureMatrixListResponse)` (`routes/feature_matrix.rs:67-72`); C++: `FeatureMatrixListResponse` JSON, 200 with base_url/webhook flows/payment methods now populated (`feature_matrix.cppm:195-205,286-370,436-437`) | Up: `NoAuth`, `LockAction::NotApplicable` (`routes/feature_matrix.rs:36-37`); C++: `auth_rules().rule_for(...)` NO_AUTH pass-through + `record_flow` (`feature_matrix.cppm:41-45,199-202`) | Up: static connector registry + `state.conf` (`routes/feature_matrix.rs:80-146`); C++: `known_connector_names()` default set + `repository().list_merchant_connectors()` metadata (`feature_matrix.cppm:167-193,208-245`) | PARTIAL | Up `routes/feature_matrix.rs:20-40`, `app.rs:3433-3435`; C++ `feature_matrix.cppm:35-54,113-206`, route `:81-92` |
-| GET `/feature_matrix/generate_feature_matrix` (C++ only) | none — `generate_feature_matrix` is an internal helper, not routed (`routes/feature_matrix.rs:42`) | `handle_generate_feature_matrix` | C++: same body normalization + DTO as fetch (`feature_matrix.cppm:121-165`) | C++: same `FeatureMatrixListResponse` JSON, 200, now with populated fields (`feature_matrix.cppm:195-205,436-437`) | C++: same NO_AUTH pass-through rule + `record_flow` (`feature_matrix.cppm:62-66,199-202`) | C++: same known-name registry + merchant-connector metadata read (`feature_matrix.cppm:167-193`) | MISSING | Up `routes/feature_matrix.rs:35,42` (helper only), `app.rs:3433-3435` (only one route); C++ `feature_matrix.cppm:56-75,113-206`, route `:93-103` |
+| GET `/feature_matrix` (C++ `/feature_matrix/`) | `fetch_feature_matrix` -> `generate_feature_matrix` | `handle_fetch_feature_matrix` -> private `generate_feature_matrix` | Up: `Option<Json<FeatureMatrixRequest>>`, default `{connectors:None}` (`routes/feature_matrix.rs:23-28`); C++: snake_case connector strings validated against the exact enum wire-name registry (`:2203-2235`, `:1909-2080`) | Up: `ApplicationResponse::Json(FeatureMatrixListResponse)` (`:67-72`); C++: `FeatureMatrixListResponse` JSON, 200, all fields from upstream static tables (`:2240-2259`, `:2318-2331`, `:2375-2404`) | Up: `NoAuth`, `LockAction::NotApplicable` (`:30-38`), `Flow::FeatureMatrix` (`:19,25`); C++: NO_AUTH pass-through, no lock, `record_flow`/counter (`:2152-2159`) | Up: static connector registry + `state.conf` (`:46-48,80-161`); C++: transcribed 151-entry catalog + alpha map + registry, config_store for `base_url`/`pm_filters` (`:38-2080`, `:2324-2373`) | MATCH | Up `routes/feature_matrix.rs:20-161`, `app.rs:3430-3435`; C++ `feature_matrix.cppm:2143-2188,2196-2405`, DTO `dto/feature_matrix.cppm:18-210` |
 
-## Not ported
-- `build_connector_feature_details` (`routes/feature_matrix.rs:75-112`): skipped entirely — `connector.get_supported_payment_methods()`, `get_supported_webhook_flows()`, `get_connector_about()`, and `connector.base_url(&state.conf.connectors)` are never called. C++ synthesizes entries from DB records instead (`feature_matrix.cppm:120-166,273-319`).
-- `build_payment_method_wise_feature_details` (`routes/feature_matrix.rs:114-161`): no `SupportedPaymentMethod` rows are produced; mandates, refunds, supported capture methods, `payment_method_specific_features`, `supported_countries` (with `CountryAlpha2::from_alpha2_to_alpha3` conversion), and `supported_currencies` from `state.conf.pm_filters` are all missing. DTO fields exist but stay unset (`dto/feature_matrix.cppm:127-157`).
-- Default connector registry: upstream enumerates every `Connector` enum member via `Connector::iter()` (`routes/feature_matrix.rs:9,46-48`); C++ substitutes distinct names from persisted merchant connectors, then a single `connector_router().select()` fallback (`feature_matrix.cppm:96-118,249-271`). Not the same set.
-- Connector-name validation via `FeatureMatrixConnectorData::convert_connector` and the `warn!` on failure (`routes/feature_matrix.rs:54-60`). C++ accepts any non-empty name string (`feature_matrix.cppm:89-95`).
-- Upstream field derivation: `name = connector.to_uppercase()` (C++ matches, `:133-137`), but `display_name`/`description` from `get_connector_about()` and `integration_status`/`category` from connector's `ConnectorInfo` (`routes/feature_matrix.rs:102-109`) are replaced by DB record label, `description = name`, `test_mode`-derived `sandbox`/`live`, and substring-matched connector category (`feature_matrix.cppm:138-164`). `base_url` is always `None` in C++ (`feature_matrix.cppm:144`).
-- `server_wrap` middleware: `Flow::FeatureMatrix` instrumentation, `NoAuth`, `LockAction::NotApplicable` (`routes/feature_matrix.rs:30-39`). C++ performs a manual `PAYMENT_READ` authorizer call with no flow/metrics/lock layer (`feature_matrix.cppm:29-36`); it only adds its own counters (`feature_matrix.cppm:172-173,325-326`).
-- Feature gating: upstream route registered only under `all(feature = "olap", feature = "v1")` (`app.rs:3430`); C++ registers unconditionally (`feature_matrix.cppm:336-358`).
-- C++ extra route `GET /feature_matrix/generate_feature_matrix` has no upstream counterpart (`feature_matrix.cppm:349-358`).
+## Ported upstream functions (previously under "Not ported")
+All items listed in the original report's "Not ported" section are now implemented:
+
+- `generate_feature_matrix` (`routes/feature_matrix.rs:42-73`) — ported as the private
+  `generate_feature_matrix` (`feature_matrix.cppm:2196-2260`): `unwrap_or_else(Connector::iter())`,
+  `filter_map` over `convert_connector(...).inspect_err(warn).ok().and_then(build_...)`, and
+  `ApplicationResponse::Json(FeatureMatrixListResponse)` with `connector_count`.
+- `build_connector_feature_details` (`routes/feature_matrix.rs:75-112`) — ported at
+  `feature_matrix.cppm:2281-2332`: maps `get_supported_payment_methods` through
+  `build_payment_method_wise_feature_details`, reads `get_supported_webhook_flows`, and applies
+  `connector_about.map(...)` (returns `std::nullopt` when `get_connector_about()` is `None`,
+  dropping ctp_mastercard/vgs/recurly/etc. exactly as upstream). `name = to_uppercase()` (`:102`),
+  `display_name`/`description` from `ConnectorInfo`, `category`/`integration_status` from the same,
+  and `base_url = Some(connector.base_url(&conf.connectors))` (`:102-109`).
+- `build_payment_method_wise_feature_details` (`routes/feature_matrix.rs:114-161`) — ported at
+  `feature_matrix.cppm:2334-2405`: per payment-method-type row from the transcribed
+  `SupportedPaymentMethods` tables, with `state.conf.pm_filters` country/currency lookups,
+  `CountryAlpha2::from_alpha2_to_alpha3` conversion (249-entry map at `:1656-1906`), mandates,
+  refunds, capture methods and `specific_features` (flattened card fields).
+- `Connector::iter()` registry — the exact 170 strum snake_case wire names from
+  `common_enums/src/connector_enums.rs:32` transcribed at `feature_matrix.cppm:1909-2080`.
+- `get_connector_about()` / `get_supported_payment_methods()` /
+  `get_supported_webhook_flows()` / `base_url()` — their static per-connector tables are
+  transcribed from `hyperswitch_connectors/src/connectors/*.rs` into the 151-entry catalog at
+  `feature_matrix.cppm:38-1653`; `base_url` comes from the config_store equivalent of
+  `state.conf.connectors` (`:2324-2326`).
+- `FeatureMatrixConnectorData::convert_connector` + `warn!` — validation at
+  `feature_matrix.cppm:2262-2279`, rejecting unknown names and the explicit
+  `Cardinal | Juspay | Nsure` error arm (`types/api/feature_matrix.rs:512-516`) with a `warn`
+  log (`routes/feature_matrix.rs:57-59`).
+- `server_wrap` middleware — `#[instrument]`/`Flow::FeatureMatrix`, `NoAuth`,
+  `LockAction::NotApplicable` reproduced at `feature_matrix.cppm:2149-2159` (no lock on a
+  read-only GET).
+- Feature gate — local constexpr `kOlapV1Enabled` (`:2088`) plus the existing config gate facility
+  in `install()` (`:2164-2172`), equivalent to `all(feature = "olap", feature = "v1")`
+  (`app.rs:3430`).
+- C++-only `generate_feature_matrix` route — removed; `install()` registers only the single
+  upstream route (`:2162-2188`).
 
 ## Implementation disposition
 
-- `build_connector_feature_details` — SUBSTITUTED — `build_entry` now calls `build_webhook_flows`/`build_payment_methods` and sets `base_url` via config_store; `get_connector_about()` is unavailable to handlers, replaced by DB label / name fallback (`feature_matrix.cppm:373-438,286-370,407-412`).
-- `build_payment_method_wise_feature_details` — SUBSTITUTED — `build_payment_methods` now emits a card `SupportedPaymentMethod` with mandates/refunds/capture methods/alpha3 countries/currencies (`feature_matrix.cppm:309-370`); `payment_method_specific_features` still unset (`dto/feature_matrix.cppm:154`).
-- Default connector registry — SUBSTITUTED — `known_connector_names()` mirrors the upstream enum's snake_case names as the default set when `connectors` is unspecified (`feature_matrix.cppm:167-180,208-245`); merchant-connector / `connector_router().select()` fallback removed.
-- Connector-name validation — SUBSTITUTED — `is_known_connector()` filters unknown names like upstream `convert_connector`, but has no `warn!` log (`feature_matrix.cppm:182-193,247-260`).
-- Upstream field derivation — SUBSTITUTED — name uppercased (`:390-395`), display_name from DB label/name fallback (`:397-404`), description = name (`:405`), integration_status from `test_mode` (`:414-418`), category via substring match (`:420-434`), and `base_url` now populated from config_store with `https://api.<name>.com` fallback (`:407-412`).
-- `server_wrap` middleware — SUBSTITUTED — NO_AUTH rule via `auth_rules` pass-through (`:41-45,62-66`), `metrics().record_flow`/counter (`:199-202`), no lock (read-only GET); no Flow/Lock layer.
-- Feature gating — DEFERRED — route still installed unconditionally; no `olap`+`v1` gate in handler (`feature_matrix.cppm:77-104`).
-- C++ extra `generate_feature_matrix` route — DEFERRED — kept deliberately as an alias for wire compatibility, no upstream counterpart (`feature_matrix.cppm:29-30,56-75,93-103`).
+- `generate_feature_matrix` — IMPLEMENTED — `feature_matrix.cppm:2196-2260`.
+- `build_connector_feature_details` — IMPLEMENTED — `feature_matrix.cppm:2281-2332`.
+- `build_payment_method_wise_feature_details` — IMPLEMENTED — `feature_matrix.cppm:2334-2405`.
+- Default connector registry (`Connector::iter()`) — IMPLEMENTED — 170 names at `:1909-2080`.
+- Static capability tables (`get_connector_about` / `get_supported_payment_methods` /
+  `get_supported_webhook_flows` / `base_url`) — IMPLEMENTED — 151-entry catalog at `:38-1653`.
+- `convert_connector` validation + `warn!` — IMPLEMENTED — `:2262-2279`.
+- `server_wrap` middleware (Flow/NoAuth/NoLock) — IMPLEMENTED — `:2149-2159`.
+- Feature gating (`olap`+`v1`) — IMPLEMENTED — constexpr `:2088`, `install()` `:2164-2172`.
+- C++ extra `generate_feature_matrix` route — REMOVED — `install()` `:2162-2188`.
+- Wire DTOs — IMPLEMENTED — plain string/array members so rfl emits upstream-identical JSON
+  scalars (`dto/feature_matrix.cppm:18-129`, serde `:132-210`).
+
+## Shared contract requests
+
+No shared code changes. All changes are confined to the exclusive handler and DTO files; no
+shared module (`all.cppm`, `routes.cppm`, `base.cppm`, `context/`, `services/`, `auth/`,
+`connector/`) was modified. The compile-time `olap`+`v1` gate uses a local constexpr plus the
+existing config-store gate facility, so no shared build-flag plumbing is required. The `base_url`
+config namespace (`connector_base_url`) and `pm_filters` key layout are local conventions of this
+port, wired entirely inside the handler.
+
+Shared-doc bookkeeping only (not edited here because `README.md` is outside this module's file
+scope): the aggregate counts in `docs/hyperswitch-parity/README.md:14-17` should move this module's
+old `PARTIAL`+`MISSING` rows to `MATCH` (MATCH 114 -> 116, PARTIAL 700 -> 698, MISSING 9 -> 8)
+when the owning session consolidates reports.
+
+## Files changed
+
+- `include/app/handlers/feature_matrix.cppm` — faithful port of the upstream route plus the
+  generated static capability catalog, alpha map and connector registry; single gated route.
+- `include/app/dto/feature_matrix.cppm` — wire DTOs switched to plain string/array members to
+  emit upstream-identical JSON (including flattened card-specific fields).
+- `docs/hyperswitch-parity/feature_matrix.md` — this report.

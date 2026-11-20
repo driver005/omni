@@ -16,22 +16,39 @@ import app_http;
 import app_crypto;
 import app_metrics;
 import app_store;
+import app_services;
+import app_keystore;
 
 export namespace app::handlers::hypersense {
 
-inline constexpr std::string_view kBlacklistConfigPrefix{"hypersense.blacklist."};
-inline constexpr std::string_view kSigningSecretConfigKey{"hypersense.jwt_secret"};
-inline constexpr std::string_view kDefaultSigningSecret{"hypersense-jwt-secret"};
-// Upstream JWT_TOKEN_TIME_IN_SECS (consts.rs:64): 60 * 60 * 24 * 2.
+// Upstream consts.rs:73 — USER_BLACKLIST_PREFIX = "BU_".
+inline constexpr std::string_view kUserBlacklistPrefix{"BU_"};
+// Upstream services/jwt.rs:50 — settings.secrets.jwt_secret. The local key store /
+// config store mirrors the single Settings secret shared by AuthToken and ExternalToken.
+inline constexpr std::string_view kJwtPurpose{"jwt"};
+inline constexpr std::string_view kJwtSigningKeyId{"user-jwt-v2"};
+inline constexpr std::string_view kJwtFallbackKeyId{"user-jwt-secret"};
+inline constexpr std::string_view kJwtConfigKey{"jwt.secret"};
+inline constexpr std::string_view kDefaultJwtSecret{"user-jwt-secret"};
+// Upstream consts.rs:64 — JWT_TOKEN_TIME_IN_SECS = 60 * 60 * 24 * 2.
 inline constexpr std::int64_t kExternalTokenTtlSeconds{172800};
+// Upstream authentication.rs:270-275 — ExternalServiceType has one snake_case variant.
+inline constexpr std::string_view kHypersenseServiceType{"hypersense"};
+
+/** @brief Port of authentication::ExternalServiceType (authentication.rs:270-275). */
+enum class ExternalServiceType : std::uint8_t
+{
+    Hypersense,
+};
 
 /**
  * @brief Local serializable shape for ExternalVerifyTokenResponse::Hypersense.
  *
  * The DTO partition declares the response variant as an empty enum marker
  * (dto/external_service_auth.cppm:36-40), so the four upstream payload fields
- * (core/external_service_auth.rs:95-102) are normalized here and emitted through
- * serde instead of a hand-written JSON string.
+ * (api_models/external_service_auth.rs:33-39) are normalized here and emitted through
+ * serde. The untagged upstream enum serializes as the bare struct fields, which is
+ * exactly what this shape produces.
  */
 class HypersenseVerifyResponse
 {
@@ -71,30 +88,9 @@ struct serde::Serializable<app::handlers::hypersense::HypersenseVerifyResponse>
 
 export namespace app::handlers::hypersense {
 
-/** @brief Typed stand-in for ExternalToken::check_service_type (no raw string compare in the handler). */
-class ServiceTypeValidator
+/** @brief api_locking::LockAction::NotApplicable (hypersense.rs:32,52,76). */
+struct LockActionNotApplicable
 {
-public:
-    [[nodiscard]] bool accepts_hypersense(std::string_view value) const noexcept
-    {
-        return parse(value) ==
-               app::dto::external_service_auth::ExternalVerifyTokenResponse::Hypersense;
-    }
-
-private:
-    using Service =
-        app::dto::external_service_auth::ExternalVerifyTokenResponse;
-
-    [[nodiscard]] std::optional<Service> parse(std::string_view value) const noexcept
-    {
-        if (value == "Hypersense") {
-            return Service::Hypersense;
-        }
-        if (value == "OfferEngine") {
-            return Service::OfferEngine;
-        }
-        return std::nullopt;
-    }
 };
 
 class HypersenseRouteHandlers
@@ -106,73 +102,32 @@ public:
         std::function<void()> send
     )
     {
-        // Upstream: DashboardNoPermissionAuth { allow_connected: false, allow_platform: false }
-        // (hypersense.rs:28-31). The audited registry row is the single source of truth;
-        // its JWT + ADMIN rule is the local equivalent (bearer required, no permission
-        // check) and the allow flags are inert for the JWT scheme.
-        const auto rule = m_context->auth_rules().rule_for("get_hypersense_token");
-        const auto auth = m_context->authorizer().authorize_route(
-            app::auth::AuthContextBuilder{}(req), rule
-        );
-        if (auth) {
-            send_error(res, send, *auth);
-            return;
-        }
-
-        // generate_external_token: bind the external token to the calling dashboard
-        // identity. user_id comes from the caller's token, merchant_id from the
-        // merchant header (with the auth context as a fallback) — never from body size.
-        const auto auth_ctx = app::auth::AuthContextBuilder{}(req);
-        const auto bearer = app::auth::TokenParser{}(req).value();
-        auto user_id = std::string{bearer};
-        if (const auto sub = auth_ctx.claim("sub"); sub && !sub->empty()) {
-            user_id = std::string{*sub};
-        }
-        auto merchant_id = app::http::merchant_id_from_header{}(req);
-        if (merchant_id.empty()) {
-            merchant_id = auth_ctx.merchant_id();
-        }
-        if (merchant_id.empty()) {
-            merchant_id = "merchant_"
-                + app::crypto::KeyedHasher{"hypersense.merchant"}.hash(bearer);
-        }
-
-        // ExternalToken payload: { user_id, merchant_id, exp, external_service_type }.
-        // Signed with the config-driven secret (state.conf substitute); jti is a real
-        // generated id. No fabricated name/email is cached here — the authoritative
-        // identity is read from the user store at verify time.
-        const auto now = std::chrono::system_clock::to_time_t(
-            std::chrono::system_clock::now()
-        );
-        const auto exp = now + kExternalTokenTtlSeconds;
-        const auto token_payload = std::format(
-            R"({{"user_id":{},"merchant_id":{},"exp":{},"external_service_type":"Hypersense","jti":{}}})",
-            serde::Ser::encode_json(user_id),
-            serde::Ser::encode_json(merchant_id),
-            exp,
-            serde::Ser::encode_json(m_context->ids().uuid_v4())
-        );
-        const auto token = app::crypto::JwtSigner{signing_secret()}.sign(token_payload);
-        if (token.empty()) {
-            send_error(
-                res,
-                send,
-                core::error::AppErrorBuilder{}(
-                    core::error::AppErrorKind::INTERNAL_ERROR,
-                    "external token signing failed"
-                )
-            );
-            return;
-        }
-
-        // Upstream flow: Flow::HypersenseTokenRequest, api_locking::LockAction::NotApplicable
-        // (hypersense.rs:15,32) — no lock is acquired, only flow/counter instrumentation.
-        m_context->metrics().record_flow("HypersenseTokenRequest");
+        record_flow("HypersenseTokenRequest", LockActionNotApplicable{});
         m_context->metrics().counter("hypersense.token_request").increment();
+
+        // routes/hypersense.rs:28-31 — DashboardNoPermissionAuth {
+        //     allow_connected: false, allow_platform: false }
+        // Imported as a local helper so the exact upstream semantics apply: parse the
+        // dashboard JWT, check its blacklist and tenant, then hand UserFromToken to the
+        // core function. No named permission is required.
+        const auto auth = dashboard_no_permission_auth(req);
+        if (auth.error) {
+            send_error(res, send, *auth.error);
+            return;
+        }
+
+        // core/external_service_auth.rs:22-26 — generate_external_token(state, user,
+        // ExternalServiceType::Hypersense).
+        const auto token = generate_external_token(*auth.user);
+        if (!token) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::INTERNAL_ERROR, "InternalServerError"));
+            return;
+        }
 
         using Response = app::dto::external_service_auth::ExternalTokenResponse;
         Response response{};
-        response.set_token(token);
+        response.set_token(*token);
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -182,62 +137,61 @@ public:
         std::function<void()> send
     )
     {
-        // Upstream: NoAuth — the payload token is the credential.
-        const auto rule = m_context->auth_rules().rule_for("verify_hypersense_token");
-        const auto auth = m_context->authorizer().authorize_route(
-            app::auth::AuthContextBuilder{}(req), rule
-        );
-        if (auth) {
-            send_error(res, send, *auth);
-            return;
-        }
+        record_flow("HypersenseVerifyToken", LockActionNotApplicable{});
+        m_context->metrics().counter("hypersense.verify_token").increment();
 
+        // routes/hypersense.rs:75 — NoAuth. The payload token is the only credential.
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
+            send_error(res, send, error(
                 core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
         using Input = app::dto::external_service_auth::ExternalVerifyTokenRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
+            send_error(res, send, error(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
 
-        // verify_external_token: decode + signature-check the JWT, reject blacklisted
-        // users and wrong service types, then resolve the identity it carries.
-        const auto claims = decode_token(parsed->get_token());
+        // core/external_service_auth.rs:73-75 — decode_jwt::<ExternalToken> ->
+        // Unauthorized.
+        const auto claims = decode_jwt_external(parsed->get_token());
         if (!claims) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid external token"));
-            return;
-        }
-        if (is_blacklisted(claims->user_id, claims->exp)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid external token"));
-            return;
-        }
-        if (!ServiceTypeValidator{}.accepts_hypersense(claims->external_service_type)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN, "invalid external service type"));
+            send_error(res, send, error(
+                core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized"));
             return;
         }
 
-        // find_active_user_by_user_id (external_service_auth.rs:85-100): name and email
-        // are authoritative from the persisted user record, not fabricated or cached.
-        const auto user = m_context->repository().find_user_by_string(claims->user_id);
-        if (!user || user->get_status() != "active") {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INTERNAL_ERROR, "user not found for external token"));
+        // core/external_service_auth.rs:77-81 — check_user_in_blacklist(user_id, exp)
+        // -> InvalidJwtToken when true.
+        if (check_user_in_blacklist(claims->user_id, claims->exp)) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::UNAUTHORIZED, "InvalidJwtToken"));
             return;
         }
 
-        // Upstream flow: Flow::HypersenseVerifyToken, LockAction::NotApplicable.
-        m_context->metrics().record_flow("HypersenseVerifyToken");
-        m_context->metrics().counter("hypersense.verify_token").increment();
+        // core/external_service_auth.rs:83 — token.check_service_type(&required) ->
+        // AccessForbidden { resource: "hypersense" }.
+        if (!check_service_type(*claims, ExternalServiceType::Hypersense)) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::FORBIDDEN,
+                std::format("AccessForbidden: {}", kHypersenseServiceType)));
+            return;
+        }
 
+        // core/external_service_auth.rs:85-90 — global_store.find_active_user_by_user_id
+        // -> InternalServerError ("User not found in database").
+        const auto user = find_active_user_by_user_id(claims->user_id);
+        if (!user) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::INTERNAL_ERROR, "User not found in database"));
+            return;
+        }
+
+        // core/external_service_auth.rs:95-102 — ExternalVerifyTokenResponse::Hypersense
+        // { user_id (from DB), merchant_id (from token), name, email (from DB) }.
         HypersenseVerifyResponse response{};
         response.set_user_id(user->get_user_id());
         response.set_merchant_id(claims->merchant_id);
@@ -252,57 +206,43 @@ public:
         std::function<void()> send
     )
     {
-        // Upstream: NoAuth — decode the JWT from the payload, then blacklist its user.
-        const auto rule = m_context->auth_rules().rule_for("signout_hypersense_token");
-        const auto auth = m_context->authorizer().authorize_route(
-            app::auth::AuthContextBuilder{}(req), rule
-        );
-        if (auth) {
-            send_error(res, send, *auth);
-            return;
-        }
+        record_flow("HypersenseSignoutToken", LockActionNotApplicable{});
+        m_context->metrics().counter("hypersense.signout_token").increment();
 
+        // routes/hypersense.rs:51 — NoAuth.
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
+            send_error(res, send, error(
                 core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
         using Input = app::dto::external_service_auth::ExternalSignoutTokenRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
+            send_error(res, send, error(
                 core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
 
-        const auto claims = decode_token(parsed->get_token());
+        // core/external_service_auth.rs:55-57 — decode_jwt::<ExternalToken> ->
+        // Unauthorized.
+        const auto claims = decode_jwt_external(parsed->get_token());
         if (!claims) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid external token"));
+            send_error(res, send, error(
+                core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized"));
             return;
         }
 
-        // insert_user_in_blacklist (external_service_auth.rs:55-61): persist the
-        // blacklist timestamp so it survives a restart. The cache entry is a short
-        // TTL mirror (an explicitly allowed cache category) that keeps other local
-        // handlers observing the same blacklist marker.
-        const auto now = std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-        ).count();
-        const auto key = std::string{kBlacklistConfigPrefix} + claims->user_id;
-        m_context->repository().set_config(key, std::to_string(now));
-        m_context->cache().put(
-            key,
-            core::cache::to_cache_value(now),
-            core::cache::Ttl{}.seconds(kExternalTokenTtlSeconds)
-        );
+        // core/external_service_auth.rs:59-61 — insert_user_in_blacklist(&state,
+        // &token.user_id) -> InvalidJwtToken on failure. The durable config row plus
+        // its cache mirror are the local Redis stand-in.
+        if (!insert_user_in_blacklist(claims->user_id)) {
+            send_error(res, send, error(
+                core::error::AppErrorKind::UNAUTHORIZED, "InvalidJwtToken"));
+            return;
+        }
 
-        // Upstream flow: Flow::HypersenseSignoutToken, LockAction::NotApplicable.
-        m_context->metrics().record_flow("HypersenseSignoutToken");
-        m_context->metrics().counter("hypersense.signout_token").increment();
-
-        // ApplicationResponse::StatusOk is bodyless (external_service_auth.rs:63).
+        // core/external_service_auth.rs:63 — ApplicationResponse::StatusOk (bodyless).
         send_status_ok(res, send);
     }
 
@@ -352,6 +292,34 @@ public:
     }
 
 private:
+    /** @brief authentication.rs:359-367 UserFromToken, reduced to the fields used here. */
+    struct UserFromToken
+    {
+        std::string user_id{};
+        std::string merchant_id{};
+    };
+
+    /** @brief authentication.rs:6824-6830 ExternalToken (the signed claim set). */
+    struct ExternalToken
+    {
+        std::string user_id{};
+        std::string merchant_id{};
+        std::int64_t exp{0};
+        ExternalServiceType external_service_type{ExternalServiceType::Hypersense};
+    };
+
+    /** @brief authentication.rs:322-331 AuthToken plus the locally issued `sub` alias. */
+    struct AuthToken
+    {
+        std::string user_id{};
+        std::string merchant_id{};
+        std::string role_id{};
+        std::string org_id{};
+        std::string profile_id{};
+        std::string tenant_id{};
+        std::int64_t exp{0};
+    };
+
     struct ExternalClaims
     {
         std::string user_id{};
@@ -360,44 +328,52 @@ private:
         std::int64_t exp{0};
     };
 
-    /** @brief state.conf signing-secret substitute, resolved from persisted config. */
-    [[nodiscard]] std::string signing_secret() const
+    struct AuthAttempt
     {
+        std::optional<UserFromToken> user{};
+        std::optional<core::error::AppError> error{};
+    };
+
+    static core::error::AppError error(core::error::AppErrorKind kind, std::string message)
+    {
+        return core::error::AppErrorBuilder{}(kind, std::move(message));
+    }
+
+    /** @brief state.conf.secrets.jwt_secret (jwt.rs:50), resolved from local infra. */
+    [[nodiscard]] std::string jwt_secret() const
+    {
+        if (const auto stored = m_context->secret_resolver().resolve(
+                kJwtPurpose, std::string{kJwtSigningKeyId});
+            stored && !stored->empty()) {
+            return *stored;
+        }
+        if (const auto stored = m_context->key_store().get(
+                kJwtPurpose, kJwtFallbackKeyId);
+            stored && !stored->value().empty()) {
+            return stored->value();
+        }
         if (const auto configured = m_context->repository().get_config(
-                std::string{kSigningSecretConfigKey});
+                std::string{kJwtConfigKey});
             configured && !configured->empty()) {
             return *configured;
         }
-        return std::string{kDefaultSigningSecret};
+        return std::string{kDefaultJwtSecret};
     }
 
-    /** @brief check_user_in_blacklist: blacklisted_at > (exp - JWT_TOKEN_TIME_IN_SECS). */
-    [[nodiscard]] bool is_blacklisted(std::string_view user_id, std::int64_t exp) const
+    /**
+     * @brief authentication.rs:6335-6351 decode_jwt_verified — verify the JWT signature
+     * and header before any payload is trusted. The local JwtSigner uses the same
+     * HS256 wire shape (crypto/token.cppm:386-397,488-498).
+     */
+    [[nodiscard]] std::optional<std::string> verified_payload_json(std::string_view token) const
     {
-        if (exp <= 0) {
-            return false;
+        if (token.empty()) {
+            return std::nullopt;
         }
-        const auto key = std::string{kBlacklistConfigPrefix} + std::string{user_id};
-        const auto stored = m_context->repository().get_config(key);
-        if (!stored) {
-            return false;
-        }
-        std::int64_t blacklisted_at{0};
-        try {
-            blacklisted_at = std::stoll(*stored);
-        } catch (...) {
-            return false;
-        }
-        return blacklisted_at > (exp - kExternalTokenTtlSeconds);
-    }
-
-    [[nodiscard]] std::optional<ExternalClaims> decode_token(std::string_view token) const
-    {
-        const auto signer = app::crypto::JwtSigner{signing_secret()};
+        const auto signer = app::crypto::JwtSigner{jwt_secret()};
         if (!signer.verify(token)) {
             return std::nullopt;
         }
-
         const auto first = token.find('.');
         const auto second = token.find('.', first + 1);
         if (first == std::string_view::npos || second == std::string_view::npos) {
@@ -410,36 +386,78 @@ private:
             return std::nullopt;
         }
         auto generic = serde::Ser::decode_generic("application/json", payload);
+        if (!generic ||
+            !std::holds_alternative<interfaces::Value::Object>(generic->get())) {
+            return std::nullopt;
+        }
+        return payload;
+    }
+
+    static void read_string(
+        const interfaces::Value::Object& object, std::string_view key, std::string& target)
+    {
+        const auto field = object.get(std::string{key});
+        if (!field) {
+            return;
+        }
+        if (const auto* text = std::get_if<std::string>(&field.value().get())) {
+            target = *text;
+        }
+    }
+
+    static std::int64_t read_expiry(const interfaces::Value::Object& object)
+    {
+        const auto field = object.get("exp");
+        if (!field) {
+            return 0;
+        }
+        if (const auto* number = std::get_if<std::int64_t>(&field.value().get())) {
+            return *number;
+        }
+        if (const auto* number = std::get_if<double>(&field.value().get())) {
+            return static_cast<std::int64_t>(*number);
+        }
+        return 0;
+    }
+
+    /** @brief jsonwebtoken Validation::new(HS256): expire when exp is present. */
+    static bool expiry_valid(const interfaces::Value::Object& object)
+    {
+        const auto field = object.get("exp");
+        if (!field) {
+            return true;
+        }
+        const auto exp = read_expiry(object);
+        if (exp <= 0) {
+            return false;
+        }
+        const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+        return exp > now;
+    }
+
+    /** @brief authentication.rs:6353-6364 decode_jwt::<ExternalToken>. */
+    [[nodiscard]] std::optional<ExternalClaims> decode_jwt_external(std::string_view token) const
+    {
+        const auto payload = verified_payload_json(token);
+        if (!payload) {
+            return std::nullopt;
+        }
+        auto generic = serde::Ser::decode_generic("application/json", *payload);
         if (!generic) {
             return std::nullopt;
         }
         const auto* object = std::get_if<interfaces::Value::Object>(&generic->get());
-        if (object == nullptr) {
+        if (object == nullptr || !expiry_valid(*object)) {
             return std::nullopt;
         }
 
         ExternalClaims claims{};
-        const auto read = [object](std::string_view key, std::string& target)
-        {
-            const auto field = object->get(std::string{key});
-            if (!field) {
-                return;
-            }
-            if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                target = *text;
-            }
-        };
-        read("user_id", claims.user_id);
-        read("merchant_id", claims.merchant_id);
-        read("external_service_type", claims.external_service_type);
-
-        if (const auto field = object->get("exp")) {
-            if (const auto* number = std::get_if<std::int64_t>(&field.value().get())) {
-                claims.exp = *number;
-            } else if (const auto* number = std::get_if<double>(&field.value().get())) {
-                claims.exp = static_cast<std::int64_t>(*number);
-            }
-        }
+        read_string(*object, "user_id", claims.user_id);
+        read_string(*object, "merchant_id", claims.merchant_id);
+        read_string(*object, "external_service_type", claims.external_service_type);
+        claims.exp = read_expiry(*object);
 
         if (claims.user_id.empty() || claims.exp <= 0) {
             return std::nullopt;
@@ -447,15 +465,196 @@ private:
         return claims;
     }
 
+    /** @brief parse_jwt_payload::<AuthToken> (authentication.rs:5394,5432). */
+    [[nodiscard]] std::optional<AuthToken> decode_jwt_auth_token(std::string_view token) const
+    {
+        const auto payload = verified_payload_json(token);
+        if (!payload) {
+            return std::nullopt;
+        }
+        auto generic = serde::Ser::decode_generic("application/json", *payload);
+        if (!generic) {
+            return std::nullopt;
+        }
+        const auto* object = std::get_if<interfaces::Value::Object>(&generic->get());
+        if (object == nullptr || !expiry_valid(*object)) {
+            return std::nullopt;
+        }
+
+        AuthToken claims{};
+        read_string(*object, "user_id", claims.user_id);
+        // Locally issued dashboard tokens use `sub` for the same identity.
+        if (claims.user_id.empty()) {
+            read_string(*object, "sub", claims.user_id);
+        }
+        read_string(*object, "merchant_id", claims.merchant_id);
+        read_string(*object, "role_id", claims.role_id);
+        read_string(*object, "org_id", claims.org_id);
+        read_string(*object, "profile_id", claims.profile_id);
+        read_string(*object, "tenant_id", claims.tenant_id);
+        claims.exp = read_expiry(*object);
+
+        if (claims.user_id.empty()) {
+            return std::nullopt;
+        }
+        return claims;
+    }
+
+    /** @brief authentication.rs:6851-6863 ExternalToken::check_service_type. */
+    [[nodiscard]] static bool check_service_type(
+        const ExternalClaims& claims, ExternalServiceType required) noexcept
+    {
+        if (required != ExternalServiceType::Hypersense) {
+            return false;
+        }
+        return claims.external_service_type == kHypersenseServiceType;
+    }
+
+    /** @brief authentication/blacklist.rs:70-83 check_user_in_blacklist. */
+    [[nodiscard]] bool check_user_in_blacklist(
+        std::string_view user_id, std::int64_t token_expiry) const
+    {
+        if (user_id.empty() || token_expiry <= 0) {
+            return false;
+        }
+        const auto key = std::string{kUserBlacklistPrefix} + std::string{user_id};
+        const auto stored = m_context->repository().get_config(key);
+        if (!stored) {
+            return false;
+        }
+        std::int64_t blacklisted_at{0};
+        try {
+            blacklisted_at = std::stoll(*stored);
+        } catch (...) {
+            return false;
+        }
+        return blacklisted_at > (token_expiry - kExternalTokenTtlSeconds);
+    }
+
+    /** @brief authentication/blacklist.rs:24-38 insert_user_in_blacklist. */
+    bool insert_user_in_blacklist(std::string_view user_id) const
+    {
+        if (user_id.empty()) {
+            return false;
+        }
+        const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+        const auto key = std::string{kUserBlacklistPrefix} + std::string{user_id};
+        m_context->repository().set_config(key, std::to_string(now));
+        // Redis key expiry mirror (an allowed in-process cache category).
+        m_context->cache().put(
+            key,
+            core::cache::to_cache_value(now),
+            core::cache::Ttl{}.seconds(kExternalTokenTtlSeconds)
+        );
+        return true;
+    }
+
+    /** @brief authorization::check_tenant (external_service_auth.rs:119). */
+    [[nodiscard]] bool tenant_matches(std::string_view tenant_id) const
+    {
+        if (tenant_id.empty()) {
+            return true;
+        }
+        const auto configured = m_context->config_store().get_value("tenant", "tenant_id");
+        if (!configured || configured->empty()) {
+            return true;
+        }
+        return tenant_id == *configured;
+    }
+
+    /**
+     * @brief authentication.rs:5378-5419 DashboardNoPermissionAuth::authenticate_and_fetch.
+     *
+     * allow_connected/allow_platform are inert for the dashboard JWT scheme; the
+     * authenticating work is parse JWT -> check blacklist -> check tenant -> UserFromToken.
+     */
+    [[nodiscard]] AuthAttempt dashboard_no_permission_auth(interfaces::io::IRequest& req) const
+    {
+        const auto bearer = app::auth::TokenParser{}(req);
+        if (bearer.is_empty()) {
+            return {std::nullopt, error(core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized")};
+        }
+        const auto claims = decode_jwt_auth_token(bearer.value());
+        if (!claims) {
+            return {std::nullopt, error(core::error::AppErrorKind::UNAUTHORIZED, "InvalidJwtToken")};
+        }
+        if (check_user_in_blacklist(claims->user_id, claims->exp)) {
+            return {std::nullopt, error(core::error::AppErrorKind::UNAUTHORIZED, "InvalidJwtToken")};
+        }
+        if (!tenant_matches(claims->tenant_id)) {
+            return {std::nullopt, error(core::error::AppErrorKind::FORBIDDEN, "AccessForbidden")};
+        }
+
+        UserFromToken user{};
+        user.user_id = claims->user_id;
+        user.merchant_id = claims->merchant_id;
+        // Locally issued tokens carry the merchant id as a request header instead of a
+        // claim; both spellings are read before the JWT is built.
+        if (user.merchant_id.empty()) {
+            user.merchant_id = app::http::merchant_id_from_header{}(req);
+        }
+        return {user, std::nullopt};
+    }
+
+    /**
+     * @brief core/external_service_auth.rs:24-49 generate_external_token, using
+     * authentication.rs:6833-6849 ExternalToken::new_token. The payload is exactly
+     * { user_id, merchant_id, exp, external_service_type } (no fabricated jti).
+     */
+    [[nodiscard]] std::optional<std::string> generate_external_token(
+        const UserFromToken& user) const
+    {
+        const auto now = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+        ExternalToken token{};
+        token.user_id = user.user_id;
+        token.merchant_id = user.merchant_id;
+        token.exp = now + kExternalTokenTtlSeconds;
+        token.external_service_type = ExternalServiceType::Hypersense;
+
+        const auto payload = std::format(
+            R"({{"user_id":{},"merchant_id":{},"exp":{},"external_service_type":{}}})",
+            serde::Ser::encode_json(token.user_id),
+            serde::Ser::encode_json(token.merchant_id),
+            token.exp,
+            serde::Ser::encode_json(std::string{kHypersenseServiceType})
+        );
+        const auto signed = app::crypto::JwtSigner{jwt_secret()}.sign(payload);
+        if (signed.empty()) {
+            return std::nullopt;
+        }
+        return signed;
+    }
+
+    /** @brief global_store.find_active_user_by_user_id (external_service_auth.rs:85-90). */
+    [[nodiscard]] std::optional<app::store::users::UserRecord>
+    find_active_user_by_user_id(std::string_view user_id) const
+    {
+        auto user = m_context->repository().find_user_by_string(user_id);
+        if (!user || user->get_status() != "active") {
+            return std::nullopt;
+        }
+        return user;
+    }
+
+    void record_flow(std::string_view flow, LockActionNotApplicable) const
+    {
+        // LockAction::NotApplicable acquires no lock; only flow instrumentation runs.
+        m_context->metrics().record_flow(flow);
+    }
+
     void send_error(
         interfaces::io::IResponse& res,
         std::function<void()> send,
-        core::error::AppError error
+        core::error::AppError failure
     ) const
     {
-        auto text = serde::Ser::encode_json(error);
+        auto text = serde::Ser::encode_json(failure);
         auto bytes = serde::Ser::serialize_raw("application/json", text);
-        res.set_status(core::error::AppErrorStatus{}(error.get_kind()));
+        res.set_status(core::error::AppErrorStatus{}(failure.get_kind()));
         res.set_body(std::move(bytes));
         send();
     }

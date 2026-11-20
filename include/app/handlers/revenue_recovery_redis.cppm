@@ -17,6 +17,22 @@ import app_metrics;
 
 export namespace app::handlers::revenue_recovery_redis {
 
+/**
+ * @brief Output of the ported `RedisTokenManager::get_redis_key_data_raw`.
+ *
+ * Mirrors the upstream tuple `(bool, i64, Option<serde_json::Value>)`:
+ * `exists` (key/hash presence), `ttl_seconds` (Redis TTL), `data` (the raw
+ * Redis value materialized as a JSON value).
+ *
+ * Upstream: types/storage/revenue_recovery_redis_operation.rs:1073-1146.
+ */
+struct RawRedisData
+{
+    bool exists{false};
+    std::int64_t ttl_seconds{-2};
+    serde::Value data{};
+};
+
 class RevenueRecoveryRedisRouteHandlers
 {
 public:
@@ -80,9 +96,9 @@ public:
 
         // Upstream key construction (revenue_recovery_redis_operation.rs:139-145,
         // :1086-1089): Status -> customer:{id}:status, Tokens -> customer:{id}:tokens.
-        // The local cache is the deterministic stand-in for the real Redis key:
-        // same key-type-specific natural key, namespaced so it cannot collide with
-        // unrelated cache entries. Real Redis access is an external dependency.
+        // The in-process cache is the local substitute for the Redis instance; the
+        // natural Redis key is used verbatim, namespaced so it cannot collide with
+        // unrelated cache entries.
         const auto redis_key = std::string{"customer:"} + connector_customer_id
             + (is_tokens ? ":tokens" : ":status");
         const auto cache_key = std::string{"revenue_recovery_redis.redis:"} + redis_key;
@@ -92,20 +108,12 @@ public:
             "Redis data not found for connector customer id:- '"
         } + connector_customer_id + "'";
 
-        // Read-only lookup: upstream never writes here. A cache miss is a Redis
-        // miss and maps to NOT_FOUND; the handler must not self-populate and then
-        // report a hit (that was the old fake-success stand-in).
-        core::cache::CacheQuerySpec spec;
-        spec.prefix = cache_key;
-        const auto entries = m_context->cache().execute(spec);
-        const core::cache::CacheEntry* found = nullptr;
-        for (const auto& entry : entries) {
-            if (entry.key == cache_key) {
-                found = &entry;
-                break;
-            }
-        }
-        if (found == nullptr || core::cache::IsMiss{}(found->value)) {
+        // Upstream only errors when the Redis connection / get_ttl fails
+        // (revenue_recovery_redis_operation.rs:1078-1098). A closed local cache is
+        // the in-process equivalent of that infrastructure failure. A key that is
+        // simply absent is NOT an error upstream: it yields a 200 response with
+        // exists=false (see get_redis_key_data_raw below).
+        if (!m_context->cache().is_open()) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(
                 core::error::AppErrorKind::NOT_FOUND,
                 not_found_message
@@ -113,62 +121,19 @@ public:
             return;
         }
 
-        // The producer stores the Redis value as a JSON string in the cache entry.
-        // Status values are plain strings; Tokens values are hash maps encoded as
-        // JSON objects. Decode into a typed Value rather than echoing path/query
-        // inputs into a synthetic envelope.
-        const auto payload = core::cache::value_as<std::string>(found->value, std::string{});
-        std::optional<serde::Value> data;
-        auto decoded = serde::Ser::decode_generic("application/json", payload);
-        if (decoded) {
-            data = std::move(*decoded);
-        } else if (!payload.empty()) {
-            // A raw status string is not JSON-quoted upstream; keep it as the
-            // JSON string value that serde_json::Value::String would produce.
-            data = serde::Value{payload};
-        }
-        if (!data) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
-                core::error::AppErrorKind::NOT_FOUND,
-                not_found_message
-            ));
-            return;
-        }
-
-        // get_ttl substitute: the cache entry carries the real remaining TTL set
-        // by the producer's put(key, value, ttl). Redis returns -1 for a key with
-        // no expiry; expose 0 in that case rather than a fabricated value.
-        std::int64_t ttl_seconds{0};
-        if (found->expires_at != core::cache::CacheEntry::Clock::time_point::max()) {
-            const auto now = core::cache::CacheEntry::Clock::now();
-            ttl_seconds = std::max<std::int64_t>(
-                0,
-                std::chrono::duration_cast<std::chrono::seconds>(found->expires_at - now).count()
-            );
-        }
-
-        // Existence derivation (revenue_recovery_redis_operation.rs:1101-1135):
-        // Status key presence means exists=true. Tokens hash presence means the
-        // decoded object is non-empty.
-        bool exists{true};
-        if (is_tokens) {
-            if (const auto* object = std::get_if<serde::Value::Object>(&data->get())) {
-                exists = !object->empty();
-            } else {
-                exists = !data->is_null();
-            }
-        }
+        const auto raw = get_redis_key_data_raw(cache_key, is_tokens, connector_customer_id);
 
         // Flow::RevenueRecoveryRedis instrumentation (revenue_recovery_redis.rs:11, :18).
         m_context->metrics().record_flow("RevenueRecoveryRedis");
         m_context->metrics().counter("revenue_recovery_redis.get_revenue_recovery_redis_data").increment();
 
-        // Upstream response: RedisDataResponse { exists, ttl_seconds, data }.
+        // Upstream core/revenue_recovery_data_backfill.rs:130-144:
+        // Ok((exists, ttl_seconds, data)) -> RedisDataResponse -> ApplicationResponse::Json.
         using Response = app::dto::revenue_recovery_data_backfill::RedisDataResponse;
         Response response;
-        response.set_exists(exists);
-        response.set_ttl_seconds(ttl_seconds);
-        response.set_data(std::move(data));
+        response.set_exists(raw.exists);
+        response.set_ttl_seconds(raw.ttl_seconds);
+        response.set_data(raw.data);
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -197,6 +162,128 @@ public:
     }
 
 private:
+    /**
+     * @brief Local, in-process port of `RedisTokenManager::get_redis_key_data_raw`.
+     *
+     * Upstream: types/storage/revenue_recovery_redis_operation.rs:1073-1146.
+     * The cache entry is the substitute for the Redis key; expiry carries the TTL
+     * and the raw string value carries the Redis value (a plain string for the
+     * Status key, a JSON object for the Tokens hash).
+     *
+     * Behavior ported line-by-line:
+     *  - TTL (:1091-1098): Redis TTL semantics -2 = missing, -1 = no expiry,
+     *    otherwise remaining whole seconds.
+     *  - Status (:1101-1114): get_key::<String> Ok -> (true, Value::String(v));
+     *    Err -> (false, Value::String("Error retrieving status key: <err>")), where
+     *    <err> is RedisError::GetFailed's display "Failed to get key value in Redis"
+     *    (redis_interface/src/errors.rs:20-21).
+     *  - Tokens (:1115-1134): get_hash_fields::<HashMap<String,String>> Ok ->
+     *    exists = !map.is_empty(), data = Value(map) or Value::Object({}); Err ->
+     *    (false, Value::Null). An absent key makes HGETALL return an empty map,
+     *    i.e. Ok(empty) -> (false, Value::Object({})).
+     */
+    [[nodiscard]] RawRedisData get_redis_key_data_raw(
+        std::string_view cache_key,
+        bool is_tokens,
+        std::string_view customer_id
+    ) const
+    {
+        RawRedisData out;
+
+        // Locate the value entry. For the Status lock key also look at the
+        // producer's lock-registry key (app/locking/lock_registry.cppm:57-60,
+        // revenue_recovery_data_backfill.cppm:442-445) so the substitute reflects
+        // a lock actually acquired by the backfill flow. The lock registry stores
+        // the owner (payment id) as a plain string, exactly the upstream Status
+        // value (revenue_recovery_redis_operation.rs:162-168).
+        std::optional<core::cache::CacheEntry> entry = find_entry(cache_key);
+        if (!is_tokens && !entry) {
+            const auto lock_key = std::string{"lock:revenue_recovery.status:"}
+                + std::string{customer_id};
+            entry = find_entry(lock_key);
+        }
+        const core::cache::CacheEntry* value_entry = entry ? &*entry : nullptr;
+
+        // TTL (revenue_recovery_redis_operation.rs:1091-1098).
+        out.ttl_seconds = -2;
+        if (value_entry != nullptr) {
+            if (value_entry->expires_at == core::cache::CacheEntry::Clock::time_point::max()) {
+                out.ttl_seconds = -1;
+            } else {
+                out.ttl_seconds = std::max<std::int64_t>(
+                    0,
+                    std::chrono::duration_cast<std::chrono::seconds>(
+                        value_entry->expires_at - core::cache::CacheEntry::Clock::now()
+                    ).count()
+                );
+            }
+        }
+
+        if (!is_tokens) {
+            // Status: get_key::<String> (:1102-1114).
+            if (value_entry != nullptr && !core::cache::IsMiss{}(value_entry->value)) {
+                auto text = core::cache::value_as<std::string>(value_entry->value, std::string{});
+                // A test/producer may store the value JSON-quoted; unwrap it so it
+                // matches the plain String redis returns from GET.
+                if (auto decoded = serde::Ser::decode_generic("application/json", text)) {
+                    if (const auto* scalar = std::get_if<std::string>(&decoded->get())) {
+                        text = *scalar;
+                    }
+                }
+                out.exists = true;
+                out.data = serde::Value{std::move(text)};
+            } else {
+                out.exists = false;
+                out.data = serde::Value{std::string{
+                    "Error retrieving status key: Failed to get key value in Redis"
+                }};
+            }
+            return out;
+        }
+
+        // Tokens: get_hash_fields::<HashMap<String,String>> (:1115-1134).
+        if (value_entry == nullptr) {
+            // HGETALL on a missing key -> empty map -> Ok(empty).
+            out.exists = false;
+            out.data = serde::Value{serde::Value::Object{}};
+            return out;
+        }
+        if (core::cache::IsMiss{}(value_entry->value)) {
+            out.exists = false;
+            out.data = serde::Value{serde::Value::Object{}};
+            return out;
+        }
+        const auto raw = core::cache::value_as<std::string>(value_entry->value, std::string{});
+        const auto decoded = serde::Ser::decode_generic("application/json", raw);
+        if (!decoded) {
+            // Hash decode failure mirrors get_hash_fields Err -> (false, Value::Null).
+            out.exists = false;
+            out.data = serde::Value{};
+            return out;
+        }
+        const auto* object = std::get_if<serde::Value::Object>(&decoded->get());
+        if (object == nullptr) {
+            out.exists = false;
+            out.data = serde::Value{};
+            return out;
+        }
+        out.exists = !object->empty();
+        out.data = serde::Value{*object};
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::cache::CacheEntry> find_entry(std::string_view key) const
+    {
+        core::cache::CacheQuerySpec spec;
+        spec.prefix = std::string{key};
+        for (const auto& entry : m_context->cache().execute(spec)) {
+            if (entry.key == key) {
+                return entry;
+            }
+        }
+        return std::nullopt;
+    }
+
     void send_error(
         interfaces::io::IResponse& res,
         std::function<void()> send,

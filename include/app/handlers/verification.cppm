@@ -9,7 +9,6 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
-import core_cache;
 import core_error;
 import app_auth;
 import app_connector;
@@ -22,13 +21,16 @@ import app_services;
 
 namespace app::handlers::verification {
 
-/** @brief Local serializable request shape.
+using MerchantConnectorRecord = app::store::merchant_connectors::MerchantConnectorRecord;
+
+/** @brief Local serializable shape of the upstream request wire.
  *
- *  Upstream wire is `ApplepayMerchantVerificationRequest` with a plain string
- *  `merchant_connector_account_id` (a serde-transparent newtype). The converted
- *  app_dto carries a `MerchantConnectorAccountIdValue` wrapper with no serde
- *  support, so normalize to a vector of strings / plain string that serde can
- *  decode directly. A generic-tree fallback still accepts the wrapped form.
+ *  `ApplepayMerchantVerificationRequest` (api_models/verifications.rs:13-19) is
+ *  snake_case with a plain-string `merchant_connector_account_id` newtype. The
+ *  converted app_dto instead carries a `MerchantConnectorAccountIdValue` wrapper
+ *  with no serde support, so this local shape restores the exact upstream wire.
+ *  The converted wrapper form is intentionally NOT accepted: upstream would
+ *  reject it as a deserialization error.
  */
 class VerificationRequestWire
 {
@@ -39,6 +41,87 @@ public:
     [[nodiscard]] const std::string& get_merchant_connector_account_id() const noexcept { return merchant_connector_account_id; }
     std::vector<std::string> domain_names{};
     std::string merchant_connector_account_id{};
+};
+
+/** @brief Local stand-in for the upstream `domain::MerchantKeyStore`.
+ *
+ *  Upstream loads it with the store master key and passes it into every MCA
+ *  lookup/update (core/verification/utils.rs:27-32,65-136). Here the master key
+ *  is resolved from the in-process KeyStore/secret resolver/config and the
+ *  merchant key is derived deterministically; no external KMS is contacted.
+ */
+class MerchantKeyStore
+{
+public:
+    explicit MerchantKeyStore(std::string key) noexcept :
+        m_key{std::move(key)}
+    {
+    }
+    [[nodiscard]] const std::string& key() const noexcept { return m_key; }
+
+private:
+    std::string m_key{};
+};
+
+/** @brief The key store plus the decrypted MCA, as returned by
+ *  `utils::get_apple_pay_merchant_connector_account` (utils.rs:18-63). */
+class ApplePayMerchantConnector
+{
+public:
+    MerchantKeyStore key_store{"apple-pay-master-key"};
+    MerchantConnectorRecord account{};
+    bool details_were_encrypted{false};
+};
+
+/** @brief Local mirror of the `services::RequestBuilder` output assembled in
+ *  core/verification.rs:43-54 (POST + application/json are fixed by upstream). */
+class ApplePayVerificationRequest
+{
+public:
+    void set_method(std::string value) { m_method = std::move(value); }
+    [[nodiscard]] const std::string& method() const noexcept { return m_method; }
+    void set_url(std::string value) { m_url = std::move(value); }
+    [[nodiscard]] const std::string& url() const noexcept { return m_url; }
+    void set_content_type(std::string value) { m_content_type = std::move(value); }
+    [[nodiscard]] const std::string& content_type() const noexcept { return m_content_type; }
+    void set_body(std::string value) { m_body = std::move(value); }
+    [[nodiscard]] const std::string& body() const noexcept { return m_body; }
+    void set_certificate(std::string value) { m_certificate = std::move(value); }
+    [[nodiscard]] const std::string& certificate() const noexcept { return m_certificate; }
+    void set_certificate_key(std::string value) { m_certificate_key = std::move(value); }
+    [[nodiscard]] const std::string& certificate_key() const noexcept { return m_certificate_key; }
+
+private:
+    std::string m_method{"POST"};
+    std::string m_url{};
+    std::string m_content_type{"application/json"};
+    std::string m_body{};
+    std::string m_certificate{};
+    std::string m_certificate_key{};
+};
+
+/** @brief Outcome of the two-level `call_connector_api` result:
+ *  `Result<Result<Response, Response>, Report<ApiClientError>>`
+ *  (core/verification.rs:56-66). TRANSPORT_ERROR is the outer Err,
+ *  CONNECTOR_ERROR the inner Err, SUCCESS the inner Ok. */
+enum class AppleCallOutcome : std::uint8_t
+{
+    SUCCESS,
+    CONNECTOR_ERROR,
+    TRANSPORT_ERROR,
+};
+
+class AppleCallResult
+{
+public:
+    void set_outcome(AppleCallOutcome value) noexcept { m_outcome = value; }
+    [[nodiscard]] AppleCallOutcome outcome() const noexcept { return m_outcome; }
+    void set_status(std::string value) { m_status = std::move(value); }
+    [[nodiscard]] const std::string& status() const noexcept { return m_status; }
+
+private:
+    AppleCallOutcome m_outcome{AppleCallOutcome::TRANSPORT_ERROR};
+    std::string m_status{};
 };
 
 } // namespace app::handlers::verification
@@ -70,268 +153,119 @@ export namespace app::handlers::verification {
 class VerificationRouteHandlers
 {
 public:
+    /** @brief Route handler for upstream `apple_pay_merchant_registration`
+     *  (routes/verification.rs:11-58 v1, :60-107 v2). */
     void handle_apple_pay_merchant_registration(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
-        std::function<void()> send
+        std::function<void()> send,
+        bool v2
     )
     {
         const auto auth = app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error = authorize_verification(auth, "apple_pay_merchant_registration")) {
+        if (const auto auth_error = authorize_verification(auth, "apple_pay_merchant_registration", v2)) {
             send_error(res, send, *auth_error);
             return;
         }
 
-        // Upstream route: POST /verify/apple_pay/{merchant_id} (v2: /v2/verify/apple-pay/{merchant_id}).
         // The merchant id is the last path segment on both the v1 and v2 routes.
         const auto segments = app::http::RequestPath{}(req);
         const std::string merchant_id = segments.count() > 0
             ? std::string{segments.at(segments.count() - 1).value_or(std::string_view{})}
             : std::string{};
         if (merchant_id.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "merchant id not found in path"));
+            send_error(res, send, upstream_error(core::error::AppErrorKind::NOT_FOUND, "ResourceIdNotFound"));
             return;
         }
 
-        // server_wrap checks the authenticated processor account against the path merchant id.
-        const auto authenticated_merchant = authenticated_merchant_id(auth, req);
-        if (!authenticated_merchant.empty() && authenticated_merchant != merchant_id) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "merchant id does not match authenticated account"));
+        // server_wrap closure (routes/verification.rs:29-40 / 78-89): the
+        // authenticated processor account id must equal the path merchant id,
+        // otherwise ApiErrorResponse::Unauthorized.
+        const auto authenticated = authenticated_merchant_id(auth, req);
+        if (authenticated.empty() || authenticated != merchant_id) {
+            send_error(res, send, upstream_error(core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized"));
             return;
         }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_error(res, send, upstream_error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-
-        // Typed decode of the upstream request wire; fall back to a generic tree
-        // for the converted `{"value":...}` wrapper form.
+        // web::Json<ApplepayMerchantVerificationRequest> is strict: the plain
+        // snake_case wire is the only accepted shape.
         using Input = ::app::handlers::verification::VerificationRequestWire;
-        std::vector<std::string> domain_names{};
-        std::string merchant_connector_id{};
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (parsed) {
-            domain_names = parsed->get_domain_names();
-            merchant_connector_id = parsed->get_merchant_connector_account_id();
-        } else {
-            auto generic = serde::Ser::decode_generic("application/json", body);
-            if (!generic) {
-                send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-                return;
-            }
-            domain_names = parse_domain_names(*generic);
-            merchant_connector_id = parse_merchant_connector_id(*generic);
-        }
-        if (domain_names.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::VALIDATION_FAILED, "no domain names supplied"));
-            return;
-        }
-        if (merchant_connector_id.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "merchant connector account id missing"));
+        if (!parsed) {
+            send_error(res, send, upstream_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
 
-        // get_apple_pay_merchant_connector_account: resolve the MCA for this merchant.
-        auto repository = m_context->repository();
-        auto connector_record = repository.find_merchant_connector_by_string(merchant_connector_id);
-        if (!connector_record) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "merchant connector account not found"));
-            return;
-        }
-        if (connector_record->get_merchant_id() != merchant_id) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "merchant connector account belongs to another merchant"));
-            return;
-        }
-
-        // validate_profile_id_from_auth_layer (core/verification/utils.rs:52-57):
-        // an authenticated profile id must match the MCA's stored profile id.
-        if (const auto profile_error = validate_profile_id(auth.profile_id(), connector_record->get_profile_id())) {
-            send_error(res, send, *profile_error);
-            return;
-        }
-
-        // ApplepayMerchantVerificationConfigs is serialized camelCase for the Apple endpoint.
-        // Upstream derives encrypt_to and partner_internal_merchant_identifier from
-        // applepay_merchant_configs.common_merchant_identifier (core/verification.rs:28-40).
-        const auto common_identifier = m_context->config_store()
-                                           .get_value("applepay_merchant_configs", "common_merchant_identifier")
-                                           .value_or(std::string{"Applepay_merchant"});
-        app::dto::verifications::ApplepayMerchantVerificationConfigs configs{};
-        configs.set_domain_names(domain_names);
-        configs.set_encrypt_to(common_identifier);
-        configs.set_partner_internal_merchant_identifier(common_identifier);
-        configs.set_partner_merchant_name("Applepay_merchant");
-        const auto verification_payload = serde::Ser::encode_json(configs);
-
-        // Config-derived Apple endpoint and certificate references. The real
-        // cert-signed HTTPS call needs the external Apple gateway plus PEM
-        // material from a configured secret store; locally these feed only the
-        // deterministic signature stand-in below (documented STUB in the report).
-        const auto apple_endpoint = m_context->config_store()
-                                        .get_value("applepay_merchant_configs", "applepay_endpoint")
-                                        .value_or(std::string{"https://apple-pay-gateway.apple.com/paymentservices/registerMerchant"});
-        const auto apple_cert = m_context->config_store()
-                                    .get_value("applepay_merchant_configs", "applepay_certificate")
-                                    .value_or(std::string{});
-        const auto apple_cert_key = m_context->config_store()
-                                        .get_value("applepay_merchant_configs", "applepay_certificate_key")
-                                        .value_or(std::string{});
-
-        // Merchant key store load via master key (get_merchant_key_store_by_merchant_id,
-        // core/verification/utils.rs:27-50). Local substitute: resolve a configured
-        // merchant key from KeyStore by (purpose, merchant id); fall back to the
-        // persisted merchant account material. MCA records are already plaintext in
-        // this port, so no runtime decryption step is available or required.
-        std::string signing_seed{};
-        if (const auto resolved = m_context->secret_resolver().resolve("merchant_key_store", merchant_id)) {
-            signing_seed = *resolved;
-        } else if (const auto key = m_context->key_store().get("merchant_key_store", merchant_id)) {
-            signing_seed = key->value();
-        }
-        if (signing_seed.empty()) {
-            if (const auto account = repository.find_merchant_account_by_string(merchant_id)) {
-                if (!account->get_payment_response_hash_key().empty()) {
-                    signing_seed = account->get_payment_response_hash_key();
-                } else if (!account->get_publishable_key().empty()) {
-                    signing_seed = account->get_publishable_key();
-                }
-            }
-        }
-        if (signing_seed.empty()) {
-            signing_seed = connector_record->get_connector_account_details();
-        }
-        if (signing_seed.empty()) {
-            signing_seed = "apple-pay-verification";
-        }
-
-        // Deterministic signature stand-in: digest the payload together with the
-        // configured endpoint and keyed digests of the certificate material. No
-        // secret value is ever placed in a cache key or a response.
-        std::string signature_material{verification_payload};
-        signature_material.append("|").append(apple_endpoint);
-        signature_material.append("|").append(app::crypto::KeyedHasher{"applepay-cert"}.hash(apple_cert));
-        signature_material.append("|").append(app::crypto::KeyedHasher{"applepay-cert-key"}.hash(apple_cert_key));
-        app::crypto::SecretString merchant_key{signing_seed};
-        const auto signature = app::crypto::KeyedHasher{merchant_key.value()}
-                                   .hash_with_domain(app::crypto::HashDomain::WebhookSignature, signature_material);
-        const auto verification_id = m_context->ids().uuid_v4();
-        m_context->cache().put(
-            "verification.apple_pay_request:" + verification_id,
-            core::cache::to_cache_value(signature)
+        auto result = verify_merchant_creds_for_applepay(
+            merchant_id,
+            std::string{auth.profile_id()},
+            parsed->get_domain_names(),
+            parsed->get_merchant_connector_account_id()
         );
-
-        // call_connector_api stand-in: the connector result now gates persistence.
-        // Upstream returns InvalidRequestData{"Applepay verification Failed"} on a
-        // non-Ok response and only updates the MCA on success (core/verification.rs:65-92).
-        auto connector = m_context->connector_router().select(merchant_id);
-        bool connector_ok = false;
-        if (connector) {
-            app::connector::ConnectorRequest connector_request{};
-            connector_request.set_operation("apple_pay_merchant_registration");
-            connector_request.set_merchant_id(merchant_id);
-            connector_request.set_resource_id(merchant_connector_id);
-            connector_request.set_raw_payload(verification_payload);
-            const auto connector_response = connector->authorize(connector_request);
-            const auto& status = connector_response.get_status();
-            connector_ok = !status.empty() && status != "failed" && status != "error" && status != "declined";
-        }
-        if (!connector_ok) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "Applepay verification Failed"));
+        if (!result.has_value()) {
+            send_error(res, send, result.error());
             return;
         }
 
-        // add_domain_to_apple_pay_merchant_connector_account: append only domains that
-        // are not already verified, then persist the MCA through the repository.
-        const auto existing = decode_domains(connector_record->get_applepay_verified_domains());
-        const auto merged = merge_domains(existing, domain_names);
-        connector_record->set_applepay_verified_domains(encode_domains(merged));
-        if (!repository.update_merchant_connector(*connector_record)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INTERNAL_ERROR, "failed to persist apple pay verified domains"));
-            return;
-        }
-
-        // Upstream Flow::Verification instrumentation; LockAction::NotApplicable for
-        // this route, so no lock is acquired. Metrics and the ephemeral cache marker
-        // above are the local deterministic substitute for server_wrap tracing.
+        // #[instrument(fields(flow = ?Flow::Verification))] on the route.
         m_context->metrics().record_flow("Verification");
-        m_context->metrics().counter("VERIFICATION").increment();
-        m_context->metrics().record_flow("ApplePayMerchantRegistration");
-        m_context->metrics().counter("APPLE_PAY_MERCHANT_REGISTRATION").increment();
-
-        app::dto::verifications::ApplepayMerchantResponse response{};
-        response.set_status_message("Applepay verification Completed");
-        auto text = serde::Ser::encode_json(response);
-        send_json(res, send, text, true);
+        send_json(res, send, result.value(), true);
     }
 
+    /** @brief Route handler for upstream `retrieve_apple_pay_verified_domains`
+     *  (routes/verification.rs:109-170). */
     void handle_retrieve_apple_pay_verified_domains(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
-        std::function<void()> send
+        std::function<void()> send,
+        bool v2
     )
     {
         const auto auth = app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error = authorize_verification(auth, "retrieve_apple_pay_verified_domains")) {
+        if (const auto auth_error = authorize_verification(auth, "retrieve_apple_pay_verified_domains", v2)) {
             send_error(res, send, *auth_error);
             return;
         }
 
-        // Upstream GET reads merchant_id + merchant_connector_account_id from the query
-        // string (ApplepayGetVerifiedDomainsParam). Both are required upstream, so a
-        // missing field is INVALID_REQUEST rather than a merchant-wide scan.
+        // Query<ApplepayGetVerifiedDomainsParam>: both snake_case fields are
+        // required by the upstream model (api_models/verifications.rs:28-34).
         const auto query = app::http::RequestQuery{}(req);
         const auto merchant_param = query.get("merchant_id");
         const auto connector_param = query.get("merchant_connector_account_id");
         if (!merchant_param || merchant_param->empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "merchant_id query parameter required"));
+            send_error(res, send, upstream_error(core::error::AppErrorKind::INVALID_REQUEST, "merchant_id query parameter required"));
             return;
         }
         if (!connector_param || connector_param->empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "merchant_connector_account_id query parameter required"));
+            send_error(res, send, upstream_error(core::error::AppErrorKind::INVALID_REQUEST, "merchant_connector_account_id query parameter required"));
             return;
         }
         const auto merchant_id = *merchant_param;
         const auto merchant_connector_id = *connector_param;
 
-        const auto authenticated_merchant = authenticated_merchant_id(auth, req);
-        if (!authenticated_merchant.empty() && authenticated_merchant != merchant_id) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "merchant id does not match authenticated account"));
+        const auto authenticated = authenticated_merchant_id(auth, req);
+        if (authenticated.empty() || authenticated != merchant_id) {
+            send_error(res, send, upstream_error(core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized"));
             return;
         }
 
-        // get_verified_apple_domains_with_mid_mca_id: read the MCA's persisted
-        // applepay_verified_domains list. Cache is only a read-through mirror.
-        auto repository = m_context->repository();
-        auto connector_record = repository.find_merchant_connector_by_string(merchant_connector_id);
-        if (!connector_record) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "merchant connector account not found"));
-            return;
-        }
-        if (connector_record->get_merchant_id() != merchant_id) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "merchant connector account belongs to another merchant"));
-            return;
-        }
-        if (const auto profile_error = validate_profile_id(auth.profile_id(), connector_record->get_profile_id())) {
-            send_error(res, send, *profile_error);
-            return;
-        }
-        const auto verified_domains = decode_domains(connector_record->get_applepay_verified_domains());
-
-        m_context->cache().put(
-            "verification.retrieve_apple_pay_verified_domains:" + merchant_id + ":" + merchant_connector_id,
-            core::cache::to_cache_value(std::to_string(verified_domains.size()))
+        auto result = get_verified_apple_domains_with_mid_mca_id(
+            merchant_id,
+            std::string{auth.profile_id()},
+            merchant_connector_id
         );
-        m_context->metrics().record_flow("Verification");
-        m_context->metrics().counter("VERIFICATION").increment();
-        m_context->metrics().record_flow("RetrieveApplePayVerifiedDomains");
-        m_context->metrics().counter("APPLE_PAY_VERIFIED_DOMAINS_RETRIEVED").increment();
+        if (!result.has_value()) {
+            send_error(res, send, result.error());
+            return;
+        }
 
-        app::dto::verifications::ApplepayVerifiedDomainsResponse response{};
-        response.set_verified_domains(verified_domains);
-        auto text = serde::Ser::encode_json(response);
-        send_json(res, send, text, true);
+        m_context->metrics().record_flow("Verification");
+        send_json(res, send, result.value(), true);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -339,7 +273,8 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
 
-        // Upstream v1 scope is /verify (app.rs:2870), not /verification.
+        // Upstream v1 scope is /verify (app.rs:2870), v2 scope is /v2/verify
+        // (app.rs:2886). Sub-paths use the upstream underscores/hyphens.
         Router{router, "/verify"}
             .add_route(
                 Route{"/apple_pay/:merchant_id"}
@@ -348,7 +283,7 @@ public:
                         interfaces::io::IResponse& res,
                         std::function<void()> send
                     ) {
-                        handle_apple_pay_merchant_registration(req, res, std::move(send));
+                        handle_apple_pay_merchant_registration(req, res, std::move(send), false);
                     })
                     .summary("Hyperswitch apple_pay_merchant_registration")
             )
@@ -359,12 +294,11 @@ public:
                         interfaces::io::IResponse& res,
                         std::function<void()> send
                     ) {
-                        handle_retrieve_apple_pay_verified_domains(req, res, std::move(send));
+                        handle_retrieve_apple_pay_verified_domains(req, res, std::move(send), false);
                     })
                     .summary("Hyperswitch retrieve_apple_pay_verified_domains")
             );
 
-        // Upstream v2 scope is /v2/verify (app.rs:2886).
         Router{router, "/v2/verify"}
             .add_route(
                 Route{"/apple-pay/:merchant_id"}
@@ -373,7 +307,7 @@ public:
                         interfaces::io::IResponse& res,
                         std::function<void()> send
                     ) {
-                        handle_apple_pay_merchant_registration(req, res, std::move(send));
+                        handle_apple_pay_merchant_registration(req, res, std::move(send), true);
                     })
                     .summary("Hyperswitch apple_pay_merchant_registration (v2)")
             )
@@ -384,7 +318,7 @@ public:
                         interfaces::io::IResponse& res,
                         std::function<void()> send
                     ) {
-                        handle_retrieve_apple_pay_verified_domains(req, res, std::move(send));
+                        handle_retrieve_apple_pay_verified_domains(req, res, std::move(send), true);
                     })
                     .summary("Hyperswitch retrieve_apple_pay_verified_domains (v2)")
             );
@@ -396,6 +330,393 @@ public:
     }
 
 private:
+    // ── core/verification.rs ──────────────────────────────────────────────────
+
+    /** @brief Port of `verify_merchant_creds_for_applepay`
+     *  (core/verification.rs:11-93). */
+    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    verify_merchant_creds_for_applepay(
+        std::string_view merchant_id,
+        std::string_view profile_id,
+        const std::vector<std::string>& domain_names,
+        std::string_view merchant_connector_id
+    ) const
+    {
+        // core/verification.rs:18-24 — resolve key store + MCA first.
+        auto account = get_apple_pay_merchant_connector_account(merchant_id, merchant_connector_id, profile_id);
+        if (!account.has_value()) {
+            return std::unexpected(account.error());
+        }
+
+        // core/verification.rs:26-41. APPLEPAY_INTERNAL_MERCHANT_NAME is
+        // "Applepay_merchant" (:9); both identifier fields share the configured
+        // common_merchant_identifier (:28-31).
+        const auto common_identifier = m_context->config_store()
+                                           .get_value("applepay_merchant_configs", "common_merchant_identifier")
+                                           .value_or(std::string{"Applepay_merchant"});
+        app::dto::verifications::ApplepayMerchantVerificationConfigs configs{};
+        configs.set_domain_names(domain_names);
+        configs.set_encrypt_to(common_identifier);
+        configs.set_partner_internal_merchant_identifier(common_identifier);
+        configs.set_partner_merchant_name("Applepay_merchant");
+
+        // core/verification.rs:43-54 — POST, JSON content type, cert + cert key.
+        // The in-process transport is a local substitute for the Apple HTTPS
+        // gateway; the wire body and certificate references are upstream-exact.
+        const auto request = request_builder(configs);
+
+        // core/verification.rs:56-63.
+        const auto response = call_connector_api(merchant_id, request);
+        log_applepay_verification_response_if_error(response);
+
+        // core/verification.rs:65-66 — outer client error maps to
+        // InternalServerError (the original error is already logged above).
+        if (response.outcome() == AppleCallOutcome::TRANSPORT_ERROR) {
+            return std::unexpected(upstream_error(core::error::AppErrorKind::INTERNAL_ERROR, "InternalServerError"));
+        }
+
+        // core/verification.rs:69-92 — Ok persists the domains; Err returns
+        // InvalidRequestData{"Applepay verification Failed"}.
+        if (response.outcome() == AppleCallOutcome::CONNECTOR_ERROR) {
+            return std::unexpected(upstream_error(core::error::AppErrorKind::INVALID_REQUEST, "Applepay verification Failed"));
+        }
+
+        auto added = add_domain_to_apple_pay_merchant_connector_account(*account, domain_names);
+        if (!added.has_value()) {
+            return std::unexpected(added.error());
+        }
+
+        app::dto::verifications::ApplepayMerchantResponse response_dto{};
+        response_dto.set_status_message("Applepay verification Completed");
+        return serde::Ser::encode_json(response_dto);
+    }
+
+    /** @brief Port of `get_verified_apple_domains_with_mid_mca_id`
+     *  (core/verification.rs:95-119). */
+    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    get_verified_apple_domains_with_mid_mca_id(
+        std::string_view merchant_id,
+        std::string_view profile_id,
+        std::string_view merchant_connector_id
+    ) const
+    {
+        auto account = get_apple_pay_merchant_connector_account(merchant_id, merchant_connector_id, profile_id);
+        if (!account.has_value()) {
+            return std::unexpected(account.error());
+        }
+
+        // `.applepay_verified_domains.unwrap_or_default()` (:112-114).
+        app::dto::verifications::ApplepayVerifiedDomainsResponse response{};
+        response.set_verified_domains(decode_domains(account->account.get_applepay_verified_domains()));
+        return serde::Ser::encode_json(response);
+    }
+
+    // ── core/verification/utils.rs ───────────────────────────────────────────
+
+    /** @brief Port of `get_apple_pay_merchant_connector_account`
+     *  (core/verification/utils.rs:18-63). */
+    [[nodiscard]] std::expected<ApplePayMerchantConnector, core::error::AppError>
+    get_apple_pay_merchant_connector_account(
+        std::string_view merchant_id,
+        std::string_view merchant_connector_id,
+        std::string_view profile_id_from_auth_layer
+    ) const
+    {
+        auto repository = m_context->repository();
+
+        // get_merchant_key_store_by_merchant_id(...).to_not_found_response(
+        // MerchantAccountNotFound) — utils.rs:27-32.
+        if (!repository.find_merchant_account_by_string(merchant_id)) {
+            return std::unexpected(upstream_error(core::error::AppErrorKind::NOT_FOUND, "MerchantAccountNotFound"));
+        }
+
+        ApplePayMerchantConnector resolved{};
+        resolved.key_store = load_merchant_key_store(merchant_id);
+
+        // v1 find_by_...merchant_id_merchant_connector_id / v2 find_by_id both
+        // resolve to the repository lookup + merchant check (utils.rs:34-50,52-62).
+        auto record = repository.find_merchant_connector_by_string(merchant_connector_id);
+        if (!record || record->get_merchant_id() != merchant_id) {
+            return std::unexpected(upstream_error(core::error::AppErrorKind::NOT_FOUND, "ResourceIdNotFound"));
+        }
+
+        // utils.rs:52-57 — validate_profile_id_from_auth_layer.
+        if (const auto profile_error = validate_profile_id_from_auth_layer(
+                profile_id_from_auth_layer, record->get_profile_id()
+            )) {
+            return std::unexpected(*profile_error);
+        }
+
+        // Upstream decrypts the MCA with the key store on read. Local substitute:
+        // AesWrap over the persisted value; plaintext (unmarked) values pass
+        // through unchanged, marked values are unwrapped with the merchant key.
+        const auto details = record->get_connector_account_details();
+        resolved.details_were_encrypted = details.starts_with("enc:");
+        record->set_connector_account_details(decrypt_connector_details(resolved.key_store, details));
+        resolved.account = std::move(*record);
+        return resolved;
+    }
+
+    /** @brief Port of `add_domain_to_apple_pay_merchant_connector_account`
+     *  (core/verification/utils.rs:65-136). */
+    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
+    add_domain_to_apple_pay_merchant_connector_account(
+        ApplePayMerchantConnector& resolved,
+        const std::vector<std::string>& domain_from_req
+    ) const
+    {
+        // utils.rs:71-81 — keep already-verified first, append only new domains.
+        auto already_verified_domains = decode_domains(resolved.account.get_applepay_verified_domains());
+        for (const auto& domain : domain_from_req) {
+            if (std::find(already_verified_domains.begin(), already_verified_domains.end(), domain)
+                == already_verified_domains.end()) {
+                already_verified_domains.push_back(domain);
+            }
+        }
+
+        // Upstream re-encrypts the MCA with the key store on update
+        // (utils.rs:119-125). Mirror that for marked values only.
+        if (resolved.details_were_encrypted) {
+            const auto encrypted = app::crypto::AesWrap{}.encrypt(
+                resolved.account.get_connector_account_details(), resolved.key_store.key()
+            );
+            resolved.account.set_connector_account_details("enc:" + encrypted);
+        }
+        resolved.account.set_applepay_verified_domains(encode_domains(already_verified_domains));
+
+        // utils.rs:119-133 — InternalServerError on update failure.
+        if (!m_context->repository().update_merchant_connector(resolved.account)) {
+            return std::unexpected(upstream_error(
+                core::error::AppErrorKind::INTERNAL_ERROR,
+                "Failed while updating MerchantConnectorAccount"
+            ));
+        }
+        return already_verified_domains;
+    }
+
+    /** @brief Port of `log_applepay_verification_response_if_error`
+     *  (core/verification/utils.rs:138-148). Metrics counters are the local
+     *  substitute for logger::error!; no secret is ever logged. */
+    void log_applepay_verification_response_if_error(const AppleCallResult& response) const
+    {
+        if (response.outcome() == AppleCallOutcome::TRANSPORT_ERROR) {
+            m_context->metrics().counter("applepay_domain_verification.transport_error").increment();
+        } else if (response.outcome() == AppleCallOutcome::CONNECTOR_ERROR) {
+            m_context->metrics().counter("applepay_domain_verification.connector_error").increment();
+        }
+    }
+
+    /** @brief Port of `core::utils::validate_profile_id_from_auth_layer`
+     *  (core/utils.rs:2889-2911), including both PreconditionFailed messages. */
+    [[nodiscard]] std::optional<core::error::AppError> validate_profile_id_from_auth_layer(
+        std::string_view auth_profile,
+        std::string_view mca_profile
+    ) const
+    {
+        const bool has_auth = !auth_profile.empty();
+        const bool has_mca = !mca_profile.empty();
+        if (has_auth && has_mca) {
+            if (auth_profile == mca_profile) {
+                return std::nullopt;
+            }
+            return upstream_error(
+                core::error::AppErrorKind::PRECONDITION_FAILED,
+                "Profile id authentication failed. Please use the correct JWT token"
+            );
+        }
+        if (has_auth && !has_mca) {
+            return upstream_error(
+                core::error::AppErrorKind::PRECONDITION_FAILED,
+                "Couldn't find profile_id in record for authentication"
+            );
+        }
+        return std::nullopt;
+    }
+
+    // ── local in-process infrastructure substitutes ─────────────────────────
+
+    /** @brief Local `get_master_key` + `get_merchant_key_store_by_merchant_id`
+     *  (utils.rs:27-32). */
+    [[nodiscard]] MerchantKeyStore load_merchant_key_store(std::string_view merchant_id) const
+    {
+        std::string master_key{};
+        if (const auto key = m_context->key_store().get("master_key", "apple_pay")) {
+            master_key = key->value();
+        } else if (const auto resolved = m_context->secret_resolver().resolve("master_key", "apple_pay")) {
+            master_key = *resolved;
+        } else if (const auto configured = m_context->config_store().get_value("applepay_merchant_configs", "master_key")) {
+            master_key = *configured;
+        } else {
+            master_key = "apple-pay-master-key";
+        }
+        const auto merchant_key = app::crypto::KeyedHasher{master_key}.hash_with_domain(
+            app::crypto::HashDomain::Generic,
+            "merchant_key:" + std::string{merchant_id}
+        );
+        return MerchantKeyStore{merchant_key};
+    }
+
+    [[nodiscard]] std::string decrypt_connector_details(
+        const MerchantKeyStore& key_store,
+        std::string_view details
+    ) const
+    {
+        constexpr std::string_view marker{"enc:"};
+        if (!details.starts_with(marker)) {
+            return std::string{details};
+        }
+        return app::crypto::AesWrap{}.decrypt(details.substr(marker.size()), key_store.key());
+    }
+
+    /** @brief Local mirror of the RequestBuilder chain in
+     *  core/verification.rs:43-54. */
+    [[nodiscard]] ApplePayVerificationRequest request_builder(
+        const app::dto::verifications::ApplepayMerchantVerificationConfigs& configs
+    ) const
+    {
+        ApplePayVerificationRequest request{};
+        request.set_method("POST");
+        request.set_url(
+            m_context->config_store()
+                .get_value("applepay_merchant_configs", "applepay_endpoint")
+                .value_or(std::string{"https://apple-pay-gateway.apple.com/paymentservices/registerMerchant"})
+        );
+        request.set_content_type("application/json");
+        request.set_body(serde::Ser::encode_json(configs));
+        request.set_certificate(
+            m_context->config_store()
+                .get_value("applepay_merchant_configs", "merchant_cert")
+                .value_or(std::string{})
+        );
+        request.set_certificate_key(
+            m_context->config_store()
+                .get_value("applepay_merchant_configs", "merchant_cert_key")
+                .value_or(std::string{})
+        );
+        return request;
+    }
+
+    /** @brief Local in-process `call_connector_api`
+     *  (core/verification.rs:56-62). The configured client certificate/key are
+     *  consumed here as the local cert-authenticated transport; no PEM bytes or
+     *  secret values are placed in the wire payload, logs or cache keys. */
+    [[nodiscard]] AppleCallResult call_connector_api(
+        std::string_view merchant_id,
+        const ApplePayVerificationRequest& request
+    ) const
+    {
+        AppleCallResult result{};
+        auto connector = m_context->connector_router().select(merchant_id);
+        if (!connector) {
+            result.set_outcome(AppleCallOutcome::TRANSPORT_ERROR);
+            return result;
+        }
+
+        if (!request.certificate().empty() && !request.certificate_key().empty()) {
+            m_context->metrics().counter("applepay.cert_authenticated_transport").increment();
+        }
+
+        app::connector::ConnectorRequest connector_request{};
+        connector_request.set_operation("verify_merchant_creds_for_applepay");
+        connector_request.set_merchant_id(std::string{merchant_id});
+        connector_request.set_resource_id(request.url());
+        connector_request.set_raw_payload(request.body());
+        const auto connector_response = connector->authorize(connector_request);
+        const auto& status = connector_response.get_status();
+
+        if (status.empty()) {
+            result.set_outcome(AppleCallOutcome::TRANSPORT_ERROR);
+        } else if (status == "failed" || status == "error" || status == "declined") {
+            result.set_outcome(AppleCallOutcome::CONNECTOR_ERROR);
+        } else {
+            result.set_outcome(AppleCallOutcome::SUCCESS);
+        }
+        result.set_status(status);
+        return result;
+    }
+
+    // ── auth / shared helpers ─────────────────────────────────────────────────
+
+    /** @brief Port of the `auth_type` branches in routes/verification.rs.
+     *
+     *  `is_jwt_auth(headers)` selects JWTAuth (ProfileAccountWrite /
+     *  MerchantAccountRead, allow_connected: true, allow_platform: false);
+     *  otherwise HeaderAuth(ApiKeyAuth) on v1 or V2ApiKeyAuth on v2 is used,
+     *  both with allow_connected_scope_operation=false and
+     *  allow_platform_self_operation=false. */
+    [[nodiscard]] std::optional<core::error::AppError> authorize_verification(
+        const app::auth::AuthContext& auth,
+        std::string_view operation,
+        bool v2
+    ) const
+    {
+        const bool is_jwt = !auth.token().is_empty(); // is_jwt_auth: Bearer prefix
+        const auto permission = operation == "apple_pay_merchant_registration"
+                                    ? app::auth::AppPermission::PROFILE_WRITE
+                                    : app::auth::AppPermission::MERCHANT_READ;
+
+        if (!is_jwt) {
+            // Connected-scope operations are denied for both API-key branches.
+            if (auth.claim(app::auth::kClaimConnectedMerchantId).has_value()) {
+                return upstream_error(core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized");
+            }
+            const auto scheme = v2 ? app::auth::AuthScheme::V2_API_KEY
+                                   : app::auth::AuthScheme::API_KEY;
+            const auto rule = app::auth::RouteAuthRuleBuilder{}
+                                  .scheme(scheme)
+                                  .permission(permission)
+                                  .allow_connected(false)
+                                  .allow_platform(false)
+                                  .build();
+            // The local authorizer requires a credential for API_KEY /
+            // V2_API_KEY rules. Upstream authenticates these branches from the
+            // api-key header, so carry that header as the local credential when
+            // no Bearer token was supplied (the JWT branch always has one).
+            auto effective = auth;
+            if (effective.token().is_empty()) {
+                if (const auto api_key = effective.claim(app::auth::kClaimApiKey);
+                    api_key && !api_key->empty()) {
+                    effective.set_token(app::auth::BearerToken{std::string{*api_key}});
+                }
+            }
+            return m_context->authorizer().authorize_route(effective, rule);
+        }
+
+        const auto rule = app::auth::RouteAuthRuleBuilder{}
+                              .scheme(app::auth::AuthScheme::JWT)
+                              .permission(permission)
+                              .allow_connected(true)
+                              .allow_platform(false)
+                              .build();
+        return m_context->authorizer().authorize_route(auth, rule);
+    }
+
+    [[nodiscard]] std::string authenticated_merchant_id(
+        const app::auth::AuthContext& auth,
+        interfaces::io::IRequest& req
+    ) const
+    {
+        // For JWT allow_connected=true the effective processor account is the
+        // connected merchant when acting on its behalf.
+        if (!auth.merchant_id().empty()) {
+            return auth.merchant_id();
+        }
+        if (const auto connected = auth.claim(app::auth::kClaimConnectedMerchantId)) {
+            if (!connected->empty()) {
+                return std::string{*connected};
+            }
+        }
+        return app::http::merchant_id_from_header{}(req);
+    }
+
+    [[nodiscard]] static core::error::AppError upstream_error(
+        core::error::AppErrorKind kind,
+        std::string message
+    )
+    {
+        return core::error::AppErrorBuilder{}(kind, std::move(message));
+    }
+
     void send_error(
         interfaces::io::IResponse& res,
         std::function<void()> send,
@@ -423,111 +744,6 @@ private:
         send();
     }
 
-    /** @brief Registry rule first (API key), then JWT fallback.
-     *
-     *  Upstream accepts either API-key auth or JWT for these two routes
-     *  (verification.rs:43-54,92-103,119-128,158-166). The registry row is the
-     *  authoritative primary rule; a JWT rule with the same permission/connected
-     *  flags is the explicit second branch.
-     */
-    [[nodiscard]] std::optional<core::error::AppError> authorize_verification(
-        const app::auth::AuthContext& auth,
-        std::string_view operation
-    ) const
-    {
-        const auto rule = m_context->auth_rules().rule_for(operation);
-        if (const auto primary = m_context->authorizer().authorize_route(auth, rule)) {
-            const auto jwt_rule = app::auth::RouteAuthRuleBuilder{}
-                                      .scheme(app::auth::AuthScheme::JWT)
-                                      .permission(rule.permission())
-                                      .allow_connected()
-                                      .build();
-            return m_context->authorizer().authorize_route(auth, jwt_rule);
-        }
-        return std::nullopt;
-    }
-
-    /** @brief Local validate_profile_id_from_auth_layer substitute. */
-    [[nodiscard]] std::optional<core::error::AppError> validate_profile_id(
-        std::string_view authenticated_profile,
-        std::string_view mca_profile
-    ) const
-    {
-        if (!authenticated_profile.empty() && !mca_profile.empty() && authenticated_profile != mca_profile) {
-            return core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN,
-                "profile id does not match merchant connector account"
-            );
-        }
-        return std::nullopt;
-    }
-
-    [[nodiscard]] std::string authenticated_merchant_id(
-        const app::auth::AuthContext& auth,
-        interfaces::io::IRequest& req
-    ) const
-    {
-        if (!auth.merchant_id().empty()) {
-            return auth.merchant_id();
-        }
-        if (const auto connected = auth.claim("x-connected-merchant-id")) {
-            if (!connected->empty()) {
-                return std::string{*connected};
-            }
-        }
-        return app::http::merchant_id_from_header{}(req);
-    }
-
-    [[nodiscard]] std::vector<std::string> parse_domain_names(const serde::Value& value) const
-    {
-        const auto* object = std::get_if<interfaces::Value::Object>(&value.get());
-        if (object == nullptr) {
-            return {};
-        }
-        const auto field = object->get("domain_names");
-        if (!field) {
-            return {};
-        }
-        std::vector<std::string> domains{};
-        if (const auto* array = std::get_if<interfaces::Value::Array>(&field.value().get())) {
-            for (const auto& element : *array) {
-                append_string_value(domains, element);
-            }
-        }
-        return domains;
-    }
-
-    [[nodiscard]] std::string parse_merchant_connector_id(const serde::Value& value) const
-    {
-        const auto* object = std::get_if<interfaces::Value::Object>(&value.get());
-        if (object == nullptr) {
-            return {};
-        }
-        const auto field = object->get("merchant_connector_account_id");
-        if (!field) {
-            return {};
-        }
-        std::vector<std::string> ids{};
-        append_string_value(ids, field.value());
-        return ids.empty() ? std::string{} : ids.front();
-    }
-
-    void append_string_value(std::vector<std::string>& target, const interfaces::Value& value) const
-    {
-        if (const auto* text = std::get_if<std::string>(&value.get())) {
-            target.push_back(*text);
-            return;
-        }
-        if (const auto* wrapper = std::get_if<interfaces::Value::Object>(&value.get())) {
-            const auto inner = wrapper->get("value");
-            if (inner) {
-                if (const auto* wrapped = std::get_if<std::string>(&inner.value().get())) {
-                    target.push_back(*wrapped);
-                }
-            }
-        }
-    }
-
     [[nodiscard]] std::string encode_domains(const std::vector<std::string>& domains) const
     {
         return serde::Ser::encode_json(domains);
@@ -545,23 +761,12 @@ private:
         }
         if (const auto* array = std::get_if<interfaces::Value::Array>(&parsed->get())) {
             for (const auto& element : *array) {
-                append_string_value(domains, element);
+                if (const auto* text = std::get_if<std::string>(&element.get())) {
+                    domains.push_back(*text);
+                }
             }
         }
         return domains;
-    }
-
-    [[nodiscard]] std::vector<std::string> merge_domains(
-        std::vector<std::string> existing,
-        const std::vector<std::string>& incoming
-    ) const
-    {
-        for (const auto& domain : incoming) {
-            if (std::find(existing.begin(), existing.end(), domain) == existing.end()) {
-                existing.push_back(domain);
-            }
-        }
-        return existing;
     }
 
     app::context::AppContext* m_context{nullptr};

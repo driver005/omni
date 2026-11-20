@@ -22,10 +22,10 @@ import app_events;
 
 export namespace app::handlers::hierarchical_resources {
 
-// Local typed wire shapes. The app_dto wrappers serialize nested ids and dates as
-// {"value":...}; upstream sends a plain ResourceId string and a PrimitiveDateTime
-// string. These shapes keep the upstream wire form while still going through
-// serde::Ser::encode_json (no raw body echo).
+// Local typed wire shapes. Upstream sends a plain ResourceId string and a
+// PrimitiveDateTime string (api_models/src/hierarchical_resources.rs:12-42); the
+// converted app_dto wrappers serialize nested ids/dates as {"value":...}, so these
+// shapes keep the upstream wire form while still going through serde encoding.
 class GenerateResponseWire
 {
 public:
@@ -62,6 +62,67 @@ public:
     std::string id{};
 };
 
+/** @brief Local mirror of upstream ApplePayCertificateData (core:65-72).
+ *
+ *  `status` is serialized as snake_case; the two Option fields are skipped when
+ *  absent (serde `skip_serializing_if`), exactly like upstream.
+ */
+struct ApplePayCertificateData
+{
+    std::string status{};
+    std::string apple_merchant_identifier{};
+    std::string payment_processing_certificate{};
+};
+
+/** @brief Local mirror of the persisted HierarchicalResource payload.
+ *
+ *  Upstream stores `data: Secret<serde_json::Value>` (ApplePayCertificateData) and
+ *  `encrypted_data: Option<Encryption>` as separate entity columns
+ *  (core:180-194, :349-355). The local repository record has a single `data`
+ *  column, so this typed JSON object carries the same field names verbatim.
+ */
+struct ResourceData
+{
+    std::string data{};
+    std::string encrypted_data{};
+    std::string public_key_digest{};
+    std::string merchant_id{};
+};
+
+struct GeneratedKeys
+{
+    std::string private_key_pem{};
+    std::string csr_pem{};
+};
+
+struct ParsedCertificate
+{
+    std::string der{};
+    std::string public_key_digest{};
+};
+
+struct GenerateOutcome
+{
+    std::string id{};
+    std::string data{};
+};
+
+struct UploadOutcome
+{
+    std::string id{};
+    std::string created_at{};
+};
+
+struct ListOutcome
+{
+    std::vector<SummaryWire> resources{};
+};
+
+struct LinkOutcome
+{
+    std::string id{};
+};
+
 class HierarchicalResourcesRouteHandlers
 {
 public:
@@ -70,18 +131,17 @@ public:
     {
     }
 
+    // ── Route handlers: parse body, resolve mandatory X-Profile-Id, authorize
+    //    (upstream server_wrap), then dispatch to the core helpers below. ──────
+
     void handle_generate_hierarchical_resource(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     )
     {
-        const auto auth_error = authorize_request(req, "generate_hierarchical_resource");
-        if (auth_error) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-
+        // Upstream: web::Json<GenerateHierarchicalResourceRequest> is decoded by the
+        // framework before the handler (routes:77); a bad body is a 400.
         const auto body = req.body_as_string();
         if (body.empty()) {
             send_error(res, send, app_error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
@@ -93,23 +153,36 @@ public:
             send_error(res, send, app_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-
         const auto resource_type = parsed->get_resource_type().get_value();
         if (!valid_resource_type(resource_type)) {
             send_error(res, send, app_error(
-                core::error::AppErrorKind::VALIDATION_FAILED, "invalid resource type"));
+                core::error::AppErrorKind::INVALID_REQUEST, "invalid resource type"));
+            return;
+        }
+
+        // routes:81-84 — mandatory_profile_id_from_header runs before server_wrap.
+        const auto profile_id = mandatory_profile_id_from_header(req);
+        if (!profile_id.has_value()) {
+            send_error(res, send, app_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "missing X-Profile-Id header"));
+            return;
+        }
+        const auto auth_error = authorize_request(req, "generate_hierarchical_resource");
+        if (auth_error) {
+            send_error(res, send, *auth_error);
             return;
         }
 
         const auto auth = app::auth::AuthContextBuilder{}(req);
         const auto merchant_id = resolve_merchant_id(req, auth);
-        if (!authorized_profile_id(req, auth, merchant_id).has_value()) {
+        // routes:93 — resolve_profile_from_header: scoped fetch is the auth check.
+        if (!resolve_profile_from_header(*profile_id, merchant_id).has_value()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::UNAUTHORIZED, "profile not found for merchant"));
             return;
         }
-        const auto scope_id = resolve_scope_id(req, auth, merchant_id);
-        if (scope_id.empty()) {
+        const auto organization_id = resolve_scope_id(req, auth, merchant_id);
+        if (organization_id.empty()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::INVALID_REQUEST, "missing organization scope"));
             return;
@@ -118,38 +191,12 @@ public:
         m_context->metrics().record_flow("HierarchicalResourcesGenerate");
         m_context->metrics().counter("hierarchical_resources_generate_total").increment();
 
-        // Upstream: ensure_organization_key_store -> EC keypair + CSR -> private key
-        // encrypted under the org key -> insert_linked_resource. The local stand-ins
-        // are the repository-backed KeyStore (AES-256 purpose label), a deterministic
-        // uuid-derived key/CSR pair and the HierarchicalResource repository record.
-        const auto resource_id = m_context->ids().payment_id("rs_");
-        const auto org_key = ensure_org_key(scope_id);
-        const app::crypto::SecretString private_key{
-            m_context->ids().uuid_v4() + m_context->ids().uuid_v4()
-        };
-        const auto encrypted_private_key = app::crypto::AesWrap{}.encrypt(private_key.value(), org_key);
-        const auto csr = "csr_" + app::crypto::KeyedHasher{org_key}.hash(resource_id);
-
-        ResourceData payload;
-        payload.merchant_id = merchant_id;
-        payload.csr = csr;
-        payload.encrypted_private_key = encrypted_private_key;
-
-        app::store::hierarchical_resources::HierarchicalResourceRecord record{};
-        record.set_resource_id(resource_id);
-        record.set_scope_id(scope_id);
-        record.set_resource_type(resource_type);
-        record.set_data(encode_resource_data(payload));
-        record.set_status(status_csr_generated());
-        record.set_created_at(created_at_value());
-        const auto stored = m_context->repository().create_hierarchical_resource(std::move(record));
-        if (!stored) {
-            send_error(res, send, stored.error());
+        const auto result = generate_hierarchical_resource(merchant_id, organization_id, resource_type);
+        if (!result) {
+            send_error(res, send, std::move(result.error()));
             return;
         }
-
-        const auto data = "{\"" + resource_type + "\":{\"csr\":\"" + csr + "\"}}";
-        const GenerateResponseWire response{resource_id, data};
+        const GenerateResponseWire response{result->id, result->data};
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -159,12 +206,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = authorize_request(req, "upload_hierarchical_resource");
-        if (auth_error) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-
+        // web::Path<ResourceId> is extracted by the framework (routes:117); the
+        // local extractor validates the same alphanumeric/length shape.
         const auto resource_id = resource_id_from_path(req, "apple_pay_certificate");
         if (!resource_id.has_value() || resource_id->empty()) {
             send_error(res, send, app_error(
@@ -172,73 +215,50 @@ public:
             return;
         }
 
+        // routes:48-71 — content-type aware body parse: JSON object or raw DER
+        // bytes that are base64-encoded into the request's `certificate` field.
         const auto body = req.body_as_string();
         if (body.empty()) {
             send_error(res, send, app_error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        using Input = app::dto::hierarchical_resources::UploadCertificateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            send_error(res, send, app_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        auto parsed_body = parse_upload_certificate_body(req, body);
+        if (!parsed_body) {
+            send_error(res, send, std::move(parsed_body.error()));
             return;
         }
-        if (parsed->get_certificate().empty()) {
+
+        const auto profile_id = mandatory_profile_id_from_header(req);
+        if (!profile_id.has_value()) {
             send_error(res, send, app_error(
-                core::error::AppErrorKind::INVALID_REQUEST, "certificate is required"));
+                core::error::AppErrorKind::INVALID_REQUEST, "missing X-Profile-Id header"));
+            return;
+        }
+        const auto auth_error = authorize_request(req, "upload_hierarchical_resource");
+        if (auth_error) {
+            send_error(res, send, *auth_error);
             return;
         }
 
         const auto auth = app::auth::AuthContextBuilder{}(req);
         const auto merchant_id = resolve_merchant_id(req, auth);
-        if (!authorized_profile_id(req, auth, merchant_id).has_value()) {
+        if (!resolve_profile_from_header(*profile_id, merchant_id).has_value()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::UNAUTHORIZED, "profile not found for merchant"));
             return;
         }
-        const auto scope_id = resolve_scope_id(req, auth, merchant_id);
+        const auto organization_id = resolve_scope_id(req, auth, merchant_id);
 
         m_context->metrics().record_flow("HierarchicalResourcesUpload");
         m_context->metrics().counter("hierarchical_resources_upload_total").increment();
 
-        const auto stored = m_context->repository().find_hierarchical_resource_by_string(*resource_id);
-        if (!stored.has_value()) {
-            send_error(res, send, app_error(core::error::AppErrorKind::NOT_FOUND, "resource not found"));
+        const auto result = upload_hierarchical_resource(
+            *resource_id, parsed_body->get_certificate(), merchant_id, organization_id);
+        if (!result) {
+            send_error(res, send, std::move(result.error()));
             return;
         }
-        // authorize_scope_id_belongs_to_org: compare the persisted scope against the
-        // authoritative organization resolved from the caller's merchant account.
-        if (!scope_belongs_to_org(stored->get_scope_id(), scope_id)) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different organization"));
-            return;
-        }
-
-        auto payload = decode_resource_data(stored->get_data());
-        if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different merchant"));
-            return;
-        }
-
-        // Upstream: base64-DER decode, X509::from_der, cert/key match, CN parse,
-        // status -> Active. DER/X.509 decoding needs an external crypto library, so
-        // the local substitute records a keyed digest and extracts an Apple merchant
-        // identifier from a CN= segment when one is present in the supplied text.
-        const auto org_key = ensure_org_key(stored->get_scope_id());
-        payload.certificate_digest = app::crypto::KeyedHasher{org_key}.hash(parsed->get_certificate());
-        payload.apple_merchant_identifier = extract_apple_merchant_id(parsed->get_certificate());
-
-        auto updated = *stored;
-        updated.set_data(encode_resource_data(payload));
-        updated.set_status(status_active());
-        if (!m_context->repository().update_hierarchical_resource(updated)) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::INTERNAL_ERROR, "failed to update resource"));
-            return;
-        }
-
-        const UploadResponseWire response{*resource_id, updated.get_created_at()};
+        const UploadResponseWire response{result->id, result->created_at};
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -248,12 +268,6 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = authorize_request(req, "list_hierarchical_resources");
-        if (auth_error) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-
         const auto body = req.body_as_string();
         if (body.empty()) {
             send_error(res, send, app_error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
@@ -265,59 +279,43 @@ public:
             send_error(res, send, app_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
             return;
         }
-
         const auto resource_type = parsed->get_resource_type().get_value();
         if (!valid_resource_type(resource_type)) {
             send_error(res, send, app_error(
-                core::error::AppErrorKind::VALIDATION_FAILED, "invalid resource type"));
+                core::error::AppErrorKind::INVALID_REQUEST, "invalid resource type"));
+            return;
+        }
+
+        const auto profile_id = mandatory_profile_id_from_header(req);
+        if (!profile_id.has_value()) {
+            send_error(res, send, app_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "missing X-Profile-Id header"));
+            return;
+        }
+        const auto auth_error = authorize_request(req, "list_hierarchical_resources");
+        if (auth_error) {
+            send_error(res, send, *auth_error);
             return;
         }
 
         const auto auth = app::auth::AuthContextBuilder{}(req);
         const auto merchant_id = resolve_merchant_id(req, auth);
-        if (!authorized_profile_id(req, auth, merchant_id).has_value()) {
+        if (!resolve_profile_from_header(*profile_id, merchant_id).has_value()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::UNAUTHORIZED, "profile not found for merchant"));
             return;
         }
-        const auto scope_id = resolve_scope_id(req, auth, merchant_id);
+        const auto organization_id = resolve_scope_id(req, auth, merchant_id);
 
         m_context->metrics().record_flow("HierarchicalResourcesList");
         m_context->metrics().counter("hierarchical_resources_list_total").increment();
 
-        // resolve_apple_pay_certificate_data cascade: effective id comes from the
-        // requestor scope, falling back through profile -> merchant account.
-        const auto effective_resource_id = resolve_effective_resource_id(req, *parsed, auth);
-
-        std::vector<SummaryWire> summaries;
-        for (const auto& record : m_context->repository().list_hierarchical_resources()) {
-            if (record.get_resource_type() != resource_type) {
-                continue;
-            }
-            if (!scope_id.empty() && !record.get_scope_id().empty() && record.get_scope_id() != scope_id) {
-                continue;
-            }
-            if (record.get_status() != status_active()) {
-                continue;
-            }
-            const auto payload = decode_resource_data(record.get_data());
-            if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
-                continue;
-            }
-
-            SummaryWire summary;
-            summary.id = record.get_resource_id();
-            summary.display_schema = R"({"apple_pay_merchant_identifier":"String"})";
-            summary.display_data = payload.apple_merchant_identifier.empty()
-                ? std::string{R"({"apple_pay_merchant_identifier":null})"}
-                : "{\"apple_pay_merchant_identifier\":\"" + payload.apple_merchant_identifier + "\"}";
-            summary.created_at = record.get_created_at();
-            summary.is_linked = !effective_resource_id.empty()
-                && effective_resource_id == record.get_resource_id();
-            summaries.emplace_back(std::move(summary));
+        const auto result = list_hierarchical_resources(*parsed, merchant_id, organization_id);
+        if (!result) {
+            send_error(res, send, std::move(result.error()));
+            return;
         }
-
-        const ListResponseWire response{std::move(summaries)};
+        const ListResponseWire response{result->resources};
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -327,12 +325,6 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = authorize_request(req, "link_hierarchical_resource");
-        if (auth_error) {
-            send_error(res, send, *auth_error);
-            return;
-        }
-
         const auto resource_id = resource_id_from_path(req, "link");
         if (!resource_id.has_value() || resource_id->empty()) {
             send_error(res, send, app_error(
@@ -353,130 +345,43 @@ public:
         }
         const auto requestor_type = parsed->get_requestor_type().get_value();
         const auto& requestor_id = parsed->get_requestor_id();
-        if (requestor_type.empty() || requestor_id.empty()) {
+        if (!valid_requestor_type(requestor_type) || requestor_id.empty()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::INVALID_REQUEST, "requestor_type and requestor_id are required"));
             return;
         }
 
+        const auto profile_id = mandatory_profile_id_from_header(req);
+        if (!profile_id.has_value()) {
+            send_error(res, send, app_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "missing X-Profile-Id header"));
+            return;
+        }
+        const auto auth_error = authorize_request(req, "link_hierarchical_resource");
+        if (auth_error) {
+            send_error(res, send, *auth_error);
+            return;
+        }
+
         const auto auth = app::auth::AuthContextBuilder{}(req);
         const auto merchant_id = resolve_merchant_id(req, auth);
-        if (!authorized_profile_id(req, auth, merchant_id).has_value()) {
+        if (!resolve_profile_from_header(*profile_id, merchant_id).has_value()) {
             send_error(res, send, app_error(
                 core::error::AppErrorKind::UNAUTHORIZED, "profile not found for merchant"));
             return;
         }
-        const auto scope_id = resolve_scope_id(req, auth, merchant_id);
+        const auto organization_id = resolve_scope_id(req, auth, merchant_id);
 
         m_context->metrics().record_flow("HierarchicalResourcesLink");
         m_context->metrics().counter("hierarchical_resources_link_total").increment();
 
-        const auto stored = m_context->repository().find_hierarchical_resource_by_string(*resource_id);
-        if (!stored.has_value()) {
-            send_error(res, send, app_error(core::error::AppErrorKind::NOT_FOUND, "resource not found"));
+        const auto result = link_hierarchical_resource(
+            *resource_id, requestor_type, requestor_id, merchant_id, organization_id);
+        if (!result) {
+            send_error(res, send, std::move(result.error()));
             return;
         }
-        if (!scope_belongs_to_org(stored->get_scope_id(), scope_id)) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different organization"));
-            return;
-        }
-        if (stored->get_status() != status_active()) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::PRECONDITION_FAILED, "resource is not active"));
-            return;
-        }
-        const auto payload = decode_resource_data(stored->get_data());
-        if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different merchant"));
-            return;
-        }
-
-        // fetch_requestor_account: strict merchant-scoped resolution with
-        // to_not_found_response style mapping. Profiles now have a repository entity.
-        if (requestor_type == "merchant_connector_account" || requestor_type == "merchant_connector") {
-            const auto connector = m_context->repository().find_merchant_connector_by_string(requestor_id);
-            if (!connector.has_value()) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::NOT_FOUND, "merchant connector account not found"));
-                return;
-            }
-            if (!merchant_id.empty() && connector->get_merchant_id() != merchant_id) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::FORBIDDEN, "requestor belongs to a different merchant"));
-                return;
-            }
-        } else if (requestor_type == "merchant_account") {
-            const auto account = m_context->repository().find_merchant_account_by_string(requestor_id);
-            if (!account.has_value()) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::NOT_FOUND, "merchant account not found"));
-                return;
-            }
-            if (!merchant_id.empty() && requestor_id != merchant_id) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::FORBIDDEN, "requestor belongs to a different merchant"));
-                return;
-            }
-        } else if (requestor_type == "profile") {
-            const auto profile = m_context->repository().find_profile_by_string(requestor_id);
-            if (!profile.has_value()) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::NOT_FOUND, "profile not found"));
-                return;
-            }
-            if (!merchant_id.empty() && profile->get_merchant_id() != merchant_id) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::FORBIDDEN, "requestor belongs to a different merchant"));
-                return;
-            }
-        } else {
-            send_error(res, send, app_error(
-                core::error::AppErrorKind::INVALID_REQUEST, "unsupported requestor_type"));
-            return;
-        }
-
-        // on_link: re-encrypt the stored private key under a requestor-scoped key from
-        // the repository-backed key store, then persist the link as a resource record
-        // and mirror the account attachment through config_store (with audit log).
-        const auto requestor_key = ensure_requestor_key(requestor_id);
-        const auto rewrapped = app::crypto::AesWrap{}.encrypt(payload.encrypted_private_key, requestor_key);
-
-        const auto link_id = link_resource_id(requestor_type, requestor_id);
-        auto link_record = m_context->repository().find_hierarchical_resource_by_string(link_id);
-        const auto link_data = requestor_id + "|" + *resource_id + "|" + requestor_type + "|" + rewrapped;
-        if (!link_record.has_value()) {
-            app::store::hierarchical_resources::HierarchicalResourceRecord fresh{};
-            fresh.set_resource_id(link_id);
-            fresh.set_scope_id(*resource_id);
-            fresh.set_resource_type("link");
-            fresh.set_data(link_data);
-            fresh.set_status(status_active());
-            fresh.set_created_at(created_at_value());
-            const auto created = m_context->repository().create_hierarchical_resource(std::move(fresh));
-            if (!created) {
-                send_error(res, send, created.error());
-                return;
-            }
-            link_record = *created;
-        } else {
-            link_record->set_scope_id(*resource_id);
-            link_record->set_data(link_data);
-            if (!m_context->repository().update_hierarchical_resource(*link_record)) {
-                send_error(res, send, app_error(
-                    core::error::AppErrorKind::INTERNAL_ERROR, "failed to persist link"));
-                return;
-            }
-        }
-
-        m_context->config_store().put(
-            "hierarchical_resources.account_links", requestor_id, *resource_id, requestor_type);
-        m_context->events().publish(
-            "hierarchical_resources.linked",
-            "{\"resource_id\":\"" + *resource_id + "\",\"requestor_id\":\"" + requestor_id + "\"}");
-
-        const LinkResponseWire response{*resource_id};
+        const LinkResponseWire response{result->id};
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -484,9 +389,11 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
+        // Upstream scope registration uses web::resource("") for generate
+        // (routes/app.rs:2282-2284); an empty segment is the exact match.
         Router{router, "/hierarchical_resources"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -532,35 +439,267 @@ public:
     }
 
 private:
-    /** @brief Registry rule for the operation, with upstream profile/allow overlays. */
-    [[nodiscard]] std::optional<core::error::AppError> authorize_request(
-        interfaces::io::IRequest& req,
-        std::string_view operation
+    // ── Core helpers — direct ports of core/hierarchical_resources.rs ─────────
+
+    /** @brief core:578-603 generate_hierarchical_resource. */
+    [[nodiscard]] std::expected<GenerateOutcome, core::error::AppError> generate_hierarchical_resource(
+        std::string_view merchant_id,
+        std::string_view organization_id,
+        std::string_view resource_type
     ) const
     {
-        const auto base = m_context->auth_rules().rule_for(operation);
-        const auto rule = app::auth::RouteAuthRuleBuilder{}
-                              .scheme(base.scheme())
-                              .permission(base.permission())
-                              .allow_connected(true)
-                              .allow_platform(true)
-                              .id_source("x-profile-id")
-                              .build();
-        return m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
+        const auto org_key = ensure_organization_key_store(organization_id);
+        const auto keys = generate_ec_keypair_and_csr(org_key);
+
+        // core:179 — id_type::ResourceId::default() -> "res" + alphanumeric.
+        const auto resource_id = m_context->ids().payment_id("res");
+
+        // core:155-171 — ApplePayCertificateKeyWrapperData serialized then encrypted
+        // with the organization key (keymanager crypto_operation substitute: AesWrap).
+        const auto private_key_payload = "{\"payment_processing_certificate_key\":"
+            + serde::Ser::encode_json(keys.private_key_pem) + "}";
+        const auto encrypted_private_key = app::crypto::AesWrap{}.encrypt(private_key_payload, org_key);
+
+        ApplePayCertificateData data;
+        data.status = status_csr_generated();
+        ResourceData payload;
+        payload.data = encode_apple_pay_certificate_data(data);
+        payload.encrypted_data = encrypted_private_key;
+        payload.public_key_digest = app::crypto::KeyedHasher{org_key}.hash(keys.private_key_pem);
+        payload.merchant_id = merchant_id;
+
+        app::store::hierarchical_resources::HierarchicalResourceRecord record{};
+        record.set_resource_id(resource_id);
+        record.set_scope_id(std::string{organization_id});
+        record.set_resource_type(std::string{resource_type});
+        record.set_data(encode_resource_data(payload));
+        record.set_status(data.status);
+        record.set_created_at(created_at_value());
+        const auto stored = m_context->repository().create_hierarchical_resource(std::move(record));
+        if (!stored) {
+            return std::unexpected{stored.error()};
+        }
+
+        // core:196-211 — response data is {"apple_pay_certificate":{"csr": <PEM>}}.
+        const auto response_data = "{\"" + std::string{resource_type} + "\":{\"csr\":"
+            + serde::Ser::encode_json(keys.csr_pem) + "}}";
+        return GenerateOutcome{resource_id, response_data};
     }
 
-    /** @brief Upstream fetches the X-Profile-Id profile scoped to the JWT merchant. */
-    [[nodiscard]] std::optional<std::string> authorized_profile_id(
-        interfaces::io::IRequest& req,
-        const app::auth::AuthContext& auth,
-        std::string_view merchant_id
+    /** @brief core:630-668 + ApplePayCertificateResource::upload (:305-367). */
+    [[nodiscard]] std::expected<UploadOutcome, core::error::AppError> upload_hierarchical_resource(
+        std::string_view resource_id,
+        std::string_view certificate,
+        std::string_view merchant_id,
+        std::string_view organization_id
+    ) const
+    {
+        // core:639-646 — find_resource_scope_id + authorize_scope_id_belongs_to_org.
+        const auto stored = m_context->repository().find_hierarchical_resource_by_string(resource_id);
+        if (!stored.has_value()) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::NOT_FOUND, "resource not found")};
+        }
+        if (!authorize_scope_id_belongs_to_org(stored->get_scope_id(), organization_id)) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different organization")};
+        }
+
+        const auto org_key = ensure_organization_key_store(organization_id);
+        auto payload = decode_resource_data(stored->get_data());
+        if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different merchant")};
+        }
+
+        // core:323 — base64 DER decode + X509::from_der (local OpenSSL substitute).
+        auto parsed_cert = parse_certificate_from_base64_der(certificate, org_key);
+        if (!parsed_cert) {
+            return std::unexpected{std::move(parsed_cert.error())};
+        }
+        // core:325-336 — cert/key match. The local substitute verifies a structural
+        // binding (no EC public-key DER available without OpenSSL); see helper.
+        if (!certificate_matches_private_key(*parsed_cert, payload)) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "Uploaded certificate does not match the generated key")};
+        }
+        // core:338-341 — CN extraction, rsplit(':')+trim, InvalidRequestData on miss.
+        auto identifier = parse_apple_merchant_identifier(*parsed_cert);
+        if (!identifier.has_value() || identifier->empty()) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "Could not parse Apple merchant identifier from certificate")};
+        }
+
+        ApplePayCertificateData data;
+        data.status = status_active();
+        data.apple_merchant_identifier = *identifier;
+        data.payment_processing_certificate = std::string{certificate};
+        payload.data = encode_apple_pay_certificate_data(data);
+
+        auto updated = *stored;
+        updated.set_data(encode_resource_data(payload));
+        updated.set_status(data.status);
+        if (!m_context->repository().update_hierarchical_resource(updated)) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::INTERNAL_ERROR, "failed to update resource")};
+        }
+
+        return UploadOutcome{std::string{resource_id}, updated.get_created_at()};
+    }
+
+    /** @brief core:728-820 list_hierarchical_resources. */
+    [[nodiscard]] std::expected<ListOutcome, core::error::AppError> list_hierarchical_resources(
+        const app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
+        std::string_view merchant_id,
+        std::string_view organization_id
+    ) const
+    {
+        // core:750-775 — effective id resolves only when BOTH scope_type and
+        // scope_id are present; otherwise it is None.
+        std::string effective_resource_id{};
+        if (request.get_scope_type().has_value() && request.get_scope_id().has_value()
+            && !request.get_scope_id()->empty()) {
+            const auto account = fetch_requestor_account(
+                request.get_scope_type()->get_value(), *request.get_scope_id(), merchant_id);
+            if (!account) {
+                return std::unexpected{std::move(account.error())};
+            }
+            effective_resource_id = resolve_apple_pay_certificate_data(*account);
+        }
+
+        const auto resource_type = request.get_resource_type().get_value();
+        std::vector<SummaryWire> summaries{};
+        for (const auto& record : m_context->repository().list_hierarchical_resources()) {
+            if (record.get_resource_type() != resource_type) {
+                continue;
+            }
+            if (!organization_id.empty() && record.get_scope_id() != organization_id) {
+                continue;
+            }
+            const auto payload = decode_resource_data(record.get_data());
+            if (!hierarchical_resource_is_linkable(payload)) {
+                continue;
+            }
+            if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
+                continue;
+            }
+
+            const auto certificate_data = parse_apple_pay_certificate_payload(payload.data);
+            SummaryWire summary;
+            summary.id = record.get_resource_id();
+            summary.display_schema = display_schema();
+            summary.display_data = display_data(certificate_data);
+            summary.created_at = record.get_created_at();
+            summary.is_linked = !effective_resource_id.empty()
+                && effective_resource_id == record.get_resource_id();
+            summaries.emplace_back(std::move(summary));
+        }
+        return ListOutcome{std::move(summaries)};
+    }
+
+    /** @brief core:822-878 link_hierarchical_resource. */
+    [[nodiscard]] std::expected<LinkOutcome, core::error::AppError> link_hierarchical_resource(
+        std::string_view resource_id,
+        std::string_view requestor_type,
+        std::string_view requestor_id,
+        std::string_view merchant_id,
+        std::string_view organization_id
+    ) const
+    {
+        // core:832-839 — find_resource_scope_id + org authorization.
+        const auto stored = m_context->repository().find_hierarchical_resource_by_string(resource_id);
+        if (!stored.has_value()) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::NOT_FOUND, "resource not found")};
+        }
+        if (!authorize_scope_id_belongs_to_org(stored->get_scope_id(), organization_id)) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different organization")};
+        }
+
+        // core:841-847 — fetch_requestor_account (V1, merchant scoped).
+        const auto account = fetch_requestor_account(requestor_type, requestor_id, merchant_id);
+        if (!account) {
+            return std::unexpected{std::move(account.error())};
+        }
+        // core:859-873 — resource type + Active-only is_linkable is enforced by
+        // is_linkable in upstream; link itself relies on the caller having an Active
+        // resource. The local guard preserves that precondition explicitly.
+        auto payload = decode_resource_data(stored->get_data());
+        if (stored->get_status() != status_active()) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::PRECONDITION_FAILED, "resource is not active")};
+        }
+        if (!merchant_id.empty() && !payload.merchant_id.empty() && payload.merchant_id != merchant_id) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::FORBIDDEN, "resource belongs to a different merchant")};
+        }
+
+        // core:238-301 on_link — re-encrypt the private key under the requestor's
+        // key store and mirror the account attachment (local config/event substitute).
+        const auto requestor_key = ensure_requestor_key(requestor_id);
+        const auto rewrapped = app::crypto::AesWrap{}.encrypt(payload.encrypted_data, requestor_key);
+        const auto link_id = link_resource_id(requestor_id);
+        const auto link_data = "{\"resource_id\":" + serde::Ser::encode_json(std::string{resource_id})
+            + ",\"requestor_id\":" + serde::Ser::encode_json(std::string{requestor_id})
+            + ",\"requestor_type\":" + serde::Ser::encode_json(std::string{requestor_type})
+            + ",\"encrypted_data\":" + serde::Ser::encode_json(rewrapped) + "}";
+        auto link_record = m_context->repository().find_hierarchical_resource_by_string(link_id);
+        if (!link_record.has_value()) {
+            app::store::hierarchical_resources::HierarchicalResourceRecord fresh{};
+            fresh.set_resource_id(link_id);
+            fresh.set_scope_id(std::string{resource_id});
+            fresh.set_resource_type("link");
+            fresh.set_data(link_data);
+            fresh.set_status(status_active());
+            fresh.set_created_at(created_at_value());
+            const auto created = m_context->repository().create_hierarchical_resource(std::move(fresh));
+            if (!created) {
+                return std::unexpected{created.error()};
+            }
+        } else {
+            link_record->set_scope_id(std::string{resource_id});
+            link_record->set_data(link_data);
+            if (!m_context->repository().update_hierarchical_resource(*link_record)) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::INTERNAL_ERROR, "failed to persist link")};
+            }
+        }
+        m_context->config_store().put(
+            "hierarchical_resources.account_links", requestor_id, std::string{resource_id},
+            std::string{requestor_type});
+        m_context->events().publish(
+            "hierarchical_resources.linked",
+            "{\"resource_id\":\"" + std::string{resource_id} + "\",\"requestor_id\":\""
+                + std::string{requestor_id} + "\"}");
+        return LinkOutcome{std::string{resource_id}};
+    }
+
+    // ── Upstream route-level helpers ──────────────────────────────────────────
+
+    /** @brief routes:22-26 mandatory_profile_id_from_header. */
+    [[nodiscard]] std::optional<std::string> mandatory_profile_id_from_header(
+        interfaces::io::IRequest& req
     ) const
     {
         const auto header = app::http::HeaderReader{}.get(req, "x-profile-id");
-        const std::string profile_id = header.empty() ? auth.profile_id() : header;
-        if (profile_id.empty()) {
+        if (header.empty()) {
             return std::nullopt;
         }
+        if (!valid_profile_id(header)) {
+            return std::nullopt;
+        }
+        return header;
+    }
+
+    /** @brief routes:28-46 resolve_profile_from_header (scoped fetch = auth). */
+    [[nodiscard]] std::optional<std::string> resolve_profile_from_header(
+        std::string_view profile_id,
+        std::string_view merchant_id
+    ) const
+    {
         const auto profile = m_context->repository().find_profile_by_string(profile_id);
         if (!profile.has_value()) {
             return std::nullopt;
@@ -568,7 +707,504 @@ private:
         if (!merchant_id.empty() && profile->get_merchant_id() != merchant_id) {
             return std::nullopt;
         }
-        return profile_id;
+        return std::string{profile_id};
+    }
+
+    /** @brief routes:48-71 parse_upload_certificate_body. */
+    [[nodiscard]] std::expected<app::dto::hierarchical_resources::UploadCertificateRequest,
+                                core::error::AppError> parse_upload_certificate_body(
+        interfaces::io::IRequest& req,
+        std::string_view body
+    ) const
+    {
+        using Input = app::dto::hierarchical_resources::UploadCertificateRequest;
+        const auto content_type = app::http::HeaderReader{}.get(req, "content-type");
+        const bool is_json = content_type.starts_with("application/json");
+        if (is_json) {
+            auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+            if (!parsed) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::INVALID_REQUEST,
+                    "invalid JSON body: " + parsed.error())};
+            }
+            return *parsed;
+        }
+        Input raw{};
+        raw.set_certificate(base64_encode(body));
+        return raw;
+    }
+
+    /** @brief core:880-890 authorize_scope_id_belongs_to_org. */
+    [[nodiscard]] bool authorize_scope_id_belongs_to_org(
+        std::string_view resource_scope,
+        std::string_view organization_id
+    ) const
+    {
+        return !resource_scope.empty() && !organization_id.empty()
+            && resource_scope == organization_id;
+    }
+
+    // ── Requestor resolution (core:412-483, V1) ───────────────────────────────
+
+    [[nodiscard]] std::expected<std::string, core::error::AppError> fetch_requestor_account(
+        std::string_view requestor_type,
+        std::string_view requestor_id,
+        std::string_view merchant_id
+    ) const
+    {
+        if (requestor_type == "merchant_connector_account") {
+            const auto connector = m_context->repository().find_merchant_connector_by_string(requestor_id);
+            if (!connector.has_value()) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::NOT_FOUND, "merchant connector account not found")};
+            }
+            if (!merchant_id.empty() && connector->get_merchant_id() != merchant_id) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::FORBIDDEN, "requestor belongs to a different merchant")};
+            }
+            return std::string{requestor_id};
+        }
+        if (requestor_type == "profile") {
+            const auto profile = m_context->repository().find_profile_by_string(requestor_id);
+            if (!profile.has_value()) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::NOT_FOUND, "profile not found")};
+            }
+            if (!merchant_id.empty() && profile->get_merchant_id() != merchant_id) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::FORBIDDEN, "requestor belongs to a different merchant")};
+            }
+            return std::string{requestor_id};
+        }
+        if (requestor_type == "merchant_account") {
+            if (!merchant_id.empty() && requestor_id != merchant_id) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::NOT_FOUND, "merchant account not found")};
+            }
+            if (!m_context->repository().find_merchant_account_by_string(requestor_id).has_value()) {
+                return std::unexpected{app_error(
+                    core::error::AppErrorKind::NOT_FOUND, "merchant account not found")};
+            }
+            return std::string{requestor_id};
+        }
+        return std::unexpected{app_error(
+            core::error::AppErrorKind::INVALID_REQUEST, "invalid requestor_type")};
+    }
+
+    /** @brief core:502-533 resolve_apple_pay_certificate_data cascading cache read. */
+    [[nodiscard]] std::string resolve_apple_pay_certificate_data(
+        std::string_view requestor_id
+    ) const
+    {
+        return find_linked_resource(requestor_id);
+    }
+
+    [[nodiscard]] std::string find_linked_resource(std::string_view requestor_id) const
+    {
+        const auto cached = m_context->config_store().get_value(
+            "hierarchical_resources.account_links", requestor_id);
+        if (cached.has_value() && !cached->empty()) {
+            return *cached;
+        }
+        const auto link = m_context->repository().find_hierarchical_resource_by_string(
+            link_resource_id(requestor_id));
+        if (link.has_value()) {
+            // Local mirror of the account `apple_pay_certificates` cache payload:
+            // the link record stores a JSON object with a `resource_id` field.
+            const auto pos = link->get_data().find("\"resource_id\":\"");
+            if (pos != std::string::npos) {
+                const auto start = pos + std::string{"\"resource_id\":\""}.size();
+                const auto end = link->get_data().find('"', start);
+                if (end != std::string::npos) {
+                    return link->get_data().substr(start, end - start);
+                }
+            }
+        }
+        // Cascade profile -> merchant account (upstream uses inherent entity properties).
+        const auto profile = m_context->repository().find_profile_by_string(requestor_id);
+        if (profile.has_value()) {
+            return find_linked_resource(profile->get_merchant_id());
+        }
+        const auto connector = m_context->repository().find_merchant_connector_by_string(requestor_id);
+        if (connector.has_value()) {
+            return find_linked_resource(connector->get_merchant_id());
+        }
+        return {};
+    }
+
+    // ── Apple Pay crypto / certificate helpers (local OpenSSL substitutes) ────
+
+    /** @brief core:892-922 ensure_organization_key_store. */
+    [[nodiscard]] std::string ensure_organization_key_store(std::string_view org_id) const
+    {
+        constexpr std::string_view purpose{"hierarchical_resources.org"};
+        const auto existing = m_context->key_store().get(purpose, org_id);
+        if (existing.has_value()) {
+            return existing->value();
+        }
+        const app::crypto::SecretString master{
+            m_context->ids().uuid_v4() + m_context->ids().uuid_v4()
+        };
+        m_context->key_store().put(purpose, org_id, "AES-256", master);
+        return master.value();
+    }
+
+    [[nodiscard]] std::string ensure_requestor_key(std::string_view requestor_id) const
+    {
+        constexpr std::string_view purpose{"hierarchical_resources.requestor"};
+        const auto existing = m_context->key_store().get(purpose, requestor_id);
+        if (existing.has_value()) {
+            return existing->value();
+        }
+        const app::crypto::SecretString key{
+            m_context->ids().uuid_v4() + m_context->ids().uuid_v4()
+        };
+        m_context->key_store().put(purpose, requestor_id, "AES-256", key);
+        return key.value();
+    }
+
+    /** @brief core:605-628 generate_ec_keypair_and_csr (local PEM substitute). */
+    [[nodiscard]] GeneratedKeys generate_ec_keypair_and_csr(std::string_view org_key) const
+    {
+        const auto seed = m_context->ids().uuid_v4() + m_context->ids().uuid_v4();
+        const auto private_der = base64_encode("ec-p256|" + seed);
+        const auto csr_hash = app::crypto::KeyedHasher{std::string{org_key}}.hash(seed);
+        const auto csr_der = base64_encode("csr|" + csr_hash);
+        return GeneratedKeys{
+            "-----BEGIN PRIVATE KEY-----\n" + private_der + "\n-----END PRIVATE KEY-----\n",
+            "-----BEGIN CERTIFICATE REQUEST-----\n" + csr_der
+                + "\n-----END CERTIFICATE REQUEST-----\n"
+        };
+    }
+
+    /** @brief core:685-695 parse_certificate_from_base64_der (local substitute). */
+    [[nodiscard]] std::expected<ParsedCertificate, core::error::AppError>
+    parse_certificate_from_base64_der(std::string_view certificate_b64, std::string_view org_key) const
+    {
+        const auto der = base64_decode(certificate_b64);
+        if (!der.has_value() || der->empty()) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::INVALID_REQUEST, "certificate is not valid base64")};
+        }
+        // Minimal DER sanity check: an X.509 certificate is a SEQUENCE (0x30).
+        if (static_cast<unsigned char>((*der)[0]) != 0x30U) {
+            return std::unexpected{app_error(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "certificate is not a valid DER-encoded X.509 certificate")};
+        }
+        return ParsedCertificate{
+            *der,
+            app::crypto::KeyedHasher{std::string{org_key}}.hash(*der)
+        };
+    }
+
+    /** @brief core:697-707 certificate_matches_private_key (local substitute).
+     *
+     *  OpenSSL public-key DER comparison is unavailable locally. The structural
+     *  substitute verifies the certificate is a well-formed DER SEQUENCE and that
+     *  a binding digest was stored at generation time; it cannot reject a
+     *  structurally valid certificate issued for a different key.
+     */
+    [[nodiscard]] bool certificate_matches_private_key(
+        const ParsedCertificate& certificate,
+        const ResourceData& payload
+    ) const
+    {
+        return !certificate.der.empty() && !payload.encrypted_data.empty()
+            && !payload.public_key_digest.empty();
+    }
+
+    /** @brief core:709-726 parse_apple_merchant_identifier (local substitute). */
+    [[nodiscard]] std::optional<std::string> parse_apple_merchant_identifier(
+        const ParsedCertificate& certificate
+    ) const
+    {
+        std::string common_name{};
+        // DER: CN has OID 2.5.4.3 = {0x55,0x04,0x03}, followed by a TLV.
+        static constexpr std::string_view cn_oid{"\x55\x04\x03", 3};
+        const auto oid_pos = certificate.der.find(cn_oid);
+        if (oid_pos != std::string::npos && oid_pos + 3 + 2 <= certificate.der.size()) {
+            const auto tag = static_cast<unsigned char>(certificate.der[oid_pos + 3]);
+            if (tag == 0x0CU || tag == 0x13U || tag == 0x16U) {
+                std::size_t length = static_cast<unsigned char>(certificate.der[oid_pos + 4]);
+                std::size_t value_start = oid_pos + 5;
+                if ((length & 0x80U) != 0U) {
+                    const std::size_t extra = length & 0x7FU;
+                    if (extra > 0 && extra <= 4 && value_start + extra <= certificate.der.size()) {
+                        length = 0;
+                        for (std::size_t i{0}; i < extra; ++i) {
+                            length = (length << 8)
+                                | static_cast<unsigned char>(certificate.der[value_start + i]);
+                        }
+                        value_start += extra;
+                    } else {
+                        length = 0;
+                    }
+                }
+                if (length > 0 && value_start + length <= certificate.der.size()) {
+                    common_name = certificate.der.substr(value_start, length);
+                }
+            }
+        }
+        // Text fallback (local certificate stand-ins may carry a literal CN=).
+        if (common_name.empty()) {
+            const auto cn_pos = certificate.der.find("CN=");
+            if (cn_pos != std::string::npos) {
+                const auto rest = std::string_view{certificate.der}.substr(cn_pos + 3);
+                const auto end = rest.find_first_of(",/ \t\r\n\"");
+                common_name = std::string{rest.substr(0, end)};
+            }
+        }
+        if (common_name.empty()) {
+            return std::nullopt;
+        }
+        // core:720-725 — rsplit(':').next().trim().
+        const auto last_colon = common_name.rfind(':');
+        auto identifier = last_colon == std::string::npos
+            ? common_name
+            : common_name.substr(last_colon + 1);
+        const auto first = identifier.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos) {
+            return std::nullopt;
+        }
+        const auto last = identifier.find_last_not_of(" \t\r\n");
+        return identifier.substr(first, last - first + 1);
+    }
+
+    // ── Status / display (core:101-117, :214-236, :800-820) ───────────────────
+
+    [[nodiscard]] std::string status_csr_generated() const { return "csr_generated"; }
+    [[nodiscard]] std::string status_active() const { return "active"; }
+
+    [[nodiscard]] std::string display_schema() const
+    {
+        return R"({"apple_pay_merchant_identifier":"String"})";
+    }
+
+    [[nodiscard]] std::string display_data(const ApplePayCertificateData& data) const
+    {
+        if (data.apple_merchant_identifier.empty()) {
+            return R"({"apple_pay_merchant_identifier":null})";
+        }
+        return "{\"apple_pay_merchant_identifier\":"
+            + serde::Ser::encode_json(data.apple_merchant_identifier) + "}";
+    }
+
+    [[nodiscard]] bool hierarchical_resource_is_linkable(const ResourceData& payload) const
+    {
+        const auto data = parse_apple_pay_certificate_payload(payload.data);
+        return data.status == status_active();
+    }
+
+    // ── Typed persistence encoding (local repository substitute) ──────────────
+
+    [[nodiscard]] std::string encode_apple_pay_certificate_data(
+        const ApplePayCertificateData& data
+    ) const
+    {
+        std::string out = "{\"status\":" + serde::Ser::encode_json(data.status);
+        if (!data.apple_merchant_identifier.empty()) {
+            out += ",\"apple_pay_merchant_identifier\":"
+                + serde::Ser::encode_json(data.apple_merchant_identifier);
+        }
+        if (!data.payment_processing_certificate.empty()) {
+            out += ",\"payment_processing_certificate\":"
+                + serde::Ser::encode_json(data.payment_processing_certificate);
+        }
+        out += "}";
+        return out;
+    }
+
+    [[nodiscard]] ApplePayCertificateData parse_apple_pay_certificate_payload(
+        std::string_view json
+    ) const
+    {
+        ApplePayCertificateData data{};
+        data.status = json_string_field(json, "status");
+        data.apple_merchant_identifier = json_string_field(json, "apple_pay_merchant_identifier");
+        data.payment_processing_certificate = json_string_field(json, "payment_processing_certificate");
+        return data;
+    }
+
+    [[nodiscard]] std::string json_string_field(std::string_view json, std::string_view key) const
+    {
+        const std::string needle = "\"" + std::string{key} + "\":";
+        const auto pos = json.find(needle);
+        if (pos == std::string_view::npos) {
+            return {};
+        }
+        auto rest = json.substr(pos + needle.size());
+        const auto first = rest.find_first_not_of(" \t\r\n");
+        if (first == std::string_view::npos || rest[first] != '"') {
+            return {};
+        }
+        rest = rest.substr(first + 1);
+        std::string out{};
+        for (std::size_t i{0}; i < rest.size(); ++i) {
+            if (rest[i] == '\\' && i + 1 < rest.size()) {
+                out.push_back(rest[++i]);
+            } else if (rest[i] == '"') {
+                break;
+            } else {
+                out.push_back(rest[i]);
+            }
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::string encode_resource_data(const ResourceData& value) const
+    {
+        return "{\"data\":" + serde::Ser::encode_json(value.data)
+            + ",\"encrypted_data\":" + serde::Ser::encode_json(value.encrypted_data)
+            + ",\"public_key_digest\":" + serde::Ser::encode_json(value.public_key_digest)
+            + ",\"merchant_id\":" + serde::Ser::encode_json(value.merchant_id) + "}";
+    }
+
+    [[nodiscard]] ResourceData decode_resource_data(std::string_view raw) const
+    {
+        ResourceData result{};
+        result.data = json_string_field(raw, "data");
+        result.encrypted_data = json_string_field(raw, "encrypted_data");
+        result.public_key_digest = json_string_field(raw, "public_key_digest");
+        result.merchant_id = json_string_field(raw, "merchant_id");
+        return result;
+    }
+
+    // ── Standard base64 (upstream BASE64_ENGINE; local, no new module deps) ────
+
+    [[nodiscard]] std::string base64_encode(std::string_view input) const
+    {
+        static constexpr std::string_view table{
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+        std::string out{};
+        out.reserve(4 * ((input.size() + 2) / 3));
+        std::uint32_t accumulator{0};
+        int bits{0};
+        for (const char c : input) {
+            accumulator = (accumulator << 8) | static_cast<unsigned char>(c);
+            bits += 8;
+            while (bits >= 6) {
+                bits -= 6;
+                out.push_back(table[(accumulator >> bits) & 0x3FU]);
+            }
+        }
+        if (bits > 0) {
+            out.push_back(table[(accumulator << (6 - bits)) & 0x3FU]);
+            while (out.size() % 4 != 0) {
+                out.push_back('=');
+            }
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<std::string> base64_decode(std::string_view input) const
+    {
+        static constexpr std::string_view table{
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+        if (input.size() % 4 != 0) {
+            return std::nullopt;
+        }
+        std::string out{};
+        out.reserve((input.size() / 4) * 3);
+        for (std::size_t i{0}; i < input.size(); i += 4) {
+            const auto chunk = input.substr(i, 4);
+            std::size_t padding{0};
+            while (padding < chunk.size() && chunk[chunk.size() - 1 - padding] == '=') {
+                ++padding;
+            }
+            if (padding > 2) {
+                return std::nullopt;
+            }
+            std::uint32_t word{0};
+            for (std::size_t j{0}; j < 4; ++j) {
+                const char c = chunk[j];
+                if (j >= 4 - padding) {
+                    if (c != '=') {
+                        return std::nullopt;
+                    }
+                    continue; // '=' contributes zero bits.
+                }
+                const auto pos = table.find(c);
+                if (pos == std::string_view::npos) {
+                    return std::nullopt;
+                }
+                word = (word << 6) | static_cast<std::uint32_t>(pos);
+            }
+            out.push_back(static_cast<char>((word >> 16) & 0xFFU));
+            if (padding < 2) {
+                out.push_back(static_cast<char>((word >> 8) & 0xFFU));
+            }
+            if (padding < 1) {
+                out.push_back(static_cast<char>(word & 0xFFU));
+            }
+        }
+        return out;
+    }
+
+    // ── Validators / path extraction ───────────────────────────────────────────
+
+    [[nodiscard]] bool valid_resource_type(std::string_view value) const
+    {
+        // common_enums::ResourceType has exactly one snake_case variant.
+        return value == "apple_pay_certificate";
+    }
+
+    [[nodiscard]] bool valid_requestor_type(std::string_view value) const
+    {
+        // common_enums::ResourceRequestorType snake_case variants (accounts.rs:145-149).
+        return value == "merchant_connector_account" || value == "profile"
+            || value == "merchant_account";
+    }
+
+    [[nodiscard]] bool valid_profile_id(std::string_view value) const
+    {
+        return !value.empty() && value.size() <= 36;
+    }
+
+    /** @brief web::Path<ResourceId> substitute: alphanumeric, length 6..36. */
+    [[nodiscard]] bool valid_resource_id(std::string_view value) const
+    {
+        if (value.size() < 6 || value.size() > 36) {
+            return false;
+        }
+        for (const char c : value) {
+            const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                || (c >= '0' && c <= '9');
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** @brief Extract :resource_id next to the route's fixed sibling segment. */
+    [[nodiscard]] std::optional<std::string> resource_id_from_path(
+        interfaces::io::IRequest& req,
+        std::string_view marker
+    ) const
+    {
+        const auto segments = app::http::RequestPath{}(req);
+        for (std::size_t i{0}; i < segments.count(); ++i) {
+            if (segments.at(i).value_or(std::string_view{}) != marker) {
+                continue;
+            }
+            const std::size_t target = marker == "apple_pay_certificate"
+                ? i + 1
+                : (i == 0 ? 0 : i - 1);
+            if (target >= segments.count()) {
+                break;
+            }
+            const auto candidate = segments.at(target);
+            if (candidate.has_value() && valid_resource_id(*candidate)) {
+                return std::string{*candidate};
+            }
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::string link_resource_id(std::string_view requestor_id) const
+    {
+        return "link:" + std::string{requestor_id};
     }
 
     [[nodiscard]] std::string resolve_merchant_id(
@@ -608,205 +1244,24 @@ private:
         return auth.org_id();
     }
 
-    [[nodiscard]] bool scope_belongs_to_org(
-        std::string_view resource_scope,
-        std::string_view authoritative_org
-    ) const
-    {
-        if (resource_scope.empty()) {
-            return true;
-        }
-        if (authoritative_org.empty()) {
-            return false;
-        }
-        return resource_scope == authoritative_org;
-    }
-
-    /** @brief Extract :resource_id next to the route's fixed sibling segment. */
-    [[nodiscard]] std::optional<std::string> resource_id_from_path(
+    /** @brief JWTAndEmbeddedAuth + MerchantConnector Write/Read + allow flags. */
+    [[nodiscard]] std::optional<core::error::AppError> authorize_request(
         interfaces::io::IRequest& req,
-        std::string_view marker
+        std::string_view operation
     ) const
     {
-        const auto segments = app::http::RequestPath{}(req);
-        for (std::size_t i{0}; i < segments.count(); ++i) {
-            if (segments.at(i).value_or(std::string_view{}) != marker) {
-                continue;
-            }
-            const std::size_t target = marker == "apple_pay_certificate"
-                ? i + 1
-                : (i == 0 ? 0 : i - 1);
-            if (target >= segments.count()) {
-                break;
-            }
-            const auto candidate = segments.at(target);
-            if (candidate.has_value() && !candidate->empty()
-                && *candidate != "link" && *candidate != "apple_pay_certificate") {
-                return std::string{*candidate};
-            }
-        }
-        return std::nullopt;
+        const auto base = m_context->auth_rules().rule_for(operation);
+        const auto rule = app::auth::RouteAuthRuleBuilder{}
+                              .scheme(base.scheme())
+                              .permission(base.permission())
+                              .allow_connected(true)
+                              .allow_platform(true)
+                              .id_source("x-profile-id")
+                              .build();
+        return m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    // ── Repository-backed key store (org master key / requestor re-wrap key) ──
-
-    [[nodiscard]] std::string ensure_org_key(std::string_view org_id) const
-    {
-        constexpr std::string_view purpose{"hierarchical_resources.org"};
-        const auto existing = m_context->key_store().get(purpose, org_id);
-        if (existing.has_value()) {
-            return existing->value();
-        }
-        const app::crypto::SecretString master{
-            m_context->ids().uuid_v4() + m_context->ids().uuid_v4()
-        };
-        m_context->key_store().put(purpose, org_id, "AES-256", master);
-        return master.value();
-    }
-
-    [[nodiscard]] std::string ensure_requestor_key(std::string_view requestor_id) const
-    {
-        constexpr std::string_view purpose{"hierarchical_resources.requestor"};
-        const auto existing = m_context->key_store().get(purpose, requestor_id);
-        if (existing.has_value()) {
-            return existing->value();
-        }
-        const app::crypto::SecretString key{
-            m_context->ids().uuid_v4() + m_context->ids().uuid_v4()
-        };
-        m_context->key_store().put(purpose, requestor_id, "AES-256", key);
-        return key.value();
-    }
-
-    // ── Resource payload encoding (repository `data` column) ──
-
-    struct ResourceData
-    {
-        std::string merchant_id{};
-        std::string csr{};
-        std::string encrypted_private_key{};
-        std::string certificate_digest{};
-        std::string apple_merchant_identifier{};
-    };
-
-    [[nodiscard]] std::string encode_resource_data(const ResourceData& value) const
-    {
-        return value.merchant_id + "|" + value.csr + "|" + value.encrypted_private_key + "|"
-            + value.certificate_digest + "|" + value.apple_merchant_identifier;
-    }
-
-    [[nodiscard]] ResourceData decode_resource_data(std::string_view raw) const
-    {
-        const auto fields = split(raw, '|');
-        ResourceData result;
-        if (fields.size() > 0) { result.merchant_id = fields[0]; }
-        if (fields.size() > 1) { result.csr = fields[1]; }
-        if (fields.size() > 2) { result.encrypted_private_key = fields[2]; }
-        if (fields.size() > 3) { result.certificate_digest = fields[3]; }
-        if (fields.size() > 4) { result.apple_merchant_identifier = fields[4]; }
-        return result;
-    }
-
-    [[nodiscard]] std::string extract_apple_merchant_id(std::string_view certificate) const
-    {
-        const auto pos = certificate.find("CN=");
-        if (pos == std::string_view::npos) {
-            return {};
-        }
-        const auto rest = certificate.substr(pos + 3);
-        const auto end = rest.find_first_of(",/ \t\r\n\"");
-        return std::string{rest.substr(0, end)};
-    }
-
-    // ── Link resolution cascade (requestor -> its account -> effective resource) ──
-
-    [[nodiscard]] std::string link_resource_id(
-        std::string_view requestor_type,
-        std::string_view requestor_id
-    ) const
-    {
-        return "link:" + std::string{requestor_type} + ":" + std::string{requestor_id};
-    }
-
-    [[nodiscard]] std::string linked_resource_from(
-        const app::store::hierarchical_resources::HierarchicalResourceRecord& record
-    ) const
-    {
-        const auto fields = split(record.get_data(), '|');
-        return fields.size() > 1 ? fields[1] : std::string{};
-    }
-
-    [[nodiscard]] std::string find_linked_resource(
-        std::string_view requestor_type,
-        std::string_view requestor_id
-    ) const
-    {
-        const auto link = m_context->repository().find_hierarchical_resource_by_string(
-            link_resource_id(requestor_type, requestor_id));
-        if (link.has_value()) {
-            return linked_resource_from(*link);
-        }
-        if (requestor_type == "profile") {
-            const auto profile = m_context->repository().find_profile_by_string(requestor_id);
-            if (profile.has_value()) {
-                return find_linked_resource("merchant_account", profile->get_merchant_id());
-            }
-        } else if (requestor_type == "merchant_connector_account" || requestor_type == "merchant_connector") {
-            const auto connector = m_context->repository().find_merchant_connector_by_string(requestor_id);
-            if (connector.has_value()) {
-                return find_linked_resource("merchant_account", connector->get_merchant_id());
-            }
-        }
-        return {};
-    }
-
-    [[nodiscard]] std::string resolve_effective_resource_id(
-        interfaces::io::IRequest& req,
-        const app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
-        const app::auth::AuthContext& auth
-    ) const
-    {
-        if (request.get_scope_id().has_value() && !request.get_scope_id()->empty()) {
-            const auto type = request.get_scope_type().has_value()
-                ? request.get_scope_type()->get_value()
-                : std::string{"profile"};
-            return find_linked_resource(type, *request.get_scope_id());
-        }
-        const auto header = app::http::HeaderReader{}.get(req, "x-profile-id");
-        const auto profile_id = header.empty() ? auth.profile_id() : header;
-        if (profile_id.empty()) {
-            return {};
-        }
-        return find_linked_resource("profile", profile_id);
-    }
-
-    // ── Small validators / formatters ──
-
-    [[nodiscard]] bool valid_resource_type(std::string_view value) const
-    {
-        if (value.empty()) {
-            return false;
-        }
-        for (const char c : value) {
-            const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-                || (c >= '0' && c <= '9') || c == '_' || c == '-';
-            if (!ok) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    [[nodiscard]] std::string status_csr_generated() const
-    {
-        return "csr_generated";
-    }
-
-    [[nodiscard]] std::string status_active() const
-    {
-        return "active";
-    }
-
+    /** @brief time::PrimitiveDateTime wire shape: "YYYY-MM-DD HH:MM:SS.nnnnnnnnn". */
     [[nodiscard]] std::int64_t now_epoch() const
     {
         return std::chrono::duration_cast<std::chrono::seconds>(
@@ -814,7 +1269,6 @@ private:
         ).count();
     }
 
-    /** @brief Civil date from days since 1970-01-01; deterministic UTC formatting. */
     [[nodiscard]] std::string iso_utc(std::int64_t epoch_seconds) const
     {
         constexpr std::int64_t seconds_per_day{86400};
@@ -835,7 +1289,7 @@ private:
         const std::int64_t month = mp < 10 ? mp + 3 : mp - 9;
         year += (month <= 2) ? 1 : 0;
         return std::format(
-            "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z",
+            "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}.000000000",
             year, month, day,
             seconds_of_day / 3600,
             (seconds_of_day % 3600) / 60,
@@ -846,22 +1300,6 @@ private:
     [[nodiscard]] std::string created_at_value() const
     {
         return iso_utc(now_epoch());
-    }
-
-    [[nodiscard]] std::vector<std::string> split(std::string_view value, char delimiter) const
-    {
-        std::vector<std::string> parts;
-        std::size_t start{0};
-        while (start <= value.size()) {
-            const auto pos = value.find(delimiter, start);
-            parts.emplace_back(value.substr(start, pos == std::string_view::npos
-                ? std::string_view::npos : pos - start));
-            if (pos == std::string_view::npos) {
-                break;
-            }
-            start = pos + 1;
-        }
-        return parts;
     }
 
     [[nodiscard]] core::error::AppError app_error(

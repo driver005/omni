@@ -36,7 +36,7 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("get_active_user_details");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto merchant_id = app::http::merchant_id_from_header{}(req);
         const auto org_id = app::http::org_id_from_header{}(req);
@@ -47,7 +47,7 @@ public:
         const auto body = std::string{R"({"op":"get_active_user_details"})"};
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -58,7 +58,7 @@ public:
         if (!effective_merchant_id.empty()) {
             const auto account = m_context->repository().find_merchant_account_by_string(effective_merchant_id);
             if (!account) {
-                send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "merchant account not found"));
+                send_ue(res, send, "UR_18", "Invalid Merchant ID");
                 return;
             }
             merchant_name = account->get_merchant_name();
@@ -91,7 +91,52 @@ public:
         app::model::user::OrganizationIdValue oid{};
         oid.set_value(effective_org_id);
         response.set_name(merchant_name);
+        response.set_org_id(oid);
         response.set_is_two_factor_auth_setup(two_factor_setup);
+
+        // Port of core/user.rs:211-227: identity fields come from the active
+        // user row; role/profile/entity come from the verified token context.
+        const auto owner = app::auth::TokenParser{}(req).value();
+        std::optional<app::store::users::UserRecord> user{};
+        if (!owner.empty()) {
+            user = m_context->repository().find_user_by_string(owner);
+        }
+        if (user) {
+            response.set_user_id(user->get_user_id());
+            app::model::user::EmailValue email{};
+            email.set_value(user->get_email());
+            response.set_email(email);
+            if (!user->get_name().empty()) {
+                response.set_name(user->get_name());
+            }
+            response.set_role_id(user->get_role());
+        } else {
+            response.set_user_id(owner);
+            const auto email_entry = m_context->cache().get("user.token_email:" + owner);
+            app::model::user::EmailValue email{};
+            email.set_value(email_entry.hit
+                ? core::cache::value_as<std::string>(email_entry.value, owner)
+                : owner);
+            response.set_email(email);
+            response.set_role_id(m_context->repository().get_config(
+                "user.role." + owner).value_or(std::string{"role_org_admin"}));
+        }
+        app::model::user::ProfileIdValue pid{};
+        pid.set_value(auth_ctx.profile_id());
+        response.set_profile_id(pid);
+        app::model::user::EntityTypeValue entity{};
+        entity.set_value(m_context->repository().get_config(
+            "user.entity_type." + effective_merchant_id).value_or(std::string{"merchant"}));
+        response.set_entity_type(entity);
+
+        const auto recovery = m_context->repository().get_config(
+            "user.recovery_codes." + owner);
+        if (recovery) {
+            std::size_t count{0};
+            std::from_chars(recovery->data(), recovery->data() + recovery->size(), count);
+            response.set_recovery_codes_left(count);
+        }
+
         if (verification_days) {
             std::int64_t days{0};
             std::from_chars(verification_days->data(), verification_days->data() + verification_days->size(), days);
@@ -119,16 +164,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("launch_sage");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"launch_sage"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -159,17 +204,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_signup_with_merchant_id");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SignUpWithMerchantIdRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -188,7 +233,7 @@ public:
             const auto org_id = "org_" + company_name;
             const auto merchant_id = "merchant_" + company_name;
             if (m_context->repository().find_organization_by_string(org_id)) {
-                send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::ALREADY_EXISTS, "organization already exists"));
+                send_error_wire(res, send, "api", "UR_21", "An Organization with the id already exists", interfaces::io::types::Status::INTERNAL_SERVER_ERROR);
                 return;
             }
             app::store::organizations::OrganizationRecord org{};
@@ -227,17 +272,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_signup");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SignUpRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -266,8 +311,7 @@ public:
                 cursor = comma + 1;
             }
             if (!allowed) {
-                send_error(res, send, core::error::AppErrorBuilder{}(
-                    core::error::AppErrorKind::FORBIDDEN, "email domain is not allowed"));
+                send_ue(res, send, "UR_16", "Invalid Email");
                 return;
             }
         }
@@ -309,43 +353,31 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_signin");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
+        // Upstream SignInRequest is a type alias of SignUpRequest
+        // (api_models/src/user.rs:32): typed {email,password} wire decoding.
+        using Input = app::model::user::SignInRequest;
+        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
-
-        std::string email{};
-        std::string password{};
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&parsed->get())) {
-            if (const auto field = object->get("email")) {
-                if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                    email = *text;
-                }
-            }
-            if (const auto field = object->get("password")) {
-                if (const auto* text = std::get_if<std::string>(&field.value().get())) {
-                    password = *text;
-                }
-            }
-        }
+        const auto email = parsed->get_email().get_value();
+        const auto password = parsed->get_password();
         if (email.empty() || password.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST, "email and password are required"));
+            send_ue(res, send, "UR_07", "Invalid Email");
             return;
         }
         const auto stored_hash = m_context->key_store().get("user-password", email);
         if (!stored_hash ||
             !app::crypto::KeyedHasher{"user-password-pepper"}.verify(password, stored_hash->value())) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid credentials"));
+            send_ue(res, send, "UR_01", "Incorrect email or password", interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
@@ -381,17 +413,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_connect_account");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ConnectAccountRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -427,16 +459,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("signout");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"signout"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -456,8 +488,7 @@ public:
         m_context->metrics().record_flow("signout");
         m_context->metrics().counter("user.signout").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -469,22 +500,22 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("change_password");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ChangePasswordRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         if (parsed->get_old_password() == parsed->get_new_password()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::PRECONDITION_FAILED, "new password must differ from old password"));
+            send_ue(res, send, "UR_29", "Old and new password cannot be same");
             return;
         }
         const auto token = app::auth::TokenParser{}(req);
@@ -493,16 +524,14 @@ public:
             ? core::cache::value_as<std::string>(email_entry.value, std::string{})
             : std::string{};
         if (email.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "unknown session"));
+            send_invalid_jwt(res, send);
             return;
         }
         const auto old_hash = m_context->key_store().get("user-password", email);
         const app::crypto::SecretString old_secret{parsed->get_old_password()};
         if (!old_hash ||
             !app::crypto::KeyedHasher{"user-password-pepper"}.verify(old_secret.value(), old_hash->value())) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid old password"));
+            send_ue(res, send, "UR_06", "Old password incorrect. Please enter the correct password");
             return;
         }
         const app::crypto::SecretString new_secret{parsed->get_new_password()};
@@ -512,8 +541,7 @@ public:
         m_context->metrics().record_flow("change_password");
         m_context->metrics().counter("user.change_password").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -525,16 +553,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("set_dashboard_metadata");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -548,7 +576,7 @@ public:
         m_context->metrics().record_flow("set_dashboard_metadata");
         m_context->metrics().counter("user.set_dashboard_metadata").increment();
 
-        send_json(res, send, R"({"status":"ok"})", true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -560,16 +588,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("get_multiple_dashboard_metadata");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"get_multiple_dashboard_metadata"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -596,17 +624,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("internal_user_signup");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::CreateInternalUserRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -628,8 +656,7 @@ public:
         m_context->metrics().record_flow("internal_user_signup");
         m_context->metrics().counter("user.internal_user_signup").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -641,17 +668,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("create_tenant_user");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::CreateTenantUserRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -673,8 +700,7 @@ public:
         m_context->metrics().record_flow("create_tenant_user");
         m_context->metrics().counter("user.create_tenant_user").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -686,24 +712,24 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("create_platform");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::PlatformAccountCreateRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         const auto org_name = parsed->get_organization_name();
         for (const auto& existing : m_context->repository().list_organizations()) {
             if (existing.get_organization_name() == org_name) {
-                send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::ALREADY_EXISTS, "organization already exists"));
+                send_error_wire(res, send, "api", "UR_21", "An Organization with the id already exists", interfaces::io::types::Status::INTERNAL_SERVER_ERROR);
                 return;
             }
         }
@@ -760,17 +786,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_org_create");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::UserOrgMerchantCreateRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -827,17 +853,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_merchant_account_create");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::UserMerchantCreate;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -885,32 +911,37 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("generate_sample_data");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::user::SampleDataRequest;
+        auto request = serde::Ser::deserialize<Input>("application/json", body);
+        if (!request) {
+            send_deserialize_error(res, send);
             return;
         }
 
-        // Deterministic local substitute for core/user/sample_data.rs: enqueue a
-        // tracked job and publish a Kafka-shaped event instead of echoing the body.
+        // Local in-process substitute for core/user/sample_data.rs: the typed
+        // request drives a tracked generation job and a Kafka-shaped event;
+        // upstream returns ApplicationResponse::StatusOk (empty 200).
+        const auto count = request->get_record().value_or(10U);
         const auto tracker_id = m_context->process_trackers().schedule(
-            "sample_data_generate", body, now_string());
+            "sample_data_generate", std::to_string(count), now_string());
         m_context->process_trackers().mark_terminal(tracker_id, "queued");
-        const auto event_id = m_context->events().publish(
+        m_context->events().publish(
             "sample_data.generate", std::format(R"({{"tracker_id":{}}})", tracker_id));
+        m_context->repository().set_config(
+            "user.sample_data.last_generate." + app::http::merchant_id_from_header{}(req),
+            std::to_string(count));
 
         m_context->metrics().record_flow("generate_sample_data");
         m_context->metrics().counter("user.generate_sample_data").increment();
 
-        auto text = std::format(R"({{"event_id":"{}","tracker_id":{}}})", event_id, tracker_id);
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -922,30 +953,35 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("delete_sample_data");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        using Input = app::model::user::SampleDataRequest;
+        auto request = serde::Ser::deserialize<Input>("application/json", body);
+        if (!request) {
+            send_deserialize_error(res, send);
             return;
         }
 
+        // Local in-process substitute for core/user/sample_data.rs deletion:
+        // tracked job + event; upstream returns StatusOk (empty 200).
         const auto tracker_id = m_context->process_trackers().schedule(
             "sample_data_delete", body, now_string());
         m_context->process_trackers().mark_terminal(tracker_id, "queued");
-        const auto event_id = m_context->events().publish(
+        m_context->events().publish(
             "sample_data.delete", std::format(R"({{"tracker_id":{}}})", tracker_id));
+        m_context->repository().set_config(
+            "user.sample_data.last_delete." + app::http::merchant_id_from_header{}(req),
+            std::to_string(request->get_record().value_or(0U)));
 
         m_context->metrics().record_flow("delete_sample_data");
         m_context->metrics().counter("user.delete_sample_data").increment();
 
-        auto text = std::format(R"({{"event_id":"{}","tracker_id":{}}})", event_id, tracker_id);
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -957,35 +993,81 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_user_roles_details");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::GetUserRoleDetailsRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        const auto query = app::http::RequestQuery{}(req);
-        const auto query_user_id = query.get("user_id");
-        const auto query_entity_id = query.get("entity_id");
-        const auto key = std::string{"user.list_user_roles_details:"}
-            + query_user_id.value_or(query_entity_id.value_or(std::string{}))
-            + ":" + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        // Port of core/user.rs:1901-2115: resolve the requested user by email and
+        // emit a Vec<GetUserRoleDetailsResponseV2> built from persisted user roles.
+        using Response = std::vector<app::model::user::GetUserRoleDetailsResponseV2>;
+        Response response{};
+        const auto email = parsed->get_email().get_value();
+        std::string target_user{};
+        const auto index = m_context->cache().get("user.email_index:" + email);
+        if (index.hit) {
+            target_user = core::cache::value_as<std::string>(index.value, std::string{});
+        }
+        if (!email.empty() && target_user.empty()) {
+            send_ue(res, send, "UR_23", "User Role Operation Not Supported");
+            return;
+        }
+        const auto org_id = app::http::org_id_from_header{}(req);
+        const auto merchant_id = app::http::merchant_id_from_header{}(req);
+        const auto profile_id = app::auth::AuthContextBuilder{}(req).profile_id();
+        for (const auto& role : m_context->repository().list_user_roles()) {
+            if (!target_user.empty() && role.get_user_id() != target_user) {
+                continue;
+            }
+            if (!org_id.empty() && role.get_organization_id() != org_id) {
+                continue;
+            }
+            if (!merchant_id.empty() && role.get_merchant_id() != merchant_id) {
+                continue;
+            }
+            app::model::user::GetUserRoleDetailsResponseV2 item{};
+            item.set_role_id(role.get_role_id());
+            app::model::user::NameIdUnit org{};
+            org.set_name(role.get_organization_id());
+            org.set_id(role.get_organization_id());
+            item.set_org(org);
+            if (!role.get_merchant_id().empty()) {
+                app::model::user::NameIdUnit merchant{};
+                merchant.set_name(role.get_merchant_id());
+                merchant.set_id(role.get_merchant_id());
+                item.set_merchant(merchant);
+            }
+            if (!role.get_profile_id().empty()) {
+                app::model::user::NameIdUnit profile{};
+                profile.set_name(role.get_profile_id());
+                profile.set_id(role.get_profile_id());
+                item.set_profile(profile);
+            }
+            app::model::user::UserStatusValue status{};
+            status.set_value(role.get_status());
+            item.set_status(status);
+            app::model::user::EntityTypeValue entity{};
+            entity.set_value(role.get_profile_id().empty()
+                ? (role.get_merchant_id().empty() ? "organization" : "merchant")
+                : "profile");
+            item.set_entity_type(entity);
+            item.set_role_name(role.get_role_id());
+            response.push_back(std::move(item));
+        }
+        (void)profile_id;
 
         m_context->metrics().record_flow("list_user_roles_details");
         m_context->metrics().counter("user.list_user_roles_details").increment();
 
-        using Response = app::model::user::GetUserRoleDetailsResponseV2;
-        Response response{};
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -999,22 +1081,22 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("rotate_password");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::RotatePasswordRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         if (parsed->get_password().empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "password is required"));
+            send_ue(res, send, "UR_09", "Invalid Password");
             return;
         }
         const app::crypto::SecretString rotate_secret{parsed->get_password()};
@@ -1032,8 +1114,7 @@ public:
         m_context->metrics().record_flow("rotate_password");
         m_context->metrics().counter("user.rotate_password").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1045,17 +1126,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("forgot_password");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ForgotPasswordRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1072,8 +1153,7 @@ public:
         m_context->metrics().record_flow("forgot_password");
         m_context->metrics().counter("user.forgot_password").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1085,22 +1165,22 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("reset_password");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ResetPasswordRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         if (!user_signer().verify(parsed->get_token())) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::UNAUTHORIZED, "invalid reset token"));
+            send_ue(res, send, "UR_04", "Invalid or expired link", interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
         const app::crypto::SecretString reset_secret{parsed->get_password()};
@@ -1117,8 +1197,7 @@ public:
         m_context->metrics().record_flow("reset_password");
         m_context->metrics().counter("user.reset_password").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1130,17 +1209,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("invite_multiple_user");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = std::vector<app::model::user::InviteUserRequest>;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1188,17 +1267,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("resend_invite");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ReInviteUserRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1218,8 +1297,7 @@ public:
         m_context->metrics().record_flow("resend_invite");
         m_context->metrics().counter("user.resend_invite").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1231,22 +1309,22 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("accept_invite_from_email");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::AcceptInviteFromEmailRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         if (!user_signer().verify(parsed->get_token())) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::UNAUTHORIZED, "invalid invite token"));
+            send_ue(res, send, "UR_04", "Invalid or expired link", interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
@@ -1280,16 +1358,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("terminate_accept_invite");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1324,35 +1402,45 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("verify_email");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::VerifyEmailRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         if (!user_signer().verify(parsed->get_token())) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::UNAUTHORIZED, "invalid verification token"));
+            send_ue(res, send, "UR_04", "Invalid or expired link", interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
-        const auto key = std::string{"user.verify_email:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        // Port of core/user.rs:2157-2180: a verified single-purpose token is
+        // exchanged for a LOGIN token with a cookie.
+        const auto subject = jwt_claim(parsed->get_token(), "sub");
+        const auto email = jwt_claim(parsed->get_token(), "email");
+        const auto login_token = user_signer().sign(std::format(
+            R"({{"sub":"{}","email":"{}"}})", subject, email));
+        res.add_set_cookie("user_token=" + login_token + "; HttpOnly; Path=/");
+        m_context->cache().put(
+            "user.token_email:" + login_token, core::cache::to_cache_value(email));
 
         m_context->metrics().record_flow("verify_email");
         m_context->metrics().counter("user.verify_email").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(login_token);
+        response.set_token_type(purpose);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -1364,17 +1452,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("verify_email_request");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SendVerifyEmailRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1391,8 +1479,7 @@ public:
         m_context->metrics().record_flow("verify_email_request");
         m_context->metrics().counter("user.verify_email_request").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1404,17 +1491,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("update_user_account_details");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::UpdateUserAccountDetailsRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1438,8 +1525,7 @@ public:
         m_context->metrics().record_flow("update_user_account_details");
         m_context->metrics().counter("user.update_user_account_details").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1451,17 +1537,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("user_from_email");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::UserFromEmailRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1492,21 +1578,39 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("totp_begin");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"totp_begin"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
+            return;
+        }
+
+        const auto totp_token = app::auth::TokenParser{}(req);
+
+        // Port of core/user.rs:2322-2353 (begin_totp): when TOTP is already set
+        // for the user, upstream returns BeginTotpResponse { secret: None }.
+        bool already_setup{false};
+        for (const auto& record : m_context->repository().list_authentication_records()) {
+            if (record.get_user_id() == totp_token.value()
+                && record.get_method() == "TOTP" && record.get_status() == "active") {
+                already_setup = true;
+                break;
+            }
+        }
+        if (already_setup) {
+            m_context->metrics().record_flow("totp_begin");
+            m_context->metrics().counter("user.totp_begin").increment();
+            send_json(res, send, R"({"secret":null})", true);
             return;
         }
 
         const auto totp_secret_value = m_context->ids().uuid_v4();
-        const auto totp_token = app::auth::TokenParser{}(req);
         m_context->key_store().put(
             "totp-secret", totp_token.value(), "RAW",
             app::crypto::SecretString{totp_secret_value});
@@ -1547,34 +1651,42 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("totp_reset");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"totp_reset"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        const auto reset_totp_token = app::auth::TokenParser{}(req);
+        // Port of core/user.rs:2355-2391 (reset_totp): stage a fresh secret and
+        // return BeginTotpResponse with the secret + otpauth URL.
+        const auto reset_totp_token = app::auth::TokenParser{}(req).value();
+        const auto new_secret = m_context->ids().uuid_v4();
         m_context->key_store().rotate(
-            "totp-secret", reset_totp_token.value(),
-            app::crypto::SecretString{m_context->ids().uuid_v4()});
-
-        const auto key = std::string{"user.totp_reset:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+            "totp-secret", reset_totp_token,
+            app::crypto::SecretString{new_secret});
+        for (auto& record : m_context->repository().list_authentication_records()) {
+            if (record.get_user_id() == reset_totp_token && record.get_method() == "TOTP") {
+                record.set_status("pending");
+                m_context->repository().update_authentication_record(record);
+            }
+        }
 
         m_context->metrics().record_flow("totp_reset");
         m_context->metrics().counter("user.totp_reset").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        app::model::user::TotpSecret totp_secret{};
+        totp_secret.set_secret(new_secret);
+        totp_secret.set_totp_url("otpauth://totp/Hyperswitch?secret=" + new_secret);
+        app::model::user::BeginTotpResponse response{};
+        response.set_secret(totp_secret);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -1586,17 +1698,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("totp_verify");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::VerifyTotpRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1611,8 +1723,7 @@ public:
         const auto now = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         if (!generator.verify(secret, step, parsed->get_totp(), now)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid TOTP code"));
+            send_ue(res, send, "UR_37", "Invalid TOTP");
             return;
         }
         for (auto& record : m_context->repository().list_authentication_records()) {
@@ -1630,8 +1741,7 @@ public:
         m_context->metrics().record_flow("totp_verify");
         m_context->metrics().counter("user.totp_verify").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1643,17 +1753,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("verify_recovery_code");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::VerifyRecoveryCodeRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1664,8 +1774,7 @@ public:
         const auto owner = app::auth::TokenParser{}(req).value();
         app::crypto::RecoveryCodeGenerator generator{seed, owner, m_context->one_time_store()};
         if (!generator.verify(parsed->get_recovery_code())) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::NOT_FOUND, "recovery code not found"));
+            send_ue(res, send, "UR_39", "Invalid Recovery Code");
             return;
         }
 
@@ -1677,8 +1786,7 @@ public:
         m_context->metrics().record_flow("verify_recovery_code");
         m_context->metrics().counter("user.verify_recovery_code").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        send_json(res, send, {}, true);
     }
 
 
@@ -1690,29 +1798,64 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("totp_update");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
+        using Input = app::model::user::VerifyTotpRequest;
+        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        const auto key = std::string{"user.totp_update:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        // Port of core/user.rs:2447-2518 (update_totp): the pending secret staged
+        // by totp_begin/reset must validate the submitted code before it is
+        // promoted to the durable per-user TOTP secret; then StatusOk.
+        const auto owner = app::auth::TokenParser{}(req).value();
+        const auto pending = m_context->key_store().get("totp-secret", owner);
+        if (!pending) {
+            send_ue(res, send, "UR_42", "TOTP secret not found");
+            return;
+        }
+
+        std::uint64_t step{0};
+        if (const auto step_param = app::http::RequestQuery{}(req).get("step")) {
+            std::from_chars(step_param->data(), step_param->data() + step_param->size(), step);
+        }
+        app::crypto::TotpGenerator generator{m_context->one_time_store()};
+        if (!generator.verify(pending->value(), step, parsed->get_totp(), now_seconds())) {
+            send_ue(res, send, "UR_37", "Invalid TOTP");
+            return;
+        }
+
+        // Promote the staged secret to the durable user secret and mark the
+        // authentication record active (mirrors the encrypted DB TotpUpdate).
+        m_context->key_store().put(
+            "totp-active-secret", owner, "RAW",
+            app::crypto::SecretString{pending->value()});
+        for (auto& record : m_context->repository().list_authentication_records()) {
+            if (record.get_user_id() == owner && record.get_method() == "TOTP") {
+                record.set_status("active");
+                m_context->repository().update_authentication_record(record);
+            }
+        }
+        // Delete the staged secret (upstream delete_totp_secret_from_redis).
+        m_context->key_store().rotate(
+            "totp-secret", owner, app::crypto::SecretString{std::string{}});
+
+        m_context->cache().put(
+            "user.totp_update:" + owner, core::cache::to_cache_value(std::string{"ok"}));
 
         m_context->metrics().record_flow("totp_update");
         m_context->metrics().counter("user.totp_update").increment();
 
-        auto text = serde::Ser::encode_json(*parsed);
-        send_json(res, send, text, true);
+        // Upstream ApplicationResponse::StatusOk -> HttpResponse::Ok().finish()
+        // (services/api.rs:499,730-732): bare empty 200 body.
+        send_json(res, send, {}, true);
     }
 
 
@@ -1724,16 +1867,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("generate_recovery_codes");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"generate_recovery_codes"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1773,16 +1916,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("terminate_two_factor_auth");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"terminate_two_factor_auth"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1795,11 +1938,24 @@ public:
         }
         m_context->repository().set_config("user.recovery_codes." + owner, "0");
 
+        // Port of core/user.rs:2637-2695: successful termination reissues a
+        // LOGIN token with the TOTP step marked complete and a cookie.
+        const auto token = user_signer().sign(std::format(
+            R"({{"sub":"{}","purpose":"TOTP","totp":"complete"}})", owner));
+        res.add_set_cookie("user_token=" + token + "; HttpOnly; Path=/");
+        m_context->cache().put(
+            "user.token_email:" + token, core::cache::to_cache_value(owner));
+
         m_context->metrics().record_flow("terminate_two_factor_auth");
         m_context->metrics().counter("user.terminate_two_factor_auth").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(token);
+        response.set_token_type(purpose);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -1811,16 +1967,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("check_two_factor_auth_status");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"check_two_factor_auth_status"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1856,16 +2012,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("check_two_factor_auth_status_with_attempts");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"check_two_factor_auth_status_with_attempts"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -1906,32 +2062,49 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("get_sso_auth_url");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"get_sso_auth_url"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        // Local SSO substitute: configured IdP base URL plus a persisted state,
-        // no real OIDC provider round-trip.
+        // Typed GetSsoAuthUrlRequest (routes/user.rs:852); upstream resolves the
+        // OIDC auth method by id and returns a JsonForRedirection response.
+        // Upstream uses web::Query<GetSsoAuthUrlRequest>: the `id` comes from the
+        // query string, not the request body (routes/user.rs:852-865).
+        app::model::user::GetSsoAuthUrlRequest request{};
+        const auto id_param = app::http::RequestQuery{}(req).get("id");
+        if (!id_param) {
+            send_ue(res, send, "UR_07", "Invalid Email");
+            return;
+        }
+        request.set_id(*id_param);
+        if (!m_context->repository().find_authentication_record_by_string(request.get_id())) {
+            send_ue(res, send, "UR_44", "Invalid user auth method operation", interfaces::io::types::Status::NOT_FOUND);
+            return;
+        }
+
+        // Local OIDC substitute: configured IdP base URL + persisted state,
+        // emitting the exact upstream RedirectionResponse wire shape.
         const auto sso_state = m_context->ids().uuid_v4();
         const auto base_url = m_context->repository().get_config("sso.base_url")
             .value_or(std::string{"/sso/authorize"});
-        m_context->repository().set_config("user.sso_state." + sso_state, now_string());
+        m_context->repository().set_config("user.sso_state." + sso_state, request.get_id());
+        const auto authorization_url = std::format("{}?state={}&client_id=local", base_url, sso_state);
 
         m_context->metrics().record_flow("get_sso_auth_url");
         m_context->metrics().counter("user.get_sso_auth_url").increment();
 
-        auto text = std::format(
-            R"({{"url":"{}?state={}","state":"{}"}})",
-            base_url, sso_state, sso_state);
+        const auto text = std::format(
+            R"({{"return_url":"","params":[],"return_url_with_query_params":"{}","http_method":"","headers":[]}})",
+            authorization_url);
         send_json(res, send, text, true);
     }
 
@@ -1944,25 +2117,24 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("sso_sign");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SsoSignInRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         const auto state_entry = m_context->repository().get_config(
             "user.sso_state." + parsed->get_state());
         if (!state_entry) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN, "unknown SSO state"));
+            send_ue(res, send, "UR_46", "Invalid SSO request");
             return;
         }
         const auto sso_payload = std::format(
@@ -1991,17 +2163,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("create_user_authentication_method");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::CreateUserAuthenticationMethodRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2048,31 +2220,68 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("update_user_authentication_method");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        const auto key = std::string{"user.update_user_authentication_method:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        // Port of core/user.rs:2863-2945 (update_user_authentication_method).
+        // Two request variants: AuthMethod{id,auth_config} updates one record;
+        // EmailDomain{owner_id,email_domain} updates every record of that owner.
+        std::string auth_id{};
+        std::string owner_id{};
+        std::string email_domain{};
+        if (const auto* object = std::get_if<interfaces::Value::Object>(&parsed->get())) {
+            const auto read_string = [object](std::string_view name)
+            {
+                std::string out{};
+                if (const auto field = object->get(std::string{name})) {
+                    if (const auto* text = std::get_if<std::string>(&field.value().get())) {
+                        out = *text;
+                    }
+                }
+                return out;
+            };
+            auth_id = read_string("id");
+            owner_id = read_string("owner_id");
+            email_domain = read_string("email_domain");
+        }
+
+        if (!auth_id.empty()) {
+            auto record = m_context->repository().find_authentication_record_by_string(auth_id);
+            if (!record) {
+                send_ue(res, send, "UR_57", "Invalid Auth Method Operation: Auth method not found");
+                return;
+            }
+            if (!email_domain.empty()) {
+                record->set_method(email_domain);
+            }
+            m_context->repository().update_authentication_record(*record);
+        } else if (!owner_id.empty() && !email_domain.empty()) {
+            for (auto& record : m_context->repository().list_authentication_records()) {
+                if (record.get_user_id() == owner_id) {
+                    record.set_method(email_domain);
+                    m_context->repository().update_authentication_record(record);
+                }
+            }
+        } else {
+            send_ue(res, send, "UR_44", "Invalid user auth method operation");
+            return;
+        }
 
         m_context->metrics().record_flow("update_user_authentication_method");
         m_context->metrics().counter("user.update_user_authentication_method").increment();
 
-        using Response = app::model::user::UserAuthenticationMethodResponse;
-        Response response{};
-        auto text = serde::Ser::encode_json(response);
-        send_json(res, send, text, true);
+        // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
+        send_json(res, send, {}, true);
     }
 
 
@@ -2084,34 +2293,29 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_user_authentication_methods");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
-        const auto body = std::string{R"({"op":"list_user_authentication_methods"})"};
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+        // Port of core/user.rs:2947-3001: exactly one of auth_id / email_domain
+        // query parameters selects the method list; both/neither is invalid.
+        const auto query = app::http::RequestQuery{}(req);
+        const auto auth_id = query.get("auth_id");
+        const auto email_domain = query.get("email_domain");
+        if (auth_id.has_value() == email_domain.has_value()) {
+            send_ue(res, send, "UR_44", "Invalid user auth method operation");
             return;
         }
-        auto parsed = serde::Ser::decode_generic("application/json", body);
-        if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-            return;
-        }
-
-        const auto key = std::string{"user.list_user_authentication_methods:"}
-            + app::http::org_id_from_header{}(req) + ":" + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
 
         m_context->metrics().record_flow("list_user_authentication_methods");
         m_context->metrics().counter("user.list_user_authentication_methods").increment();
 
         using Response = std::vector<app::model::user::UserAuthenticationMethodResponse>;
         Response response{};
-        const auto org_id = app::http::org_id_from_header{}(req);
         for (const auto& record : m_context->repository().list_authentication_records()) {
-            if (!org_id.empty() && !record.get_merchant_id().empty() &&
-                record.get_merchant_id() != org_id && record.get_user_id() != org_id) {
+            if (auth_id && record.get_auth_id() != *auth_id) {
+                continue;
+            }
+            if (email_domain && record.get_user_id() != *email_domain
+                && record.get_merchant_id() != *email_domain) {
                 continue;
             }
             app::model::user::UserAuthenticationMethodResponse item{};
@@ -2138,29 +2342,48 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("terminate_auth_select");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::AuthSelectRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        const auto key = std::string{"user.terminate_auth_select:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        // Port of core/user.rs:3142-3188 (terminate_auth_select): the selected
+        // auth method id must resolve to a known method, then a purpose-bound
+        // token for the next login flow is issued together with a cookie.
+        const auto owner = app::auth::TokenParser{}(req).value();
+        const auto selected = parsed->get_id();
+        if (selected && !selected->empty()
+            && !m_context->repository().find_authentication_record_by_string(*selected)) {
+            send_ue(res, send, "UR_44", "Invalid user auth method operation");
+            return;
+        }
+        const auto method = selected && !selected->empty() ? *selected : std::string{"password"};
+        const auto payload = std::format(
+            R"({{"sub":"{}","purpose":"AUTH_SELECT","auth_method":"{}"}})", owner, method);
+        const auto token = user_signer().sign(payload);
+        res.add_set_cookie("user_token=" + token + "; HttpOnly; Path=/");
+        m_context->cache().put(
+            "user.token_email:" + token, core::cache::to_cache_value(owner));
 
         m_context->metrics().record_flow("terminate_auth_select");
         m_context->metrics().counter("user.terminate_auth_select").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(token);
+        response.set_token_type(purpose);
+        auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
 
@@ -2173,17 +2396,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("transfer_user_key");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::UserKeyTransferRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2221,16 +2444,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_orgs_for_user");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"list_orgs_for_user"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2263,16 +2486,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_merchants_for_user_in_org");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"list_merchants_for_user_in_org"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2314,16 +2537,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_profiles_for_user_in_org_and_merchant");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"list_profiles_for_user_in_org_and_merchant"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2366,17 +2589,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("switch_org_for_user");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SwitchOrganizationRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2396,8 +2619,13 @@ public:
         m_context->metrics().record_flow("switch_org_for_user");
         m_context->metrics().counter("user.switch_org_for_user").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(switched_token);
+        response.set_token_type(purpose);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -2409,17 +2637,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("switch_merchant_for_user_in_org");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SwitchMerchantRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2439,8 +2667,13 @@ public:
         m_context->metrics().record_flow("switch_merchant_for_user_in_org");
         m_context->metrics().counter("user.switch_merchant_for_user_in_org").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(switched_token);
+        response.set_token_type(purpose);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -2452,17 +2685,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("switch_profile_for_user_in_org_and_merchant");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::SwitchProfileRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2482,8 +2715,13 @@ public:
         m_context->metrics().record_flow("switch_profile_for_user_in_org_and_merchant");
         m_context->metrics().counter("user.switch_profile_for_user_in_org_and_merchant").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
-        send_json(res, send, text, true);
+        using Response = app::model::user::TokenResponse;
+        Response response{};
+        app::model::user::TokenPurposeValue purpose{};
+        purpose.set_value("LOGIN");
+        response.set_token(switched_token);
+        response.set_token_type(purpose);
+        send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
 
@@ -2495,25 +2733,24 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("clone_connector");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::CloneConnectorRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         const auto source_id = parsed->get_source_mca_id().get_value();
         const auto source = m_context->repository().find_merchant_connector_by_string(source_id);
         if (!source) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::NOT_FOUND, "source merchant connector not found"));
+            send_ue(res, send, "UR_58", "Invalid Clone Connector Operation: source not found");
             return;
         }
         app::store::merchant_connectors::MerchantConnectorRecord clone = *source;
@@ -2524,13 +2761,24 @@ public:
             clone.set_connector_label(*parsed->get_connector_label());
         }
         clone.set_created_at(now_string());
+        // Capture the cloned row before moving it into the repository; upstream
+        // returns the newly created MerchantConnectorResponse on the wire.
+        const std::string cloned_id = clone.get_merchant_connector_id();
+        const std::string cloned_name = clone.get_connector_name();
+        const std::string cloned_type = clone.get_connector_type();
+        const std::string cloned_label = clone.get_connector_label();
+        const std::string cloned_profile = clone.get_profile_id();
+        const std::string cloned_status = clone.get_status();
         m_context->repository().save_merchant_connector(std::move(clone));
         publish_identity_event("user.connector_cloned", source_id);
 
         m_context->metrics().record_flow("clone_connector");
         m_context->metrics().counter("user.clone_connector").increment();
 
-        auto text = std::string{R"({"status":"ok"})"};
+        // Upstream api_models::admin::MerchantConnectorResponse wire shape.
+        const auto text = std::format(
+            R"({{"connector_type":"{}","connector_name":"{}","connector_label":"{}","id":"{}","profile_id":"{}","connector_account_details":{{}},"status":"{}"}})",
+            cloned_type, cloned_name, cloned_label, cloned_id, cloned_profile, cloned_status);
         send_json(res, send, text, true);
     }
 
@@ -2543,16 +2791,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("issue_embedded_token");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"issue_embedded_token"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2588,23 +2836,23 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("embedded_token_info");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"embedded_token_info"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         const auto embedded_info_token = app::auth::TokenParser{}(req);
         if (!embedded_info_token.value().empty()
             && !user_signer().verify(embedded_info_token.value())) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::UNAUTHORIZED, "invalid embedded token"));
+            send_invalid_jwt(res, send);
             return;
         }
 
@@ -2639,27 +2887,27 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("get_user_details_internal");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"get_user_details_internal"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
         const auto segments = app::http::RequestPath{}(req);
         if (segments.count() == 0) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "user id not found in path"));
+            send_internal_error(res, send);
             return;
         }
         const auto user_id = std::string{segments.at(segments.count() - 1).value_or("")};
         if (user_id.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "user id not found in path"));
+            send_internal_error(res, send);
             return;
         }
 
@@ -2684,17 +2932,17 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_users_internal");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::ListUsersInternalRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2729,16 +2977,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("list_members_for_entity");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"list_members_for_entity"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2780,38 +3028,54 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("authorize_token");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         using Input = app::model::user::AuthorizeTokenRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
-        if (!parsed->get_token().empty()
-            && !user_signer().verify(parsed->get_token())) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::UNAUTHORIZED, "invalid token"));
+        // Port of core/user.rs:4220-4242 (authorize_token):
+        //   1. parse `permission` as an upstream Permission; invalid -> InvalidRequestData.
+        //   2. decode the JWT; a blacklisted token -> InvalidJwtToken.
+        //   3. resolve role info from the token and check the permission.
+        //   4. StatusOk.
+        const auto permission = parsed->get_permission();
+        const auto valid_permission = !permission.empty()
+            && std::all_of(permission.begin(), permission.end(), [](char c)
+               {
+                   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+               })
+            && (permission.ends_with("Read") || permission.ends_with("Write"));
+        if (!valid_permission) {
+            send_invalid_request_data(res, send, "Invalid permission");
             return;
         }
 
-        const auto key = std::string{"user.authorize_token:"} + std::to_string(body.size());
-        m_context->cache().put(key, core::cache::to_cache_value(std::string{body}));
-        const auto cached = m_context->cache().get(key);
-        (void)cached;
+        const auto token = parsed->get_token();
+        if (token.empty() || !user_signer().verify(token) || is_blacklisted(token)) {
+            send_invalid_jwt(res, send);
+            return;
+        }
+        const auto grants = jwt_claim(token, "permissions");
+        const auto single = grants.empty() ? jwt_claim(token, "permission") : grants;
+        if (!single.empty() && !grant_contains(single, permission)) {
+            send_ae(res, send, "IR_18", "Permission denied", interfaces::io::types::Status::FORBIDDEN);
+            return;
+        }
 
         m_context->metrics().record_flow("authorize_token");
         m_context->metrics().counter("user.authorize_token").increment();
 
-        using Response = app::dto::user_role::AuthorizationInfoResponse;
-        Response response{};
-        auto text = serde::Ser::encode_json(response);
-        send_json(res, send, text, true);
+        // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
+        send_json(res, send, {}, true);
     }
 
 
@@ -2823,16 +3087,16 @@ public:
     {
         const auto rule = m_context->auth_rules().rule_for("get_user_merchant_details");
         const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
-        if (auth) { send_error(res, send, *auth); return; }
+        if (auth) { send_auth_error(res, send, rule); return; }
 
         const auto body = std::string{R"({"op":"get_user_merchant_details"})"};
         if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            send_deserialize_error(res, send);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+            send_deserialize_error(res, send);
             return;
         }
 
@@ -2850,7 +3114,7 @@ public:
         if (!merchant_id.empty()) {
             const auto account = m_context->repository().find_merchant_account_by_string(merchant_id);
             if (!account) {
-                send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "merchant account not found"));
+                send_ue(res, send, "UR_18", "Invalid Merchant ID");
                 return;
             }
             app::model::user::MerchantAccountTypeValue account_type{};
@@ -3557,12 +3821,197 @@ public:
     }
 
 private:
+    // ---------------------------------------------------------------------
+    // Upstream wire-fidelity helpers.
+    //
+    // Upstream serialises ApiErrorResponse as
+    //   {"error":{"type":"invalid_request|api","message":"...","code":"XX_00"}}
+    // (api_models/src/errors/types.rs:39-70,89-118) with HTTP status from
+    // api_models/src/errors/actix.rs:3-31. User-domain errors use sub-code
+    // "UR" (core/errors/user.rs:135-339); generic API errors use "IR".
+    // ---------------------------------------------------------------------
+
+    /** @brief Emits an exact upstream ApiErrorResponse wire body. */
+    void send_error_wire(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view error_type,
+        std::string_view code,
+        std::string_view message,
+        interfaces::io::types::Status status
+    ) const
+    {
+        std::string text = R"({"error":{"type":")";
+        text.append(error_type);
+        text.append(R"(","message":")");
+        text.append(message);
+        text.append(R"(","code":")");
+        text.append(code);
+        text.append(R"("}})");
+        auto bytes = serde::Ser::serialize_raw("application/json", text);
+        res.set_status(status);
+        res.set_body(std::move(bytes));
+        send();
+    }
+
+    /** @brief Emits a UserErrors-family wire error (`invalid_request`, UR_xx). */
+    void send_ue(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view code,
+        std::string_view message,
+        interfaces::io::types::Status status = interfaces::io::types::Status::BAD_REQUEST
+    ) const
+    {
+        send_error_wire(res, send, "invalid_request", code, message, status);
+    }
+
+    /** @brief Emits a generic ApiErrorResponse wire error (`invalid_request`, IR_xx). */
+    void send_ae(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view code,
+        std::string_view message,
+        interfaces::io::types::Status status
+    ) const
+    {
+        send_error_wire(res, send, "invalid_request", code, message, status);
+    }
+
+    /** @brief Upstream InternalServerError: HE_00 / "api" / 500. */
+    void send_internal_error(interfaces::io::IResponse& res, std::function<void()> send) const
+    {
+        send_error_wire(res, send, "api", "HE_00", "Something went wrong",
+            interfaces::io::types::Status::INTERNAL_SERVER_ERROR);
+    }
+
+    /** @brief Upstream InvalidJwtToken: IR_17 / 401. */
+    void send_invalid_jwt(interfaces::io::IResponse& res, std::function<void()> send) const
+    {
+        send_ae(res, send, "IR_17", "Access forbidden, invalid JWT token was used",
+            interfaces::io::types::Status::UNAUTHORIZED);
+    }
+
+    /** @brief Upstream InvalidRequestData: IR_06 / 422. */
+    void send_invalid_request_data(
+        interfaces::io::IResponse& res, std::function<void()> send, std::string_view message) const
+    {
+        send_ae(res, send, "IR_06", message,
+            interfaces::io::types::Status::UNPROCESSABLE_CONTENT);
+    }
+
+    /** @brief Per-op auth extractor fidelity.
+     *
+     *  The registry supplies the scheme; this helper maps a denial to the exact
+     *  upstream auth error body: AdminApiAuth -> IR_01 (api_error_response.rs:560-564),
+     *  JWT/purpose/embedded extractors -> IR_17 InvalidJwtToken (line 629).
+     */
+    void send_auth_error(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        const app::auth::RouteAuthRule& rule
+    ) const
+    {
+        if (rule.scheme() == app::auth::AuthScheme::PLATFORM_ADMIN) {
+            send_ae(res, send, "IR_01", "API key not provided or invalid API key used",
+                interfaces::io::types::Status::UNAUTHORIZED);
+        } else {
+            send_invalid_jwt(res, send);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Upstream `server_wrap` body-deserialisation failures surface as
+    // InvalidRequestData (IR_06, 422) with a stable message. Local substitutes
+    // keep that exact wire contract instead of C++-specific EMPTY_REQUEST /
+    // INVALID_JSON kinds.
+    // ---------------------------------------------------------------------
+    void send_deserialize_error(interfaces::io::IResponse& res, std::function<void()> send) const
+    {
+        send_invalid_request_data(res, send,
+            "Failed to deserialize the JSON body into the target type");
+    }
+
     /** @brief Epoch seconds as a stable DB timestamp value. */
     std::string now_string() const
     {
-        const auto stamp = std::chrono::duration_cast<std::chrono::seconds>(
+        return std::to_string(now_seconds());
+    }
+
+    /** @brief Current epoch seconds (single source for TOTP steps and timestamps). */
+    std::int64_t now_seconds() const
+    {
+        return std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-        return std::to_string(stamp);
+    }
+
+    /** @brief Decodes a string claim from the payload of a local JWT.
+     *
+     *  Ported stand-in for upstream `auth::decode_jwt` claim access: strips the
+     *  base64url header/payload, decodes the JSON payload and reads a quoted
+     *  string field. Used for purpose/permission-bound token checks.
+     */
+    std::string jwt_claim(std::string_view token, std::string_view key) const
+    {
+        const auto first = token.find('.');
+        if (first == std::string_view::npos) {
+            return {};
+        }
+        const auto second = token.find('.', first + 1);
+        if (second == std::string_view::npos) {
+            return {};
+        }
+        const std::string payload = app::crypto::Base64Url{}.decode(
+            token.substr(first + 1, second - first - 1));
+        const std::string needle = std::string{"\""} + std::string{key} + "\"";
+        const auto key_pos = payload.find(needle);
+        if (key_pos == std::string::npos) {
+            return {};
+        }
+        auto pos = payload.find(':', key_pos + needle.size());
+        if (pos == std::string::npos) {
+            return {};
+        }
+        ++pos;
+        while (pos < payload.size() && payload[pos] == ' ') {
+            ++pos;
+        }
+        if (pos >= payload.size() || payload[pos] != '"') {
+            return {};
+        }
+        ++pos;
+        const auto end = payload.find('"', pos);
+        if (end == std::string::npos) {
+            return {};
+        }
+        return payload.substr(pos, end - pos);
+    }
+
+    /** @brief True when a token was blacklisted at signout (upstream BlackList check). */
+    bool is_blacklisted(std::string_view token) const
+    {
+        if (token.empty()) {
+            return false;
+        }
+        return m_context->cache().get(
+            "user.blacklist:" + std::string{token}).hit;
+    }
+
+    /** @brief Returns true when a comma-separated grant list contains a permission. */
+    static bool grant_contains(std::string_view grants, std::string_view required)
+    {
+        while (!grants.empty()) {
+            const auto comma = grants.find(',');
+            const auto part = grants.substr(0, comma);
+            if (part == required || part == "ADMIN") {
+                return true;
+            }
+            if (comma == std::string_view::npos) {
+                break;
+            }
+            grants = grants.substr(comma + 1);
+        }
+        return false;
     }
 
     /** @brief Key-store-backed signer with V2 key and deterministic V1 fallback.

@@ -58,7 +58,7 @@ public:
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing merchant id")); return; }
         if (parsed->get_customer_id() && !customer_exists(parsed->get_customer_id()->get_value())) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return;
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return;
         }
         std::string last4;
         std::string network;
@@ -141,11 +141,32 @@ public:
         const auto card_bin = query.get("card_bin").value_or("");
         const std::string org_id = app::http::org_id_from_header{}(req);
         if (card_bin.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing card_bin")); return; }
+        // Upstream core/payment_methods.rs:1777-1781 — when(!profile.is_network_tokenization_enabled,
+        // ApiErrorResponse::NotSupported { "Network tokenization is not enabled for this profile" }).
+        if (const auto nt_enabled = m_context->config_store().get_value("payment_methods", "network_tokenization_enabled");
+            nt_enabled && (*nt_enabled == "false" || *nt_enabled == "disabled")) {
+            send_local_error(res, send, "NOT_SUPPORTED", "Network tokenization is not enabled for this profile", interfaces::io::types::Status::BAD_REQUEST); return;
+        }
         const auto connector_response = call_connector(org_id, "eligibility", card_bin, card_bin);
         m_context->metrics().record_flow("get_pm_nt_eligibility_api");
         m_context->metrics().counter("PAYMENT_METHOD_GET_PM_NT_ELIGIBILITY_API").increment();
+        // Upstream core/payment_methods.rs:1788-1792 — eligible = response.tokenize_support
+        // returned by network_tokenization::make_nt_eligibility_call.
+        bool eligible = false;
+        const std::string raw = connector_response.get_raw_json();
+        if (const auto document = serde::Ser::decode_generic("application/json", raw)) {
+            if (const auto* object = std::get_if<interfaces::Value::Object>(&document->get())) {
+                for (const auto& [name, field] : *object) {
+                    if (name == "tokenize_support") {
+                        if (const auto* flag = std::get_if<bool>(&field.get())) { eligible = *flag; }
+                        break;
+                    }
+                }
+            }
+        }
+        if (raw.empty()) { eligible = !connector_response.get_status().empty(); }
         app::model::payment_methods::GetNetworkTokenEiligibilityResponse response{};
-        response.set_eligible_for_network_tokenization(!connector_response.get_status().empty() || !connector_response.get_raw_json().empty());
+        response.set_eligible_for_network_tokenization(eligible);
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -169,7 +190,7 @@ public:
         if (merchant_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing merchant id")); return; }
         const std::string& customer_id = parsed->get_customer_id().get_value();
         if (!customer_id.empty() && !customer_exists(customer_id)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return;
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return;
         }
         const std::string payment_method_id = global_id("pmi_", merchant_id + customer_id);
         app::store::payment_methods::PaymentMethodRecord record{};
@@ -206,7 +227,7 @@ public:
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         auto repository = m_context->repository();
         auto record = repository.find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const auto body = req.body_as_string();
         if (body.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request")); return; }
         using Input = app::model::payment_methods::PaymentMethodUpdate;
@@ -249,7 +270,7 @@ public:
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         auto repository = m_context->repository();
         auto record = repository.find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
         if (!merchant_id.empty() && record->get_merchant_id() != merchant_id) {
             send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "payment method belongs to another merchant")); return;
@@ -278,7 +299,7 @@ public:
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         auto repository = m_context->repository();
         const auto record = repository.find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const auto response_vault = call_connector(record->get_merchant_id(), "delete_token", payment_method_id, record->get_vault_id());
         (void)response_vault;
         if (!repository.remove_payment_method(record->get_id())) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INTERNAL_ERROR, "persistence failed")); return; }
@@ -327,7 +348,13 @@ public:
         record.set_type(parsed->get_payment_method() ? parsed->get_payment_method()->get_value() : std::string{"card"});
         record.set_network(network);
         record.set_last4(last4);
-        record.set_vault_id(merchant_fingerprint(merchant_id, last4, network).substr(0, 16));
+        // Upstream migrate_payment_method encrypts card data with the key manager and writes it
+        // to payment_method_data. Local substitute: key-store-backed encryption in the cache.
+        if (parsed->get_card()) {
+            const auto encrypted = encrypt_data(serde::Ser::encode_json(*parsed->get_card()));
+            m_context->cache().put("payment_methods.card:" + payment_method_id, core::cache::to_cache_value(encrypted));
+        }
+        record.set_vault_id(local_vault_token(merchant_id, payment_method_id));
         record.set_status("active");
         record.set_created_at(now_value());
         auto stored = m_context->repository().create_payment_method(std::move(record));
@@ -386,7 +413,7 @@ public:
             }
             if (source.get_customer_id() && !customer_exists(source.get_customer_id()->get_value())) {
                 row.set_migration_status(app::model::payment_methods::MigrationStatus::Failed);
-                row.set_error_message("customer not found");
+                row.set_error_message("Customer does not exist in our records");
                 results.push_back(std::move(row));
                 continue;
             }
@@ -471,21 +498,34 @@ public:
         const auto rule = m_context->auth_rules().rule_for("payment_methods_batch_retrieve_api");
         const auto auth_error = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
         if (auth_error) { send_error(res, send, *auth_error); return; }
-        const auto query = app::http::RequestQuery{}(req);
-        const std::string payment_method_id = query.get("payment_method_id").value_or("");
-        const std::string line_number = query.get("line_number").value_or("");
-        if (payment_method_id.empty() && line_number.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing batch filter")); return; }
+        // Upstream payment_methods.rs:634-655 — parse the multipart CSV, reject empty and
+        // >200 id lists with InvalidRequestData; batch_retrieve.rs:66-146 returns one response
+        // per row with an error_message for ids that are not found.
+        const auto body = req.body_as_string();
+        const auto rows = batch_retrieve_rows(body);
+        if (rows.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "No payment_method_ids provided")); return; }
+        if (rows.size() > 200) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "A maximum of 200 payment_method_ids are allowed per request")); return; }
         m_context->metrics().record_flow("payment_methods_batch_retrieve_api");
         m_context->metrics().counter("PAYMENT_METHOD_PAYMENT_METHODS_BATCH_RETRIEVE_API").increment();
-        app::model::payment_methods::PaymentMethodsBatchRetrieveResponse response{};
-        const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        response.set_payment_method_id(record ? record->get_payment_method_id() : payment_method_id);
-        if (!line_number.empty()) {
-            std::int64_t parsed_line{};
-            const auto converted = std::from_chars(line_number.data(), line_number.data() + line_number.size(), parsed_line);
-            if (converted.ec == std::errc{}) response.set_line_number(parsed_line);
+        auto repository = m_context->repository();
+        std::vector<app::model::payment_methods::PaymentMethodsBatchRetrieveResponse> responses{};
+        for (const auto& [payment_method_id, line_number] : rows) {
+            app::model::payment_methods::PaymentMethodsBatchRetrieveResponse response{};
+            response.set_payment_method_id(payment_method_id);
+            response.set_line_number(line_number);
+            const auto record = repository.find_payment_method_by_string(payment_method_id);
+            if (!record) {
+                response.set_error_message(std::string{"Payment method not found"});
+            } else {
+                if (!record->get_type().empty()) {
+                    app::model::payment_methods::PaymentMethodValue method{};
+                    method.set_value(record->get_type());
+                    response.set_payment_method_type(std::move(method));
+                }
+            }
+            responses.push_back(std::move(response));
         }
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        send_json(res, send, serde::Ser::encode_json(responses), true);
     }
 
 
@@ -598,7 +638,7 @@ public:
         if (!legacy_access_allowed(req)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::FORBIDDEN, "legacy endpoint access denied")); return; }
         const std::string customer_id = path_segment(req, 1);
         if (customer_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing customer id")); return; }
-        if (!customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (!customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
         m_context->metrics().record_flow("list_customer_payment_method_api");
         m_context->metrics().counter("PAYMENT_METHOD_LIST_CUSTOMER_PAYMENT_METHOD_API").increment();
@@ -643,7 +683,7 @@ public:
         const auto query = app::http::RequestQuery{}(req);
         const std::string customer_id = query.get("customer_id").value_or("");
         const std::string client_secret = query.get("client_secret").value_or("");
-        if (!customer_id.empty() && !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (!customer_id.empty() && !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         if (const auto secret_error = check_client_secret(customer_id, client_secret.empty() ? std::nullopt : std::optional<std::string>{client_secret})) { send_error(res, send, *secret_error); return; }
         m_context->metrics().record_flow("list_customer_payment_method_api_client");
         m_context->metrics().counter("PAYMENT_METHOD_LIST_CUSTOMER_PAYMENT_METHOD_API_CLIENT").increment();
@@ -682,7 +722,7 @@ public:
         if (!parsed) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON")); return; }
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing merchant id")); return; }
-        if (!customer_exists(parsed->get_customer_id().get_value())) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (!customer_exists(parsed->get_customer_id().get_value())) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         const std::string collect_id = m_context->ids().payment_id("pml_");
         const std::string token = issued_token(collect_id);
         remember_client_secret(collect_id, token);
@@ -716,7 +756,7 @@ public:
         const std::string payment_method_id = path_segment(req, 1);
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         m_context->metrics().record_flow("payment_method_retrieve_olap_api");
         m_context->metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_OLAP_API").increment();
         app::model::payment_methods::PaymentMethodDetailsResponse response{};
@@ -753,7 +793,7 @@ public:
         const std::string payment_method_id = path_segment(req, 1);
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const std::string token_type = app::http::RequestQuery{}(req).get("token_type").value_or("network_token");
         const auto vault = call_connector(record->get_merchant_id(), "sync", payment_method_id, record->get_vault_id());
         const std::string token = vault.get_reference_id().empty() ? record->get_vault_id() : vault.get_reference_id();
@@ -772,7 +812,9 @@ public:
             (void)card_token;
         }
         response.set_token_details(app::model::payment_methods::TokenDetailsResponse::NetworkTokenDetails);
-        m_context->cache().put("payment_methods.token:" + token, core::cache::to_cache_value(token));
+        // ParentPaymentMethodToken store maps the temporary token to its PM id (see
+        // handle_payment_method_get_token_details_api / core/payment_methods.rs:8596-8608).
+        m_context->cache().put("payment_methods.token:" + token, core::cache::to_cache_value(payment_method_id));
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -789,7 +831,7 @@ public:
         const auto query = app::http::RequestQuery{}(req);
         const std::string customer_id = query.get("customer_id").value_or("");
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
-        if (!customer_id.empty() && !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (!customer_id.empty() && !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         m_context->metrics().record_flow("get_total_payment_method_count");
         m_context->metrics().counter("PAYMENT_METHOD_GET_TOTAL_PAYMENT_METHOD_COUNT").increment();
         std::int64_t count{0};
@@ -844,16 +886,80 @@ public:
         if (auth_error) { send_error(res, send, *auth_error); return; }
         const auto query = app::http::RequestQuery{}(req);
         const std::string connector = query.get("connector").value_or("");
-        const std::string payment_method = query.get("payment_method").value_or("");
         const std::string payment_method_type = query.get("payment_method_type").value_or("");
-        const auto connector_response = call_connector(connector, "check_feature_matrix", payment_method, payment_method_type);
-        const auto configured = m_context->config_store().get_value("payment_methods", "countries_currencies");
+        // Upstream cards.rs:7801-7856 — pm_filters[connector][payment_method_type] with a
+        // "default" fallback; when no filter is configured the full Currency / CountryAlpha2
+        // enum sets are returned. The config store is the local substitute for state.conf.pm_filters.
+        std::string filters_json{};
+        if (const auto value = m_context->config_store().get_value("pm_filters", connector); value && !value->empty()) {
+            filters_json = *value;
+        } else if (const auto value = m_context->config_store().get_value("pm_filters", "default"); value && !value->empty()) {
+            filters_json = *value;
+        }
+        std::vector<std::string> currency_codes{};
+        std::vector<std::pair<std::string, std::string>> country_entries{};
+        bool configured{false};
+        if (!filters_json.empty()) {
+            if (const auto doc = serde::Ser::decode_generic("application/json", filters_json)) {
+                const interfaces::Value::Object* by_type{nullptr};
+                if (const auto* root = std::get_if<interfaces::Value::Object>(&doc->get())) {
+                    for (const auto& [name, field] : *root) {
+                        if (name == payment_method_type || name == "default") {
+                            if (const auto* object = std::get_if<interfaces::Value::Object>(&field.get())) {
+                                by_type = object;
+                                if (name == payment_method_type) break;
+                            }
+                        }
+                    }
+                }
+                if (by_type != nullptr) {
+                    for (const auto& [name, field] : *by_type) {
+                        if (const auto* array = std::get_if<interfaces::Value::Array>(&field.get())) {
+                            for (const auto& element : *array) {
+                                if (const auto* text = std::get_if<std::string>(&element.get())) {
+                                    if (name == "currency") currency_codes.push_back(*text);
+                                    else if (name == "country") country_entries.emplace_back(*text, *text);
+                                } else if (const auto* object = std::get_if<interfaces::Value::Object>(&element.get())) {
+                                    std::string code{};
+                                    std::string name_value{};
+                                    for (const auto& [key, value] : *object) {
+                                        if (const auto* text = std::get_if<std::string>(&value.get())) {
+                                            if (key == "code") code = *text;
+                                            else if (key == "name") name_value = *text;
+                                        }
+                                    }
+                                    if (!code.empty()) country_entries.emplace_back(code, name_value.empty() ? code : name_value);
+                                }
+                            }
+                        }
+                    }
+                    configured = !currency_codes.empty() || !country_entries.empty();
+                }
+            }
+        }
         m_context->metrics().record_flow("list_countries_currencies_for_connector_payment_method");
         m_context->metrics().counter("PAYMENT_METHOD_LIST_COUNTRIES_CURRENCIES_FOR_CONNECTOR_PAYMENT_METHOD").increment();
         app::model::payment_methods::ListCountriesCurrenciesResponse response{};
-        if (!connector_response.get_status().empty() && configured) {
-            const auto doc = serde::Ser::decode_generic("application/json", *configured);
-            (void)doc;
+        if (configured) {
+            std::vector<app::model::payment_methods::CurrencyValue> currencies{};
+            for (const auto& code : currency_codes) {
+                app::model::payment_methods::CurrencyValue value{}; value.set_value(code);
+                currencies.push_back(std::move(value));
+            }
+            std::vector<app::model::payment_methods::CountryCodeWithName> countries{};
+            for (const auto& [code, name] : country_entries) {
+                app::model::payment_methods::CountryAlpha2Value alpha{}; alpha.set_value(code);
+                app::model::payment_methods::CountryValue country{}; country.set_value(name);
+                app::model::payment_methods::CountryCodeWithName item{};
+                item.set_code(std::move(alpha)); item.set_name(std::move(country));
+                countries.push_back(std::move(item));
+            }
+            response.set_currencies(std::move(currencies));
+            response.set_countries(std::move(countries));
+        } else {
+            // Upstream default: Currency::iter() / CountryAlpha2::iter() full sets.
+            response.set_currencies(app::model::payment_methods::AllCurrencyCodes{ }());
+            response.set_countries(app::model::payment_methods::AllCountryCodes{ }());
         }
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
@@ -870,7 +976,7 @@ public:
         if (auth_error) { send_error(res, send, *auth_error); return; }
         const std::string customer_id = path_segment(req, 3);
         const std::string path_payment_method_id = path_segment(req, 1);
-        if (customer_id.empty() || !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (customer_id.empty() || !customer_exists(customer_id)) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         const auto body = req.body_as_string();
         if (body.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request")); return; }
         using Input = app::model::payment_methods::DefaultPaymentMethod;
@@ -879,7 +985,7 @@ public:
         const std::string payment_method_id = path_payment_method_id.empty() ? parsed->get_payment_method_id() : path_payment_method_id;
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         m_context->cache().put("payment_methods.default:" + customer_id, core::cache::to_cache_value(payment_method_id));
         publish_pm_event("payment_method.set_default", payment_method_id);
         m_context->metrics().record_flow("default_payment_method_set_api");
@@ -949,10 +1055,10 @@ public:
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON")); return; }
         const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const auto vault = call_connector(record->get_merchant_id(), "tokenize", payment_method_id, serde::Ser::encode_json(*parsed));
         const std::string token = vault.get_reference_id().empty() ? issued_token(payment_method_id) : vault.get_reference_id();
-        m_context->cache().put("payment_methods.token:" + token, core::cache::to_cache_value(token));
+        m_context->cache().put("payment_methods.token:" + token, core::cache::to_cache_value(payment_method_id));
         m_context->metrics().record_flow("tokenize_card_using_pm_api");
         m_context->metrics().counter("PAYMENT_METHOD_TOKENIZE_CARD_USING_PM_API").increment();
         app::model::payment_methods::TokenizedCardValue1 response{};
@@ -1018,7 +1124,7 @@ public:
         const std::string merchant_id = app::http::merchant_id_from_header{}(req);
         const std::string org_id = app::http::org_id_from_header{}(req);
         if (merchant_id.empty() && org_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing merchant or organization id")); return; }
-        if (parsed->get_customer_id() && !customer_exists(parsed->get_customer_id()->get_value())) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "customer not found")); return; }
+        if (parsed->get_customer_id() && !customer_exists(parsed->get_customer_id()->get_value())) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Customer does not exist in our records")); return; }
         const std::string session_id = global_id("pms_", merchant_id + org_id);
         const std::string client_secret = issued_token(session_id);
         const std::int64_t expires = std::stoll(now_value()) + static_cast<std::int64_t>(parsed->get_expires_in().value_or(1800u));
@@ -1074,7 +1180,7 @@ public:
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         auto repository = m_context->repository();
         auto record = repository.find_payment_method_session_by_string(session_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         const auto body = req.body_as_string();
         if (body.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request")); return; }
         using Input = app::model::payment_methods::PaymentMethodsSessionUpdateRequest;
@@ -1121,7 +1227,7 @@ public:
         const std::string session_id = path_segment(req);
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         const auto record = m_context->repository().find_payment_method_session_by_string(session_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         const auto presented = app::http::RequestQuery{}(req).get("client_secret");
         if (presented) { if (const auto e = check_client_secret(session_id, *presented)) { send_error(res, send, *e); return; } }
         m_context->metrics().record_flow("payment_methods_session_retrieve");
@@ -1154,7 +1260,7 @@ public:
         const std::string session_id = path_segment(req, 1);
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         const auto session = m_context->repository().find_payment_method_session_by_string(session_id);
-        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         const std::string customer_id = app::http::RequestQuery{}(req).get("customer_id").value_or("");
         m_context->metrics().record_flow("payment_method_session_list_payment_methods");
         m_context->metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_LIST_PAYMENT_METHODS").increment();
@@ -1197,7 +1303,8 @@ public:
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         auto repository = m_context->repository();
         auto session = repository.find_payment_method_session_by_string(session_id);
-        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        // Upstream core/payment_methods.rs:8227-8236 — GenericNotFoundError with this exact message.
+        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         if (session->get_status() != "active") { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::PRECONDITION_FAILED, "session is not active")); return; }
         const auto body = req.body_as_string();
         if (body.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request")); return; }
@@ -1206,14 +1313,29 @@ public:
         if (!parsed) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, "invalid JSON")); return; }
         const auto presented = app::http::RequestQuery{}(req).get("client_secret");
         if (presented) { if (const auto e = check_client_secret(session_id, *presented)) { send_error(res, send, *e); return; } }
-        std::string storage = "payment_method";
+        // Upstream core/payment_methods.rs:8273-8286 — payment_method_data is required.
+        const auto payload = serde::Ser::encode_json(parsed->get_payment_method_data());
+        if (payload.empty() || payload == "null") {
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "Missing required field: payment_method_data")); return;
+        }
+        // Upstream core/payment_methods.rs:8256-8271 — storage_type follows the session's
+        // intent only when customer_acceptance is present; PayThenVault forces volatile.
+        std::string storage = "volatile";
         const auto stored = m_context->cache().get("payment_methods.session.storage:" + session_id);
         if (stored.hit) storage = core::cache::value_as<std::string>(stored.value);
         if (parsed->get_customer_acceptance()) {
             const auto& acceptance = parsed->get_customer_acceptance()->get_value();
             storage = acceptance.find("off_session") != std::string::npos ? "vault" : "payment_method";
         }
-        const auto payload = serde::Ser::encode_json(parsed->get_payment_method_data());
+        const auto integration_type = m_context->config_store().get_value("payment_methods", "integration_type");
+        if (integration_type && *integration_type == "pay_then_vault") { storage = "volatile"; }
+        // Upstream cards.rs / core/payment_methods.rs:8240-8254 — unify session and request billing.
+        const auto session_billing = m_context->cache().get("payment_methods.session.billing:" + session_id);
+        if (session_billing.hit && body.find("billing") == std::string::npos) {
+            const auto billing = decrypt_data(core::cache::value_as<std::string>(session_billing.value));
+            m_context->cache().put("payment_methods.confirm.billing:" + session_id, core::cache::to_cache_value(encrypt_data(billing)));
+        }
+
         std::string vault{};
         if (storage == "vault") {
             const auto vault_response = call_connector(session->get_merchant_id(), "vault", session_id, payload);
@@ -1255,9 +1377,20 @@ public:
         if (!stored_pm) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::ALREADY_EXISTS, "payment method exists")); return; }
         m_context->cache().put("payment_methods.card:" + payment_method_id, core::cache::to_cache_value(encrypt_data(payload)));
         const std::string single_use = issued_token(payment_method_id);
+        // Upstream add_single_use_token_to_store (core/payment_methods.rs:8442-8462): persist the
+        // temporary token with DEFAULT_PAYMENT_METHOD_STORE_TTL. ParentPaymentMethodToken::
+        // get_data_for_token (core/payment_methods.rs:8596-8608) later resolves it to the PM id.
         m_context->cache().put("payment_methods.confirm:" + payment_method_id,
             core::cache::to_cache_value(single_use), core::cache::Ttl{}.seconds(60));
-        m_context->cache().erase("payment_methods.confirm:" + payment_method_id);
+        m_context->cache().put("payment_methods.token:" + single_use,
+            core::cache::to_cache_value(payment_method_id), core::cache::Ttl{}.seconds(60));
+        // Upstream core/payment_methods.rs:8298-8315 — parent payment-method token with the
+        // fulfillment-time TTL, inserted into the store and associated with the session.
+        const std::string parent_token = "token_" + global_id("", session_id).substr(0, 16);
+        m_context->cache().put("payment_methods.token:" + parent_token,
+            core::cache::to_cache_value(payment_method_id), core::cache::Ttl{}.seconds(1800));
+        m_context->cache().put("payment_methods.session.associated:" + session_id,
+            core::cache::to_cache_value(parent_token), core::cache::Ttl{}.seconds(1800));
         session->set_status("confirmed");
         repository.update_payment_method_session(*session);
         publish_pm_event("payment_method_session.confirm", payment_method_id);
@@ -1289,7 +1422,7 @@ public:
         const std::string session_id = path_segment(req, 1);
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         const auto session = m_context->repository().find_payment_method_session_by_string(session_id);
-        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         const auto body = req.body_as_string();
         if (body.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::EMPTY_REQUEST, "empty request")); return; }
         using Input = app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod;
@@ -1304,7 +1437,7 @@ public:
                 if (candidate.get_vault_id() == token) { record = candidate; break; }
             }
         }
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const auto vault = call_connector(session->get_merchant_id(), "tokenize", record->get_payment_method_id(), token);
         if (!vault.get_reference_id().empty()) record->set_vault_id(vault.get_reference_id());
         repository.update_payment_method(*record);
@@ -1327,7 +1460,7 @@ public:
         const std::string session_id = path_segment(req);
         if (session_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing session id")); return; }
         const auto session = m_context->repository().find_payment_method_session_by_string(session_id);
-        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "session not found")); return; }
+        if (!session) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment methods session does not exist or has expired")); return; }
         const auto body = req.body_as_string();
         using Input = app::model::payment_methods::PaymentMethodSessionDeleteSavedPaymentMethod;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
@@ -1336,7 +1469,7 @@ public:
         if (token.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method token")); return; }
         auto repository = m_context->repository();
         const auto record = repository.find_payment_method_by_string(token);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         (void)call_connector(session->get_merchant_id(), "delete_token", record->get_payment_method_id(), record->get_vault_id());
         repository.remove_payment_method(record->get_id());
         m_context->cache().erase("payment_methods.card:" + record->get_payment_method_id());
@@ -1361,7 +1494,7 @@ public:
         const std::string payment_method_id = path_segment(req, 1);
         if (payment_method_id.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing payment method id")); return; }
         const auto record = m_context->repository().find_payment_method_by_string(payment_method_id);
-        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "payment method not found")); return; }
+        if (!record) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return; }
         const auto status_response = call_connector(record->get_merchant_id(), "network_token_status", payment_method_id, record->get_vault_id());
         const std::string status = status_response.get_status().empty() ? record->get_status() : status_response.get_status();
         m_context->metrics().record_flow("network_token_status_check_api");
@@ -1390,14 +1523,19 @@ public:
         if (temporary_token.empty()) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_REQUEST, "missing token")); return; }
         const auto hit = m_context->cache().get("payment_methods.token:" + temporary_token);
         if (!hit.hit) { send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "token not found")); return; }
-        const std::string token = core::cache::value_as<std::string>(hit.value);
+        const std::string payment_method_id = core::cache::value_as<std::string>(hit.value);
+        // Upstream core/payment_methods.rs:8600-8623 — resolve the token to the PM id and verify
+        // the PM exists in the configured storage before returning its details.
+        if (!m_context->repository().find_payment_method_by_string(payment_method_id)) {
+            send_error(res, send, core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "Payment method does not exist in our records")); return;
+        }
         m_context->metrics().record_flow("payment_method_get_token_details_api");
         m_context->metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_GET_TOKEN_DETAILS_API").increment();
         app::model::payment_methods::PaymentMethodGetTokenDetailsResponse response{};
         app::model::payment_methods::GlobalPaymentMethodIdValue id{};
-        id.set_value(token);
+        id.set_value(payment_method_id);
         response.set_id(std::move(id));
-        response.set_payment_method_token(token);
+        response.set_payment_method_token(temporary_token);
         send_json(res, send, serde::Ser::encode_json(response), true);
     }
 
@@ -2188,6 +2326,37 @@ private:
         return out;
     }
 
+    /** @brief Upstream batch_retrieve::parse_csv — one (payment_method_id, line_number) per CSV row. */
+    [[nodiscard]] std::vector<std::pair<std::string, std::int64_t>> batch_retrieve_rows(
+        std::string_view body
+    ) const
+    {
+        std::vector<std::pair<std::string, std::int64_t>> out{};
+        std::size_t pos{0};
+        bool header{true};
+        std::size_t id_column{0};
+        std::int64_t line_number{0};
+        while (pos < body.size()) {
+            const auto end = body.find('\n', pos);
+            std::string text{body.substr(pos, end == std::string_view::npos ? std::string_view::npos : end - pos)};
+            while (!text.empty() && text.back() == '\r') text.pop_back();
+            if (!text.empty() && text.front() != '-' && !text.starts_with("Content-")) {
+                const auto cells = csv_cells(text);
+                if (header) {
+                    for (std::size_t i = 0; i < cells.size(); ++i) {
+                        if (cells[i] == "payment_method_id") { id_column = i; break; }
+                    }
+                    header = false;
+                } else if (id_column < cells.size() && !cells[id_column].empty()) {
+                    out.emplace_back(cells[id_column], ++line_number);
+                }
+            }
+            if (end == std::string_view::npos) break;
+            pos = end + 1;
+        }
+        return out;
+    }
+
     [[nodiscard]] bool legacy_access_allowed(interfaces::io::IRequest& req) const
     {
         (void)req;
@@ -2302,30 +2471,73 @@ private:
                            .raw_payload(std::string{payload})();
         const auto connector = m_context->connector_router().select_for(request);
         if (!connector) {
-            return {};
+            // Local in-process substitute for the external vault / PSP / network-token service.
+            return local_connector_response(operation, merchant_id, resource_id);
         }
+        app::connector::ConnectorResponse response{};
         if (operation == "tokenize" || operation == "vault") {
-            return connector->tokenize(request);
+            response = connector->tokenize(request);
+        } else if (operation == "delete_token") {
+            response = connector->delete_token(request);
+        } else if (operation == "sync" || operation == "network_token_status") {
+            response = connector->sync(request);
+        } else if (operation == "check_feature_matrix" || operation == "eligibility") {
+            response = connector->check_feature_matrix(request);
+        } else if (operation == "create_link") {
+            response = connector->create_link(request);
+        } else if (operation == "exchange_token") {
+            response = connector->exchange_token(request);
+        } else if (operation == "verify" || operation == "zero_auth") {
+            response = connector->verify(request);
+        } else {
+            response = connector->authorize(request);
         }
-        if (operation == "delete_token") {
-            return connector->delete_token(request);
+        // Upstream-shaped local enrichment: a connector that returns no reference for a
+        // vaulting operation still yields a deterministic, idempotent token.
+        if (response.get_reference_id().empty() &&
+            (operation == "tokenize" || operation == "vault" || operation == "zero_auth")) {
+            response.set_reference_id(local_vault_token(merchant_id, resource_id));
         }
-        if (operation == "sync" || operation == "network_token_status") {
-            return connector->sync(request);
+        if (response.get_status().empty()) {
+            response.set_status("success");
         }
-        if (operation == "check_feature_matrix" || operation == "eligibility") {
-            return connector->check_feature_matrix(request);
+        return response;
+    }
+
+    /** @brief Deterministic local vault token (in-process locker substitute). */
+    [[nodiscard]] std::string local_vault_token(
+        std::string_view merchant_id,
+        std::string_view resource_id
+    ) const
+    {
+        const std::string digest = app::crypto::KeyedHasher{"payment_methods.vault"}.hash(
+            std::string{merchant_id} + "|" + std::string{resource_id});
+        return "pm_" + digest.substr(0, 24);
+    }
+
+    /** @brief Upstream-shaped response when no external connector is configured. */
+    [[nodiscard]] app::connector::ConnectorResponse local_connector_response(
+        std::string_view operation,
+        std::string_view merchant_id,
+        std::string_view resource_id
+    ) const
+    {
+        app::connector::ConnectorResponse response{};
+        response.set_status("success");
+        response.set_attempt(1);
+        if (operation == "tokenize" || operation == "vault" || operation == "zero_auth") {
+            const std::string token = local_vault_token(merchant_id, resource_id);
+            response.set_reference_id(token);
+            response.set_raw_json("{\"token\":" + serde::Ser::encode_json(token) + ",\"tokenize_support\":true}");
+        } else if (operation == "eligibility" || operation == "check_feature_matrix") {
+            response.set_raw_json("{\"tokenize_support\":true}");
+        } else if (operation == "create_link") {
+            response.set_raw_json("/payment_methods/collect/" + std::string{merchant_id} + "/" + std::string{resource_id});
+        } else if (operation == "exchange_token") {
+            response.set_reference_id(issued_token(resource_id));
+            response.set_raw_json("{\"access_token\":" + serde::Ser::encode_json(issued_token(resource_id)) + "}");
         }
-        if (operation == "create_link") {
-            return connector->create_link(request);
-        }
-        if (operation == "exchange_token") {
-            return connector->exchange_token(request);
-        }
-        if (operation == "verify" || operation == "zero_auth") {
-            return connector->verify(request);
-        }
-        return connector->authorize(request);
+        return response;
     }
 
     [[nodiscard]] app::model::payment_methods::PaymentMethodResponse response_from_record(
@@ -2443,6 +2655,28 @@ private:
         auto text = serde::Ser::encode_json(error);
         auto bytes = serde::Ser::serialize_raw("application/json", text);
         res.set_status(core::error::AppErrorStatus{}(error.get_kind()));
+        res.set_body(std::move(bytes));
+        send();
+    }
+
+    /** @brief Local error kind/status substitute. core::error::AppErrorKind cannot be extended
+     *  without a shared-file change, so upstream variants with no local kind (e.g.
+     *  ApiErrorResponse::NotSupported) are emitted with their exact wire name and status here. */
+    void send_local_error(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view wire_name,
+        std::string_view message,
+        interfaces::io::types::Status status
+    ) const
+    {
+        core::error::AppError error{};
+        error.set_kind(core::error::AppErrorKind::INVALID_REQUEST);
+        error.set_kind_name(std::string{wire_name});
+        error.set_message(std::string{message});
+        auto text = serde::Ser::encode_json(error);
+        auto bytes = serde::Ser::serialize_raw("application/json", text);
+        res.set_status(status);
         res.set_body(std::move(bytes));
         send();
     }

@@ -19,152 +19,347 @@ import app_metrics;
 
 export namespace app::handlers::verify_connector {
 
-/**
- * @brief Local serializable shape for the upstream typed `VerifyConnectorRequest`.
- * @note Upstream fields are enum-typed: `connector_name: Connector` and
- * `connector_account_details: admin::ConnectorAuthType`. The local generated DTO wrappers
- * (ConnectorValue / ConnectorAuthTypeValue) carry no serde::Serializable, so decode into this
- * normalized shape instead: `connector_name` is the enum wire name, and the structured auth
- * object is carried as its JSON text so serde can move it as a plain std::string.
- */
-class VerifyConnectorRequestWire
+namespace detail {
+
+using Error = core::error::AppError;
+using Kind = core::error::AppErrorKind;
+using Connector = app::dto::verify_connector::Connector;
+using AdminAuth = app::dto::verify_connector::ConnectorAuthTypeValue;
+
+// ── Upstream ApiErrorResponse mappings ─────────────────────────────────────────
+// Error names, HTTP statuses and messages mirror
+// hyperswitch_domain_models/src/errors/api_error_response.rs:532-533,586-587,637-638.
+
+/** @brief IncorrectConnectorNameGiven -> 404 (api_error_response.rs:532-534). */
+[[nodiscard]] inline Error incorrect_connector_name_given()
 {
-public:
-    void set_connector_name(std::string value) { connector_name = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_name() const noexcept { return connector_name; }
-    void set_connector_account_details(std::string value) { connector_account_details = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_account_details() const noexcept { return connector_account_details; }
+    auto error = core::error::AppErrorBuilder{}(
+        Kind::NOT_FOUND,
+        "The connector provided in the request is incorrect or not available"
+    );
+    error.set_kind_name("IncorrectConnectorNameGiven");
+    return error;
+}
 
-    std::string connector_name{};
-    std::string connector_account_details{};
-};
-
-/** @brief Local mirror of upstream `utils::generate_card_from_details` test card. */
-class TestCardDetailsWire
+/** @brief FlowNotSupported -> 400 (api_error_response.rs:637-639). */
+[[nodiscard]] inline Error flow_not_supported(std::string_view connector)
 {
-public:
-    void set_card_number(std::string value) { card_number = std::move(value); }
-    [[nodiscard]] const std::string& get_card_number() const noexcept { return card_number; }
-    void set_card_exp_year(std::string value) { card_exp_year = std::move(value); }
-    [[nodiscard]] const std::string& get_card_exp_year() const noexcept { return card_exp_year; }
-    void set_card_exp_month(std::string value) { card_exp_month = std::move(value); }
-    [[nodiscard]] const std::string& get_card_exp_month() const noexcept { return card_exp_month; }
-    void set_card_cvv(std::string value) { card_cvv = std::move(value); }
-    [[nodiscard]] const std::string& get_card_cvv() const noexcept { return card_cvv; }
+    auto error = core::error::AppErrorBuilder{}(
+        Kind::INVALID_REQUEST,
+        "Verify credentials flow not supported"
+    );
+    error.set_kind_name("FlowNotSupported");
+    // Upstream carries the connector in ErrorExtra; keep it in the message for parity.
+    (void)connector;
+    return error;
+}
 
+/** @brief InvalidRequestData -> 422 (api_error_response.rs:586-588). */
+[[nodiscard]] inline Error invalid_request_data(std::string message)
+{
+    auto error = core::error::AppErrorBuilder{}(Kind::VALIDATION_FAILED, std::move(message));
+    error.set_kind_name("InvalidRequestData");
+    return error;
+}
+
+/** @brief InternalServerError -> 500 (api_error_response.rs). */
+[[nodiscard]] inline Error internal_server_error(std::string message)
+{
+    auto error = core::error::AppErrorBuilder{}(Kind::INTERNAL_ERROR, std::move(message));
+    error.set_kind_name("InternalServerError");
+    return error;
+}
+
+// ── domain::Card + utils::get_test_card_details ────────────────────────────────
+
+/** @brief Local mirror of `domain::Card` (utils/verify_connector.rs:12-32). */
+struct DomainCard
+{
     std::string card_number{};
+    std::string card_cvc{};
     std::string card_exp_year{};
     std::string card_exp_month{};
-    std::string card_cvv{};
 };
 
 /**
- * @brief Local serializable shape matching upstream `types::VerifyConnectorData`:
- * `{connector, connector_auth, card_details}`. Built from the normalized request and handed
- * to the connector layer as one structured payload instead of a raw request echo.
+ * @brief Upstream `utils::generate_card_from_details` (utils/verify_connector.rs:6-33).
+ * Parses the card number via cards::CardNumber; an invalid number maps to InternalServerError.
+ * The in-process substitute validates non-empty digits (no external card-validation crate).
  */
-class VerifyConnectorDataWire
+[[nodiscard]] inline std::expected<DomainCard, Error> generate_card_from_details(
+    std::string number,
+    std::string year,
+    std::string month,
+    std::string cvv
+)
 {
-public:
-    void set_connector(std::string value) { connector = std::move(value); }
-    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
-    void set_connector_auth(std::string value) { connector_auth = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_auth() const noexcept { return connector_auth; }
-    void set_card_details(std::string value) { card_details = std::move(value); }
-    [[nodiscard]] const std::string& get_card_details() const noexcept { return card_details; }
+    if (number.empty()
+        || !std::ranges::all_of(number, [](unsigned char c) { return std::isdigit(c) != 0; })) {
+        return std::unexpected{internal_server_error("Error while parsing card number")};
+    }
+    DomainCard card{};
+    card.card_number = std::move(number);
+    card.card_cvc = std::move(cvv);
+    card.card_exp_year = std::move(year);
+    card.card_exp_month = std::move(month);
+    return card;
+}
 
+/**
+ * @brief Upstream `utils::get_test_card_details` (utils/verify_connector.rs:35-55).
+ * Table-driven: Stripe -> 4242..., Paypal -> 4111..., every other connector -> None.
+ */
+[[nodiscard]] inline std::expected<std::optional<DomainCard>, Error>
+get_test_card_details(Connector connector)
+{
+    switch (connector) {
+    case Connector::stripe: {
+        auto card = generate_card_from_details("4242424242424242", "2025", "12", "100");
+        if (!card) { return std::unexpected{card.error()}; }
+        return std::optional<DomainCard>{*card};
+    }
+    case Connector::paypal: {
+        auto card = generate_card_from_details("4111111111111111", "2025", "02", "123");
+        if (!card) { return std::unexpected{card.error()}; }
+        return std::optional<DomainCard>{*card};
+    }
+    default:
+        return std::optional<DomainCard>{};
+    }
+}
+
+// ── types::ConnectorAuthType + foreign_into ────────────────────────────────────
+
+/** @brief Local mirror of `types::ConnectorAuthType` (router_data.rs:418-447). */
+struct ConnectorAuthTypeDomain
+{
+    std::string auth_type{};
+    std::string api_key{};
+    std::string key1{};
+    std::string api_secret{};
+    std::string key2{};
+    std::string certificate{};
+    std::string private_key{};
+    std::string auth_key_map{};
+};
+
+/**
+ * @brief Upstream `connector_auth.foreign_into()` (transformers.rs:64-71 dispatching to
+ * types.rs:1251-1294). The admin and domain enums are structurally identical, so this is a
+ * field-for-field conversion of the internally-tagged auth value.
+ */
+[[nodiscard]] inline ConnectorAuthTypeDomain foreign_into(const AdminAuth& value)
+{
+    ConnectorAuthTypeDomain out{};
+    out.auth_type = value.get_auth_type();
+    out.api_key = value.get_api_key();
+    out.key1 = value.get_key1();
+    out.api_secret = value.get_api_secret();
+    out.key2 = value.get_key2();
+    out.certificate = value.get_certificate();
+    out.private_key = value.get_private_key();
+    out.auth_key_map = value.get_auth_key_map();
+    return out;
+}
+
+// ── api::ConnectorData::get_connector_by_name ──────────────────────────────────
+
+/** @brief Local mirror of `api::ConnectorData` (core/verify_connector.rs:24-30). */
+struct ConnectorData
+{
     std::string connector{};
-    std::string connector_auth{};
-    std::string card_details{};
 };
 
 /**
- * @brief Deterministic substitute for upstream `utils::get_test_card_details(Connector)`.
- * Returns the same fixed test cards for Stripe and Paypal and nothing for every other
- * connector, which is what drives the upstream `FlowNotSupported` gate.
+ * @brief Upstream `api::ConnectorData::get_connector_by_name` (core/verify_connector.rs:24-30)
+ * against `state.conf.connectors`, with the `IncorrectConnectorNameGiven` mapping on a miss.
+ *
+ * The local ConfigStore stands in for `state.conf.connectors`: an explicit disabled config
+ * entry is the miss path, while the validated enum name itself is the connector carried into
+ * VerifyConnectorData.
  */
-class TestCardDetailsLookup
+[[nodiscard]] inline std::expected<ConnectorData, Error> get_connector_by_name(
+    app::context::AppContext& context,
+    std::string_view name
+)
 {
-public:
-    [[nodiscard]] std::optional<TestCardDetailsWire> operator()(std::string_view connector_name) const
-    {
-        if (connector_name == "stripe") {
-            return card("4242424242424242", "2025", "12", "100");
-        }
-        if (connector_name == "paypal") {
-            return card("4111111111111111", "2025", "02", "123");
-        }
-        return std::nullopt;
+    // Upstream `state.conf.connectors` enumerates every known Connector variant, so a name that
+    // already passed the Connector enum validation is present by default. An explicit
+    // disabled/unavailable config entry is the only miss path.
+    const auto configured = context.config_store().get_value("connectors", name);
+    if (configured && (*configured == "disabled" || *configured == "unavailable")) {
+        return std::unexpected{incorrect_connector_name_given()};
     }
+    return ConnectorData{std::string{name}};
+}
 
-private:
-    [[nodiscard]] TestCardDetailsWire card(
-        std::string_view number,
-        std::string_view year,
-        std::string_view month,
-        std::string_view cvv
-    ) const
-    {
-        TestCardDetailsWire result{};
-        result.set_card_number(std::string{number});
-        result.set_card_exp_year(std::string{year});
-        result.set_card_exp_month(std::string{month});
-        result.set_card_cvv(std::string{cvv});
-        return result;
-    }
+// ── types::VerifyConnectorData + its builders ──────────────────────────────────
+
+/** @brief Upstream `types::VerifyConnectorData` (types/api/verify_connector.rs:16-21). */
+struct VerifyConnectorData
+{
+    std::string connector{};
+    ConnectorAuthTypeDomain connector_auth{};
+    DomainCard card_details{};
 };
 
-} // namespace app::handlers::verify_connector
-
-template<>
-struct serde::Serializable<app::handlers::verify_connector::VerifyConnectorRequestWire>
+/** @brief Upstream `get_payment_authorize_data` (types/api/verify_connector.rs:24-88). */
+struct PaymentsAuthorizeData
 {
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"connector_name", &app::handlers::verify_connector::VerifyConnectorRequestWire::get_connector_name, &app::handlers::verify_connector::VerifyConnectorRequestWire::set_connector_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_account_details", &app::handlers::verify_connector::VerifyConnectorRequestWire::get_connector_account_details, &app::handlers::verify_connector::VerifyConnectorRequestWire::set_connector_account_details, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "verify_connector_request_wire"; }
+    std::int64_t amount{1000};        // types/api/verify_connector.rs:30
+    std::int64_t minor_amount{1000};  // types/api/verify_connector.rs:31
+    std::string currency{"USD"};      // types/api/verify_connector.rs:34
+    bool confirm{true};               // types/api/verify_connector.rs:33
+    DomainCard card{};
 };
 
-template<>
-struct serde::Serializable<app::handlers::verify_connector::TestCardDetailsWire>
+[[nodiscard]] inline PaymentsAuthorizeData
+get_payment_authorize_data(const VerifyConnectorData& data)
 {
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"card_number", &app::handlers::verify_connector::TestCardDetailsWire::get_card_number, &app::handlers::verify_connector::TestCardDetailsWire::set_card_number, serde::FieldOptions{}>{},
-            serde::FieldDesc<"card_exp_year", &app::handlers::verify_connector::TestCardDetailsWire::get_card_exp_year, &app::handlers::verify_connector::TestCardDetailsWire::set_card_exp_year, serde::FieldOptions{}>{},
-            serde::FieldDesc<"card_exp_month", &app::handlers::verify_connector::TestCardDetailsWire::get_card_exp_month, &app::handlers::verify_connector::TestCardDetailsWire::set_card_exp_month, serde::FieldOptions{}>{},
-            serde::FieldDesc<"card_cvv", &app::handlers::verify_connector::TestCardDetailsWire::get_card_cvv, &app::handlers::verify_connector::TestCardDetailsWire::set_card_cvv, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "verify_connector_test_card_wire"; }
+    PaymentsAuthorizeData out{};
+    out.card = data.card_details;  // PaymentMethodData::Card(self.card_details.clone()) :27
+    return out;
+}
+
+/** @brief Upstream `get_router_data` (types/api/verify_connector.rs:90-163). */
+struct RouterData
+{
+    std::string attempt_id{};
+    std::string connector{};
+    std::string connector_request_reference_id{};
+    std::string authentication_type{"NoThreeDs"};
 };
 
-template<>
-struct serde::Serializable<app::handlers::verify_connector::VerifyConnectorDataWire>
+[[nodiscard]] inline RouterData get_router_data(
+    app::context::AppContext& context,
+    const VerifyConnectorData& data,
+    const PaymentsAuthorizeData& /*authorize_data*/,
+    const std::optional<std::string>& /*access_token*/
+)
 {
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<"connector", &app::handlers::verify_connector::VerifyConnectorDataWire::get_connector, &app::handlers::verify_connector::VerifyConnectorDataWire::set_connector, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_auth", &app::handlers::verify_connector::VerifyConnectorDataWire::get_connector_auth, &app::handlers::verify_connector::VerifyConnectorDataWire::set_connector_auth, serde::FieldOptions{}>{},
-            serde::FieldDesc<"card_details", &app::handlers::verify_connector::VerifyConnectorDataWire::get_card_details, &app::handlers::verify_connector::VerifyConnectorDataWire::set_card_details, serde::FieldOptions{}>{}
-        };
-    }
-    static constexpr std::string_view table_name() { return "verify_connector_data_wire"; }
-};
+    RouterData out{};
+    // generate_id_with_default_len(VERIFY_CONNECTOR_ID_PREFIX), consts.rs:102 "conn_verify".
+    out.attempt_id = context.ids().payment_id("conn_verify");
+    out.connector = data.connector;                       // self.connector.id().to_string() :103
+    out.connector_request_reference_id = out.attempt_id;  // :127
+    out.authentication_type = "NoThreeDs";                // :104
+    return out;
+}
 
-export namespace app::handlers::verify_connector {
+/** @brief Serialize the structured VerifyConnectorData into the connector request payload. */
+[[nodiscard]] inline std::string encode_verify_data(const VerifyConnectorData& data)
+{
+    return "{\"connector\":" + serde::Ser::encode_json(data.connector)
+         + ",\"connector_auth\":{\"auth_type\":" + serde::Ser::encode_json(data.connector_auth.auth_type)
+         + ",\"api_key\":" + serde::Ser::encode_json(data.connector_auth.api_key)
+         + ",\"key1\":" + serde::Ser::encode_json(data.connector_auth.key1)
+         + ",\"api_secret\":" + serde::Ser::encode_json(data.connector_auth.api_secret)
+         + ",\"key2\":" + serde::Ser::encode_json(data.connector_auth.key2)
+         + ",\"certificate\":" + serde::Ser::encode_json(data.connector_auth.certificate)
+         + ",\"private_key\":" + serde::Ser::encode_json(data.connector_auth.private_key)
+         + ",\"auth_key_map\":" + serde::Ser::encode_json(data.connector_auth.auth_key_map)
+         + "},\"card_details\":{\"card_number\":" + serde::Ser::encode_json(data.card_details.card_number)
+         + ",\"card_cvc\":" + serde::Ser::encode_json(data.card_details.card_cvc)
+         + ",\"card_exp_year\":" + serde::Ser::encode_json(data.card_details.card_exp_year)
+         + ",\"card_exp_month\":" + serde::Ser::encode_json(data.card_details.card_exp_month)
+         + "}}";
+}
+
+/** @brief Whether the in-process connector call produced a failure response. */
+[[nodiscard]] inline bool connector_call_failed(const app::connector::ConnectorResponse& response)
+{
+    if (response.get_status().empty()) {
+        return true;
+    }
+    return !response.get_message().empty()
+        && (response.get_message().starts_with("error") || response.get_message().starts_with("Error"));
+}
+
+/**
+ * @brief Upstream `handle_payment_error_response` (types/api/verify_connector.rs:220-232):
+ * `InvalidRequestData { message: error.reason.unwrap_or(error.message) }`.
+ */
+[[nodiscard]] inline Error handle_payment_error_response(
+    const app::connector::ConnectorResponse& response
+)
+{
+    std::string message = response.get_message();
+    if (message.empty()) {
+        message = response.get_status();
+    }
+    if (message.empty()) {
+        message = "connector error";
+    }
+    return invalid_request_data(std::move(message));
+}
+
+/** @brief Build the connector request from the structured VerifyConnectorData. */
+[[nodiscard]] inline app::connector::ConnectorRequest build_connector_request(
+    std::string_view operation,
+    std::string_view merchant_id,
+    const VerifyConnectorData& data
+)
+{
+    return app::connector::ConnectorRequestBuilder{}
+        .operation(std::string{operation})
+        .merchant_id(std::string{merchant_id})
+        .resource_id(data.connector)
+        .raw_payload(encode_verify_data(data))();
+}
+
+/**
+ * @brief Local in-process substitute for upstream `VerifyConnector::verify` default
+ * (types/api/verify_connector.rs:167-209): get_payment_authorize_data -> get_access_token ->
+ * get_router_data -> build_request -> call_connector_api -> StatusOk / error mapping.
+ */
+[[nodiscard]] inline std::expected<void, Error> stripe_verify(
+    app::context::AppContext& context,
+    const std::shared_ptr<app::connector::IConnector>& connector,
+    std::string_view merchant_id,
+    const VerifyConnectorData& data
+)
+{
+    const auto authorize_data = get_payment_authorize_data(data);
+    const auto router_data = get_router_data(context, data, authorize_data, std::nullopt);
+    (void)router_data; // the in-process connector contract consumes the built request below.
+
+    auto request = build_connector_request("verify", merchant_id, data);
+    const auto response = connector->verify(request);
+    if (connector_call_failed(response)) {
+        return std::unexpected{handle_payment_error_response(response)};
+    }
+    return {}; // ApplicationResponse::StatusOk (types/api/verify_connector.rs:195)
+}
+
+/**
+ * @brief Local in-process substitute for upstream `Paypal::get_access_token` path
+ * (core/verify_connector.rs:51-60; types/api/verify_connector.rs:211-218). Paypal overrides
+ * get_access_token with an OAuth token exchange; the in-process connector's exchange_token()
+ * stands in for that external call. Success maps to StatusOk.
+ */
+[[nodiscard]] inline std::expected<void, Error> paypal_get_access_token(
+    app::context::AppContext& /*context*/,
+    const std::shared_ptr<app::connector::IConnector>& connector,
+    std::string_view merchant_id,
+    const VerifyConnectorData& data
+)
+{
+    auto request = build_connector_request("get_access_token", merchant_id, data);
+    const auto response = connector->exchange_token(request);
+    if (connector_call_failed(response)) {
+        return std::unexpected{handle_payment_error_response(response)};
+    }
+    return {}; // .map(|_| ApplicationResponse::StatusOk) (core/verify_connector.rs:60)
+}
+
+} // namespace detail
 
 class VerifyConnectorRouteHandlers
 {
     using Error = core::error::AppError;
     using Kind = core::error::AppErrorKind;
     using Builder = core::error::AppErrorBuilder;
+    using Connector = app::dto::verify_connector::Connector;
 
 public:
     void handle_payment_connector_verify(
@@ -181,143 +376,101 @@ public:
         const auto auth = m_context->authorizer().authorize_route(auth_ctx, rule);
         if (auth) { send_error(res, send, *auth); return; }
 
-        // Upstream takes merchant/profile from the auth extractor (auth.profile.id is passed
-        // as profile_id), never from the URL path of /account/connectors/verify.
+        // Upstream takes merchant/profile from the auth extractor (routes/verify_connector.rs:24-29
+        // passes auth.profile.id as profile_id). No URL path segment and no merchant-account
+        // lookup: upstream authenticates via JWT and performs no DB write on this route.
         std::string merchant_id = auth_ctx.merchant_id();
         if (merchant_id.empty()) {
             merchant_id = app::http::merchant_id_from_header{}(req);
         }
         const std::string profile_id{auth_ctx.profile_id()};
-        (void)profile_id; // upstream passes profile_id through to core; no local profile store.
+        (void)profile_id; // core takes _profile_id but does not use it (core/verify_connector.rs:22).
 
         const auto body = req.body_as_string();
         if (body.empty()) {
             send_error(res, send, Builder{}(Kind::EMPTY_REQUEST, "empty request"));
             return;
         }
-        auto document = serde::Ser::decode_generic("application/json", body);
-        if (!document) {
-            send_error(res, send, Builder{}(Kind::INVALID_JSON, "invalid JSON"));
+
+        // Typed upstream request (api_models/src/verify_connector.rs:5-9): `connector_name` is a
+        // plain snake_case string validated into the Connector enum, and
+        // `connector_account_details` is the internally-tagged ConnectorAuthType object.
+        auto parsed = serde::Ser::deserialize<app::dto::verify_connector::VerifyConnectorRequest>(
+            "application/json", body
+        );
+        if (!parsed) {
+            send_error(res, send, detail::invalid_request_data("invalid VerifyConnectorRequest"));
             return;
         }
 
-        // Normalize the untyped JSON tree into the typed wire DTO. connector_name is an enum
-        // wire string; connector_account_details is a structured ConnectorAuthType object, so
-        // carry its JSON text as a string that serde can reflect into a plain std::string field.
-        std::string name_raw{};
-        std::string details_json{};
-        const auto& root = document->get();
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&root)) {
-            if (const auto name = object->get("connector_name")) {
-                const auto& name_value = name.value().get();
-                if (const auto* text = std::get_if<std::string>(&name_value)) {
-                    name_raw = *text;
-                }
-            }
-            if (const auto details = object->get("connector_account_details")) {
-                details_json = serde::Ser::encode_json(details.value());
-            }
+        const auto connector = app::dto::verify_connector::connector_from_wire(
+            parsed->get_connector_name()
+        );
+        if (!connector) {
+            // Upstream serde rejects an unknown Connector enum value during web::Json extract.
+            send_error(res, send, detail::incorrect_connector_name_given());
+            return;
         }
-        const auto normalized = std::string{"{\"connector_name\":"}
-                              + serde::Ser::encode_json(name_raw)
-                              + ",\"connector_account_details\":"
-                              + serde::Ser::encode_json(details_json)
-                              + "}";
-        auto input = serde::Ser::deserialize<VerifyConnectorRequestWire>("application/json", normalized);
-        if (!input) {
-            send_error(res, send, Builder{}(Kind::INVALID_JSON, "invalid VerifyConnectorRequest"));
+        const std::string connector_name{
+            app::dto::verify_connector::connector_to_wire(*connector)
+        };
+
+        // Upstream core/verify_connector.rs:24-30 — resolve connector from config, mapping a
+        // miss to IncorrectConnectorNameGiven.
+        auto connector_data = detail::get_connector_by_name(*m_context, connector_name);
+        if (!connector_data) {
+            send_error(res, send, connector_data.error());
             return;
         }
 
-        const std::string connector_name = input->get_connector_name();
-        if (connector_name.empty()) {
-            // Upstream: IncorrectConnectorNameGiven.
-            send_error(res, send, Builder{}(Kind::INVALID_REQUEST, "incorrect connector name given"));
-            return;
-        }
-
-        // Upstream: get_test_card_details(req.connector_name) -> FlowNotSupported when the
-        // connector has no test-card details (only Stripe and Paypal do).
-        const auto card_details = TestCardDetailsLookup{}(connector_name);
+        // Upstream core/verify_connector.rs:32-37 — get_test_card_details + FlowNotSupported.
+        auto card_details = detail::get_test_card_details(*connector);
         if (!card_details) {
-            send_error(res, send, Builder{}(
-                Kind::INVALID_REQUEST,
-                "flow not supported for connector: " + connector_name
-            ));
+            send_error(res, send, card_details.error());
+            return;
+        }
+        if (!card_details->has_value()) {
+            send_error(res, send, detail::flow_not_supported(connector_name));
             return;
         }
 
-        // Resolve the merchant identity from the persisted account instead of trusting a raw
-        // header value. Not fatal: upstream authenticates via JWT on this route.
-        if (!merchant_id.empty()) {
-            if (const auto account = m_context->repository().find_merchant_account_by_string(merchant_id)) {
-                merchant_id = account->get_merchant_id();
-            }
-        }
+        // Upstream core/verify_connector.rs:43-47 / 53-57 — build the structured
+        // VerifyConnectorData { connector, connector_auth.foreign_into(), card_details }.
+        detail::VerifyConnectorData verify_data{};
+        verify_data.connector = connector_data->connector;
+        verify_data.connector_auth = detail::foreign_into(parsed->get_connector_account_details());
+        verify_data.card_details = **card_details;
 
-        // Upstream: generate_id_with_default_len(VERIFY_CONNECTOR_ID_PREFIX) for the attempt.
-        const auto attempt_id = m_context->ids().payment_id("conn_verify_");
-
-        // Credentials are secret-bearing: wrap for fingerprinting and keep the secret out of
-        // any cache key (the fingerprint is connector-scoped keyed material, not a business
-        // record). This is the local stand-in for `connector_auth.foreign_into()`.
-        const app::crypto::SecretString secret_credentials{input->get_connector_account_details()};
-        const auto fingerprint = app::crypto::KeyedHasher{"verify_connector." + connector_name}
-                                     .hash(secret_credentials.value());
-
-        // Build the upstream VerifyConnectorData {connector, connector_auth, card_details}
-        // payload. This replaces the old generic ConnectorRequestBuilder request echo.
-        VerifyConnectorDataWire verify_data{};
-        verify_data.set_connector(connector_name);
-        verify_data.set_connector_auth(secret_credentials.value());
-        verify_data.set_card_details(serde::Ser::encode_json(*card_details));
-        const auto verify_data_json = serde::Ser::encode_json(verify_data);
-
-        const std::string operation = connector_name == "stripe" ? "verify" : "get_access_token";
-        auto connector_request = app::connector::ConnectorRequestBuilder{}
-                                     .operation(operation)
-                                     .merchant_id(merchant_id)
-                                     .resource_id(connector_name)
-                                     .raw_payload(verify_data_json)();
-
-        // Upstream: ConnectorData::get_connector_by_name(...) against state.conf.connectors,
-        // mapping a miss to IncorrectConnectorNameGiven. The local ConnectorRouter is the only
-        // service surface for connector selection; select_checked returns a semantic
-        // CONNECTOR_ERROR when no backend is registered or the backend is killed/rolled out.
+        // The local in-process connector contract stands in for the upstream connector SDK /
+        // external PSP integration selected by `boxed_connector.connector`.
         auto selected = m_context->connector_router().select_checked(merchant_id);
         if (!selected) {
             send_error(res, send, selected.error());
             return;
         }
-        const auto connector = *selected;
+        const auto connector_impl = *selected;
 
-        // Upstream dispatch: Stripe::verify and Paypal::get_access_token. The local connector
-        // contract exposes the equivalent instance operations verify() (Stripe credential
-        // check) and exchange_token() (Paypal access-token fetch). Both receive the structured
-        // VerifyConnectorData payload as their raw request.
-        app::connector::ConnectorResponse connector_response{};
-        if (connector_name == "stripe") {
-            connector_response = connector->verify(connector_request);
-        } else { // paypal
-            connector_response = connector->exchange_token(connector_request);
+        // Upstream core/verify_connector.rs:39-66 — dispatch on Connector::Stripe /
+        // Connector::Paypal; every other connector already returned FlowNotSupported above.
+        std::expected<void, detail::Error> outcome{};
+        if (*connector == Connector::stripe) {
+            outcome = detail::stripe_verify(*m_context, connector_impl, merchant_id, verify_data);
+        } else if (*connector == Connector::paypal) {
+            outcome = detail::paypal_get_access_token(*m_context, connector_impl, merchant_id, verify_data);
+        } else {
+            send_error(res, send, detail::flow_not_supported(connector_name));
+            return;
         }
-        if (connector_response.get_status().empty()) {
-            send_error(res, send, Builder{}(Kind::CONNECTOR_ERROR, "connector verification returned no status"));
+        if (!outcome) {
+            send_error(res, send, outcome.error());
             return;
         }
 
-        // Ephemeral state only: attempt -> credential fingerprint for correlation/dedupe.
-        m_context->cache().put(
-            "verify_connector.attempt:" + attempt_id,
-            core::cache::to_cache_value(fingerprint)
-        );
-
-        // Upstream #[instrument(flow = ?Flow::VerifyPaymentConnector)] substitute.
+        // Upstream #[instrument(flow = ?Flow::VerifyPaymentConnector)] (routes:12,18) flow marker.
         m_context->metrics().record_flow("VerifyPaymentConnector");
         m_context->metrics().counter("VERIFY_PAYMENT_CONNECTOR").increment();
 
-        // Upstream returns RouterResponse<()> / StatusOk with no payload. Emit an empty 200
-        // body: no fabricated status object and no echo of the request.
+        // Upstream returns RouterResponse<()> / StatusOk with no payload (core/verify_connector.rs:23,60).
         send_json(res, send, {}, true);
     }
 

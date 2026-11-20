@@ -7,35 +7,31 @@ import core_serde;
 import boost.ut;
 #endif
 
+// Upstream api_models/apple_pay_certificates_migration.rs:1-10 uses
+// `Vec<common_utils::id_type::MerchantId>` for every id field. MerchantId is a
+// transparent newtype, so the wire shape is a plain JSON string array — not the
+// {"value": ...} wrapper used by many other converted DTOs. Mirror that exactly.
 export namespace app::dto::apple_pay_certificates_migration {
-
-class MerchantIdValue
-{
-public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
-    std::string value{};
-};
 
 class ApplePayCertificatesMigrationRequest
 {
 public:
-    void set_merchant_ids(std::vector<MerchantIdValue> value) { merchant_ids = std::move(value); }
-    [[nodiscard]] const std::vector<MerchantIdValue>& get_merchant_ids() const noexcept { return merchant_ids; }
-    std::vector<MerchantIdValue> merchant_ids{};
+    void set_merchant_ids(std::vector<std::string> value) { merchant_ids = std::move(value); }
+    [[nodiscard]] const std::vector<std::string>& get_merchant_ids() const noexcept { return merchant_ids; }
+    std::vector<std::string> merchant_ids{};
 };
 
 class ApplePayCertificatesMigrationResponse
 {
 public:
-    void set_migration_successful(std::vector<MerchantIdValue> value) { migration_successful = std::move(value); }
-    [[nodiscard]] const std::vector<MerchantIdValue>& get_migration_successful() const noexcept { return migration_successful; }
-    void set_migration_failed(std::vector<MerchantIdValue> value) { migration_failed = std::move(value); }
-    [[nodiscard]] const std::vector<MerchantIdValue>& get_migration_failed() const noexcept { return migration_failed; }
-    std::vector<MerchantIdValue> migration_successful{};
-    std::vector<MerchantIdValue> migration_failed{};
+    void set_migration_successful(std::vector<std::string> value) { migration_successful = std::move(value); }
+    [[nodiscard]] const std::vector<std::string>& get_migration_successful() const noexcept { return migration_successful; }
+    void set_migration_failed(std::vector<std::string> value) { migration_failed = std::move(value); }
+    [[nodiscard]] const std::vector<std::string>& get_migration_failed() const noexcept { return migration_failed; }
+    std::vector<std::string> migration_successful{};
+    std::vector<std::string> migration_failed{};
 };
-}
+} // namespace app::dto::apple_pay_certificates_migration
 
 template<>
 struct serde::Serializable<app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse>

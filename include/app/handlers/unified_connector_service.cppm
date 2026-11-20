@@ -18,6 +18,38 @@ import app_services;
 
 export namespace app::handlers::unified_connector_service {
 
+// Upstream gates the whole scope behind `#[cfg(feature = "olap")]`
+// (routes/app.rs:2444). The project's local compile-time-feature convention is
+// a namespace-scoped `constexpr bool` (health.cppm:27); this is that substitute.
+inline constexpr bool kOlap = true;
+
+// Constants mirrored verbatim from upstream consts.rs:389,393,399,405,407,409
+// and kill_switch.rs:23,29.
+inline constexpr std::string_view kRolloutConfigPrefix{"ucs_rollout_config"};
+inline constexpr std::string_view kNotConfigured{"not_configured"};
+inline constexpr std::string_view kKillSwitchPrefix{"ucs_kill_switch"};
+inline constexpr std::string_view kShadowKey{"ucs_shadow_killed"};
+inline constexpr std::string_view kCounterField{"counter"};
+inline constexpr std::string_view kDeclineField{"counter_connector_decline"};
+inline constexpr std::int64_t kPrimaryTtlSeconds{7 * 24 * 60 * 60};    // consts.rs:405
+inline constexpr std::int64_t kShadowTtlSeconds{24 * 60 * 60};         // consts.rs:409
+inline constexpr std::string_view kSuperpositionThresholdKey{"ucs.shadow_kill_switch_threshold"}; // consts.rs:615
+
+/**
+ * @brief Strict local port of upstream `core/unified_connector_service/kill_switch.rs`
+ * (SHA 7736d55adaf235f7af74e133ae408573b1826823).
+ *
+ * The two route endpoints are ported line-by-line:
+ *  - `kill_switch::trip_status` (kill_switch.rs:580-671) -> handle_kill_switch_status
+ *  - `kill_switch::reset`       (kill_switch.rs:543-577) -> handle_reset_kill_switch
+ *
+ * Redis (external infra) is replaced by the injected `core::cache` in-process, but
+ * every observable behaviour is preserved: two independent store namespaces stand
+ * in for `state.store` (tenant) and `state.global_store` (global); each Redis hash
+ * is one cache entry whose JSON value carries the `counter` and
+ * `counter_connector_decline` hash fields; expiry carries the HINCRBY/EXPIRE TTL;
+ * `DEL` maps `KeyDeleted`/`KeyNotDeleted` exactly.
+ */
 class UnifiedConnectorServiceRouteHandlers
 {
 public:
@@ -27,9 +59,12 @@ public:
         std::function<void()> send
     )
     {
-        // Route rule comes from the single declarative registry
-        // (registry.cppm:191 -> unified_connector_service.md:21). PLATFORM_ADMIN
-        // still requires a bearer token, so the failure mode is unchanged.
+        // Upstream routes/unified_connector_service.rs:22-30: server_wrap(flow,
+        // ..., AdminApiAuth, LockAction::NotApplicable). The declarative rule for
+        // this operation is PLATFORM_ADMIN / AppPermission::ADMIN
+        // (auth/registry.cppm:191), the local AdminApiAuth equivalent. No lock is
+        // acquired, which is LockAction::NotApplicable locally; record_flow below
+        // is the #[instrument(flow = ...)] substitute.
         const auto rule = m_context->auth_rules().rule_for("kill_switch_status");
         const auto auth = m_context->authorizer().authorize_route(
             app::auth::AuthContextBuilder{}(req),
@@ -41,46 +76,76 @@ public:
         }
 
         const auto resolved = resolve_scope(req);
-        if (resolved.scope.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+        if (resolved.listed_key.empty()) {
+            send_error(res, send, make_error(
                 core::error::AppErrorKind::INVALID_REQUEST, "scope is required"
             ));
             return;
         }
 
-        // Upstream trip_status: both counters are read; the decline counter is
-        // only fetched when a connector-decline threshold is configured.
-        std::uint64_t counter = read_counter(counter_key(resolved));
+        // A closed local cache is the in-process equivalent of a failed
+        // `get_redis_conn`. Upstream fails the request with InternalServerError
+        // and the matching attach_printable message (kill_switch.rs:585-588,
+        // :604-608, :646-650).
+        if (!m_context->cache().is_open()) {
+            const auto message = resolved.shadow
+                ? std::string{"Failed to read the shadow kill switch counter"}
+                : std::string{"Failed to read the UCS kill switch counter"};
+            send_error(res, send, make_error(
+                core::error::AppErrorKind::INTERNAL_ERROR, message
+            ));
+            return;
+        }
+
+        std::uint64_t counter{0};
         std::optional<std::uint64_t> threshold{};
-        std::optional<std::uint64_t> decline_threshold{};
         std::uint64_t decline_counter{0};
+        std::optional<std::uint64_t> decline_threshold{};
+        bool tripped{false};
 
         if (resolved.shadow) {
-            // Shadow trips against the global (Superposition/comparison-service)
-            // threshold, not the per-scope rollout config.
-            threshold = shadow_threshold();
+            // kill_switch.rs:584-599: global hash `ucs_shadow_killed`, field
+            // `counter`; threshold from shadow::threshold; declines fixed at 0.
+            counter = read_hash_counter(resolved, kCounterField);
+            const auto configured = shadow_threshold();
+            threshold = configured;
+            tripped = exceeds_threshold(counter, configured);
         } else {
+            // kill_switch.rs:602-659: tenant hash `ucs_kill_switch_<scope>`.
+            counter = read_hash_counter(resolved, kCounterField);
+
             const auto config = load_rollout_config(resolved.scope);
             if (config) {
-                // helpers.rs:2719 default_kill_switch_threshold() == 1.
+                // RolloutConfig::kill_switch_threshold defaults to 1 when present
+                // but unset (helpers.rs:2696-2697,2719-2721).
                 threshold = config->get_kill_switch_threshold().value_or(1);
                 decline_threshold = config->get_connector_decline_threshold();
             }
+
+            // kill_switch.rs:645-653: only read when a threshold can use it.
             if (decline_threshold) {
-                decline_counter = read_counter(decline_key(resolved));
+                decline_counter = read_hash_counter(resolved, kDeclineField);
             }
+
+            // kill_switch.rs:655-659: no threshold => any count trips, exactly
+            // as upstream (not `counter >= 1`, which differs only when 0).
+            tripped = (threshold ? exceeds_threshold(counter, *threshold) : counter > 0)
+                || (decline_threshold
+                        ? exceeds_threshold(decline_counter, *decline_threshold)
+                        : false);
         }
 
-        const bool tripped = (threshold ? counter >= *threshold : counter > 0)
-            || (decline_threshold && decline_counter >= *decline_threshold);
-
+        // Flow::UnifiedConnectorServiceKillSwitchStatus instrumentation
+        // (routes/unified_connector_service.rs:14,20).
         m_context->metrics().record_flow("UnifiedConnectorServiceKillSwitchStatus");
         m_context->metrics().counter("unified_connector_service.kill_switch_status").increment();
 
-        // Typed response DTO: absent Option<u64> thresholds encode as JSON null,
-        // matching upstream KillSwitchStatusResponse serialization.
+        // Upstream KillSwitchStatusResponse (kill_switch.rs:524-538): serde emits
+        // Option<u64> thresholds as JSON null when absent. Field order matches.
         KillSwitchStatusResponse response{};
-        response.set_rollout_scope(resolved.scope);
+        response.set_rollout_scope(
+            resolved.shadow ? resolved.listed_key : resolved.scope
+        );
         response.set_counter(counter);
         response.set_threshold(threshold);
         response.set_decline_counter(decline_counter);
@@ -95,6 +160,8 @@ public:
         std::function<void()> send
     )
     {
+        // Upstream routes/unified_connector_service.rs:44-52:
+        // server_wrap(flow, ..., AdminApiAuth, LockAction::NotApplicable).
         const auto rule = m_context->auth_rules().rule_for("reset_kill_switch");
         const auto auth = m_context->authorizer().authorize_route(
             app::auth::AuthContextBuilder{}(req),
@@ -106,37 +173,52 @@ public:
         }
 
         const auto resolved = resolve_scope(req);
-        if (resolved.scope.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+        if (resolved.listed_key.empty()) {
+            send_error(res, send, make_error(
                 core::error::AppErrorKind::INVALID_REQUEST, "scope is required"
             ));
             return;
         }
 
-        // Upstream delete_key maps DelReply::KeyNotDeleted to GenericNotFound.
-        // Primary counter is in the tenant store, the shadow counter in the
-        // global store; both are cleared.
-        const bool removed = m_context->cache().erase(counter_key(resolved));
-        if (!resolved.shadow) {
-            m_context->cache().erase(decline_key(resolved));
+        // kill_switch.rs:553-559: connection failure -> InternalServerError.
+        if (!m_context->cache().is_open()) {
+            send_error(res, send, make_error(
+                core::error::AppErrorKind::INTERNAL_ERROR,
+                "Failed to get a redis connection to clear the UCS kill switch"
+            ));
+            return;
         }
-        if (!removed) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+
+        // kill_switch.rs:545-552: shadow counter lives in the global store under
+        // its listed key; primary counters live in the tenant store under the
+        // `ucs_kill_switch_<scope>` hash key. Both hash fields are deleted by the
+        // single DEL (the local substitute erases the one cache entry that
+        // carries both fields).
+        if (!delete_key(resolved)) {
+            // kill_switch.rs:570-575: DelReply::KeyNotDeleted -> GenericNotFound.
+            send_error(res, send, make_error(
                 core::error::AppErrorKind::NOT_FOUND,
                 "No UCS kill switch counter found for scope " + resolved.scope
             ));
             return;
         }
 
+        // Flow::UnifiedConnectorServiceKillSwitchReset instrumentation
+        // (routes/unified_connector_service.rs:36,42).
         m_context->metrics().record_flow("UnifiedConnectorServiceKillSwitchReset");
         m_context->metrics().counter("unified_connector_service.kill_switch_reset").increment();
 
-        // Upstream reset returns ApplicationResponse::StatusOk with no JSON body.
+        // kill_switch.rs:562-569: ApplicationResponse::StatusOk, no JSON body.
         send_json(res, send, std::string_view{}, true);
     }
 
     void install(core::router::RouterContext<>& router)
     {
+        // routes/app.rs:2444-2454: the entire scope is gated by feature "olap".
+        if constexpr (!kOlap) {
+            return;
+        }
+
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/unified-connector-service"}
@@ -170,14 +252,23 @@ public:
     }
 
 public:
-    /** @brief A scope plus the tenant/global store discriminator. */
+    /**
+     * @brief Upstream `listed_key`/`rollout_scope` pair.
+     *
+     * `listed_key` is the original final path segment (what upstream compares to
+     * UCS_SHADOW_KILL_SWITCH_REDIS_KEY); `scope` is `rollout_scope_in(listed_key)`.
+     * Shadow is decided from `listed_key`, NOT the stripped scope: upstream checks
+     * the original key (kill_switch.rs:545,584), so a tenant key whose scope
+     * happens to equal `ucs_shadow_killed` must stay in the tenant store.
+     */
     struct ScopeInfo
     {
+        std::string listed_key{};
         std::string scope{};
         bool shadow{false};
     };
 
-    /** @brief Typed RolloutConfig subset used by the threshold lookup. */
+    /** @brief Typed RolloutConfig subset consumed by trip_status. */
     class RolloutConfigView
     {
     public:
@@ -199,8 +290,8 @@ public:
         }
 
     private:
-        // Upstream default_kill_switch_threshold() == 1 when the config is present,
-        // applied by the caller so an absent JSON field stays optional here.
+        // Upstream defaults applied at the call site: kill_switch_threshold -> 1
+        // (helpers.rs:2719-2721), connector_decline_threshold -> None.
         std::optional<std::uint64_t> m_kill_switch_threshold{};
         std::optional<std::uint64_t> m_connector_decline_threshold{};
     };
@@ -268,71 +359,184 @@ public:
     };
 
 private:
-    /** @brief Upstream rollout_scope_in: split_once(prefix) accepts a full listed key. */
+    /** @brief `count >= threshold` (kill_switch.rs:31-34). */
+    [[nodiscard]] static bool exceeds_threshold(std::uint64_t count, std::uint64_t threshold) noexcept
+    {
+        return count >= threshold;
+    }
+
+    /** @brief Port of `rollout_scope_in` (kill_switch.rs:52-63). */
     [[nodiscard]] ScopeInfo resolve_scope(interfaces::io::IRequest& req) const
     {
-        constexpr std::string_view counter_prefix{"ucs_kill_switch_"};
-        constexpr std::string_view shadow_key{"ucs_shadow_killed"};
-
         ScopeInfo result{};
         const auto segments = app::http::RequestPath{}(req);
         if (segments.count() == 0) {
             return result;
         }
-        result.scope = std::string{segments.at(segments.count() - 1).value_or("")};
-        if (result.scope.empty()) {
+        result.listed_key = std::string{segments.at(segments.count() - 1).value_or("")};
+        if (result.listed_key.empty()) {
             return result;
         }
 
-        // split_once semantics: accept any leading tenant prefix, not just a
-        // key that starts with the prefix (kill_switch.rs:56-63).
-        const auto pos = result.scope.find(counter_prefix);
-        if (pos != std::string::npos) {
-            result.scope.erase(0, pos + counter_prefix.size());
+        // split_once(prefix): accept any leading tenant prefix, not just a key
+        // that starts with the prefix (kill_switch.rs:56-63).
+        result.scope = result.listed_key;
+        const auto prefix = std::string{kKillSwitchPrefix} + "_";
+        if (const auto pos = result.scope.find(prefix); pos != std::string::npos) {
+            result.scope.erase(0, pos + prefix.size());
         }
-        result.shadow = result.scope == shadow_key;
+
+        // Shadow is decided from the *original* listed key (kill_switch.rs:545,584).
+        result.shadow = result.listed_key == kShadowKey;
         return result;
     }
 
+    /** @brief `counter_key(rollout_scope)` (kill_switch.rs:47-50). */
+    [[nodiscard]] std::string redis_key(const ScopeInfo& scope) const
+    {
+        if (scope.shadow) {
+            return std::string{kShadowKey};
+        }
+        return std::string{kKillSwitchPrefix} + "_" + scope.scope;
+    }
+
     /**
-     * @brief Tenant/global store split represented by key namespaces.
-     * Real Redis uses two connections (state.store / state.global_store); the
-     * local cache is a single instance, so the two stores are partitioned by
-     * namespace. Counter TTLs are owned by the absence enforcement hooks.
+     * @brief tenant/global store split (kill_switch.rs:545-552,915-924).
+     * Real Redis uses two connections; the single local cache is partitioned
+     * into two namespaces so the stores stay independent.
      */
-    [[nodiscard]] std::string counter_key(const ScopeInfo& scope) const
+    [[nodiscard]] std::string cache_key(const ScopeInfo& scope) const
     {
-        return scope.shadow
-            ? std::string{"global/ucs_shadow_killed"}
-            : std::string{"tenant/ucs_kill_switch_"} + scope.scope;
+        return std::string{"unified_connector_service.redis."}
+            + (scope.shadow ? "global:" : "tenant:")
+            + redis_key(scope);
     }
 
-    [[nodiscard]] std::string decline_key(const ScopeInfo& scope) const
+    [[nodiscard]] std::optional<core::cache::CacheEntry> find_entry(std::string_view key) const
     {
-        return counter_key(scope) + ":counter_connector_decline";
+        core::cache::CacheQuerySpec spec;
+        spec.prefix = std::string{key};
+        for (const auto& entry : m_context->cache().execute(spec)) {
+            if (entry.key == key) {
+                return entry;
+            }
+        }
+        return std::nullopt;
     }
 
-    [[nodiscard]] std::uint64_t read_counter(std::string_view key) const
+    /** @brief Internal JSON encoding of one Redis hash value. */
+    [[nodiscard]] static std::string encode_hash(std::uint64_t count, std::uint64_t decline)
     {
-        return m_context->cache().get(key).value_or<std::uint64_t>(0);
+        return std::format(R"({{"counter":{},"counter_connector_decline":{}}})", count, decline);
+    }
+
+    [[nodiscard]] static std::uint64_t decode_hash_field(
+        const std::string& json,
+        std::string_view field
+    )
+    {
+        const auto key = std::string{"\""} + std::string{field} + "\":";
+        const auto pos = json.find(key);
+        if (pos == std::string::npos) {
+            return 0;
+        }
+        std::uint64_t value{};
+        const char* begin = json.data() + pos + key.size();
+        const char* end = json.data() + json.size();
+        const auto [ptr, ec] = std::from_chars(begin, end, value);
+        if (ec != std::errc{} || ptr == begin) {
+            return 0;
+        }
+        return value;
+    }
+
+    /** @brief `read_hash_counter` (kill_switch.rs:186-196) over the local cache. */
+    [[nodiscard]] std::uint64_t read_hash_counter(
+        const ScopeInfo& scope,
+        std::string_view field
+    ) const
+    {
+        const auto entry = find_entry(cache_key(scope));
+        if (!entry || entry->expired()) {
+            // Missing key or field -> 0 (kill_switch.rs:192-195).
+            return 0;
+        }
+        return decode_hash_field(
+            core::cache::value_as<std::string>(entry->value, std::string{}),
+            field
+        );
     }
 
     /**
-     * @brief Persistent RolloutConfig lookup with the upstream sentinel filter
-     * and typed serde parse (kill_switch.rs:613-638, helpers.rs:2690-2713).
+     * @brief Port of `write_hash_counter` (kill_switch.rs:499-521):
+     * HINCRBY one field then best-effort EXPIRE. Used by the enforcement hooks
+     * that feed the counters; the read/reset endpoints share this hash layout.
+     */
+    [[maybe_unused]] std::uint64_t write_hash_counter(
+        const ScopeInfo& scope,
+        std::string_view field,
+        std::int64_t ttl_seconds
+    ) const
+    {
+        const auto key = cache_key(scope);
+        const auto entry = find_entry(key);
+        const auto raw = entry
+            ? core::cache::value_as<std::string>(entry->value, std::string{})
+            : std::string{};
+        auto count = decode_hash_field(raw, kCounterField);
+        auto decline = decode_hash_field(raw, kDeclineField);
+        std::uint64_t incremented{0};
+        if (field == kDeclineField) {
+            incremented = ++decline;
+        } else {
+            incremented = ++count;
+        }
+        m_context->cache().put(key, encode_hash(count, decline), core::cache::Ttl{}.seconds(ttl_seconds));
+        return incremented;
+    }
+
+    /** @brief `increment_counter` TTL selection (kill_switch.rs:485-497,1052-1057). */
+    [[maybe_unused]] std::uint64_t increment_counter(
+        const ScopeInfo& scope,
+        std::string_view field
+    ) const
+    {
+        return write_hash_counter(
+            scope,
+            field,
+            scope.shadow ? kShadowTtlSeconds : kPrimaryTtlSeconds
+        );
+    }
+
+    /** @brief `DelReply` mapping for `delete_key` (kill_switch.rs:553-576). */
+    bool delete_key(const ScopeInfo& scope) const
+    {
+        const auto key = cache_key(scope);
+        // An expired entry is invisible to `execute` (CacheQuerySpec::matches),
+        // just as an expired Redis key is absent for DEL -> KeyNotDeleted.
+        if (!find_entry(key)) {
+            return false;
+        }
+        m_context->cache().erase(key);
+        return true;
+    }
+
+    /**
+     * @brief Persistent RolloutConfig lookup (kill_switch.rs:610-638):
+     * `find_config_by_key_unwrap_or(config_key, "not_configured")`, sentinel
+     * filter, typed serde parse, then `(kill_switch_threshold, decline)`.
      */
     [[nodiscard]] std::optional<RolloutConfigView> load_rollout_config(std::string_view scope) const
     {
-        constexpr std::string_view not_configured{"not_configured"};
-        const auto key = std::string{"ucs_rollout_config_"} + std::string{scope};
+        const auto key = std::string{kRolloutConfigPrefix} + "_" + std::string{scope};
         const auto raw = m_context->repository().get_config(key);
-        if (!raw || *raw == not_configured) {
+        if (!raw || *raw == kNotConfigured) {
             return std::nullopt;
         }
         auto parsed = serde::Ser::deserialize<RolloutConfigView>("application/json", *raw);
         if (!parsed) {
-            // Fail closed: an unreadable config leaves thresholds unset so any
-            // recorded failure trips the switch. Mirrors Redis-error logging.
+            // kill_switch.rs:628-636: an unparseable config is logged and treated
+            // as absent; fail-closed metrics counter is the local log substitute.
             m_context->metrics()
                 .counter("unified_connector_service.rollout_config_parse_error")
                 .increment();
@@ -341,50 +545,100 @@ private:
         return *parsed;
     }
 
-    /** @brief Parse a positive unsigned integer from a config value. */
-    [[nodiscard]] std::optional<std::uint64_t> parse_positive(std::string_view text) const
+    /** @brief Parse an unsigned config integer (no positivity requirement). */
+    [[nodiscard]] static std::optional<std::uint64_t> parse_unsigned(std::string_view text) noexcept
     {
         if (text.empty()) {
             return std::nullopt;
         }
         std::uint64_t value{};
-        const char* const begin = text.data();
-        const char* const end = begin + text.size();
-        const auto [ptr, ec] = std::from_chars(begin, end, value);
-        if (ec == std::errc{} && ptr == end && value > 0) {
+        const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (ec == std::errc{} && ptr == text.data() + text.size()) {
+            return value;
+        }
+        return std::nullopt;
+    }
+
+    /** @brief Parse a signed i64 (Superposition config value). */
+    [[nodiscard]] static std::optional<std::int64_t> parse_signed(std::string_view text) noexcept
+    {
+        if (text.empty()) {
+            return std::nullopt;
+        }
+        std::int64_t value{};
+        const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (ec == std::errc{} && ptr == text.data() + text.size()) {
             return value;
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Shadow threshold chain (kill_switch.rs:928-965): Superposition /
-     * persistent ucs config first, then comparison-service config, then 1.
+     * @brief Local substitute for `get_ucs_config_source(state)` (helpers.rs:2677-2688).
+     * Default is `Database`; only "superposition" selects the Superposition path.
+     */
+    [[nodiscard]] bool config_source_is_superposition() const
+    {
+        std::optional<std::string> raw =
+            m_context->config_store().get_value("grpc_clients", "unified_connector_service");
+        if (!raw) {
+            raw = m_context->repository().get_config("grpc_clients.unified_connector_service");
+        }
+        if (!raw) {
+            if (const auto record = m_context->superposition().get_config(
+                    "grpc_clients", "unified_connector_service"
+                )) {
+                raw = record->get_value();
+            }
+        }
+        return raw && raw->find("superposition") != std::string::npos;
+    }
+
+    /**
+     * @brief Port of `shadow::threshold` (kill_switch.rs:928-965).
+     * Order matters: comparison-service fallback first, then the Superposition
+     * value only when the configured source is Superposition; any failure or
+     * non-positive value preserves the fallback.
      */
     [[nodiscard]] std::uint64_t shadow_threshold() const
     {
-        constexpr std::string_view superposition_key{"ucs.shadow_kill_switch_threshold"};
-        constexpr std::string_view comparison_key{"comparison_service.shadow_kill_switch_threshold"};
+        std::uint64_t fallback{1};
+        if (const auto value = m_context->config_store().get_value(
+                "comparison_service", "shadow_kill_switch_threshold"
+            )) {
+            if (const auto parsed = parse_unsigned(*value)) {
+                fallback = *parsed;
+            }
+        }
+        if (!config_source_is_superposition()) {
+            return fallback;
+        }
 
-        if (const auto value = m_context->repository().get_config(superposition_key)) {
-            if (const auto parsed = parse_positive(*value)) {
-                return *parsed;
+        std::optional<std::string> raw = m_context->repository().get_config(kSuperpositionThresholdKey);
+        if (!raw) {
+            if (const auto record = m_context->superposition().get_config(
+                    "ucs", "shadow_kill_switch_threshold"
+                )) {
+                raw = record->get_value();
             }
         }
-        if (const auto record = m_context->superposition().get_config("ucs", "shadow_kill_switch_threshold")) {
-            if (const auto parsed = parse_positive(record->get_value())) {
-                return *parsed;
-            }
+        if (!raw) {
+            return fallback;
         }
-        if (const auto value = m_context->repository().get_config(comparison_key)) {
-            if (const auto parsed = parse_positive(*value)) {
-                return *parsed;
-            }
+        const auto parsed = parse_signed(*raw);
+        // u64::try_from(value) && > 0 (kill_switch.rs:954-964).
+        if (!parsed || *parsed <= 0) {
+            return fallback;
         }
-        m_context->metrics()
-            .counter("unified_connector_service.shadow_threshold_fallback")
-            .increment();
-        return 1;
+        return static_cast<std::uint64_t>(*parsed);
+    }
+
+    [[nodiscard]] core::error::AppError make_error(
+        core::error::AppErrorKind kind,
+        std::string message
+    ) const
+    {
+        return core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
     }
 
     void send_error(

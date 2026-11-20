@@ -9,6 +9,7 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import core_cache;
 import core_error;
 import app_auth;
 import app_http;
@@ -26,21 +27,28 @@ public:
         std::function<void()> send
     )
     {
-        // Upstream routes/cards_info.rs:44-63 runs check_sdk_auth_and_get_auth (SDK
-        // authorization header or api_key/publishable-key) before server_wrap. The
-        // registry rule is the primary check; an SDK rule is the documented fallback
-        // for the publishable-key/client-secret SDK path.
+        // Upstream routes/cards_info.rs:42-47 runs check_sdk_auth_and_get_auth
+        // (SDK authorization header or api_key/publishable-key) before server_wrap.
+        // The registry rule is the primary check; the two SDK schemes are the
+        // documented fallback for the publishable-key/client-secret SDK path.
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error = authorize_operation(auth_context, "card_iin_info", true)) {
             send_error(res, send, *auth_error);
             return;
         }
 
-        // Upstream GET /cards/{bin}: IIN is a path segment, client_secret a query param.
+        // Upstream GET /cards/{bin}: IIN is a path segment, client_secret a query param
+        // (routes/cards_info.rs:31-40).
         const auto segments = ::app::http::RequestPath{}(req);
         const auto bin = segments.at(1); // /cards/:bin -> "cards", "<bin>"
         if (!bin) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::NOT_FOUND, "InvalidCardIin"));
+            server_wrap(
+                "CardsInfo", res, send,
+                std::expected<CardInfoResponse, AppError>{
+                    std::unexpected{invalid_card_iin()}
+                },
+                "CARDS_INFO_RETRIEVED"
+            );
             return;
         }
         ::app::model::cards_info::CardsInfoRequest payload;
@@ -55,28 +63,13 @@ public:
             payload.set_client_secret(std::string{*authenticated_secret});
         }
 
-        if (const auto invalid = verify_iin_length(payload.get_card_iin())) {
-            send_error(res, send, *invalid);
-            return;
-        }
-        if (const auto invalid = validate_client_secret(payload.get_client_secret())) {
-            send_error(res, send, *invalid);
-            return;
-        }
-
-        auto repository = m_context->repository();
-        const auto stored = repository.find_card_info_by_string(payload.get_card_iin());
-        if (!stored) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::NOT_FOUND, "InvalidCardIin"));
-            return;
-        }
-        const auto response = response_from_store(*stored);
-        const auto text = serde::Ser::encode_json(response);
-
-        m_context->metrics().record_flow("CardsInfo");
-        m_context->metrics().counter("CARDS_INFO_RETRIEVED").increment();
-
-        send_json(res, send, text, true);
+        // api::server_wrap(Flow::CardsInfo, ..., LockAction::NotApplicable) then calls
+        // core/cards_info.rs:32-53 retrieve_card_info. No lock is acquired.
+        server_wrap(
+            "CardsInfo", res, send,
+            retrieve_card_info(payload),
+            "CARDS_INFO_RETRIEVED"
+        );
     }
 
     void handle_create_cards_info(
@@ -91,38 +84,38 @@ public:
             return;
         }
 
+        // web::Json<CardInfoCreateRequest> extraction (routes/cards_info.rs:71) is the
+        // deserialization step that server_wrap's typed payload represents.
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            server_wrap(
+                "CardsInfoCreate", res, send,
+                std::expected<CardInfoResponse, AppError>{
+                    std::unexpected{invalid_request_data("Json payload deserialization failed: empty body")}
+                },
+                "CARDS_INFO_CREATED"
+            );
             return;
         }
-        using Input = ::app::model::cards_info::CardInfoCreateRequest;
+        using Input = CardInfoCreateRequest;
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-            return;
-        }
-
-        // Upstream create_card_info has no IIN-length check (core/cards_info.rs:56-67).
-        auto repository = m_context->repository();
-        if (const auto created = repository.create_card_info(to_store_record(*parsed)); !created) {
-            send_error(
-                res, send,
-                make_error(
-                    ::core::error::AppErrorKind::ALREADY_EXISTS,
-                    "CardInfo with given key already exists in our records"
-                )
+            server_wrap(
+                "CardsInfoCreate", res, send,
+                std::expected<CardInfoResponse, AppError>{
+                    std::unexpected{invalid_request_data("Json payload deserialization failed")}
+                },
+                "CARDS_INFO_CREATED"
             );
             return;
         }
 
-        const auto response = build_response(*parsed);
-        const auto text = serde::Ser::encode_json(response);
-
-        m_context->metrics().record_flow("CardsInfoCreate");
-        m_context->metrics().counter("CARDS_INFO_CREATED").increment();
-
-        send_json(res, send, text, true);
+        // Upstream create_card_info has no IIN-length check (core/cards_info.rs:56-67).
+        server_wrap(
+            "CardsInfoCreate", res, send,
+            create_card_info(*parsed),
+            "CARDS_INFO_CREATED"
+        );
     }
 
     void handle_update_cards_info(
@@ -139,43 +132,35 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
-        using Input = ::app::model::cards_info::CardInfoUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
-            return;
-        }
-
-        // Upstream update_card_info: update by IIN, last_updated = now(), and a
-        // missing record is GenericNotFoundError (core/cards_info.rs:70-125).
-        auto repository = m_context->repository();
-        auto stored = repository.find_card_info_by_string(parsed->get_card_iin());
-        if (!stored) {
-            send_error(
-                res, send,
-                make_error(
-                    ::core::error::AppErrorKind::NOT_FOUND,
-                    "Card info with given key does not exist in our records"
-                )
+            server_wrap(
+                "CardsInfoUpdate", res, send,
+                std::expected<CardInfoResponse, AppError>{
+                    std::unexpected{invalid_request_data("Json payload deserialization failed: empty body")}
+                },
+                "CARDS_INFO_UPDATED"
             );
             return;
         }
-        apply_update(*stored, *parsed);
-        if (!repository.update_card_info(*stored)) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::INTERNAL_ERROR, "Failed while updating card info"));
+        using Input = CardInfoUpdateRequest;
+        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        if (!parsed) {
+            server_wrap(
+                "CardsInfoUpdate", res, send,
+                std::expected<CardInfoResponse, AppError>{
+                    std::unexpected{invalid_request_data("Json payload deserialization failed")}
+                },
+                "CARDS_INFO_UPDATED"
+            );
             return;
         }
 
-        const auto response = build_response(*parsed);
-        const auto text = serde::Ser::encode_json(response);
-
-        m_context->metrics().record_flow("CardsInfoUpdate");
-        m_context->metrics().counter("CARDS_INFO_UPDATED").increment();
-
-        send_json(res, send, text, true);
+        // Upstream update_card_info: update by IIN, last_updated = now(), missing record
+        // is GenericNotFoundError (core/cards_info.rs:70-125). No IIN-length check.
+        server_wrap(
+            "CardsInfoUpdate", res, send,
+            update_card_info(*parsed),
+            "CARDS_INFO_UPDATED"
+        );
     }
 
     void handle_migrate_cards_info(
@@ -192,29 +177,49 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, make_error(::core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
+            server_wrap(
+                "CardsInfoMigrate", res, send,
+                std::expected<std::vector<CardInfoMigrationResponse>, AppError>{
+                    std::unexpected{invalid_request_data("Multipart form deserialization failed: empty body")}
+                }
+            );
             return;
         }
 
-        std::vector<::app::model::cards_info::CardInfoUpdateRequest> records;
+        std::vector<CardInfoUpdateRequest> records;
         if (const auto csv_bytes = multipart_file_bytes(req, body)) {
             // Upstream CardsInfoUpdateForm caps the multipart file at 1MB and a CSV
             // parse failure maps to PreconditionFailed (core/cards_info.rs:127-157).
             if (csv_bytes->size() > (1024u * 1024u)) {
-                send_error(res, send, make_error(::core::error::AppErrorKind::PRECONDITION_FAILED, "cards bin CSV exceeds 1MB limit"));
+                server_wrap(
+                    "CardsInfoMigrate", res, send,
+                    std::expected<std::vector<CardInfoMigrationResponse>, AppError>{
+                        std::unexpected{precondition_failed("cards bin CSV exceeds 1MB limit")}
+                    }
+                );
                 return;
             }
             auto parsed_csv = parse_cards_csv(*csv_bytes);
             if (!parsed_csv) {
-                send_error(res, send, make_error(::core::error::AppErrorKind::PRECONDITION_FAILED, "failed to parse cards bin CSV"));
+                server_wrap(
+                    "CardsInfoMigrate", res, send,
+                    std::expected<std::vector<CardInfoMigrationResponse>, AppError>{
+                        std::unexpected{precondition_failed("failed to parse cards bin CSV")}
+                    }
+                );
                 return;
             }
             records = std::move(*parsed_csv);
         } else {
-            using Input = std::vector<::app::model::cards_info::CardInfoUpdateRequest>;
+            using Input = std::vector<CardInfoUpdateRequest>;
             auto parsed = serde::Ser::deserialize<Input>("application/json", body);
             if (!parsed) {
-                send_error(res, send, make_error(::core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+                server_wrap(
+                    "CardsInfoMigrate", res, send,
+                    std::expected<std::vector<CardInfoMigrationResponse>, AppError>{
+                        std::unexpected{invalid_request_data("Json payload deserialization failed")}
+                    }
+                );
                 return;
             }
             records = std::move(*parsed);
@@ -225,45 +230,10 @@ public:
             }
         }
 
-        std::vector<::app::model::cards_info::CardInfoMigrationResponse> results;
-        results.reserve(records.size());
-        std::size_t migrated{0};
-        auto repository = m_context->repository();
-        for (const auto& record : records) {
-            bool ok{false};
-            std::string_view failure{};
-            if (record.get_card_iin().empty()) {
-                failure = "invalid card iin";
-            } else if (const auto existing = repository.find_card_info_by_string(record.get_card_iin())) {
-                // card_info_flow: fetch -> update when present -> build response.
-                auto stored = *existing;
-                apply_update(stored, record); // stamps last_updated = now()
-                ok = repository.update_card_info(stored);
-                if (ok) {
-                    m_context->metrics().counter("CARDS_INFO_UPDATED").increment();
-                } else {
-                    failure = "failed to migrate card info";
-                }
-            } else {
-                // card_info_flow: fetch -> add when absent -> build response.
-                ok = repository.create_card_info(to_store_record(record)).has_value();
-                if (ok) {
-                    m_context->metrics().counter("CARDS_INFO_CREATED").increment();
-                } else {
-                    failure = "failed to migrate card info";
-                }
-            }
-            if (ok) {
-                ++migrated;
-            }
-            results.push_back(build_migration_response(record, ok, failure));
-        }
-
-        m_context->metrics().record_flow("CardsInfoMigrate");
-        m_context->metrics().counter("CARDS_INFO_MIGRATED").increment(static_cast<std::uint64_t>(migrated));
-
-        auto text = serde::Ser::encode_json(results);
-        send_json(res, send, text, true);
+        server_wrap(
+            "CardsInfoMigrate", res, send,
+            migrate_cards_info(std::move(records))
+        );
     }
 
     void install(core::router::RouterContext<>& router)
@@ -323,62 +293,317 @@ public:
     }
 
 private:
-    [[nodiscard]] ::core::error::AppError make_error(
-        ::core::error::AppErrorKind kind,
-        std::string message
+    using AppError = ::core::error::AppError;
+    using AppErrorKind = ::core::error::AppErrorKind;
+    using CardInfoRecord = ::app::store::cards_info::CardInfoRecord;
+    using CardInfoResponse = ::app::model::cards_info::CardInfoResponse;
+    using CardInfoCreateRequest = ::app::model::cards_info::CardInfoCreateRequest;
+    using CardInfoUpdateRequest = ::app::model::cards_info::CardInfoUpdateRequest;
+    using CardInfoMigrateResponseRecord = ::app::model::cards_info::CardInfoMigrateResponseRecord;
+    using CardInfoMigrationResponse = ::app::model::cards_info::CardInfoMigrationResponse;
+
+    // ── Upstream ApiErrorResponse wire mapping ──────────────────────────────────
+    // hyperswitch_domain_models/src/errors/api_error_response.rs:586-688, 459-461, 599-605.
+
+    [[nodiscard]] AppError make_error(
+        AppErrorKind kind,
+        std::string message,
+        std::string wire_name = {}
     ) const
     {
-        return ::core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
+        auto error = ::core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
+        if (!wire_name.empty()) {
+            error.set_kind_name(std::move(wire_name));
+        }
+        return error;
+    }
+
+    [[nodiscard]] AppError invalid_request_data(std::string_view message) const
+    {
+        // InvalidRequestData -> IR_6, Unprocessable (api_error_response.rs:586-588).
+        return make_error(AppErrorKind::VALIDATION_FAILED, std::string{message}, "InvalidRequestData");
+    }
+
+    [[nodiscard]] AppError invalid_card_iin_length() const
+    {
+        // InvalidCardIinLength -> IR_32, BadRequest (api_error_response.rs:670-671).
+        return make_error(
+            AppErrorKind::INVALID_REQUEST,
+            "The provided card IIN length is invalid, please provide an IIN with 6 digits",
+            "InvalidCardIinLength"
+        );
+    }
+
+    [[nodiscard]] AppError invalid_card_iin() const
+    {
+        // InvalidCardIin -> IR_31, BadRequest (api_error_response.rs:670).
+        return make_error(
+            AppErrorKind::INVALID_REQUEST,
+            "The provided card IIN does not exist",
+            "InvalidCardIin"
+        );
+    }
+
+    [[nodiscard]] AppError generic_duplicate_error(std::string_view message) const
+    {
+        // GenericDuplicateError -> IR_38, BadRequest (api_error_response.rs:687-689).
+        return make_error(AppErrorKind::INVALID_REQUEST, std::string{message}, "GenericDuplicateError");
+    }
+
+    [[nodiscard]] AppError generic_not_found_error(std::string_view message) const
+    {
+        // GenericNotFoundError -> IR_37, NotFound (api_error_response.rs:684-686).
+        return make_error(AppErrorKind::NOT_FOUND, std::string{message}, "GenericNotFoundError");
+    }
+
+    [[nodiscard]] AppError precondition_failed(std::string_view message) const
+    {
+        // PreconditionFailed -> IR_16, BadRequest (api_error_response.rs:626-628).
+        return make_error(AppErrorKind::INVALID_REQUEST, std::string{message}, "PreconditionFailed");
+    }
+
+    [[nodiscard]] AppError invalid_data_value(std::string_view field_name) const
+    {
+        // InvalidDataValue -> IR_7, BadRequest (api_error_response.rs:589-593).
+        return make_error(
+            AppErrorKind::INVALID_REQUEST,
+            "Invalid value provided: " + std::string{field_name},
+            "InvalidDataValue"
+        );
+    }
+
+    [[nodiscard]] AppError payment_not_found() const
+    {
+        // PaymentNotFound -> HE_2, NotFound (api_error_response.rs:459-461).
+        return make_error(
+            AppErrorKind::NOT_FOUND,
+            "Payment does not exist in our records",
+            "PaymentNotFound"
+        );
+    }
+
+    [[nodiscard]] AppError client_secret_invalid() const
+    {
+        // ClientSecretInvalid -> IR_9, BadRequest (api_error_response.rs:604-606).
+        return make_error(
+            AppErrorKind::INVALID_REQUEST,
+            "The client_secret provided does not match the client_secret associated with the Payment",
+            "ClientSecretInvalid"
+        );
+    }
+
+    [[nodiscard]] AppError client_secret_expired() const
+    {
+        // ClientSecretExpired -> IR_8, BadRequest (api_error_response.rs:599-603).
+        return make_error(
+            AppErrorKind::INVALID_REQUEST,
+            "The provided client_secret has expired",
+            "ClientSecretExpired"
+        );
+    }
+
+    [[nodiscard]] AppError internal_server_error(std::string_view message) const
+    {
+        return make_error(AppErrorKind::INTERNAL_ERROR, std::string{message}, "InternalServerError");
+    }
+
+    // ── server_wrap equivalent ──────────────────────────────────────────────────
+
+    /**
+     * Local api::server_wrap (routes/cards_info.rs:49-64,75-84,95-104,119-128):
+     * Flow instrumentation, auth (checked by authorize_operation before the core
+     * call) and LockAction::NotApplicable (no lock is acquired). The typed payload
+     * outcome is mapped to the upstream JSON response, or to a typed error body.
+     */
+    template <typename T>
+    void server_wrap(
+        std::string_view flow,
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::expected<T, AppError> outcome,
+        std::string_view counter = {},
+        std::uint64_t delta = 1
+    ) const
+    {
+        m_context->metrics().record_flow(flow);
+        if (!outcome) {
+            send_error(res, send, std::move(outcome.error()));
+            return;
+        }
+        if (!counter.empty()) {
+            m_context->metrics().counter(counter).increment(delta);
+        }
+        const auto text = serde::Ser::encode_json(*outcome);
+        send_json(res, send, text, true);
     }
 
     [[nodiscard]] std::string now_stamp() const
     {
-        return std::to_string(
-            std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()
-            ).count()
-        );
+        return std::to_string(now_seconds());
     }
 
-    [[nodiscard]] std::optional<::core::error::AppError> verify_iin_length(
-        std::string_view card_iin
-    ) const
+    [[nodiscard]] std::int64_t now_seconds() const
     {
-        if (card_iin.size() == 6 || card_iin.size() == 8) {
-            return std::nullopt;
-        }
-        return make_error(
-            ::core::error::AppErrorKind::VALIDATION_FAILED,
-            "The provided card IIN length is invalid, please provide an IIN with 6 digits"
-        );
+        return std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
     }
 
-    /**
-     * @brief Deterministic stand-in for verify_payment_intent_time_and_client_secret
-     * (core/payments/helpers.rs:5092-5135): derive the payment id, require the intent
-     * to exist. Equality/expiry comparison needs payment_intent.client_secret and
-     * session_expiry, which the Lane A CardInfo/payment records do not carry.
-     */
-    [[nodiscard]] std::optional<::core::error::AppError> validate_client_secret(
-        const std::optional<std::string>& secret
-    ) const
+    // ── core/cards_info.rs:24-29 verify_iin_length ──────────────────────────────
+
+    [[nodiscard]] std::optional<AppError> verify_iin_length(std::string_view card_iin) const
     {
-        if (!secret) {
+        const bool in_range = card_iin.size() == 6 || card_iin.size() == 8;
+        if (in_range) {
             return std::nullopt;
         }
-        constexpr std::string_view separator{"_secret_"};
-        const auto pos = secret->rfind("_secret_");
-        if (pos == std::string::npos || pos == 0 || pos + separator.size() >= secret->size()) {
-            return make_error(::core::error::AppErrorKind::FORBIDDEN, "ClientSecretInvalid");
+        return invalid_card_iin_length();
+    }
+
+    // ── core/payments/helpers.rs:5172-5177 get_payment_id_from_client_secret ────
+
+    [[nodiscard]] std::optional<AppError> get_payment_id_from_client_secret(
+        std::string_view secret,
+        std::string& payment_id
+    ) const
+    {
+        const auto pos = secret.rfind("_secret_");
+        if (pos == std::string_view::npos) {
+            return client_secret_invalid();
         }
-        const std::string payment_id = secret->substr(0, pos);
-        if (!m_context->repository().find_payment_by_string(payment_id)) {
-            return make_error(::core::error::AppErrorKind::NOT_FOUND, "PaymentNotFound");
+        payment_id = std::string{secret.substr(0, pos)};
+        if (payment_id.empty()) {
+            return invalid_data_value("payment_id");
         }
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<::core::error::AppError> authorize_operation(
+    // ── local store accessors for the payment intent's client secret/expiry ──────
+    // The in-process PaymentIntentRecord has no dedicated client_secret /
+    // session_expiry columns, so the upstream fields are read from its metadata
+    // JSON (local in-process substitute for the upstream DB columns).
+
+    [[nodiscard]] std::optional<serde::Value> metadata_field(
+        const ::app::store::payments::PaymentIntentRecord& intent,
+        std::string_view key
+    ) const
+    {
+        const auto meta = serde::Ser::decode_generic("application/json", intent.get_metadata());
+        if (!meta) {
+            return std::nullopt;
+        }
+        const auto* object = std::get_if<serde::Value::Object>(&meta->get());
+        if (object == nullptr) {
+            return std::nullopt;
+        }
+        const auto field = object->get(std::string{key});
+        if (!field) {
+            return std::nullopt;
+        }
+        return std::optional<serde::Value>{field.value()};
+    }
+
+    [[nodiscard]] std::optional<std::string> intent_client_secret(
+        const ::app::store::payments::PaymentIntentRecord& intent
+    ) const
+    {
+        const auto field = metadata_field(intent, "client_secret");
+        if (!field) {
+            return std::nullopt;
+        }
+        if (const auto* text = std::get_if<std::string>(&field->get())) {
+            return std::optional<std::string>{*text};
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<std::int64_t> json_integer(const serde::Value& value) const
+    {
+        if (const auto* number = std::get_if<std::int64_t>(&value.get())) {
+            return *number;
+        }
+        if (const auto* number = std::get_if<double>(&value.get())) {
+            return static_cast<std::int64_t>(*number);
+        }
+        if (const auto* text = std::get_if<std::string>(&value.get())) {
+            std::int64_t parsed{};
+            const auto result = std::from_chars(text->data(), text->data() + text->size(), parsed);
+            if (result.ec == std::errc{} && result.ptr == text->data() + text->size()) {
+                return parsed;
+            }
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<std::int64_t> intent_session_expiry(
+        const ::app::store::payments::PaymentIntentRecord& intent
+    ) const
+    {
+        static constexpr std::int64_t DEFAULT_SESSION_EXPIRY = 15 * 60; // common_utils/consts.rs:85
+        if (const auto field = metadata_field(intent, "session_expiry")) {
+            if (const auto value = json_integer(*field)) {
+                return value;
+            }
+        }
+        // Fall back to created_at + DEFAULT_SESSION_EXPIRY
+        // (core/payments/helpers.rs:4990-4994).
+        const auto& created = intent.get_created_at();
+        if (created.empty()) {
+            return std::nullopt;
+        }
+        std::int64_t created_seconds{};
+        const auto result = std::from_chars(created.data(), created.data() + created.size(), created_seconds);
+        if (result.ec != std::errc{} || result.ptr != created.data() + created.size()) {
+            return std::nullopt;
+        }
+        return created_seconds + DEFAULT_SESSION_EXPIRY;
+    }
+
+    // ── core/payments/helpers.rs:4979-5005 authenticate_client_secret ──────────
+
+    [[nodiscard]] std::optional<AppError> authenticate_client_secret(
+        const std::optional<std::string>& presented,
+        const ::app::store::payments::PaymentIntentRecord& intent
+    ) const
+    {
+        if (!presented) {
+            return std::nullopt; // (_ , _) -> Ok
+        }
+        const auto expected = intent_client_secret(intent);
+        if (!expected) {
+            return client_secret_expired(); // (Some, None) -> ClientSecretExpired
+        }
+        if (*presented != *expected) {
+            return client_secret_invalid(); // req_cs != pi_cs -> ClientSecretInvalid
+        }
+        const auto expiry = intent_session_expiry(intent);
+        if (expiry && now_seconds() > *expiry) {
+            return client_secret_expired();
+        }
+        return std::nullopt;
+    }
+
+    // ── core/payments/helpers.rs:5092-5135 verify_payment_intent_time_and_client_secret ──
+
+    [[nodiscard]] std::optional<AppError> verify_payment_intent_time_and_client_secret(
+        const std::optional<std::string>& client_secret
+    ) const
+    {
+        if (!client_secret) {
+            return std::nullopt;
+        }
+        std::string payment_id{};
+        if (const auto error = get_payment_id_from_client_secret(*client_secret, payment_id)) {
+            return error;
+        }
+        const auto intent = m_context->repository().find_payment_by_string(payment_id);
+        if (!intent) {
+            return payment_not_found();
+        }
+        return authenticate_client_secret(client_secret, *intent);
+    }
+
+    [[nodiscard]] std::optional<AppError> authorize_operation(
         const ::app::auth::AuthContext& context,
         std::string_view operation,
         bool sdk_fallback = false
@@ -401,15 +626,410 @@ private:
                                           .build();
                 auth = m_context->authorizer().authorize_route(context, sdk_rule);
             }
+            // auth is nullopt when either SDK path authorizes; otherwise it carries
+            // the SDK path's error, matching check_sdk_auth_and_get_auth's rejection.
         }
         return auth;
     }
 
-    [[nodiscard]] ::app::store::cards_info::CardInfoRecord to_store_record(
-        const ::app::model::cards_info::CardInfoCreateRequest& in
+    // ── local substitutes for the upstream full-column store ────────────────────
+    // CardInfoRecord has only iin/scheme/type/bank/country; the upstream DB row
+    // carries every CardInfoResponse column. The full serialized response is kept
+    // in-process under the IIN so retrieve and migration emit the same wire shape.
+
+    [[nodiscard]] std::string response_cache_key(std::string_view iin) const
+    {
+        return "cards_info.response." + std::string{iin};
+    }
+
+    void cache_response(std::string_view iin, const CardInfoResponse& response) const
+    {
+        m_context->cache().put(
+            response_cache_key(iin),
+            core::cache::to_cache_value(serde::Ser::encode_json(response))
+        );
+    }
+
+    [[nodiscard]] std::optional<CardInfoResponse> cached_response(std::string_view iin) const
+    {
+        const auto result = m_context->cache().get(response_cache_key(iin));
+        if (!result.hit) {
+            return std::nullopt;
+        }
+        return serde::Ser::deserialize<CardInfoResponse>(
+            "application/json", result.value_or<std::string>("")
+        );
+    }
+
+    [[nodiscard]] CardInfoResponse response_from_store_enriched(
+        const CardInfoRecord& record,
+        CardInfoResponse fallback
     ) const
     {
-        ::app::store::cards_info::CardInfoRecord record;
+        // CardInfoResponse::foreign_from(card_info) (core/cards_info.rs:50-52).
+        fallback.set_card_iin(record.get_iin());
+        if (!record.get_scheme().empty()) {
+            fallback.set_card_network(std::optional<std::string>{record.get_scheme()});
+        }
+        if (!record.get_card_type().empty()) {
+            fallback.set_card_type(record.get_card_type());
+        }
+        if (!record.get_bank_name().empty()) {
+            fallback.set_card_issuer(record.get_bank_name());
+        }
+        if (!record.get_country().empty()) {
+            fallback.set_country_code(record.get_country());
+        }
+        return fallback;
+    }
+
+    // ── core/cards_info.rs:32-53 retrieve_card_info ─────────────────────────────
+
+    [[nodiscard]] std::expected<CardInfoResponse, AppError> retrieve_card_info(
+        const ::app::model::cards_info::CardsInfoRequest& payload
+    ) const
+    {
+        if (const auto invalid = verify_iin_length(payload.get_card_iin())) {
+            return std::unexpected{*invalid};
+        }
+        if (const auto invalid = verify_payment_intent_time_and_client_secret(payload.get_client_secret())) {
+            return std::unexpected{*invalid};
+        }
+        const auto stored = m_context->repository().find_card_info_by_string(payload.get_card_iin());
+        if (!stored) {
+            return std::unexpected{invalid_card_iin()};
+        }
+        auto fallback = cached_response(payload.get_card_iin()).value_or(CardInfoResponse{});
+        return response_from_store_enriched(*stored, std::move(fallback));
+    }
+
+    // ── core/cards_info.rs:56-67 create_card_info ───────────────────────────────
+
+    [[nodiscard]] std::expected<CardInfoResponse, AppError> create_card_info(
+        const CardInfoCreateRequest& payload
+    ) const
+    {
+        auto repository = m_context->repository();
+        auto created = repository.create_card_info(to_store_record(payload));
+        if (!created) {
+            return std::unexpected{generic_duplicate_error(
+                "CardInfo with given key already exists in our records"
+            )};
+        }
+        auto response = build_response(payload);
+        cache_response(created->get_iin(), response);
+        return response_from_store_enriched(*created, std::move(response));
+    }
+
+    // ── core/cards_info.rs:70-125 update_card_info ──────────────────────────────
+
+    [[nodiscard]] std::expected<CardInfoResponse, AppError> update_card_info(
+        const CardInfoUpdateRequest& payload
+    ) const
+    {
+        auto repository = m_context->repository();
+        auto stored = repository.find_card_info_by_string(payload.get_card_iin());
+        if (!stored) {
+            return std::unexpected{generic_not_found_error(
+                "Card info with given key does not exist in our records"
+            )};
+        }
+        apply_update(*stored, payload); // last_updated = now()
+        if (!repository.update_card_info(*stored)) {
+            return std::unexpected{internal_server_error("Failed while updating card info")};
+        }
+        auto response = build_response(payload);
+        cache_response(stored->get_iin(), response);
+        return response_from_store_enriched(*stored, std::move(response));
+    }
+
+    // ── core/cards_info.rs:179-196 typestate markers ────────────────────────────
+    // State/TransitionTo are represented as a local enum + builder; the legal
+    // transitions are Fetch->Add/Update and Add/Update->Response.
+
+    enum class MigrateState
+    {
+        Fetch,
+        Add,
+        Update,
+        Response,
+    };
+
+    class CardInfoBuilder
+    {
+    public:
+        [[nodiscard]] static CardInfoBuilder new_builder()
+        {
+            return CardInfoBuilder{};
+        }
+        [[nodiscard]] CardInfoBuilder set_card_info(CardInfoMigrateResponseRecord record) const
+        {
+            return CardInfoBuilder{MigrateState::Update, std::move(record)};
+        }
+        [[nodiscard]] CardInfoBuilder transition() const
+        {
+            return CardInfoBuilder{MigrateState::Add, std::nullopt};
+        }
+        [[nodiscard]] CardInfoBuilder set_updated_card_info(CardInfoMigrateResponseRecord record) const
+        {
+            return CardInfoBuilder{MigrateState::Response, std::move(record)};
+        }
+        [[nodiscard]] CardInfoBuilder set_added_card_info(CardInfoMigrateResponseRecord record) const
+        {
+            return CardInfoBuilder{MigrateState::Response, std::move(record)};
+        }
+        [[nodiscard]] CardInfoMigrateResponseRecord build() const
+        {
+            return card_info.value_or(CardInfoMigrateResponseRecord{});
+        }
+        [[nodiscard]] MigrateState state() const noexcept { return this->state_value; }
+
+    private:
+        explicit CardInfoBuilder(
+            MigrateState value = MigrateState::Fetch,
+            std::optional<CardInfoMigrateResponseRecord> record = std::nullopt
+        )
+            : state_value{value}, card_info{std::move(record)}
+        {
+        }
+        MigrateState state_value{MigrateState::Fetch};
+        std::optional<CardInfoMigrateResponseRecord> card_info{};
+    };
+
+    // ── core/cards_info.rs:199-287 CardInfoMigrateExecutor ──────────────────────
+
+    class CardInfoMigrateExecutor
+    {
+    public:
+        CardInfoMigrateExecutor(
+            const CardsInfoRouteHandlers& handler,
+            const CardInfoUpdateRequest& record
+        )
+            : m_handler{handler}, m_record{record}
+        {
+        }
+
+        [[nodiscard]] std::expected<std::optional<CardInfoRecord>, AppError> fetch_card_info() const
+        {
+            // core/cards_info.rs:212-219; storage error maps to InvalidCardIin.
+            return m_handler.m_context->repository().find_card_info_by_string(
+                m_record.get_card_iin()
+            );
+        }
+
+        [[nodiscard]] std::expected<CardInfoRecord, AppError> add_card_info() const
+        {
+            // core/cards_info.rs:221-232; duplicate -> GenericDuplicateError.
+            auto added = m_handler.m_context->repository().create_card_info(
+                m_handler.to_store_record(m_record)
+            );
+            if (!added) {
+                return std::unexpected{m_handler.generic_duplicate_error(
+                    "CardInfo with given key already exists in our records"
+                )};
+            }
+            m_handler.cache_response(m_record.get_card_iin(), m_handler.build_response(m_record));
+            return *added;
+        }
+
+        [[nodiscard]] std::expected<CardInfoRecord, AppError> update_card_info() const
+        {
+            // core/cards_info.rs:234-286; last_updated=now(), miss -> GenericNotFoundError.
+            auto repository = m_handler.m_context->repository();
+            auto stored = repository.find_card_info_by_string(m_record.get_card_iin());
+            if (!stored) {
+                return std::unexpected{m_handler.generic_not_found_error(
+                    "Card info with given key does not exist in our records"
+                )};
+            }
+            m_handler.apply_update(*stored, m_record);
+            if (!repository.update_card_info(*stored)) {
+                return std::unexpected{m_handler.internal_server_error(
+                    "Failed while updating card info"
+                )};
+            }
+            m_handler.cache_response(m_record.get_card_iin(), m_handler.build_response(m_record));
+            return *stored;
+        }
+
+    private:
+        const CardsInfoRouteHandlers& m_handler;
+        const CardInfoUpdateRequest& m_record;
+    };
+
+    // ── core/cards_info.rs:289-345 CardInfoBuilder::build ───────────────────────
+
+    [[nodiscard]] CardInfoMigrateResponseRecord to_migrate_record(
+        const CardInfoResponse& response
+    ) const
+    {
+        using namespace ::app::model::cards_info;
+        CardInfoMigrateResponseRecord out;
+        if (!response.get_card_iin().empty()) {
+            out.set_card_iin(response.get_card_iin());
+        }
+        out.set_card_issuer(response.get_card_issuer());
+        out.set_card_network(response.get_card_network());
+        out.set_card_type(response.get_card_type());
+        out.set_card_sub_type(response.get_card_sub_type());
+        out.set_card_issuing_country(response.get_card_issuing_country());
+        out.set_country_code(response.get_country_code());
+        out.set_funding_source(response.get_funding_source());
+        out.set_card_iin_type(response.get_card_iin_type());
+        out.set_virtual_card(response.get_virtual_card());
+        out.set_gambling_blocked(response.get_gambling_blocked());
+        out.set_co_badged_card_networks(response.get_co_badged_card_networks());
+        out.set_card_segment_type(response.get_card_segment_type());
+        out.set_numeric_country_code(response.get_numeric_country_code());
+        out.set_prepaid(response.get_prepaid());
+        out.set_regulated(response.get_regulated());
+        out.set_issuer_phone(response.get_issuer_phone());
+        out.set_issuer_url(response.get_issuer_url());
+        out.set_regulated_name(response.get_regulated_name());
+        out.set_reloadable_prepaid(response.get_reloadable_prepaid());
+        out.set_account_updater(response.get_account_updater());
+        out.set_account_level_management(response.get_account_level_management());
+        out.set_domestic_only(response.get_domestic_only());
+        out.set_level_two_supported(response.get_level_two_supported());
+        out.set_level_three_supported(response.get_level_three_supported());
+        out.set_issuer_currency(response.get_issuer_currency());
+        out.set_combo_card(response.get_combo_card());
+        out.set_authentication(response.get_authentication());
+        out.set_cost(response.get_cost());
+        out.set_issuer_supports_tokenization(response.get_issuer_supports_tokenization());
+        out.set_billpay_enabled(response.get_billpay_enabled());
+        out.set_ecom_enabled(response.get_ecom_enabled());
+        out.set_flexible_credential_supported(response.get_flexible_credential_supported());
+        out.set_card_subtype_code(response.get_card_subtype_code());
+        out.set_multi_account_access_indicator(response.get_multi_account_access_indicator());
+        return out;
+    }
+
+    [[nodiscard]] CardInfoMigrateResponseRecord migrate_record_from_store(
+        const CardInfoRecord& record
+    ) const
+    {
+        auto fallback = cached_response(record.get_iin()).value_or(CardInfoResponse{});
+        return to_migrate_record(response_from_store_enriched(record, std::move(fallback)));
+    }
+
+    // ── core/cards_info.rs:428-450 card_info_flow ───────────────────────────────
+
+    [[nodiscard]] std::expected<CardInfoMigrateResponseRecord, std::string> card_info_flow(
+        const CardInfoUpdateRequest& record
+    ) const
+    {
+        const auto builder = CardInfoBuilder::new_builder();
+        const CardInfoMigrateExecutor executor{*this, record};
+        auto fetched = executor.fetch_card_info();
+        if (!fetched) {
+            return std::unexpected{fetched.error().get_message()};
+        }
+        if (*fetched) {
+            // Fetch -> Update -> Response.
+            const auto updated_builder = builder.set_card_info(
+                migrate_record_from_store(**fetched)
+            );
+            auto updated = executor.update_card_info();
+            if (!updated) {
+                return std::unexpected{updated.error().get_message()};
+            }
+            return updated_builder.set_updated_card_info(
+                migrate_record_from_store(*updated)
+            ).build();
+        }
+        // Fetch -> Add -> Response.
+        const auto added_builder = builder.transition();
+        auto added = executor.add_card_info();
+        if (!added) {
+            return std::unexpected{added.error().get_message()};
+        }
+        return added_builder.set_added_card_info(
+            migrate_record_from_store(*added)
+        ).build();
+    }
+
+    // ── api_models/cards_info.rs:349-406 CardInfoMigrationResponse::from ────────
+
+    [[nodiscard]] CardInfoMigrationResponse migration_response_from(
+        std::expected<CardInfoMigrateResponseRecord, std::string> outcome,
+        const CardInfoUpdateRequest& record
+    ) const
+    {
+        using namespace ::app::model::cards_info;
+        CardInfoMigrationResponse out;
+        out.set_card_iin(record.get_card_iin());
+        out.set_line_number(record.get_line_number());
+        if (outcome) {
+            const auto& res = *outcome;
+            out.set_card_issuer(res.get_card_issuer());
+            out.set_card_network(res.get_card_network());
+            out.set_card_type(res.get_card_type());
+            out.set_card_sub_type(res.get_card_sub_type());
+            out.set_card_issuing_country(res.get_card_issuing_country());
+            out.set_country_code(res.get_country_code());
+            out.set_funding_source(res.get_funding_source());
+            out.set_card_iin_type(res.get_card_iin_type());
+            out.set_virtual_card(res.get_virtual_card());
+            out.set_gambling_blocked(res.get_gambling_blocked());
+            out.set_co_badged_card_networks(res.get_co_badged_card_networks());
+            out.set_card_segment_type(res.get_card_segment_type());
+            out.set_numeric_country_code(res.get_numeric_country_code());
+            out.set_prepaid(res.get_prepaid());
+            out.set_regulated(res.get_regulated());
+            out.set_issuer_phone(res.get_issuer_phone());
+            out.set_issuer_url(res.get_issuer_url());
+            out.set_regulated_name(res.get_regulated_name());
+            out.set_reloadable_prepaid(res.get_reloadable_prepaid());
+            out.set_account_updater(res.get_account_updater());
+            out.set_account_level_management(res.get_account_level_management());
+            out.set_domestic_only(res.get_domestic_only());
+            out.set_level_two_supported(res.get_level_two_supported());
+            out.set_level_three_supported(res.get_level_three_supported());
+            out.set_issuer_currency(res.get_issuer_currency());
+            out.set_combo_card(res.get_combo_card());
+            out.set_authentication(res.get_authentication());
+            out.set_cost(res.get_cost());
+            out.set_issuer_supports_tokenization(res.get_issuer_supports_tokenization());
+            out.set_billpay_enabled(res.get_billpay_enabled());
+            out.set_ecom_enabled(res.get_ecom_enabled());
+            out.set_flexible_credential_supported(res.get_flexible_credential_supported());
+            out.set_card_subtype_code(res.get_card_subtype_code());
+            out.set_multi_account_access_indicator(res.get_multi_account_access_indicator());
+            out.set_migration_status(CardInfoMigrationStatus::Success);
+        } else {
+            // Err(e) -> default fields, migration_error = e, status Failed.
+            out.set_migration_status(CardInfoMigrationStatus::Failed);
+            out.set_migration_error(std::string{outcome.error()});
+        }
+        return out;
+    }
+
+    // ── core/cards_info.rs:159-177 migrate_cards_info ───────────────────────────
+
+    [[nodiscard]] std::expected<std::vector<CardInfoMigrationResponse>, AppError> migrate_cards_info(
+        std::vector<CardInfoUpdateRequest> records
+    ) const
+    {
+        std::vector<CardInfoMigrationResponse> result{};
+        result.reserve(records.size());
+        std::size_t migrated{0};
+        for (const auto& record : records) {
+            auto flow = card_info_flow(record);
+            if (flow) {
+                ++migrated;
+            }
+            result.push_back(migration_response_from(std::move(flow), record));
+        }
+        m_context->metrics().counter("CARDS_INFO_MIGRATED").increment(
+            static_cast<std::uint64_t>(migrated)
+        );
+        return result;
+    }
+
+    [[nodiscard]] CardInfoRecord to_store_record(const CardInfoCreateRequest& in) const
+    {
+        CardInfoRecord record;
         record.set_iin(in.get_card_iin());
         apply_update(record, in);
         record.set_status("active");
@@ -417,11 +1037,9 @@ private:
         return record;
     }
 
-    [[nodiscard]] ::app::store::cards_info::CardInfoRecord to_store_record(
-        const ::app::model::cards_info::CardInfoUpdateRequest& in
-    ) const
+    [[nodiscard]] CardInfoRecord to_store_record(const CardInfoUpdateRequest& in) const
     {
-        ::app::store::cards_info::CardInfoRecord record;
+        CardInfoRecord record;
         record.set_iin(in.get_card_iin());
         apply_update(record, in);
         record.set_status("active");
@@ -429,10 +1047,7 @@ private:
         return record;
     }
 
-    void apply_update(
-        ::app::store::cards_info::CardInfoRecord& record,
-        const ::app::model::cards_info::CardInfoCreateRequest& in
-    ) const
+    void apply_update(CardInfoRecord& record, const CardInfoCreateRequest& in) const
     {
         if (in.get_card_network()) {
             record.set_scheme(in.get_card_network()->get_value());
@@ -452,10 +1067,7 @@ private:
         record.set_updated_at(now_stamp());
     }
 
-    void apply_update(
-        ::app::store::cards_info::CardInfoRecord& record,
-        const ::app::model::cards_info::CardInfoUpdateRequest& in
-    ) const
+    void apply_update(CardInfoRecord& record, const CardInfoUpdateRequest& in) const
     {
         if (in.get_card_network()) {
             record.set_scheme(in.get_card_network()->get_value());
@@ -472,27 +1084,6 @@ private:
             record.set_country(*in.get_card_issuing_country());
         }
         record.set_updated_at(now_stamp());
-    }
-
-    [[nodiscard]] ::app::model::cards_info::CardInfoResponse response_from_store(
-        const ::app::store::cards_info::CardInfoRecord& record
-    ) const
-    {
-        ::app::model::cards_info::CardInfoResponse response;
-        response.set_card_iin(record.get_iin());
-        if (!record.get_scheme().empty()) {
-            response.set_card_network(std::optional<std::string>{record.get_scheme()});
-        }
-        if (!record.get_card_type().empty()) {
-            response.set_card_type(record.get_card_type());
-        }
-        if (!record.get_bank_name().empty()) {
-            response.set_card_issuer(record.get_bank_name());
-        }
-        if (!record.get_country().empty()) {
-            response.set_country_code(record.get_country());
-        }
-        return response;
     }
 
     [[nodiscard]] std::optional<std::string> multipart_file_bytes(
@@ -629,11 +1220,7 @@ private:
         return parsed;
     }
 
-    void apply_csv_field(
-        ::app::model::cards_info::CardInfoUpdateRequest& out,
-        std::string_view header,
-        std::string_view value
-    ) const
+    void apply_csv_field(CardInfoUpdateRequest& out, std::string_view header, std::string_view value) const
     {
         using ::app::model::cards_info::CardAuthenticationValue;
         using ::app::model::cards_info::CardCostValue;
@@ -736,8 +1323,11 @@ private:
         }
     }
 
-    [[nodiscard]] std::optional<std::vector<::app::model::cards_info::CardInfoUpdateRequest>>
-    parse_cards_csv(std::string_view csv) const
+    // ── core/cards_info.rs:133-157 parse_cards_bin_csv / get_cards_bin_records ───
+
+    [[nodiscard]] std::optional<std::vector<CardInfoUpdateRequest>> parse_cards_csv(
+        std::string_view csv
+    ) const
     {
         std::vector<std::string_view> lines;
         std::size_t start{0};
@@ -757,21 +1347,21 @@ private:
             start = newline + 1;
         }
         if (lines.empty()) {
-            return std::vector<::app::model::cards_info::CardInfoUpdateRequest>{};
+            return std::vector<CardInfoUpdateRequest>{};
         }
         const auto headers = split_csv_line(lines.front());
         if (headers.empty() || headers.front().empty()) {
             return std::nullopt;
         }
 
-        std::vector<::app::model::cards_info::CardInfoUpdateRequest> records;
+        std::vector<CardInfoUpdateRequest> records;
         std::int64_t line_number{0};
         for (std::size_t i{1}; i < lines.size(); ++i) {
             const auto values = split_csv_line(lines[i]);
             if (values.size() == 1 && values.front().empty()) {
                 continue;
             }
-            ::app::model::cards_info::CardInfoUpdateRequest record;
+            CardInfoUpdateRequest record;
             for (std::size_t column{0}; column < headers.size() && column < values.size(); ++column) {
                 if (!values[column].empty()) {
                     apply_csv_field(record, headers[column], values[column]);
@@ -784,357 +1374,94 @@ private:
         return records;
     }
 
-    [[nodiscard]] ::app::model::cards_info::CardInfoResponse build_response(
-        const app::model::cards_info::CardInfoCreateRequest& in
-    ) const
+    [[nodiscard]] CardInfoResponse build_response(const CardInfoCreateRequest& in) const
     {
         using namespace app::model::cards_info;
         CardInfoResponse out;
         out.set_card_iin(in.get_card_iin());
-        if (in.get_card_issuer()) {
-            out.set_card_issuer(in.get_card_issuer());
-        }
-        if (in.get_card_network()) {
-            out.set_card_network(in.get_card_network()->get_value());
-        }
-        if (in.get_card_type()) {
-            out.set_card_type(in.get_card_type());
-        }
-        if (in.get_card_subtype()) {
-            out.set_card_sub_type(in.get_card_subtype());
-        }
-        if (in.get_card_issuing_country()) {
-            out.set_card_issuing_country(in.get_card_issuing_country());
-        }
-        if (in.get_country_code()) {
-            out.set_country_code(in.get_country_code());
-        }
-        if (in.get_funding_source()) {
-            out.set_funding_source(in.get_funding_source()->get_value());
-        }
-        if (in.get_card_iin_type()) {
-            out.set_card_iin_type(in.get_card_iin_type()->get_value());
-        }
-        if (in.get_virtual_card()) {
-            out.set_virtual_card(in.get_virtual_card());
-        }
-        if (in.get_gambling_blocked()) {
-            out.set_gambling_blocked(in.get_gambling_blocked());
-        }
-        if (in.get_co_badged_card_networks()) {
-            out.set_co_badged_card_networks(in.get_co_badged_card_networks());
-        }
-        if (in.get_card_segment_type()) {
-            out.set_card_segment_type(in.get_card_segment_type());
-        }
-        if (in.get_numeric_country_code()) {
-            out.set_numeric_country_code(in.get_numeric_country_code());
-        }
-        if (in.get_prepaid()) {
-            out.set_prepaid(in.get_prepaid());
-        }
-        if (in.get_regulated()) {
-            out.set_regulated(in.get_regulated());
-        }
-        if (in.get_issuer_phone()) {
-            out.set_issuer_phone(in.get_issuer_phone());
-        }
-        if (in.get_issuer_url()) {
-            out.set_issuer_url(in.get_issuer_url());
-        }
-        if (in.get_regulated_name()) {
-            out.set_regulated_name(in.get_regulated_name());
-        }
-        if (in.get_reloadable_prepaid()) {
-            out.set_reloadable_prepaid(in.get_reloadable_prepaid());
-        }
-        if (in.get_account_updater()) {
-            out.set_account_updater(in.get_account_updater());
-        }
-        if (in.get_account_level_management()) {
-            out.set_account_level_management(in.get_account_level_management());
-        }
-        if (in.get_domestic_only()) {
-            out.set_domestic_only(in.get_domestic_only());
-        }
-        if (in.get_level_two_supported()) {
-            out.set_level_two_supported(in.get_level_two_supported());
-        }
-        if (in.get_level_three_supported()) {
-            out.set_level_three_supported(in.get_level_three_supported());
-        }
-        if (in.get_issuer_currency()) {
-            out.set_issuer_currency(in.get_issuer_currency());
-        }
-        if (in.get_combo_card()) {
-            out.set_combo_card(in.get_combo_card());
-        }
-        if (in.get_authentication()) {
-            out.set_authentication(in.get_authentication());
-        }
-        if (in.get_cost()) {
-            out.set_cost(in.get_cost());
-        }
-        if (in.get_issuer_supports_tokenization()) {
-            out.set_issuer_supports_tokenization(in.get_issuer_supports_tokenization());
-        }
-        if (in.get_billpay_enabled()) {
-            out.set_billpay_enabled(in.get_billpay_enabled());
-        }
-        if (in.get_ecom_enabled()) {
-            out.set_ecom_enabled(in.get_ecom_enabled());
-        }
-        if (in.get_flexible_credential_supported()) {
-            out.set_flexible_credential_supported(in.get_flexible_credential_supported());
-        }
-        if (in.get_card_subtype_code()) {
-            out.set_card_subtype_code(in.get_card_subtype_code());
-        }
-        if (in.get_multi_account_access_indicator()) {
-            out.set_multi_account_access_indicator(in.get_multi_account_access_indicator());
-        }
+        if (in.get_card_issuer()) { out.set_card_issuer(in.get_card_issuer()); }
+        if (in.get_card_network()) { out.set_card_network(in.get_card_network()->get_value()); }
+        if (in.get_card_type()) { out.set_card_type(in.get_card_type()); }
+        if (in.get_card_subtype()) { out.set_card_sub_type(in.get_card_subtype()); }
+        if (in.get_card_issuing_country()) { out.set_card_issuing_country(in.get_card_issuing_country()); }
+        if (in.get_country_code()) { out.set_country_code(in.get_country_code()); }
+        if (in.get_funding_source()) { out.set_funding_source(in.get_funding_source()->get_value()); }
+        if (in.get_card_iin_type()) { out.set_card_iin_type(in.get_card_iin_type()->get_value()); }
+        if (in.get_virtual_card()) { out.set_virtual_card(in.get_virtual_card()); }
+        if (in.get_gambling_blocked()) { out.set_gambling_blocked(in.get_gambling_blocked()); }
+        if (in.get_co_badged_card_networks()) { out.set_co_badged_card_networks(in.get_co_badged_card_networks()); }
+        if (in.get_card_segment_type()) { out.set_card_segment_type(in.get_card_segment_type()); }
+        if (in.get_numeric_country_code()) { out.set_numeric_country_code(in.get_numeric_country_code()); }
+        if (in.get_prepaid()) { out.set_prepaid(in.get_prepaid()); }
+        if (in.get_regulated()) { out.set_regulated(in.get_regulated()); }
+        if (in.get_issuer_phone()) { out.set_issuer_phone(in.get_issuer_phone()); }
+        if (in.get_issuer_url()) { out.set_issuer_url(in.get_issuer_url()); }
+        if (in.get_regulated_name()) { out.set_regulated_name(in.get_regulated_name()); }
+        if (in.get_reloadable_prepaid()) { out.set_reloadable_prepaid(in.get_reloadable_prepaid()); }
+        if (in.get_account_updater()) { out.set_account_updater(in.get_account_updater()); }
+        if (in.get_account_level_management()) { out.set_account_level_management(in.get_account_level_management()); }
+        if (in.get_domestic_only()) { out.set_domestic_only(in.get_domestic_only()); }
+        if (in.get_level_two_supported()) { out.set_level_two_supported(in.get_level_two_supported()); }
+        if (in.get_level_three_supported()) { out.set_level_three_supported(in.get_level_three_supported()); }
+        if (in.get_issuer_currency()) { out.set_issuer_currency(in.get_issuer_currency()); }
+        if (in.get_combo_card()) { out.set_combo_card(in.get_combo_card()); }
+        if (in.get_authentication()) { out.set_authentication(in.get_authentication()); }
+        if (in.get_cost()) { out.set_cost(in.get_cost()); }
+        if (in.get_issuer_supports_tokenization()) { out.set_issuer_supports_tokenization(in.get_issuer_supports_tokenization()); }
+        if (in.get_billpay_enabled()) { out.set_billpay_enabled(in.get_billpay_enabled()); }
+        if (in.get_ecom_enabled()) { out.set_ecom_enabled(in.get_ecom_enabled()); }
+        if (in.get_flexible_credential_supported()) { out.set_flexible_credential_supported(in.get_flexible_credential_supported()); }
+        if (in.get_card_subtype_code()) { out.set_card_subtype_code(in.get_card_subtype_code()); }
+        if (in.get_multi_account_access_indicator()) { out.set_multi_account_access_indicator(in.get_multi_account_access_indicator()); }
         return out;
     }
 
-    [[nodiscard]] app::model::cards_info::CardInfoResponse build_response(
-        const app::model::cards_info::CardInfoUpdateRequest& in
-    ) const
+    [[nodiscard]] CardInfoResponse build_response(const CardInfoUpdateRequest& in) const
     {
         using namespace app::model::cards_info;
         CardInfoResponse out;
         out.set_card_iin(in.get_card_iin());
-        if (in.get_card_issuer()) {
-            out.set_card_issuer(in.get_card_issuer());
-        }
-        if (in.get_card_network()) {
-            out.set_card_network(in.get_card_network()->get_value());
-        }
-        if (in.get_card_type()) {
-            out.set_card_type(in.get_card_type());
-        }
-        if (in.get_card_subtype()) {
-            out.set_card_sub_type(in.get_card_subtype());
-        }
-        if (in.get_card_issuing_country()) {
-            out.set_card_issuing_country(in.get_card_issuing_country());
-        }
-        if (in.get_country_code()) {
-            out.set_country_code(in.get_country_code());
-        }
-        if (in.get_funding_source()) {
-            out.set_funding_source(in.get_funding_source()->get_value());
-        }
-        if (in.get_card_iin_type()) {
-            out.set_card_iin_type(in.get_card_iin_type()->get_value());
-        }
-        if (in.get_virtual_card()) {
-            out.set_virtual_card(in.get_virtual_card());
-        }
-        if (in.get_gambling_blocked()) {
-            out.set_gambling_blocked(in.get_gambling_blocked());
-        }
-        if (in.get_co_badged_card_networks()) {
-            out.set_co_badged_card_networks(in.get_co_badged_card_networks());
-        }
-        if (in.get_card_segment_type()) {
-            out.set_card_segment_type(in.get_card_segment_type());
-        }
-        if (in.get_numeric_country_code()) {
-            out.set_numeric_country_code(in.get_numeric_country_code());
-        }
-        if (in.get_prepaid()) {
-            out.set_prepaid(in.get_prepaid());
-        }
-        if (in.get_regulated()) {
-            out.set_regulated(in.get_regulated());
-        }
-        if (in.get_issuer_phone()) {
-            out.set_issuer_phone(in.get_issuer_phone());
-        }
-        if (in.get_issuer_url()) {
-            out.set_issuer_url(in.get_issuer_url());
-        }
-        if (in.get_regulated_name()) {
-            out.set_regulated_name(in.get_regulated_name());
-        }
-        if (in.get_reloadable_prepaid()) {
-            out.set_reloadable_prepaid(in.get_reloadable_prepaid());
-        }
-        if (in.get_account_updater()) {
-            out.set_account_updater(in.get_account_updater());
-        }
-        if (in.get_account_level_management()) {
-            out.set_account_level_management(in.get_account_level_management());
-        }
-        if (in.get_domestic_only()) {
-            out.set_domestic_only(in.get_domestic_only());
-        }
-        if (in.get_level_two_supported()) {
-            out.set_level_two_supported(in.get_level_two_supported());
-        }
-        if (in.get_level_three_supported()) {
-            out.set_level_three_supported(in.get_level_three_supported());
-        }
-        if (in.get_issuer_currency()) {
-            out.set_issuer_currency(in.get_issuer_currency());
-        }
-        if (in.get_combo_card()) {
-            out.set_combo_card(in.get_combo_card());
-        }
-        if (in.get_authentication()) {
-            out.set_authentication(in.get_authentication());
-        }
-        if (in.get_cost()) {
-            out.set_cost(in.get_cost());
-        }
-        if (in.get_issuer_supports_tokenization()) {
-            out.set_issuer_supports_tokenization(in.get_issuer_supports_tokenization());
-        }
-        if (in.get_billpay_enabled()) {
-            out.set_billpay_enabled(in.get_billpay_enabled());
-        }
-        if (in.get_ecom_enabled()) {
-            out.set_ecom_enabled(in.get_ecom_enabled());
-        }
-        if (in.get_flexible_credential_supported()) {
-            out.set_flexible_credential_supported(in.get_flexible_credential_supported());
-        }
-        if (in.get_card_subtype_code()) {
-            out.set_card_subtype_code(in.get_card_subtype_code());
-        }
-        if (in.get_multi_account_access_indicator()) {
-            out.set_multi_account_access_indicator(in.get_multi_account_access_indicator());
-        }
-        return out;
-    }
-
-    [[nodiscard]] app::model::cards_info::CardInfoMigrationResponse build_migration_response(
-        const app::model::cards_info::CardInfoUpdateRequest& in,
-        bool ok,
-        std::string_view error
-    ) const
-    {
-        using namespace app::model::cards_info;
-        CardInfoMigrationResponse out;
-        if (in.get_line_number()) {
-            out.set_line_number(in.get_line_number());
-        }
-        out.set_card_iin(in.get_card_iin());
-        if (in.get_card_issuer()) {
-            out.set_card_issuer(in.get_card_issuer());
-        }
-        if (in.get_card_network()) {
-            out.set_card_network(in.get_card_network()->get_value());
-        }
-        if (in.get_card_type()) {
-            out.set_card_type(in.get_card_type());
-        }
-        if (in.get_card_subtype()) {
-            out.set_card_sub_type(in.get_card_subtype());
-        }
-        if (in.get_card_issuing_country()) {
-            out.set_card_issuing_country(in.get_card_issuing_country());
-        }
-        if (in.get_country_code()) {
-            out.set_country_code(in.get_country_code());
-        }
-        if (in.get_funding_source()) {
-            out.set_funding_source(in.get_funding_source()->get_value());
-        }
-        if (in.get_card_iin_type()) {
-            out.set_card_iin_type(in.get_card_iin_type()->get_value());
-        }
-        if (in.get_virtual_card()) {
-            out.set_virtual_card(in.get_virtual_card());
-        }
-        if (in.get_gambling_blocked()) {
-            out.set_gambling_blocked(in.get_gambling_blocked());
-        }
-        if (in.get_co_badged_card_networks()) {
-            out.set_co_badged_card_networks(in.get_co_badged_card_networks());
-        }
-        if (in.get_card_segment_type()) {
-            out.set_card_segment_type(in.get_card_segment_type());
-        }
-        if (in.get_numeric_country_code()) {
-            out.set_numeric_country_code(in.get_numeric_country_code());
-        }
-        if (in.get_prepaid()) {
-            out.set_prepaid(in.get_prepaid());
-        }
-        if (in.get_regulated()) {
-            out.set_regulated(in.get_regulated());
-        }
-        if (in.get_issuer_phone()) {
-            out.set_issuer_phone(in.get_issuer_phone());
-        }
-        if (in.get_issuer_url()) {
-            out.set_issuer_url(in.get_issuer_url());
-        }
-        if (in.get_regulated_name()) {
-            out.set_regulated_name(in.get_regulated_name());
-        }
-        if (in.get_reloadable_prepaid()) {
-            out.set_reloadable_prepaid(in.get_reloadable_prepaid());
-        }
-        if (in.get_account_updater()) {
-            out.set_account_updater(in.get_account_updater());
-        }
-        if (in.get_account_level_management()) {
-            out.set_account_level_management(in.get_account_level_management());
-        }
-        if (in.get_domestic_only()) {
-            out.set_domestic_only(in.get_domestic_only());
-        }
-        if (in.get_level_two_supported()) {
-            out.set_level_two_supported(in.get_level_two_supported());
-        }
-        if (in.get_level_three_supported()) {
-            out.set_level_three_supported(in.get_level_three_supported());
-        }
-        if (in.get_issuer_currency()) {
-            out.set_issuer_currency(in.get_issuer_currency());
-        }
-        if (in.get_combo_card()) {
-            out.set_combo_card(in.get_combo_card());
-        }
-        if (in.get_authentication()) {
-            out.set_authentication(in.get_authentication());
-        }
-        if (in.get_cost()) {
-            out.set_cost(in.get_cost());
-        }
-        if (in.get_issuer_supports_tokenization()) {
-            out.set_issuer_supports_tokenization(in.get_issuer_supports_tokenization());
-        }
-        if (in.get_billpay_enabled()) {
-            out.set_billpay_enabled(in.get_billpay_enabled());
-        }
-        if (in.get_ecom_enabled()) {
-            out.set_ecom_enabled(in.get_ecom_enabled());
-        }
-        if (in.get_flexible_credential_supported()) {
-            out.set_flexible_credential_supported(in.get_flexible_credential_supported());
-        }
-        if (in.get_card_subtype_code()) {
-            out.set_card_subtype_code(in.get_card_subtype_code());
-        }
-        if (in.get_multi_account_access_indicator()) {
-            out.set_multi_account_access_indicator(in.get_multi_account_access_indicator());
-        }
-        out.set_migration_status(
-            ok ? CardInfoMigrationStatus::Success : CardInfoMigrationStatus::Failed
-        );
-        if (!error.empty()) {
-            out.set_migration_error(std::string{error});
-        }
+        if (in.get_card_issuer()) { out.set_card_issuer(in.get_card_issuer()); }
+        if (in.get_card_network()) { out.set_card_network(in.get_card_network()->get_value()); }
+        if (in.get_card_type()) { out.set_card_type(in.get_card_type()); }
+        if (in.get_card_subtype()) { out.set_card_sub_type(in.get_card_subtype()); }
+        if (in.get_card_issuing_country()) { out.set_card_issuing_country(in.get_card_issuing_country()); }
+        if (in.get_country_code()) { out.set_country_code(in.get_country_code()); }
+        if (in.get_funding_source()) { out.set_funding_source(in.get_funding_source()->get_value()); }
+        if (in.get_card_iin_type()) { out.set_card_iin_type(in.get_card_iin_type()->get_value()); }
+        if (in.get_virtual_card()) { out.set_virtual_card(in.get_virtual_card()); }
+        if (in.get_gambling_blocked()) { out.set_gambling_blocked(in.get_gambling_blocked()); }
+        if (in.get_co_badged_card_networks()) { out.set_co_badged_card_networks(in.get_co_badged_card_networks()); }
+        if (in.get_card_segment_type()) { out.set_card_segment_type(in.get_card_segment_type()); }
+        if (in.get_numeric_country_code()) { out.set_numeric_country_code(in.get_numeric_country_code()); }
+        if (in.get_prepaid()) { out.set_prepaid(in.get_prepaid()); }
+        if (in.get_regulated()) { out.set_regulated(in.get_regulated()); }
+        if (in.get_issuer_phone()) { out.set_issuer_phone(in.get_issuer_phone()); }
+        if (in.get_issuer_url()) { out.set_issuer_url(in.get_issuer_url()); }
+        if (in.get_regulated_name()) { out.set_regulated_name(in.get_regulated_name()); }
+        if (in.get_reloadable_prepaid()) { out.set_reloadable_prepaid(in.get_reloadable_prepaid()); }
+        if (in.get_account_updater()) { out.set_account_updater(in.get_account_updater()); }
+        if (in.get_account_level_management()) { out.set_account_level_management(in.get_account_level_management()); }
+        if (in.get_domestic_only()) { out.set_domestic_only(in.get_domestic_only()); }
+        if (in.get_level_two_supported()) { out.set_level_two_supported(in.get_level_two_supported()); }
+        if (in.get_level_three_supported()) { out.set_level_three_supported(in.get_level_three_supported()); }
+        if (in.get_issuer_currency()) { out.set_issuer_currency(in.get_issuer_currency()); }
+        if (in.get_combo_card()) { out.set_combo_card(in.get_combo_card()); }
+        if (in.get_authentication()) { out.set_authentication(in.get_authentication()); }
+        if (in.get_cost()) { out.set_cost(in.get_cost()); }
+        if (in.get_issuer_supports_tokenization()) { out.set_issuer_supports_tokenization(in.get_issuer_supports_tokenization()); }
+        if (in.get_billpay_enabled()) { out.set_billpay_enabled(in.get_billpay_enabled()); }
+        if (in.get_ecom_enabled()) { out.set_ecom_enabled(in.get_ecom_enabled()); }
+        if (in.get_flexible_credential_supported()) { out.set_flexible_credential_supported(in.get_flexible_credential_supported()); }
+        if (in.get_card_subtype_code()) { out.set_card_subtype_code(in.get_card_subtype_code()); }
+        if (in.get_multi_account_access_indicator()) { out.set_multi_account_access_indicator(in.get_multi_account_access_indicator()); }
         return out;
     }
 
     void send_error(
         interfaces::io::IResponse& res,
         std::function<void()> send,
-        core::error::AppError error
+        AppError error
     ) const
     {
         auto text = serde::Ser::encode_json(error);

@@ -9,6 +9,14 @@ import boost.ut;
 
 export namespace app::dto::offer_engine {
 
+/**
+ * @brief Scalar wrappers kept for source compatibility with older callers.
+ *
+ * They are NOT used by the wire DTOs below: upstream serializes `Currency` and
+ * `PrimitiveDateTime` as plain JSON strings (types.rs:373-392,
+ * api_models/offer_engine.rs:35-55), so `BrowseOffer::currency` and
+ * `BrowseOffer::valid_till` now hold `std::optional<std::string>` directly.
+ */
 class CurrencyValue
 {
 public:
@@ -32,6 +40,7 @@ public:
     std::string value{};
 };
 
+/** @brief Upstream `api_models::offer_engine::BrowseOffer` (offer_engine.rs:33-55). */
 class BrowseOffer
 {
 public:
@@ -43,24 +52,26 @@ public:
     [[nodiscard]] const std::optional<std::string>& get_display_title() const noexcept { return display_title; }
     void set_description(std::optional<std::string> value) { description = std::move(value); }
     [[nodiscard]] const std::optional<std::string>& get_description() const noexcept { return description; }
-    void set_currency(std::optional<CurrencyValue> value) { currency = std::move(value); }
-    [[nodiscard]] const std::optional<CurrencyValue>& get_currency() const noexcept { return currency; }
-    void set_valid_till(std::optional<PrimitiveDateTimeValue> value) { valid_till = std::move(value); }
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_valid_till() const noexcept { return valid_till; }
+    // Plain strings on the wire: upstream `Option<Currency>` / `Option<PrimitiveDateTime>`
+    // serialize via serde as a JSON string or null, never as an object `{"value":...}`.
+    void set_currency(std::optional<std::string> value) { currency = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_currency() const noexcept { return currency; }
+    void set_valid_till(std::optional<std::string> value) { valid_till = std::move(value); }
+    [[nodiscard]] const std::optional<std::string>& get_valid_till() const noexcept { return valid_till; }
     std::string code{};
     std::optional<std::string> title{};
     std::optional<std::string> display_title{};
     std::optional<std::string> description{};
-    std::optional<CurrencyValue> currency{};
-    std::optional<PrimitiveDateTimeValue> valid_till{};
+    std::optional<std::string> currency{};
+    std::optional<std::string> valid_till{};
 };
 
 class OfferPaymentInfo
 {
 public:
-    void set_currency(CurrencyValue value) { currency = std::move(value); }
-    [[nodiscard]] const CurrencyValue& get_currency() const noexcept { return currency; }
-    CurrencyValue currency{};
+    void set_currency(std::string value) { currency = std::move(value); }
+    [[nodiscard]] const std::string& get_currency() const noexcept { return currency; }
+    std::string currency{};
 };
 
 class BrowseOffersRequest

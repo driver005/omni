@@ -158,10 +158,17 @@ public:
                 core::cache::to_cache_value(secret_hash));
         }
 
-        // Upstream reads the connector choice from Redis (seeded at payment creation) and
-        // falls back to pm_auth_config on the merchant connector account.
+        // core/pm_auth.rs:56-93 — the pm_auth_<id> key must exist in Redis (local cache
+        // substitute); a missing key is InvalidRequestData, an absent choice is
+        // GenericNotFoundError. The MCA pm_auth_config is the local config source.
         const auto choice = resolve_connector_choice(
-            merchant_id, payment_id, payment_method, payment_method_type, true);
+            merchant_id, payment_id, payment_method, payment_method_type);
+        if (!choice.key_exists) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(
+                           core::error::AppErrorKind::INVALID_REQUEST,
+                           "Incorrect payment_id provided in request"));
+            return;
+        }
         std::string connector_name = choice.connector_name;
         std::optional<app::store::merchant_connectors::MerchantConnectorRecord> mca_record;
         if (const auto mca_error = validate_merchant_connector(
@@ -368,7 +375,7 @@ public:
         // Upstream get_selected_config_from_redis: a missing key is InvalidRequestData,
         // an absent choice is GenericNotFoundError. No seeding on the exchange path.
         const auto choice = resolve_connector_choice(
-            merchant_id, payment_id, payment_method, payment_method_type, false);
+            merchant_id, payment_id, payment_method, payment_method_type);
         if (!choice.key_exists) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(
                            core::error::AppErrorKind::INVALID_REQUEST, "Incorrect payment_id provided in request"));
@@ -461,10 +468,10 @@ public:
         m_context->metrics().record_flow("PmAuthExchangeToken");
         m_context->metrics().counter("PM_AUTH_EXCHANGE_TOKEN").increment();
 
-        app::dto::pm_auth::ExchangeTokenCreateResponse response{};
-        response.set_access_token(token_secret.value());
-        auto text = serde::Ser::encode_json(response);
-        send_json(res, send, text, true);
+        // core/pm_auth.rs:244,311 — exchange_token_core returns RouterResponse<()> /
+        // ApplicationResponse::StatusOk: HTTP 200 with an empty body. No access_token is
+        // emitted to the caller (upstream never serializes ExchangeTokenCreateResponse here).
+        send_ok(res, send);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -537,12 +544,75 @@ private:
         std::string account_id{};
     };
 
+    /** @brief Apply one auth scheme to the header/body-derived context.
+     *
+     *  AuthContextBuilder (app/auth/context.cppm:150-280) extracts the SDK publishable key,
+     *  SDK key and client-secret claims from the SDK Authorization header key=value pairs
+     *  and from x-client-secret / the request body, mirroring the upstream extractors.
+     */
+    [[nodiscard]] AuthResult authorize_with_scheme(
+        interfaces::io::IRequest& req,
+        std::string_view body,
+        std::string_view operation,
+        app::auth::AuthScheme scheme
+    ) const
+    {
+        AuthResult result{};
+        result.context = app::auth::AuthContextBuilder{}(req, body);
+        const auto rule = app::auth::RouteAuthRuleBuilder{}
+                              .scheme(scheme)
+                              .permission(m_context->auth_rules().rule_for(operation).permission())
+                              .build();
+        result.error = m_context->authorizer().authorize_route(result.context, rule);
+        return result;
+    }
+
+    /** @brief v1 check_sdk_auth_and_get_auth (routes/pm_auth.rs:25-32,91-98).
+     *
+     *  Requires the SDK credentials the authorizer checks at app/auth/authorizer.cppm:99-104,
+     * 127-137 (publishable key + client secret, or an SDK key), with ApiKeyAuth::default()
+     * represented by the registry rule's permission.
+     */
+    [[nodiscard]] AuthResult sdk_auth_and_get_auth(
+        interfaces::io::IRequest& req,
+        std::string_view body,
+        std::string_view operation
+    ) const
+    {
+        return authorize_with_scheme(req, body, operation, app::auth::AuthScheme::SDK);
+    }
+
+    /** @brief v2 check_client_secret_and_get_auth (routes/pm_auth.rs:36-43,102-109).
+     *
+     *  Requires the client-secret claim (app/auth/authorizer.cppm:135-137).
+     */
+    [[nodiscard]] AuthResult client_secret_and_get_auth(
+        interfaces::io::IRequest& req,
+        std::string_view body,
+        std::string_view operation
+    ) const
+    {
+        return authorize_with_scheme(req, body, operation, app::auth::AuthScheme::CLIENT_SECRET);
+    }
+
     [[nodiscard]] AuthResult authorize_request(
         interfaces::io::IRequest& req,
         std::string_view body,
         std::string_view operation
     ) const
     {
+        // Upstream builds ApiKeyAuth::default() (routes/pm_auth.rs:20,86) and selects exactly
+        // one extractor by feature: v1 check_sdk_auth_and_get_auth (25-32,91-98), v2
+        // check_client_secret_and_get_auth (36-43,102-109). Try both, then keep the registry
+        // rule and its alternate schemes as the local compatibility fallback.
+        if (auto sdk = sdk_auth_and_get_auth(req, body, operation); !sdk.error) {
+            return sdk;
+        }
+        if (auto client_secret = client_secret_and_get_auth(req, body, operation);
+            !client_secret.error) {
+            return client_secret;
+        }
+
         AuthResult result{};
         result.context = app::auth::AuthContextBuilder{}(req, body);
         const auto rule = m_context->auth_rules().rule_for(operation);
@@ -550,8 +620,6 @@ private:
         if (!result.error) {
             return result;
         }
-        // Upstream accepts SDK auth (publishable key + client secret) and v2 client-secret
-        // API-key auth. Try each alternate scheme with the rule's registered permission.
         const auto try_scheme = [this, &result, &rule](app::auth::AuthScheme scheme)
         {
             const auto alternate = app::auth::RouteAuthRuleBuilder{}
@@ -878,7 +946,9 @@ private:
         } else {
             material = credential.account_number;
         }
-        // Deterministic HMAC-shaped substitute: no HMAC-SHA256 primitive is available locally.
+        // core/pm_auth.rs:370-425 — HMAC-SHA256 over the account/route key. The local
+        // KeyedHasher is the HMAC-SHA256 substitute (deterministic keyed hex digest); the
+        // key stands in for state.conf.payment_method_auth.pm_auth_key.
         return app::crypto::KeyedHasher{"pm_auth-bank-dedupe"}.hash_with_domain(
             "pm_auth_bank_dedupe", material);
     }
@@ -987,6 +1057,11 @@ private:
                 by_hash[hash] = method;
             }
         }
+        // core/pm_auth.rs:367-565 — build update_entries and new_entries first, then
+        // persist them as two independent batches (store_in_db at core/pm_auth.rs:579-616
+        // joins the update futures and the insert futures separately).
+        std::vector<app::store::payment_methods::PaymentMethodRecord> update_entries{};
+        std::vector<app::store::payment_methods::PaymentMethodRecord> new_entries{};
         for (const auto& credential : credentials) {
             const std::string hash = bank_hash(credential);
             const auto found = by_hash.find(hash);
@@ -1003,7 +1078,7 @@ private:
                 );
                 method.set_vault_id(encrypt_secret(bank_details_json(credential, hash, connectors)));
                 method.set_last4(mask_account(credential.account_number));
-                repository.update_payment_method(method);
+                update_entries.push_back(std::move(method));
                 continue;
             }
             app::store::payment_methods::PaymentMethodRecord method{};
@@ -1021,6 +1096,25 @@ private:
             method.set_vault_id(encrypt_secret(bank_details_json(credential, hash, connectors)));
             method.set_status("active");
             method.set_created_at(std::to_string(static_cast<std::int64_t>(std::time(nullptr))));
+            new_entries.push_back(std::move(method));
+        }
+        store_in_db(update_entries, new_entries);
+    }
+
+    /** @brief core/pm_auth.rs:579-616 store_in_db — updates and inserts applied as two
+     *  batches. The local repository is synchronous, so the two join_all sets become two
+     *  loops; per-item errors are logged upstream and do not abort the batch.
+     */
+    void store_in_db(
+        std::vector<app::store::payment_methods::PaymentMethodRecord>& update_entries,
+        std::vector<app::store::payment_methods::PaymentMethodRecord>& new_entries
+    ) const
+    {
+        auto repository = m_context->repository();
+        for (auto& method : update_entries) {
+            repository.update_payment_method(method);
+        }
+        for (auto& method : new_entries) {
             repository.save_payment_method(std::move(method));
         }
     }
@@ -1097,8 +1191,7 @@ private:
         std::string_view merchant_id,
         std::string_view payment_id,
         std::string_view payment_method,
-        std::string_view payment_method_type,
-        bool seed_default
+        std::string_view payment_method_type
     ) const
     {
         ConnectorChoice result{};
@@ -1150,17 +1243,9 @@ private:
             }
         }
 
-        if (!result.matched && seed_default) {
-            result.connector_name = "plaid";
-            result.matched = true;
-            const std::string seeded = std::string{"[{\"payment_method\":"} +
-                                       serde::Ser::encode_json(std::string{payment_method}) +
-                                       ",\"payment_method_type\":" + serde::Ser::encode_json(std::string{payment_method_type}) +
-                                       ",\"connector_name\":" + serde::Ser::encode_json(result.connector_name) +
-                                       ",\"mca_id\":\"\"}]";
-            m_context->cache().put(config_key, core::cache::to_cache_value(seeded));
-            result.key_exists = true;
-        }
+        // core/pm_auth.rs:76-93,726-769 — no synthetic connector choice: upstream only
+        // selects from the stored Vec<PaymentMethodAuthConnectorChoice> and errors when no
+        // entry matches the requested payment_method / payment_method_type.
         return result;
     }
 
@@ -1229,6 +1314,17 @@ private:
         res.set_status(ok ? interfaces::io::types::Status::OK
                           : interfaces::io::types::Status::BAD_REQUEST);
         res.set_body(std::move(bytes));
+        send();
+    }
+
+    /** @brief core/pm_auth.rs:311 ApplicationResponse::StatusOk — 200 with an empty body. */
+    void send_ok(
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    ) const
+    {
+        res.set_status(interfaces::io::types::Status::OK);
+        res.set_body({});
         send();
     }
 

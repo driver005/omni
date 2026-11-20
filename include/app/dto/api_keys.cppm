@@ -1,4 +1,6 @@
 module;
+#include <simdjson.h>
+#include <toml++/toml.hpp>
 export module app_dto:api_keys;
 
 import std;
@@ -9,10 +11,27 @@ import boost.ut;
 
 export namespace app::dto::api_keys {
 
-enum class ApiKeyExpiration
+/**
+ * @brief Untagged `ApiKeyExpiration` mirror of api_models/src/api_keys.rs:168-233.
+ * Wire form is a plain JSON string: `"never"` or an ISO-8601 datetime.
+ */
+class ApiKeyExpiration
 {
-    Never,
-    DateTime
+public:
+    ApiKeyExpiration() = default;
+
+    [[nodiscard]] static ApiKeyExpiration never() { return ApiKeyExpiration{"never"}; }
+    [[nodiscard]] static ApiKeyExpiration at(std::string datetime)
+    {
+        return ApiKeyExpiration{std::move(datetime)};
+    }
+
+    [[nodiscard]] const std::string& value() const noexcept { return m_value; }
+    [[nodiscard]] bool is_never() const noexcept { return m_value == "never"; }
+
+private:
+    explicit ApiKeyExpiration(std::string value) : m_value{std::move(value)} {}
+    std::string m_value{"never"};
 };
 
 class ApiKeyIdValue
@@ -150,6 +169,156 @@ public:
     MerchantIdValue merchant_id{};
 };
 } // namespace app::dto::api_keys
+
+// ── Exact upstream wire converters (api_models/src/api_keys.rs:28-104) ─────────
+// Upstream key_id/merchant_id are plain strings, `created` is an iso8601
+// primitive datetime, and expiration is an untagged string. The local wrapper
+// value objects are reduced to those plain strings on the wire.
+
+template<>
+struct serde::FieldConverter<app::dto::api_keys::ApiKeyIdValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::api_keys::ApiKeyIdValue& v) { return v.get_value(); }
+    static app::dto::api_keys::ApiKeyIdValue from_rfl(const rfl_type& v)
+    {
+        app::dto::api_keys::ApiKeyIdValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(simdjson::ondemand::value& j, app::dto::api_keys::ApiKeyIdValue& out)
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) { return ec; }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::api_keys::ApiKeyIdValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) { return std::unexpected{std::format("missing field '{}'", name)}; }
+        app::dto::api_keys::ApiKeyIdValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::api_keys::MerchantIdValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::api_keys::MerchantIdValue& v) { return v.get_value(); }
+    static app::dto::api_keys::MerchantIdValue from_rfl(const rfl_type& v)
+    {
+        app::dto::api_keys::MerchantIdValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(simdjson::ondemand::value& j, app::dto::api_keys::MerchantIdValue& out)
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) { return ec; }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::api_keys::MerchantIdValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) { return std::unexpected{std::format("missing field '{}'", name)}; }
+        app::dto::api_keys::MerchantIdValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::api_keys::PrimitiveDateTimeValue>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::api_keys::PrimitiveDateTimeValue& v) { return v.get_value(); }
+    static app::dto::api_keys::PrimitiveDateTimeValue from_rfl(const rfl_type& v)
+    {
+        app::dto::api_keys::PrimitiveDateTimeValue out;
+        out.set_value(v);
+        return out;
+    }
+    static simdjson::error_code from_simdjson(simdjson::ondemand::value& j, app::dto::api_keys::PrimitiveDateTimeValue& out)
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) { return ec; }
+        out.set_value(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::api_keys::PrimitiveDateTimeValue, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) { return std::unexpected{std::format("missing field '{}'", name)}; }
+        app::dto::api_keys::PrimitiveDateTimeValue out;
+        out.set_value(*v);
+        return out;
+    }
+};
+
+template<>
+struct serde::FieldConverter<app::dto::api_keys::ApiKeyExpiration>
+{
+    using rfl_type = std::string;
+    static rfl_type to_rfl(const app::dto::api_keys::ApiKeyExpiration& v) { return v.value(); }
+    static app::dto::api_keys::ApiKeyExpiration from_rfl(const rfl_type& v)
+    {
+        return v == "never" ? app::dto::api_keys::ApiKeyExpiration::never()
+                            : app::dto::api_keys::ApiKeyExpiration::at(v);
+    }
+    static simdjson::error_code from_simdjson(simdjson::ondemand::value& j, app::dto::api_keys::ApiKeyExpiration& out)
+    {
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) { return ec; }
+        out = from_rfl(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<app::dto::api_keys::ApiKeyExpiration, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) { return std::unexpected{std::format("missing field '{}'", name)}; }
+        return from_rfl(*v);
+    }
+};
+
+template<>
+struct serde::FieldConverter<std::optional<app::dto::api_keys::ApiKeyExpiration>>
+{
+    using rfl_type = std::optional<std::string>;
+    static rfl_type to_rfl(const std::optional<app::dto::api_keys::ApiKeyExpiration>& v)
+    {
+        return v ? std::optional<std::string>{v->value()} : std::nullopt;
+    }
+    static std::optional<app::dto::api_keys::ApiKeyExpiration> from_rfl(const rfl_type& v)
+    {
+        if (!v) { return std::nullopt; }
+        return *v == "never" ? app::dto::api_keys::ApiKeyExpiration::never()
+                             : app::dto::api_keys::ApiKeyExpiration::at(*v);
+    }
+    static simdjson::error_code
+    from_simdjson(simdjson::ondemand::value& j, std::optional<app::dto::api_keys::ApiKeyExpiration>& out)
+    {
+        if (j.is_null()) { out = std::nullopt; return simdjson::SUCCESS; }
+        std::string_view s;
+        if (auto ec = j.get_string().get(s); ec) { return ec; }
+        out = from_rfl(std::string{s});
+        return simdjson::SUCCESS;
+    }
+    static std::expected<std::optional<app::dto::api_keys::ApiKeyExpiration>, std::string>
+    from_toml(const toml::table& table, std::string_view name)
+    {
+        auto v = table[name].value<std::string>();
+        if (!v) { return std::nullopt; }
+        return from_rfl(*v);
+    }
+};
 
 template<>
 struct serde::Serializable<app::dto::api_keys::ApiKeyIdValue>

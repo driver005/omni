@@ -21,22 +21,45 @@ import app_services;
 
 export namespace app::handlers::external_service_auth {
 
-inline constexpr std::string_view kBlacklistPrefix{"hypersense.blacklist."};
+// ── Upstream constants (exact values) ───────────────────────────────────────
+// consts.rs:64 — JWT_TOKEN_TIME_IN_SECS = 60 * 60 * 24 * 2.
+inline constexpr std::int64_t kJwtTokenTimeInSecs{172800};
+// consts.rs:73,75,77 — Redis key prefixes.
+inline constexpr std::string_view kUserBlacklistPrefix{"BU_"};
+inline constexpr std::string_view kRoleBlacklistPrefix{"BR_"};
+inline constexpr std::string_view kUserIdleSessionPrefix{"IS_"};
+// authorization.rs:72-74 — role info cache key prefix.
+inline constexpr std::string_view kRoleInfoCachePrefix{"CR_INFO_"};
+// jwt.rs:50 + services/authentication.rs:6353-6364 — state.conf.secrets.jwt_secret.
 inline constexpr std::string_view kJwtPurpose{"jwt"};
-inline constexpr std::string_view kJwtKeyId{"user-jwt-secret"};
+inline constexpr std::string_view kJwtSigningKeyId{"user-jwt-v2"};
+inline constexpr std::string_view kJwtFallbackKeyId{"user-jwt-secret"};
 inline constexpr std::string_view kJwtConfigKey{"jwt.secret"};
 inline constexpr std::string_view kDefaultJwtSecret{"user-jwt-secret"};
-// Upstream OFFER_ENGINE_CONTEXT (core/external_service_auth.rs:22,130).
+// core/external_service_auth.rs:22,130 — OFFER_ENGINE_CONTEXT.
 inline constexpr std::string_view kOfferEngineContext{"MERCHANT"};
 
+// Exact upstream error wire values (hyperswitch_domain_models api_error_response.rs:
+// 629,768,643-645 + api_models/errors/types.rs:60-70,159-176).
+inline constexpr std::string_view kInvalidRequestType{"invalid_request"};
+inline constexpr std::string_view kInvalidJwtCode{"IR_17"};
+inline constexpr std::string_view kInvalidJwtMessage{
+    "Access forbidden, invalid JWT token was used"};
+inline constexpr std::string_view kExpiredJwtCode{"IR_48"};
+inline constexpr std::string_view kExpiredJwtMessage{
+    "Access forbidden, expired JWT token was used"};
+inline constexpr std::string_view kAccessForbiddenCode{"IR_22"};
+inline constexpr std::string_view kAccessForbiddenMessage{
+    "Access forbidden. Not authorized to access this resource offer_engine"};
+
 /**
- * @brief Local normalizer for ValidateTokenRequest.
+ * @brief Local wire shape for api_models::external_service_auth::ValidateTokenRequest.
  *
- * The DTO partition models `service` as a C++ enum (dto/external_service_auth.cppm:42-56)
- * whose serde mapping uses the enumerator name, while upstream `ValidatingService` is
- * `#[serde(rename_all = "snake_case")]` + `strum::Display` ("offer_engine"). Deserializing
- * the DTO directly therefore does not accept the upstream wire value. This local shape
- * keeps the field as text so both spellings map deterministically to the typed DTO.
+ * The DTO partition models `service` as a C++ enum whose serde mapping uses the
+ * enumerator name, while upstream `ValidatingService` is
+ * `#[serde(rename_all = "snake_case")]` + `strum::Display`. Keeping the field as
+ * text here accepts the exact upstream snake_case value ("offer_engine"), then
+ * maps to the typed DTO. See "## Shared contract requests" in the report.
  */
 class ValidateTokenWire
 {
@@ -51,12 +74,12 @@ public:
 };
 
 /**
- * @brief Typed OfferEngine arm of ExternalVerifyTokenResponse.
+ * @brief Typed OfferEngine arm of api_models::ExternalVerifyTokenResponse.
  *
- * The DTO partition declares the response variant as an empty enum marker
+ * The DTO declares the response variant as an empty enum marker
  * (dto/external_service_auth.cppm:36-40), so the four upstream fields
- * (api_models/external_service_auth.rs:40-45) are normalized here and emitted through
- * serde. `token` is masked because upstream types it as `Secret<String>`.
+ * (api_models/external_service_auth.rs:40-45) are normalized here and emitted
+ * through serde. `token` is masked because upstream types it as `Secret<String>`.
  */
 class OfferEngineVerifyResponse
 {
@@ -74,6 +97,82 @@ public:
     std::string context{};
     std::string token{};
     std::vector<std::string> permissions{};
+};
+
+/** @brief Port of authentication::AuthToken (authentication.rs:322-331). */
+struct AuthToken
+{
+    std::string user_id{};
+    std::string merchant_id{};
+    std::string role_id{};
+    std::int64_t exp{0};
+    std::string org_id{};
+    std::string profile_id{};
+    std::optional<std::string> tenant_id{};
+};
+
+/** @brief JwtDecodeOutcome mapping (authentication.rs:6353-6364). */
+enum class JwtDecodeOutcome
+{
+    Valid,
+    Invalid,
+    Expired,
+};
+
+/** @brief Outcome of decode_jwt::<AuthToken>: reconstructed claims plus reason. */
+struct DecodedToken
+{
+    AuthToken token{};
+    JwtDecodeOutcome outcome{JwtDecodeOutcome::Invalid};
+};
+
+/** @brief authorization::permissions::Permission restricted to Resource::Offers.
+ *
+ *  generate_permissions! declares Offers with scopes [Read, Write]
+ *  (authorization/permissions.rs:130-133); Permission::iter() therefore yields
+ *  these two in this order and their Display values are the snake_case names.
+ */
+enum class OffersPermission
+{
+    Read,
+    Write,
+};
+
+[[nodiscard]] constexpr std::string_view permission_name(OffersPermission permission) noexcept
+{
+    return permission == OffersPermission::Read ? "offers_read" : "offers_write";
+}
+
+/** @brief offer_engine::OfferEngineCredentialSource (core/offer_engine/types.rs:19).
+ *  Reuses the shared DTO enum (dto/offer_engine.cppm:20-25) rather than a local copy. */
+using OfferEngineCredentialSource = app::dto::offer_engine::OfferEngineCredentialSource;
+
+/** @brief Local mirror of roles::RoleInfo (authorization/roles.rs:11-90).
+ *
+ *  `grants` is the local in-process stand-in for the role's permission groups:
+ *  upstream `check_permission_exists` expands groups and checks resource/scope;
+ *  here the expanded grant names are held directly, so the Offers filter below
+ *  is byte-for-byte the upstream iteration result.
+ */
+struct RoleInfo
+{
+    std::string role_id{};
+    std::vector<std::string> grants{};
+
+    [[nodiscard]] bool check_permission_exists(OffersPermission permission) const noexcept
+    {
+        const auto wanted = permission_name(permission);
+        return std::ranges::any_of(
+            grants, [wanted](std::string_view grant) { return grant == wanted; });
+    }
+};
+
+/** @brief Result of AuthToken::check_in_blacklist (blacklist.rs:143-166). */
+enum class BlacklistOutcome
+{
+    NotBlacklisted,
+    Blacklisted,   // InvalidJwtToken
+    IdleExpired,   // ExpiredJwtToken
 };
 
 } // namespace app::handlers::external_service_auth
@@ -118,15 +217,17 @@ public:
     {
     }
 
+    /** @brief routes/external_service_auth.rs:11-27 — validate_token. */
     void handle_validate_token(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
         std::function<void()> send
     )
     {
-        // Upstream: authentication::NoAuth + api_locking::LockAction::NotApplicable
-        // (routes/external_service_auth.rs:23-24). The audited registry row is NO_AUTH,
-        // so authorize_route passes through; identity comes from the JWT in the body.
+        // routes/external_service_auth.rs:23-24 — authentication::NoAuth with
+        // LockAction::NotApplicable. "validate_token" resolves to NO_AUTH
+        // (auth/registry.cppm:456); authorize_route is an exact no-op
+        // (auth/authorizer.cppm:59-62). No lock is acquired, matching NotApplicable.
         const auto rule = m_context->auth_rules().rule_for("validate_token");
         const auto auth = m_context->authorizer().authorize_route(
             app::auth::AuthContextBuilder{}(req), rule
@@ -167,82 +268,92 @@ public:
         request.set_token(parsed->get_token());
         request.set_service(*service);
 
+        // core/external_service_auth.rs:111 — req.token.expose().
         const app::crypto::SecretString token_secret{request.get_token()};
         const auto token = token_secret.value();
 
-        // core/external_service_auth.rs:111-113 — decode_jwt::<AuthToken>(&token, &state)
-        // and validate signature, shape and expiry before any identity is trusted.
-        const auto claims = decode_dashboard_claims(token);
-        if (!claims) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid dashboard token"));
+        // core/external_service_auth.rs:113 — decode_jwt::<AuthToken>(&token, &state).
+        const auto decoded = decode_jwt(token);
+        if (decoded.outcome == JwtDecodeOutcome::Expired) {
+            send_api_error(res, send, kInvalidRequestType, kExpiredJwtCode,
+                           kExpiredJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
+            return;
+        }
+        if (decoded.outcome != JwtDecodeOutcome::Valid) {
+            send_api_error(res, send, kInvalidRequestType, kInvalidJwtCode,
+                           kInvalidJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
+            return;
+        }
+        const auto& payload = decoded.token;
+
+        // core/external_service_auth.rs:115-117 — payload.check_in_blacklist(&state).
+        const auto blacklist = check_in_blacklist(payload);
+        if (blacklist == BlacklistOutcome::Blacklisted) {
+            send_api_error(res, send, kInvalidRequestType, kInvalidJwtCode,
+                           kInvalidJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
+            return;
+        }
+        if (blacklist == BlacklistOutcome::IdleExpired) {
+            send_api_error(res, send, kInvalidRequestType, kExpiredJwtCode,
+                           kExpiredJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
-        // core:115-117 — payload.check_in_blacklist -> InvalidJwtToken.
-        if (is_blacklisted(claims->user_id)) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED, "invalid dashboard token"));
+        // core/external_service_auth.rs:119 — check_tenant(payload.tenant_id, state.tenant).
+        if (!check_tenant(payload.tenant_id)) {
+            send_api_error(res, send, kInvalidRequestType, kInvalidJwtCode,
+                           kInvalidJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
-        // core:119 — check_tenant(payload.tenant_id, state.tenant.tenant_id).
-        if (const auto tenant = m_context->config_store().get_value("tenant", "tenant_id");
-            tenant && !tenant->empty() && claims->tenant_id != *tenant) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN, "tenant mismatch"));
+        // core/external_service_auth.rs:121 — get_role_info(&state, &payload).
+        const auto role_info = get_role_info(payload);
+        if (!role_info) {
+            send_api_error(res, send, kInvalidRequestType, kInvalidJwtCode,
+                           kInvalidJwtMessage, interfaces::io::types::Status::UNAUTHORIZED);
             return;
         }
 
-        // core:121,189-196 — get_role_info + Permission::iter() filtered to Resource::Offers.
-        // A resolved role with no Offers grants yields an empty permissions list upstream,
-        // not an access error; only an unresolved role is access forbidden.
-        const auto permissions = offer_engine_permissions(*claims);
-        if (!permissions) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN, "offer engine access forbidden"));
+        // core/external_service_auth.rs:123-136 — match ValidatingService::OfferEngine.
+        switch (*service) {
+        case app::dto::external_service_auth::ValidatingService::OfferEngine: {
+            // core:125 — resolve_offer_engine_merchant_id.
+            const auto merchant_id = resolve_offer_engine_merchant_id(payload);
+            if (!merchant_id) {
+                send_api_error(res, send, kInvalidRequestType, kAccessForbiddenCode,
+                               kAccessForbiddenMessage,
+                               interfaces::io::types::Status::FORBIDDEN);
+                return;
+            }
+
+            // routes/external_service_auth.rs:16-26 — Flow::ExternalServiceValidateToken,
+            // LockAction::NotApplicable (no lock acquired). Local metrics substitute.
+            m_context->metrics().record_flow("ExternalServiceValidateToken");
+            m_context->metrics().counter("EXTERNAL_SERVICE_TOKEN_VALIDATED").increment();
+
+            OfferEngineVerifyResponse response{};
+            response.set_merchant_id(*merchant_id);
+            response.set_context(std::string{kOfferEngineContext});
+            response.set_token(
+                token_secret.masked_as(app::crypto::SecretFieldKind::ClientSecret));
+            response.set_permissions(offer_engine_permissions(*role_info));
+            send_json(res, send, serde::Ser::encode_json(response), true);
             return;
         }
-
-        // core:125,139-187 — resolve_offer_engine_merchant_id via Dimensions and the
-        // credential-source config, with AccessForbidden when no source is configured.
-        auto merchant_id = resolve_offer_engine_merchant(*claims);
-        if (merchant_id.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::FORBIDDEN, "offer engine is not enabled for this merchant"));
-            return;
         }
 
-        // routes/external_service_auth.rs:16-26 — Flow::ExternalServiceValidateToken,
-        // LockAction::NotApplicable (no lock acquired).
-        m_context->metrics().record_flow("ExternalServiceValidateToken");
-        m_context->metrics().counter("EXTERNAL_SERVICE_TOKEN_VALIDATED").increment();
-
-        OfferEngineVerifyResponse response{};
-        response.set_merchant_id(std::move(merchant_id));
-        response.set_context(std::string{kOfferEngineContext});
-        response.set_token(token_secret.masked_as(app::crypto::SecretFieldKind::ClientSecret));
-        response.set_permissions(*permissions);
-        send_json(res, send, serde::Ser::encode_json(response), true);
+        send_error(res, send, core::error::AppErrorBuilder{}(
+            core::error::AppErrorKind::INVALID_REQUEST, "unsupported validating service"));
     }
 
     void install(core::router::RouterContext<>& router)
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/external_service_auth"}
-            .add_route(
-                Route{"/external-service/validate-token"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_validate_token(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch validate_token")
-            );
-        // Upstream mounts the route as POST /external-service/validate-token.
+        // Upstream mounts exactly POST /external-service/validate-token
+        // (app.rs:2004-2009; routes/external_service_auth.rs:11-27). No other
+        // route exists in this domain upstream; the old C++-only prefixed alias
+        // was removed for strict parity.
         Router{router, "/external-service"}
             .add_route(
                 Route{"/validate-token"}
@@ -258,23 +369,20 @@ public:
     }
 
 private:
-    struct DashboardClaims
-    {
-        std::string user_id{};
-        std::string merchant_id{};
-        std::string org_id{};
-        std::string profile_id{};
-        std::string tenant_id{};
-        std::string role_id{};
-        std::string external_service_type{};
-        std::int64_t exp{0};
-    };
+    // ── decode_jwt::<AuthToken> ───────────────────────────────────────────────
 
-    /** @brief Secret resolution: key store first, persisted config then local default. */
-    [[nodiscard]] std::string signing_secret() const
+    /** @brief state.conf.secrets.jwt_secret resolved from local infra.
+     *  Mirrors hypersense.cppm:342-360 and supports the same local token issuer
+     *  (user.cppm:3822-3830 signs with "jwt"/"user-jwt-v2"). */
+    [[nodiscard]] std::string jwt_secret() const
     {
+        if (const auto stored = m_context->secret_resolver().resolve(
+                kJwtPurpose, std::string{kJwtSigningKeyId});
+            stored && !stored->empty()) {
+            return *stored;
+        }
         if (const auto stored = m_context->key_store().get(
-                kJwtPurpose, kJwtKeyId);
+                kJwtPurpose, kJwtFallbackKeyId);
             stored && !stored->value().empty()) {
             return stored->value();
         }
@@ -286,36 +394,50 @@ private:
         return std::string{kDefaultJwtSecret};
     }
 
-    /** @brief decode_jwt::<AuthToken> substitute with strict signature/expiry checks. */
-    [[nodiscard]] std::optional<DashboardClaims>
-    decode_dashboard_claims(std::string_view token) const
+    /** @brief authentication.rs:6334-6364 decode_jwt_verified + decode_jwt error map. */
+    [[nodiscard]] DecodedToken decode_jwt(std::string_view token) const
     {
-        const auto signer = app::crypto::JwtSigner{signing_secret()};
-        if (!signer.verify(token)) {
-            return std::nullopt;
+        DecodedToken result{};
+        if (token.empty()) {
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
+        }
+
+        const auto signer = app::crypto::JwtSigner{jwt_secret()};
+        const auto verification = signer.verify_with_options(
+            token, app::crypto::JwtVerificationOptions{}.require_expiry(false));
+        if (!verification.ok()) {
+            // The local JwtSigner reports "expired" only when require_expiry is
+            // enabled; with it disabled, an expired exp is still read below and
+            // mapped to ExpiredJwtToken exactly as jsonwebtoken would.
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
         }
 
         const std::size_t first = token.find('.');
         const std::size_t second = token.find('.', first + 1);
         if (first == std::string_view::npos || second == std::string_view::npos) {
-            return std::nullopt;
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
         }
         const auto payload = app::crypto::Base64Url{}.decode(
             token.substr(first + 1, second - first - 1)
         );
         if (payload.empty()) {
-            return std::nullopt;
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
         }
         auto generic = serde::Ser::decode_generic("application/json", payload);
         if (!generic) {
-            return std::nullopt;
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
         }
         const auto* object = std::get_if<interfaces::Value::Object>(&generic->get());
         if (object == nullptr) {
-            return std::nullopt;
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
         }
 
-        DashboardClaims claims{};
         const auto read = [object](std::string_view key, std::string& target)
         {
             const auto field = object->get(std::string{key});
@@ -326,200 +448,480 @@ private:
                 target = *text;
             }
         };
-        read("user_id", claims.user_id);
-        read("merchant_id", claims.merchant_id);
-        read("org_id", claims.org_id);
-        read("profile_id", claims.profile_id);
-        read("tenant_id", claims.tenant_id);
-        read("role_id", claims.role_id);
-        read("external_service_type", claims.external_service_type);
+        read("user_id", result.token.user_id);
+        // Locally issued dashboard tokens also carry `sub` (hypersense.cppm:486-489).
+        if (result.token.user_id.empty()) {
+            read("sub", result.token.user_id);
+        }
+        read("merchant_id", result.token.merchant_id);
+        read("role_id", result.token.role_id);
+        read("org_id", result.token.org_id);
+        read("profile_id", result.token.profile_id);
+
+        if (const auto field = object->get("tenant_id")) {
+            if (const auto* text = std::get_if<std::string>(&field.value().get())) {
+                result.token.tenant_id = *text;
+            }
+        }
 
         if (const auto field = object->get("exp")) {
             if (const auto* number = std::get_if<std::int64_t>(&field.value().get())) {
-                claims.exp = *number;
+                result.token.exp = *number;
             } else if (const auto* number = std::get_if<double>(&field.value().get())) {
-                claims.exp = static_cast<std::int64_t>(*number);
+                result.token.exp = static_cast<std::int64_t>(*number);
             }
         }
-        if (claims.exp > 0) {
+
+        // Validation::new(HS256) validates `exp` when present.
+        if (result.token.exp > 0) {
             const auto now = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()
             ).count();
-            if (claims.exp <= now) {
-                return std::nullopt;
+            if (result.token.exp <= now) {
+                result.outcome = JwtDecodeOutcome::Expired;
+                return result;
             }
         }
-        return claims;
+        // jsonwebtoken Validation::new(HS256) requires an `exp` claim, and
+        // AuthToken's non-Option fields must deserialize (user_id, merchant_id,
+        // role_id, org_id, profile_id). Missing values are InvalidJwtToken.
+        if (result.token.exp <= 0 || result.token.user_id.empty() ||
+            result.token.merchant_id.empty() || result.token.role_id.empty()) {
+            result.outcome = JwtDecodeOutcome::Invalid;
+            return result;
+        }
+        result.outcome = JwtDecodeOutcome::Valid;
+        return result;
     }
 
-    [[nodiscard]] bool is_blacklisted(std::string_view user_id) const
+    // ── AuthToken::check_in_blacklist ─────────────────────────────────────────
+
+    /** @brief blacklist.rs:70-83 check_user_in_blacklist. */
+    [[nodiscard]] bool check_user_in_blacklist(
+        std::string_view user_id, std::int64_t token_expiry) const
     {
-        const std::string key = std::string{kBlacklistPrefix} +
-            (user_id.empty() ? std::string{"unknown"} : std::string{user_id});
-        // Durable marker written by the signout handler, mirrored in TTL cache.
-        if (m_context->repository().get_config(key).has_value()) {
+        return check_principal_in_blacklist(kUserBlacklistPrefix, user_id, token_expiry);
+    }
+
+    /** @brief blacklist.rs:85-98 check_role_in_blacklist. */
+    [[nodiscard]] bool check_role_in_blacklist(
+        std::string_view role_id, std::int64_t token_expiry) const
+    {
+        return check_principal_in_blacklist(kRoleBlacklistPrefix, role_id, token_expiry);
+    }
+
+    [[nodiscard]] bool check_principal_in_blacklist(
+        std::string_view prefix, std::string_view id, std::int64_t token_expiry) const
+    {
+        if (id.empty() || token_expiry <= 0) {
+            return false;
+        }
+        const auto key = std::string{prefix} + std::string{id};
+        const auto stored = m_context->repository().get_config(key);
+        if (!stored) {
+            return false;
+        }
+        std::int64_t blacklisted_at{0};
+        try {
+            blacklisted_at = std::stoll(*stored);
+        } catch (...) {
+            return false;
+        }
+        return blacklisted_at > (token_expiry - kJwtTokenTimeInSecs);
+    }
+
+    /** @brief idle_session.rs:40-74 check_idle_session. */
+    [[nodiscard]] BlacklistOutcome check_idle_session(std::string_view user_id) const
+    {
+        if (user_id.empty()) {
+            return BlacklistOutcome::NotBlacklisted;
+        }
+        const auto timeout = m_context->config_store().get_value(
+            "user", "idle_session_timeout_in_secs");
+        if (!timeout || timeout->empty()) {
+            return BlacklistOutcome::NotBlacklisted;
+        }
+        std::int64_t seconds{0};
+        try {
+            seconds = std::stoll(*timeout);
+        } catch (...) {
+            return BlacklistOutcome::NotBlacklisted;
+        }
+        if (seconds <= 0) {
+            return BlacklistOutcome::NotBlacklisted;
+        }
+        const auto key = std::string{kUserIdleSessionPrefix} + std::string{user_id};
+        if (!m_context->cache().get(key).hit) {
+            return BlacklistOutcome::IdleExpired;
+        }
+        m_context->cache().put(
+            key, core::cache::to_cache_value(now_seconds()),
+            core::cache::Ttl{}.seconds(seconds));
+        return BlacklistOutcome::NotBlacklisted;
+    }
+
+    /** @brief blacklist.rs:151-166 BlackList for AuthToken. */
+    [[nodiscard]] BlacklistOutcome check_in_blacklist(const AuthToken& token) const
+    {
+        const bool blacklisted =
+            check_user_in_blacklist(token.user_id, token.exp) ||
+            check_role_in_blacklist(token.role_id, token.exp);
+        if (blacklisted) {
+            return BlacklistOutcome::Blacklisted;
+        }
+        return check_idle_session(token.user_id);
+    }
+
+    // ── authorization::check_tenant / get_role_info ───────────────────────────
+
+    /** @brief authorization.rs:130-144 check_tenant. */
+    [[nodiscard]] bool check_tenant(const std::optional<std::string>& token_tenant_id) const
+    {
+        if (!token_tenant_id.has_value()) {
             return true;
         }
-        return m_context->cache().get(key).hit;
+        const auto configured = m_context->config_store().get_value("tenant", "tenant_id");
+        if (!configured || configured->empty()) {
+            return true;
+        }
+        return *token_tenant_id == *configured;
     }
 
+    /** @brief authorization.rs:19-56 get_role_info (predefined → cache → DB). */
+    [[nodiscard]] std::optional<RoleInfo> get_role_info(const AuthToken& token) const
+    {
+        if (token.role_id.empty()) {
+            return std::nullopt;
+        }
+        // authorization.rs:23-25 — PREDEFINED_ROLES.get(role_id).
+        if (const auto predefined = predefined_role_grants(token.role_id)) {
+            RoleInfo info{};
+            info.role_id = token.role_id;
+            info.grants = *predefined;
+            return info;
+        }
+        // authorization.rs:27-32 — role info cache (CR_INFO_<role_id>).
+        const auto cache_key = std::string{kRoleInfoCachePrefix} + token.role_id;
+        const auto cached = m_context->cache().get(cache_key);
+        if (cached.hit) {
+            RoleInfo info{};
+            info.role_id = token.role_id;
+            info.grants = parse_grants(cached.value_or<std::string>({}));
+            return info;
+        }
+        // authorization.rs:34-43 — find_by_role_id_org_id_tenant_id -> InvalidJwtToken.
+        const auto record = m_context->repository().find_role_by_string(token.role_id);
+        if (!record) {
+            return std::nullopt;
+        }
+        RoleInfo info{};
+        info.role_id = token.role_id;
+        const auto config_key = std::string{"role_permissions."} + token.role_id;
+        const auto configured = m_context->config_store().get_value("offer_engine", config_key);
+        if (configured && !configured->empty()) {
+            info.grants = parse_grants(*configured);
+        }
+        // authorization.rs:45-54 — cache with TTL = exp - now when positive.
+        if (token.exp > 0) {
+            const auto now = now_seconds();
+            if (token.exp > now) {
+                m_context->cache().put(
+                    cache_key,
+                    core::cache::to_cache_value(join_grants(info.grants)),
+                    core::cache::Ttl{}.seconds(token.exp - now));
+            }
+        }
+        return info;
+    }
+
+    /** @brief Local PREDEFINED_ROLES table (predefined_roles.rs:8+): the Offers
+     *  grants each predefined role carries via its permission groups. */
+    [[nodiscard]] std::optional<std::vector<std::string>> predefined_role_grants(
+        std::string_view role_id) const noexcept
+    {
+        constexpr std::string_view kReadWrite[] = {
+            "internal_admin", "internal_operator", "tenant_admin", "org_admin",
+            "merchant_admin", "merchant_developer", "merchant_iam_admin",
+            "merchant_operator", "profile_admin", "profile_developer",
+            "profile_iam_admin", "profile_operator",
+        };
+        constexpr std::string_view kViewOnly[] = {
+            "internal_view_only", "merchant_view_only", "profile_view_only",
+            "merchant_customer_support", "profile_customer_support",
+        };
+        for (const auto id : kReadWrite) {
+            if (role_id == id) {
+                return std::vector<std::string>{"offers_read", "offers_write"};
+            }
+        }
+        for (const auto id : kViewOnly) {
+            if (role_id == id) {
+                return std::vector<std::string>{"offers_read"};
+            }
+        }
+        return std::nullopt;
+    }
+
+    // ── offer_engine_permissions ──────────────────────────────────────────────
+
+    /** @brief core/external_service_auth.rs:189-196 offer_engine_permissions.
+     *  Permission::iter().filter(resource() == Resource::Offers)
+     *    .filter(check_permission_exists).map(to_string()).collect(). */
+    [[nodiscard]] std::vector<std::string>
+    offer_engine_permissions(const RoleInfo& role_info) const noexcept
+    {
+        std::vector<std::string> permissions{};
+        for (const auto permission : {OffersPermission::Read, OffersPermission::Write}) {
+            if (role_info.check_permission_exists(permission)) {
+                permissions.emplace_back(permission_name(permission));
+            }
+        }
+        return permissions;
+    }
+
+    // ── resolve_offer_engine_merchant_id ──────────────────────────────────────
+
+    /** @brief Dimension chain from AuthToken (core/external_service_auth.rs:145-148). */
+    [[nodiscard]] std::string dimensions(const AuthToken& payload) const
+    {
+        std::string scope{};
+        if (!payload.merchant_id.empty()) {
+            scope += "merchant:" + payload.merchant_id;
+        }
+        if (!payload.org_id.empty()) {
+            if (!scope.empty()) {
+                scope += '/';
+            }
+            scope += "org:" + payload.org_id;
+        }
+        if (!payload.profile_id.empty()) {
+            if (!scope.empty()) {
+                scope += '/';
+            }
+            scope += "profile:" + payload.profile_id;
+        }
+        return scope;
+    }
+
+    /** @brief Superposition-backed config read with namespace/scoped/base fallback. */
+    [[nodiscard]] std::optional<std::string> config_value(
+        std::string_view scope, std::string_view key) const
+    {
+        constexpr std::string_view kNamespace{"offer_engine"};
+        if (const auto resolved = m_context->superposition().resolve(kNamespace, key, scope)) {
+            return resolved->get_value();
+        }
+        const std::string scoped_key{std::string{key} + "@" + std::string{scope}};
+        if (const auto scoped = m_context->config_store().get_value(kNamespace, scoped_key)) {
+            return scoped;
+        }
+        return m_context->config_store().get_value(kNamespace, key);
+    }
+
+    /** @brief core/offer_engine/config.rs:12-47 resolve_offer_engine_credential_source. */
+    [[nodiscard]] OfferEngineCredentialSource
+    resolve_offer_engine_credential_source(const AuthToken& payload) const
+    {
+        const auto scope = dimensions(payload);
+        const auto enabled = config_value(scope, "enabled");
+        if (!enabled || *enabled != "true") {
+            return OfferEngineCredentialSource::None;
+        }
+        const auto raw = config_value(scope, "credential_source");
+        if (raw && *raw == "application") {
+            return OfferEngineCredentialSource::Application;
+        }
+        if (raw && *raw == "merchant") {
+            return OfferEngineCredentialSource::Merchant;
+        }
+        return OfferEngineCredentialSource::None;
+    }
+
+    /** @brief core/offer_engine/config.rs:75-108 resolve_application_offer_config.
+     *  Same base keys as the offer_engine module (offer_engine.cppm:652-670). */
+    [[nodiscard]] std::optional<std::string> resolve_application_offer_config() const
+    {
+        const auto api_key = config_value("", "api_key");
+        if (!api_key || api_key->empty()) {
+            return std::nullopt;
+        }
+        const auto merchant_id = config_value("", "merchant_id");
+        if (!merchant_id || merchant_id->empty()) {
+            return std::nullopt;
+        }
+        return *merchant_id;
+    }
+
+    /** @brief core/offer_engine/config.rs:111-147 resolve_merchant_offer_config.
+     *
+     *  Upstream reads merchant_account.get_offer_engine_config(). The shared
+     *  offer_engine module persists that same JSON under ConfigStore namespace
+     *  `offer_engine_merchant_config`, keyed by merchant id
+     *  (offer_engine.cppm:673-705). Reading it here keeps both routes on one
+     *  local persistence contract. */
+    [[nodiscard]] std::optional<std::string>
+    resolve_merchant_offer_config(const AuthToken& payload) const
+    {
+        if (payload.merchant_id.empty()) {
+            return std::nullopt;
+        }
+        // core/external_service_auth.rs:164-175 — merchant key store + account lookup.
+        // Local accounts_store is AppRepository; master key resolution is represented by
+        // the merchant-key record when present.
+        (void)m_context->key_store().get("merchant_key", payload.merchant_id);
+        const auto account = m_context->repository().find_merchant_account_by_string(
+            payload.merchant_id
+        );
+        if (!account) {
+            return std::nullopt;
+        }
+        // resolve_merchant_offer_config also requires the application base_url.
+        const auto base_url = config_value("", "base_url");
+        if (!base_url || base_url->empty()) {
+            return std::nullopt;
+        }
+        const auto raw = m_context->config_store().get_value(
+            "offer_engine_merchant_config", payload.merchant_id);
+        if (!raw || raw->empty()) {
+            return std::nullopt;
+        }
+        auto generic = serde::Ser::decode_generic("application/json", *raw);
+        if (!generic) {
+            return std::nullopt;
+        }
+        const auto* object = std::get_if<interfaces::Value::Object>(&generic->get());
+        if (object == nullptr) {
+            return std::nullopt;
+        }
+        std::string api_key{};
+        std::string merchant_id{};
+        const auto read = [object](std::string_view key, std::string& target)
+        {
+            const auto field = object->get(std::string{key});
+            if (field) {
+                if (const auto* text = std::get_if<std::string>(&field.value().get())) {
+                    target = *text;
+                }
+            }
+        };
+        read("api_key", api_key);
+        read("merchant_id", merchant_id);
+        if (api_key.empty() || merchant_id.empty()) {
+            return std::nullopt;
+        }
+        return merchant_id;
+    }
+
+    /** @brief core/external_service_auth.rs:139-187 resolve_offer_engine_merchant_id. */
+    [[nodiscard]] std::optional<std::string>
+    resolve_offer_engine_merchant_id(const AuthToken& payload) const
+    {
+        const auto source = resolve_offer_engine_credential_source(payload);
+        switch (source) {
+        case OfferEngineCredentialSource::None:
+            return std::nullopt;  // AccessForbidden { resource: "offer_engine" }
+        case OfferEngineCredentialSource::Application:
+            return resolve_application_offer_config();
+        case OfferEngineCredentialSource::Merchant:
+            return resolve_merchant_offer_config(payload);
+        }
+        return std::nullopt;
+    }
+
+    // ── small utilities ───────────────────────────────────────────────────────
+
+    [[nodiscard]] std::int64_t now_seconds() const
+    {
+        return std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+    }
+
+    /** @brief api_models:18-23 ValidatingService is snake_case-serialized. */
     [[nodiscard]] std::optional<app::dto::external_service_auth::ValidatingService>
     parse_service(std::string_view value) const noexcept
     {
-        // Upstream snake_case wire value and strum Display spelling both accepted.
-        if (value == "offer_engine" || value == "OfferEngine" || value == "offer-engine") {
+        if (value == "offer_engine") {
+            return app::dto::external_service_auth::ValidatingService::OfferEngine;
+        }
+        // strum::Display spelling and kebab-case are accepted as local aliases for
+        // hand-written JSON clients; the upstream wire value above is exact.
+        if (value == "OfferEngine" || value == "offer-engine") {
             return app::dto::external_service_auth::ValidatingService::OfferEngine;
         }
         return std::nullopt;
     }
 
-    /**
-     * @brief Role info + offers-resource permission derivation.
-     *
-     * Local substitute for roles::RoleInfo::check_permission_exists: the role id comes
-     * from the decoded token (or an active user-role assignment), the role record is
-     * loaded from AppRepository, and the Offers permission set is read from config
-     * `offer_engine.role_permissions.<role_id>` with the two canonical Offers grants as
-     * the configured-role default. Non-Offers permissions are filtered out.
-     */
-    [[nodiscard]] std::optional<std::vector<std::string>>
-    offer_engine_permissions(const DashboardClaims& claims) const
+    [[nodiscard]] static std::vector<std::string> parse_grants(std::string_view value)
     {
-        std::vector<std::string> role_ids{};
-        if (!claims.role_id.empty()) {
-            role_ids.push_back(claims.role_id);
-        } else if (!claims.user_id.empty()) {
-            for (const auto& assignment : m_context->repository().list_user_roles()) {
-                if (assignment.get_user_id() != claims.user_id) {
-                    continue;
-                }
-                const auto& status = assignment.get_status();
-                if (!status.empty() && status != "active" && status != "granted") {
-                    continue;
-                }
-                if (!assignment.get_role_id().empty()) {
-                    role_ids.push_back(assignment.get_role_id());
-                }
+        std::vector<std::string> grants{};
+        while (!value.empty()) {
+            const auto comma = value.find(',');
+            std::string grant{value.substr(0, comma)};
+            const auto first = grant.find_first_not_of(" \t");
+            if (first != std::string::npos) {
+                grant.erase(0, first);
             }
+            while (!grant.empty() && (grant.back() == ' ' || grant.back() == '\t')) {
+                grant.pop_back();
+            }
+            if (!grant.empty()) {
+                grants.push_back(std::move(grant));
+            }
+            if (comma == std::string_view::npos) {
+                break;
+            }
+            value.remove_prefix(comma + 1);
         }
-
-        bool role_found{false};
-        std::vector<std::string> granted{};
-        for (const auto& role_id : role_ids) {
-            const auto role = m_context->repository().find_role_by_string(role_id);
-            if (!role) {
-                continue;
-            }
-            const auto& status = role->get_status();
-            if (!status.empty() && status != "active") {
-                continue;
-            }
-            role_found = true;
-
-            std::vector<std::string> role_permissions{};
-            const auto config_key = std::string{"role_permissions."} + role_id;
-            const auto configured = m_context->config_store().get_value(
-                "offer_engine", config_key
-            );
-            if (configured && !configured->empty()) {
-                std::string_view rest{*configured};
-                while (!rest.empty()) {
-                    const std::size_t comma = rest.find(',');
-                    std::string permission{rest.substr(0, comma)};
-                    const std::size_t space = permission.find_first_not_of(" \t");
-                    if (space != std::string::npos) {
-                        permission.erase(0, space);
-                    }
-                    while (!permission.empty() &&
-                           (permission.back() == ' ' || permission.back() == '\t')) {
-                        permission.pop_back();
-                    }
-                    // Permission::iter().filter(resource() == Resource::Offers)
-                    if (permission.starts_with("offers_")) {
-                        role_permissions.push_back(std::move(permission));
-                    }
-                    if (comma == std::string_view::npos) {
-                        break;
-                    }
-                    rest.remove_prefix(comma + 1);
-                }
-            } else {
-                role_permissions = {"offers_read", "offers_write"};
-            }
-
-            for (auto& permission : role_permissions) {
-                if (std::ranges::find(granted, permission) == granted.end()) {
-                    granted.push_back(std::move(permission));
-                }
-            }
-        }
-
-        if (!role_found) {
-            return std::nullopt;
-        }
-        return granted;
+        return grants;
     }
 
-    /**
-     * @brief resolve_offer_engine_merchant_id substitute.
-     *
-     * Dimensions (processor merchant id, org id, profile id) come from the decoded
-     * claims. `offer_engine.credential_source` selects the local branch: "application"
-     * reads superposition/config `offer_engine.merchant_id`, "merchant" reads the
-     * merchant account from AppRepository (with an optional config override), and any
-     * other value — including an explicit "none" — yields AccessForbidden.
-     */
-    [[nodiscard]] std::string
-    resolve_offer_engine_merchant(const DashboardClaims& claims) const
+    [[nodiscard]] static std::string join_grants(const std::vector<std::string>& grants)
     {
-        std::string source{};
-        if (const auto value = m_context->config_store().get_value(
-                "offer_engine", "credential_source");
-            value && !value->empty()) {
-            source = *value;
+        std::string out{};
+        for (const auto& grant : grants) {
+            if (!out.empty()) {
+                out += ',';
+            }
+            out += grant;
         }
-        if (source.empty()) {
-            // Default to the previous local behavior until a source is configured.
-            source = "merchant";
-        }
+        return out;
+    }
 
-        if (source == "application") {
-            const auto context = claims.profile_id.empty()
-                                     ? claims.org_id
-                                     : claims.profile_id;
-            if (const auto resolved = m_context->superposition().resolve(
-                    "offer_engine", "merchant_id", context);
-                resolved && !resolved->get_value().empty()) {
-                return resolved->get_value();
+    [[nodiscard]] static std::string json_escape(std::string_view value)
+    {
+        std::string out{};
+        out.reserve(value.size());
+        for (const char ch : value) {
+            switch (ch) {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default: out.push_back(ch); break;
             }
-            if (const auto configured = m_context->config_store().get_value(
-                    "offer_engine", "merchant_id");
-                configured && !configured->empty()) {
-                return *configured;
-            }
-            return {};
         }
+        return out;
+    }
 
-        if (source == "merchant") {
-            if (claims.merchant_id.empty()) {
-                return {};
-            }
-            const auto account = m_context->repository().find_merchant_account_by_string(
-                claims.merchant_id
-            );
-            if (!account) {
-                return {};
-            }
-            const auto override_key = std::string{"merchant."} + claims.merchant_id;
-            if (const auto override = m_context->config_store().get_value(
-                    "offer_engine", override_key);
-                override && !override->empty()) {
-                return *override;
-            }
-            return account->get_merchant_id();
-        }
-
-        return {};
+    /** @brief Exact ApiErrorResponse wire shape (api_models/errors/types.rs:60-70,159-176). */
+    void send_api_error(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        std::string_view type,
+        std::string_view code,
+        std::string_view message,
+        interfaces::io::types::Status status
+    ) const
+    {
+        const auto body = std::format(
+            R"({{"type":"{}","message":"{}","code":"{}"}})",
+            json_escape(type), json_escape(message), json_escape(code));
+        auto bytes = serde::Ser::serialize_raw("application/json", body);
+        res.set_status(status);
+        res.set_body(std::move(bytes));
+        send();
     }
 
     void send_error(

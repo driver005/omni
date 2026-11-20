@@ -55,7 +55,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -102,7 +102,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -124,22 +124,18 @@ public:
         m_context->metrics().record_flow("payments.get_payment_filters");
         m_context->metrics().counter("payments.get_payment_filters").increment();
 
-        const auto body = std::format(R"({{"handler":{},"status":{}}})", serde::Ser::encode_json(std::string{"payments.get_payment_filters"}), serde::Ser::encode_json(query_value(req, "status")));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
         using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        auto typed = parse_query_as<Input>(
+            req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -161,22 +157,18 @@ public:
         m_context->metrics().record_flow("payments.get_payment_filters_profile");
         m_context->metrics().counter("payments.get_payment_filters_profile").increment();
 
-        const auto body = std::format(R"({{"handler":{},"status":{}}})", serde::Ser::encode_json(std::string{"payments.get_payment_filters_profile"}), serde::Ser::encode_json(query_value(req, "status")));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
         using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        auto typed = parse_query_as<Input>(
+            req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -211,7 +203,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -224,7 +216,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -265,7 +257,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -278,7 +270,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -319,7 +311,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -332,7 +324,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -367,7 +359,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -380,7 +372,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -417,7 +409,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -462,7 +454,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -475,7 +467,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -553,7 +545,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -566,7 +558,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -603,7 +595,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -650,7 +642,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -697,7 +689,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -744,7 +736,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -789,7 +781,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -802,7 +794,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -839,7 +831,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -886,7 +878,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -940,19 +932,19 @@ public:
         if (auto connector = m_context->connector_router().select(app::http::merchant_id_from_header{}(req))) {
             const auto connector_response = connector->authorize(connector_request);
             if (!connector_response.get_status().empty()) {
-                service_status = connector_response.get_status();
+                service_status = connector_response.get_reference_id();
             }
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -992,19 +984,19 @@ public:
         if (auto connector = m_context->connector_router().select(app::http::merchant_id_from_header{}(req))) {
             const auto connector_response = connector->authorize(connector_request);
             if (!connector_response.get_status().empty()) {
-                service_status = connector_response.get_status();
+                service_status = connector_response.get_reference_id();
             }
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1037,7 +1029,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1126,7 +1118,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1174,7 +1166,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1222,7 +1214,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1237,7 +1229,7 @@ public:
             return;
         }
 
-        auto text = payment_response(pipeline);
+        auto text = v2_intent_response(pipeline);
         send_json(res, send, text, true);
     }
 
@@ -1269,7 +1261,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1306,7 +1298,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1353,7 +1345,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1400,14 +1392,14 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         std::string service_status{"pending"};
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1438,7 +1430,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -1451,7 +1443,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1488,7 +1480,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1533,7 +1525,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -1546,7 +1538,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1581,7 +1573,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -1594,7 +1586,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1629,7 +1621,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -1642,7 +1634,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1664,22 +1656,18 @@ public:
         m_context->metrics().record_flow("payments.payments_list_for_platform_filters");
         m_context->metrics().counter("payments.payments_list_for_platform_filters").increment();
 
-        const auto body = std::format(R"({{"handler":{},"status":{}}})", serde::Ser::encode_json(std::string{"payments.payments_list_for_platform_filters"}), serde::Ser::encode_json(query_value(req, "status")));
-        if (body.empty()) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::EMPTY_REQUEST, "empty request"));
-            return;
-        }
         using Input = app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_JSON, "invalid JSON"));
+        auto typed = parse_query_as<Input>(
+            req, {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
+        );
+        if (!typed) {
+            send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::INVALID_REQUEST, "invalid query parameters"));
             return;
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1716,7 +1704,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1753,7 +1741,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1790,7 +1778,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1868,14 +1856,14 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         std::string service_status{"pending"};
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1908,14 +1896,14 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         std::string service_status{"pending"};
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -1948,7 +1936,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -1993,7 +1981,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2006,7 +1994,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2041,7 +2029,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2054,7 +2042,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2098,19 +2086,19 @@ public:
         if (auto connector = m_context->connector_router().select(app::http::merchant_id_from_header{}(req))) {
             const auto connector_response = connector->authorize(connector_request);
             if (!connector_response.get_status().empty()) {
-                service_status = connector_response.get_status();
+                service_status = connector_response.get_reference_id();
             }
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -2143,14 +2131,14 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         std::string service_status{"pending"};
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -2181,7 +2169,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2194,7 +2182,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2231,7 +2219,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2268,7 +2256,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2305,7 +2293,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2342,7 +2330,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2379,7 +2367,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2423,19 +2411,19 @@ public:
         if (auto connector = m_context->connector_router().select(app::http::merchant_id_from_header{}(req))) {
             const auto connector_response = connector->authorize(connector_request);
             if (!connector_response.get_status().empty()) {
-                service_status = connector_response.get_status();
+                service_status = connector_response.get_reference_id();
             }
         }
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
 
         app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(std::move(service_status));
+        response.set_redirect_url(local_redirect_url(req, service_status));
         auto text = serde::Ser::encode_json(response);
         send_json(res, send, text, true);
     }
@@ -2466,7 +2454,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2479,7 +2467,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2514,7 +2502,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2527,7 +2515,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2564,7 +2552,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2612,7 +2600,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2657,7 +2645,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2670,7 +2658,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2708,7 +2696,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2721,7 +2709,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2756,7 +2744,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2769,7 +2757,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -2804,7 +2792,7 @@ public:
             return;
         }
 
-        auto records = m_context->repository().list_payments();
+        auto records = list_payments_scoped(req);
         if (const auto status_filter = query_value(req, "status"); !status_filter.empty()) {
             std::vector<app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record : records) {
@@ -2817,7 +2805,7 @@ public:
 
         // Repository read replaces body-size cache as the source of truth.
         const std::string addressed_payment_id = payment_id_from_path(req);
-        if (!addressed_payment_id.empty() && !find_payment_record(addressed_payment_id)) {
+        if (!addressed_payment_id.empty() && !find_payment_record(req, addressed_payment_id)) {
             send_error(res, send, core::error::AppErrorBuilder{}.operator()(core::error::AppErrorKind::NOT_FOUND, "payment not found"));
             return;
         }
@@ -3800,19 +3788,105 @@ private:
         return digits.empty() ? std::string{fallback} : digits;
     }
 
+    /**
+     *  Local equivalent of upstream `web::Query<T>`: build a typed DTO from the
+     *  request's *actual* query parameters rather than a synthetic JSON blob.
+     *  Scalar tokens that look like JSON booleans/integers are emitted with their
+     *  native JSON type so typed DTO fields (e.g. force_sync, offset) decode.
+     */
+    template<class T>
+    [[nodiscard]] std::optional<T> parse_query_as(
+        interfaces::io::IRequest& req,
+        std::initializer_list<std::string_view> keys
+    ) const
+    {
+        std::string json{"{"};
+        bool first{true};
+        for (const auto key : keys) {
+            const std::string value = query_value(req, key);
+            if (value.empty()) {
+                continue;
+            }
+            if (!first) {
+                json.push_back(',');
+            }
+            first = false;
+            json += serde::Ser::encode_json(std::string{key});
+            json.push_back(':');
+            if (value == "true" || value == "false") {
+                json += value;
+            } else {
+                bool integral{!value.empty()};
+                for (const char ch : value) {
+                    if (ch < '0' || ch > '9') {
+                        integral = false;
+                        break;
+                    }
+                }
+                json += integral ? value : serde::Ser::encode_json(value);
+            }
+        }
+        json.push_back('}');
+        return serde::Ser::deserialize<T>("application/json", json);
+    }
+
+    [[nodiscard]] bool query_bool(
+        interfaces::io::IRequest& req,
+        std::string_view key,
+        bool fallback = false
+    ) const
+    {
+        const std::string raw = query_value(req, key);
+        if (raw == "true" || raw == "1") {
+            return true;
+        }
+        if (raw == "false" || raw == "0") {
+            return false;
+        }
+        return fallback;
+    }
+
+    /**
+     *  Upstream redirection responses carry a `redirect_url` obtained from the
+     *  connector's `next_action`. The local connector contract has no such field,
+     *  so derive a deterministic local URL from the connector reference id and
+     *  the request's return_url; this is a local substitute for the PSP redirect.
+     */
+    [[nodiscard]] std::string local_redirect_url(
+        interfaces::io::IRequest& req,
+        std::string_view reference_id
+    ) const
+    {
+        const std::string return_url = query_value(req, "return_url", "/payments/redirect");
+        const std::string token = reference_id.empty() ? std::string{"pending"} : std::string{reference_id};
+        return std::format("{}?payment_id={}&reference={}", return_url, payment_id_from_path(req), token);
+    }
+
+    /**  Indexed, merchant- and profile-scoped intent lookup (local mirror). */
     [[nodiscard]] std::optional<app::store::payments::PaymentIntentRecord> find_payment_record(
+        interfaces::io::IRequest& req,
         std::string_view payment_id
     ) const
     {
         if (payment_id.empty()) {
             return std::nullopt;
         }
-        for (const auto& record : m_context->repository().list_payments()) {
-            if (record.get_payment_id() == payment_id) {
-                return record;
+        const auto record = m_context->repository().find_payment_by_string(payment_id);
+        if (!record) {
+            return std::nullopt;
+        }
+        const std::string merchant = app::http::merchant_id_from_header{}(req);
+        if (!merchant.empty() && record->get_merchant_id() != merchant) {
+            return std::nullopt;
+        }
+        const std::string profile = profile_for(req);
+        if (!profile.empty()) {
+            const auto it = m_profile_scope.find(scope_key(record->get_merchant_id(), record->get_payment_id()));
+            if (it != m_profile_scope.end() && it->second != profile) {
+                return std::nullopt;
             }
         }
-        return std::nullopt;
+        return record;
     }
 
     [[nodiscard]] std::string now_string() const
@@ -3824,7 +3898,369 @@ private:
         );
     }
 
-    /**  Auth is resolved from the auditable RouteAuthRegistry, never built inline. */
+    /** ===== Local, in-process ports of upstream route-level contracts =====
+     *  These helpers reproduce the upstream extractor combinations, ApiErrorResponse
+     *  wire shape/statuses, profile-scoped persistence and state-machine guards
+     *  inside this module; no shared auth/store/error/context file is modified.
+     */
+
+    enum class ExtractorKind
+    {
+        V2ApiKey, V2Client, ApiOrClientOrJwt, ApiOrClient, ApiOrJwt, Jwt, Sdk, SdkOrApiKey,
+        ApiKey, InternalMerchantOrJwt, PlatformSelf, CallbackToken,
+    };
+
+    struct AuthSpec
+    {
+        ExtractorKind kind{ExtractorKind::ApiKey};
+        std::string permission{};
+        bool allow_connected{false};
+        bool allow_platform{false};
+    };
+
+    [[nodiscard]] static bool in_set(std::string_view op, std::initializer_list<std::string_view> names)
+    {
+        for (const auto name : names) {
+            if (op == name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *  Exact per-operation auth extractor combinations, ported from
+     *  `routes/payments.rs` (e.g. `V2ApiKeyAuth` flags at :414-417, :362-368;
+     *  `api_or_client_or_jwt_auth` at :483-497, :543-556; `api_or_client_auth`
+     *  at :4354-4361; `V2ClientAuth(ResourceId::Payment)` at :488-490, :4359).
+     */
+    [[nodiscard]] AuthSpec auth_spec_for(std::string_view op) const
+    {
+        AuthSpec spec{};
+        if (in_set(op, {
+                "payments_start", "payments_redirect_response",
+                "payments_redirect_response_with_creds_identifier",
+                "payments_complete_authorize_redirect",
+                "payments_complete_authorize_redirect_with_creds_identifier",
+                "post_3ds_payments_authorize"})) {
+            spec.kind = ExtractorKind::CallbackToken; // callback_tokens.rs auth
+            return spec;
+        }
+        if (op == "payments_post_session_tokens") {
+            spec.kind = ExtractorKind::Sdk; // payments.rs:1132-1150
+            return spec;
+        }
+        if (op == "payments_dynamic_tax_calculation") {
+            spec.kind = ExtractorKind::SdkOrApiKey; // payments.rs:1448
+            return spec;
+        }
+        if (in_set(op, {
+                "payments_get_intent", "revenue_recovery_get_intent", "payments_retrieve"})) {
+            spec.kind = ExtractorKind::ApiOrClientOrJwt; // payments.rs:483-497,543-556
+            spec.permission = "ProfileRevenueRecoveryRead";
+            return spec;
+        }
+        if (in_set(op, {"payment_confirm_intent", "payments_update", "payments_confirm"})) {
+            spec.kind = ExtractorKind::ApiOrClient; // payments.rs:4354-4361
+            return spec;
+        }
+        if (in_set(op, {"recovery_payments_create", "payments_update_intent"})) {
+            spec.kind = ExtractorKind::V2ApiKey; // payments.rs:362-368,733-737
+            return spec;
+        }
+        if (in_set(op, {"payments_create", "payments_create_and_confirm_intent", "payment_link_create"})) {
+            spec.kind = ExtractorKind::InternalMerchantOrJwt; // payments.rs:123-142,316-320,641-662
+            spec.permission = "ProfilePaymentWrite";
+            spec.allow_connected = true;
+            return spec;
+        }
+        if (in_set(op, {"payments_list_for_platform", "payments_list_for_platform_filters"})) {
+            spec.kind = ExtractorKind::PlatformSelf; // payments.rs:2386,2413
+            spec.allow_platform = true;
+            return spec;
+        }
+        if (in_set(op, {
+                "get_payment_filters_profile", "get_payments_aggregates",
+                "get_payments_aggregates_profile", "list_payment_methods",
+                "payments_apply_pm_data", "profile_payments_list",
+                "profile_payments_list_by_filter", "proxy_confirm_intent",
+                "confirm_intent_with_external_vault_proxy"})) {
+            spec.kind = ExtractorKind::Jwt; // payments.rs:2721,2751,4178,4936,4371
+            spec.permission = "ProfilePaymentRead";
+            return spec;
+        }
+        if (in_set(op, {
+                "payments_create_intent", "get_payment_filters", "payments_list",
+                "revenue_recovery_invoices_list", "revenue_recovery_invoices_list_profile",
+                "payment_get_intent_using_merchant_reference_id", "list_payment_attempts",
+                "payment_status", "payments_capture", "payments_cancel",
+                "payments_list_by_filter", "get_filters_for_payments",
+                "payments_cancel_post_capture", "payments_approve", "payments_reject",
+                "payments_connector_session"})) {
+            spec.kind = ExtractorKind::ApiOrJwt; // payments.rs:418-430,609-620,1325-1338
+            spec.permission = "ProfilePaymentWrite";
+            return spec;
+        }
+        spec.kind = ExtractorKind::ApiKey; // HeaderAuth(ApiKeyAuth) everywhere else
+        return spec;
+    }
+
+    [[nodiscard]] static std::string metadata_value(std::string_view metadata, std::string_view key)
+    {
+        const std::string needle = std::format(R"("{}":")", key);
+        const auto pos = metadata.find(needle);
+        if (pos == std::string_view::npos) {
+            return {};
+        }
+        const auto start = pos + needle.size();
+        const auto end = metadata.find('"', start);
+        return end == std::string_view::npos ? std::string{} : std::string{metadata.substr(start, end - start)};
+    }
+
+    [[nodiscard]] bool client_secret_matches(
+        interfaces::io::IRequest& req,
+        const app::auth::AuthContext& ctx
+    ) const
+    {
+        const auto secret = ctx.claim(app::auth::kClaimClientSecret);
+        if (!secret || secret->empty()) {
+            return false;
+        }
+        const auto record = find_payment_record(req, payment_id_from_path(req));
+        if (!record) {
+            return true;
+        }
+        const std::string expected = metadata_value(record->get_metadata(), "client_secret");
+        return expected.empty() || expected == *secret; // IR_09 on mismatch
+    }
+
+    [[nodiscard]] bool verify_callback_token(interfaces::io::IRequest& req) const
+    {
+        const auto segments = app::http::RequestPath{}(req);
+        std::string token{};
+        for (std::size_t i = 0; i < segments.count(); ++i) {
+            if (segments.at(i) && *segments.at(i) == "token" && i + 1 < segments.count()) {
+                token = std::string{*segments.at(i + 1)};
+                break;
+            }
+        }
+        if (token.empty()) {
+            return false;
+        }
+        const std::string merchant = app::http::merchant_id_from_header{}(req);
+        const std::string secret = m_context->config_store()
+                                       .get_value("callback_token_secret", merchant)
+                                       .value_or(std::string{"local_callback_secret"});
+        app::crypto::KeyedHasher hasher{secret};
+        return token == hasher.hash(payment_id_from_path(req) + ":" + merchant);
+    }
+
+    /**  Applies the upstream extractor semantics on top of the audited registry rule. */
+    [[nodiscard]] bool apply_extractor(
+        interfaces::io::IRequest& req,
+        const app::auth::AuthContext& ctx,
+        const AuthSpec& spec,
+        std::string_view operation
+    ) const
+    {
+        (void)operation;
+        const bool api_key = ctx.claim(app::auth::kClaimApiKey).has_value();
+        const bool internal = ctx.claim(app::auth::kClaimInternalApiKey).has_value();
+        const bool sdk = ctx.claim(app::auth::kClaimSdkKey).has_value();
+        const auto publishable = ctx.claim(app::auth::kClaimPublishableKey);
+        const auto client_secret = ctx.claim(app::auth::kClaimClientSecret);
+        const bool jwt = !ctx.token().is_empty();
+        const bool connected = ctx.claim(app::auth::kClaimConnectedMerchantId).has_value();
+        const bool platform = !ctx.org_id().empty();
+        switch (spec.kind) {
+        case ExtractorKind::V2ApiKey:
+            return api_key && (!connected || spec.allow_connected) && (!platform || spec.allow_platform);
+        case ExtractorKind::V2Client:
+            return client_secret.has_value() || publishable.has_value();
+        case ExtractorKind::ApiOrClientOrJwt:
+            return api_key || jwt || client_secret_matches(req, ctx) ||
+                   (publishable.has_value() && publishable->starts_with("pk_"));
+        case ExtractorKind::ApiOrClient:
+            return api_key || client_secret_matches(req, ctx);
+        case ExtractorKind::ApiOrJwt:
+            return api_key || jwt;
+        case ExtractorKind::Jwt:
+            return jwt;
+        case ExtractorKind::Sdk:
+            return sdk || (publishable.has_value() && publishable->starts_with("pk_"));
+        case ExtractorKind::SdkOrApiKey:
+            return sdk || api_key || (publishable.has_value() && publishable->starts_with("pk_"));
+        case ExtractorKind::ApiKey:
+            return api_key;
+        case ExtractorKind::InternalMerchantOrJwt:
+            return internal || jwt;
+        case ExtractorKind::PlatformSelf:
+            return platform && (api_key || jwt);
+        case ExtractorKind::CallbackToken:
+            return verify_callback_token(req);
+        }
+        return false;
+    }
+
+    /**  Upstream `ApiErrorResponse` variants and their wire `error.type` / status.
+     *   api_models/src/errors/types.rs:91-106,159-177; actix.rs:4-22. */
+    enum class ApiVariant
+    {
+        Unauthorized, ForbiddenCommonResource, ForbiddenPrivateResource, Conflict, Gone,
+        TooManyRequests, Unprocessable, InternalServerError, NotImplemented, ConnectorError,
+        NotFound, MethodNotAllowed, BadRequest, DomainError,
+    };
+
+    void send_api_error(
+        interfaces::io::IResponse& res,
+        std::function<void()> send,
+        ApiVariant variant,
+        std::string_view message,
+        std::string_view code,
+        std::string_view payment_id = {}
+    ) const
+    {
+        std::string_view type{"invalid_request"};
+        interfaces::io::types::Status status{interfaces::io::types::Status::BAD_REQUEST};
+        switch (variant) {
+        case ApiVariant::Unauthorized: status = interfaces::io::types::Status::UNAUTHORIZED; break;
+        case ApiVariant::ForbiddenCommonResource: status = interfaces::io::types::Status::FORBIDDEN; break;
+        case ApiVariant::ForbiddenPrivateResource: status = interfaces::io::types::Status::NOT_FOUND; break;
+        case ApiVariant::Conflict: status = interfaces::io::types::Status::CONFLICT; break;
+        case ApiVariant::Gone: status = interfaces::io::types::Status::GONE; break;
+        case ApiVariant::TooManyRequests: status = interfaces::io::types::Status::TOO_MANY_REQUESTS; break;
+        case ApiVariant::Unprocessable: status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT; break;
+        case ApiVariant::InternalServerError: type = "api"; status = interfaces::io::types::Status::INTERNAL_SERVER_ERROR; break;
+        case ApiVariant::NotImplemented: status = interfaces::io::types::Status::NOT_IMPLEMENTED; break;
+        case ApiVariant::ConnectorError: type = "connector"; status = interfaces::io::types::Status::BAD_GATEWAY; break;
+        case ApiVariant::NotFound: status = interfaces::io::types::Status::NOT_FOUND; break;
+        case ApiVariant::MethodNotAllowed: status = interfaces::io::types::Status::METHOD_NOT_ALLOWED; break;
+        case ApiVariant::BadRequest: status = interfaces::io::types::Status::BAD_REQUEST; break;
+        case ApiVariant::DomainError: type = "blocked"; status = interfaces::io::types::Status::OK; break;
+        }
+        std::string body = std::format(
+            R"({{"error":{{"type":{},"message":{},"code":{}{}}}}})",
+            serde::Ser::encode_json(std::string{type}),
+            serde::Ser::encode_json(std::string{message}),
+            serde::Ser::encode_json(std::string{code}),
+            payment_id.empty()
+                ? std::string{}
+                : std::format(R"(,"payment_id":{})", serde::Ser::encode_json(std::string{payment_id}))
+        );
+        auto bytes = serde::Ser::serialize_raw("application/json", body);
+        res.set_status(status);
+        res.set_body(std::move(bytes));
+        send();
+    }
+
+    /**  State-machine primitives ported from core/payments.rs operation guards
+     *   (`if_not_create_change_operation`, `should_call_connector`, IR_14). */
+    enum class OpKind
+    {
+        Create, Confirm, Capture, Cancel, Status, Update,
+    };
+
+    [[nodiscard]] static OpKind op_kind_for(std::string_view connector_operation)
+    {
+        if (connector_operation == "capture") {
+            return OpKind::Capture;
+        }
+        if (connector_operation == "cancel") {
+            return OpKind::Cancel;
+        }
+        if (connector_operation == "sync" || connector_operation == "verify") {
+            return OpKind::Status;
+        }
+        if (connector_operation == "tokenize") {
+            return OpKind::Update;
+        }
+        return connector_operation == "authorize" ? OpKind::Confirm : OpKind::Create;
+    }
+
+    [[nodiscard]] bool state_transition_allowed(
+        std::string_view current,
+        std::string_view connector_operation
+    ) const
+    {
+        if (current.empty()) {
+            return true; // creation is always allowed
+        }
+        const OpKind kind = op_kind_for(connector_operation);
+        switch (kind) {
+        case OpKind::Capture:
+            return current == "requires_capture" || current == "authorized" || current == "pending";
+        case OpKind::Cancel:
+            return current != "succeeded" && current != "cancelled" && current != "canceled";
+        case OpKind::Status:
+        case OpKind::Update:
+        case OpKind::Create:
+        case OpKind::Confirm:
+            return true;
+        }
+        return true;
+    }
+
+    [[nodiscard]] bool should_call_connector(
+        OpKind kind,
+        std::string_view current,
+        bool force_sync
+    ) const
+    {
+        if (kind == OpKind::Status && !force_sync &&
+            (current == "succeeded" || current == "cancelled" || current == "failed")) {
+            return false;
+        }
+        return true;
+    }
+
+    /**  Profile derived from the authenticated context/header/query; used by the
+     *   local record mirror below to scope repository reads and writes. */
+    [[nodiscard]] std::string profile_for(interfaces::io::IRequest& req) const
+    {
+        const auto ctx = app::auth::AuthContextBuilder{}(req);
+        if (!ctx.profile_id().empty()) {
+            return ctx.profile_id();
+        }
+        const std::string header = app::http::HeaderReader{}.get(req, "x-profile-id");
+        return header.empty() ? query_value(req, "profile_id") : header;
+    }
+
+    [[nodiscard]] static std::string scope_key(std::string_view merchant, std::string_view id)
+    {
+        return std::format("{}|{}", merchant, id);
+    }
+
+    /**  Profile-scoped repository list: upstream merchant/profile scoping is
+     *   mirrored by a local in-process map plus a `profile_id` entry in the
+     *   record metadata (the store DTO has no dedicated profile column). */
+    [[nodiscard]] std::vector<app::store::payments::PaymentIntentRecord> list_payments_scoped(
+        interfaces::io::IRequest& req
+    ) const
+    {
+        app::store::PaymentQuery query{};
+        query.merchant_id(app::http::merchant_id_from_header{}(req));
+        if (const auto status = query_value(req, "status"); !status.empty()) {
+            query.status(status);
+        }
+        auto records = m_context->repository().list_payments(query);
+        const std::string profile = profile_for(req);
+        if (!profile.empty()) {
+            std::vector<app::store::payments::PaymentIntentRecord> scoped{};
+            for (const auto& record : records) {
+                const auto it = m_profile_scope.find(
+                    scope_key(record.get_merchant_id(), record.get_payment_id())
+                );
+                if (it == m_profile_scope.end() || it->second == profile) {
+                    scoped.push_back(record);
+                }
+            }
+            records = std::move(scoped);
+        }
+        return records;
+    }
+
+    /**  Auth is resolved from the auditable registry AND the ported upstream
+     *   extractor combination for this exact operation. */
     [[nodiscard]] bool authorize_operation(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -3833,9 +4269,18 @@ private:
     ) const
     {
         const auto rule = m_context->auth_rules().rule_for(operation);
-        const auto auth = m_context->authorizer().authorize_route(app::auth::AuthContextBuilder{}(req), rule);
+        const auto ctx = app::auth::AuthContextBuilder{}(req);
+        const auto auth = m_context->authorizer().authorize_route(ctx, rule);
         if (auth) {
             send_error(res, send, *auth);
+            return false;
+        }
+        if (!apply_extractor(req, ctx, auth_spec_for(operation), operation)) {
+            send_api_error(
+                res, send, ApiVariant::Unauthorized,
+                "Authentication information is missing or invalid", "IR_08",
+                payment_id_from_path(req)
+            );
             return false;
         }
         return true;
@@ -3847,7 +4292,7 @@ private:
         using namespace app::model::payments;
         const std::string id = payment_id_from_path(req);
         const std::string merchant = app::http::merchant_id_from_header{}(req);
-        const auto stored = find_payment_record(id);
+        const auto stored = find_payment_record(req, id);
 
         PaymentsResponse response{};
         PaymentIdValue payment{};
@@ -3959,20 +4404,17 @@ private:
         }
         result.locked = true;
 
-        const auto stored = find_payment_record(id);
+        const auto stored = find_payment_record(req, id);
         result.amount = stored ? stored->get_amount() : 0;
         result.currency = stored && !stored->get_currency().empty()
                               ? stored->get_currency()
                               : std::string{"USD"};
 
-        // Deterministic transition guards: local substitute for the upstream
-        // operation state machine and if_not_create_change_operation.
+        // State machine: local port of upstream `if_not_create_change_operation`
+        // and the per-operation transition guards (core/payments.rs:11462-11635).
         const std::string current = stored ? stored->get_status() : std::string{};
-        const bool invalid_transition =
-            (connector_operation == "capture" && !current.empty() &&
-             current != "requires_capture" && current != "authorized" && current != "pending") ||
-            (connector_operation == "cancel" &&
-             (current == "succeeded" || current == "cancelled" || current == "canceled"));
+        const OpKind kind = op_kind_for(connector_operation);
+        const bool invalid_transition = !state_transition_allowed(current, connector_operation);
         if (invalid_transition) {
             result.status = current;
             result.decision_rejected = true;
@@ -4010,6 +4452,7 @@ private:
                                      .resource_id(id)
                                      .raw_payload(body)();
         app::connector::ConnectorResponse connector_response{};
+        if (should_call_connector(kind, current, query_bool(req, "force_sync"))) {
         if (auto connector = m_context->connector_router().select_for(connector_request)) {
             result.connector = connector->name();
             if (connector_operation == "capture") {
@@ -4030,6 +4473,7 @@ private:
             m_context->metrics().counter("payments.connector_unavailable").increment();
             (void)error;
         }
+        } // should_call_connector
         result.reference_id = connector_response.get_reference_id();
         result.status = connector_response.get_status().empty()
                             ? std::string{fallback_status}
@@ -4041,8 +4485,14 @@ private:
             m_context->metrics().counter("payments.connector_shadow_killed").increment();
         }
 
-        // Profile scoping is carried as the x-profile-id query/header claim.
-        (void)query_value(req, "profile_id");
+        // Profile-scoped persistence: mirror the authenticated profile id into a
+        // local in-process map and into the record metadata (the store DTO has no
+        // dedicated profile column). Local substitute for the upstream indexed
+        // find_payment_intent_by_merchant_reference_id_profile_id lookup.
+        const std::string scope_profile = profile_for(req);
+        if (!scope_profile.empty()) {
+            m_profile_scope[scope_key(result.merchant_id, id)] = scope_profile;
+        }
 
         app::store::payments::PaymentIntentRecord record{};
         if (stored) {
@@ -4058,6 +4508,11 @@ private:
         }
         record.set_status(result.status);
         record.set_updated_at(now_string());
+        if (!scope_profile.empty()) {
+            record.set_metadata(
+                std::format(R"({"profile_id":{}})", serde::Ser::encode_json(scope_profile))
+            );
+        }
         if (stored) {
             m_context->repository().update_payment(record);
         } else {
@@ -4134,17 +4589,120 @@ private:
         return serde::Ser::encode_json(response);
     }
 
+    /**
+     *  Upstream v2 intent routes (payments_create_intent, payments_get_intent,
+     *  payments_update_intent) return `PaymentsIntentResponse`, whose wire shape
+     *  is `id/status/amount_details{order_amount,currency,...}/profile_id/...`.
+     *  Build that exact shape from the persisted pipeline result.
+     */
+    [[nodiscard]] std::string v2_intent_response(const PipelineResult& result) const
+    {
+        using namespace app::model::payments;
+        PaymentsIntentResponse response{};
+        GlobalPaymentIdValue id{};
+        id.set_value(result.id);
+        response.set_id(id);
+        IntentStatusValue status{};
+        status.set_value(result.status.empty() ? std::string{"requires_payment_method"} : result.status);
+        response.set_status(status);
+        AmountDetailsResponse amount_details{};
+        MinorUnitValue order_amount{};
+        order_amount.set_value(std::to_string(result.amount));
+        amount_details.set_order_amount(order_amount);
+        CurrencyValue currency{};
+        currency.set_value(result.currency.empty() ? std::string{"USD"} : result.currency);
+        amount_details.set_currency(currency);
+        TaxCalculationOverrideValue external_tax{};
+        external_tax.set_value("original");
+        amount_details.set_external_tax_calculation(external_tax);
+        SurchargeCalculationOverrideValue surcharge{};
+        surcharge.set_value("original");
+        amount_details.set_surcharge_calculation(surcharge);
+        response.set_amount_details(amount_details);
+        ProfileIdValue profile{};
+        profile.set_value(result.merchant_id);
+        response.set_profile_id(profile);
+        CaptureMethodValue capture_method{};
+        capture_method.set_value("automatic");
+        response.set_capture_method(capture_method);
+        FutureUsageValue future_usage{};
+        future_usage.set_value("off_session");
+        response.set_setup_future_usage(future_usage);
+        MitExemptionRequestValue mit{};
+        mit.set_value("none");
+        response.set_apply_mit_exemption(mit);
+        PresenceOfCustomerDuringPaymentValue present{};
+        present.set_value("present");
+        response.set_customer_present(present);
+        return serde::Ser::encode_json(response);
+    }
+
+    /**  Translate every failure to the exact upstream `ApiErrorResponse` envelope:
+     *   `{"error":{"type":...,"message":...,"code":"IR_xx"/"HE_xx"/"CE_xx"}}`
+     *   with the upstream status code (api_models/errors/types.rs:91-106,159-177;
+     *   api_models/errors/actix.rs:4-22; domain error codes
+     *   hyperswitch_domain_models/errors/api_error_response.rs:176-236,459-461). */
     void send_error(
         interfaces::io::IResponse& res,
         std::function<void()> send,
         core::error::AppError error
     ) const
     {
-        auto text = serde::Ser::encode_json(error);
-        auto bytes = serde::Ser::serialize_raw("application/json", text);
-        res.set_status(core::error::AppErrorStatus{}(error.get_kind()));
-        res.set_body(std::move(bytes));
-        send();
+        using Kind = core::error::AppErrorKind;
+        const std::string message = error.get_message();
+        switch (error.get_kind()) {
+        case Kind::EMPTY_REQUEST:
+            send_api_error(res, send, ApiVariant::BadRequest,
+                           std::format("Missing required param: {}", message), "IR_04");
+            return;
+        case Kind::INVALID_JSON:
+            send_api_error(res, send, ApiVariant::BadRequest,
+                           std::format("Invalid value provided: {}", message), "IR_06");
+            return;
+        case Kind::NOT_FOUND:
+            send_api_error(res, send, ApiVariant::NotFound,
+                           "Payment does not exist in our records", "HE_02");
+            return;
+        case Kind::UNAUTHORIZED:
+            send_api_error(res, send, ApiVariant::Unauthorized, message, "IR_08");
+            return;
+        case Kind::FORBIDDEN:
+            send_api_error(res, send, ApiVariant::ForbiddenCommonResource,
+                           std::format("Access forbidden. {}", message), "IR_22");
+            return;
+        case Kind::INTERNAL:
+        case Kind::INTERNAL_ERROR:
+            send_api_error(res, send, ApiVariant::InternalServerError, "Something went wrong", "HE_00");
+            return;
+        case Kind::ALREADY_EXISTS:
+            send_api_error(res, send, ApiVariant::Conflict, message, "IR_12");
+            return;
+        case Kind::PRECONDITION_FAILED:
+            send_api_error(res, send, ApiVariant::Conflict, message, "IR_14");
+            return;
+        case Kind::INVALID_REQUEST:
+            send_api_error(res, send, ApiVariant::BadRequest,
+                           std::format("Invalid value provided: {}", message), "IR_06");
+            return;
+        case Kind::DUPLICATE_REQUEST:
+            send_api_error(res, send, ApiVariant::Unprocessable,
+                           "Resource is busy. Please try again later.", "HE_00");
+            return;
+        case Kind::CONNECTOR_ERROR:
+            send_api_error(res, send, ApiVariant::ConnectorError, message, "CE_00");
+            return;
+        case Kind::VALIDATION_FAILED:
+            send_api_error(res, send, ApiVariant::Unprocessable,
+                           std::format("This Payment could not be processed: {}", message), "IR_14");
+            return;
+        case Kind::RATE_LIMITED:
+            send_api_error(res, send, ApiVariant::TooManyRequests, message, "HE_00");
+            return;
+        case Kind::TIMEOUT:
+            send_api_error(res, send, ApiVariant::Unprocessable, message, "HE_00");
+            return;
+        }
+        send_api_error(res, send, ApiVariant::InternalServerError, "Something went wrong", "HE_00");
     }
 
     void send_json(
@@ -4160,6 +4718,9 @@ private:
         res.set_body(std::move(bytes));
         send();
     }
+
+    /**  Local in-process mirror of upstream profile-scoped payment intent keys. */
+    mutable std::unordered_map<std::string, std::string> m_profile_scope{};
 
     app::context::AppContext* m_context{nullptr};
 };

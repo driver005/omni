@@ -78,51 +78,55 @@ public:
     std::string value{};
 };
 
+// Upstream id_type and Connector newtypes are serde-transparent: they serialize as
+// plain strings on the wire (common_utils/src/id_type.rs:88-104,
+// common_enums/src/connector_enums.rs:29-32). Mirror that wire shape directly so
+// serde::Ser::deserialize parses the upstream JSON without a {"value": ...} wrapper.
 class ActionUrlRequest
 {
 public:
-    void set_connector(ConnectorValue value) { connector = std::move(value); }
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept { return connector; }
-    void set_connector_id(MerchantConnectorAccountIdValue value) { connector_id = std::move(value); }
-    [[nodiscard]] const MerchantConnectorAccountIdValue& get_connector_id() const noexcept { return connector_id; }
+    void set_connector(std::string value) { connector = std::move(value); }
+    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
+    void set_connector_id(std::string value) { connector_id = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
     void set_return_url(std::string value) { return_url = std::move(value); }
     [[nodiscard]] const std::string& get_return_url() const noexcept { return return_url; }
-    ConnectorValue connector{};
-    MerchantConnectorAccountIdValue connector_id{};
+    std::string connector{};
+    std::string connector_id{};
     std::string return_url{};
 };
 
 class OnboardingSyncRequest
 {
 public:
-    void set_profile_id(ProfileIdValue value) { profile_id = std::move(value); }
-    [[nodiscard]] const ProfileIdValue& get_profile_id() const noexcept { return profile_id; }
-    void set_connector_id(MerchantConnectorAccountIdValue value) { connector_id = std::move(value); }
-    [[nodiscard]] const MerchantConnectorAccountIdValue& get_connector_id() const noexcept { return connector_id; }
-    void set_connector(ConnectorValue value) { connector = std::move(value); }
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept { return connector; }
-    ProfileIdValue profile_id{};
-    MerchantConnectorAccountIdValue connector_id{};
-    ConnectorValue connector{};
+    void set_profile_id(std::string value) { profile_id = std::move(value); }
+    [[nodiscard]] const std::string& get_profile_id() const noexcept { return profile_id; }
+    void set_connector_id(std::string value) { connector_id = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
+    void set_connector(std::string value) { connector = std::move(value); }
+    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
+    std::string profile_id{};
+    std::string connector_id{};
+    std::string connector{};
 };
 
 class PayPalOnboardingDone
 {
 public:
-    void set_payer_id(MerchantIdValue value) { payer_id = std::move(value); }
-    [[nodiscard]] const MerchantIdValue& get_payer_id() const noexcept { return payer_id; }
-    MerchantIdValue payer_id{};
+    void set_payer_id(std::string value) { payer_id = std::move(value); }
+    [[nodiscard]] const std::string& get_payer_id() const noexcept { return payer_id; }
+    std::string payer_id{};
 };
 
 class ResetTrackingIdRequest
 {
 public:
-    void set_connector_id(MerchantConnectorAccountIdValue value) { connector_id = std::move(value); }
-    [[nodiscard]] const MerchantConnectorAccountIdValue& get_connector_id() const noexcept { return connector_id; }
-    void set_connector(ConnectorValue value) { connector = std::move(value); }
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept { return connector; }
-    MerchantConnectorAccountIdValue connector_id{};
-    ConnectorValue connector{};
+    void set_connector_id(std::string value) { connector_id = std::move(value); }
+    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
+    void set_connector(std::string value) { connector = std::move(value); }
+    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
+    std::string connector_id{};
+    std::string connector{};
 };
 } // namespace app::dto::connector_onboarding
 

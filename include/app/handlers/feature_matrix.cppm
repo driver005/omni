@@ -2174,9 +2174,9 @@ public:
 
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/feature_matrix"}
+        Router{router, "feature_matrix"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

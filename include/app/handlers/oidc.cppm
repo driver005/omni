@@ -853,9 +853,9 @@ public:
         using Router = utils::openapi::ApiRouter;
         // Upstream mounts these at the root via web::scope(""). Single-segment
         // router/route literals keep the trie resolution exact.
-        Router{router, "/.well-known"}
+        Router{router, ".well-known"}
             .add_route(
-                Route{"/openid-configuration"}
+                Route{"openid-configuration"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -865,9 +865,9 @@ public:
                     })
                     .summary("Hyperswitch oidc_discovery")
             );
-        Router{router, "/oauth2"}
+        Router{router, "oauth2"}
             .add_route(
-                Route{"/jwks"}
+                Route{"jwks"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -878,7 +878,7 @@ public:
                     .summary("Hyperswitch jwks_endpoint")
             )
             .add_route(
-                Route{"/token"}
+                Route{"token"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -888,9 +888,9 @@ public:
                     })
                     .summary("Hyperswitch oidc_token")
             );
-        Router{router, "/oidc"}
+        Router{router, "oidc"}
             .add_route(
-                Route{"/authorize"}
+                Route{"authorize"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

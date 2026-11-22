@@ -1679,9 +1679,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/payment_methods"}
+        Router{router, "payment_methods"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1692,7 +1692,7 @@ public:
                     .summary("Hyperswitch create_payment_method_api")
             )
             .add_route(
-                Route{"/"}
+                Route{""}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1703,7 +1703,7 @@ public:
                     .summary("Hyperswitch list_payment_method_api")
             )
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1714,7 +1714,7 @@ public:
                     .summary("Hyperswitch list_countries_currencies_for_connector_payment_method")
             )
             .add_route(
-                Route{"/migrate"}
+                Route{"migrate"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1725,7 +1725,7 @@ public:
                     .summary("Hyperswitch migrate_payment_method_api")
             )
             .add_route(
-                Route{"/migrate-batch"}
+                Route{"migrate-batch"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1736,7 +1736,7 @@ public:
                     .summary("Hyperswitch migrate_payment_methods")
             )
             .add_route(
-                Route{"/update-batch"}
+                Route{"update-batch"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1747,7 +1747,7 @@ public:
                     .summary("Hyperswitch update_payment_methods")
             )
             .add_route(
-                Route{"/batch"}
+                Route{"batch"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1757,15 +1757,15 @@ public:
                     })
                     .summary("Hyperswitch payment_methods_batch_retrieve_api")
             )
-            .add_route(
-                Route{"/fingerprint/migrate-batch"}
+            .add_router(Router{router, "fingerprint"}.add_route(
+                Route{"migrate-batch"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_modular_migrate_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch modular_migrate_payment_methods")
-            )
+            ))
             .add_route(
-                Route{"/tokenize-card"}
+                Route{"tokenize-card"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1776,7 +1776,7 @@ public:
                     .summary("Hyperswitch tokenize_card_api")
             )
             .add_route(
-                Route{"/tokenize-card-batch"}
+                Route{"tokenize-card-batch"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1787,7 +1787,7 @@ public:
                     .summary("Hyperswitch tokenize_card_batch_api")
             )
             .add_route(
-                Route{"/collect"}
+                Route{"collect"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1797,8 +1797,8 @@ public:
                     })
                     .summary("Hyperswitch initiate_pm_collect_link_flow")
             )
-            .add_route(
-                Route{"/collect/:merchant_id/:collect_id"}
+            .add_router(Router{router, "collect"}.add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":collect_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1807,9 +1807,9 @@ public:
                         handle_render_pm_collect_link(req, res, std::move(send));
                     })
                     .summary("Hyperswitch render_pm_collect_link")
-            )
+            )))
             .add_route(
-                Route{"/create-intent"}
+                Route{"create-intent"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1820,7 +1820,7 @@ public:
                     .summary("Hyperswitch create_payment_method_intent_api")
             )
             .add_route(
-                Route{"/get-network-token-eligibility"}
+                Route{"get-network-token-eligibility"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1830,8 +1830,8 @@ public:
                     })
                     .summary("Hyperswitch get_pm_nt_eligibility_api")
             )
-            .add_route(
-                Route{"/token/:payment_method_temporary_token/details"}
+            .add_router(Router{router, "token"}.add_router(Router{router, ":payment_method_temporary_token"}.add_route(
+                Route{"details"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1840,9 +1840,9 @@ public:
                         handle_payment_method_get_token_details_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_get_token_details_api")
-            )
-            .add_route(
-                Route{"/customers/total-payment-methods"}
+            )))
+            .add_router(Router{router, "customers"}.add_route(
+                Route{"total-payment-methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1851,9 +1851,9 @@ public:
                         handle_get_total_payment_method_count(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_total_payment_method_count")
-            )
-            .add_route(
-                Route{"/customers/payment_methods"}
+            ))
+            .add_router(Router{router, "customers"}.add_route(
+                Route{"payment_methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1862,9 +1862,9 @@ public:
                         handle_list_customer_payment_method_api_client(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_customer_payment_method_api_client")
-            )
-            .add_route(
-                Route{"/customers/:id/saved-payment-methods"}
+            ))
+            .add_router(Router{router, "customers"}.add_router(Router{router, ":id"}.add_route(
+                Route{"saved-payment-methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1873,9 +1873,9 @@ public:
                         handle_list_customer_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_customer_payment_method_api")
-            )
-            .add_route(
-                Route{"/customers/:customer_id/payment_methods"}
+            )))
+            .add_router(Router{router, "customers"}.add_router(Router{router, ":customer_id"}.add_route(
+                Route{"payment_methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1884,9 +1884,9 @@ public:
                         handle_list_customer_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_customer_payment_method_api")
-            )
-            .add_route(
-                Route{"/customers/:customer_id/payment-methods/:payment_method_id/default"}
+            )))
+            .add_router(Router{router, "customers"}.add_router(Router{router, ":customer_id"}.add_router(Router{router, "payment-methods"}.add_router(Router{router, ":payment_method_id"}.add_route(
+                Route{"default"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1895,9 +1895,9 @@ public:
                         handle_default_payment_method_set_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch default_payment_method_set_api")
-            )
+            )))))
             .add_route(
-                Route{"/payment-method-sessions"}
+                Route{"payment-method-sessions"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1907,8 +1907,8 @@ public:
                     })
                     .summary("Hyperswitch payment_methods_session_create")
             )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id"}
+            .add_router(Router{router, "payment-method-sessions"}.add_route(
+                Route{":payment_method_session_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1917,9 +1917,9 @@ public:
                         handle_payment_methods_session_retrieve(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_methods_session_retrieve")
-            )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id"}
+            ))
+            .add_router(Router{router, "payment-method-sessions"}.add_route(
+                Route{":payment_method_session_id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1928,9 +1928,9 @@ public:
                         handle_payment_methods_session_update(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_methods_session_update")
-            )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id"}
+            ))
+            .add_router(Router{router, "payment-method-sessions"}.add_route(
+                Route{":payment_method_session_id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1939,9 +1939,9 @@ public:
                         handle_payment_method_session_delete_saved_payment_method(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_delete_saved_payment_method")
-            )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id/list-payment-methods"}
+            ))
+            .add_router(Router{router, "payment-method-sessions"}.add_router(Router{router, ":payment_method_session_id"}.add_route(
+                Route{"list-payment-methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1950,9 +1950,9 @@ public:
                         handle_payment_method_session_list_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_list_payment_methods")
-            )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id/confirm"}
+            )))
+            .add_router(Router{router, "payment-method-sessions"}.add_router(Router{router, ":payment_method_session_id"}.add_route(
+                Route{"confirm"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1961,9 +1961,9 @@ public:
                         handle_payment_method_session_confirm(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_confirm")
-            )
-            .add_route(
-                Route{"/payment-method-sessions/:payment_method_session_id/update-saved-payment-method"}
+            )))
+            .add_router(Router{router, "payment-method-sessions"}.add_router(Router{router, ":payment_method_session_id"}.add_route(
+                Route{"update-saved-payment-method"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1972,9 +1972,9 @@ public:
                         handle_payment_method_session_update_saved_payment_method(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_update_saved_payment_method")
-            )
-            .add_route(
-                Route{"/payments/:payment_id/client"}
+            )))
+            .add_router(Router{router, "payments"}.add_router(Router{router, ":payment_id"}.add_route(
+                Route{"client"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1983,9 +1983,9 @@ public:
                         handle_list_payment_methods_for_payments_client(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_payment_methods_for_payments_client")
-            )
+            )))
             .add_route(
-                Route{"/:payment_method_id"}
+                Route{":payment_method_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1996,7 +1996,7 @@ public:
                     .summary("Hyperswitch payment_method_retrieve_api")
             )
             .add_route(
-                Route{"/:payment_method_id"}
+                Route{":payment_method_id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2006,8 +2006,8 @@ public:
                     })
                     .summary("Hyperswitch payment_method_delete_api")
             )
-            .add_route(
-                Route{"/:payment_method_id/tokenize-card"}
+            .add_router(Router{router, ":payment_method_id"}.add_route(
+                Route{"tokenize-card"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2016,9 +2016,9 @@ public:
                         handle_tokenize_card_using_pm_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch tokenize_card_using_pm_api")
-            )
-            .add_route(
-                Route{"/:payment_method_id/update"}
+            ))
+            .add_router(Router{router, ":payment_method_id"}.add_route(
+                Route{"update"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2027,9 +2027,9 @@ public:
                         handle_payment_method_update_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_update_api")
-            )
-            .add_route(
-                Route{"/:payment_method_id/save"}
+            ))
+            .add_router(Router{router, ":payment_method_id"}.add_route(
+                Route{"save"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2038,9 +2038,9 @@ public:
                         handle_save_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch save_payment_method_api")
-            )
-            .add_route(
-                Route{"/:payment_method_id/check-network-token-status"}
+            ))
+            .add_router(Router{router, ":payment_method_id"}.add_route(
+                Route{"check-network-token-status"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2049,9 +2049,9 @@ public:
                         handle_network_token_status_check_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch network_token_status_check_api")
-            )
-            .add_route(
-                Route{"/:id/details"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"details"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2060,9 +2060,9 @@ public:
                         handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_retrieve_olap_api")
-            )
-            .add_route(
-                Route{"/:id/update-saved-payment-method"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"update-saved-payment-method"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2071,9 +2071,9 @@ public:
                         handle_payment_method_update_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_update_api")
-            )
-            .add_route(
-                Route{"/:id/get-token"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"get-token"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2082,9 +2082,9 @@ public:
                         handle_get_payment_method_token_data(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_payment_method_token_data")
-            )
-            .add_route(
-                Route{"/:id/list-enabled-payment-methods"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"list-enabled-payment-methods"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2093,142 +2093,142 @@ public:
                         handle_payment_method_session_list_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_list_payment_methods")
-            );
-        Router{router, "/:pm_prefix/payment-methods"}
+            ));
+        Router{router, ":pm_prefix/payment-methods"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_create_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch create_payment_method_api (v2 prefix)")
             )
             .add_route(
-                Route{"/"}
+                Route{""}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_payment_method_api (v2 prefix)")
             )
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_countries_currencies_for_connector_payment_method(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_countries_currencies_for_connector_payment_method (v2 prefix)")
             )
-            .add_route(
-                Route{"/fingerprint/migrate-batch"}
+            .add_router(Router{router, "fingerprint"}.add_route(
+                Route{"migrate-batch"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_modular_migrate_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch modular_migrate_payment_methods (v2 prefix)")
-            )
+            ))
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_retrieve_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_retrieve_api (v2 prefix)")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_delete_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_delete_api (v2 prefix)")
             )
-            .add_route(
-                Route{"/:id/update"}
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"update"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_update_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_update_api (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/save"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"save"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_save_payment_method_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch save_payment_method_api (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/details"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"details"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_retrieve_olap_api (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/get-token"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"get-token"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_payment_method_token_data(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_payment_method_token_data (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/list-enabled-payment-methods"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"list-enabled-payment-methods"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_session_list_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_list_payment_methods (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/check-network-token-status"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"check-network-token-status"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_network_token_status_check_api(req, res, std::move(send));
                     })
                     .summary("Hyperswitch network_token_status_check_api (v2 prefix)")
-            );
-        Router{router, "/:pm_prefix/payment-method-sessions"}
+            ));
+        Router{router, ":pm_prefix/payment-method-sessions"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_methods_session_create(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_methods_session_create (v2 prefix)")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_methods_session_retrieve(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_methods_session_retrieve (v2 prefix)")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_methods_session_update(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_methods_session_update (v2 prefix)")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_session_delete_saved_payment_method(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_delete_saved_payment_method (v2 prefix)")
             )
-            .add_route(
-                Route{"/:id/list-payment-methods"}
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"list-payment-methods"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_session_list_payment_methods(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_list_payment_methods (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/confirm"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"confirm"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_session_confirm(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_confirm (v2 prefix)")
-            )
-            .add_route(
-                Route{"/:id/update-saved-payment-method"}
+            ))
+            .add_router(Router{router, ":id"}.add_route(
+                Route{"update-saved-payment-method"}
                     .put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_payment_method_session_update_saved_payment_method(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_method_session_update_saved_payment_method (v2 prefix)")
-            );
+            ));
     }
 
 private:

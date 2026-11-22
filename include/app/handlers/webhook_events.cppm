@@ -343,9 +343,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/events"}
-            .add_route(
-                Route{"/profile/list"}
+        Router{router, "events"}
+            .add_router(Router{router, "profile"}.add_route(
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -354,9 +354,9 @@ public:
                         handle_list_initial_webhook_delivery_attempts_with_jwtauth(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_initial_webhook_delivery_attempts_with_jwtauth")
-            )
+            ))
             .add_route(
-                Route{"/:merchant_id"}
+                Route{":merchant_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -366,8 +366,8 @@ public:
                     })
                     .summary("Hyperswitch list_initial_webhook_delivery_attempts")
             )
-            .add_route(
-                Route{"/:merchant_id/:event_id/attempts"}
+            .add_router(Router{router, ":merchant_id"}.add_router(Router{router, ":event_id"}.add_route(
+                Route{"attempts"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -376,9 +376,9 @@ public:
                         handle_list_webhook_delivery_attempts(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_webhook_delivery_attempts")
-            )
-            .add_route(
-                Route{"/:merchant_id/:event_id/retry"}
+            )))
+            .add_router(Router{router, ":merchant_id"}.add_router(Router{router, ":event_id"}.add_route(
+                Route{"retry"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -387,7 +387,7 @@ public:
                         handle_retry_webhook_delivery_attempt(req, res, std::move(send));
                     })
                     .summary("Hyperswitch retry_webhook_delivery_attempt")
-            );
+            )));
     }
 
     explicit WebhookEventsRouteHandlers(app::context::AppContext& context) noexcept

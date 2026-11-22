@@ -303,8 +303,12 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/webhooks"}
-            .add_route(
-                Route{"/webhooks/:merchant_id/:connector_id_or_name"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, ":merchant_id"}
+                    .add_route(
+                        Route{":connector_id_or_name"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -313,9 +317,16 @@ public:
                         handle_receive_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                    )
+                )
             )
-            .add_route(
-                Route{"/webhooks/:merchant_id/:connector_id_or_name"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, ":merchant_id"}
+                    .add_route(
+                        Route{":connector_id_or_name"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -324,9 +335,16 @@ public:
                         handle_receive_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                    )
+                )
             )
-            .add_route(
-                Route{"/webhooks/:merchant_id/:connector_id_or_name"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, ":merchant_id"}
+                    .add_route(
+                        Route{":connector_id_or_name"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -335,12 +353,23 @@ public:
                         handle_receive_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                    )
+                )
             )
             // POST /webhooks/relay/:merchant_id/:connector_id is registered only by
             // relay.cppm:781 (cross-module ownership); registering it here as well would
             // throw std::runtime_error on duplicate POST in the core router.
-            .add_route(
-                Route{"/v2/webhooks/:merchant_id/:profile_id/:connector_id"}
+            .add_router(
+                Router{router, "v2"}
+                .add_router(
+                    Router{router, "webhooks"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                        .add_router(
+                            Router{router, ":profile_id"}
+                            .add_route(
+                                Route{":connector_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -349,9 +378,22 @@ public:
                         handle_receive_incoming_webhook_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                            )
+                        )
+                    )
+                )
             )
-            .add_route(
-                Route{"/v2/webhooks/:merchant_id/:profile_id/:connector_id"}
+            .add_router(
+                Router{router, "v2"}
+                .add_router(
+                    Router{router, "webhooks"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                        .add_router(
+                            Router{router, ":profile_id"}
+                            .add_route(
+                                Route{":connector_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -360,9 +402,22 @@ public:
                         handle_receive_incoming_webhook_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                            )
+                        )
+                    )
+                )
             )
-            .add_route(
-                Route{"/v2/webhooks/:merchant_id/:profile_id/:connector_id"}
+            .add_router(
+                Router{router, "v2"}
+                .add_router(
+                    Router{router, "webhooks"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                        .add_router(
+                            Router{router, ":profile_id"}
+                            .add_route(
+                                Route{":connector_id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -371,9 +426,18 @@ public:
                         handle_receive_incoming_webhook_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_incoming_webhook")
+            
+                            )
+                        )
+                    )
+                )
             )
-            .add_route(
-                Route{"/webhooks/network_token_requestor/ref"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, "network_token_requestor"}
+                    .add_route(
+                        Route{"ref"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -382,9 +446,16 @@ public:
                         handle_receive_network_token_requestor_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_network_token_requestor_incoming_webhook")
+            
+                    )
+                )
             )
-            .add_route(
-                Route{"/webhooks/network_token_requestor/ref"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, "network_token_requestor"}
+                    .add_route(
+                        Route{"ref"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -393,9 +464,16 @@ public:
                         handle_receive_network_token_requestor_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_network_token_requestor_incoming_webhook")
+            
+                    )
+                )
             )
-            .add_route(
-                Route{"/webhooks/network_token_requestor/ref"}
+            .add_router(
+                Router{router, "webhooks"}
+                .add_router(
+                    Router{router, "network_token_requestor"}
+                    .add_route(
+                        Route{"ref"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -404,6 +482,9 @@ public:
                         handle_receive_network_token_requestor_incoming_webhook(req, res, std::move(send));
                     })
                     .summary("Hyperswitch receive_network_token_requestor_incoming_webhook")
+            
+                    )
+                )
             );
     }
 

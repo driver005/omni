@@ -221,9 +221,9 @@ public:
 
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/unified-connector-service"}
-            .add_route(
-                Route{"/kill-switch/:scope"}
+        Router{router, "unified-connector-service"}
+            .add_router(Router{router, "kill-switch"}.add_route(
+                Route{":scope"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -232,9 +232,9 @@ public:
                         handle_kill_switch_status(req, res, std::move(send));
                     })
                     .summary("Hyperswitch kill_switch_status")
-            )
-            .add_route(
-                Route{"/kill-switch/:scope"}
+            ))
+            .add_router(Router{router, "kill-switch"}.add_route(
+                Route{":scope"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -243,7 +243,7 @@ public:
                         handle_reset_kill_switch(req, res, std::move(send));
                     })
                     .summary("Hyperswitch reset_kill_switch")
-            );
+            ));
     }
 
     explicit UnifiedConnectorServiceRouteHandlers(app::context::AppContext& context) noexcept

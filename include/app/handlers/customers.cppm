@@ -455,20 +455,20 @@ private:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         // app.rs:1593-1632. Multi-segment resources are mounted before "/{customer_id}".
-        (void)Router{router, "/customers"}
-            .add_route(Route{"/list"}.get([this](auto& req, auto& res, auto send) {
+        (void)Router{router, "customers"}
+            .add_route(Route{"list"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_list(req, res, std::move(send)); }).summary("Hyperswitch customers_list"))
-            .add_route(Route{"/list_with_count"}.get([this](auto& req, auto& res, auto send) {
+            .add_route(Route{"list_with_count"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_list_with_count(req, res, std::move(send)); }).summary("Hyperswitch customers_list_with_count"))
-            .add_route(Route{"/:customer_id/mandates"}.get([this](auto& req, auto& res, auto send) {
-                handle_get_customer_mandates(req, res, std::move(send)); }).summary("Hyperswitch get_customer_mandates"))
+            .add_router(Router{router, ":customer_id"}.add_route(Route{"mandates"}.get([this](auto& req, auto& res, auto send) {
+                handle_get_customer_mandates(req, res, std::move(send)); }).summary("Hyperswitch get_customer_mandates")))
             .add_route(Route{""}.post([this](auto& req, auto& res, auto send) {
                 handle_customers_create(req, res, std::move(send)); }).summary("Hyperswitch customers_create"))
-            .add_route(Route{"/:customer_id"}.get([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":customer_id"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_retrieve(req, res, std::move(send)); }).summary("Hyperswitch customers_retrieve"))
-            .add_route(Route{"/:customer_id"}.post([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":customer_id"}.post([this](auto& req, auto& res, auto send) {
                 handle_customers_update(req, res, std::move(send)); }).summary("Hyperswitch customers_update"))
-            .add_route(Route{"/:customer_id"}.delt([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":customer_id"}.delt([this](auto& req, auto& res, auto send) {
                 handle_customers_delete(req, res, std::move(send)); }).summary("Hyperswitch customers_delete"));
     }
 
@@ -479,21 +479,21 @@ private:
         // app.rs:1545-1586. The C++-only v1 `POST /{id}` alias and v1-only
         // `GET /{id}/mandates` are deliberately not mounted on the v2 scope.
         (void)Router{router, base}
-            .add_route(Route{"/list"}.get([this](auto& req, auto& res, auto send) {
+            .add_route(Route{"list"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_list_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_list (v2)"))
-            .add_route(Route{"/list_with_count"}.get([this](auto& req, auto& res, auto send) {
+            .add_route(Route{"list_with_count"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_list_with_count_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_list_with_count (v2)"))
-            .add_route(Route{"/migrate/global-id"}.post([this](auto& req, auto& res, auto send) {
-                handle_migrate_global_id(req, res, std::move(send)); }).summary("Hyperswitch customers migrate_global_id"))
-            .add_route(Route{"/reference/:merchant_reference_id"}.get([this](auto& req, auto& res, auto send) {
-                handle_customers_retrieve_by_merchant_reference_id(req, res, std::move(send)); }).summary("Hyperswitch customers_retrieve_by_merchant_reference_id"))
+            .add_router(Router{router, "migrate"}.add_route(Route{"global-id"}.post([this](auto& req, auto& res, auto send) {
+                handle_migrate_global_id(req, res, std::move(send)); }).summary("Hyperswitch customers migrate_global_id")))
+            .add_router(Router{router, "reference"}.add_route(Route{":merchant_reference_id"}.get([this](auto& req, auto& res, auto send) {
+                handle_customers_retrieve_by_merchant_reference_id(req, res, std::move(send)); }).summary("Hyperswitch customers_retrieve_by_merchant_reference_id")))
             .add_route(Route{""}.post([this](auto& req, auto& res, auto send) {
                 handle_customers_create_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_create (v2)"))
-            .add_route(Route{"/:id"}.get([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":id"}.get([this](auto& req, auto& res, auto send) {
                 handle_customers_retrieve_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_retrieve (v2)"))
-            .add_route(Route{"/:id"}.put([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":id"}.put([this](auto& req, auto& res, auto send) {
                 handle_customers_update_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_update (v2)"))
-            .add_route(Route{"/:id"}.delt([this](auto& req, auto& res, auto send) {
+            .add_route(Route{":id"}.delt([this](auto& req, auto& res, auto send) {
                 handle_customers_delete_v2(req, res, std::move(send)); }).summary("Hyperswitch customers_delete (v2)"));
     }
 

@@ -481,9 +481,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/account"}
-            .add_route(
-                Route{"/connectors/verify"}
+        Router{router, "account"}
+            .add_router(Router{router, "connectors"}.add_route(
+                Route{"verify"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -492,7 +492,7 @@ public:
                         handle_payment_connector_verify(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_connector_verify")
-            );
+            ));
     }
 
     explicit VerifyConnectorRouteHandlers(app::context::AppContext& context) noexcept

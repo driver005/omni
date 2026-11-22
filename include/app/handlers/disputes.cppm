@@ -531,9 +531,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/disputes"}
+        Router{router, "disputes"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -543,19 +543,22 @@ public:
                     })
                     .summary("Hyperswitch retrieve_disputes_list")
             )
-            .add_route(
-                Route{"/profile/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_retrieve_disputes_list_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch retrieve_disputes_list_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_retrieve_disputes_list_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch retrieve_disputes_list_profile")
+                    )
             )
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -565,52 +568,64 @@ public:
                     })
                     .summary("Hyperswitch get_disputes_filters")
             )
-            .add_route(
-                Route{"/profile/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_disputes_filters_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_disputes_filters_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_disputes_filters_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_disputes_filters_profile")
+                    )
+            )
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(
+                        Route{"list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_retrieve_disputes_list_for_platform(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch retrieve_disputes_list_for_platform")
+                    )
+            )
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_platform_disputes_filters(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_platform_disputes_filters")
+                    )
+            )
+            .add_router(
+                Router{router, "accept"}
+                    .add_route(
+                        Route{":dispute_id"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_accept_dispute(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch accept_dispute")
+                    )
             )
             .add_route(
-                Route{"/platform/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_retrieve_disputes_list_for_platform(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch retrieve_disputes_list_for_platform")
-            )
-            .add_route(
-                Route{"/platform/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_platform_disputes_filters(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_platform_disputes_filters")
-            )
-            .add_route(
-                Route{"/accept/:dispute_id"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_accept_dispute(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch accept_dispute")
-            )
-            .add_route(
-                Route{"/aggregate"}
+                Route{"aggregate"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -620,19 +635,22 @@ public:
                     })
                     .summary("Hyperswitch get_disputes_aggregate")
             )
-            .add_route(
-                Route{"/profile/aggregate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_disputes_aggregate_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_disputes_aggregate_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"aggregate"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_disputes_aggregate_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_disputes_aggregate_profile")
+                    )
             )
             .add_route(
-                Route{"/evidence"}
+                Route{"evidence"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -643,7 +661,7 @@ public:
                     .summary("Hyperswitch submit_dispute_evidence")
             )
             .add_route(
-                Route{"/evidence"}
+                Route{"evidence"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -654,7 +672,7 @@ public:
                     .summary("Hyperswitch attach_dispute_evidence")
             )
             .add_route(
-                Route{"/evidence"}
+                Route{"evidence"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -664,19 +682,22 @@ public:
                     })
                     .summary("Hyperswitch delete_dispute_evidence")
             )
-            .add_route(
-                Route{"/evidence/:dispute_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_retrieve_dispute_evidence(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch retrieve_dispute_evidence")
+            .add_router(
+                Router{router, "evidence"}
+                    .add_route(
+                        Route{":dispute_id"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_retrieve_dispute_evidence(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch retrieve_dispute_evidence")
+                    )
             )
             .add_route(
-                Route{"/:dispute_id"}
+                Route{":dispute_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -686,16 +707,19 @@ public:
                     })
                     .summary("Hyperswitch retrieve_dispute")
             )
-            .add_route(
-                Route{"/:connector_id/fetch"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_fetch_disputes(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch fetch_disputes")
+            .add_router(
+                Router{router, ":connector_id"}
+                    .add_route(
+                        Route{"fetch"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_fetch_disputes(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch fetch_disputes")
+                    )
             );
     }
 

@@ -91,6 +91,11 @@ public:
 
         std::optional<std::size_t> wild_index{std::nullopt};
         std::vector<std::size_t> param_indexes{};
+        // Duplicate literal siblings can exist (a leaf Route{"x"} with a handler and a
+        // router Router{"x"} with children). Collect all exact matches and pick the one
+        // that fits: with no remaining segments use the leaf that has a handler; with
+        // remaining segments use the router that has children.
+        std::vector<std::size_t> literal_indexes{};
 
         if (m_children_length > 1) {
             // multiple siblings — hash-probe starting from a bucket derived from the segment,
@@ -118,8 +123,7 @@ public:
                 switch (node.get_kind()) {
                     case EdgeKind::PATH:
                         if (node.get_literal() == seg) {
-                            current_index = idx;
-                            return std::make_optional(node);
+                            literal_indexes.push_back(idx);
                         }
                         break;
                     case EdgeKind::PARAM:
@@ -147,6 +151,36 @@ public:
                 case EdgeKind::WILD:
                     wild_index = std::make_optional(current_index);
             }
+        }
+
+        // Choose among duplicate literal matches: when the request path ends here,
+        // prefer a leaf that has a handler; when segments remain, prefer a router with
+        // children whose literal subtree can consume them.
+        if (!literal_indexes.empty()) {
+            std::size_t chosen = literal_indexes.front();
+            if (rest.empty()) {
+                // Path ends here: prefer a leaf with a handler over a pure router.
+                for (const auto candidate : literal_indexes) {
+                    auto& node = table[candidate];
+                    if (node.get_handler_mask() != HANDLER_MASK &&
+                        node.get_children_length() == 0) { chosen = candidate; break; }
+                }
+            } else {
+                // Segments remain: pick the duplicate whose children contain a literal
+                // matching the next segment (handles 78 duplicate v2 scope nodes).
+                for (const auto candidate : literal_indexes) {
+                    auto& node = table[candidate];
+                    const std::size_t base = candidate + node.get_data_offset();
+                    for (std::size_t i = 0; i < node.get_children_length(); ++i) {
+                        auto& child = table[base + i];
+                        if (child.get_kind() == EdgeKind::PATH &&
+                            child.get_literal() == rest[0]) { chosen = candidate; break; }
+                    }
+                    if (chosen != literal_indexes.front()) break;
+                }
+            }
+            current_index = chosen;
+            return std::make_optional(table[chosen]);
         }
 
         if (!param_indexes.empty()) {

@@ -2858,9 +2858,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/create-intent"}
+                Route{"create-intent"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2870,9 +2870,9 @@ public:
                     })
                     .summary("Hyperswitch payments_create_intent")
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2882,21 +2882,24 @@ public:
                     })
                     .summary("Hyperswitch get_payment_filters")
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/profile/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payment_filters_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payment_filters_profile")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payment_filters_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payment_filters_profile")
+                    )
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2906,9 +2909,9 @@ public:
                     })
                     .summary("Hyperswitch payments_create_and_confirm_intent")
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2918,9 +2921,9 @@ public:
                     })
                     .summary("Hyperswitch payments_list")
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/recovery-list"}
+                Route{"recovery-list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2930,21 +2933,24 @@ public:
                     })
                     .summary("Hyperswitch revenue_recovery_invoices_list")
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/profile/recovery-list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_revenue_recovery_invoices_list_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch revenue_recovery_invoices_list_profile")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"recovery-list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_revenue_recovery_invoices_list_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch revenue_recovery_invoices_list_profile")
+                    )
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/aggregate"}
+                Route{"aggregate"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2954,9 +2960,9 @@ public:
                     })
                     .summary("Hyperswitch get_payments_aggregates")
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/recovery"}
+                Route{"recovery"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -2966,141 +2972,177 @@ public:
                     })
                     .summary("Hyperswitch recovery_payments_create")
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/profile/aggregate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payments_aggregates_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payments_aggregates_profile")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"aggregate"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payments_aggregates_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payments_aggregates_profile")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/ref/:merchant_reference_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payment_get_intent_using_merchant_reference_id(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_get_intent_using_merchant_reference_id")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, "ref"}
+                    .add_route(
+                        Route{":merchant_reference_id"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payment_get_intent_using_merchant_reference_id(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payment_get_intent_using_merchant_reference_id")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/confirm-intent"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payment_confirm_intent(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_confirm_intent")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"confirm-intent"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payment_confirm_intent(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payment_confirm_intent")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/list-attempts"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_payment_attempts(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_payment_attempts")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"list-attempts"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_list_payment_attempts(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch list_payment_attempts")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/list_attempts"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_payment_attempts(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_payment_attempts (deprecated alias)")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"list_attempts"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_list_payment_attempts(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch list_payment_attempts (deprecated alias)")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/proxy-confirm-intent"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_proxy_confirm_intent(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch proxy_confirm_intent")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"proxy-confirm-intent"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_proxy_confirm_intent(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch proxy_confirm_intent")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/confirm-intent/external-vault-proxy"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_confirm_intent_with_external_vault_proxy(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch confirm_intent_with_external_vault_proxy")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, "confirm-intent"}
+                            .add_route(
+                                Route{"external-vault-proxy"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_confirm_intent_with_external_vault_proxy(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch confirm_intent_with_external_vault_proxy")
+                            )
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/get-intent"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_get_intent(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_get_intent")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"get-intent"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_get_intent(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_get_intent")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/get-revenue-recovery-intent"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_revenue_recovery_get_intent(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch revenue_recovery_get_intent")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"get-revenue-recovery-intent"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_revenue_recovery_get_intent(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch revenue_recovery_get_intent")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/update-intent"}
-                    .put([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_update_intent(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_update_intent")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"update-intent"}
+                            .put([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_update_intent(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_update_intent")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/create-external-sdk-tokens"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_connector_session(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_connector_session")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"create-external-sdk-tokens"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_connector_session(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_connector_session")
+                    )
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/:payment_id"}
+                Route{":payment_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3110,9 +3152,9 @@ public:
                     })
                     .summary("Hyperswitch payment_status")
             );
-        Router{router, "/v2/payments"}
+        Router{router, "v2/payments"}
             .add_route(
-                Route{"/:payment_id"}
+                Route{":payment_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3122,81 +3164,108 @@ public:
                     })
                     .summary("Hyperswitch payments_status_with_gateway_creds")
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/start-redirection"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_start_redirection(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_start_redirection")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"start-redirection"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_start_redirection(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_start_redirection")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/payment-methods"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_payment_methods(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_payment_methods")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"payment-methods"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_list_payment_methods(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch list_payment_methods")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/eligibility/check-balance-and-apply-pm-data"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_apply_pm_data(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_apply_pm_data")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, "eligibility"}
+                            .add_route(
+                                Route{"check-balance-and-apply-pm-data"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_payments_apply_pm_data(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch payments_apply_pm_data")
+                            )
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/finish-redirection/:publishable_key/:profile_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_finish_redirection(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_finish_redirection")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, "finish-redirection"}
+                            .add_router(
+                                Router{router, ":publishable_key"}
+                                    .add_route(
+                                        Route{":profile_id"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_payments_finish_redirection(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch payments_finish_redirection")
+                                    )
+                            )
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/capture"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_capture(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_capture")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"capture"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_capture(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_capture")
+                    )
             );
-        Router{router, "/v2/payments"}
-            .add_route(
-                Route{"/:payment_id/cancel"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_cancel(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_cancel")
+        Router{router, "v2/payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"cancel"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_cancel(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_cancel")
+                    )
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3206,9 +3275,9 @@ public:
                     })
                     .summary("Hyperswitch payments_list")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3218,57 +3287,69 @@ public:
                     })
                     .summary("Hyperswitch payments_list_by_filter")
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/platform/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_list_for_platform(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_list_for_platform")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(
+                        Route{"list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_list_for_platform(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_list_for_platform")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/platform/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_list_for_platform_filters(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_list_for_platform_filters")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_list_for_platform_filters(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_list_for_platform_filters")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/profile/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_profile_payments_list(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch profile_payments_list")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_profile_payments_list(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch profile_payments_list")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/profile/list"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_profile_payments_list_by_filter(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch profile_payments_list_by_filter")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"list"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_profile_payments_list_by_filter(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch profile_payments_list_by_filter")
+                    )
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3278,21 +3359,24 @@ public:
                     })
                     .summary("Hyperswitch get_filters_for_payments")
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/v2/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payment_filters(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payment_filters")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "v2"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payment_filters(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payment_filters")
+                    )
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/aggregate"}
+                Route{"aggregate"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3302,105 +3386,135 @@ public:
                     })
                     .summary("Hyperswitch get_payments_aggregates")
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/profile/aggregate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payments_aggregates_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payments_aggregates_profile")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"aggregate"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payments_aggregates_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payments_aggregates_profile")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/advanced/list"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payment_list_from_opensearch(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payment_list_from_opensearch")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "advanced"}
+                    .add_route(
+                        Route{"list"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payment_list_from_opensearch(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payment_list_from_opensearch")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/profile/advanced/list"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_profile_payment_list_from_opensearch(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_profile_payment_list_from_opensearch")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "profile"}
+                    .add_router(
+                        Router{router, "advanced"}
+                            .add_route(
+                                Route{"list"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_get_profile_payment_list_from_opensearch(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch get_profile_payment_list_from_opensearch")
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/client"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_payment_methods_for_payments_client(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_payment_methods_for_payments_client")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"client"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_list_payment_methods_for_payments_client(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch list_payment_methods_for_payments_client")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/v2/profile/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payment_filters_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payment_filters_profile")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "v2"}
+                    .add_router(
+                        Router{router, "profile"}
+                            .add_route(
+                                Route{"filter"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_get_payment_filters_profile(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch get_payment_filters_profile")
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/manual-update"}
-                    .put([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_manual_update(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_manual_update")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"manual-update"}
+                            .put([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_manual_update(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_manual_update")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/manual-status-update"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_manual_status_update(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_manual_status_update")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"manual-status-update"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_manual_status_update(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_manual_status_update")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/manual-status-update"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_manual_status_update_eligible_statuses(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_manual_status_update_eligible_statuses")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"manual-status-update"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_manual_status_update_eligible_statuses(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_manual_status_update_eligible_statuses")
+                    )
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3410,9 +3524,9 @@ public:
                     })
                     .summary("Hyperswitch payments_create")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/payment_link"}
+                Route{"payment_link"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3422,9 +3536,9 @@ public:
                     })
                     .summary("Hyperswitch payment_link_create")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/session_tokens"}
+                Route{"session_tokens"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3434,9 +3548,9 @@ public:
                     })
                     .summary("Hyperswitch payments_connector_session")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/sync"}
+                Route{"sync"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3446,9 +3560,9 @@ public:
                     })
                     .summary("Hyperswitch payments_retrieve_with_gateway_creds")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/:payment_id"}
+                Route{":payment_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3458,9 +3572,9 @@ public:
                     })
                     .summary("Hyperswitch payments_retrieve")
             );
-        Router{router, "/payments"}
+        Router{router, "payments"}
             .add_route(
-                Route{"/:payment_id"}
+                Route{":payment_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3470,433 +3584,748 @@ public:
                     })
                     .summary("Hyperswitch payments_update")
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/post_session_tokens"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_post_session_tokens(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_post_session_tokens")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"post_session_tokens"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_post_session_tokens(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_post_session_tokens")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/confirm"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_confirm(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_confirm")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"confirm"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_confirm(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_confirm")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/cancel"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_cancel(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_cancel")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"cancel"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_cancel(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_cancel")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/cancel_post_capture"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_cancel_post_capture(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_cancel_post_capture")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"cancel_post_capture"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_cancel_post_capture(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_cancel_post_capture")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/cancel_post_capture"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_cancel_post_capture_retrieve(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_cancel_post_capture_retrieve")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"cancel_post_capture"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_cancel_post_capture_retrieve(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_cancel_post_capture_retrieve")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/capture"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_capture(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_capture")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"capture"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_capture(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_capture")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/approve"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_approve(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_approve")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"approve"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_approve(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_approve")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/reject"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_reject(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_reject")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"reject"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_reject(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_reject")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/eligibility_check"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_submit_eligibility_check(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_submit_eligibility_check")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"eligibility_check"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_submit_eligibility_check(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_submit_eligibility_check")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/eligibility"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_submit_eligibility(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_submit_eligibility")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"eligibility"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_submit_eligibility(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_submit_eligibility")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/3ds/authentication"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_external_authentication(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_external_authentication")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, "3ds"}
+                            .add_route(
+                                Route{"authentication"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_payments_external_authentication(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch payments_external_authentication")
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/complete_authorize"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_complete_authorize")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"complete_authorize"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_complete_authorize(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_complete_authorize")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/incremental_authorization"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_incremental_authorization(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_incremental_authorization")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"incremental_authorization"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_incremental_authorization(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_incremental_authorization")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/extend_authorization"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_extend_authorization(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_extend_authorization")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"extend_authorization"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_extend_authorization(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_extend_authorization")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/extended_card_info"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_retrieve_extended_card_info(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch retrieve_extended_card_info")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"extended_card_info"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_retrieve_extended_card_info(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch retrieve_extended_card_info")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/calculate_tax"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_dynamic_tax_calculation(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_dynamic_tax_calculation")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"calculate_tax"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_dynamic_tax_calculation(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_dynamic_tax_calculation")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/update_metadata"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_update_metadata(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_update_metadata")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_route(
+                        Route{"update_metadata"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payments_update_metadata(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payments_update_metadata")
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/start/:attempt_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_start(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_start")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "start"}
+                                                            .add_route(
+                                                                Route{":attempt_id"}
+                                                                    .get([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_payments_start(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch payments_start")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/response/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_redirect_response")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "response"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .get([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_payments_redirect_response(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch payments_redirect_response")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/response/:connector"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_redirect_response")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "response"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .post([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_payments_redirect_response(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch payments_redirect_response")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/response/:connector/:creds_identifier"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_redirect_response_with_creds_identifier")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "response"}
+                                                            .add_router(
+                                                                Router{router, ":connector"}
+                                                                    .add_route(
+                                                                        Route{":creds_identifier"}
+                                                                            .get([this](
+                                                                                interfaces::io::IRequest& req,
+                                                                                interfaces::io::IResponse& res,
+                                                                                std::function<void()> send
+                                                                            ) {
+                                                                                handle_payments_redirect_response_with_creds_identifier(req, res, std::move(send));
+                                                                            })
+                                                                            .summary("Hyperswitch payments_redirect_response_with_creds_identifier")
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/complete/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_complete_authorize_redirect")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "complete"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .get([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch payments_complete_authorize_redirect")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/complete/:connector"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_complete_authorize_redirect")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "complete"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .post([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch payments_complete_authorize_redirect")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/complete/:connector/:creds_identifier"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_complete_authorize_redirect_with_creds_identifier")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "complete"}
+                                                            .add_router(
+                                                                Router{router, ":connector"}
+                                                                    .add_route(
+                                                                        Route{":creds_identifier"}
+                                                                            .get([this](
+                                                                                interfaces::io::IRequest& req,
+                                                                                interfaces::io::IResponse& res,
+                                                                                std::function<void()> send
+                                                                            ) {
+                                                                                handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                                                                            })
+                                                                            .summary("Hyperswitch payments_complete_authorize_redirect_with_creds_identifier")
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/complete/:connector/:creds_identifier"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payments_complete_authorize_redirect_with_creds_identifier")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "complete"}
+                                                            .add_router(
+                                                                Router{router, ":connector"}
+                                                                    .add_route(
+                                                                        Route{":creds_identifier"}
+                                                                            .post([this](
+                                                                                interfaces::io::IRequest& req,
+                                                                                interfaces::io::IResponse& res,
+                                                                                std::function<void()> send
+                                                                            ) {
+                                                                                handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                                                                            })
+                                                                            .summary("Hyperswitch payments_complete_authorize_redirect_with_creds_identifier")
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/authorize/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_post_3ds_payments_authorize(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch post_3ds_payments_authorize")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "authorize"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .get([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_post_3ds_payments_authorize(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch post_3ds_payments_authorize")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/token/:callback_token/authorize/:connector"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_post_3ds_payments_authorize(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch post_3ds_payments_authorize")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "token"}
+                                            .add_router(
+                                                Router{router, ":callback_token"}
+                                                    .add_router(
+                                                        Router{router, "authorize"}
+                                                            .add_route(
+                                                                Route{":connector"}
+                                                                    .post([this](
+                                                                        interfaces::io::IRequest& req,
+                                                                        interfaces::io::IResponse& res,
+                                                                        std::function<void()> send
+                                                                    ) {
+                                                                        handle_post_3ds_payments_authorize(req, res, std::move(send));
+                                                                    })
+                                                                    .summary("Hyperswitch post_3ds_payments_authorize")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
 
         // Legacy callback resources (upstream app.rs:1196-1201;
         // callback_routes.rs:76-121,181-209). Same handlers, original tokenless
         // paths, kept for the compatibility rollout.
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/redirect/:payment_id/:merchant_id/:attempt_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_start(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_start (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, "redirect"}
+                    .add_router(
+                        Router{router, ":payment_id"}
+                            .add_router(
+                                Router{router, ":merchant_id"}
+                                    .add_route(
+                                        Route{":attempt_id"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_payments_start(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch payment_callback_start (legacy)")
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/response/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response(req, res, std::move(send));
-                    })
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_redirect_response (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "response"}
+                                            .add_route(
+                                                Route{":connector"}
+                                                    .get([this](
+                                                        interfaces::io::IRequest& req,
+                                                        interfaces::io::IResponse& res,
+                                                        std::function<void()> send
+                                                    ) {
+                                                        handle_payments_redirect_response(req, res, std::move(send));
+                                                    })
+                                                    .post([this](
+                                                        interfaces::io::IRequest& req,
+                                                        interfaces::io::IResponse& res,
+                                                        std::function<void()> send
+                                                    ) {
+                                                        handle_payments_redirect_response(req, res, std::move(send));
+                                                    })
+                                                    .summary("Hyperswitch payment_callback_redirect_response (legacy)")
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/response/:connector/:creds_identifier"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_redirect_response_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_redirect_response_with_credentials (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "response"}
+                                            .add_router(
+                                                Router{router, ":connector"}
+                                                    .add_route(
+                                                        Route{":creds_identifier"}
+                                                            .get([this](
+                                                                interfaces::io::IRequest& req,
+                                                                interfaces::io::IResponse& res,
+                                                                std::function<void()> send
+                                                            ) {
+                                                                handle_payments_redirect_response_with_creds_identifier(req, res, std::move(send));
+                                                            })
+                                                            .summary("Hyperswitch payment_callback_redirect_response_with_credentials (legacy)")
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/complete/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
-                    })
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_redirect_complete (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "complete"}
+                                            .add_route(
+                                                Route{":connector"}
+                                                    .get([this](
+                                                        interfaces::io::IRequest& req,
+                                                        interfaces::io::IResponse& res,
+                                                        std::function<void()> send
+                                                    ) {
+                                                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                                                    })
+                                                    .post([this](
+                                                        interfaces::io::IRequest& req,
+                                                        interfaces::io::IResponse& res,
+                                                        std::function<void()> send
+                                                    ) {
+                                                        handle_payments_complete_authorize_redirect(req, res, std::move(send));
+                                                    })
+                                                    .summary("Hyperswitch payment_callback_redirect_complete (legacy)")
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/redirect/complete/:connector/:creds_identifier"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_redirect_complete_with_credentials (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "redirect"}
+                                    .add_router(
+                                        Router{router, "complete"}
+                                            .add_router(
+                                                Router{router, ":connector"}
+                                                    .add_route(
+                                                        Route{":creds_identifier"}
+                                                            .get([this](
+                                                                interfaces::io::IRequest& req,
+                                                                interfaces::io::IResponse& res,
+                                                                std::function<void()> send
+                                                            ) {
+                                                                handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                                                            })
+                                                            .post([this](
+                                                                interfaces::io::IRequest& req,
+                                                                interfaces::io::IResponse& res,
+                                                                std::function<void()> send
+                                                            ) {
+                                                                handle_payments_complete_authorize_redirect_with_creds_identifier(req, res, std::move(send));
+                                                            })
+                                                            .summary("Hyperswitch payment_callback_redirect_complete_with_credentials (legacy)")
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
             );
-        Router{router, "/payments"}
-            .add_route(
-                Route{"/:payment_id/:merchant_id/authorize/:connector"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_post_3ds_payments_authorize(req, res, std::move(send));
-                    })
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_post_3ds_payments_authorize(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payment_callback_authorize (legacy)")
+        Router{router, "payments"}
+            .add_router(
+                Router{router, ":payment_id"}
+                    .add_router(
+                        Router{router, ":merchant_id"}
+                            .add_router(
+                                Router{router, "authorize"}
+                                    .add_route(
+                                        Route{":connector"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_post_3ds_payments_authorize(req, res, std::move(send));
+                                            })
+                                            .post([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_post_3ds_payments_authorize(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch payment_callback_authorize (legacy)")
+                                    )
+                            )
+                    )
             );
     }
 

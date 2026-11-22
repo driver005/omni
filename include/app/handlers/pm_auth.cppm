@@ -478,9 +478,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/payment_methods"}
-            .add_route(
-                Route{"/auth/link"}
+        Router{router, "payment_methods"}
+            .add_router(Router{router, "auth"}.add_route(
+                Route{"link"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -489,9 +489,9 @@ public:
                         handle_link_token_create(req, res, std::move(send));
                     })
                     .summary("Hyperswitch link_token_create")
-            )
-            .add_route(
-                Route{"/auth/exchange"}
+            ))
+            .add_router(Router{router, "auth"}.add_route(
+                Route{"exchange"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -500,7 +500,7 @@ public:
                         handle_exchange_token(req, res, std::move(send));
                     })
                     .summary("Hyperswitch exchange_token")
-            );
+            ));
     }
 
     explicit PmAuthRouteHandlers(app::context::AppContext& context) noexcept

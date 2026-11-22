@@ -3134,9 +3134,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/user"}
+        Router{router, "user"}
             .add_route(
-                Route{"/user"}
+                Route{"user"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3146,580 +3146,814 @@ public:
                     })
                     .summary("Hyperswitch get_active_user_details")
             )
-            .add_route(
-                Route{"/user/launch_sage"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_launch_sage(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch launch_sage")
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"launch_sage"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_launch_sage(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch launch_sage")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"signup_with_merchant_id"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_signup_with_merchant_id(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_signup_with_merchant_id")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"signup"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_signup(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_signup")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"signin"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_signin(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_signin")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"connect_account"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_connect_account(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_connect_account")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"signout"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_signout(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch signout")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"change_password"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_change_password(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch change_password")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"data"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_set_dashboard_metadata(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch set_dashboard_metadata")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"data"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_multiple_dashboard_metadata(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_multiple_dashboard_metadata")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"internal_signup"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_internal_user_signup(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch internal_user_signup")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"tenant_signup"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_create_tenant_user(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch create_tenant_user")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"create_platform"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_create_platform(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch create_platform")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"create_org"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_org_create(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_org_create")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"create_merchant"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_merchant_account_create(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_merchant_account_create")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"sample_data"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_generate_sample_data(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch generate_sample_data")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"sample_data"}
+                            .delt([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_delete_sample_data(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch delete_sample_data")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"user"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_list_user_roles_details(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch list_user_roles_details")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"rotate_password"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_rotate_password(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch rotate_password")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"forgot_password"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_forgot_password(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch forgot_password")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"reset_password"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_reset_password(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch reset_password")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "user"}
+                            .add_route(
+                                Route{"invite_multiple"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_invite_multiple_user(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch invite_multiple_user")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "user"}
+                            .add_route(
+                                Route{"resend_invite"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_resend_invite(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch resend_invite")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"accept_invite_from_email"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_accept_invite_from_email(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch accept_invite_from_email")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"terminate_accept_invite"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_terminate_accept_invite(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch terminate_accept_invite")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"verify_email"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_verify_email(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch verify_email")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"verify_email_request"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_verify_email_request(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch verify_email_request")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"update"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_update_user_account_details(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch update_user_account_details")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"from_email"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_user_from_email(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch user_from_email")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "totp"}
+                                    .add_route(
+                                        Route{"begin"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_totp_begin(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch totp_begin")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "totp"}
+                                    .add_route(
+                                        Route{"reset"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_totp_reset(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch totp_reset")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "totp"}
+                                    .add_route(
+                                        Route{"verify"}
+                                            .post([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_totp_verify(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch totp_verify")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "recovery_code"}
+                                    .add_route(
+                                        Route{"verify"}
+                                            .post([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_verify_recovery_code(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch verify_recovery_code")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "totp"}
+                                    .add_route(
+                                        Route{"verify"}
+                                            .put([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_totp_update(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch totp_update")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_router(
+                                Router{router, "recovery_code"}
+                                    .add_route(
+                                        Route{"generate"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_generate_recovery_codes(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch generate_recovery_codes")
+                                    )
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_route(
+                                Route{"terminate"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_terminate_two_factor_auth(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch terminate_two_factor_auth")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"2fa"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_check_two_factor_auth_status(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch check_two_factor_auth_status")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "2fa"}
+                            .add_route(
+                                Route{"v2"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_check_two_factor_auth_status_with_attempts(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch check_two_factor_auth_status_with_attempts")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "auth"}
+                            .add_route(
+                                Route{"url"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_get_sso_auth_url(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch get_sso_auth_url")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"oidc"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_sso_sign(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch sso_sign")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"auth"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_create_user_authentication_method(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch create_user_authentication_method")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"auth"}
+                            .put([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_update_user_authentication_method(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch update_user_authentication_method")
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "auth"}
+                            .add_route(
+                                Route{"list"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_user_authentication_methods(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_user_authentication_methods")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "auth"}
+                            .add_route(
+                                Route{"select"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_terminate_auth_select(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch terminate_auth_select")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "key"}
+                            .add_route(
+                                Route{"transfer"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_transfer_user_key(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch transfer_user_key")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "list"}
+                            .add_route(
+                                Route{"org"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_orgs_for_user(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_orgs_for_user")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "list"}
+                            .add_route(
+                                Route{"merchant"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_merchants_for_user_in_org(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_merchants_for_user_in_org")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "list"}
+                            .add_route(
+                                Route{"profile"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_profiles_for_user_in_org_and_merchant(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_profiles_for_user_in_org_and_merchant")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "switch"}
+                            .add_route(
+                                Route{"org"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_switch_org_for_user(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch switch_org_for_user")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "switch"}
+                            .add_route(
+                                Route{"merchant"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_switch_merchant_for_user_in_org(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch switch_merchant_for_user_in_org")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "switch"}
+                            .add_route(
+                                Route{"profile"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_switch_profile_for_user_in_org_and_merchant(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch switch_profile_for_user_in_org_and_merchant")
+                            )
+                    )
+            )
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"clone_connector"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_clone_connector(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch clone_connector")
+                    )
+            )
+            .add_router(
+                Router{router, "embedded"}
+                    .add_route(
+                        Route{"token"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_issue_embedded_token(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch issue_embedded_token")
+                    )
             )
             .add_route(
-                Route{"/user/signup_with_merchant_id"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_signup_with_merchant_id(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_signup_with_merchant_id")
-            )
-            .add_route(
-                Route{"/user/signup"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_signup(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_signup")
-            )
-            .add_route(
-                Route{"/user/signin"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_signin(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_signin")
-            )
-            .add_route(
-                Route{"/user/connect_account"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_connect_account(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_connect_account")
-            )
-            .add_route(
-                Route{"/user/signout"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_signout(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch signout")
-            )
-            .add_route(
-                Route{"/user/change_password"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_change_password(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch change_password")
-            )
-            .add_route(
-                Route{"/user/data"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_set_dashboard_metadata(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch set_dashboard_metadata")
-            )
-            .add_route(
-                Route{"/user/data"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_multiple_dashboard_metadata(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_multiple_dashboard_metadata")
-            )
-            .add_route(
-                Route{"/user/internal_signup"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_internal_user_signup(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch internal_user_signup")
-            )
-            .add_route(
-                Route{"/user/tenant_signup"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_create_tenant_user(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch create_tenant_user")
-            )
-            .add_route(
-                Route{"/user/create_platform"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_create_platform(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch create_platform")
-            )
-            .add_route(
-                Route{"/user/create_org"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_org_create(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_org_create")
-            )
-            .add_route(
-                Route{"/user/create_merchant"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_merchant_account_create(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_merchant_account_create")
-            )
-            .add_route(
-                Route{"/user/sample_data"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_generate_sample_data(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch generate_sample_data")
-            )
-            .add_route(
-                Route{"/user/sample_data"}
-                    .delt([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_delete_sample_data(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch delete_sample_data")
-            )
-            .add_route(
-                Route{"/user/user"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_user_roles_details(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_user_roles_details")
-            )
-            .add_route(
-                Route{"/user/rotate_password"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_rotate_password(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch rotate_password")
-            )
-            .add_route(
-                Route{"/user/forgot_password"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_forgot_password(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch forgot_password")
-            )
-            .add_route(
-                Route{"/user/reset_password"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_reset_password(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch reset_password")
-            )
-            .add_route(
-                Route{"/user/user/invite_multiple"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_invite_multiple_user(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch invite_multiple_user")
-            )
-            .add_route(
-                Route{"/user/user/resend_invite"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_resend_invite(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch resend_invite")
-            )
-            .add_route(
-                Route{"/user/accept_invite_from_email"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_accept_invite_from_email(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch accept_invite_from_email")
-            )
-            .add_route(
-                Route{"/user/terminate_accept_invite"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_terminate_accept_invite(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch terminate_accept_invite")
-            )
-            .add_route(
-                Route{"/user/verify_email"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_verify_email(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch verify_email")
-            )
-            .add_route(
-                Route{"/user/verify_email_request"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_verify_email_request(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch verify_email_request")
-            )
-            .add_route(
-                Route{"/user/update"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_update_user_account_details(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch update_user_account_details")
-            )
-            .add_route(
-                Route{"/user/from_email"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_from_email(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_from_email")
-            )
-            .add_route(
-                Route{"/user/2fa/totp/begin"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_totp_begin(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch totp_begin")
-            )
-            .add_route(
-                Route{"/user/2fa/totp/reset"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_totp_reset(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch totp_reset")
-            )
-            .add_route(
-                Route{"/user/2fa/totp/verify"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_totp_verify(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch totp_verify")
-            )
-            .add_route(
-                Route{"/user/2fa/recovery_code/verify"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_verify_recovery_code(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch verify_recovery_code")
-            )
-            .add_route(
-                Route{"/user/2fa/totp/verify"}
-                    .put([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_totp_update(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch totp_update")
-            )
-            .add_route(
-                Route{"/user/2fa/recovery_code/generate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_generate_recovery_codes(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch generate_recovery_codes")
-            )
-            .add_route(
-                Route{"/user/2fa/terminate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_terminate_two_factor_auth(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch terminate_two_factor_auth")
-            )
-            .add_route(
-                Route{"/user/2fa"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_check_two_factor_auth_status(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch check_two_factor_auth_status")
-            )
-            .add_route(
-                Route{"/user/2fa/v2"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_check_two_factor_auth_status_with_attempts(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch check_two_factor_auth_status_with_attempts")
-            )
-            .add_route(
-                Route{"/user/auth/url"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_sso_auth_url(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_sso_auth_url")
-            )
-            .add_route(
-                Route{"/user/oidc"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_sso_sign(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch sso_sign")
-            )
-            .add_route(
-                Route{"/user/auth"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_create_user_authentication_method(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch create_user_authentication_method")
-            )
-            .add_route(
-                Route{"/user/auth"}
-                    .put([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_update_user_authentication_method(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch update_user_authentication_method")
-            )
-            .add_route(
-                Route{"/user/auth/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_user_authentication_methods(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_user_authentication_methods")
-            )
-            .add_route(
-                Route{"/user/auth/select"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_terminate_auth_select(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch terminate_auth_select")
-            )
-            .add_route(
-                Route{"/user/key/transfer"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_transfer_user_key(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch transfer_user_key")
-            )
-            .add_route(
-                Route{"/user/list/org"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_orgs_for_user(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_orgs_for_user")
-            )
-            .add_route(
-                Route{"/user/list/merchant"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_merchants_for_user_in_org(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_merchants_for_user_in_org")
-            )
-            .add_route(
-                Route{"/user/list/profile"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_profiles_for_user_in_org_and_merchant(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_profiles_for_user_in_org_and_merchant")
-            )
-            .add_route(
-                Route{"/user/switch/org"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_switch_org_for_user(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch switch_org_for_user")
-            )
-            .add_route(
-                Route{"/user/switch/merchant"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_switch_merchant_for_user_in_org(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch switch_merchant_for_user_in_org")
-            )
-            .add_route(
-                Route{"/user/switch/profile"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_switch_profile_for_user_in_org_and_merchant(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch switch_profile_for_user_in_org_and_merchant")
-            )
-            .add_route(
-                Route{"/user/clone_connector"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_clone_connector(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch clone_connector")
-            )
-            .add_route(
-                Route{"/embedded/token"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_issue_embedded_token(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch issue_embedded_token")
-            )
-            .add_route(
-                Route{"/embedded"}
+                Route{"embedded"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3729,93 +3963,144 @@ public:
                     })
                     .summary("Hyperswitch embedded_token_info")
             )
-            .add_route(
-                Route{"/user/internal/user/:user_id"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_user_details_internal(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_user_details_internal")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "internal"}
+                            .add_router(
+                                Router{router, "user"}
+                                    .add_route(
+                                        Route{":user_id"}
+                                            .get([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_get_user_details_internal(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch get_user_details_internal")
+                                    )
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/internal/user/list"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_users_internal(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_users_internal")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "internal"}
+                            .add_router(
+                                Router{router, "user"}
+                                    .add_route(
+                                        Route{"list"}
+                                            .post([this](
+                                                interfaces::io::IRequest& req,
+                                                interfaces::io::IResponse& res,
+                                                std::function<void()> send
+                                            ) {
+                                                handle_list_users_internal(req, res, std::move(send));
+                                            })
+                                            .summary("Hyperswitch list_users_internal")
+                                    )
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/internal/members"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_members_for_entity(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_members_for_entity")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "internal"}
+                            .add_route(
+                                Route{"members"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_members_for_entity(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_members_for_entity")
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/internal/authorize"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_authorize_token(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch authorize_token")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "internal"}
+                            .add_route(
+                                Route{"authorize"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_authorize_token(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch authorize_token")
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/merchant_details"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_user_merchant_details(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_user_merchant_details")
+            .add_router(
+                Router{router, "user"}
+                    .add_route(
+                        Route{"merchant_details"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_user_merchant_details(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_user_merchant_details")
+                    )
             )
-            .add_route(
-                Route{"/user/v2/signin"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_user_signin(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch user_signin (v2 alias)")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "v2"}
+                            .add_route(
+                                Route{"signin"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_user_signin(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch user_signin (v2 alias)")
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/v2/verify_email"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_verify_email(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch verify_email (v2 alias)")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "v2"}
+                            .add_route(
+                                Route{"verify_email"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_verify_email(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch verify_email (v2 alias)")
+                            )
+                    )
             )
-            .add_route(
-                Route{"/user/user/v2"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_list_user_roles_details(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch list_user_roles_details (v2 alias)")
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "user"}
+                            .add_route(
+                                Route{"v2"}
+                                    .post([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_user_roles_details(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_user_roles_details (v2 alias)")
+                            )
+                    )
             );
     }
 

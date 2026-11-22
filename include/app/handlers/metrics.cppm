@@ -20,7 +20,7 @@ public:
     void install(core::router::RouterContext<>& router)
     {
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/metrics"};
+        Router{router, "metrics"};
     }
 
     explicit MetricsRouteHandlers(app::context::AppContext& context) noexcept

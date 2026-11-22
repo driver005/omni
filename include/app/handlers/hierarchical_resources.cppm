@@ -339,7 +339,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         // Upstream scope registration uses web::resource("") for generate
         // (routes/app.rs:2282-2284); an empty segment is the exact match.
-        Router{router, "/hierarchical_resources"}
+        Router{router, "hierarchical_resources"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -352,7 +352,7 @@ public:
                     .summary("Hyperswitch generate_hierarchical_resource")
             )
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -362,8 +362,8 @@ public:
                     })
                     .summary("Hyperswitch list_hierarchical_resources")
             )
-            .add_route(
-                Route{"/apple_pay_certificate/:resource_id"}
+            .add_router(Router{router, "apple_pay_certificate"}.add_route(
+                Route{":resource_id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -372,9 +372,9 @@ public:
                         handle_upload_hierarchical_resource(req, res, std::move(send));
                     })
                     .summary("Hyperswitch upload_hierarchical_resource")
-            )
-            .add_route(
-                Route{"/:resource_id/link"}
+            ))
+            .add_router(Router{router, ":resource_id"}.add_route(
+                Route{"link"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -383,7 +383,7 @@ public:
                         handle_link_hierarchical_resource(req, res, std::move(send));
                     })
                     .summary("Hyperswitch link_hierarchical_resource")
-            );
+            ));
     }
 
 private:

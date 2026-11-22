@@ -363,7 +363,7 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
 
-        Router{router, "/v2/profiles"}
+        Router{router, "v2/profiles"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -376,7 +376,7 @@ public:
                     .summary("Hyperswitch profile_create")
             )
             .add_route(
-                Route{"/:profile_id"}
+                Route{":profile_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -387,7 +387,7 @@ public:
                     .summary("Hyperswitch profile_retrieve")
             )
             .add_route(
-                Route{"/:profile_id"}
+                Route{":profile_id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -398,7 +398,7 @@ public:
                     .summary("Hyperswitch profile_update")
             );
 
-        Router{router, "/v2/merchant-accounts/:id/profiles"}
+        Router{router, "v2/merchant-accounts/:id/profiles"}
             .add_route(
                 Route{""}
                     .get([this](
@@ -411,7 +411,7 @@ public:
                     .summary("Hyperswitch profiles_list")
             );
 
-        Router{router, "/account/:account_id/business_profile"}
+        Router{router, "account/:account_id/business_profile"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -435,7 +435,7 @@ public:
                     .summary("Hyperswitch profiles_list")
             )
             .add_route(
-                Route{"/:profile_id"}
+                Route{":profile_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -446,7 +446,7 @@ public:
                     .summary("Hyperswitch profile_retrieve")
             )
             .add_route(
-                Route{"/:profile_id"}
+                Route{":profile_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -458,7 +458,7 @@ public:
             )
             .add_route(
                 // delt() is the ApiRoute DELETE binding (core/router/builder.cppm:542-548).
-                Route{"/:profile_id"}
+                Route{":profile_id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -468,8 +468,8 @@ public:
                     })
                     .summary("Hyperswitch profile_delete")
             )
-            .add_route(
-                Route{"/:profile_id/toggle_extended_card_info"}
+            .add_router(Router{router, ":profile_id"}.add_route(
+                Route{"toggle_extended_card_info"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -478,9 +478,9 @@ public:
                         handle_toggle_extended_card_info(req, res, std::move(send));
                     })
                     .summary("Hyperswitch toggle_extended_card_info")
-            )
-            .add_route(
-                Route{"/:profile_id/toggle_connector_agnostic_mit"}
+            ))
+            .add_router(Router{router, ":profile_id"}.add_route(
+                Route{"toggle_connector_agnostic_mit"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -489,9 +489,9 @@ public:
                         handle_toggle_connector_agnostic_mit(req, res, std::move(send));
                     })
                     .summary("Hyperswitch toggle_connector_agnostic_mit")
-            );
+            ));
 
-        Router{router, "/account/:account_id/profile"}
+        Router{router, "account/:account_id/profile"}
             .add_route(
                 Route{""}
                     .get([this](

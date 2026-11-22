@@ -803,61 +803,61 @@ public:
         // modelled locally by the constexpr gates above.
         if constexpr (kV1) {
             // routes/app.rs:2112-2131 (Organization::server, v1).
-            Router{router, "/organization"}
+            Router{router, "organization"}
                 .add_route(Route{""}.post([this](
                                               interfaces::io::IRequest& req,
                                               interfaces::io::IResponse& res,
                                               std::function<void()> send
                                           ) { handle_organization_create(req, res, std::move(send)); })
                                .summary("Hyperswitch organization_create"))
-                .add_route(Route{"/:id"}.get([this](
+                .add_route(Route{":id"}.get([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_organization_retrieve(req, res, std::move(send)); })
                                .summary("Hyperswitch organization_retrieve"))
-                .add_route(Route{"/:id"}.put([this](
+                .add_route(Route{":id"}.put([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_organization_update(req, res, std::move(send)); })
                                .summary("Hyperswitch organization_update"))
-                .add_route(Route{"/:id/convert_to_platform"}.post([this](
+                .add_router(Router{router, ":id"}.add_route(Route{"convert_to_platform"}.post([this](
                                                                       interfaces::io::IRequest& req,
                                                                       interfaces::io::IResponse& res,
                                                                       std::function<void()> send
                                                                   ) {
                               handle_convert_organization_to_platform(req, res, std::move(send));
                           })
-                               .summary("Hyperswitch convert_organization_to_platform"));
+                               .summary("Hyperswitch convert_organization_to_platform")));
 
             // routes/app.rs:2181-2207 (MerchantAccount::server, v1).
-            Router{router, "/accounts"}
+            Router{router, "accounts"}
                 .add_route(Route{""}.post([this](
                                               interfaces::io::IRequest& req,
                                               interfaces::io::IResponse& res,
                                               std::function<void()> send
                                           ) { handle_merchant_account_create(req, res, std::move(send)); })
                                .summary("Hyperswitch merchant_account_create"))
-                .add_route(Route{"/list"}.get([this](
+                .add_route(Route{"list"}.get([this](
                                                   interfaces::io::IRequest& req,
                                                   interfaces::io::IResponse& res,
                                                   std::function<void()> send
                                               ) { handle_merchant_account_list(req, res, std::move(send)); })
                                .summary("Hyperswitch merchant_account_list"))
-                .add_route(Route{"/:id/kv"}.post([this](
+                .add_router(Router{router, ":id"}.add_route(Route{"kv"}.post([this](
                                                      interfaces::io::IRequest& req,
                                                      interfaces::io::IResponse& res,
                                                      std::function<void()> send
                                                  ) { handle_merchant_account_toggle_kv(req, res, std::move(send)); })
-                               .summary("Hyperswitch merchant_account_toggle_kv"))
-                .add_route(Route{"/:id/kv"}.get([this](
+                               .summary("Hyperswitch merchant_account_toggle_kv")))
+                .add_router(Router{router, ":id"}.add_route(Route{"kv"}.get([this](
                                                     interfaces::io::IRequest& req,
                                                     interfaces::io::IResponse& res,
                                                     std::function<void()> send
                                                 ) { handle_merchant_account_kv_status(req, res, std::move(send)); })
-                               .summary("Hyperswitch merchant_account_kv_status"))
-                .add_route(Route{"/transfer"}.post([this](
+                               .summary("Hyperswitch merchant_account_kv_status")))
+                .add_route(Route{"transfer"}.post([this](
                                                        interfaces::io::IRequest& req,
                                                        interfaces::io::IResponse& res,
                                                        std::function<void()> send
@@ -865,7 +865,7 @@ public:
                               handle_merchant_account_transfer_keys(req, res, std::move(send));
                           })
                                .summary("Hyperswitch merchant_account_transfer_keys"))
-                .add_route(Route{"/kv"}.post([this](
+                .add_route(Route{"kv"}.post([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
@@ -873,19 +873,19 @@ public:
                               handle_merchant_account_toggle_all_kv(req, res, std::move(send));
                           })
                                .summary("Hyperswitch merchant_account_toggle_all_kv"))
-                .add_route(Route{"/:id"}.get([this](
+                .add_route(Route{":id"}.get([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_retrieve_merchant_account(req, res, std::move(send)); })
                                .summary("Hyperswitch retrieve_merchant_account"))
-                .add_route(Route{"/:id"}.post([this](
+                .add_route(Route{":id"}.post([this](
                                                   interfaces::io::IRequest& req,
                                                   interfaces::io::IResponse& res,
                                                   std::function<void()> send
                                               ) { handle_update_merchant_account(req, res, std::move(send)); })
                                .summary("Hyperswitch update_merchant_account"))
-                .add_route(Route{"/:id"}.delt([this](
+                .add_route(Route{":id"}.delt([this](
                                                   interfaces::io::IRequest& req,
                                                   interfaces::io::IResponse& res,
                                                   std::function<void()> send
@@ -893,56 +893,56 @@ public:
                                .summary("Hyperswitch delete_merchant_account"));
 
             // routes/app.rs:2233-2273 (MerchantConnectorAccount::server, v1).
-            Router{router, "/account"}
-                .add_route(Route{"/:merchant_id/connectors"}.post([this](
+            Router{router, "account"}
+                .add_router(Router{router, ":merchant_id"}.add_route(Route{"connectors"}.post([this](
                                                                       interfaces::io::IRequest& req,
                                                                       interfaces::io::IResponse& res,
                                                                       std::function<void()> send
                                                                   ) { handle_connector_create(req, res, std::move(send)); })
-                               .summary("Hyperswitch connector_create"))
-                .add_route(Route{"/:merchant_id/connectors/:merchant_connector_id"}.get([this](
+                               .summary("Hyperswitch connector_create")))
+                .add_router(Router{router, ":merchant_id"}.add_router(Router{router, "connectors"}.add_route(Route{":merchant_connector_id"}.get([this](
                                                                                             interfaces::io::IRequest& req,
                                                                                             interfaces::io::IResponse& res,
                                                                                             std::function<void()> send
                                                                                         ) { handle_connector_retrieve(req, res, std::move(send)); })
-                               .summary("Hyperswitch connector_retrieve"))
-                .add_route(Route{"/:merchant_id/connectors"}.get([this](
+                               .summary("Hyperswitch connector_retrieve"))))
+                .add_router(Router{router, ":merchant_id"}.add_route(Route{"connectors"}.get([this](
                                                                     interfaces::io::IRequest& req,
                                                                     interfaces::io::IResponse& res,
                                                                     std::function<void()> send
                                                                 ) { handle_connector_list(req, res, std::move(send)); })
-                               .summary("Hyperswitch connector_list"))
-                .add_route(Route{"/:merchant_id/connectors/:merchant_connector_id"}.post([this](
+                               .summary("Hyperswitch connector_list")))
+                .add_router(Router{router, ":merchant_id"}.add_router(Router{router, "connectors"}.add_route(Route{":merchant_connector_id"}.post([this](
                                                                                              interfaces::io::IRequest& req,
                                                                                              interfaces::io::IResponse& res,
                                                                                              std::function<void()> send
                                                                                          ) { handle_connector_update(req, res, std::move(send)); })
-                               .summary("Hyperswitch connector_update"))
-                .add_route(Route{"/:merchant_id/connectors/:merchant_connector_id"}.delt([this](
+                               .summary("Hyperswitch connector_update"))))
+                .add_router(Router{router, ":merchant_id"}.add_router(Router{router, "connectors"}.add_route(Route{":merchant_connector_id"}.delt([this](
                                                                                              interfaces::io::IRequest& req,
                                                                                              interfaces::io::IResponse& res,
                                                                                              std::function<void()> send
                                                                                          ) { handle_connector_delete(req, res, std::move(send)); })
-                               .summary("Hyperswitch connector_delete"))
-                .add_route(Route{"/:merchant_id/connectors/webhooks/:merchant_connector_id"}.post([this](
+                               .summary("Hyperswitch connector_delete"))))
+                .add_router(Router{router, ":merchant_id"}.add_router(Router{router, "connectors"}.add_router(Router{router, "webhooks"}.add_route(Route{":merchant_connector_id"}.post([this](
                                                                                                       interfaces::io::IRequest& req,
                                                                                                       interfaces::io::IResponse& res,
                                                                                                       std::function<void()> send
                                                                                                   ) {
                               handle_connector_webhook_register(req, res, std::move(send));
                           })
-                               .summary("Hyperswitch connector_webhook_register"))
-                .add_route(Route{"/:merchant_id/connectors/webhooks/:merchant_connector_id"}.get([this](
+                               .summary("Hyperswitch connector_webhook_register")))))
+                .add_router(Router{router, ":merchant_id"}.add_router(Router{router, "connectors"}.add_router(Router{router, "webhooks"}.add_route(Route{":merchant_connector_id"}.get([this](
                                                                                                      interfaces::io::IRequest& req,
                                                                                                      interfaces::io::IResponse& res,
                                                                                                      std::function<void()> send
                                                                                                  ) {
                               handle_retrieve_connector_webhook(req, res, std::move(send));
                           })
-                               .summary("Hyperswitch retrieve_connector_webhook"));
+                               .summary("Hyperswitch retrieve_connector_webhook")))));
 
             // routes/app.rs:2792-2804 (ProfileNew::server, v1) — connector_list_profile.
-            Router{router, "/account/:account_id/profile/connectors"}
+            Router{router, "account/:account_id/profile/connectors"}
                 .add_route(Route{""}.get([this](
                                              interfaces::io::IRequest& req,
                                              interfaces::io::IResponse& res,
@@ -953,20 +953,20 @@ public:
 
         if constexpr (kV2) {
             // routes/app.rs:2133-2151 (Organization::server, v2).
-            Router{router, "/v2/organizations"}
+            Router{router, "v2/organizations"}
                 .add_route(Route{""}.post([this](
                                               interfaces::io::IRequest& req,
                                               interfaces::io::IResponse& res,
                                               std::function<void()> send
                                           ) { handle_organization_create(req, res, std::move(send)); })
                                .summary("Hyperswitch organization_create"))
-                .add_route(Route{"/:id"}.get([this](
+                .add_route(Route{":id"}.get([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_organization_retrieve(req, res, std::move(send)); })
                                .summary("Hyperswitch organization_retrieve"))
-                .add_route(Route{"/:id"}.put([this](
+                .add_route(Route{":id"}.put([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
@@ -974,7 +974,7 @@ public:
                                .summary("Hyperswitch organization_update"));
 
             // routes/app.rs:2147-2149 (v2 merchant list for an organization).
-            Router{router, "/v2/organizations/:id/merchant-accounts"}
+            Router{router, "v2/organizations/:id/merchant-accounts"}
                 .add_route(Route{""}.get([this](
                                              interfaces::io::IRequest& req,
                                              interfaces::io::IResponse& res,
@@ -983,59 +983,59 @@ public:
                                .summary("Hyperswitch merchant_account_list"));
 
             // routes/app.rs:2156-2179 (MerchantAccount::server, v2).
-            Router{router, "/v2/merchant-accounts"}
+            Router{router, "v2/merchant-accounts"}
                 .add_route(Route{""}.post([this](
                                               interfaces::io::IRequest& req,
                                               interfaces::io::IResponse& res,
                                               std::function<void()> send
                                           ) { handle_merchant_account_create(req, res, std::move(send)); })
                                .summary("Hyperswitch merchant_account_create"))
-                .add_route(Route{"/:id"}.get([this](
+                .add_route(Route{":id"}.get([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_retrieve_merchant_account(req, res, std::move(send)); })
                                .summary("Hyperswitch retrieve_merchant_account"))
-                .add_route(Route{"/:id"}.put([this](
+                .add_route(Route{":id"}.put([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_update_merchant_account(req, res, std::move(send)); })
                                .summary("Hyperswitch update_merchant_account"))
-                .add_route(Route{"/:id/kv"}.post([this](
+                .add_router(Router{router, ":id"}.add_route(Route{"kv"}.post([this](
                                                      interfaces::io::IRequest& req,
                                                      interfaces::io::IResponse& res,
                                                      std::function<void()> send
                                                  ) { handle_merchant_account_toggle_kv(req, res, std::move(send)); })
-                               .summary("Hyperswitch merchant_account_toggle_kv"))
-                .add_route(Route{"/:id/kv"}.get([this](
+                               .summary("Hyperswitch merchant_account_toggle_kv")))
+                .add_router(Router{router, ":id"}.add_route(Route{"kv"}.get([this](
                                                     interfaces::io::IRequest& req,
                                                     interfaces::io::IResponse& res,
                                                     std::function<void()> send
                                                 ) { handle_merchant_account_kv_status(req, res, std::move(send)); })
-                               .summary("Hyperswitch merchant_account_kv_status"));
+                               .summary("Hyperswitch merchant_account_kv_status")));
 
             // routes/app.rs:2211-2231 (MerchantConnectorAccount::server, v2).
-            Router{router, "/v2/connector-accounts"}
+            Router{router, "v2/connector-accounts"}
                 .add_route(Route{""}.post([this](
                                               interfaces::io::IRequest& req,
                                               interfaces::io::IResponse& res,
                                               std::function<void()> send
                                           ) { handle_connector_create(req, res, std::move(send)); })
                                .summary("Hyperswitch connector_create"))
-                .add_route(Route{"/:id"}.get([this](
+                .add_route(Route{":id"}.get([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_connector_retrieve(req, res, std::move(send)); })
                                .summary("Hyperswitch connector_retrieve"))
-                .add_route(Route{"/:id"}.put([this](
+                .add_route(Route{":id"}.put([this](
                                                  interfaces::io::IRequest& req,
                                                  interfaces::io::IResponse& res,
                                                  std::function<void()> send
                                              ) { handle_connector_update(req, res, std::move(send)); })
                                .summary("Hyperswitch connector_update"))
-                .add_route(Route{"/:id"}.delt([this](
+                .add_route(Route{":id"}.delt([this](
                                                   interfaces::io::IRequest& req,
                                                   interfaces::io::IResponse& res,
                                                   std::function<void()> send
@@ -1043,7 +1043,7 @@ public:
                                .summary("Hyperswitch connector_delete"));
 
             // routes/admin.rs:740-775 (v2 connector_list for a profile).
-            Router{router, "/v2/profiles/:profile_id/connector-accounts"}
+            Router{router, "v2/profiles/:profile_id/connector-accounts"}
                 .add_route(Route{""}.get([this](
                                              interfaces::io::IRequest& req,
                                              interfaces::io::IResponse& res,

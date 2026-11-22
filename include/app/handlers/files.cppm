@@ -249,7 +249,7 @@ public:
         // Upstream: routes/app.rs:2592-2599 — scope("/files"), resource("") POST,
         // resource("/{file_id}") DELETE + GET. An empty child path keeps POST at
         // exactly "/files" (no trailing slash).
-        Router{router, "/files"}
+        Router{router, "files"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -262,7 +262,7 @@ public:
                     .summary("Hyperswitch files_create")
             )
             .add_route(
-                Route{"/:file_id"}
+                Route{":file_id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -273,7 +273,7 @@ public:
                     .summary("Hyperswitch files_delete")
             )
             .add_route(
-                Route{"/:file_id"}
+                Route{":file_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

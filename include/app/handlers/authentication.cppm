@@ -501,37 +501,86 @@ public:
                 handle_authentication_create(req, res, std::move(send));
             }).summary("Hyperswitch authentication_create"));
         Router{router, "/authentication"}
-            .add_route(Route{"/:authentication_id/eligibility"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":authentication_id"}
+                .add_route(
+                    Route{"eligibility"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_eligibility(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_eligibility"));
+            }).summary("Hyperswitch authentication_eligibility")
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:authentication_id/authenticate"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":authentication_id"}
+                .add_route(
+                    Route{"authenticate"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_authenticate(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_authenticate"));
+            }).summary("Hyperswitch authentication_authenticate")
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:authentication_id/eligibility-check"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":authentication_id"}
+                .add_route(
+                    Route{"eligibility-check"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_eligibility_check(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_eligibility_check"));
+            }).summary("Hyperswitch authentication_eligibility_check")
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:authentication_id/eligibility-check"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":authentication_id"}
+                .add_route(
+                    Route{"eligibility-check"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_retrieve_eligibility_check(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_retrieve_eligibility_check"));
+            }).summary("Hyperswitch authentication_retrieve_eligibility_check")
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:merchant_id/:authentication_id/redirect"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":merchant_id"}
+                .add_router(
+                    Router{router, ":authentication_id"}
+                    .add_route(
+                        Route{"redirect"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_sync_post_update(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_sync_post_update"));
+            }).summary("Hyperswitch authentication_sync_post_update")
+                    )
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:merchant_id/:authentication_id/redirect"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":merchant_id"}
+                .add_router(
+                    Router{router, ":authentication_id"}
+                    .add_route(
+                        Route{"redirect"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_sync_post_update(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_sync_post_update"));
+            }).summary("Hyperswitch authentication_sync_post_update")
+                    )
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:merchant_id/:authentication_id/sync"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":merchant_id"}
+                .add_router(
+                    Router{router, ":authentication_id"}
+                    .add_route(
+                        Route{"sync"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_sync(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_sync"));
+            }).summary("Hyperswitch authentication_sync")
+                    )
+                )
+            );
         Router{router, "/authentication"}
-            .add_route(Route{"/:authentication_id/enabled_authn_methods_token"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
+            .add_router(
+                Router{router, ":authentication_id"}
+                .add_route(
+                    Route{"enabled_authn_methods_token"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                 handle_authentication_session_token(req, res, std::move(send));
-            }).summary("Hyperswitch authentication_session_token"));
+            }).summary("Hyperswitch authentication_session_token")
+                )
+            );
     }
 
     explicit AuthenticationRouteHandlers(app::context::AppContext& context) noexcept

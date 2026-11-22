@@ -2054,175 +2054,175 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/user"}
+        Router{router, "user"}
             .add_route(
-                Route{"/permission_info"}
+                Route{"permission_info"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_authorization_info(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_authorization_info")
             )
             .add_route(
-                Route{"/role"}
+                Route{"role"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_role_from_token(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_role_from_token")
             )
-            .add_route(
-                Route{"/role/v2"}
+            .add_router(Router{router, "role"}.add_route(
+                Route{"v2"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_groups_and_resources_for_role_from_token(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_groups_and_resources_for_role_from_token")
-            )
-            .add_route(
-                Route{"/role/v3"}
+            ))
+            .add_router(Router{router, "role"}.add_route(
+                Route{"v3"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_parent_groups_info_for_role_from_token(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_parent_groups_info_for_role_from_token")
-            )
+            ))
             .add_route(
-                Route{"/role"}
+                Route{"role"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_create_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch create_role")
             )
-            .add_route(
-                Route{"/role/v2"}
+            .add_router(Router{router, "role"}.add_route(
+                Route{"v2"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_create_role_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch create_role_v2")
-            )
-            .add_route(
-                Route{"/role/:role_id"}
+            ))
+            .add_router(Router{router, "role"}.add_route(
+                Route{":role_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_role")
-            )
-            .add_route(
-                Route{"/role/:role_id/v2"}
+            ))
+            .add_router(Router{router, "role"}.add_router(Router{router, ":role_id"}.add_route(
+                Route{"v2"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_parent_info_for_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_parent_info_for_role")
-            )
-            .add_route(
-                Route{"/role/:role_id"}
+            )))
+            .add_router(Router{router, "role"}.add_route(
+                Route{":role_id"}
                     .put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_update_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch update_role")
-            )
-            .add_route(
-                Route{"/user/update_role"}
+            ))
+            .add_router(Router{router, "user"}.add_route(
+                Route{"update_role"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_update_user_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch update_user_role")
-            )
-            .add_route(
-                Route{"/user/invite/accept"}
+            ))
+            .add_router(Router{router, "user"}.add_router(Router{router, "invite"}.add_route(
+                Route{"accept"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_accept_invitations_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch accept_invitations_v2")
-            )
-            .add_route(
-                Route{"/user/invite/accept/v2"}
+            )))
+            .add_router(Router{router, "user"}.add_router(Router{router, "invite"}.add_router(Router{router, "accept"}.add_route(
+                Route{"v2"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_accept_invitations_v2(req, res, std::move(send));
                     })
                     .summary("Hyperswitch accept_invitations_v2 (v2 alias)")
-            )
-            .add_route(
-                Route{"/user/invite/accept/pre_auth"}
+            ))))
+            .add_router(Router{router, "user"}.add_router(Router{router, "invite"}.add_router(Router{router, "accept"}.add_route(
+                Route{"pre_auth"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_accept_invitations_pre_auth(req, res, std::move(send));
                     })
                     .summary("Hyperswitch accept_invitations_pre_auth")
-            )
-            .add_route(
-                Route{"/user/invite/accept/v2/pre_auth"}
+            ))))
+            .add_router(Router{router, "user"}.add_router(Router{router, "invite"}.add_router(Router{router, "accept"}.add_router(Router{router, "v2"}.add_route(
+                Route{"pre_auth"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_accept_invitations_pre_auth(req, res, std::move(send));
                     })
                     .summary("Hyperswitch accept_invitations_pre_auth (v2 alias)")
-            )
-            .add_route(
-                Route{"/user/delete"}
+            )))))
+            .add_router(Router{router, "user"}.add_route(
+                Route{"delete"}
                     .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_delete_user_role(req, res, std::move(send));
                     })
                     .summary("Hyperswitch delete_user_role")
-            )
-            .add_route(
-                Route{"/user/v2/list"}
+            ))
+            .add_router(Router{router, "user"}.add_router(Router{router, "v2"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_users_in_lineage(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_users_in_lineage (v2 alias)")
-            )
-            .add_route(
-                Route{"/module/list"}
+            )))
+            .add_router(Router{router, "module"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_role_information(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_role_information")
-            )
-            .add_route(
-                Route{"/parent/list"}
+            ))
+            .add_router(Router{router, "parent"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_get_parent_group_info(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_parent_group_info")
-            )
-            .add_route(
-                Route{"/user/list"}
+            ))
+            .add_router(Router{router, "user"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_users_in_lineage(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_users_in_lineage")
-            )
-            .add_route(
-                Route{"/role/list"}
+            ))
+            .add_router(Router{router, "role"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_roles_with_info(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_roles_with_info")
-            )
-            .add_route(
-                Route{"/role/v2/list"}
+            ))
+            .add_router(Router{router, "role"}.add_router(Router{router, "v2"}.add_route(
+                Route{"list"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_roles_with_info(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_roles_with_info (v2 alias)")
-            )
-            .add_route(
-                Route{"/role/list/invite"}
+            )))
+            .add_router(Router{router, "role"}.add_router(Router{router, "list"}.add_route(
+                Route{"invite"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_invitable_roles_at_entity_level(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_invitable_roles_at_entity_level")
-            )
-            .add_route(
-                Route{"/role/list/update"}
+            )))
+            .add_router(Router{router, "role"}.add_router(Router{router, "list"}.add_route(
+                Route{"update"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_updatable_roles_at_entity_level(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_updatable_roles_at_entity_level")
-            )
-            .add_route(
-                Route{"/list/invitation"}
+            )))
+            .add_router(Router{router, "list"}.add_route(
+                Route{"invitation"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                         handle_list_invitations_for_user(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_invitations_for_user")
-            );
+            ));
     }
 
 private:

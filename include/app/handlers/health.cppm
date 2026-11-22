@@ -193,7 +193,7 @@ public:
         // Upstream v1: web::scope("health") + resource("") and resource("/ready")
         // (app.rs:812-819). resource("") is /health with NO trailing slash.
         if constexpr (kV1) {
-            Router{router, "/health"}
+            Router{router, "health"}
                 .add_route(
                     Route{""}
                         .get([this](
@@ -206,7 +206,7 @@ public:
                         .summary("Hyperswitch health")
                 )
                 .add_route(
-                    Route{"/ready"}
+                    Route{"ready"}
                         .get([this](
                                  interfaces::io::IRequest& req,
                                  interfaces::io::IResponse& res,
@@ -220,7 +220,7 @@ public:
 
         // Upstream v2: web::scope("/v2/health") (app.rs:822-829).
         if constexpr (kV2) {
-            Router{router, "/v2/health"}
+            Router{router, "v2/health"}
                 .add_route(
                     Route{""}
                         .get([this](
@@ -233,7 +233,7 @@ public:
                         .summary("Hyperswitch health v2")
                 )
                 .add_route(
-                    Route{"/ready"}
+                    Route{"ready"}
                         .get([this](
                                  interfaces::io::IRequest& req,
                                  interfaces::io::IResponse& res,

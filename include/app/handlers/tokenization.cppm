@@ -172,7 +172,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/tokenize"}
+        Router{router, "v2/tokenize"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -185,7 +185,7 @@ public:
                     .summary("Hyperswitch create_token_vault_api")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

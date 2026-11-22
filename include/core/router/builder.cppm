@@ -430,16 +430,13 @@ public:
     }
 
     /**
-     * @brief Constructs a route for `path`, stripping a single leading `/` off into `m_path`.
-     * @param path the route path. Must be `"*"` (wildcard) or contain a `/` somewhere in it.
-     * @warning The thrown message says "must start '/'" but the actual check is
-     * `path.contains('/')` — it only verifies a slash shows up *anywhere*, not at the front. A
-     * path like `abc/def` sails through validation despite not starting with `/`. Lowkey
-     * misleading error text, don't trust the message over the code.
-     * @throws std::runtime_error if `path` isn't `"*"` and contains no `/` at all.
+     * @brief Constructs a leaf route for a single path segment.
+     * @param path the segment. `""` is the scope-root resource (`web::resource("")`),
+     * `"*"` is the wildcard edge, and a leading `/` is tolerated and stripped so existing
+     * call sites keep working. Multi-segment paths are NOT leaves — they must be expressed
+     * as nested sub-routers via `Router::add_router()`.
      */
     constexpr Route<>(std::string_view path)
-        // strip exactly one leading '/' when it's there, otherwise keep the path as-is
         :
         m_path{path.size() > 1 && path.starts_with('/') ? path.substr(1) : path},
         m_is_build{false},
@@ -449,13 +446,12 @@ public:
         m_handler{},
         m_local_middleware{}
     {
-        // wildcard is always fine; an empty path is the "resource at the scope root"
-        // form (upstream `web::resource("")`) and is merged into the parent router at
-        // build time; everything else needs a '/' somewhere in it.
-        if (path != "*" && !path.empty()) {
-            if (!path.contains('/')) {
-                throw std::runtime_error("Route path must start '/'");
-            }
+        // A lone "/" is the scope-root resource — treat it the same as "".
+        if (path == "/") m_path.clear();
+        if (path != "*" && m_path.find('/') != std::string::npos) {
+            throw std::runtime_error(
+                std::format("Leaf route path must be a single segment: '{}'", path)
+            );
         }
     }
 
@@ -481,11 +477,13 @@ public:
         m_child_routes{0},
         m_handler{}
     {
-        // same path validation as the single-arg constructor (empty = scope-root resource)
-        if (path != "*" && !path.empty()) {
-            if (!path.contains('/')) {
-                throw std::runtime_error("Route path must start '/'");
-            }
+        // leaf routes are single segments; ws::resource("") and "*" are valid.
+        // A lone "/" is the scope-root resource — treat it the same as "".
+        if (path == "/") m_path.clear();
+        if (path != "*" && m_path.find('/') != std::string::npos) {
+            throw std::runtime_error(
+                std::format("Leaf route path must be a single segment: '{}'", path)
+            );
         }
         // register each middleware in the pack, in the order they were passed — that order
         // becomes execution order at match time
@@ -804,11 +802,10 @@ public:
     // constexpr Router() : m_ctx{}, m_router_number{0}, m_router_index{0} {}
 
 private:
-    /** Register a possibly multi-segment scope path as a chain of nested router nodes,
-     * returning the index of the last (deepest) node. The matcher walks one path segment
-     * at a time, so a literal containing '/' would otherwise be unreachable. The deepest
-     * node keeps `router_number` (the number this Router instance owns); intermediate
-     * segments get fresh numbers and are reparented under the previous segment's node. */
+    /** Register a scope path (bare segments, possibly '/'-separated) as a chain of nested
+     * router nodes, returning the index of the deepest node. Each segment is its own node;
+     * the deepest keeps this Router's own number. Nodes with the same literal under the same
+     * parent are coalesced so duplicate scopes share one branch. */
     static constexpr std::size_t register_path(
         RouterContext<>& ctx,
         std::string_view path,
@@ -820,26 +817,20 @@ private:
         if (segments.empty()) {
             return ctx.add_route(Route<>{""}.set_router_number(router_number));
         }
-        // Route rejects a path with no '/', so give each single segment a leading slash.
-        // A single-segment path keeps this Router's own number so its children can find it.
-        const std::string first_path = std::string{"/"} + std::string{segments.front()};
-        const std::size_t first_router =
-            (segments.size() == 1) ? router_number : ctx.get_highest_router_number();
-        std::size_t prev_index = ctx.add_route(
-            Route<>{first_path}.set_router_number(first_router)
-        );
-        std::size_t prev_router = ctx[prev_index].get_router_number();
-        for (std::size_t i = 1; i < segments.size(); ++i) {
+        std::size_t prev_index = std::numeric_limits<std::size_t>::max();
+        std::size_t prev_router = 0;
+        for (std::size_t i = 0; i < segments.size(); ++i) {
+            const bool is_root = (i == 0);
             const bool is_last = (i + 1 == segments.size());
-            const std::size_t child_router =
-                is_last ? router_number : ctx.get_highest_router_number();
-            const std::string child_path = std::string{"/"} + std::string{segments[i]};
-            Route<> child = Route<>{child_path}.set_router_number(child_router);
-            child.update_base_router(prev_router);
-            const std::size_t child_index = ctx.add_route(std::move(child));
-            ctx[prev_index].increment_child_routes();
-            prev_index = child_index;
-            prev_router = child_router;
+            const std::size_t own_number = is_last ? router_number : ctx.get_highest_router_number();
+            const std::size_t base = is_root ? std::size_t{0} : prev_router;
+
+            Route<> node = Route<>{segments[i]}.set_router_number(own_number);
+            if (!is_root) node.update_base_router(base);
+            const std::size_t idx = ctx.add_route(std::move(node));
+            if (!is_root) ctx[prev_index].increment_child_routes();
+            prev_index = idx;
+            prev_router = own_number;
         }
         return prev_index;
     }

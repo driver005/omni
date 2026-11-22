@@ -142,9 +142,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/recovery/data-backfill"}
-            .add_route(
-                Route{"/redis-data/:connector_cutomer_id"}
+        Router{router, "v2/recovery/data-backfill"}
+            .add_router(Router{router, "redis-data"}.add_route(
+                Route{":connector_cutomer_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -153,7 +153,7 @@ public:
                         handle_get_revenue_recovery_redis_data(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_revenue_recovery_redis_data")
-            );
+            ));
     }
 
     explicit RevenueRecoveryRedisRouteHandlers(app::context::AppContext& context) noexcept

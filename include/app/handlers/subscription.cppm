@@ -727,17 +727,42 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
         Router{router, "/subscriptions"}
-            .add_route(Route{"/create"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_create_subscription(req, res, std::move(send)); }).summary("Hyperswitch create_subscription"))
-            .add_route(Route{"/:subscription_id/pause"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_pause_subscription(req, res, std::move(send)); }).summary("Hyperswitch pause_subscription"))
-            .add_route(Route{"/:subscription_id/resume"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_resume_subscription(req, res, std::move(send)); }).summary("Hyperswitch resume_subscription"))
-            .add_route(Route{"/:subscription_id/cancel"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_cancel_subscription(req, res, std::move(send)); }).summary("Hyperswitch cancel_subscription"))
-            .add_route(Route{"/:subscription_id/confirm"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_confirm_subscription(req, res, std::move(send)); }).summary("Hyperswitch confirm_subscription"))
-            .add_route(Route{"/items"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_subscription_items(req, res, std::move(send)); }).summary("Hyperswitch get_subscription_items"))
-            .add_route(Route{"/:subscription_id"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_subscription(req, res, std::move(send)); }).summary("Hyperswitch get_subscription"))
-            .add_route(Route{"/"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_create_and_confirm_subscription(req, res, std::move(send)); }).summary("Hyperswitch create_and_confirm_subscription"))
-            .add_route(Route{"/estimate"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_estimate(req, res, std::move(send)); }).summary("Hyperswitch get_estimate"))
-            .add_route(Route{"/:subscription_id/update"}.put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_update_subscription(req, res, std::move(send)); }).summary("Hyperswitch update_subscription"))
-            .add_route(Route{"/list"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_list_subscriptions(req, res, std::move(send)); }).summary("Hyperswitch list_subscriptions"));
+            .add_route(Route{"create"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_create_subscription(req, res, std::move(send)); }).summary("Hyperswitch create_subscription"))
+            .add_router(
+                Router{router, ":subscription_id"}
+                .add_route(
+                    Route{"pause"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_pause_subscription(req, res, std::move(send)); }).summary("Hyperswitch pause_subscription")
+                )
+            )
+            .add_router(
+                Router{router, ":subscription_id"}
+                .add_route(
+                    Route{"resume"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_resume_subscription(req, res, std::move(send)); }).summary("Hyperswitch resume_subscription")
+                )
+            )
+            .add_router(
+                Router{router, ":subscription_id"}
+                .add_route(
+                    Route{"cancel"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_cancel_subscription(req, res, std::move(send)); }).summary("Hyperswitch cancel_subscription")
+                )
+            )
+            .add_router(
+                Router{router, ":subscription_id"}
+                .add_route(
+                    Route{"confirm"}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_confirm_subscription(req, res, std::move(send)); }).summary("Hyperswitch confirm_subscription")
+                )
+            )
+            .add_route(Route{"items"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_subscription_items(req, res, std::move(send)); }).summary("Hyperswitch get_subscription_items"))
+            .add_route(Route{":subscription_id"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_subscription(req, res, std::move(send)); }).summary("Hyperswitch get_subscription"))
+            .add_route(Route{""}.post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_create_and_confirm_subscription(req, res, std::move(send)); }).summary("Hyperswitch create_and_confirm_subscription"))
+            .add_route(Route{"estimate"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_get_estimate(req, res, std::move(send)); }).summary("Hyperswitch get_estimate"))
+            .add_router(
+                Router{router, ":subscription_id"}
+                .add_route(
+                    Route{"update"}.put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_update_subscription(req, res, std::move(send)); }).summary("Hyperswitch update_subscription")
+                )
+            )
+            .add_route(Route{"list"}.get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) { handle_list_subscriptions(req, res, std::move(send)); }).summary("Hyperswitch list_subscriptions"));
     }
 
     explicit SubscriptionRouteHandlers(app::context::AppContext& context) noexcept

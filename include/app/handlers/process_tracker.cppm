@@ -26,7 +26,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/process_tracker"};
+        Router{router, "process_tracker"};
     }
 
 private:

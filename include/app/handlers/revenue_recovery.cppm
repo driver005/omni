@@ -123,9 +123,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/recovery"}
-            .add_route(
-                Route{"/:merchant_reference_id/cancel"}
+        Router{router, "v2/recovery"}
+            .add_router(Router{router, ":merchant_reference_id"}.add_route(
+                Route{"cancel"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -134,7 +134,7 @@ public:
                         handle_revenue_recovery_cancel(req, res, std::move(send));
                     })
                     .summary("Hyperswitch revenue_recovery_cancel")
-            );
+            ));
     }
 
     explicit RevenueRecoveryRouteHandlers(app::context::AppContext& context) noexcept

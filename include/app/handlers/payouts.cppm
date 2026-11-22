@@ -1127,9 +1127,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/payouts"}
+        Router{router, "payouts"}
             .add_route(
-                Route{"/create"}
+                Route{"create"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1140,7 +1140,7 @@ public:
                     .summary("Hyperswitch payouts_create")
             )
             .add_route(
-                Route{"/:payout_id"}
+                Route{":payout_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1151,7 +1151,7 @@ public:
                     .summary("Hyperswitch payouts_retrieve")
             )
             .add_route(
-                Route{"/:payout_id"}
+                Route{":payout_id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1161,41 +1161,50 @@ public:
                     })
                     .summary("Hyperswitch payouts_update")
             )
-            .add_route(
-                Route{"/:payout_id/confirm"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_confirm(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_confirm")
+            .add_router(
+                Router{router, ":payout_id"}
+                    .add_route(
+                        Route{"confirm"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_confirm(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_confirm")
+                    )
+            )
+            .add_router(
+                Router{router, ":payout_id"}
+                    .add_route(
+                        Route{"cancel"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_cancel(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_cancel")
+                    )
+            )
+            .add_router(
+                Router{router, ":payout_id"}
+                    .add_route(
+                        Route{"fulfill"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_fulfill(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_fulfill")
+                    )
             )
             .add_route(
-                Route{"/:payout_id/cancel"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_cancel(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_cancel")
-            )
-            .add_route(
-                Route{"/:payout_id/fulfill"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_fulfill(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_fulfill")
-            )
-            .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1205,19 +1214,22 @@ public:
                     })
                     .summary("Hyperswitch payouts_list")
             )
-            .add_route(
-                Route{"/profile/list"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_list_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_list_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"list"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_list_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_list_profile")
+                    )
             )
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1227,19 +1239,22 @@ public:
                     })
                     .summary("Hyperswitch payouts_list_by_filter")
             )
-            .add_route(
-                Route{"/profile/list"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_list_by_filter_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_list_by_filter_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"list"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_list_by_filter_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_list_by_filter_profile")
+                    )
             )
             .add_route(
-                Route{"/filter"}
+                Route{"filter"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1249,41 +1264,53 @@ public:
                     })
                     .summary("Hyperswitch payouts_list_available_filters_for_merchant")
             )
-            .add_route(
-                Route{"/profile/filter"}
-                    .post([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_list_available_filters_for_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_list_available_filters_for_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"filter"}
+                            .post([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_list_available_filters_for_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_list_available_filters_for_profile")
+                    )
+            )
+            .add_router(
+                Router{router, "v2"}
+                    .add_route(
+                        Route{"filter"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payout_filters(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payout_filters")
+                    )
+            )
+            .add_router(
+                Router{router, "v2"}
+                    .add_router(
+                        Router{router, "profile"}
+                            .add_route(
+                                Route{"filter"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_get_payout_filters_profile(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch get_payout_filters_profile")
+                            )
+                    )
             )
             .add_route(
-                Route{"/v2/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payout_filters(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payout_filters")
-            )
-            .add_route(
-                Route{"/v2/profile/filter"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payout_filters_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payout_filters_profile")
-            )
-            .add_route(
-                Route{"/aggregate"}
+                Route{"aggregate"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1293,27 +1320,33 @@ public:
                     })
                     .summary("Hyperswitch get_payouts_aggregates")
             )
-            .add_route(
-                Route{"/profile/aggregate"}
-                    .get([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_get_payouts_aggregates_profile(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch get_payouts_aggregates_profile")
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(
+                        Route{"aggregate"}
+                            .get([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_get_payouts_aggregates_profile(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch get_payouts_aggregates_profile")
+                    )
             )
-            .add_route(
-                Route{"/:payout_id/manual-update"}
-                    .put([this](
-                        interfaces::io::IRequest& req,
-                        interfaces::io::IResponse& res,
-                        std::function<void()> send
-                    ) {
-                        handle_payouts_manual_update(req, res, std::move(send));
-                    })
-                    .summary("Hyperswitch payouts_manual_update")
+            .add_router(
+                Router{router, ":payout_id"}
+                    .add_route(
+                        Route{"manual-update"}
+                            .put([this](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            ) {
+                                handle_payouts_manual_update(req, res, std::move(send));
+                            })
+                            .summary("Hyperswitch payouts_manual_update")
+                    )
             );
     }
 

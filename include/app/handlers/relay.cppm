@@ -743,9 +743,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/relay"}
+        Router{router, "relay"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -756,7 +756,7 @@ public:
                     .summary("Hyperswitch relay")
             )
             .add_route(
-                Route{"/unreferenced_refund"}
+                Route{"unreferenced_refund"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -767,7 +767,7 @@ public:
                     .summary("Hyperswitch unreferenced_refund")
             )
             .add_route(
-                Route{"/:relay_id"}
+                Route{":relay_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -781,13 +781,13 @@ public:
         // Upstream: POST /webhooks/relay/{merchant_id}/{connector_id}
         // (routes/app.rs:2374-2382, routes/webhooks.rs:48-83). Nested
         // single-segment routers build the exact /webhooks/relay/{m}/{c} trie.
-        Router{router, "/webhooks"}
+        Router{router, "webhooks"}
             .add_router(
-                Router{router, "/relay"}
+                Router{router, "relay"}
                     .add_router(
-                        Router{router, "/:merchant_id"}
+                        Router{router, ":merchant_id"}
                             .add_route(
-                                Route{"/:connector_id"}
+                                Route{":connector_id"}
                                     .post([this](
                                         interfaces::io::IRequest& req,
                                         interfaces::io::IResponse& res,

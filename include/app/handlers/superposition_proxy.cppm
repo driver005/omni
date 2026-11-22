@@ -300,9 +300,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v1/superposition"}
+        Router{router, "v1/superposition"}
             .add_route(
-                Route{"/context"}
+                Route{"context"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -313,7 +313,7 @@ public:
                     .summary("Hyperswitch list_contexts")
             )
             .add_route(
-                Route{"/context"}
+                Route{"context"}
                     .put([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -324,7 +324,7 @@ public:
                     .summary("Hyperswitch create_context")
             )
             .add_route(
-                Route{"/default-config"}
+                Route{"default-config"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -334,8 +334,8 @@ public:
                          })
                     .summary("Hyperswitch list_default_configs")
             )
-            .add_route(
-                Route{"/default-config/:key"}
+            .add_router(Router{router, "default-config"}.add_route(
+                Route{":key"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -344,9 +344,9 @@ public:
                              handle_get_default_config(req, res, std::move(send));
                          })
                     .summary("Hyperswitch get_default_config")
-            )
+            ))
             .add_route(
-                Route{"/dimension"}
+                Route{"dimension"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -356,8 +356,8 @@ public:
                          })
                     .summary("Hyperswitch list_dimensions")
             )
-            .add_route(
-                Route{"/dimension/:dimension_name"}
+            .add_router(Router{router, "dimension"}.add_route(
+                Route{":dimension_name"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,
@@ -366,9 +366,9 @@ public:
                              handle_get_dimension(req, res, std::move(send));
                          })
                     .summary("Hyperswitch get_dimension")
-            )
-            .add_route(
-                Route{"/config/resolve/detailed"}
+            ))
+            .add_router(Router{router, "config"}.add_router(Router{router, "resolve"}.add_route(
+                Route{"detailed"}
                     .post([this](
                               interfaces::io::IRequest& req,
                               interfaces::io::IResponse& res,
@@ -377,9 +377,9 @@ public:
                               handle_resolve_detailed_config(req, res, std::move(send));
                           })
                     .summary("Hyperswitch resolve_detailed_config")
-            )
-            .add_route(
-                Route{"/config/resolve/explain/:key"}
+            )))
+            .add_router(Router{router, "config"}.add_router(Router{router, "resolve"}.add_router(Router{router, "explain"}.add_route(
+                Route{":key"}
                     .post([this](
                               interfaces::io::IRequest& req,
                               interfaces::io::IResponse& res,
@@ -388,9 +388,9 @@ public:
                               handle_resolve_config_explanation(req, res, std::move(send));
                           })
                     .summary("Hyperswitch resolve_config_explanation")
-            )
+            ))))
             .add_route(
-                Route{"/audit"}
+                Route{"audit"}
                     .get([this](
                              interfaces::io::IRequest& req,
                              interfaces::io::IResponse& res,

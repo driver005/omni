@@ -126,9 +126,9 @@ public:
         // web::resource("/status/{poll_id}").route(web::get()), gated by
         // all(feature = "oltp", feature = "v1"). No C++-only routes exist.
         if constexpr (kOltp && kV1) {
-            Router{router, "/poll"}
-                .add_route(
-                    Route{"/status/:poll_id"}
+            Router{router, "poll"}
+                .add_router(Router{router, "status"}.add_route(
+                    Route{":poll_id"}
                         .get([this](
                                  interfaces::io::IRequest& req,
                                  interfaces::io::IResponse& res,
@@ -143,7 +143,7 @@ public:
                             "(connected scope allowed, platform self denied). "
                             "404 PollNotFound when the processor-scoped poll key is absent."
                         )
-                );
+                ));
         }
     }
 

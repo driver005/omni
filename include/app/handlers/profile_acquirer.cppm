@@ -304,7 +304,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/profile_acquirer"}
+        Router{router, "profile_acquirer"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -316,8 +316,8 @@ public:
                     })
                     .summary("Hyperswitch create_profile_acquirer")
             )
-            .add_route(
-                Route{"/:profile_id/:profile_acquirer_id"}
+            .add_router(Router{router, ":profile_id"}.add_route(
+                Route{":profile_acquirer_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -326,7 +326,7 @@ public:
                         handle_profile_acquirer_update(req, res, std::move(send));
                     })
                     .summary("Hyperswitch profile_acquirer_update")
-            );
+            ));
     }
 
     explicit ProfileAcquirerRouteHandlers(app::context::AppContext& context) noexcept

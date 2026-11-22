@@ -296,9 +296,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/connector_onboarding"}
+        Router{router, "connector_onboarding"}
             .add_route(
-                Route{"/action_url"}
+                Route{"action_url"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -309,7 +309,7 @@ public:
                     .summary("Hyperswitch get_action_url")
             )
             .add_route(
-                Route{"/sync"}
+                Route{"sync"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -320,7 +320,7 @@ public:
                     .summary("Hyperswitch sync_onboarding_status")
             )
             .add_route(
-                Route{"/reset_tracking_id"}
+                Route{"reset_tracking_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

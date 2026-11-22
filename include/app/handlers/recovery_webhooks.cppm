@@ -340,9 +340,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/webhooks"}
-            .add_route(
-                Route{"/recovery/:merchant_id/:profile_id/:connector_id"}
+        Router{router, "v2/webhooks"}
+            .add_router(Router{router, "recovery"}.add_router(Router{router, ":merchant_id"}.add_router(Router{router, ":profile_id"}.add_route(
+                Route{":connector_id"}
                     .post([this](
                               interfaces::io::IRequest& req,
                               interfaces::io::IResponse& res,
@@ -355,7 +355,7 @@ public:
                         "POST /v2/webhooks/recovery/{merchant_id}/{profile_id}/{connector_id} "
                         "(upstream routes/recovery_webhooks.rs:11-49)"
                     )
-            );
+            ))));
     }
 
     explicit RecoveryWebhooksRouteHandlers(app::context::AppContext& context) noexcept :

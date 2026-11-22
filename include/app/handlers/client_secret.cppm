@@ -132,7 +132,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/client-secret"}
+        Router{router, "v2/client-secret"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -145,7 +145,7 @@ public:
                     .summary("Hyperswitch client_secret_create")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

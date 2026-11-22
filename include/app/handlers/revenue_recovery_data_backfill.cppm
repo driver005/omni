@@ -874,7 +874,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/v2/recovery/data-backfill"}
+        Router{router, "v2/recovery/data-backfill"}
             .add_route(
                 Route{""}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
@@ -883,16 +883,16 @@ public:
                     })
                     .summary("Hyperswitch revenue_recovery_data_backfill")
             )
-            .add_route(
-                Route{"/status/:connector_cutomer_id/:payment_intent_id"}
+            .add_router(Router{router, "status"}.add_router(Router{router, ":connector_cutomer_id"}.add_route(
+                Route{":payment_intent_id"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_revenue_recovery_data_backfill_status(req, res, std::move(send));
                     })
                     .summary("Hyperswitch revenue_recovery_data_backfill_status")
-            )
+            )))
             .add_route(
-                Route{"/update-token"}
+                Route{"update-token"}
                     .put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_update_revenue_recovery_additional_redis_data(req, res,
@@ -901,7 +901,7 @@ public:
                     .summary("Hyperswitch update_revenue_recovery_additional_redis_data")
             )
             .add_route(
-                Route{"/retry-stats"}
+                Route{"retry-stats"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_revenue_recovery_retry_stats_migration(req, res, std::move(send));

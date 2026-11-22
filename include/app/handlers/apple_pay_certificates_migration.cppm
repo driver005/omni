@@ -221,7 +221,7 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/apple_pay_certificates_migration"}
+        Router{router, "apple_pay_certificates_migration"}
             .add_route(
                 Route{""}
                     .post([this](

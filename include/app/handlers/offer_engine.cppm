@@ -534,9 +534,9 @@ public:
         using Router = utils::openapi::ApiRouter;
         // Upstream scope `/offer_engine` with `/connectivity` and `/offers/list`
         // POST resources (routes/app.rs:838-847). No C++-only routes are installed.
-        Router{router, "/offer_engine"}
+        Router{router, "offer_engine"}
             .add_route(
-                Route{"/connectivity"}
+                Route{"connectivity"}
                     .post([this](
                               interfaces::io::IRequest& req,
                               interfaces::io::IResponse& res,
@@ -546,8 +546,8 @@ public:
                     })
                     .summary("Hyperswitch offer_engine_connectivity_check")
             )
-            .add_route(
-                Route{"/offers/list"}
+            .add_router(Router{router, "offers"}.add_route(
+                Route{"list"}
                     .post([this](
                               interfaces::io::IRequest& req,
                               interfaces::io::IResponse& res,
@@ -556,7 +556,7 @@ public:
                         handle_offer_engine_browse_offers(req, res, std::move(send));
                     })
                     .summary("Hyperswitch offer_engine_browse_offers")
-            );
+            ));
     }
 
     explicit OfferEngineRouteHandlers(app::context::AppContext& context) noexcept

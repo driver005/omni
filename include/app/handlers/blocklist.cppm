@@ -860,9 +860,9 @@ public:
 
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/blocklist"}
+        Router{router, "blocklist"}
             .add_route(
-                Route{"/"}
+                Route{""}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_list_blocked_payment_methods(req, res, std::move(send));
@@ -870,7 +870,7 @@ public:
                     .summary("Hyperswitch list_blocked_payment_methods")
             )
             .add_route(
-                Route{"/"}
+                Route{""}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_add_entry_to_blocklist(req, res, std::move(send));
@@ -878,7 +878,7 @@ public:
                     .summary("Hyperswitch add_entry_to_blocklist")
             )
             .add_route(
-                Route{"/"}
+                Route{""}
                     .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_remove_entry_from_blocklist(req, res, std::move(send));
@@ -886,7 +886,7 @@ public:
                     .summary("Hyperswitch remove_entry_from_blocklist")
             )
             .add_route(
-                Route{"/toggle"}
+                Route{"toggle"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_toggle_blocklist_guard(req, res, std::move(send));
@@ -894,7 +894,7 @@ public:
                     .summary("Hyperswitch toggle_blocklist_guard")
             )
             .add_route(
-                Route{"/count"}
+                Route{"count"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_get_blocklist_count(req, res, std::move(send));
@@ -902,7 +902,7 @@ public:
                     .summary("Hyperswitch get_blocklist_count")
             )
             .add_route(
-                Route{"/lookup"}
+                Route{"lookup"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_lookup_blocklist_entry(req, res, std::move(send));
@@ -910,7 +910,7 @@ public:
                     .summary("Hyperswitch lookup_blocklist_entry")
             )
             .add_route(
-                Route{"/batch"}
+                Route{"batch"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_upload_batch_blocklist(req, res, std::move(send));
@@ -918,24 +918,24 @@ public:
                     .summary("Hyperswitch upload_batch_blocklist")
             )
             .add_route(
-                Route{"/batch"}
+                Route{"batch"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_list_batch_blocklist_jobs(req, res, std::move(send));
                     })
                     .summary("Hyperswitch list_batch_blocklist_jobs")
             )
-            .add_route(
+            .add_router(Router{router, "batch"}.add_route(
                 // core router supports only `:param`; upstream OpenAPI spells `{job_id}`.
-                Route{"/batch/:job_id"}
+                Route{":job_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_get_batch_blocklist_job_status(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_batch_blocklist_job_status")
-            )
+            ))
             .add_route(
-                Route{"/export"}
+                Route{"export"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_create_blocklist_export(req, res, std::move(send));
@@ -943,7 +943,7 @@ public:
                     .summary("Hyperswitch create_blocklist_export")
             )
             .add_route(
-                Route{"/clone"}
+                Route{"clone"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_clone_blocklist_entries(req, res, std::move(send));

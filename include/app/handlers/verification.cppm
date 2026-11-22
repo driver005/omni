@@ -275,9 +275,9 @@ public:
 
         // Upstream v1 scope is /verify (app.rs:2870), v2 scope is /v2/verify
         // (app.rs:2886). Sub-paths use the upstream underscores/hyphens.
-        Router{router, "/verify"}
-            .add_route(
-                Route{"/apple_pay/:merchant_id"}
+        Router{router, "verify"}
+            .add_router(Router{router, "apple_pay"}.add_route(
+                Route{":merchant_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -286,9 +286,9 @@ public:
                         handle_apple_pay_merchant_registration(req, res, std::move(send), false);
                     })
                     .summary("Hyperswitch apple_pay_merchant_registration")
-            )
+            ))
             .add_route(
-                Route{"/applepay_verified_domains"}
+                Route{"applepay_verified_domains"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -299,9 +299,9 @@ public:
                     .summary("Hyperswitch retrieve_apple_pay_verified_domains")
             );
 
-        Router{router, "/v2/verify"}
-            .add_route(
-                Route{"/apple-pay/:merchant_id"}
+        Router{router, "v2/verify"}
+            .add_router(Router{router, "apple-pay"}.add_route(
+                Route{":merchant_id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -310,9 +310,9 @@ public:
                         handle_apple_pay_merchant_registration(req, res, std::move(send), true);
                     })
                     .summary("Hyperswitch apple_pay_merchant_registration (v2)")
-            )
+            ))
             .add_route(
-                Route{"/applepay-verified-domains"}
+                Route{"applepay-verified-domains"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

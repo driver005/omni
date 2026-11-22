@@ -283,9 +283,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/mandates"}
+        Router{router, "mandates"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -296,7 +296,7 @@ public:
                     .summary("Hyperswitch retrieve_mandates_list")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -306,8 +306,8 @@ public:
                     })
                     .summary("Hyperswitch get_mandate")
             )
-            .add_route(
-                Route{"/revoke/:id"}
+            .add_router(Router{router, "revoke"}.add_route(
+                Route{":id"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -316,7 +316,7 @@ public:
                         handle_revoke_mandate(req, res, std::move(send));
                     })
                     .summary("Hyperswitch revoke_mandate")
-            );
+            ));
     }
 
     explicit MandatesRouteHandlers(::app::context::AppContext& context) noexcept

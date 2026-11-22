@@ -112,9 +112,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/forex"}
+        Router{router, "forex"}
             .add_route(
-                Route{"/rates"}
+                Route{"rates"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -125,7 +125,7 @@ public:
                     .summary("Hyperswitch retrieve_forex")
             )
             .add_route(
-                Route{"/convert_from_minor"}
+                Route{"convert_from_minor"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

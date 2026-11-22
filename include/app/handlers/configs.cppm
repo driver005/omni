@@ -271,9 +271,9 @@ public:
         // Upstream v1: `web::scope("/configs")` with resource("/") POST and
         // resource("/{key}") GET/POST/DELETE (routes/app.rs:2412-2424).
         if constexpr (kV1) {
-            Router{router, "/configs"}
+            Router{router, "configs"}
                 .add_route(
-                    Route{"/"}
+                    Route{""}
                         .post([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,
@@ -284,7 +284,7 @@ public:
                         .summary("Hyperswitch config_key_create")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .get([this](
                                  interfaces::io::IRequest& req,
                                  interfaces::io::IResponse& res,
@@ -295,7 +295,7 @@ public:
                         .summary("Hyperswitch config_key_retrieve")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .post([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,
@@ -306,7 +306,7 @@ public:
                         .summary("Hyperswitch config_key_update")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .delt([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,
@@ -321,9 +321,9 @@ public:
         // Upstream v2: `web::scope("/v2/configs")` with the same four ops
         // (routes/app.rs:2427-2439).
         if constexpr (kV2) {
-            Router{router, "/v2/configs"}
+            Router{router, "v2/configs"}
                 .add_route(
-                    Route{"/"}
+                    Route{""}
                         .post([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,
@@ -334,7 +334,7 @@ public:
                         .summary("Hyperswitch config_key_create (v2)")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .get([this](
                                  interfaces::io::IRequest& req,
                                  interfaces::io::IResponse& res,
@@ -345,7 +345,7 @@ public:
                         .summary("Hyperswitch config_key_retrieve (v2)")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .post([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,
@@ -356,7 +356,7 @@ public:
                         .summary("Hyperswitch config_key_update (v2)")
                 )
                 .add_route(
-                    Route{"/:key"}
+                    Route{":key"}
                         .delt([this](
                                   interfaces::io::IRequest& req,
                                   interfaces::io::IResponse& res,

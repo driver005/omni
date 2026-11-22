@@ -467,23 +467,23 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/gsm"}
-            .add_route(Route{"/"}.post([this](
+        Router{router, "gsm"}
+            .add_route(Route{""}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_create_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch create_gsm_rule"))
-            .add_route(Route{"/get"}.post([this](
+            .add_route(Route{"get"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_get_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch get_gsm_rule"))
-            .add_route(Route{"/update"}.post([this](
+            .add_route(Route{"update"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_update_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch update_gsm_rule"))
-            .add_route(Route{"/delete"}.post([this](
+            .add_route(Route{"delete"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_delete_gsm_rule(req, res, std::move(send)); })
@@ -493,23 +493,23 @@ public:
         // (app.rs:2813-2835). AdminApiAuth delegates to V2AdminApiAuth
         // (authentication.rs:1715-1728), so both scopes use the identical
         // admin extractor: no distinct auth path is required.
-        Router{router, "/v2/gsm"}
-            .add_route(Route{"/"}.post([this](
+        Router{router, "v2/gsm"}
+            .add_route(Route{""}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_create_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch create_gsm_rule (v2)"))
-            .add_route(Route{"/get"}.post([this](
+            .add_route(Route{"get"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_get_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch get_gsm_rule (v2)"))
-            .add_route(Route{"/update"}.post([this](
+            .add_route(Route{"update"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_update_gsm_rule(req, res, std::move(send)); })
                 .summary("Hyperswitch update_gsm_rule (v2)"))
-            .add_route(Route{"/delete"}.post([this](
+            .add_route(Route{"delete"}.post([this](
                 interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                 std::function<void()> send
             ) { handle_delete_gsm_rule(req, res, std::move(send)); })

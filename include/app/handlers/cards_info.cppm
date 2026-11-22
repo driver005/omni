@@ -240,9 +240,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/cards"}
+        Router{router, "cards"}
             .add_route(
-                Route{"/:bin"}
+                Route{":bin"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -253,7 +253,7 @@ public:
                     .summary("Hyperswitch card_iin_info")
             )
             .add_route(
-                Route{"/create"}
+                Route{"create"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -264,7 +264,7 @@ public:
                     .summary("Hyperswitch create_cards_info")
             )
             .add_route(
-                Route{"/update"}
+                Route{"update"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -275,7 +275,7 @@ public:
                     .summary("Hyperswitch update_cards_info")
             )
             .add_route(
-                Route{"/update-batch"}
+                Route{"update-batch"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

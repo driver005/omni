@@ -345,9 +345,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/webhooks"}
+        Router{router, "webhooks"}
             .add_route(
-                Route{"/frm_fulfillment"}
+                Route{"frm_fulfillment"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

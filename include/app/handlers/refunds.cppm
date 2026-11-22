@@ -579,48 +579,78 @@ public:
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
 
-        Router{router, "/refunds"}
+        Router{router, "refunds"}
             .add_route(Route{""}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_create(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_create"))
-            .add_route(Route{"/sync"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_route(Route{"sync"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_retrieve_with_body(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_retrieve_with_body"))
-            .add_route(Route{"/:id"}.get([this](auto& rq, auto& rs, auto sd) {
+            .add_route(Route{":id"}.get([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_retrieve(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_retrieve"))
-            .add_route(Route{"/:id"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_route(Route{":id"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_update(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_update"))
-            .add_route(Route{"/:id/reverse"}.post([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_reverse(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_reverse"))
-            .add_route(Route{"/list"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_router(
+                Router{router, ":id"}
+                    .add_route(Route{"reverse"}.post([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_reverse(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_reverse"))
+            )
+            .add_route(Route{"list"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_list(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list"))
-            .add_route(Route{"/platform/list"}.get([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_list_for_platform(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list_for_platform"))
-            .add_route(Route{"/platform/filter"}.get([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_filter_list_for_platform(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_filter_list_for_platform"))
-            .add_route(Route{"/profile/list"}.post([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_list_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list_profile"))
-            .add_route(Route{"/filter"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(Route{"list"}.get([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_list_for_platform(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list_for_platform"))
+            )
+            .add_router(
+                Router{router, "platform"}
+                    .add_route(Route{"filter"}.get([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_filter_list_for_platform(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_filter_list_for_platform"))
+            )
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(Route{"list"}.post([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_list_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list_profile"))
+            )
+            .add_route(Route{"filter"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_filter_list(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_filter_list"))
-            .add_route(Route{"/v2/filter"}.get([this](auto& rq, auto& rs, auto sd) {
-                handle_get_refunds_filters(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_filters"))
-            .add_route(Route{"/aggregate"}.get([this](auto& rq, auto& rs, auto sd) {
+            .add_router(
+                Router{router, "v2"}
+                    .add_route(Route{"filter"}.get([this](auto& rq, auto& rs, auto sd) {
+                        handle_get_refunds_filters(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_filters"))
+            )
+            .add_route(Route{"aggregate"}.get([this](auto& rq, auto& rs, auto sd) {
                 handle_get_refunds_aggregates(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_aggregates"))
-            .add_route(Route{"/profile/aggregate"}.get([this](auto& rq, auto& rs, auto sd) {
-                handle_get_refunds_aggregate_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_aggregate_profile"))
-            .add_route(Route{"/v2/profile/filter"}.get([this](auto& rq, auto& rs, auto sd) {
-                handle_get_refunds_filters_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_filters_profile"))
-            .add_route(Route{"/:id/manual-update"}.put([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_manual_update(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_manual_update"));
+            .add_router(
+                Router{router, "profile"}
+                    .add_route(Route{"aggregate"}.get([this](auto& rq, auto& rs, auto sd) {
+                        handle_get_refunds_aggregate_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_aggregate_profile"))
+            )
+            .add_router(
+                Router{router, "v2"}
+                    .add_router(
+                        Router{router, "profile"}
+                            .add_route(Route{"filter"}.get([this](auto& rq, auto& rs, auto sd) {
+                                handle_get_refunds_filters_profile(rq, rs, std::move(sd)); }).summary("Hyperswitch get_refunds_filters_profile"))
+                    )
+            )
+            .add_router(
+                Router{router, ":id"}
+                    .add_route(Route{"manual-update"}.put([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_manual_update(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_manual_update"))
+            );
 
-        Router{router, "/v2/refunds"}
+        Router{router, "v2/refunds"}
             .add_route(Route{""}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_create(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_create"))
-            .add_route(Route{"/:id"}.get([this](auto& rq, auto& rs, auto sd) {
+            .add_route(Route{":id"}.get([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_retrieve(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_retrieve"))
-            .add_route(Route{"/:id"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_route(Route{":id"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_retrieve_with_gateway_creds(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_retrieve_with_gateway_creds"))
-            .add_route(Route{"/:id/update-metadata"}.put([this](auto& rq, auto& rs, auto sd) {
-                handle_refunds_metadata_update(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_metadata_update"))
-            .add_route(Route{"/list"}.post([this](auto& rq, auto& rs, auto sd) {
+            .add_router(
+                Router{router, ":id"}
+                    .add_route(Route{"update-metadata"}.put([this](auto& rq, auto& rs, auto sd) {
+                        handle_refunds_metadata_update(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_metadata_update"))
+            )
+            .add_route(Route{"list"}.post([this](auto& rq, auto& rs, auto sd) {
                 handle_refunds_list(rq, rs, std::move(sd)); }).summary("Hyperswitch refunds_list"));
     }
 

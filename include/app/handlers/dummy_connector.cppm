@@ -1155,55 +1155,55 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/dummy-connector"}
-            .add_route(
-                Route{"/authorize/:attempt_id"}
+        Router{router, "dummy-connector"}
+            .add_router(Router{router, "authorize"}.add_route(
+                Route{":attempt_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_dummy_connector_authorize_payment(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_authorize_payment")
-            )
-            .add_route(
-                Route{"/complete/:attempt_id"}
+            ))
+            .add_router(Router{router, "complete"}.add_route(
+                Route{":attempt_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_dummy_connector_complete_payment(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_complete_payment")
-            )
+            ))
             .add_route(
-                Route{"/payment"}
+                Route{"payment"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_dummy_connector_payment(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_payment")
             )
-            .add_route(
-                Route{"/payments/:payment_id"}
+            .add_router(Router{router, "payments"}.add_route(
+                Route{":payment_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_dummy_connector_payment_data(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_payment_data")
-            )
-            .add_route(
-                Route{"/:payment_id/refund"}
+            ))
+            .add_router(Router{router, ":payment_id"}.add_route(
+                Route{"refund"}
                     .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                  std::function<void()> send) {
                         handle_dummy_connector_refund(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_refund")
-            )
-            .add_route(
-                Route{"/refunds/:refund_id"}
+            ))
+            .add_router(Router{router, "refunds"}.add_route(
+                Route{":refund_id"}
                     .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res,
                                 std::function<void()> send) {
                         handle_dummy_connector_refund_data(req, res, std::move(send));
                     })
                     .summary("Hyperswitch dummy_connector_refund_data")
-            );
+            ));
     }
 
     explicit DummyConnectorRouteHandlers(app::context::AppContext& context) noexcept

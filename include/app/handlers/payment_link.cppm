@@ -369,9 +369,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/payment_link"}
+        Router{router, "payment_link"}
             .add_route(
-                Route{"/list"}
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -381,8 +381,8 @@ public:
                     })
                     .summary("Hyperswitch payments_link_list")
             )
-            .add_route(
-                Route{"/profile/list"}
+            .add_router(Router{router, "profile"}.add_route(
+                Route{"list"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -391,9 +391,9 @@ public:
                         handle_profile_payment_link_list(req, res, std::move(send));
                     })
                     .summary("Hyperswitch profile_payment_link_list")
-            )
+            ))
             .add_route(
-                Route{"/:payment_link_id"}
+                Route{":payment_link_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -403,8 +403,8 @@ public:
                     })
                     .summary("Hyperswitch payment_link_retrieve")
             )
-            .add_route(
-                Route{"/:merchant_id/:payment_id"}
+            .add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":payment_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -413,9 +413,9 @@ public:
                         handle_initiate_payment_link(req, res, std::move(send));
                     })
                     .summary("Hyperswitch initiate_payment_link")
-            )
-            .add_route(
-                Route{"/s/:merchant_id/:payment_id"}
+            ))
+            .add_router(Router{router, "s"}.add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":payment_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -424,9 +424,9 @@ public:
                         handle_initiate_secure_payment_link(req, res, std::move(send));
                     })
                     .summary("Hyperswitch initiate_secure_payment_link")
-            )
-            .add_route(
-                Route{"/status/:merchant_id/:payment_id"}
+            )))
+            .add_router(Router{router, "status"}.add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":payment_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -435,7 +435,7 @@ public:
                         handle_payment_link_status(req, res, std::move(send));
                     })
                     .summary("Hyperswitch payment_link_status")
-            );
+            )));
     }
 
     explicit PaymentLinkRouteHandlers(app::context::AppContext& context) noexcept

@@ -196,9 +196,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/superposition_sdk_config"}
-            .add_route(
-                Route{"/v1/sdk/configs/:platform/sdk_config.json"}
+        Router{router, "superposition_sdk_config"}
+            .add_router(Router{router, "v1"}.add_router(Router{router, "sdk"}.add_router(Router{router, "configs"}.add_router(Router{router, ":platform"}.add_route(
+                Route{"sdk_config.json"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -207,9 +207,9 @@ public:
                         handle_get_sdk_config(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_sdk_config")
-            )
-            .add_route(
-                Route{"/v1/sdk/configs/:platform/:profile_id/sdk_config.json"}
+            )))))
+            .add_router(Router{router, "v1"}.add_router(Router{router, "sdk"}.add_router(Router{router, "configs"}.add_router(Router{router, ":platform"}.add_router(Router{router, ":profile_id"}.add_route(
+                Route{"sdk_config.json"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -218,7 +218,7 @@ public:
                         handle_get_profile_sdk_config(req, res, std::move(send));
                     })
                     .summary("Hyperswitch get_profile_sdk_config")
-            );
+            ))))));
     }
 
     explicit SuperpositionSdkConfigRouteHandlers(app::context::AppContext& context) noexcept

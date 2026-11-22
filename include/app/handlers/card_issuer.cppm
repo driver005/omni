@@ -198,7 +198,7 @@ public:
         // Upstream app.rs:2093-2105: scope "/card_issuers" with resource "" (POST/GET)
         // and resource "/{id}" (PUT/DELETE). `delt()` is the router's DELETE binding
         // (core/router/builder.cppm:540-548), the local equivalent of `web::delete()`.
-        Router{router, "/card_issuers"}
+        Router{router, "card_issuers"}
             .add_route(
                 Route{""}
                     .post([this](
@@ -222,7 +222,7 @@ public:
                     .summary("Hyperswitch list_card_issuers")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .put([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -233,7 +233,7 @@ public:
                     .summary("Hyperswitch update_card_issuer")
             )
             .add_route(
-                Route{"/:id"}
+                Route{":id"}
                     .delt([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

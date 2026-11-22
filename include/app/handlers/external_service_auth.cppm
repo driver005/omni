@@ -282,9 +282,9 @@ public:
         // (app.rs:2004-2009; routes/external_service_auth.rs:11-27). No other
         // route exists in this domain upstream; the old C++-only prefixed alias
         // was removed for strict parity.
-        Router{router, "/external-service"}
+        Router{router, "external-service"}
             .add_route(
-                Route{"/validate-token"}
+                Route{"validate-token"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

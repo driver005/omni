@@ -25,7 +25,7 @@ public:
     void install(core::router::RouterContext<>& router)
     {
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/lock_utils"};
+        Router{router, "lock_utils"};
     }
 
 private:

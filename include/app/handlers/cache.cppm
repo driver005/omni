@@ -151,9 +151,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/cache"}
-            .add_route(
-                Route{"/invalidate/:key"}
+        Router{router, "cache"}
+            .add_router(Router{router, "invalidate"}.add_route(
+                Route{":key"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -162,7 +162,7 @@ public:
                         handle_invalidate(req, res, std::move(send));
                     })
                     .summary("Hyperswitch invalidate")
-            );
+            ));
     }
 
     explicit CacheRouteHandlers(app::context::AppContext& context)

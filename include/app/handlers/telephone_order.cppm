@@ -1028,9 +1028,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/telephone_order"}
-            .add_route(
-                Route{"/:merchant_id/:provider"}
+        Router{router, "telephone_order"}
+            .add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":provider"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -1039,7 +1039,7 @@ public:
                         handle_telephone_order_charge(req, res, std::move(send));
                     })
                     .summary("Hyperswitch telephone_order_charge")
-            );
+            ));
     }
 
     explicit TelephoneOrderRouteHandlers(app::context::AppContext& context) noexcept

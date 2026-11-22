@@ -90,9 +90,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/payout_link"}
-            .add_route(
-                Route{"/:merchant_id/:payout_id"}
+        Router{router, "payout_link"}
+            .add_router(Router{router, ":merchant_id"}.add_route(
+                Route{":payout_id"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -101,7 +101,7 @@ public:
                         handle_render_payout_link(req, res, std::move(send));
                     })
                     .summary("Hyperswitch render_payout_link")
-            );
+            ));
     }
 
     explicit PayoutLinkRouteHandlers(app::context::AppContext& context) noexcept

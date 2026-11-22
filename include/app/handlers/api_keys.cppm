@@ -310,47 +310,47 @@ public:
 
         if constexpr (kV1) {
             // app.rs:2504-2513 — web::scope("/api_keys/{merchant_id}")
-            Router{router, "/api_keys"}
+            Router{router, "api_keys"}
                 .add_route(
-                    Route{"/:merchant_id"}
+                    Route{":merchant_id"}
                         .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_create(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_create")
                 )
-                .add_route(
-                    Route{"/:merchant_id/list"}
+                .add_router(Router{router, ":merchant_id"}.add_route(
+                    Route{"list"}
                         .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_list(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_list")
-                )
-                .add_route(
-                    Route{"/:merchant_id/:key_id"}
+                ))
+                .add_router(Router{router, ":merchant_id"}.add_route(
+                    Route{":key_id"}
                         .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_retrieve(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_retrieve")
-                )
-                .add_route(
-                    Route{"/:merchant_id/:key_id"}
+                ))
+                .add_router(Router{router, ":merchant_id"}.add_route(
+                    Route{":key_id"}
                         .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_update(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_update")
-                )
-                .add_route(
-                    Route{"/:merchant_id/:key_id"}
+                ))
+                .add_router(Router{router, ":merchant_id"}.add_route(
+                    Route{":key_id"}
                         .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_revoke(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_revoke")
-                );
+                ));
         }
 
         if constexpr (kV2) {
             // app.rs:2488-2497 — web::scope("/v2/api-keys"), resource("") etc.
-            Router{router, "/v2/api-keys"}
+            Router{router, "v2/api-keys"}
                 .add_route(
                     Route{""}
                         .post([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
@@ -359,28 +359,28 @@ public:
                         .summary("Hyperswitch api_key_create (v2)")
                 )
                 .add_route(
-                    Route{"/list"}
+                    Route{"list"}
                         .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_list(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_list (v2)")
                 )
                 .add_route(
-                    Route{"/:key_id"}
+                    Route{":key_id"}
                         .get([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_retrieve(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_retrieve (v2)")
                 )
                 .add_route(
-                    Route{"/:key_id"}
+                    Route{":key_id"}
                         .put([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_update(req, res, std::move(send));
                         })
                         .summary("Hyperswitch api_key_update (v2)")
                 )
                 .add_route(
-                    Route{"/:key_id"}
+                    Route{":key_id"}
                         .delt([this](interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
                             handle_api_key_revoke(req, res, std::move(send));
                         })

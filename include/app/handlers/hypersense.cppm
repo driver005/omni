@@ -250,9 +250,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/hypersense"}
+        Router{router, "hypersense"}
             .add_route(
-                Route{"/token"}
+                Route{"token"}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -263,7 +263,7 @@ public:
                     .summary("Hyperswitch get_hypersense_token")
             )
             .add_route(
-                Route{"/verify_token"}
+                Route{"verify_token"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -274,7 +274,7 @@ public:
                     .summary("Hyperswitch verify_hypersense_token")
             )
             .add_route(
-                Route{"/signout"}
+                Route{"signout"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

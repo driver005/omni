@@ -734,9 +734,9 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/three_ds_decision"}
+        Router{router, "three_ds_decision"}
             .add_route(
-                Route{"/execute"}
+                Route{"execute"}
                     .post([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,

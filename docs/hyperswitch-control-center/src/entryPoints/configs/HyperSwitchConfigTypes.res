@@ -1,0 +1,97 @@
+type urlThemeConfig = {
+  faviconUrl: option<string>,
+  logoUrl: option<string>,
+}
+type emailConfig = {
+  entity_name: string,
+  entity_logo_url: string,
+  primary_color: string,
+  foreground_color: string,
+  background_color: string,
+}
+
+type superpositionDisplayConfig = {
+  folder: option<string>,
+  name: string,
+}
+
+type superpositionConfig = {
+  organization_id: string,
+  workspace: string,
+  display_configs: array<superpositionDisplayConfig>,
+}
+
+type baseConfig = {
+  apiBaseUrl: string,
+  olapUrl: string,
+  eulerUrl: string,
+  mtlsApiUrl: option<string>,
+  mixpanelToken: string,
+  sdkBaseUrl: option<string>,
+  agreementUrl: option<string>,
+  agreementVersion: option<string>,
+  applePayCertificateUrl: option<string>,
+  reconIframeUrl: option<string>,
+  dssCertificateUsUrl: option<string>,
+  dssCertificateEuUrl: option<string>,
+  dynamoSimulationTemplateUrl: option<string>,
+  urlThemeConfig: urlThemeConfig,
+  hypersenseUrl: string,
+  superpositionConfigs: option<superpositionConfig>,
+}
+
+// Type definition for themes
+type colorPalette = {
+  primary: string,
+  secondary: string,
+  background: string,
+}
+type typographyConfig = {
+  fontFamily: string,
+  fontSize: string,
+  headingFontSize: string,
+  textColor: string,
+  linkColor: string,
+  linkHoverColor: string,
+}
+
+type buttonStyleConfig = {
+  backgroundColor: string,
+  textColor: string,
+  hoverBackgroundColor: string,
+}
+
+type borderConfig = {
+  defaultRadius: string,
+  borderColor: string,
+}
+
+type spacingConfig = {
+  padding: string,
+  margin: string,
+}
+
+type buttonConfig = {
+  primary: buttonStyleConfig,
+  secondary: buttonStyleConfig,
+}
+
+type sidebarConfig = {
+  primary: string,
+  textColor: string,
+  textColorPrimary: string,
+}
+
+type themeSettings = {
+  colors: colorPalette,
+  sidebar: sidebarConfig,
+  typography: typographyConfig,
+  buttons: buttonConfig,
+  borders: borderConfig,
+  spacing: spacingConfig,
+}
+
+type customStylesTheme = {
+  settings: themeSettings,
+  urls: urlThemeConfig,
+}

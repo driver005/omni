@@ -1,0 +1,284 @@
+import * as Fs from "fs";
+import toml from "@iarna/toml";
+
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
+
+// Helper function for error handling
+const errorHandler = (res, errorMessage = "something went wrong") => {
+  if (res.headersSent) return;
+  res.writeHead(500, { "Content-Type": "text/plain" });
+  console.error(errorMessage);
+  res.end("Internal Server Error");
+};
+
+// Update config with environment variables
+function updateConfigWithEnv(config, domain = "", prefix = "") {
+  for (const key in config) {
+    if (typeof config[key] === "object" && config[key] !== null) {
+      updateConfigWithEnv(config[key], domain, key); // Recursively update nested objects
+    } else {
+      const envVar = process.env[`${domain}__${prefix}__${key}`];
+      if (envVar !== undefined) {
+        config[key] = inferType(config[key], envVar); // Convert string to appropriate type
+      }
+    }
+  }
+
+  return config;
+}
+
+// Infer type based on the original value's type
+const inferType = (originalValue, envValue) => {
+  if (typeof originalValue === "boolean")
+    return envValue.toLowerCase() === "true";
+  if (typeof originalValue === "number") return parseFloat(envValue);
+  return envValue;
+};
+
+// Check if env values exist or fall back to TOML config
+function checkEnvValues(env, tomlConfig) {
+  if (typeof env === "string") {
+    return env.split(",");
+  }
+  if (typeof tomlConfig === "object" && tomlConfig !== null) {
+    return tomlConfig;
+  }
+  return [];
+}
+
+// Update connector list config using environment variables
+function updateConnectorListWithEnv(connectorListConfig, domain, tableName) {
+  domain = domain || "default";
+  const result = {};
+  for (const key in connectorListConfig) {
+    const envVar = process.env[`${domain}__${tableName}__${key}`];
+    result[key] = checkEnvValues(envVar, connectorListConfig[key]);
+  }
+  return result;
+}
+
+// Update superposition display configs using environment variables
+function updateSuperpositionConfigWithEnv(superpositionConfig, domain) {
+  domain = domain || "default";
+  const envVar =
+    process.env[`${domain}__superposition_configs__display_configs`];
+  return {
+    ...superpositionConfig,
+    display_configs: checkEnvValues(envVar, superpositionConfig.display_configs)
+      .map((key) => key.trim())
+      .filter((key) => key.length > 0),
+  };
+}
+
+function processConfigList(configList, body, domain, listType) {
+  const result = {};
+  for (const key in configList) {
+    const envOrgIds =
+      process.env[`${domain}__merchant_config__${listType}__${key}__org_ids`];
+    const envMerchantIds =
+      process.env[
+        `${domain}__merchant_config__${listType}__${key}__merchant_ids`
+      ];
+    const envProfileIds =
+      process.env[
+        `${domain}__merchant_config__${listType}__${key}__profile_ids`
+      ];
+    const orgId = checkEnvValues(envOrgIds, configList[key].org_ids).find(
+      (id) => body.org_id === id,
+    );
+    const merchantId = checkEnvValues(
+      envMerchantIds,
+      configList[key].merchant_ids,
+    ).find((id) => body.merchant_id === id);
+    const profileId = checkEnvValues(
+      envProfileIds,
+      configList[key].profile_ids,
+    ).find((id) => body.profile_id === id);
+
+    result[key] = {
+      org_id: orgId,
+      merchant_id: merchantId,
+      profile_id: profileId,
+    };
+  }
+  return result;
+}
+
+// Update merchant config using environment variables
+function updateMerchantConfigWithEnv(tomlConfig, body, domain = "default") {
+  let modifiedConfig = {};
+
+  // Handle denylist configurations
+  if (tomlConfig.denylist) {
+    modifiedConfig.denylist = processConfigList(
+      tomlConfig.denylist,
+      body,
+      domain,
+      "denylist",
+    );
+  }
+
+  // Handle allowlist configurations
+  if (tomlConfig.allowlist) {
+    modifiedConfig.allowlist = processConfigList(
+      tomlConfig.allowlist,
+      body,
+      domain,
+      "allowlist",
+    );
+  }
+
+  return modifiedConfig;
+}
+
+// Read and parse TOML config file
+const readTomlConfig = (configPath, res) => {
+  return new Promise((resolve, reject) => {
+    Fs.readFile(configPath, { encoding: "utf8" }, (err, data) => {
+      if (err) {
+        errorHandler(res, "Error on Reading File");
+        return reject(err);
+      }
+      try {
+        resolve(toml.parse(data));
+      } catch (err) {
+        errorHandler(res, "Error on Parsing TOML");
+        reject(err);
+      }
+    });
+  });
+};
+
+// Main config handler
+const configHandler = async (
+  req,
+  res,
+  isDeployed = false,
+  domain = "default",
+  configPath = "dist/server/config/config.toml",
+) => {
+  const filePath = isDeployed ? configPath : "config/config.toml";
+  try {
+    const config = await readTomlConfig(filePath, res);
+    let merchantConfig = config.default;
+    let isDomainExitsInEnv =
+      process.env[`${domain}__enabled`] || process.env[`${domain}`];
+
+    if (config[domain] && Object.keys(config[domain]).length > 0) {
+      merchantConfig = updateConfigWithEnv(config[domain], domain, "theme");
+    } else if (domain.length > 0 && isDomainExitsInEnv) {
+      merchantConfig = updateConfigWithEnv(config.default, domain, "theme");
+    } else {
+      merchantConfig = updateConfigWithEnv(merchantConfig, "default", "");
+    }
+
+    if (merchantConfig && merchantConfig["connector_list_for_live"]) {
+      merchantConfig["connector_list_for_live"] = updateConnectorListWithEnv(
+        merchantConfig["connector_list_for_live"],
+        domain,
+        "connector_list_for_live",
+      );
+    }
+    if (merchantConfig && merchantConfig["connector_clone"]) {
+      merchantConfig["connector_clone"] = updateConnectorListWithEnv(
+        merchantConfig["connector_clone"],
+        domain,
+        "connector_clone",
+      );
+    }
+    if (merchantConfig && merchantConfig["superposition_configs"]) {
+      merchantConfig["superposition_configs"] =
+        updateSuperpositionConfigWithEnv(
+          merchantConfig["superposition_configs"],
+          domain,
+        );
+    }
+    if (merchantConfig && merchantConfig["merchant_config"]) {
+      delete merchantConfig["merchant_config"];
+    }
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify(merchantConfig));
+  } catch {
+    errorHandler(res, "Server Error");
+  }
+};
+
+/* 
+@module getRequestBody
+
+To Parse the request body
+ 
+*/
+
+const getRequestBodyTooLargeError = () => {
+  const error = new Error("Request body too large");
+  error.statusCode = 413;
+  return error;
+};
+
+// Get request body
+const getRequestBody = (req) => {
+  return new Promise((resolve, reject) => {
+    if (Number(req.headers["content-length"]) > MAX_REQUEST_BODY_BYTES) {
+      return reject(getRequestBodyTooLargeError());
+    }
+    let body = "";
+    let receivedBytes = 0;
+    req.on("data", (chunk) => {
+      receivedBytes += chunk.length;
+      if (receivedBytes > MAX_REQUEST_BODY_BYTES) {
+        req.removeAllListeners("data");
+        return reject(getRequestBodyTooLargeError());
+      }
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on("error", reject);
+  });
+};
+
+// Merchant config handler
+const merchantConfigHandler = async (
+  req,
+  res,
+  isDeployed = false,
+  domain = "default",
+  configPath = "dist/server/config/config.toml",
+) => {
+  const filePath = isDeployed ? configPath : "config/config.toml";
+  try {
+    const body = await getRequestBody(req);
+    const config = await readTomlConfig(filePath, res);
+    const merchantConfig =
+      config[domain]?.merchant_config || config.default.merchant_config;
+    const data = updateMerchantConfigWithEnv(merchantConfig, body, domain);
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify(data));
+  } catch (error) {
+    if (error.statusCode === 413) {
+      console.error(error.message);
+      res.writeHead(413, { "Content-Type": "text/plain", Connection: "close" });
+      res.end("Payload Too Large");
+      return;
+    }
+    if (process.env.NODE_ENV === "development") {
+      console.log(error);
+    }
+    errorHandler(res, "Server Error");
+  }
+};
+export { configHandler, merchantConfigHandler, updateConfigWithEnv };

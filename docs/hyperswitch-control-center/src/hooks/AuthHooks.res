@@ -1,0 +1,225 @@
+type contentType = Headers(string) | Unknown
+
+let headersForXFeature = (~uri, ~headers) => {
+  if (
+    uri->String.includes("lottie-files") ||
+    uri->String.includes("config/merchant") ||
+    uri->String.includes("config/feature") ||
+    uri->String.includes("config/theme")
+  ) {
+    headers->Dict.set("Content-Type", `application/json`)
+  } else {
+    headers->Dict.set("x-feature", "integ-custom")
+  }
+}
+
+// offer-engine authenticates Control Center users via x-hyperswitch-token (HSTokenAuth)
+// and is not merchant/profile scoped, so those headers must not be sent either.
+let headersForOffers = (~headers, ~token) => {
+  headers->Dict.delete("authorization")
+  headers->Dict.delete("X-Profile-Id")
+  headers->Dict.delete("X-Merchant-Id")
+  switch token {
+  | Some(str) => headers->Dict.set("x-hyperswitch-token", `Bearer ${str}`)
+  | None => ()
+  }
+}
+
+let getHeaders = (
+  ~uri,
+  ~headers,
+  ~contentType=Headers("application/json"),
+  ~xFeatureRoute,
+  ~token,
+  ~merchantId,
+  ~profileId,
+  ~sendV1DummyApiKeyHeader,
+  ~cugUser,
+  ~version: UserInfoTypes.version,
+) => {
+  let isMixpanel = uri->String.includes("mixpanel")
+
+  let headerObj = if isMixpanel {
+    [
+      ("Content-Type", "application/x-www-form-urlencoded"),
+      ("accept", "application/json"),
+    ]->Dict.fromArray
+  } else {
+    switch (token, version) {
+    | (Some(str), V1) => {
+        headers->Dict.set("authorization", `Bearer ${str}`)
+        if sendV1DummyApiKeyHeader {
+          headers->Dict.set("api-key", `hyperswitch`)
+        }
+      }
+    | (Some(str), V2) => headers->Dict.set("authorization", `Bearer ${str}`)
+    | _ => ()
+    }
+    switch contentType {
+    | Headers(headerString) => headers->Dict.set("Content-Type", headerString)
+    | Unknown => ()
+    }
+    if xFeatureRoute {
+      headersForXFeature(~headers, ~uri)
+    }
+
+    // TODO: this header is scoped to Blocklist APIs for now;
+    // remove the uri condition once blocklist CUG testing is done so it applies to all APIs
+    if cugUser && uri->String.includes("/blocklist") {
+      headers->Dict.set("x-cug-user", "true")
+    }
+
+    // this header is specific to Intelligent Routing (Dynamic Routing)
+    if uri->String.includes("dynamic-routing") {
+      headers->Dict.set("x-feature", "dynamo-simulator")
+    }
+
+    // headers for V2
+    headers->Dict.set("X-Profile-Id", profileId)
+    headers->Dict.set("X-Merchant-Id", merchantId)
+
+    if uri->String.includes("/offers/") {
+      headersForOffers(~headers, ~token)
+    }
+
+    headers
+  }
+  Fetch.HeadersInit.make(headerObj->Identity.dictOfAnyTypeToObj)
+}
+
+type betaEndpoint = {
+  betaApiStr: string,
+  originalApiStr: string,
+  replaceStr: string,
+}
+
+let useApiFetcher = () => {
+  open Promise
+  open LogicUtils
+  open CommonAuthUtils
+
+  let {authStatus, setAuthStateToLogout} = React.useContext(AuthInfoProvider.authStatusContext)
+  let url = RescriptReactRouter.useUrl()
+  let setReqProgress = Recoil.useSetRecoilState(ApiProgressHooks.pendingRequestCount)
+  let {setEmbeddedStateToError} = React.useContext(EmbeddedCheckProvider.embeddedContext)
+  let {cugUser} = FeatureFlagAtom.featureFlagAtom->Recoil.useRecoilValueFromAtom
+
+  React.useCallback(
+    (
+      uri,
+      ~bodyStr: string="",
+      ~bodyFormData=None,
+      ~headers=Dict.make(),
+      ~method_: Fetch.requestMethod,
+      ~betaEndpointConfig=?,
+      ~contentType=Headers("application/json"),
+      ~xFeatureRoute,
+      ~forceCookies,
+      ~sendV1DummyApiKeyHeader=false,
+      ~merchantId="",
+      ~profileId="",
+      ~version=UserInfoTypes.V1,
+      ~isEmbeddableSession=false,
+      ~signal=?,
+    ) => {
+      let token = {
+        if isEmbeddableSession {
+          Some(EmbeddedStorageUtils.LocalStorage.getEmbeddedTokenFromStorage())
+        } else {
+          switch authStatus {
+          | PreLogin(info) => info.token
+          | LoggedIn(info) =>
+            switch info {
+            | Auth(_) => AuthUtils.getUserInfoDetailsFromLocalStorage().token
+            }
+          | _ => None
+          }
+        }
+      }
+
+      let uri = switch betaEndpointConfig {
+      | Some(val) => String.replace(uri, val.replaceStr, val.originalApiStr)
+      | None => uri
+      }
+
+      let body = switch method_ {
+      | Get => resolve(None)
+      | _ =>
+        switch bodyFormData {
+        | Some(formDataVal) => resolve(Some(Fetch.BodyInit.makeWithFormData(formDataVal)))
+        | None => resolve(Some(Fetch.BodyInit.make(bodyStr)))
+        }
+      }
+
+      body->then(body => {
+        setReqProgress(p => p + 1)
+        Fetch.fetchWithInit(
+          uri,
+          Fetch.RequestInit.make(
+            ~method_,
+            ~body?,
+            ~credentials={forceCookies ? SameOrigin : Omit},
+            ~headers=getHeaders(
+              ~headers,
+              ~uri,
+              ~contentType,
+              ~token,
+              ~xFeatureRoute,
+              ~merchantId,
+              ~profileId,
+              ~sendV1DummyApiKeyHeader,
+              ~cugUser,
+              ~version,
+            ),
+            ~signal?, // to be used in case of aborting requests
+          ),
+        )
+        ->catch(
+          err => {
+            setReqProgress(p => p - 1)
+            reject(err)
+          },
+        )
+        ->then(
+          resp => {
+            setReqProgress(p => p - 1)
+            if resp->Fetch.Response.status === 401 {
+              let jsonPromise =
+                resp
+                ->Fetch.Response.clone
+                ->Fetch.Response.json
+                ->catch(_ => resolve(JSON.Encode.null))
+
+              jsonPromise->then(
+                json => {
+                  let errorDict = json->getDictFromJsonObject
+                  let errorCode = errorDict->getObj("error", Dict.make())->getString("code", "")
+
+                  if isEmbeddableSession && errorCode->errorSubCodeMapper == IR_48 {
+                    EmbeddedIframeUtils.sendEventToParentForRefetchToken()
+                  } else if isEmbeddableSession && errorCode->errorSubCodeMapper == IR_47 {
+                    setEmbeddedStateToError()
+                  } else {
+                    switch authStatus {
+                    | LoggedIn(_) =>
+                      let _ = clearLocalStorage()
+                      let _ = handleSwitchUserQueryParam(~url)
+                      setAuthStateToLogout()
+                      AuthUtils.redirectToLogin()
+
+                    | _ => ()
+                    }
+                  }
+                  resolve(resp)
+                },
+              )
+            } else {
+              resolve(resp)
+            }
+          },
+        )
+      })
+    },
+    [cugUser],
+  )
+}

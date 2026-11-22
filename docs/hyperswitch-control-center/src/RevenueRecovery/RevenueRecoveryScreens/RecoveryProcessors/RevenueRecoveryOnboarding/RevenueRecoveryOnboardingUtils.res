@@ -1,0 +1,253 @@
+open RevenueRecoveryOnboardingTypes
+
+// Fixed for now, not configurable by the merchant
+let hardDeclineTotalRetries = 0
+let defaultGracePeriodDays = 30
+
+let getMainStepName = step => {
+  switch step {
+  | #connectProcessor => "Connect Processor"
+  | #addAPlatform => "Add a Platform"
+  | #reviewDetails => "Review Details"
+  }
+}
+
+let getStepName = (step: revenueRecoverySubsections) => {
+  switch step {
+  | #selectProcessor => "Select a Processor"
+  | #authenticateProcessor => "Authenticate"
+  | #activePaymentMethods => "Payment Methods"
+  | #selectAPlatform => "Select a Platform"
+  | #authenticateBilling => "Authenticate"
+  | #processorSetUp => "Billing Processor Set-up"
+  }
+}
+
+let getIcon = step => {
+  switch step {
+  | #connectProcessor => "nd-inbox"
+  | #addAPlatform => "nd-plugin"
+  | #reviewDetails => "nd-flag"
+  }
+}
+
+let requiresProcessorReference = billingConnector =>
+  switch billingConnector->ConnectorUtils.getConnectorNameTypeFromString(
+    ~connectorType=ConnectorTypes.BillingProcessor,
+  ) {
+  | ConnectorTypes.BillingProcessor(CUSTOMBILLING) | ConnectorTypes.UnknownConnector(_) => false
+  | _ => true
+  }
+
+open VerticalStepIndicatorTypes
+let getSections = (~isLiveMode, ~billingConnector) => {
+  let platformSubsectionsDefaultSteps = [
+    {
+      id: (#selectAPlatform: revenueRecoverySubsections :> string),
+      name: #selectAPlatform->getStepName,
+    },
+    {
+      id: (#authenticateBilling: revenueRecoverySubsections :> string),
+      name: #authenticateBilling->getStepName,
+    },
+  ]
+
+  if !isLiveMode || billingConnector->requiresProcessorReference {
+    platformSubsectionsDefaultSteps->Array.push({
+      id: (#processorSetUp: revenueRecoverySubsections :> string),
+      name: #processorSetUp->getStepName,
+    })
+  }
+
+  let defaultSteps = [
+    {
+      id: (#connectProcessor: revenueRecoverySections :> string),
+      name: #connectProcessor->getMainStepName,
+      VerticalStepIndicatorTypes.icon: #connectProcessor->getIcon,
+      subSections: Some([
+        {
+          id: (#selectProcessor: revenueRecoverySubsections :> string),
+          name: #selectProcessor->getStepName,
+        },
+        {
+          id: (#authenticateProcessor: revenueRecoverySubsections :> string),
+          name: #authenticateProcessor->getStepName,
+        },
+      ]),
+    },
+    {
+      id: (#addAPlatform: revenueRecoverySections :> string),
+      name: #addAPlatform->getMainStepName,
+      VerticalStepIndicatorTypes.icon: #addAPlatform->getIcon,
+      subSections: Some(platformSubsectionsDefaultSteps),
+    },
+    {
+      id: (#reviewDetails: revenueRecoverySections :> string),
+      name: #reviewDetails->getMainStepName,
+      VerticalStepIndicatorTypes.icon: #reviewDetails->getIcon,
+      subSections: None,
+    },
+  ]
+
+  defaultSteps
+}
+
+let getDefaultStep = _isLiveMode => {
+  {
+    sectionId: (#connectProcessor: revenueRecoverySections :> string),
+    subSectionId: (#selectProcessor: revenueRecoverySubsections :> string)->Some,
+  }
+}
+
+let defaultStepBilling = {
+  sectionId: (#addAPlatform: revenueRecoverySections :> string),
+  subSectionId: Some((#selectAPlatform: revenueRecoverySubsections :> string)),
+}
+
+open VerticalStepIndicatorUtils
+let getNextStep = (currentStep: step, ~isLiveMode, ~billingConnector): option<step> => {
+  findNextStep(getSections(~isLiveMode, ~billingConnector), currentStep)
+}
+
+let getPreviousStep = (currentStep: step, ~isLiveMode, ~billingConnector): option<step> => {
+  findPreviousStep(getSections(~isLiveMode, ~billingConnector), currentStep)
+}
+
+let onNextClick = (currentStep, setNextStep, ~isLiveMode, ~billingConnector) => {
+  switch getNextStep(currentStep, ~isLiveMode, ~billingConnector) {
+  | Some(nextStep) => setNextStep(_ => nextStep)
+  | None => ()
+  }
+}
+
+let onPreviousClick = (currentStep, setNextStep, ~isLiveMode, ~billingConnector) => {
+  switch getPreviousStep(currentStep, ~isLiveMode, ~billingConnector) {
+  | Some(previousStep) => setNextStep(_ => previousStep)
+  | None => ()
+  }
+}
+
+let getSectionVariant = ({sectionId, subSectionId}) => {
+  let mainSection = switch sectionId {
+  | "connectProcessor" => #connectProcessor
+  | "addAPlatform" => #addAPlatform
+  | "reviewDetails" | _ => #reviewDetails
+  }
+
+  let subSection: revenueRecoverySubsections = switch subSectionId {
+  | Some("selectProcessor") => #selectProcessor
+  | Some("authenticateProcessor") => #authenticateProcessor
+  | Some("activePaymentMethods") => #activePaymentMethods
+  | Some("selectAPlatform") => #selectAPlatform
+  | Some("authenticateBilling") => #authenticateBilling
+  | Some("processorSetUp") | _ => #processorSetUp
+  }
+
+  (mainSection, subSection)
+}
+
+module PageWrapper = {
+  @react.component
+  let make = (~title, ~subTitle, ~children, ~showPermLink=false) => {
+    <div className="flex flex-col gap-7">
+      <PageUtils.PageHeading
+        title subTitle customSubTitleStyle="font-500 font-normal text-nd_gray-700" showPermLink
+      />
+      {children}
+    </div>
+  }
+}
+
+open ConnectorTypes
+let billingConnectorList: array<connectorTypes> = [
+  BillingProcessor(CUSTOMBILLING),
+  BillingProcessor(CHARGEBEE),
+  BillingProcessor(RECURLY),
+  BillingProcessor(STRIPE_BILLING),
+]
+
+let prodBillingConnectorList: array<connectorTypes> = [
+  BillingProcessor(CUSTOMBILLING),
+  BillingProcessor(CHARGEBEE),
+  BillingProcessor(RECURLY),
+  BillingProcessor(STRIPE_BILLING),
+]
+
+let billingConnectorProdList: array<BillingProcessorsUtils.optionType> = [
+  {
+    name: "Recharge",
+    icon: "/assets/recharge-logo.png",
+  },
+  {
+    name: "Zoura",
+    icon: "/assets/zoura-logo.png",
+  },
+]
+
+let billingConnectorInHouseList: array<BillingProcessorsUtils.optionType> = [
+  {
+    name: "Kill Bill",
+    icon: "/assets/kill_bill-logo.png",
+  },
+]
+
+let getOptions: array<ConnectorTypes.connectorTypes> => array<
+  SelectBox.dropdownOption,
+> = dropdownList => {
+  open ConnectorUtils
+
+  let options: array<SelectBox.dropdownOption> = dropdownList->Array.map((
+    connector
+  ): SelectBox.dropdownOption => {
+    let connectorValue = connector->getConnectorNameString
+    let connectorName = switch connector {
+    | BillingProcessor(processor) => processor->getDisplayNameForBillingProcessor
+    | Processors(processor) => processor->getDisplayNameForProcessor
+    | _ => ""
+    }
+
+    {
+      label: connectorName,
+      customRowClass: "my-1",
+      value: connectorValue,
+      icon: Button.CustomIcon(
+        <GatewayIcon gateway={connectorValue->String.toUpperCase} className="mr-2 w-5 h-5" />,
+      ),
+    }
+  })
+  options
+}
+
+let getMixpanelEventName = currentStep => {
+  switch currentStep->getSectionVariant {
+  | (#connectProcessor, #selectProcessor) => "recovery_payment_processor"
+  | (#connectProcessor, #activePaymentMethods) => "recovery_processor_active_payment_method"
+  | (#addAPlatform, #selectAPlatform) => "recovery_billing_processor"
+  | (#addAPlatform, #processorSetUp) => "recovery_billing_processor_set_up"
+  | _ => ""
+  }
+}
+
+let features: array<feature> = [
+  {
+    icon: "nd-workflow",
+    bgColor: "bg-nd_orange-150",
+    iconColor: "text-nd_orange-300",
+    title: "ML-Powered Retry Engine",
+    description: "Minimizes recurring payment failures using data and machine learning for optimized retries.",
+  },
+  {
+    icon: "recovery-home",
+    bgColor: "bg-nd_pink-100",
+    iconColor: "text-nd_pink-500",
+    title: "Reduce Involuntary Churn",
+    description: "Improves retention by recovering failed payments that would otherwise lead to churn.",
+  },
+  {
+    icon: "nd-swap-arrow-horizontal",
+    bgColor: "bg-nd_teal-100",
+    iconColor: "text-nd_teal-500",
+    title: "Smart Retry Optimization",
+    description: "Targets specific errors and subscription types for maximum success.",
+  },
+]

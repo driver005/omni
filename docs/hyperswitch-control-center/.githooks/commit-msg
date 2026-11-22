@@ -1,0 +1,61 @@
+#!/bin/sh
+
+echo "*****~~~~~ Commit hook initiated ~~~~~~*****"
+
+commit_msg_file=$1
+if [ -z "$commit_msg_file" ]; then
+  echo "Error: No commit message file provided."
+  exit 1
+fi
+commit_msg=$(head -n 1 "$commit_msg_file")
+
+echo
+echo "*****~~~~~ Formatting - Check for unformatted files ~~~~~~*****"
+
+# Check staged JavaScript, JSON, and YAML files using Prettier.
+# TypeScript (.ts/.tsx) formatting is enforced in CI, not in this hook, to keep
+# commits in the Playwright test suite lightweight.
+unformatted_js_files=$(
+  git diff --cached --name-only -z --diff-filter=ACM -- \
+    '*.js' '*.jsx' '*.json' '*.yml' '*.yaml' \
+    | xargs -0 --no-run-if-empty npx prettier --list-different
+)
+
+if [ -n "$unformatted_js_files" ]; then
+  echo "Error: Unformatted JavaScript, JSON, or YAML files found. Please run 'npx prettier --write .' to format the whole repository or format the following files:"
+  echo "$unformatted_js_files"
+  exit 1
+fi
+
+# Check staged ReScript files only (fail, don't silently reformat).
+# CI still runs `npm run re:format:check` on the full tree, so the local hook
+# stays fast and only blocks commits that introduce unformatted changes.
+if [ -n "$(git diff --cached --name-only --diff-filter=ACM -- '*.res' '*.resi')" ]; then
+  if ! git diff --cached --name-only -z --diff-filter=ACM -- \
+         '*.res' '*.resi' \
+         | xargs -0 npx --no-install rescript format -check; then
+    echo "Error: Unformatted staged ReScript files found. Run 'npm run re:format' and stage the changes."
+    exit 1
+  fi
+fi
+
+echo
+echo "*****~~~~~ All checked files are formatted. ~~~~~~*****"
+echo
+
+echo
+echo "*****~~~~~ Commit message validation! ~~~~~*****"
+echo
+
+commit_regex="^(Merge (branch|pull request|remote-tracking branch|tag).+|(feat|fix|chore|refactor|docs|test|style|enhancement|ci)(\([[:alnum:]_.\/, -]+\))?!?: .+)"
+
+if ! echo "$commit_msg" | grep -Ei "$commit_regex" >/dev/null; then
+  echo "Aborting commit. Your commit message does not follow the conventional format."
+  echo "Use a supported conventional type, an optional scope, and an optional breaking-change marker. For example: 'feat(checkout): add saved cards' or 'fix!: remove legacy API'."
+  exit 1
+fi
+
+echo
+echo "*****~~~~~ Commit hook completed ~~~~~~*****"
+echo
+exit 0

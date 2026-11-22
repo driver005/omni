@@ -1,0 +1,857 @@
+open SidebarTypes
+open UserManagementTypes
+open CommonAuthTypes
+open HSwitchUtils
+open ConnectorUtils
+
+// * Custom Component
+module ProductHeaderComponent = {
+  @react.component
+  let make = () => {
+    let {activeProduct} = React.useContext(ProductSelectionProvider.defaultContext)
+
+    <div className={`text-xs font-semibold px-3 py-2 text-nd_gray-400 tracking-widest`}>
+      {React.string(activeProduct->ProductUtils.getProductDisplayName->String.toUpperCase)}
+    </div>
+  }
+}
+
+let emptyComponent = CustomComponent({
+  component: React.null,
+})
+
+// * Main Features
+
+let home = isHomeEnabled =>
+  isHomeEnabled
+    ? Link({
+        name: "Overview",
+        icon: "nd-home",
+        link: "/home",
+        access: Access,
+        selectedIcon: "nd-fill-home",
+      })
+    : emptyComponent
+
+let payments = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Payments",
+    link: `/payments`,
+    access: userHasResourceAccess(~resourceAccess=Payment),
+    searchOptions: [("View payment operations", "")],
+  })
+}
+
+let refunds = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Refunds",
+    link: `/refunds`,
+    access: userHasResourceAccess(~resourceAccess=Refund),
+    searchOptions: [("View refund operations", "")],
+  })
+}
+
+let disputes = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Disputes",
+    link: `/disputes`,
+    access: userHasResourceAccess(~resourceAccess=Dispute),
+    searchOptions: [("View dispute operations", "")],
+  })
+}
+
+let customers = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Customers",
+    link: `/customers`,
+    access: userHasResourceAccess(~resourceAccess=Customer),
+    searchOptions: [("View customers", "")],
+  })
+}
+
+let payouts = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Payouts",
+    link: `/payouts`,
+    access: userHasResourceAccess(~resourceAccess=Payout),
+    searchOptions: [("View payout operations", "")],
+  })
+}
+
+let paymentLinks = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Payment Link",
+    link: `/payment-links`,
+    access: userHasResourceAccess(~resourceAccess=Payment),
+    searchOptions: [("View and create payment links", "")],
+  })
+}
+
+let alerts = (~userHasAccess) => {
+  SubLevelLink({
+    name: "Business Insights",
+    link: `/alerts-business-insights`,
+    access: userHasAccess(~groupAccess=AlertsView),
+    searchOptions: [("View alerts", "")],
+  })
+}
+
+let alertsSection = (~isAlertsEnabled, ~userHasAccess) =>
+  isAlertsEnabled && userHasAccess(~groupAccess=AlertsView) == Access
+    ? Section({
+        name: "Alerts",
+        icon: "nd-alerts",
+        selectedIcon: "nd-alerts-fill",
+        showSection: true,
+        links: [alerts(~userHasAccess)],
+      })
+    : emptyComponent
+
+let monitoringSection = (~isMonitoringEnabled, ~userHasAccess) =>
+  isMonitoringEnabled && userHasAccess(~groupAccess=MonitoringView) == Access
+    ? Section({
+        name: "Monitoring",
+        icon: "nd-analytics",
+        selectedIcon: "nd-analytics",
+        showSection: true,
+        links: MonitoringUtils.destinations->Array.map(destination => SubLevelLink({
+          name: destination->MonitoringUtils.getTitle,
+          link: `/monitoring/${destination->MonitoringUtils.getId(~separator="-")}`,
+          access: userHasAccess(~groupAccess=MonitoringView),
+          searchOptions: [(destination->MonitoringUtils.getTitle, "")],
+        })),
+      })
+    : emptyComponent
+
+let alternatePaymentMethods = isApmEnabled =>
+  isApmEnabled
+    ? Link({
+        name: "Alt Payment Methods",
+        icon: "nd-apm",
+        link: "/apm",
+        access: Access,
+        selectedIcon: "nd-fill-apm",
+      })
+    : emptyComponent
+
+let operations = (
+  isOperationsEnabled,
+  ~userHasResourceAccess,
+  ~isPayoutsEnabled,
+  ~isPaymentLinkEnabled,
+  ~userEntity,
+  ~isCurrentMerchantPlatform,
+) => {
+  let customers = customers(userHasResourceAccess)
+
+  let links = if isCurrentMerchantPlatform {
+    [customers]
+  } else {
+    let payments = payments(userHasResourceAccess)
+    let refunds = refunds(userHasResourceAccess)
+    let disputes = disputes(userHasResourceAccess)
+    let payouts = payouts(userHasResourceAccess)
+    let paymentLinks = paymentLinks(userHasResourceAccess)
+
+    let links = [payments, refunds, disputes]
+    let isCustomersEnabled = userEntity !== #Profile
+
+    if isPayoutsEnabled {
+      links->Array.push(payouts)->ignore
+    }
+    if isPaymentLinkEnabled {
+      links->Array.push(paymentLinks)->ignore
+    }
+    if isCustomersEnabled {
+      links->Array.push(customers)->ignore
+    }
+    links
+  }
+
+  isOperationsEnabled
+    ? Section({
+        name: "Operations",
+        icon: "nd-operations",
+        showSection: true,
+        links,
+        selectedIcon: "nd-operations-fill",
+      })
+    : emptyComponent
+}
+
+let paymentProcessor = (userHasResourceAccess, ~paymentProcessorsList) => {
+  SubLevelLink({
+    name: "Payment Processors",
+    link: `/connectors`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=paymentProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let payoutConnectors = (~userHasResourceAccess, ~payoutProcessorsList) => {
+  SubLevelLink({
+    name: "Payout Processors",
+    link: `/payoutconnectors`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=payoutProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let fraudAndRisk = (~userHasResourceAccess) => {
+  SubLevelLink({
+    name: "Fraud & Risk",
+    link: `/fraud-risk-management`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: [],
+  })
+}
+
+let threeDsConnector = (~userHasResourceAccess, ~threeDsAuthenticatorProcessorsList) => {
+  SubLevelLink({
+    name: "3DS Authenticators",
+    link: "/3ds-authenticators",
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=threeDsAuthenticatorProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let pmAuthenticationProcessor = (~userHasResourceAccess, ~pmAuthProcessorsList) => {
+  SubLevelLink({
+    name: "PM Auth Processor",
+    link: `/pm-authentication-processor`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=pmAuthProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let taxProcessor = (~userHasResourceAccess, ~taxProcessorsList) => {
+  SubLevelLink({
+    name: "Tax Processor",
+    link: `/tax-processor`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=taxProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let billingProcessor = (~userHasResourceAccess, ~billingProcessorsList) => {
+  SubLevelLink({
+    name: "Billing Processor",
+    link: `/billing-processor`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=billingProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let vaultProcessor = (~userHasResourceAccess, ~vaultProcessorsList) => {
+  SubLevelLink({
+    name: "Vault Processor",
+    link: `/vault-processor`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=vaultProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let surchargeProcessor = (~userHasResourceAccess, ~surchargeProcessorsList) => {
+  SubLevelLink({
+    name: "Surcharge Processor",
+    link: `/surcharge-processor`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: getSearchOptionsForProcessors(
+      ~processorList=surchargeProcessorsList,
+      ~getNameFromString=getConnectorNameString,
+    ),
+  })
+}
+
+let connectors = (
+  isConnectorsEnabled,
+  ~isFrmEnabled,
+  ~isPayoutsEnabled,
+  ~isThreedsConnectorEnabled,
+  ~isPMAuthenticationProcessor,
+  ~isTaxProcessor,
+  ~isBillingProcessor,
+  ~isVaultProcessor,
+  ~isSurchargeProcessor,
+  ~userHasResourceAccess,
+  ~isCurrentMerchantPlatform,
+  ~isCurrentMerchantConnected,
+  ~connectorDisplayList: ConnectorListFromConfigTypes.connectorDisplayList,
+) => {
+  let {
+    paymentProcessorsList,
+    payoutProcessorsList,
+    threeDsAuthenticatorProcessorsList,
+    vaultProcessorsList,
+    pmAuthProcessorsList,
+    billingProcessorsList,
+    surchargeProcessorsList,
+    taxProcessorsList,
+  } = connectorDisplayList
+  let connectorLinkArray = if isCurrentMerchantPlatform {
+    let links = []
+    if isVaultProcessor {
+      links->Array.push(vaultProcessor(~userHasResourceAccess, ~vaultProcessorsList))->ignore
+    }
+    links
+  } else {
+    let links = [paymentProcessor(userHasResourceAccess, ~paymentProcessorsList)]
+
+    if isPayoutsEnabled {
+      links->Array.push(payoutConnectors(~userHasResourceAccess, ~payoutProcessorsList))->ignore
+    }
+    if isThreedsConnectorEnabled {
+      links
+      ->Array.push(threeDsConnector(~userHasResourceAccess, ~threeDsAuthenticatorProcessorsList))
+      ->ignore
+    }
+
+    if isFrmEnabled {
+      links->Array.push(fraudAndRisk(~userHasResourceAccess))->ignore
+    }
+
+    if isPMAuthenticationProcessor {
+      links
+      ->Array.push(pmAuthenticationProcessor(~userHasResourceAccess, ~pmAuthProcessorsList))
+      ->ignore
+    }
+
+    if isTaxProcessor {
+      links->Array.push(taxProcessor(~userHasResourceAccess, ~taxProcessorsList))->ignore
+    }
+    if isBillingProcessor {
+      links->Array.push(billingProcessor(~userHasResourceAccess, ~billingProcessorsList))->ignore
+    }
+
+    if isSurchargeProcessor {
+      links
+      ->Array.push(surchargeProcessor(~userHasResourceAccess, ~surchargeProcessorsList))
+      ->ignore
+    }
+
+    if isVaultProcessor && !isCurrentMerchantConnected {
+      links->Array.push(vaultProcessor(~userHasResourceAccess, ~vaultProcessorsList))->ignore
+    }
+    links
+  }
+
+  isConnectorsEnabled
+    ? Section({
+        name: "Connectors",
+        icon: "nd-connectors",
+        showSection: true,
+        links: connectorLinkArray,
+        selectedIcon: "nd-connectors-fill",
+      })
+    : emptyComponent
+}
+
+let paymentAnalytcis = (~userHasResourceAccess) => SubLevelLink({
+  name: "Payments",
+  link: `/analytics-payments`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("View analytics", "")],
+})
+
+let analyticsExplorer = (~userHasResourceAccess) => SubLevelLink({
+  name: "Explorer",
+  link: `/analytics-explorer`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("Explore payments, refunds and disputes", "")],
+})
+
+let newAnalytics = (~userHasResourceAccess) => SubLevelLink({
+  name: "Insights",
+  link: `/new-analytics`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("Insights", "")],
+})
+
+let disputeAnalytics = (~userHasResourceAccess) => SubLevelLink({
+  name: "Disputes",
+  link: `/analytics-disputes`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("View Dispute analytics", "")],
+})
+let routingAnalytics = (
+  ~userHasResourceAccess,
+  ~showDecisionEngineAnalytics=false,
+) => SubLevelLink({
+  name: "Routing",
+  link: showDecisionEngineAnalytics
+    ? DecisionEngineUtils.workspacePath(~slug="analytics")
+    : `/analytics-routing`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("View routing analytics", "")],
+})
+
+let refundAnalytics = (~userHasResourceAccess) => SubLevelLink({
+  name: "Refunds",
+  link: `/analytics-refunds`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  searchOptions: [("View analytics", "")],
+})
+let authenticationAnalytics = (~userHasResourceAccess) => SubLevelLink({
+  name: "Authentication",
+  link: `/analytics-authentication`,
+  access: userHasResourceAccess(~resourceAccess=Analytics),
+  iconTag: "betaTag",
+  searchOptions: [("View analytics", "")],
+})
+
+let analytics = (
+  isAnalyticsEnabled,
+  disputeAnalyticsFlag,
+  newAnalyticsflag,
+  routingAnalyticsFlag,
+  ~authenticationAnalyticsFlag,
+  ~analyticsExplorerFlag,
+  ~userHasResourceAccess,
+  ~isEmbedDecisionEngineEnabled=false,
+) => {
+  let links =
+    [paymentAnalytcis(~userHasResourceAccess)]
+    ->Array.concat(analyticsExplorerFlag ? [analyticsExplorer(~userHasResourceAccess)] : [])
+    ->Array.concat([refundAnalytics(~userHasResourceAccess)])
+  if authenticationAnalyticsFlag {
+    links->Array.push(authenticationAnalytics(~userHasResourceAccess))
+  }
+  if disputeAnalyticsFlag {
+    links->Array.push(disputeAnalytics(~userHasResourceAccess))
+  }
+
+  if newAnalyticsflag {
+    links->Array.unshift(newAnalytics(~userHasResourceAccess))
+  }
+
+  // Embedding the DE routes this entry to the DE's routing analytics; surface it even if the
+  // native routing-analytics flag is off, since it replaces that page.
+  if routingAnalyticsFlag || isEmbedDecisionEngineEnabled {
+    links->Array.push(
+      routingAnalytics(
+        ~userHasResourceAccess,
+        ~showDecisionEngineAnalytics=isEmbedDecisionEngineEnabled,
+      ),
+    )
+  }
+
+  isAnalyticsEnabled
+    ? Section({
+        name: "Analytics",
+        icon: "nd-analytics",
+        showSection: userHasResourceAccess(~resourceAccess=Analytics) === Access,
+        links,
+      })
+    : emptyComponent
+}
+let routing = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Routing",
+    link: `/routing`,
+    access: userHasResourceAccess(~resourceAccess=Routing),
+    searchOptions: [
+      ("Manage default routing configuration", "/default"),
+      ("Create new volume based routing", "/volume"),
+      ("Create new rule based routing", "/rule"),
+      ("Manage smart routing", ""),
+    ],
+  })
+}
+
+let payoutRouting = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Payout Routing",
+    link: `/payoutrouting`,
+    access: userHasResourceAccess(~resourceAccess=Routing),
+    searchOptions: [
+      ("Manage default routing configuration", "/default"),
+      ("Create new volume based routing", "/volume"),
+      ("Create new rule based routing", "/rule"),
+      ("Manage smart routing", ""),
+    ],
+  })
+}
+
+let threeDsExemption = userHasResourceAccess => {
+  SubLevelLink({
+    name: "3DS Exemption Manager",
+    iconTag: "betaTag",
+    link: `/3ds-exemption`,
+    access: userHasResourceAccess(~resourceAccess=ThreeDsDecisionManager), // Assuming same access as 3DS Decision Manager for now
+    searchOptions: [("View 3DS Exemption", "")],
+  })
+}
+
+let threeDs = userHasResourceAccess => {
+  SubLevelLink({
+    name: "3DS Decision Manager",
+    link: `/3ds`,
+    access: userHasResourceAccess(~resourceAccess=ThreeDsDecisionManager),
+    searchOptions: [("Configure 3ds", "")],
+  })
+}
+let surcharge = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Surcharge",
+    link: `/surcharge`,
+    access: userHasResourceAccess(~resourceAccess=SurchargeDecisionManager),
+    searchOptions: [("Add Surcharge", "")],
+  })
+}
+
+let vaultOnboarding = userHasResourceAccess => SubLevelLink({
+  name: "Configuration",
+  link: `/vault-onboarding`,
+  access: userHasResourceAccess(~resourceAccess=Connector),
+  searchOptions: [("Vault onboarding", "")],
+})
+
+let vaultCustomerAndTokens = userHasResourceAccess => SubLevelLink({
+  name: "Customers & Tokens",
+  link: `/vault-customers-tokens`,
+  access: userHasResourceAccess(~resourceAccess=Connector),
+  searchOptions: [("Manage vault customers and tokens", "")],
+})
+
+let vault = (isVaultEnabled, ~userHasResourceAccess) => {
+  let defaultVault = [
+    vaultOnboarding(userHasResourceAccess),
+    vaultCustomerAndTokens(userHasResourceAccess),
+  ]
+
+  isVaultEnabled
+    ? Section({
+        name: "Vault",
+        icon: "vault-home",
+        showSection: true,
+        links: defaultVault,
+      })
+    : emptyComponent
+}
+
+let decisionEngineRouting = (showDecisionEngine, ~userHasResourceAccess) => {
+  let decisionEngineLink = (section: DecisionEngineTypes.deSection) => SubLevelLink({
+    name: section.label,
+    link: DecisionEngineUtils.workspacePath(~slug=section.slug),
+    access: userHasResourceAccess(~resourceAccess=Routing),
+    iconTag: ?section.iconTag,
+    searchOptions: section.searchOptions,
+  })
+
+  showDecisionEngine
+    ? Section({
+        name: "Decision Engine Routing",
+        icon: "nd-graph-chart-gantt",
+        showSection: true,
+        links: DecisionEngineUtils.sections
+        ->Array.filter(section => section.inSidebar)
+        ->Array.map(decisionEngineLink)
+        ->Array.concat([
+          SubLevelLink({
+            name: "Default Fallback",
+            link: `/routing/default`,
+            access: userHasResourceAccess(~resourceAccess=Routing),
+            searchOptions: [("Manage default routing configuration", "")],
+          }),
+        ]),
+      })
+    : emptyComponent
+}
+
+let workflow = (
+  isWorkflowEnabled,
+  isSurchargeEnabled,
+  threedsExemptionRules,
+  ~userHasResourceAccess,
+  ~isPayoutEnabled,
+  ~userEntity,
+  ~isEmbedDecisionEngineEnabled=false,
+) => {
+  let routing = routing(userHasResourceAccess)
+  let threeDs = threeDs(userHasResourceAccess)
+  let payoutRouting = payoutRouting(userHasResourceAccess)
+  let surcharge = surcharge(userHasResourceAccess)
+
+  let defaultWorkFlow = isEmbedDecisionEngineEnabled ? [] : [routing]
+  let isNotProfileEntity = userEntity !== #Profile
+
+  if isSurchargeEnabled && isNotProfileEntity {
+    defaultWorkFlow->Array.push(surcharge)->ignore
+  }
+  if isNotProfileEntity {
+    defaultWorkFlow->Array.push(threeDs)->ignore
+  }
+  if isPayoutEnabled {
+    defaultWorkFlow->Array.push(payoutRouting)->ignore
+  }
+  if threedsExemptionRules {
+    defaultWorkFlow->Array.push(threeDsExemption(userHasResourceAccess))->ignore
+  }
+
+  isWorkflowEnabled
+    ? Section({
+        name: "Workflow",
+        icon: "nd-workflow",
+        showSection: true,
+        links: defaultWorkFlow,
+        selectedIcon: "nd-workflow-fill",
+      })
+    : emptyComponent
+}
+
+let userManagement = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Users",
+    link: `/users`,
+    access: userHasResourceAccess(~resourceAccess=User),
+    searchOptions: [("View user management", "")],
+  })
+}
+let configurePMTs = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Configure PMTs",
+    link: `/configure-pmts`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: [("Configure payment methods", "Configure country currency")],
+  })
+}
+
+let complianceCertificateSection = {
+  SubLevelLink({
+    name: "Compliance",
+    link: `/compliance`,
+    access: Access,
+    searchOptions: [("PCI certificate", "")],
+  })
+}
+
+let hierarchicalConfigurationsSection = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Hierarchical Configurations",
+    link: `/hierarchical-configurations`,
+    access: userHasResourceAccess(~resourceAccess=Connector),
+    searchOptions: [
+      ("Hierarchical Configurations", ""),
+      ("Certificate management", ""),
+      ("Apple Pay certificate", ""),
+    ],
+  })
+}
+
+let organizationSettings = (userHasAccess, checkUserEntity) => {
+  SubLevelLink({
+    name: "Organization Settings",
+    link: `/organization-settings`,
+    access: {
+      userHasAccess(~groupAccess=AccountManage) == Access && checkUserEntity([#Organization])
+        ? Access
+        : NoAccess
+    },
+    searchOptions: [("Organization settings", "")],
+  })
+}
+
+let settings = (
+  ~isConfigurePmtsEnabled,
+  ~userHasResourceAccess,
+  ~userHasAccess,
+  ~checkUserEntity,
+  ~complianceCertificate,
+  ~hierarchicalConfigurations,
+  ~devModularityV2Enabled,
+  ~devThemeEnabled,
+  ~devUsers,
+  ~isCurrentMerchantPlatform,
+) => {
+  let settingsLinkArray = []
+
+  if isConfigurePmtsEnabled && !isCurrentMerchantPlatform {
+    settingsLinkArray->Array.push(configurePMTs(userHasResourceAccess))->ignore
+  }
+
+  if complianceCertificate {
+    settingsLinkArray->Array.push(complianceCertificateSection)->ignore
+  }
+  if hierarchicalConfigurations {
+    settingsLinkArray->Array.push(hierarchicalConfigurationsSection(userHasResourceAccess))->ignore
+  }
+  if !devModularityV2Enabled && devThemeEnabled {
+    settingsLinkArray
+    ->Array.push(ThemeSidebarValues.themeSublevelLinks(~userHasResourceAccess))
+    ->ignore
+  }
+  if userHasAccess(~groupAccess=AccountManage) == Access {
+    settingsLinkArray->Array.push(organizationSettings(userHasAccess, checkUserEntity))->ignore
+  }
+  if !(devUsers && devModularityV2Enabled) {
+    settingsLinkArray->Array.push(userManagement(userHasResourceAccess))->ignore
+  }
+
+  Section({
+    name: "Settings",
+    icon: "nd-settings",
+    showSection: true,
+    links: settingsLinkArray,
+    selectedIcon: "nd-settings-fill",
+  })
+}
+
+let apiKeys = userHasResourceAccess => {
+  SubLevelLink({
+    name: "API Keys",
+    link: `/developer-api-keys`,
+    access: userHasResourceAccess(~resourceAccess=ApiKey),
+    searchOptions: [("View API Keys", "")],
+  })
+}
+
+let paymentSettings = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Payment Settings",
+    link: `/payment-settings`,
+    access: userHasResourceAccess(~resourceAccess=Account),
+    searchOptions: [
+      ("View payment settings", ""),
+      ("View webhooks", ""),
+      ("View return url", ""),
+      ("View blocklist", ""),
+      ("Upload blocklist CSV", ""),
+    ],
+  })
+}
+
+let webhooks = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Webhooks",
+    link: `/webhooks`,
+    access: userHasResourceAccess(~resourceAccess=WebhookEvent),
+    searchOptions: [("Webhooks", ""), ("Retry webhooks", "")],
+  })
+}
+
+let paymentLinkTheme = {
+  SubLevelLink({
+    name: "Payment Link Theme",
+    link: `/payment-link-theme`,
+    access: Access,
+    searchOptions: [("Configure payment link theme", "")],
+  })
+}
+
+let offers = userHasResourceAccess => {
+  SubLevelLink({
+    name: "Offers",
+    iconTag: "newTag",
+    link: `/offers`,
+    access: userHasResourceAccess(~resourceAccess=Offers),
+    searchOptions: [("View offers", "")],
+  })
+}
+
+let developers = (
+  isDevelopersEnabled,
+  ~isWebhooksEnabled,
+  ~userHasResourceAccess,
+  ~checkUserEntity,
+  ~paymentLinkThemeConfigurator,
+  ~isCurrentMerchantPlatform,
+) => {
+  let apiKeys = apiKeys(userHasResourceAccess)
+  let webhooks = webhooks(userHasResourceAccess)
+  let paymentSettings = paymentSettings(userHasResourceAccess)
+  let offers = offers(userHasResourceAccess)
+
+  let links = if isCurrentMerchantPlatform {
+    [paymentSettings, apiKeys, webhooks]
+  } else {
+    let isProfileUser = checkUserEntity([#Profile])
+
+    let defaultDevelopersOptions = [paymentSettings]
+
+    if !isProfileUser {
+      defaultDevelopersOptions->Array.push(apiKeys)
+    }
+    if isWebhooksEnabled {
+      defaultDevelopersOptions->Array.push(webhooks)
+    }
+    if paymentLinkThemeConfigurator {
+      defaultDevelopersOptions->Array.push(paymentLinkTheme)
+    }
+    defaultDevelopersOptions->Array.push(offers)
+    defaultDevelopersOptions
+  }
+
+  isDevelopersEnabled
+    ? Section({
+        name: "Developers",
+        icon: "nd-developers",
+        showSection: true,
+        links,
+      })
+    : emptyComponent
+}
+
+let superpositionDefaultConfigs = userHasResourceAccess => SubLevelLink({
+  name: "Default Configs",
+  link: "/configuration-management-default-config",
+  access: userHasResourceAccess(~resourceAccess=SuperpositionConfigs),
+  searchOptions: [("View default configurations", "")],
+})
+
+let superpositionOverrides = userHasResourceAccess => SubLevelLink({
+  name: "Overrides",
+  link: "/configuration-management-overrides",
+  access: userHasResourceAccess(~resourceAccess=SuperpositionConfigs),
+  searchOptions: [("View context overrides", "")],
+})
+
+let superpositionDimensions = userHasResourceAccess => SubLevelLink({
+  name: "Dimensions",
+  link: "/configuration-management-dimensions",
+  access: userHasResourceAccess(~resourceAccess=SuperpositionConfigs),
+  searchOptions: [("View dimensions", "")],
+})
+
+let superpositionAuditLog = userHasResourceAccess => SubLevelLink({
+  name: "Audit Log",
+  link: "/configuration-management-audit",
+  access: userHasResourceAccess(~resourceAccess=SuperpositionConfigs),
+  searchOptions: [("View audit log", "")],
+})
+
+let superposition = (~userHasResourceAccess, ~isEnabled) =>
+  isEnabled
+    ? Section({
+        name: "Configuration Management",
+        icon: "nd-config-sliders",
+        showSection: true,
+        links: [
+          superpositionDefaultConfigs(userHasResourceAccess),
+          superpositionOverrides(userHasResourceAccess),
+          superpositionDimensions(userHasResourceAccess),
+          superpositionAuditLog(userHasResourceAccess),
+        ],
+        selectedIcon: "nd-config-sliders",
+      })
+    : emptyComponent

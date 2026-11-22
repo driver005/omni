@@ -1,0 +1,28 @@
+open LogicUtils
+let getConfigFromDict: Dict.t<JSON.t> => HyperSwitchConfigTypes.baseConfig = dict => {
+  {
+    apiBaseUrl: dict->getString("api_url", ""),
+    olapUrl: dict->getString("olap_url", ""),
+    eulerUrl: dict->getString("euler_url", ""),
+    mtlsApiUrl: dict->getString("mtls_api_url", "")->getNonEmptyString,
+    mixpanelToken: dict->getString("mixpanel_token", ""),
+    sdkBaseUrl: dict->getString("sdk_url", "")->getNonEmptyString,
+    agreementUrl: dict->getString("agreement_url", "")->getNonEmptyString,
+    dssCertificateUsUrl: dict->getString("dss_certificate_us_url", "")->getNonEmptyString,
+    dssCertificateEuUrl: dict->getString("dss_certificate_eu_url", "")->getNonEmptyString,
+    dynamoSimulationTemplateUrl: dict
+    ->getString("dynamo_simulation_template_url", "")
+    ->getNonEmptyString,
+    applePayCertificateUrl: dict
+    ->getString("apple_pay_certificate_url", "")
+    ->getNonEmptyString,
+    agreementVersion: dict->getString("agreement_version", "")->getNonEmptyString,
+    reconIframeUrl: dict->getString("recon_iframe_url", "")->getNonEmptyString,
+    urlThemeConfig: {
+      faviconUrl: dict->getString("favicon_url", "")->getNonEmptyString,
+      logoUrl: dict->getString("logo_url", "")->getNonEmptyString,
+    },
+    hypersenseUrl: dict->getString("hypersense_url", ""),
+    superpositionConfigs: None,
+  }
+}

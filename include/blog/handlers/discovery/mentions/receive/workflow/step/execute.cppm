@@ -51,7 +51,7 @@ inline constexpr auto kRateWindow = std::chrono::seconds{60};
     std::string source;
     std::string target;
     if (body.find('=') != std::string_view::npos && body.find('{') == std::string_view::npos) {
-        for (auto part : body | std::views::split('&')) {
+        for (auto part : std::views::split(body, '&')) {
             const std::string text{std::ranges::begin(part), std::ranges::end(part)};
             const auto eq = text.find('=');
             if (eq == std::string::npos) continue;

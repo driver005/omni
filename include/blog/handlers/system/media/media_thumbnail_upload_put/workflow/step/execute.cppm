@@ -241,7 +241,7 @@ struct Multipart
     if (question == std::string_view::npos) {
         return out;
     }
-    for (auto pair : path.substr(question + 1) | std::views::split('&')) {
+    for (auto pair : std::views::split(path.substr(question + 1), '&')) {
         const std::string text{std::ranges::begin(pair), std::ranges::end(pair)};
         if (const auto eq = text.find('='); eq != std::string::npos) {
             out[text.substr(0, eq)] = text.substr(eq + 1);

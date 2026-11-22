@@ -25,7 +25,7 @@ namespace activate_detail {
 {
     const auto q = path.find('?');
     if (q == std::string_view::npos) return {};
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         std::string_view kv{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = kv.find('=');
         if (eq != std::string_view::npos && kv.substr(0, eq) == key) {
@@ -40,7 +40,7 @@ namespace activate_detail {
 {
     if (const auto q = path.find('?'); q != std::string_view::npos) path = path.substr(0, q);
     std::vector<std::string> segs;
-    for (auto part : path | std::views::split('/')) {
+    for (auto part : std::views::split(path, '/')) {
         std::string s{std::ranges::begin(part), std::ranges::end(part)};
         if (!s.empty()) segs.push_back(std::move(s));
     }

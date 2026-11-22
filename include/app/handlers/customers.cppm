@@ -1,4 +1,5 @@
 module;
+#include <ctime>
 export module app_handlers:customers;
 
 import std;
@@ -217,6 +218,10 @@ public:
         );
     }
     void add_string(std::string_view name, std::string value)
+    {
+        m_fields.emplace_back(std::string{name}, quote(value));
+    }
+    void add_string(std::string_view name, std::string_view value)
     {
         m_fields.emplace_back(std::string{name}, quote(value));
     }
@@ -712,11 +717,11 @@ private:
 
         // `#[serde(flatten)] time_range: Option<TimeRange>` — start_time/end_time
         // (aliases startTime/endTime) appear at the top level of the query.
-        std::optional<CustomerTimeRange> time_range{};
+        std::optional<app::model::customers::CustomerTimeRange> time_range{};
         auto start = query.get("start_time");
         if (!start) { start = query.get("startTime"); }
         if (start) {
-            CustomerTimeRange range{};
+            app::model::customers::CustomerTimeRange range{};
             range.set_start_time(*start);
             auto end = query.get("end_time");
             if (!end) { end = query.get("endTime"); }
@@ -1757,7 +1762,7 @@ private:
     }
 
     [[nodiscard]] std::optional<std::pair<std::string, std::string>> parse_time_range(
-        const CustomerTimeRange& range
+        const app::model::customers::CustomerTimeRange& range
     ) const
     {
         if (range.get_start_time().empty()) { return std::nullopt; }
@@ -1767,7 +1772,7 @@ private:
     }
 
     [[nodiscard]] bool within_range(
-        std::string_view created_at, const CustomerTimeRange& range
+        std::string_view created_at, const app::model::customers::CustomerTimeRange& range
     ) const
     {
         const auto bounds = parse_time_range(range);

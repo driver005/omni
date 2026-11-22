@@ -305,7 +305,7 @@ public:
    // dumped (non-empty) line indented by two spaces; trailing newline per section.
    auto& bucket=perm?p301:p302;
    const auto dumped=download_detail::dump_pair(from,to);
-   for (const auto line : dumped | std::views::split('\n')) {
+   for (const auto line : std::views::split(dumped, '\n')) {
     if (line.empty()) continue;
     bucket += "  ";
     bucket += std::string_view{std::ranges::begin(line), std::ranges::end(line)};

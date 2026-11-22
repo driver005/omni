@@ -36,7 +36,7 @@ using Object = serde::Value::Object;
     std::map<std::string, std::string> out;
     const auto q = path.find('?');
     if (q == std::string_view::npos) return out;
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         const std::string kv{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = kv.find('=');
         if (eq != std::string::npos) out[kv.substr(0, eq)] = kv.substr(eq + 1);
@@ -218,7 +218,7 @@ public:
   if (const auto it=p.find("components"); it!=p.end()) {
    const auto raw=lower(trim(it->second));
    if (raw.empty()) return invalid("No export components selected");
-   for (auto piece:raw|std::views::split(',')) {
+   for (auto std::views::split(piece:raw, ',')) {
     const std::string component{std::ranges::begin(piece),std::ranges::end(piece)};
     if (std::ranges::find(sync_components,std::string_view{component})==sync_components.end())
      return invalid("Validation (AllowedValues) failed for components");

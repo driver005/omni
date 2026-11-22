@@ -622,11 +622,11 @@ private:
             token.exp,
             serde::Ser::encode_json(std::string{kHypersenseServiceType})
         );
-        const auto signed = app::crypto::JwtSigner{jwt_secret()}.sign(payload);
-        if (signed.empty()) {
+        const auto jwt_signed = (app::crypto::JwtSigner{jwt_secret()}).sign(payload);
+        if (jwt_signed.empty()) {
             return std::nullopt;
         }
-        return signed;
+        return jwt_signed;
     }
 
     /** @brief global_store.find_active_user_by_user_id (external_service_auth.rs:85-90). */

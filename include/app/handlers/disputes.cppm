@@ -185,7 +185,7 @@ public:
 
         m_context->metrics().record_flow("dispute_retrieve");
         auto response = retrieve_dispute(m_context->repository(), scope, request);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -217,7 +217,7 @@ public:
         m_context->metrics().record_flow("dispute_fetch");
         m_context->metrics().counter("disputes_fetch_total").increment();
         auto response = connector_sync_disputes(scope, connector_id, payload);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -237,7 +237,7 @@ public:
         const auto constraints = list_constraints_from(query);
         m_context->metrics().record_flow("dispute_list");
         auto response = retrieve_disputes_list(scope, constraints, std::nullopt);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -259,7 +259,7 @@ public:
         const std::vector<std::string> profiles = scope.profile_id.empty()
             ? std::vector<std::string>{} : std::vector<std::string>{scope.profile_id};
         auto response = retrieve_disputes_list(scope, constraints, profiles);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -285,7 +285,7 @@ public:
         }
         m_context->metrics().record_flow("dispute_platform_list");
         auto response = retrieve_disputes_list_for_platform(scope, constraints);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -304,7 +304,7 @@ public:
 
         m_context->metrics().record_flow("dispute_filters");
         auto response = get_filters_for_disputes(scope, std::nullopt);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -325,7 +325,7 @@ public:
         const std::vector<std::string> profiles = scope.profile_id.empty()
             ? std::vector<std::string>{} : std::vector<std::string>{scope.profile_id};
         auto response = get_filters_for_disputes(scope, profiles);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -344,7 +344,7 @@ public:
 
         m_context->metrics().record_flow("dispute_platform_filters");
         auto response = get_platform_disputes_filters(scope);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -369,7 +369,7 @@ public:
         }
         m_context->metrics().record_flow("dispute_accept");
         auto response = accept_dispute(scope, dispute_id);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -398,7 +398,7 @@ public:
         }
         m_context->metrics().record_flow("dispute_submit_evidence");
         auto response = submit_evidence(scope, *parsed);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -427,7 +427,7 @@ public:
         }
         m_context->metrics().record_flow("dispute_attach_evidence");
         auto response = attach_evidence(scope, *parsed);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -452,7 +452,7 @@ public:
         }
         m_context->metrics().record_flow("dispute_retrieve_evidence");
         auto response = retrieve_dispute_evidence(scope, dispute_id);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -502,7 +502,7 @@ public:
 
         m_context->metrics().record_flow("dispute_aggregate");
         auto response = get_aggregates_for_disputes(scope, time_range_from(query), std::nullopt);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -523,7 +523,7 @@ public:
         const std::vector<std::string> profiles = scope.profile_id.empty()
             ? std::vector<std::string>{} : std::vector<std::string>{scope.profile_id};
         auto response = get_aggregates_for_disputes(scope, time_range_from(query), profiles);
-        if (!response) { send_error(res, send, *response); return; }
+        if (!response) { send_error(res, send, response.error()); return; }
         send_json(res, send, serde::Ser::encode_json(*response), true);
     }
 
@@ -1046,7 +1046,7 @@ private:
             if (!scope.profile_id.empty() && !record.get_profile_id().empty() &&
                 record.get_profile_id() != scope.profile_id) { continue; }
             if (!attempt_id_for(record.get_payment_id()).empty()) {
-                add_process_dispute_task_to_pt(connector_name, record, scope,
+                (void)add_process_dispute_task_to_pt(connector_name, record, scope,
                                                 payload.get_fetch_till());
             }
             result.push_back(to_response(record));
@@ -1617,9 +1617,9 @@ private:
         // add_dispute_list_task_to_pt — task "DISPUTE_LIST", runner
         // DisputeListWorkflow, tag ["LIST","DISPUTE"] (core/disputes.rs:1235-1265).
         return m_context->process_trackers().schedule(
-            name,
+            std::string{name},
             std::format("{{\"merchant_id\":\"{}\",\"profile_id\":\"{}\"}}",
-                        scope.merchant_id, scope.profile_id),
+                        std::string{scope.merchant_id}, std::string{scope.profile_id}),
             "0");
     }
 
@@ -1629,7 +1629,7 @@ private:
         // `list_dispute_supported_connectors` config; local config_store mirrors it.
         if (m_context->config_store().get_value("list_dispute_supported_connectors",
                                                 connector_name).value_or("false") != "true") { return; }
-        add_dispute_list_task_to_pt("DISPUTE_LIST", scope);
+        (void)add_dispute_list_task_to_pt("DISPUTE_LIST", scope);
     }
 
     // ── gateway / connector / webhook substitutes ─────────────────────────────
@@ -2028,7 +2028,7 @@ private:
     [[nodiscard]] std::vector<std::string> split_commas(std::string_view text) const
     {
         std::vector<std::string> parts{};
-        for (const auto part : text | std::views::split(',')) {
+        for (const auto part : std::views::split(text, ',')) {
             parts.emplace_back(std::ranges::begin(part), std::ranges::end(part));
         }
         return parts;

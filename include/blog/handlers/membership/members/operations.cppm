@@ -639,7 +639,7 @@ inline void emit_mail(std::string_view name, std::string_view payload,
     std::map<std::string, std::string> out;
     const auto q = path.find('?');
     if (q == std::string_view::npos) return out;
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         const std::string kv{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = kv.find('=');
         if (eq != std::string::npos) out[kv.substr(0, eq)] = kv.substr(eq + 1);
@@ -649,7 +649,7 @@ inline void emit_mail(std::string_view name, std::string_view payload,
 [[nodiscard]] inline std::vector<std::string> segments(std::string_view path)
 {
     std::vector<std::string> out;
-    for (auto part : clean_path(path) | std::views::split('/')) {
+    for (auto part : std::views::split(clean_path(path), '/')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         if (!text.empty()) out.push_back(text);
     }

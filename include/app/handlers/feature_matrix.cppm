@@ -1,4 +1,5 @@
 module;
+#include <cstdio>
 export module app_handlers:feature_matrix;
 
 import std;

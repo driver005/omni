@@ -59,7 +59,7 @@ inline constexpr std::string_view kMentionFilter{"source:~$'/.well-known/recomme
     std::map<std::string, std::string> out;
     const auto q = path.find('?');
     if (q == std::string_view::npos) return out;
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         if (const auto eq = text.find('='); eq != std::string::npos) {
             out[text.substr(0, eq)] = text.substr(eq + 1);

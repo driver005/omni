@@ -362,7 +362,7 @@ public:
             send_error(res, send, page.error());
             return;
         }
-        send_json(res, send, status_page_data_json(page->first, page->second, page->third), true);
+        send_json(res, send, status_page_data_json(std::get<0>(*page), std::get<1>(*page), std::get<2>(*page)), true);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -1191,7 +1191,7 @@ private:
             currency_value.set_value(currency);
             details.set_currency(std::move(currency_value));
             app::model::payments::PaymentIdValue id{};
-            id.set_value(payment_id);
+            id.set_value(std::string{payment_id});
             details.set_payment_id(std::move(id));
             details.set_merchant_name(merchant_name);
             details.set_merchant_logo(config.logo);
@@ -1241,7 +1241,7 @@ private:
         details.set_pub_key(config.publishable_key);
         details.set_client_secret(config.client_secret);
         app::model::payments::PaymentIdValue id{};
-        id.set_value(payment_id);
+        id.set_value(std::string{payment_id});
         details.set_payment_id(std::move(id));
         app::model::payments::PrimitiveDateTimeValue expiry{};
         expiry.set_value(session_expiry);
@@ -1326,7 +1326,7 @@ private:
         currency_value.set_value(currency);
         details.set_currency(std::move(currency_value));
         app::model::payments::PaymentIdValue id{};
-        id.set_value(payment_id);
+        id.set_value(std::string{payment_id});
         details.set_payment_id(std::move(id));
         details.set_merchant_name(capitalized(config.merchant_name));
         details.set_merchant_logo(config.logo);

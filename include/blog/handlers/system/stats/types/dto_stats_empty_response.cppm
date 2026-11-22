@@ -199,7 +199,7 @@ inline constexpr std::string_view kDocName{"stats"};
 {
     if (order.empty()) return true;
     if (!core::query::valid_option("order", order)) return false;
-    for (auto piece : order | std::views::split(',')) {
+    for (auto piece : std::views::split(order, ',')) {
         const std::string text{std::ranges::begin(piece), std::ranges::end(piece)};
         const auto field = text.substr(0, text.find_first_of(" \t"));
         bool found = false;

@@ -71,7 +71,7 @@ public:
 
         // core::create_subscription (core.rs:31-123)
         const auto merchant = merchant_id(req, auth);
-        if (const auto failure = find_business_profile(*profile, merchant)) {
+        if (const auto failure = find_business_profile(profile.value, merchant)) {
             send_failure(res, send, *failure);
             return;
         }
@@ -80,7 +80,7 @@ public:
             return;
         }
         BillingProcessor billing{this};
-        if (const auto failure = billing.create(*profile, merchant)) {
+        if (const auto failure = billing.create(profile.value, merchant)) {
             send_failure(res, send, *failure);
             return;
         }
@@ -89,7 +89,7 @@ public:
         SubscriptionRecord record{};
         record.subscription_id = subscription_id;
         record.merchant_id = merchant;
-        record.profile_id = *profile;
+        record.profile_id = profile.value;
         record.customer_id = *customer_id;
         record.status = "created"; // SubscriptionStatus::Created.to_string() -> "Created" (subscription.rs:54)
         record.plan_id = json_string(payload->root, "plan_id").value_or("");
@@ -147,7 +147,7 @@ public:
             return;
         }
         auto payload = parse_json_body_optional(req);
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -199,7 +199,7 @@ public:
             return;
         }
         auto payload = parse_json_body_optional(req);
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -250,7 +250,7 @@ public:
             return;
         }
         auto payload = parse_json_body_optional(req);
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -318,7 +318,7 @@ public:
         // The SDK flow overwrites payload.client_secret with the authenticated claim.
         const std::string client_secret = effective_client_secret(auth, payload->root);
 
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -402,7 +402,7 @@ public:
         auto profile = extract_profile_id(req, res, send);
         if (!profile) { return; }
 
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -416,7 +416,7 @@ public:
         }
 
         BillingProcessor billing{this};
-        if (const auto failure = billing.create(*profile, merchant_id(req, auth))) {
+        if (const auto failure = billing.create(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -426,7 +426,7 @@ public:
         const std::string item_type = query.get("item_type").value_or("plan");
 
         // get_subscription_items + get_subscription_item_prices (core.rs:151-172)
-        auto items = billing.get_items(*profile, limit, offset, item_type);
+        auto items = billing.get_items(profile.value, limit, offset, item_type);
         metrics_for("subscription.get_subscription_items");
         send_json(res, send, encode_items_response(items));
     }
@@ -450,7 +450,7 @@ public:
             send_failure(res, send, generic_not_found("subscription not found for id: "));
             return;
         }
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -496,7 +496,7 @@ public:
 
         // core::create_and_confirm_subscription (core.rs:176-307)
         const auto merchant = merchant_id(req, auth);
-        if (const auto failure = find_business_profile(*profile, merchant)) {
+        if (const auto failure = find_business_profile(profile.value, merchant)) {
             send_failure(res, send, *failure);
             return;
         }
@@ -505,7 +505,7 @@ public:
             return;
         }
         BillingProcessor billing{this};
-        if (const auto failure = billing.create(*profile, merchant)) {
+        if (const auto failure = billing.create(profile.value, merchant)) {
             send_failure(res, send, *failure);
             return;
         }
@@ -514,7 +514,7 @@ public:
         SubscriptionRecord record{};
         record.subscription_id = subscription_id;
         record.merchant_id = merchant;
-        record.profile_id = *profile;
+        record.profile_id = profile.value;
         record.customer_id = *customer_id;
         record.status = "created";
         record.plan_id = json_string(payload->root, "plan_id").value_or("");
@@ -579,7 +579,7 @@ public:
         auto profile = extract_profile_id(req, res, send);
         if (!profile) { return; }
 
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -591,7 +591,7 @@ public:
             }
         }
         BillingProcessor billing{this};
-        if (const auto failure = billing.create(*profile, merchant_id(req, auth))) {
+        if (const auto failure = billing.create(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -601,14 +601,14 @@ public:
         SubscriptionRecord seed{};
         seed.subscription_id = m_context->ids().payment_id("sub_");
         seed.merchant_id = merchant_id(req, auth);
-        seed.profile_id = *profile;
+        seed.profile_id = profile.value;
         seed.plan_id = plan_id;
         seed.item_price_id = item_price_id;
         Estimate estimate = billing.estimate(seed, plan_id, item_price_id,
                                              json_string(payload, "coupon_code").value_or(""), client_secret);
 
         metrics_for("subscription.get_estimate");
-        send_json(res, send, encode_estimate_response(estimate, *profile));
+        send_json(res, send, encode_estimate_response(estimate, profile.value));
     }
 
     // ── PUT /subscriptions/:id/update — update_subscription ─────────────────────
@@ -639,7 +639,7 @@ public:
             return;
         }
 
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -692,7 +692,7 @@ public:
         }
         auto profile = extract_profile_id(req, res, send);
         if (!profile) { return; }
-        if (const auto failure = find_business_profile(*profile, merchant_id(req, auth))) {
+        if (const auto failure = find_business_profile(profile.value, merchant_id(req, auth))) {
             send_failure(res, send, *failure);
             return;
         }
@@ -704,7 +704,7 @@ public:
         // list_subscriptions_by_profile_id(profile, limit, offset) (core.rs:741-748)
         std::vector<SubscriptionRecord> records;
         for (const auto& record : m_context->repository().list_subscriptions()) {
-            if (record.get_profile_id() == *profile) {
+            if (record.get_profile_id() == profile.value) {
                 records.push_back(from_store_record(record));
             }
         }
@@ -1437,16 +1437,16 @@ private:
         {
             // BillingHandler::create (billing_processor_handler.rs:40-101):
             // profile.get_billing_processor_id() -> MCA lookup by merchant + id.
-            const auto record = m_context()->repository().find_profile_by_string(profile);
+            const auto record = m_context()->m_context->repository().find_profile_by_string(profile);
             if (!record) { return m_context()->profile_not_found(profile); }
             // Local substitute for Profile::get_billing_processor_id(): the configured
             // billing processor MCA id for the profile (upstream reads it from the profile).
-            if (const auto configured = m_context()->config_store().get_value(
+            if (const auto configured = m_context()->m_context->config_store().get_value(
                     "subscription_billing_processors", std::string{profile})) {
                 merchant_connector_id = *configured;
             }
             if (merchant_connector_id.empty()) {
-                for (const auto& mca : m_context()->repository().list_merchant_connectors()) {
+                for (const auto& mca : m_context()->m_context->repository().list_merchant_connectors()) {
                     if (merchant.empty() || mca.get_merchant_id() == merchant) {
                         merchant_connector_id = mca.get_merchant_connector_id();
                         connector_name = mca.get_connector_name();
@@ -1454,7 +1454,7 @@ private:
                     }
                 }
             } else {
-                if (const auto mca = m_context()->repository().find_merchant_connector_by_string(merchant_connector_id)) {
+                if (const auto mca = m_context()->m_context->repository().find_merchant_connector_by_string(merchant_connector_id)) {
                     connector_name = mca->get_connector_name();
                 }
             }
@@ -1477,7 +1477,7 @@ private:
             std::string_view client_secret
         ) const
         {
-            ConnectorRequest request = m_context()->billing_request(
+            app::connector::ConnectorRequest request = m_context()->billing_request(
                 "get_subscription_estimate", record,
                 item_price_id.empty() ? std::string{plan_id} : std::string{item_price_id});
             const auto raw = m_context()->call_connector("get_subscription_estimate", request);
@@ -1508,7 +1508,7 @@ private:
                 "get_subscription_items", m_context()->billing_request("get_subscription_items", seed, std::string{item_type}));
             (void)response;
 
-            auto records = m_context()->repository().list_subscriptions();
+            auto records = m_context()->m_context->repository().list_subscriptions();
             std::vector<SubscriptionRecord> scoped{};
             for (const auto& stored : records) {
                 if (!profile.empty() && stored.get_profile_id() != profile) { continue; }

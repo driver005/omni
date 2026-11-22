@@ -211,7 +211,7 @@ private:
             return actual.find(expected) != std::string::npos;
         }
         if (op == "in") {
-            for (const auto part: expected | std::views::split(',')) {
+            for (const auto part: std::views::split(expected, ',')) {
                 if (std::string{std::ranges::begin(part), std::ranges::end(part)} == actual) {
                     return true;
                 }

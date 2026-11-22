@@ -137,7 +137,7 @@ inline constexpr std::array<std::string_view, 7> kInputFields{
 {
     std::set<std::string> out{q.include.begin(), q.include.end()};
     if (const auto it = q.options.find("withRelated"); it != q.options.end()) {
-        for (auto part : std::string_view{it->second} | std::views::split(',')) {
+        for (auto part : std::string_view{it->std::views::split(second}, ',')) {
             const std::string token{std::ranges::begin(part), std::ranges::end(part)};
             if (!token.empty()) out.insert(token);
         }
@@ -155,7 +155,7 @@ inline constexpr std::array<std::string_view, 7> kInputFields{
 
 [[nodiscard]] inline bool order_ok(const core::query::ParsedQuery& q)
 {
-    for (auto clause : std::string_view{q.order} | std::views::split(',')) {
+    for (auto clause : std::views::split(std::string_view{q.order}, ',')) {
         const std::string text{std::ranges::begin(clause), std::ranges::end(clause)};
         const auto space = text.find_first_of(" \t");
         const auto field = space == std::string::npos ? text : text.substr(0, space);

@@ -656,9 +656,10 @@ private:
         if (!result.hit) {
             return std::nullopt;
         }
-        return serde::Ser::deserialize<CardInfoResponse>(
+        const auto decoded = serde::Ser::deserialize<CardInfoResponse>(
             "application/json", result.value_or<std::string>("")
         );
+        return decoded ? std::optional<CardInfoResponse>{*decoded} : std::nullopt;
     }
 
     [[nodiscard]] CardInfoResponse response_from_store_enriched(

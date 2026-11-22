@@ -669,7 +669,7 @@ private:
                 Kind::INVALID_REQUEST, "File upload provider is not a connector"
             )};
         }
-        const std::string connector_name = file_upload_provider_name(provider);
+        const std::string connector_name{file_upload_provider_name(provider)};
 
         // helpers.rs:143-158 — dispute lookup when dispute_id is provided.
         if (dispute_id.has_value() && !dispute_id->empty()) {

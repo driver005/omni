@@ -2112,7 +2112,7 @@ private:
         if (!range.present) {
             return true;
         }
-        const auto compare = [](std::string_view lhs, std::string_view rhs) -> int
+        const auto compare = [this](std::string_view lhs, std::string_view rhs) -> int
         {
             if (const auto l = to_number(lhs); l.has_value()) {
                 if (const auto r = to_number(rhs); r.has_value()) {
@@ -2687,9 +2687,10 @@ private:
         const app::http::QueryParams& query
     ) const
     {
-        return serde::Ser::deserialize<app::model::payouts::PayoutListConstraints>(
+        const auto decoded = serde::Ser::deserialize<app::model::payouts::PayoutListConstraints>(
             "application/json",
             query_json(query, {"customer_id", "starting_after", "ending_before", "limit", "created"}));
+        return decoded ? std::optional<app::model::payouts::PayoutListConstraints>{*decoded} : std::nullopt;
     }
 
     [[nodiscard]] std::vector<std::string> status_values(

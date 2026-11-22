@@ -1244,7 +1244,7 @@ private:
     }
 
     // ── Minimal JSON helpers for MCA payment_methods_enabled / required-fields config ──
-    [[nodiscard]] std::string_view skip_ws(std::string_view json, std::size_t& pos) const
+    std::string_view skip_ws(std::string_view json, std::size_t& pos) const
     {
         while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) { ++pos; }
         return json.substr(pos);

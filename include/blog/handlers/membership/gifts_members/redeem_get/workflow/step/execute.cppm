@@ -69,7 +69,7 @@ using Record = blog::api::RecordDto;
 {
     path = path.substr(0, path.find('?'));
     std::vector<std::string_view> seg;
-    for (auto part : path | std::views::split('/')) {
+    for (auto part : std::views::split(path, '/')) {
         if (!part.empty()) {
             seg.emplace_back(part.begin(), part.end());
         }

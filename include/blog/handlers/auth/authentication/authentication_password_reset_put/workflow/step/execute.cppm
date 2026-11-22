@@ -150,7 +150,7 @@ private:
   }
   static std::vector<std::string> split(std::string_view text, char delim) {
     std::vector<std::string> out;
-    for (auto part:text|std::views::split(delim))
+    for (auto std::views::split(part:text, delim))
       out.emplace_back(std::ranges::begin(part),std::ranges::end(part));
     return out;
   }

@@ -180,7 +180,7 @@ private:
         const std::string_view bare = qpos == std::string_view::npos
             ? path : path.substr(0, qpos);
         std::size_t i = 0;
-        for (auto part : bare | std::views::split('/')) {
+        for (auto part : std::views::split(bare, '/')) {
             const std::string s{std::ranges::begin(part), std::ranges::end(part)};
             if (s.empty()) continue;
             if (i++ == n) return s;
@@ -194,7 +194,7 @@ private:
         const auto qpos = path.find('?');
         if (qpos == std::string_view::npos) return {};
         std::set<std::string> seen;
-        for (auto pair : path.substr(qpos + 1) | std::views::split('&')) {
+        for (auto pair : std::views::split(path.substr(qpos + 1), '&')) {
             const std::string text{std::ranges::begin(pair), std::ranges::end(pair)};
             const auto eq = text.find('=');
             if (eq == std::string::npos) continue;
@@ -283,7 +283,7 @@ private:
     template<typename Range>
     static bool valid_tokens(std::string_view csv, const Range& allowed)
     {
-        for (auto part : csv | std::views::split(',')) {
+        for (auto part : std::views::split(csv, ',')) {
             const std::string token{std::ranges::begin(part), std::ranges::end(part)};
             if (!in(allowed, token)) return false;
         }

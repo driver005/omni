@@ -322,8 +322,9 @@ private:
         if (!cached.hit) {
             return std::nullopt;
         }
-        return serde::Ser::deserialize<ClientSecretType>(
+        const auto decoded = serde::Ser::deserialize<ClientSecretType>(
             "application/json", cached.value_or<std::string>(std::string{}));
+        return decoded ? std::optional<ClientSecretType>{*decoded} : std::nullopt;
     }
 
     // ClientSecretResponse::foreign_try_from — types/storage/client_secret.rs:11-31.

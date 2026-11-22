@@ -1045,7 +1045,7 @@ struct CheckedManifest
     std::map<std::string, std::string> params;
     const auto q = raw.find('?');
     if (q == std::string_view::npos) return params;
-    for (auto part : std::string_view{raw}.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::std::views::split(string_view{raw}.substr(q + 1), '&')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = text.find('=');
         if (eq != std::string::npos) params[text.substr(0, eq)] = text.substr(eq + 1);

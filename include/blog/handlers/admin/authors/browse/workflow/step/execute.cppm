@@ -165,7 +165,7 @@ inline void sanitize(core::query::ParsedQuery& q)
     auto list = trim(filter.substr(key + 5));
     if (list.size() < 2 || list.front() != '[' || list.back() != ']') return false;
     list = trim(list.substr(1, list.size() - 2));
-    for (auto part : list | std::views::split(',')) {
+    for (auto part : std::views::split(list, ',')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         auto item = std::string{trim(text)};
         if (item.size() >= 2 && ((item.front() == '"' && item.back() == '"') ||

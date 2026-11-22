@@ -129,7 +129,7 @@ struct InputError
         return false;
     }
     int seen = 0;
-    for (auto part : path.substr(qpos + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(qpos + 1), '&')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = text.find('=');
         if (eq == std::string::npos) {

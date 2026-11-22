@@ -499,7 +499,7 @@ using ValueArray = Value::Array;
 
 [[nodiscard]] inline bool valid_include(std::string_view csv)
 {
-    for (auto part : csv | std::views::split(',')) {
+    for (auto part : std::views::split(csv, ',')) {
         const std::string token{std::ranges::begin(part), std::ranges::end(part)};
         if (token != "api_keys" && token != "webhooks") return false;
     }
@@ -507,7 +507,7 @@ using ValueArray = Value::Array;
 }
 [[nodiscard]] inline bool include_has(std::string_view csv, std::string_view token)
 {
-    for (auto part : csv | std::views::split(',')) {
+    for (auto part : std::views::split(csv, ',')) {
         const std::string value{std::ranges::begin(part), std::ranges::end(part)};
         if (value == token) return true;
     }
@@ -548,7 +548,7 @@ using ValueArray = Value::Array;
     std::map<std::string, std::string> out;
     const auto question = path.find('?');
     if (question == std::string_view::npos) return out;
-    for (auto pair : path.substr(question + 1) | std::views::split('&')) {
+    for (auto pair : std::views::split(path.substr(question + 1), '&')) {
         const std::string text{std::ranges::begin(pair), std::ranges::end(pair)};
         const auto eq = text.find('=');
         if (eq == std::string::npos) continue;

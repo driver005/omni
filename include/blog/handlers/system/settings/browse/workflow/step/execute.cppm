@@ -580,7 +580,7 @@ struct MultipartPart
     if (content.empty() || content.find('\t') != std::string_view::npos) return false;
     int braces{0}, brackets{0};
     bool saw_top_level_key{false};
-    for (auto line : content | std::views::split('\n')) {
+    for (auto line : std::views::split(content, '\n')) {
         const std::string text{std::ranges::begin(line), std::ranges::end(line)};
         const auto trimmed = trim(text);
         if (trimmed.empty() || trimmed.starts_with('#')) continue;

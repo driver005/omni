@@ -4008,7 +4008,8 @@ private:
             }
         }
         json.push_back('}');
-        return serde::Ser::deserialize<T>("application/json", json);
+        const auto decoded = serde::Ser::deserialize<T>("application/json", json);
+        return decoded ? std::optional<T>{*decoded} : std::nullopt;
     }
 
     [[nodiscard]] bool query_bool(
@@ -5136,7 +5137,7 @@ private:
         record.set_updated_at(now_string());
         if (!scope_profile.empty()) {
             record.set_metadata(
-                std::format(R"({"profile_id":{}})", serde::Ser::encode_json(scope_profile))
+                std::format("{{\"profile_id\":{}}}", serde::Ser::encode_json(scope_profile))
             );
         }
         if (stored) {

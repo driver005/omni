@@ -250,7 +250,7 @@ public:
                 continue;
             }
             if (first.has_value() && *first != value) {
-                return std::unexpected{m_errors{}(
+                return std::unexpected{m_errors(
                     ProxyError::Kind::InvalidRequestData,
                     "Conflicting connector Content-Type headers")};
             }
@@ -268,7 +268,7 @@ public:
         const std::string essence = m_text.trim(m_text.lower(
             semicolon == std::string::npos ? *first : first->substr(0, semicolon)));
         if (!valid_mime(essence)) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData,
                 "Invalid connector Content-Type header")};
         }
@@ -631,13 +631,13 @@ public:
             if (!parsed) {
                 return std::unexpected{std::move(parsed.error())};
             }
-            if (parsed->has_value()) {
-                auto resolved = scalar(vault, parsed->field);
+            if (parsed.value().has_value()) {
+                auto resolved = scalar(vault, parsed.value()->field);
                 if (!resolved) {
                     return std::unexpected{std::move(resolved.error())};
                 }
                 output += xml_escape ? m_text.escape_xml(*resolved) : *resolved;
-                rest.remove_prefix(parsed->consumed);
+                rest.remove_prefix(parsed.value()->consumed);
             } else {
                 output += "{{";
                 rest.remove_prefix(2);
@@ -676,7 +676,7 @@ public:
             if (!parsed) {
                 return std::unexpected{std::move(parsed.error())};
             }
-            if (parsed->has_value()) {
+            if (parsed.value().has_value()) {
                 return true;
             }
             from = start + 2;
@@ -736,8 +736,8 @@ private:
             if (!parsed) {
                 return std::unexpected{std::move(parsed.error())};
             }
-            if (parsed->has_value() && parsed->consumed == text->size()) {
-                return m_placeholder.value(vault, parsed->field);
+            if (parsed.value().has_value() && parsed.value()->consumed == text->size()) {
+                return m_placeholder.value(vault, parsed.value()->field);
             }
             auto replaced = m_placeholder.substitute(*text, vault, false);
             if (!replaced) {
@@ -1208,7 +1208,7 @@ public:
             return ResponseBody{serde::Ser::encode_json(*value), true}; // bare JSON value
         }
         if (!is_utf8(raw)) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InternalServerError,
                 "Connector response is neither JSON nor UTF-8 text")};
         }
@@ -1308,7 +1308,7 @@ public:
 
         const auto body = req.body_as_string();
         if (body.empty()) {
-            send_error(res, send, m_errors{}(
+            send_error(res, send, m_errors(
                 ProxyError::Kind::InvalidRequestData, "empty request"));
             return;
         }
@@ -1323,7 +1323,7 @@ public:
                                       .get_value("proxy", "bypass_proxy_hosts")
                                       .value_or(std::string{});
         if (DestinationValidator{}(input->destination_url, bypass_hosts)) {
-            send_error(res, send, m_errors{}(
+            send_error(res, send, m_errors(
                 ProxyError::Kind::InvalidRequestData, "destination_url is not valid"));
             return;
         }
@@ -1331,7 +1331,7 @@ public:
         // Upstream Method is a five-value enum (common_utils/src/request.rs:37-57).
         const auto method = TextTools{}.upper(input->method);
         if (!is_supported_method(method)) {
-            send_error(res, send, m_errors{}(
+            send_error(res, send, m_errors(
                 ProxyError::Kind::InvalidRequestData, "method is not valid"));
             return;
         }
@@ -1351,7 +1351,7 @@ public:
             }
             auto made = ProxyBody{}.make(input->request_body, *content);
             if (!made) {
-                send_error(res, send, invalid_body(*made.error()));
+                send_error(res, send, invalid_body(made.error()));
                 return;
             }
             auto proxy_body = std::move(*made);
@@ -1504,7 +1504,7 @@ private:
     {
         auto tree = serde::Ser::decode_generic("application/json", body);
         if (!tree) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "invalid JSON")};
         }
         ValueTools values{};
@@ -1512,7 +1512,7 @@ private:
 
         const auto* request_body = values.child(*tree, "request_body");
         if (request_body == nullptr) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "request_body is required")};
         }
         input.request_body = *request_body;
@@ -1522,7 +1522,7 @@ private:
             ? values.as_string(*destination)
             : std::nullopt;
         if (!destination_text.has_value() || destination_text->empty()) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "destination_url is not valid")};
         }
         input.destination_url = *destination_text;
@@ -1530,7 +1530,7 @@ private:
         const auto* method = values.child(*tree, "method");
         const auto method_text = method != nullptr ? values.as_string(*method) : std::nullopt;
         if (!method_text.has_value()) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "method is not valid")};
         }
         input.method = *method_text;
@@ -1538,7 +1538,7 @@ private:
         const auto* token = values.child(*tree, "token");
         const auto token_text = token != nullptr ? values.as_string(*token) : std::nullopt;
         if (!token_text.has_value() || token_text->empty()) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "token is required")};
         }
         input.token = *token_text;
@@ -1551,7 +1551,7 @@ private:
             ? token_type_from(*type_text)
             : std::nullopt;
         if (!parsed_type.has_value()) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InvalidRequestData, "token_type is not valid")};
         }
         input.token_type = *parsed_type;
@@ -1583,7 +1583,7 @@ private:
         case LocalTokenType::PaymentMethodToken: {
             auto found = m_context->repository().find_payment_method_by_string(token);
             if (!found) {
-                return std::unexpected{m_errors{}(
+                return std::unexpected{m_errors(
                     ProxyError::Kind::PaymentMethodNotFound,
                     "Payment method does not exist in our records")};
             }
@@ -1600,7 +1600,7 @@ private:
         case LocalTokenType::TokenizationId: {
             auto found = m_context->repository().find_tokenization_by_string(token);
             if (!found) {
-                return std::unexpected{m_errors{}(
+                return std::unexpected{m_errors(
                     ProxyError::Kind::InternalServerError,
                     "Error while fetching tokenization record from vault")};
             }
@@ -1615,13 +1615,13 @@ private:
         case LocalTokenType::VolatilePaymentMethodId: {
             const auto cached = m_context->cache().get(std::string{token});
             if (!cached.hit) {
-                return std::unexpected{m_errors{}(
+                return std::unexpected{m_errors(
                     ProxyError::Kind::UnprocessableEntity, "Token is invalid or expired")};
             }
             const auto packed = core::cache::value_as<std::string>(cached.value);
             const auto parts = TextTools{}.split(packed, '|');
             if (parts.size() < 3) {
-                return std::unexpected{m_errors{}(
+                return std::unexpected{m_errors(
                     ProxyError::Kind::UnprocessableEntity, "Token is invalid or expired")};
             }
             ProxyRecordValue value{};
@@ -1636,13 +1636,13 @@ private:
         }
         }
         if (!record.has_value()) {
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::PaymentMethodNotFound,
                 "Payment method does not exist in our records")};
         }
         if (record->merchant_id.empty() || record->merchant_id != merchant_id) {
             m_context->metrics().counter("proxy.ownership_denied").increment();
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::PaymentMethodNotFound,
                 "Payment method does not exist in our records")};
         }
@@ -1699,7 +1699,7 @@ private:
             const std::string message = kind == ProxyError::Kind::UnprocessableEntity
                 ? std::string{"Token is invalid or expired"}
                 : std::string{"Error while fetching data from vault"};
-            return std::unexpected{m_errors{}(kind, message)};
+            return std::unexpected{m_errors(kind, message)};
         }
 
         auto vault = interfaces::Value::Object{};
@@ -1711,7 +1711,7 @@ private:
 
     [[nodiscard]] ProxyError invalid_body(const BodyError& error) const
     {
-        return m_errors{}(
+        return m_errors(
             ProxyError::Kind::InvalidRequestData,
             ProxyBodyErrorTools{}.message(error.code, error.field));
     }
@@ -1752,13 +1752,13 @@ private:
         auto selected = m_context->connector_router().select_for(outbound);
         if (!selected) {
             m_context->metrics().counter("proxy.connector_unavailable").increment();
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InternalServerError, "Failed to call the destination")};
         }
         const auto result = selected->sync(outbound);
         if (result.get_retryable() || result.get_status().empty()) {
             m_context->metrics().counter("proxy.connector_failed").increment();
-            return std::unexpected{m_errors{}(
+            return std::unexpected{m_errors(
                 ProxyError::Kind::InternalServerError, "Error while receiving response")};
         }
         return result;
@@ -1841,7 +1841,7 @@ private:
     ) const
     {
         const bool forbidden = error.get_kind() == core::error::AppErrorKind::FORBIDDEN;
-        send_error(res, send, m_errors{}(
+        send_error(res, send, m_errors(
             forbidden ? ProxyError::Kind::Forbidden : ProxyError::Kind::Unauthorized,
             error.get_message()));
     }

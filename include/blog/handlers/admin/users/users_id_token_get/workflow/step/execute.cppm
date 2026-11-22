@@ -95,7 +95,7 @@ private:
   std::map<std::string,std::string> params;
   const auto q=path.find('?');
   if (q!=std::string_view::npos) {
-   for (auto pair : path.substr(q+1) | std::views::split('&')) {
+   for (auto pair : std::views::split(path.substr(q+1), '&')) {
     const std::string text{std::ranges::begin(pair),std::ranges::end(pair)};
     const auto eq=text.find('=');
     if (eq!=std::string::npos) params[text.substr(0,eq)]=text.substr(eq+1);

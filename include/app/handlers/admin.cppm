@@ -1877,11 +1877,11 @@ private:
     }
 
     [[nodiscard]] OpOutcome<std::vector<app::dto::admin::MerchantConnectorListResponse>>
-    list_connectors_for_a_profile(std::string_view profile_id) const
+    list_connectors_for_a_profile(std::string_view profile_id_filter) const
     {
         std::vector<app::dto::admin::MerchantConnectorListResponse> response;
         for (const auto& record : m_context->repository().list_merchant_connectors()) {
-            if (!profile_id.empty() && record.get_profile_id() != profile_id) {
+            if (!profile_id_filter.empty() && record.get_profile_id() != profile_id_filter) {
                 continue;
             }
             app::dto::admin::MerchantConnectorListResponse item;
@@ -1889,7 +1889,7 @@ private:
             item.set_connector_name(record.get_connector_name());
             item.set_connector_label(record.get_connector_label());
             item.set_merchant_connector_id(connector_account_id(record.get_merchant_connector_id()));
-            item.set_profile_id(profile_id(record.get_profile_id()));
+            item.set_profile_id(this->profile_id(record.get_profile_id()));
             item.set_disabled(record.get_disabled());
             item.set_status(connector_status_value(record.get_status()));
             response.push_back(std::move(item));
@@ -2100,9 +2100,9 @@ private:
         }
         const app::crypto::SecretString password{req.get_webhook_password().value_or("")};
         app::store::connector_webhooks::ConnectorWebhookRecord record;
-        record.set_connector_webhook_id(connector_id);
+        record.set_connector_webhook_id(std::string{connector_id});
         record.set_connector(connector_name);
-        record.set_merchant_id(merchant_id);
+        record.set_merchant_id(std::string{merchant_id});
         record.set_event_type(req.get_webhook_version().value_or(""));
         record.set_scope(req.get_webhook_url().value_or(""));
         record.set_secret(app::crypto::AesWrap{}.encrypt(

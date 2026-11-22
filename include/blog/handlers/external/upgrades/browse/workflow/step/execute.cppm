@@ -693,8 +693,7 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     if (principal.role.empty() && principal.context == ApiContext::ADMIN_API) {
         principal.role = "Administrator";
     }
-    for (auto part : std::string_view{request.find_header(kGhostPermissionsHeader)} |
-                         std::views::split(',')) {
+    for (auto part : std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
         if (!scope.empty()) {
             principal.permissions.insert(scope);

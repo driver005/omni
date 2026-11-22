@@ -206,10 +206,10 @@ struct PrimitiveDateTime
 /** `types/storage/revenue_recovery_redis_operation.rs:21-31`. */
 struct PaymentProcessorTokenDetails
 {
-#define RRDB_FIELD(name, type)                                                                   \
-    type name{};                                                                                 \
-    void set_##name(type value) { name = std::move(value); }                                     \
-    [[nodiscard]] const type& get_##name() const noexcept { return name; }
+#define RRDB_FIELD(name, ...)                                                                    \
+    __VA_ARGS__ name{};                                                                          \
+    void set_##name(__VA_ARGS__ value) { name = std::move(value); }                              \
+    [[nodiscard]] const __VA_ARGS__& get_##name() const noexcept { return name; }
     RRDB_FIELD(payment_processor_token, std::string)
     RRDB_FIELD(expiry_month, std::optional<std::string>)
     RRDB_FIELD(expiry_year, std::optional<std::string>)
@@ -226,10 +226,10 @@ struct PaymentProcessorTokenStatus
 {
     using History = std::vector<
         app::dto::revenue_recovery_data_backfill::AccountUpdateHistoryRecord>;
-#define RRDB_FIELD(name, type)                                                                   \
-    type name{};                                                                                 \
-    void set_##name(type value) { name = std::move(value); }                                     \
-    [[nodiscard]] const type& get_##name() const noexcept { return name; }
+#define RRDB_FIELD(name, ...)                                                                    \
+    __VA_ARGS__ name{};                                                                          \
+    void set_##name(__VA_ARGS__ value) { name = std::move(value); }                              \
+    [[nodiscard]] const __VA_ARGS__& get_##name() const noexcept { return name; }
     RRDB_FIELD(payment_processor_token_details, PaymentProcessorTokenDetails)
     RRDB_FIELD(inserted_by_attempt_id, std::string)
     RRDB_FIELD(error_code, std::optional<std::string>)
@@ -360,11 +360,13 @@ struct StatsDocument
 };
 
 } // namespace detail
+} // namespace app::handlers::revenue_recovery_data_backfill
 
 // rfl reflection for the local token-status storage record (declared before the
 // handler so encode/decode instantiation sees the exact upstream field names).
+namespace serde {
 template<>
-struct serde::Serializable<
+struct Serializable<
     app::handlers::revenue_recovery_data_backfill::detail::PaymentProcessorTokenDetails>
 {
     static constexpr auto fields()
@@ -393,7 +395,7 @@ struct serde::Serializable<
 };
 
 template<>
-struct serde::Serializable<
+struct ::serde::Serializable<
     app::handlers::revenue_recovery_data_backfill::detail::PaymentProcessorTokenStatus>
 {
     static constexpr auto fields()
@@ -425,6 +427,9 @@ struct serde::Serializable<
     }
     static constexpr std::string_view table_name() { return "payment_processor_token_status"; }
 };
+} // namespace serde
+
+namespace app::handlers::revenue_recovery_data_backfill {
 
 export class RevenueRecoveryDataBackfillRouteHandlers
 {
@@ -669,9 +674,9 @@ public:
         }
         std::optional<ScheduledUpdate> scheduled_update{};
         if (auto* root = std::get_if<serde::Value::Object>(&generic->get())) {
-            const auto it = root->find("scheduled_at");
-            if (it != root->end()) {
-                if (const auto* text = std::get_if<std::string>(&it->second.get())) {
+            const auto found = root->get(std::string{"scheduled_at"});
+            if (found) {
+                if (const auto* text = std::get_if<std::string>(&found->get())) {
                     std::string lowered{};
                     lowered.reserve(text->size());
                     for (const char ch : *text) {
@@ -694,7 +699,6 @@ public:
                         "Expected null variable or datetime iso8601 for scheduled_at");
                     return;
                 }
-                root->erase(it);
             }
         }
 
@@ -1269,7 +1273,7 @@ private:
         }
         detail::StatsDocument document{};
         for (const auto* name : {"dow", "dom", "hod"}) {
-            const auto it = object->find(name);
+            const auto found = object->get(std::string{name});
             std::vector<detail::SlotCounter>* target = nullptr;
             if (std::string_view{name} == "dow") {
                 target = &document.dow;
@@ -1282,12 +1286,12 @@ private:
                 std::string_view{name} == "dow" ? std::size_t{7}
                 : std::string_view{name} == "dom" ? std::size_t{31}
                                                   : std::size_t{24};
-            if (it == object->end()) {
+            if (!found) {
                 // #[serde(default)] -> all-zero array of the fixed length.
                 target->resize(expected_slots, detail::SlotCounter{});
                 continue;
             }
-            const auto* array = std::get_if<serde::Value::Array>(&it->second.get());
+            const auto* array = std::get_if<serde::Value::Array>(&found->get());
             if (array == nullptr) {
                 error = std::string{name} + " must be an array";
                 return std::nullopt;
@@ -1304,19 +1308,15 @@ private:
                 }
                 detail::SlotCounter counter{};
                 const auto read = [&](std::string_view field, std::uint64_t& out) {
-                    const auto field_it = slot->find(std::string{field});
-                    if (field_it == slot->end()) {
+                    const auto field_found = slot->get(std::string{field});
+                    if (!field_found) {
                         return true; // serde(default) -> 0.
                     }
-                    if (const auto* number = std::get_if<std::int64_t>(&field_it->second.get())) {
+                    if (const auto* number = std::get_if<std::int64_t>(&field_found->get())) {
                         if (*number < 0) {
                             return false; // serde cannot decode a negative u64.
                         }
                         out = static_cast<std::uint64_t>(*number);
-                        return true;
-                    }
-                    if (const auto* number = std::get_if<std::uint64_t>(&field_it->second.get())) {
-                        out = *number;
                         return true;
                     }
                     return false;
@@ -1424,31 +1424,27 @@ private:
         }
         const auto read_string = [&](const serde::Value::Object& object, std::string_view key)
             -> std::optional<std::string> {
-            const auto it = object.find(std::string{key});
-            if (it == object.end()) {
-                return std::nullopt;
-            }
-            if (const auto* text = std::get_if<std::string>(&it->second.get())) {
+            const auto found = object.get(std::string{key});
+            if (!found) { return std::nullopt; }
+            if (const auto* text = std::get_if<std::string>(&found->get())) {
                 return *text;
             }
             return std::nullopt;
         };
         const auto read_bool = [&](const serde::Value::Object& object, std::string_view key)
             -> std::optional<bool> {
-            const auto it = object.find(std::string{key});
-            if (it == object.end()) {
-                return std::nullopt;
-            }
-            if (const auto* value = std::get_if<bool>(&it->second.get())) {
+            const auto found = object.get(std::string{key});
+            if (!found) { return std::nullopt; }
+            if (const auto* value = std::get_if<bool>(&found->get())) {
                 return *value;
             }
             return std::nullopt;
         };
 
         detail::PaymentProcessorTokenStatus status{};
-        const auto details_it = root->find("payment_processor_token_details");
-        if (details_it != root->end()) {
-            if (const auto* details = std::get_if<serde::Value::Object>(&details_it->second.get())) {
+        const auto details_found = root->get(std::string{"payment_processor_token_details"});
+        if (details_found) {
+            if (const auto* details = std::get_if<serde::Value::Object>(&details_found->get())) {
                 auto& out = status.payment_processor_token_details;
                 if (auto v = read_string(*details, "payment_processor_token")) {
                     out.payment_processor_token = *v;
@@ -1470,9 +1466,8 @@ private:
         status.is_hard_decline = read_bool(*root, "is_hard_decline");
         status.modified_at = read_string(*root, "modified_at");
         status.is_active = read_bool(*root, "is_active");
-        if (const auto it = root->find("daily_retry_history");
-            it != root->end()) {
-            if (const auto* history = std::get_if<serde::Value::Object>(&it->second.get())) {
+        if (const auto history_found = root->get(std::string{"daily_retry_history"})) {
+            if (const auto* history = std::get_if<serde::Value::Object>(&history_found->get())) {
                 for (const auto& [key, value] : *history) {
                     if (const auto* number = std::get_if<std::int64_t>(&value.get())) {
                         status.daily_retry_history[key] = static_cast<std::int32_t>(*number);
@@ -1482,18 +1477,16 @@ private:
                 }
             }
         }
-        if (const auto it = root->find("account_update_history");
-            it != root->end()) {
+        if (const auto history_found = root->get(std::string{"account_update_history"})) {
             auto history = serde::Ser::from_value<
                 std::vector<app::dto::revenue_recovery_data_backfill::AccountUpdateHistoryRecord>>(
-                it->second);
+                *history_found);
             if (history) {
                 status.account_update_history = std::move(*history);
             }
         }
-        if (const auto it = root->find("decision_threshold");
-            it != root->end()) {
-            if (const auto* number = std::get_if<double>(&it->second.get())) {
+        if (const auto threshold_found = root->get(std::string{"decision_threshold"})) {
+            if (const auto* number = std::get_if<double>(&threshold_found->get())) {
                 status.decision_threshold = *number;
             }
         }

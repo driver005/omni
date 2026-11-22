@@ -59,7 +59,7 @@ private:
         if (q == std::string::npos) return;
         const std::string_view path_view{path};
         const std::string_view query = path_view.substr(q + 1);
-        for (auto part : query | std::views::split('&')) {
+        for (auto part : std::views::split(query, '&')) {
             const std::string_view kv{std::ranges::begin(part), std::ranges::end(part)};
             if (!kv.starts_with("token=")) continue;
             const auto token = kv.substr(6);

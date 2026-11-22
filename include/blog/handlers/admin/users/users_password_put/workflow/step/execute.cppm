@@ -115,7 +115,7 @@ private:
  static std::string query_value(std::string_view path, std::string_view key) {
   const auto q=path.find('?');
   if (q==std::string_view::npos) return {};
-  for (auto pair : path.substr(q+1) | std::views::split('&')) {
+  for (auto pair : std::views::split(path.substr(q+1), '&')) {
    const std::string text{std::ranges::begin(pair),std::ranges::end(pair)};
    const auto eq=text.find('=');
    if (eq!=std::string::npos && text.substr(0,eq)==key) return text.substr(eq+1);

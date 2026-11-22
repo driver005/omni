@@ -810,12 +810,13 @@ private:
                 }
             }
         }
-        return serde::Ser::deserialize<Input>("application/json", body);
+        const auto decoded = serde::Ser::deserialize<Input>("application/json", body);
+        return decoded ? std::optional<Input>{*decoded} : std::nullopt;
     }
 
     [[nodiscard]] bool has_string_field(const interfaces::Value::Object& object, std::string_view key) const
     {
-        const auto field = object.get(key);
+        const auto field = object.get(std::string{key});
         return field.has_value() && std::holds_alternative<std::string>(field->get());
     }
 

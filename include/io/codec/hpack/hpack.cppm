@@ -328,7 +328,7 @@ private:
         static constexpr std::string_view SEP = "; ";
         // Split the raw cookie string on "; " and encode each crumb as its own field.
         std::ranges::for_each(
-            value | std::views::split(SEP),
+            std::views::split(value, SEP),
             [&](auto crumb_range)
             {
                 std::string_view crumb{crumb_range.begin(), crumb_range.end()};
@@ -1388,7 +1388,7 @@ suite<"HpackTableSizeUpdateAdaptor"> hpack_table_size_update_adaptor_suite = []
 //
 //     template <std::output_iterator<std::uint8_t> Out>
 //     void encode_cookies(std::string_view value, Out out) {
-//         for (auto crumb_range : value | std::views::split(COOKIE_SEPARATOR)) {
+//         for (auto crumb_range : std::views::split(value, COOKIE_SEPARATOR)) {
 //             std::string_view crumb{crumb_range.begin(), crumb_range.end()};
 //             if (crumb.empty())
 //                 continue;

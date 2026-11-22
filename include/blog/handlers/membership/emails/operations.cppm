@@ -159,7 +159,7 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     const auto route = path.substr(0, path.find('?'));
     std::vector<std::string> segments;
-    for (auto part : route | std::views::split('/')) {
+    for (auto part : std::views::split(route, '/')) {
         const std::string token{std::ranges::begin(part), std::ranges::end(part)};
         if (!token.empty()) segments.push_back(token);
     }

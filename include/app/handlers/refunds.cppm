@@ -1039,7 +1039,7 @@ private:
             m_context->metrics().counter("refunds_execute_no_connector").increment();
             return {};
         }
-        record.set_connector(connector->name());
+        record.set_connector(std::string{connector->name()});
         const std::string name{connector->name()};
         apply_gateway_decision(name, creds_identifier, /*flow=*/"refund");
 
@@ -1609,7 +1609,7 @@ private:
         // core/utils/refunds_validator.rs:113-141 — refund support for method type.
         // Local attempt records carry no method-type column; connectors are treated as
         // refund-capable unless the config explicitly disables them (in-process substitute).
-        const std::string key = std::format!("refund_not_supported.{}", connector);
+        const std::string key = std::format("refund_not_supported.{}", connector);
         if (config_bool("refund_not_supported", std::string{connector})) {
             return err(Kind::INVALID_REQUEST, std::format(
                 "Refunds are currently not supported for transactions via {}", connector));
@@ -1649,7 +1649,7 @@ private:
         if (!response.get_status().empty()) { return std::nullopt; }
         if (raw.empty() && response.get_message().empty()) { return std::nullopt; }
         ParsedConnectorError error{};
-        error.status_code = parse_i64(json_number(raw, "status_code")).value_or(400);
+        error.status_code = parse_i64(json_number(raw, "status_code"));
         error.code = json_string(raw, "code");
         error.message = json_string(raw, "message");
         if (error.message.empty()) { error.message = response.get_message(); }
@@ -1668,10 +1668,10 @@ private:
         std::string unified_code = json_string(raw, "unified_code");
         std::string unified_message = json_string(raw, "unified_message");
         if (unified_code.empty()) {
-            unified_code = config_value(std::format!("gsm.{}", code), std::string{code}).value_or(std::string{kUnifiedErrorCode});
+            unified_code = config_value(std::format("gsm.{}", code), std::string{code}).value_or(std::string{kUnifiedErrorCode});
         }
         if (unified_message.empty()) {
-            unified_message = config_value(std::format!("gsm.{}", message), std::string{message}).value_or(std::string{kUnifiedErrorMsg});
+            unified_message = config_value(std::format("gsm.{}", message), std::string{message}).value_or(std::string{kUnifiedErrorMsg});
         }
         return {unified_code.empty() ? std::string{kUnifiedErrorCode} : unified_code,
                 unified_message.empty() ? std::string{kUnifiedErrorMsg} : unified_message};
@@ -1681,7 +1681,7 @@ private:
     {
         // core/refunds.rs:1156-1169 — locale translation with fallback to stored message.
         if (code.empty() || message.empty()) { return std::string{message}; }
-        return config_value(std::format!("locale.{}.{}", code, message), "locale")
+        return config_value(std::format("locale.{}.{}", code, message), "locale")
             .value_or(std::string{message});
     }
 

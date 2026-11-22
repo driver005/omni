@@ -743,7 +743,7 @@ public:
         return request.transaction_id;
     }
 
-    [[nodiscard]] static const Parameters& parameters(const TwilioGenericPayRequest& request)
+    [[nodiscard]] static Parameters parameters(const TwilioGenericPayRequest& request)
     {
         static const Parameters empty{};
         return request.parameters.value_or(empty);
@@ -931,8 +931,8 @@ public:
         const std::size_t count{segments.count()};
         const auto merchant_segment = count >= 2 ? segments.at(count - 2) : std::nullopt;
         const auto provider_segment = count >= 1 ? segments.at(count - 1) : std::nullopt;
-        const std::string merchant_id = merchant_segment ? *merchant_segment : std::string{};
-        const std::string provider = provider_segment ? *provider_segment : std::string{};
+        const std::string merchant_id = merchant_segment ? std::string{*merchant_segment} : std::string{};
+        const std::string provider = provider_segment ? std::string{*provider_segment} : std::string{};
 
         if (merchant_id.empty() || provider != "twilio") {
             m_context->metrics().counter("telephone_order_charge_invalid_request_url").increment();
@@ -958,7 +958,7 @@ public:
         auto parsed = serde::Ser::deserialize<TwilioGenericPayRequest>("application/json", body);
         // An unknown TwilioPayMethod is a deserialization failure upstream (enum variant).
         if (parsed && parsed->get_method() != "charge" && parsed->get_method() != "tokenize") {
-            parsed = std::nullopt;
+            parsed = std::unexpected{std::string{"Unknown TwilioPayMethod"}};
         }
         if (!parsed) {
             m_context->metrics().counter("telephone_order_charge_invalid_data_format").increment();

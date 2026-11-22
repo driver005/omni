@@ -692,7 +692,7 @@ public:
         const auto values = JsonBody{}.parse(body);
         if (!values.contains("ids")) return 0;
         std::size_t removed = 0;
-        for (const auto& token : values.at("ids") | std::views::split(',')) {
+        for (const auto& token : std::views::split(values.at("ids"), ',')) {
             const std::string id{std::ranges::begin(token), std::ranges::end(token)};
             if (!id.empty() && destroy(resource, id)) ++removed;
         }
@@ -704,7 +704,7 @@ public:
         const auto values = JsonBody{}.parse(body);
         if (!values.contains("ids")) return 0;
         std::size_t updated = 0;
-        for (const auto& token : values.at("ids") | std::views::split(',')) {
+        for (const auto& token : std::views::split(values.at("ids"), ',')) {
             const std::string id{std::ranges::begin(token), std::ranges::end(token)};
             if (!id.empty() && edit(resource, id, body)) ++updated;
         }
@@ -753,7 +753,7 @@ private:
         const auto hit = m_cache.get(ids_key(resource));
         if (!hit.hit) return {};
         std::vector<std::string> ids;
-        for (const auto& token : std::string_view{core::cache::value_as<std::string>(hit.value)} | std::views::split(',')) {
+        for (const auto& token : std::views::split(std::string_view{core::cache::value_as<std::string>(hit.value)}, ',')) {
             const std::string id{std::ranges::begin(token), std::ranges::end(token)};
             if (!id.empty()) ids.push_back(id);
         }

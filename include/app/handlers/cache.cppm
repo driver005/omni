@@ -176,7 +176,7 @@ public:
         // selects all caches, so the key is erased from this instance's cache.
         app::context::AppContext* ctx = m_context;
         m_subscription = InProcessPubSubBroker::instance().subscribe(
-            kInvalidationChannel,
+            std::string{kInvalidationChannel},
             [ctx](std::string_view message) {
                 if (const auto key = key_from_cache_redact(message); !key.empty()) {
                     ctx->cache().erase(key);
@@ -201,7 +201,7 @@ private:
     {
         m_context->cache().erase(key);
         return InProcessPubSubBroker::instance().publish(
-            kInvalidationChannel,
+            std::string{kInvalidationChannel},
             encode_cache_redact(key)
         );
     }

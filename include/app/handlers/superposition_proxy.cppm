@@ -463,6 +463,9 @@ private:
     {
         std::vector<std::pair<std::string, std::string>> values{};
 
+        QueryPairs() = default;
+        QueryPairs(std::vector<std::pair<std::string, std::string>> v) : values(std::move(v)) {}
+
         [[nodiscard]] std::optional<std::string> first_value(std::string_view name) const
         {
             for (const auto& [key, value] : values) {
@@ -1557,9 +1560,9 @@ private:
                 const auto value = m_context->superposition().resolve(default_config_ns(), key, context);
                 const auto decoded = decode_or_null(value ? value->get_value() : std::string{"null"});
                 serde::Value::Object entry{};
-                entry.insert("description", serde::Value{value ? value->get_context() : std::string{}});
-                entry.insert("schema", serde::Value{serde::Value::Object{}});
-                entry.insert("value", decoded);
+                entry.insert(std::string{"description"}, serde::Value{value ? value->get_context() : std::string{}});
+                entry.insert(std::string{"schema"}, serde::Value{serde::Value::Object{}});
+                entry.insert(std::string{"value"}, serde::Value{decoded});
                 resolved.insert(key, serde::Value{std::move(entry)});
             }
         } else {
@@ -1568,9 +1571,9 @@ private:
                     default_config_ns(), key, scalar_text(value).value_or("")
                 );
                 serde::Value::Object entry{};
-                entry.insert("description", serde::Value{std::string{}});
-                entry.insert("schema", serde::Value{serde::Value::Object{}});
-                entry.insert("value", decode_or_null(found ? found->get_value() : serde::Ser::encode_json(value)));
+                entry.insert(std::string{"description"}, serde::Value{std::string{}});
+                entry.insert(std::string{"schema"}, serde::Value{serde::Value::Object{}});
+                entry.insert(std::string{"value"}, serde::Value{decode_or_null(found ? found->get_value() : serde::Ser::encode_json(value))});
                 resolved.insert(key, serde::Value{std::move(entry)});
             }
         }
@@ -1596,7 +1599,7 @@ private:
             ResolveExplanationEntryOut entry{};
             entry.context_id = log.get_config_namespace();
             for (const auto& [key, value] : input.context) {
-                entry.condition.insert(key, value);
+                entry.condition.emplace(key, serde::Value{value});
             }
             entry.override_id = std::to_string(log.get_id());
             entry.value_before = decode_or_null(before ? before->get_value() : std::string{"null"});
@@ -1701,12 +1704,12 @@ private:
         }
         if (encoded.starts_with("LOCAL_COHORT:")) {
             serde::Value::Object object{};
-            object.insert("LOCAL_COHORT", Doc{encoded.substr(13U)});
+            object.insert(std::string{"LOCAL_COHORT"}, Doc{encoded.substr(13U)});
             return Doc{std::move(object)};
         }
         if (encoded.starts_with("REMOTE_COHORT:")) {
             serde::Value::Object object{};
-            object.insert("REMOTE_COHORT", Doc{encoded.substr(14U)});
+            object.insert(std::string{"REMOTE_COHORT"}, Doc{encoded.substr(14U)});
             return Doc{std::move(object)};
         }
         return Doc{std::string{"UNKNOWN"}};
@@ -2038,13 +2041,13 @@ private:
     [[nodiscard]] static serde::Value wire_paginated(const PaginatedResult& result)
     {
         serde::Value::Object object{};
-        object.insert("total_pages", serde::Value{static_cast<std::int64_t>(result.total_pages)});
-        object.insert("total_items", serde::Value{static_cast<std::int64_t>(result.total_items)});
+        object.insert(std::string{"total_pages"}, serde::Value{static_cast<std::int64_t>(result.total_pages)});
+        object.insert(std::string{"total_items"}, serde::Value{static_cast<std::int64_t>(result.total_items)});
         serde::Value::Array data{};
         for (const auto& item : result.data) {
             data.push_back(item);
         }
-        object.insert("data", serde::Value{std::move(data)});
+        object.insert(std::string{"data"}, serde::Value{std::move(data)});
         return serde::Value{std::move(object)};
     }
 
@@ -2075,30 +2078,30 @@ private:
         serde::Value::Object inner{};
         switch (error.kind) {
         case ApiError::Kind::InvalidRequestData:
-            inner.insert("type", serde::Value{std::string{"invalid_request_error"}});
-            inner.insert("message", serde::Value{error.message});
-            inner.insert("code", serde::Value{std::string{"IR_06"}});
+            inner.insert(std::string{"type"}, serde::Value{std::string{"invalid_request_error"}});
+            inner.insert(std::string{"message"}, serde::Value{error.message});
+            inner.insert(std::string{"code"}, serde::Value{std::string{"IR_06"}});
             break;
         case ApiError::Kind::AccessForbidden:
-            inner.insert("type", serde::Value{std::string{"invalid_request_error"}});
+            inner.insert(std::string{"type"}, serde::Value{std::string{"invalid_request_error"}});
             inner.insert(
-                "message",
+                std::string{"message"},
                 serde::Value{"Access forbidden. Not authorized to access this resource " + error.resource}
             );
-            inner.insert("code", serde::Value{std::string{"IR_22"}});
+            inner.insert(std::string{"code"}, serde::Value{std::string{"IR_22"}});
             break;
         case ApiError::Kind::InternalServerError:
-            inner.insert("type", serde::Value{std::string{"server_not_available"}});
-            inner.insert("message", serde::Value{error.message});
-            inner.insert("code", serde::Value{std::string{"HE_00"}});
+            inner.insert(std::string{"type"}, serde::Value{std::string{"server_not_available"}});
+            inner.insert(std::string{"message"}, serde::Value{error.message});
+            inner.insert(std::string{"code"}, serde::Value{std::string{"HE_00"}});
             break;
         case ApiError::Kind::MissingHeader:
         case ApiError::Kind::BadRequestBody:
-            inner.insert("message", serde::Value{error.message});
+            inner.insert(std::string{"message"}, serde::Value{error.message});
             break;
         }
         serde::Value::Object root{};
-        root.insert("error", serde::Value{std::move(inner)});
+        root.insert(std::string{"error"}, serde::Value{std::move(inner)});
         return serde::Value{std::move(root)};
     }
 

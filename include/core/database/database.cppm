@@ -66,7 +66,7 @@ public:
     [[nodiscard]] std::vector<std::string> split(std::string_view joined) const
     {
         std::vector<std::string> columns;
-        for (const auto part: joined | std::views::split(',')) {
+        for (const auto part: std::views::split(joined, ',')) {
             columns.emplace_back(std::ranges::begin(part), std::ranges::end(part));
         }
         return columns;

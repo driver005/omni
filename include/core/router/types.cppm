@@ -16,7 +16,7 @@ enum class EdgeKind : std::uint8_t
 
 constexpr auto split_path(std::string_view path) noexcept
 {
-    return path | std::views::split('/') |
+    return std::views::split(path, '/') |
            std::views::transform(
                [](auto&& rng)
                {

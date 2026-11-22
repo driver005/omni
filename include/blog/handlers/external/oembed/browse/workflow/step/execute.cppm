@@ -91,7 +91,7 @@ struct FetchResult
     std::map<std::string, std::string> out;
     const auto q = path.find('?');
     if (q == std::string_view::npos) return out;
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         const std::string pair{std::ranges::begin(part), std::ranges::end(part)};
         if (const auto eq = pair.find('='); eq != std::string::npos) {
             out[pair.substr(0, eq)] = pair.substr(eq + 1);

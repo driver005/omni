@@ -35,7 +35,7 @@ public:
         EdgeKind kind,
         std::string_view path,
         std::uint16_t children_offset,
-        std::uint8_t children_length,
+        std::size_t children_length,
         std::uint16_t middleware_offset,
         std::uint8_t middleware_size,
         std::uint16_t handler_offset,
@@ -76,7 +76,7 @@ public:
     constexpr std::optional<RouterNode> find_child(
         std::string_view seg,
         std::span<RouterNode> table,
-        std::uint8_t& current_index,
+        std::size_t& current_index,
         std::span<const std::string_view> rest = {}
     ) const
     {
@@ -98,7 +98,7 @@ public:
             const std::uint32_t HASH = fnv1a(seg) % m_children_length;
 
             for (std::uint32_t i = 0; i < m_children_length; ++i) {
-                std::uint8_t idx = current_index + ((HASH + i) % m_children_length);
+                std::size_t idx = current_index + ((HASH + i) % m_children_length);
 
                 auto& node = table[idx]; // FIXME(clang-tidy): unchecked operator[], consider .at()
                 std::println(
@@ -155,7 +155,7 @@ public:
                 for (const auto candidate : param_indexes) {
                     auto& node = table[candidate];
                     for (std::size_t i = 0; i < node.get_children_length(); ++i) {
-                        auto& child = table[node.get_data_offset() + i];
+                        auto& child = table[candidate + node.get_data_offset() + i];
                         if (child.get_kind() == EdgeKind::PATH && child.get_literal() == rest[0]) {
                             chosen = candidate;
                             break;
@@ -192,7 +192,7 @@ public:
      * @brief Gets this node's child count.
      * @return mutable reference to the children length.
      */
-    constexpr std::uint8_t& get_children_length() noexcept
+    constexpr std::size_t& get_children_length() noexcept
     {
         return m_children_length;
     }
@@ -257,7 +257,7 @@ private:
     EdgeKind m_kind{};
     std::string m_path;
     std::uint16_t m_children_offset{};
-    std::uint8_t m_children_length{};
+    std::size_t m_children_length{};
     std::uint16_t m_middleware_offset{};
     std::uint8_t m_middleware_length{};
     std::uint16_t m_handler_offset{};
@@ -265,8 +265,8 @@ private:
 };
 
 template<
-    std::size_t RouterSize = 1024,
-    std::size_t HandlerSize = 512,
+    std::size_t RouterSize = 4096,
+    std::size_t HandlerSize = 4096,
     std::size_t MiddlewareSize = 192>
 class RouteHandler
 {
@@ -352,7 +352,7 @@ public:
             // walk the trie from the root, one path segment at a time
             RouterNode current =
                 m_table[0]; // FIXME(clang-tidy): unchecked operator[], consider .at()
-            std::uint8_t current_index = 0;
+            std::size_t current_index = 0;
 
             for (; it != end; ++it) {
                 const auto position = static_cast<std::size_t>(it - segments.begin());
@@ -381,6 +381,24 @@ public:
             // path fully resolved to a node — now it's just a question of whether that node
             // has a handler for this specific method
             if (it == end) {
+                // Empty-path child (`web::resource("")` at a scope root) is built as a
+                // literal child with an empty label. When the request path ends at the
+                // parent scope, fall back to that child's handler.
+                if (current.get_handler_mask() == HANDLER_MASK &&
+                    current.get_children_length() > 0) {
+                    // get_data_offset() is relative to the node's own index (find_child
+                    // does `current_index += m_children_offset`), so add current_index.
+                    const std::size_t base = current_index + current.get_data_offset();
+                    for (std::size_t i = 0; i < current.get_children_length(); ++i) {
+                        auto& child = m_table[base + i];
+                        if (child.get_kind() == EdgeKind::PATH &&
+                            child.get_literal().empty() &&
+                            child.get_handler_mask() != HANDLER_MASK) {
+                            current = child;
+                            break;
+                        }
+                    }
+                }
                 // HANDLER_MASK unchanged means no handlers were ever registered on this node
                 if (current.get_handler_mask() != HANDLER_MASK) {
                     const auto HANDLER_FN = m_handler.find(
@@ -506,7 +524,7 @@ public:
         std::size_t children_offset,
         const Handler<8>& handler,
         const Middleware<MiddlewareSize>& middleware,
-        std::uint8_t children_size
+        std::size_t children_size
     )
     {
         // stamp out the node up front — offsets into the shared pools are wherever the pools'
@@ -575,7 +593,7 @@ private:
     // Runs on every request before the trie walk — separate from m_middleware, which is the
     // per-node offset pool the routes carve slices out of.
     Middleware<MiddlewareSize> m_global_middleware{};
-    std::uint8_t m_table_index{0};
+    std::size_t m_table_index{0};
 };
 
 } // namespace core::router

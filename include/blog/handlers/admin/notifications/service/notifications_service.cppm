@@ -118,7 +118,7 @@ using Record = blog::api::RecordDto; // std::map<std::string, std::string> of ra
 [[nodiscard]] inline std::vector<std::string> string_array(std::string_view raw)
 {
     std::vector<std::string> out;
-    for (auto part : std::string_view{raw} | std::views::split(',')) {
+    for (auto part : std::views::split(std::string_view{raw}, ',')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         if (!trim(text).empty()) out.push_back(unquote(text));
     }

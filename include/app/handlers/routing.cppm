@@ -1048,7 +1048,7 @@ public:
                     app::model::routing::RuleMigrationNotApplicable na;
                     na.set_profile_id(profile_value);
                     na.set_algorithm_id(wrap<app::model::routing::RoutingIdValue>(algorithm_id));
-                    na.set_kind(app::model::routing::RoutingAlgorithmKind::RoutingAlgorithm);
+                    na.set_kind(app::model::routing::RoutingAlgorithmKind::Single);
                     na.set_reason("3DS decision rules are not migrated to the Decision Engine");
                     not_applicable.push_back(std::move(na));
                     continue;
@@ -1617,7 +1617,7 @@ private:
         item.set_profile_id(wrap<app::model::routing::ProfileIdValue>(std::string{profile}));
         item.set_name(std::string{name});
         item.set_description(std::string{description});
-        item.set_kind(app::model::routing::RoutingAlgorithmKind::RoutingAlgorithm);
+        item.set_kind(app::model::routing::RoutingAlgorithmKind::Single);
         item.set_created_at(now_unix());
         item.set_modified_at(now_unix());
         item.set_algorithm_for(wrap<app::model::routing::TransactionTypeValue>(std::string{txn}));
@@ -1891,7 +1891,7 @@ private:
             return {};
         }
         std::vector<std::string> ids;
-        for (auto part : stored->get_value() | std::views::split(',')) {
+        for (auto part : std::views::split(stored->get_value(), ',')) {
             std::string id{std::ranges::begin(part), std::ranges::end(part)};
             if (!id.empty()) {
                 ids.push_back(std::move(id));

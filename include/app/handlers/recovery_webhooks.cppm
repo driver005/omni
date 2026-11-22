@@ -514,7 +514,7 @@ private:
         return std::get_if<interfaces::Value::Object>(&value.get());
     }
 
-    [[nodiscard]] const interfaces::Value* field(
+    [[nodiscard]] const interfaces::Value::VariantType* field(
         const interfaces::Value& value,
         std::string_view key
     ) const
@@ -534,7 +534,7 @@ private:
     {
         const auto* found = field(value, key);
         if (found != nullptr) {
-            if (const auto* text = std::get_if<std::string>(&found->get())) {
+            if (const auto* text = std::get_if<std::string>(found)) {
                 return *text;
             }
         }
@@ -545,13 +545,13 @@ private:
     {
         const auto* found = field(value, key);
         if (found != nullptr) {
-            if (const auto* number = std::get_if<std::int64_t>(&found->get())) {
+            if (const auto* number = std::get_if<std::int64_t>(found)) {
                 return *number;
             }
-            if (const auto* number = std::get_if<double>(&found->get())) {
+            if (const auto* number = std::get_if<double>(found)) {
                 return static_cast<std::int64_t>(*number);
             }
-            if (const auto* text = std::get_if<std::string>(&found->get())) {
+            if (const auto* text = std::get_if<std::string>(found)) {
                 try {
                     return std::stoll(*text);
                 } catch (...) {
@@ -1386,14 +1386,15 @@ private:
     // -----------------------------------------------------------------------
 
     /** `get_recovery_invoice_transaction_details` (recovery_incoming.rs:663-690). */
-    [[nodiscard]] RevenueRecoveryAttemptData get_recovery_invoice_transaction_details(
+    [[nodiscard]] ResolvedTransaction get_recovery_invoice_transaction_details(
         const RequestScope& scope,
         std::string_view object_ref
     ) const
     {
-        RevenueRecoveryAttemptData attempt{};
+        ResolvedTransaction resolved{};
+        RevenueRecoveryAttemptData& attempt = resolved.attempt_data;
         const auto parsed = serde::Ser::decode_generic("application/json", scope.body);
-        if (!parsed) return attempt;
+        if (!parsed) return resolved;
         attempt.connector_transaction_id = json_string(*parsed, "connector_transaction_id");
         if (attempt.connector_transaction_id.empty()) attempt.connector_transaction_id = std::string{object_ref};
         attempt.charge_id = json_string(*parsed, "charge_id");
@@ -1408,7 +1409,8 @@ private:
         attempt.transaction_created_at = json_string(*parsed, "transaction_created_at");
         attempt.amount = json_int(*parsed, "amount");
         attempt.retry_count = static_cast<int>(json_int(*parsed, "retry_count"));
-        return attempt;
+        resolved.present = !attempt.connector_transaction_id.empty();
+        return resolved;
     }
 
     /** `find_payment_merchant_connector_account` (recovery_incoming.rs:1144-1191). */
@@ -1534,7 +1536,7 @@ private:
         const RequestScope& scope
     ) const
     {
-        return get_recovery_invoice_transaction_details(scope, scope.object_ref.value);
+        return get_recovery_invoice_transaction_details(scope, scope.object_ref.value).attempt_data;
     }
 
     /** `list_attempts` (recovery_incoming.rs:774-815). */

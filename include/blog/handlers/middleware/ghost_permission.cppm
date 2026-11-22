@@ -78,8 +78,7 @@ private:
 
     principal.role = std::string{request.find_header(kGhostRoleHeader)};
 
-    for (auto part : std::string_view{request.find_header(kGhostPermissionsHeader)} |
-                         std::views::split(',')) {
+    for (auto part : std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
         if (!scope.empty()) principal.permissions.insert(scope);
     }

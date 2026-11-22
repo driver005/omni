@@ -10,7 +10,7 @@ def _system_libstdcxx_repo(repo_ctx):
     found = repo_ctx.execute([
         "bash",
         "-lc",
-        "ls /usr/include/c++/*/bits/std.cc 2>/dev/null | head -1",
+        "ls -v /usr/include/c++/*/bits/std.cc 2>/dev/null | tail -1",
     ])
     std_cc = found.stdout.strip()
     if not std_cc:

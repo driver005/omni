@@ -37,7 +37,7 @@ namespace upload_detail {
 {
     const auto q = path.find('?');
     if (q == std::string_view::npos) return {};
-    for (auto part : path.substr(q + 1) | std::views::split('&')) {
+    for (auto part : std::views::split(path.substr(q + 1), '&')) {
         std::string_view kv{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = kv.find('=');
         if (eq != std::string_view::npos && kv.substr(0, eq) == key) {

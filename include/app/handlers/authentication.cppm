@@ -932,7 +932,7 @@ private:
         }
         track_record_fetch("retrieve_eligibility_check", authentication_id);
         const auto tracker_id = schedule_auth_tracker("retrieve_eligibility_check", authentication_id, auth.flow);
-        m_context->process_trackers().mark_terminal(tracker_id, authentication_id);
+        m_context->process_trackers().mark_terminal(tracker_id, std::string{authentication_id});
         m_context->metrics().record_flow("AuthenticationRetrieveEligibilityCheck");
 
         // :1770-1788 ClickToPayEligibilityCheckResponseData { visa, mastercard consumer_present }.
@@ -1019,7 +1019,7 @@ private:
         const std::string return_url = record->get_return_url().empty()
             ? std::string{"/authentication/"} + std::string{merchant_id} + "/" + std::string{authentication_id} + "/redirect"
             : record->get_return_url();
-        const std::string status = trans_status_wire(record->get_trans_status());
+        const std::string status{trans_status_wire(record->get_trans_status())};
         // Vec<(String, Secret<String>)> wire shape: [["status","Y"],["authentication_id","..."],...].
         const auto pair_json = [](std::string_view key, std::string_view value) {
             return "[" + serde::Ser::encode_json(std::string{key}) + ","
@@ -1061,7 +1061,7 @@ private:
         }
         track_record_fetch("session_token", authentication_id);
         const auto tracker_id = schedule_auth_tracker("session_token", authentication_id, auth.flow);
-        m_context->process_trackers().mark_terminal(tracker_id, authentication_id);
+        m_context->process_trackers().mark_terminal(tracker_id, std::string{authentication_id});
         m_context->metrics().record_flow("AuthenticationSessionToken");
 
         // :2562-2573 is_click_to_pay_enabled && authentication_product_ids ->
@@ -1156,7 +1156,7 @@ private:
                                 : operation == "verify" ? connector->verify(request)
                                 : connector->authorize(request);
             m_context->process_trackers().update_status(tracker_id, "RUNNING");
-            m_context->process_trackers().mark_terminal(tracker_id, response.get_reference_id());
+            m_context->process_trackers().mark_terminal(tracker_id, std::string{response.get_reference_id()});
             m_context->metrics().counter("authentication_connector_call").increment();
             ConnectorOutcome outcome{};
             outcome.trans_status = response.get_status().empty() ? "Y" : response.get_status();
@@ -1169,7 +1169,7 @@ private:
         // Deterministic local connector (documented substitute).
         const auto digest = app::crypto::KeyedHasher{"authentication_connector"}.hash(
             std::string{operation} + ":" + std::string{resource_id});
-        m_context->process_trackers().mark_terminal(tracker_id, digest);
+        m_context->process_trackers().mark_terminal(tracker_id, std::string{digest});
         m_context->metrics().counter("authentication_connector_unavailable").increment();
         ConnectorOutcome outcome{};
         outcome.reference_id = "authn_" + digest;
@@ -1254,7 +1254,7 @@ private:
     {
         if (is_terminal_status(record.get_trans_status())) {
             return make_error(core::error::AppErrorKind::VALIDATION_FAILED,
-                "authentication status for the given authentication_id is already in " + trans_status_wire(record.get_trans_status()));
+                "authentication status for the given authentication_id is already in " + std::string{trans_status_wire(record.get_trans_status())});
         }
         return std::nullopt;
     }
@@ -1571,7 +1571,7 @@ private:
         response.set_status(make_status_value(record.get_status()));
         if (!record.get_trans_status().empty()) {
             app::dto::authentication::TransactionStatusValue transaction_status{};
-            transaction_status.set_value(trans_status_wire(record.get_trans_status()));
+            transaction_status.set_value(std::string{trans_status_wire(record.get_trans_status())});
             response.set_transaction_status(transaction_status);
         }
         if (!record.get_acs_url().empty()) {
@@ -1644,7 +1644,7 @@ private:
         response.set_acs_signed_content(string_opt(record.get_acs_signed_content()));
         response.set_three_ds_requestor_url(string_opt(record.get_three_ds_requestor_url()));
         response.set_three_ds_requestor_app_url(string_opt(record.get_three_ds_requestor_app_url()));
-        response.set_profile_acquirer_id(string_opt(record.get_profile_acquirer_id()));
+        if (!record.get_profile_acquirer_id().empty()) { app::dto::authentication::ProfileAcquirerIdValue pa{}; pa.set_value(record.get_profile_acquirer_id()); response.set_profile_acquirer_id(pa); }
         (void)outcome;
         return serde::Ser::encode_json(response);
     }
@@ -1806,7 +1806,7 @@ private:
     void update_eligibility_check_trackers(std::string_view authentication_id, AuthFlowKind flow) const
     {
         const auto tracker_id = schedule_auth_tracker("eligibility_check", authentication_id, flow);
-        m_context->process_trackers().mark_terminal(tracker_id, authentication_id);
+        m_context->process_trackers().mark_terminal(tracker_id, std::string{authentication_id});
     }
 
     void publish_auth_event(

@@ -314,7 +314,7 @@ std::optional<std::string> validate_options(const Query& q, bool content)
     if (const auto it = q.options.find("include"); it != q.options.end() &&
         !detail::in(includes, it->second)) {
         // Compound include lists are comma separated; validate each token.
-        for (auto part : std::string_view{it->second} | std::views::split(',')) {
+        for (auto part : std::string_view{it->std::views::split(second}, ',')) {
             const std::string token{std::ranges::begin(part), std::ranges::end(part)};
             if (!detail::in(includes, detail::trim(token))) {
                 return validation("include", "Invalid include value");
@@ -323,7 +323,7 @@ std::optional<std::string> validate_options(const Query& q, bool content)
     }
     if (const auto it = q.options.find("formats"); it != q.options.end() &&
         !detail::in(kFormats, it->second)) {
-        for (auto part : std::string_view{it->second} | std::views::split(',')) {
+        for (auto part : std::string_view{it->std::views::split(second}, ',')) {
             const std::string token{std::ranges::begin(part), std::ranges::end(part)};
             if (!detail::in(kFormats, detail::trim(token))) {
                 return validation("formats", "Invalid formats value");

@@ -524,7 +524,7 @@ private:
     ) const
     {
         auto repository = m_context->repository();
-        const auto account = repository.find_merchant_account_by_string(merchant_id);
+        auto account = repository.find_merchant_account_by_string(merchant_id);
         const std::string account_type = account ? account->get_merchant_account_type() : std::string{};
 
         // core/admin.rs:4066-4070.
@@ -551,9 +551,8 @@ private:
                 std::format("Business Profile with the profile_id {} already exists", profile_id)
             ));
         }
-        const auto payload = insert_business_profile(profile_id, merchant_id, domain->get_profile_name(), *domain);
-        if (!payload) {
-            return std::unexpected(*payload);
+        if (const auto insert_error = insert_business_profile(profile_id, merchant_id, domain->get_profile_name(), *domain)) {
+            return std::unexpected(*insert_error);
         }
 
         // core/admin.rs:4100-4112 (v1) — unset an existing default profile.
@@ -563,8 +562,9 @@ private:
             (void)repository.update_merchant_account(*account);
         }
 
-        emit_event("create", *payload);
-        return *payload;
+        const auto payload = serde::Ser::encode_json(*domain);
+        emit_event("create", payload);
+        return payload;
     }
 
     // core/admin.rs:4122-4150 — list_profile.
@@ -633,7 +633,7 @@ private:
     {
         auto repository = m_context->repository();
         // core/admin.rs:4681-4685 — find_merchant_account_by_merchant_id.
-        const auto account = repository.find_merchant_account_by_string(merchant_id);
+        auto account = repository.find_merchant_account_by_string(merchant_id);
         if (!account) {
             return std::unexpected(make_error(
                 core::error::AppErrorKind::NOT_FOUND, "merchant account not found"
@@ -718,7 +718,7 @@ private:
         // merchant; the header/route binding is enforced by
         // authorize_profile_operation and the ownership check below.
         auto repository = m_context->repository();
-        const auto account = repository.find_merchant_account_by_string(merchant_id);
+        auto account = repository.find_merchant_account_by_string(merchant_id);
         if (!account) {
             return std::unexpected(make_error(
                 core::error::AppErrorKind::NOT_FOUND, "merchant account not found"
@@ -753,7 +753,7 @@ private:
     // ==================================================================
 
     // core/admin.rs:3576-3826 (v1) / :3830+ (v2) — create_domain_model_from_request.
-    [[nodiscard]] JsonResult create_domain_model_from_request(
+    [[nodiscard]] std::expected<Response, core::error::AppError> create_domain_model_from_request(
         std::string_view merchant_id,
         const CreateInput& request
     ) const
@@ -786,7 +786,7 @@ private:
         }
 
         auto repository = m_context->repository();
-        const auto account = repository.find_merchant_account_by_string(merchant_id);
+        auto account = repository.find_merchant_account_by_string(merchant_id);
         Response domain;
         const std::string profile_id = m_context->ids().payment_id("profile_");
         // Plain id strings on the profile-owned wire type — upstream emits
@@ -878,14 +878,14 @@ private:
         domain.set_always_collect_shipping_details_from_wallet_connector(
             request.get_always_collect_shipping_details_from_wallet_connector());
 
-        return serde::Ser::encode_json(domain);
+        return domain;
     }
 
     // core/admin.rs:4211-4470 — ProfileUpdateBridge::get_update_profile_object.
     // Upstream converts the request into domain::ProfileGeneralUpdate whose
     // Option fields mean "no change"; applying them onto the stored domain
     // profile reproduces the upstream DB merge exactly.
-    [[nodiscard]] JsonResult get_update_profile_object(
+    [[nodiscard]] std::expected<Response, core::error::AppError> get_update_profile_object(
         const Response& stored,
         const UpdateInput& request
     ) const
@@ -938,7 +938,7 @@ private:
             overlay_webhook(base, *request.get_webhook_details());
             merged.set_webhook_details(to_webhook_response(base));
         }
-        return serde::Ser::encode_json(merged);
+        return merged;
     }
 
     // Apply only the Option fields that are present (domain::ProfileGeneralUpdate

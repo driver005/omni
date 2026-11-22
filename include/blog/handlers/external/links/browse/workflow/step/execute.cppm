@@ -126,8 +126,7 @@ inline constexpr std::array<std::string_view, 1> kBrowseOptions{"filter"};
 
     p.role = std::string{req.find_header(kGhostRoleHeader)};
     if (p.role.empty() && p.context == ApiContext::ADMIN_API) p.role = "Administrator";
-    for (auto part : std::string_view{req.find_header(kGhostPermissionsHeader)} |
-                         std::views::split(',')) {
+    for (auto part : std::views::split(std::string_view{req.find_header(kGhostPermissionsHeader)}, ',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
         if (!scope.empty()) p.permissions.insert(scope);
     }
@@ -252,7 +251,7 @@ inline constexpr std::array<std::string_view, 1> kBrowseOptions{"filter"};
     if (const auto q = old_link.find('?'); q != std::string::npos) {
         auto query = old_link.substr(q + 1);
         if (const auto h = query.find('#'); h != std::string::npos) query = query.substr(0, h);
-        for (auto part : query | std::views::split('&')) {
+        for (auto part : std::views::split(query, '&')) {
             const std::string text{std::ranges::begin(part), std::ranges::end(part)};
             if (text.starts_with("ref=")) {
                 old_ref = detail::unquote(text.substr(4));

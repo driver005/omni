@@ -43,7 +43,7 @@ public:
         const auto cut = path.find('?');
         const auto route = cut == std::string_view::npos ? path : path.substr(0, cut);
         std::vector<std::string> segs;
-        for (auto s : route | std::views::split('/')) {
+        for (auto s : std::views::split(route, '/')) {
             if (!s.empty()) segs.emplace_back(std::ranges::begin(s), std::ranges::end(s));
         }
         if (segs.size() < 3) {

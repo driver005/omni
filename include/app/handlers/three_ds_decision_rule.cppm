@@ -17,9 +17,10 @@ import app_services;
 
 export namespace app::handlers::three_ds_decision_rule {
 
-export namespace detail {
+namespace Dto = app::dto::three_ds_decision_rule;
 
-using Dto = app::dto::three_ds_decision_rule;
+namespace detail {
+
 using Decision = Dto::ThreeDSDecision;
 using Request = Dto::ThreeDsDecisionRuleExecuteRequest;
 using Value = interfaces::Value;
@@ -807,7 +808,7 @@ private:
 
     // Port of core::three_ds_decision_rule::execute_three_ds_decision_rule
     // (core/three_ds_decision_rule.rs:23-39).
-    [[nodiscard]] std::expected<detail::Dto::ThreeDsDecisionRuleExecuteResponse, core::error::AppError>
+    [[nodiscard]] std::expected<Dto::ThreeDsDecisionRuleExecuteResponse, core::error::AppError>
     execute_three_ds_decision_rule(
         const detail::Request& request,
         std::string_view processor_merchant_id
@@ -817,7 +818,7 @@ private:
         if (!decision) {
             return std::unexpected{decision.error()};
         }
-        detail::Dto::ThreeDsDecisionRuleExecuteResponse response{};
+        Dto::ThreeDsDecisionRuleExecuteResponse response{};
         response.set_decision(*decision);
         return response;
     }

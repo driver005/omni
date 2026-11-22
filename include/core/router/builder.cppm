@@ -15,7 +15,7 @@ template<std::size_t MaxMiddlewareSize = 192>
 class Router;
 
 template<
-    std::size_t RouterSize = 1024,
+    std::size_t RouterSize = 4096,
     std::size_t MaxHandlerSize = 8,
     std::size_t MaxMiddlewareSize = 192>
 class RouterContext
@@ -151,7 +151,10 @@ public:
         }
 
         // walk the table row by row (each row = one router's children) to compute each
-        // node's forward offset to its own children before handing it to the real handler
+        // node's forward offset to its own children before handing it to the real handler.
+        // The offset is RELATIVE to the node's own flat index: find_child() does
+        // `current_index += m_children_offset`, so a node at index I in a row of size N
+        // points at I + (N - I + cumulative) = N + cumulative = the first child row.
         for (const auto& row: table) {
             std::size_t cumulative_children = 0;
             for (const auto& [index, node]: row | std::views::enumerate) {
@@ -259,9 +262,11 @@ private:
     static constexpr std::pair<EdgeKind, std::string_view>
     determine_node_kind(std::string_view path)
     {
-        // empty path has nothing to classify — bail loud
+        // an empty path is the scope-root resource (`web::resource("")`): it is
+        // merged into its parent router node at build time, so classify it as a
+        // path node with an empty literal.
         if (path.empty()) {
-            throw std::runtime_error("Path cannot be empty");
+            return std::make_pair(EdgeKind::PATH, std::string_view{});
         }
 
         // exact "*" segment is the wildcard edge, no literal text attached
@@ -357,6 +362,7 @@ private:
         auto [kind, literal] = determine_node_kind(route.get_path());
         std::size_t router_number = 0;
 
+
         // child count > 0 means this route is actually a router/branch node — it gets its
         // own router_number tag so its future children can find it; a leaf route tags 0
         // instead since nothing parents off a leaf
@@ -443,8 +449,10 @@ public:
         m_handler{},
         m_local_middleware{}
     {
-        // wildcard is always fine — everything else just needs a '/' somewhere in it
-        if (path != "*") {
+        // wildcard is always fine; an empty path is the "resource at the scope root"
+        // form (upstream `web::resource("")`) and is merged into the parent router at
+        // build time; everything else needs a '/' somewhere in it.
+        if (path != "*" && !path.empty()) {
             if (!path.contains('/')) {
                 throw std::runtime_error("Route path must start '/'");
             }
@@ -473,8 +481,8 @@ public:
         m_child_routes{0},
         m_handler{}
     {
-        // same path validation as the single-arg constructor
-        if (path != "*") {
+        // same path validation as the single-arg constructor (empty = scope-root resource)
+        if (path != "*" && !path.empty()) {
             if (!path.contains('/')) {
                 throw std::runtime_error("Route path must start '/'");
             }
@@ -780,7 +788,7 @@ public:
     }
 
 private:
-    std::string_view m_path;
+    std::string m_path;
     bool m_is_build;
     std::size_t m_router_number;
     std::size_t m_base_router;
@@ -795,6 +803,49 @@ class Router
 public:
     // constexpr Router() : m_ctx{}, m_router_number{0}, m_router_index{0} {}
 
+private:
+    /** Register a possibly multi-segment scope path as a chain of nested router nodes,
+     * returning the index of the last (deepest) node. The matcher walks one path segment
+     * at a time, so a literal containing '/' would otherwise be unreachable. The deepest
+     * node keeps `router_number` (the number this Router instance owns); intermediate
+     * segments get fresh numbers and are reparented under the previous segment's node. */
+    static constexpr std::size_t register_path(
+        RouterContext<>& ctx,
+        std::string_view path,
+        std::size_t router_number
+    )
+    {
+        std::vector<std::string_view> segments;
+        for (const auto part: split_path(path)) segments.push_back(part);
+        if (segments.empty()) {
+            return ctx.add_route(Route<>{""}.set_router_number(router_number));
+        }
+        // Route rejects a path with no '/', so give each single segment a leading slash.
+        // A single-segment path keeps this Router's own number so its children can find it.
+        const std::string first_path = std::string{"/"} + std::string{segments.front()};
+        const std::size_t first_router =
+            (segments.size() == 1) ? router_number : ctx.get_highest_router_number();
+        std::size_t prev_index = ctx.add_route(
+            Route<>{first_path}.set_router_number(first_router)
+        );
+        std::size_t prev_router = ctx[prev_index].get_router_number();
+        for (std::size_t i = 1; i < segments.size(); ++i) {
+            const bool is_last = (i + 1 == segments.size());
+            const std::size_t child_router =
+                is_last ? router_number : ctx.get_highest_router_number();
+            const std::string child_path = std::string{"/"} + std::string{segments[i]};
+            Route<> child = Route<>{child_path}.set_router_number(child_router);
+            child.update_base_router(prev_router);
+            const std::size_t child_index = ctx.add_route(std::move(child));
+            ctx[prev_index].increment_child_routes();
+            prev_index = child_index;
+            prev_router = child_router;
+        }
+        return prev_index;
+    }
+
+public:
+
     /**
      * @brief Registers a new root-level route for this router against `ctx` and claims a fresh
      * router number.
@@ -805,7 +856,7 @@ public:
     constexpr Router(RouterContext<>& ctx, std::string_view path) :
         m_ctx{ctx},
         m_router_number{ctx.get_highest_router_number()},
-        m_router_index{m_ctx.get().add_route(Route<>{path}.set_router_number(m_router_number))}
+        m_router_index{register_path(ctx, path, m_router_number)}
     {
     }
 

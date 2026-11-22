@@ -1,4 +1,5 @@
 module;
+#include <time.h>
 export module app_handlers:dummy_connector;
 
 import std;
@@ -970,7 +971,7 @@ public:
         const auto body = req.body_as_string();
         const auto request = parse_payment_request(body);
         if (!request) {
-            send_dc_error(res, send, *request.error());
+            send_dc_error(res, send, request.error());
             return;
         }
         const PaymentRequest& input = *request;
@@ -984,7 +985,7 @@ public:
         const std::string redirect_url = base_url() + "/dummy-connector/authorize/" + attempt_id;
         auto flow = process_payment_attempt(input, redirect_url);
         if (!flow) {
-            send_dc_error(res, send, *flow.error());
+            send_dc_error(res, send, flow.error());
             return;
         }
 
@@ -1075,7 +1076,7 @@ public:
 
         const auto request = parse_refund_request(req.body_as_string());
         if (!request) {
-            send_dc_error(res, send, *request.error());
+            send_dc_error(res, send, request.error());
             return;
         }
 
@@ -1089,7 +1090,7 @@ public:
         // types.rs:301-315 - is_eligible_for_refund: amount first, then status.
         const auto eligibility = is_eligible_for_refund(*payment, request->amount);
         if (!eligibility) {
-            send_dc_error(res, send, *eligibility.error());
+            send_dc_error(res, send, eligibility.error());
             return;
         }
 
@@ -1455,14 +1456,14 @@ private:
         case PaymentMethodData::Kind::Card: {
             auto flow = card_flow(input, scratch, redirect_url);
             if (!flow) {
-                return std::unexpected{*flow.error()};
+                return std::unexpected{flow.error()};
             }
             break;
         }
         case PaymentMethodData::Kind::Upi: {
             auto flow = upi_flow(input, scratch, redirect_url);
             if (!flow) {
-                return std::unexpected{*flow.error()};
+                return std::unexpected{flow.error()};
             }
             break;
         }

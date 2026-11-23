@@ -337,7 +337,7 @@ public:
         using Response = app::model::user::TokenResponse;
         Response response{};
         app::model::user::TokenPurposeValue purpose{};
-        purpose.set_value("SIGNIN");
+        purpose.set_value("user_info");
         response.set_token(token);
         response.set_token_type(purpose);
         auto text = serde::Ser::encode_json(response);
@@ -397,7 +397,7 @@ public:
         using Response = app::model::user::TokenResponse;
         Response response{};
         app::model::user::TokenPurposeValue purpose{};
-        purpose.set_value("LOGIN");
+        purpose.set_value("user_info");
         response.set_token(signin_token);
         response.set_token_type(purpose);
         auto text = serde::Ser::encode_json(response);
@@ -3136,7 +3136,7 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "user"}
             .add_route(
-                Route{"user"}
+                Route{""}
                     .get([this](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
@@ -3174,8 +3174,6 @@ public:
                             .summary("Hyperswitch user_signup_with_merchant_id")
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"signup"}
                             .post([this](
@@ -3187,9 +3185,6 @@ public:
                             })
                             .summary("Hyperswitch user_signup")
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"signin"}
                             .post([this](
@@ -3201,7 +3196,6 @@ public:
                             })
                             .summary("Hyperswitch user_signin")
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_route(
@@ -3258,8 +3252,6 @@ public:
                             .summary("Hyperswitch set_dashboard_metadata")
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"data"}
                             .get([this](
@@ -3271,7 +3263,6 @@ public:
                             })
                             .summary("Hyperswitch get_multiple_dashboard_metadata")
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_route(
@@ -3328,8 +3319,6 @@ public:
                             .summary("Hyperswitch user_org_create")
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"create_merchant"}
                             .post([this](
@@ -3341,7 +3330,6 @@ public:
                             })
                             .summary("Hyperswitch user_merchant_account_create")
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_route(
@@ -3488,8 +3476,6 @@ public:
                             .summary("Hyperswitch terminate_accept_invite")
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"verify_email"}
                             .post([this](
@@ -3501,7 +3487,6 @@ public:
                             })
                             .summary("Hyperswitch verify_email")
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_route(
@@ -3712,8 +3697,6 @@ public:
                             )
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "auth"}
                             .add_route(
@@ -3728,9 +3711,6 @@ public:
                                     .summary("Hyperswitch get_sso_auth_url")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"oidc"}
                             .post([this](
@@ -3742,9 +3722,6 @@ public:
                             })
                             .summary("Hyperswitch sso_sign")
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"auth"}
                             .post([this](
@@ -3756,9 +3733,6 @@ public:
                             })
                             .summary("Hyperswitch create_user_authentication_method")
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"auth"}
                             .put([this](
@@ -3770,9 +3744,6 @@ public:
                             })
                             .summary("Hyperswitch update_user_authentication_method")
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "auth"}
                             .add_route(
@@ -3787,9 +3758,6 @@ public:
                                     .summary("Hyperswitch list_user_authentication_methods")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "auth"}
                             .add_route(
@@ -3804,7 +3772,6 @@ public:
                                     .summary("Hyperswitch terminate_auth_select")
                             )
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_router(
@@ -3822,8 +3789,6 @@ public:
                             )
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "list"}
                             .add_route(
@@ -3838,9 +3803,6 @@ public:
                                     .summary("Hyperswitch list_orgs_for_user")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "list"}
                             .add_route(
@@ -3855,9 +3817,6 @@ public:
                                     .summary("Hyperswitch list_merchants_for_user_in_org")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "list"}
                             .add_route(
@@ -3872,9 +3831,6 @@ public:
                                     .summary("Hyperswitch list_profiles_for_user_in_org_and_merchant")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "switch"}
                             .add_route(
@@ -3889,9 +3845,6 @@ public:
                                     .summary("Hyperswitch switch_org_for_user")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "switch"}
                             .add_route(
@@ -3906,9 +3859,6 @@ public:
                                     .summary("Hyperswitch switch_merchant_for_user_in_org")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "switch"}
                             .add_route(
@@ -3923,7 +3873,6 @@ public:
                                     .summary("Hyperswitch switch_profile_for_user_in_org_and_merchant")
                             )
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_route(
@@ -4037,8 +3986,6 @@ public:
                             )
                     )
             )
-            .add_router(
-                Router{router, "user"}
                     .add_route(
                         Route{"merchant_details"}
                             .get([this](
@@ -4050,9 +3997,6 @@ public:
                             })
                             .summary("Hyperswitch get_user_merchant_details")
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "v2"}
                             .add_route(
@@ -4067,9 +4011,6 @@ public:
                                     .summary("Hyperswitch user_signin (v2 alias)")
                             )
                     )
-            )
-            .add_router(
-                Router{router, "user"}
                     .add_router(
                         Router{router, "v2"}
                             .add_route(
@@ -4084,7 +4025,6 @@ public:
                                     .summary("Hyperswitch verify_email (v2 alias)")
                             )
                     )
-            )
             .add_router(
                 Router{router, "user"}
                     .add_router(
@@ -4099,6 +4039,26 @@ public:
                                         handle_list_user_roles_details(req, res, std::move(send));
                                     })
                                     .summary("Hyperswitch list_user_roles_details (v2 alias)")
+                            )
+                    )
+            );
+
+        // Control Center also loads the v2 merchant-list alias during onboarding.
+        Router{router, "v2"}
+            .add_router(
+                Router{router, "user"}
+                    .add_router(
+                        Router{router, "list"}
+                            .add_route(
+                                Route{"merchant"}
+                                    .get([this](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    ) {
+                                        handle_list_merchants_for_user_in_org(req, res, std::move(send));
+                                    })
+                                    .summary("Hyperswitch list_merchants_for_user_in_org (v2 alias)")
                             )
                     )
             );

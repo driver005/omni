@@ -44,7 +44,7 @@ build:macos --linkopt="-fuse-ld=lld"
 
 build:mold --linkopt="-fuse-ld=mold"
 
-build --disk_cache=~/.cache/bazel-disk
+build --disk_cache=/tmp/opencode/bazel-disk
 build --repository_cache=~/.cache/bazel-repo
 build --action_cache_store_output_metadata
 build --incompatible_strict_action_env

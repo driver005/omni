@@ -74,7 +74,15 @@ std::optional<Request> read_request(int fd)
             const auto colon = line.find(':');
             if (colon != std::string_view::npos) {
                 const auto name = lower(std::string{line.substr(0, colon)});
-                const auto value = std::string{line.substr(colon + 1)};
+                auto value = std::string{line.substr(colon + 1)};
+                // HTTP permits optional whitespace after ':'; keep it out of auth values
+                // or "Bearer ..." arrives as " Bearer ..." and the token parser rejects it.
+                const auto first = value.find_first_not_of(" \t");
+                value = first == std::string::npos ? std::string{}
+                                                   : value.substr(first);
+                while (!value.empty() && (value.back() == '\r' || value.back() == '\n')) {
+                    value.pop_back();
+                }
                 if (name == "authorization") request.authorization = value;
             }
         }

@@ -1,4 +1,6 @@
 module;
+#include <simdjson.h>
+#include <toml++/toml.hpp>
 export module app_model:user;
 
 import std;
@@ -1004,6 +1006,52 @@ public:
     std::optional<std::string> email_domain{};
 };
 } // namespace app::model::user
+
+// The upstream API sends these single-field ID wrappers as bare JSON strings
+// ("email": "user@example.com"), not as {"value": ...} objects. Teach serde to
+// round-trip the wrapper as its scalar so the real Control Center payloads work.
+namespace serde {
+// These two single-field wrappers ride the upstream API as bare JSON strings
+// ("email": "user@example.com", "token_type": "SIGNIN"), not as {"value": ...}
+// objects. Explicit specializations keep the generic nested-object converter
+// from being chosen for them.
+#define CONGELADO_SCALAR_WRAPPER_CONVERTER(TYPE)                                    \
+    template<>                                                                     \
+    struct FieldConverter<TYPE>                                                    \
+    {                                                                              \
+        using rfl_type = std::string;                                              \
+        static simdjson::error_code from_simdjson(                                 \
+            simdjson::ondemand::value& json_value, TYPE& out)                      \
+        {                                                                          \
+            std::string_view text;                                                 \
+            if (auto ec = json_value.get_string().get(text); ec) return ec;        \
+            out.set_value(std::string{text});                                      \
+            return simdjson::error_code{};                                         \
+        }                                                                          \
+        static std::expected<TYPE, std::string>                                    \
+        from_toml(const toml::table& table, std::string_view field_name)           \
+        {                                                                          \
+            auto value = table[field_name].value<std::string>();                   \
+            if (!value)                                                            \
+                return std::unexpected{                                            \
+                    std::format("missing or invalid field '{}'", field_name)};     \
+            TYPE result;                                                           \
+            result.set_value(std::move(*value));                                   \
+            return result;                                                         \
+        }                                                                          \
+        static rfl_type to_rfl(const TYPE& value) { return value.get_value(); }    \
+        static TYPE from_rfl(const rfl_type& value)                                \
+        {                                                                          \
+            TYPE result;                                                           \
+            result.set_value(value);                                               \
+            return result;                                                         \
+        }                                                                          \
+    }
+
+CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::EmailValue);
+CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::TokenPurposeValue);
+#undef CONGELADO_SCALAR_WRAPPER_CONVERTER
+} // namespace serde
 
 template<>
 struct serde::Serializable<app::model::user::SignUpWithMerchantIdRequest>

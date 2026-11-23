@@ -5,6 +5,11 @@ export module core_router:builder;
 import std;
 import :utils;
 import :router;
+import :consts;
+import :handler;
+import :middleware;
+import :node;
+import :tree;
 
 export namespace core::router {
 
@@ -85,100 +90,47 @@ public:
      */
     RouteHandler<> build()
     {
-        std::vector<std::vector<RouterBuildingHelper>> table;
-        std::size_t idx{0};
+        // Turn the flat registration list into a canonical tree: duplicate scopes merge
+        // into one node with the union of their method handlers. RouterTree::flatten()
+        // then emits children contiguously, which makes every child offset exact.
         const auto SENTINEL = std::numeric_limits<std::size_t>::max();
-
-        // only the live prefix of m_routes is real data — everything past m_router_size is
-        // unused backing storage
-        auto active_routes = std::span(m_routes.data(), m_router_size);
-        auto group_start = active_routes.begin();
-
-        // walk the routes in runs that share the same base router, sorting each run in place
-        // so match precedence at runtime falls out of array order alone
-        while (group_start != active_routes.end()) {
-            // find where this base-router group ends and the next one starts
-            auto group_end = std::ranges::find_if(
-                group_start,
-                active_routes.end(),
-                [&](const auto& current_route)
-                {
-                    return current_route.get_base_router() != group_start->get_base_router();
-                }
-            );
-
-            std::size_t group_size = std::distance(group_start, group_end);
-            // ordering rules, checked in priority order: wildcard ("*") always sorts last in
-            // its group; sentinel-parented routes (root/fallback) sort ahead of everything
-            // else; anything left over falls back to a hash-bucket ordering — mess with this
-            // predicate and match precedence desyncs at runtime, no cap
-            std::ranges::sort(
-                group_start,
-                group_end,
-                [&](const auto& left, const auto& right)
-                {
-                    if (left.get_path() == "*") {
-                        return false;
-                    }
-                    if (right.get_path() == "*") {
-                        return true;
-                    }
-                    if (left.get_base_router() == SENTINEL && right.get_base_router() != SENTINEL) {
-                        return true;
-                    }
-                    if (right.get_base_router() == SENTINEL && left.get_base_router() != SENTINEL) {
-                        return false;
-                    }
-                    return fnv1a(left.get_path()) % group_size <
-                           fnv1a(right.get_path()) % group_size;
-                }
-            );
-
-
-            group_start = group_end;
+        std::vector<RouteInput> inputs;
+        inputs.reserve(m_router_size);
+        for (std::size_t i = 0; i < m_router_size; ++i) {
+            if (i == 0) continue; // reserved root slot — the tree's own root is the table entry
+            const auto& route = m_routes[i];
+            const auto parent = route.get_base_router() == SENTINEL ? 0 : route.get_base_router();
+            inputs.push_back(RouteInput{
+                route.get_path(),
+                parent,
+                route.get_router_number(),
+                &route.get_handlers(),
+                &route.get_middlewares(),
+            });
         }
+
+        RouteTree tree;
+        tree.build(inputs);
+        const auto flat = tree.flatten();
 
         RouteHandler<> handler{};
-
-        // fold every stored route into the intermediate table, grouped by parent router —
-        // insert_route() itself skips anything already flagged built
-        while (idx < m_router_size) {
-            insert_route(
-                m_routes[idx],
-                table
-            ); // FIXME(clang-tidy): unchecked operator[], consider .at(); non-constant array index
-            ++idx;
+        for (const auto& entry: flat) {
+            handler.add_route(
+                entry.kind,
+                entry.segment,
+                entry.children_offset,
+                entry.handlers,
+                entry.middlewares,
+                entry.children_length
+            );
         }
 
-        // walk the table row by row (each row = one router's children) to compute each
-        // node's forward offset to its own children before handing it to the real handler.
-        // The offset is RELATIVE to the node's own flat index: find_child() does
-        // `current_index += m_children_offset`, so a node at index I in a row of size N
-        // points at I + (N - I + cumulative) = N + cumulative = the first child row.
-        for (const auto& row: table) {
-            std::size_t cumulative_children = 0;
-            for (const auto& [index, node]: row | std::views::enumerate) {
-                std::size_t offset{0};
-
-                // only nodes with children need a real offset — leaves stay at 0
-                if (node.m_children > 0) {
-                    offset = row.size() - index + cumulative_children;
-                }
-
-                cumulative_children += node.m_children;
-
-                handler.add_route(
-                    node.m_kind,
-                    node.m_literal,
-                    offset,
-                    node.m_handlers,
-                    node.m_middlewares,
-                    node.m_children
-                );
-            }
-        }
-
-        std::println("Finished building");
+        std::println(
+            "Finished building: {} registrations -> {} nodes ({} duplicates merged)",
+            m_router_size,
+            flat.size(),
+            tree.merged_count()
+        );
 
         return handler;
     }
@@ -790,7 +742,7 @@ private:
     bool m_is_build;
     std::size_t m_router_number;
     std::size_t m_base_router;
-    std::uint8_t m_child_routes;
+    std::size_t m_child_routes;
     Handler<MaxHandlerSize> m_handler;
     Middleware<MaxMiddlewareSize> m_local_middleware;
 };
@@ -809,13 +761,16 @@ private:
     static constexpr std::size_t register_path(
         RouterContext<>& ctx,
         std::string_view path,
-        std::size_t router_number
+        std::size_t router_number,
+        std::vector<std::size_t>& chain
     )
     {
         std::vector<std::string_view> segments;
         for (const auto part: split_path(path)) segments.push_back(part);
         if (segments.empty()) {
-            return ctx.add_route(Route<>{""}.set_router_number(router_number));
+            const auto idx = ctx.add_route(Route<>{""}.set_router_number(router_number));
+            chain.push_back(idx);
+            return idx;
         }
         std::size_t prev_index = std::numeric_limits<std::size_t>::max();
         std::size_t prev_router = 0;
@@ -829,6 +784,7 @@ private:
             if (!is_root) node.update_base_router(base);
             const std::size_t idx = ctx.add_route(std::move(node));
             if (!is_root) ctx[prev_index].increment_child_routes();
+            chain.push_back(idx);
             prev_index = idx;
             prev_router = own_number;
         }
@@ -847,8 +803,13 @@ public:
     constexpr Router(RouterContext<>& ctx, std::string_view path) :
         m_ctx{ctx},
         m_router_number{ctx.get_highest_router_number()},
-        m_router_index{register_path(ctx, path, m_router_number)}
+        m_router_index{0}
     {
+        // m_chain is declared after m_router_index, so it isn't constructed yet when the
+        // member-init list runs — fill a local first, then move it in.
+        std::vector<std::size_t> chain;
+        m_router_index = register_path(ctx, path, m_router_number, chain);
+        m_chain = std::move(chain);
     }
 
     /**
@@ -869,6 +830,7 @@ public:
             Route<>{path, std::forward<Args>(middlewares)...}.set_router_number(m_router_number)
         )}
     {
+        m_chain.push_back(m_router_index);
     }
 
     /**
@@ -982,12 +944,18 @@ public:
      */
     constexpr Router<> add_router(Router<> sub) &&
     {
-        // reparent sub's underlying route to hang off this router instead of the root
-        m_ctx.get()[sub.get_router_index()].update_base_router(
-            m_router_number
-        ); // FIXME(clang-tidy): unchecked operator[], consider .at()
-        // sub was previously counted as a base-router child (or assumed to be) — undo that,
-        // then bump this router's own child count to reflect the new nesting
+        // Reparent *every* segment of a multi-segment sub-router, preserving the chain:
+        // the first segment hangs off this router, each following one off its predecessor.
+        // Reparenting only the deepest node (the old behaviour) split the chain in two and
+        // left an orphan at the root whose child offset pointed into the wrong table row.
+        for (std::size_t i = 0; i < sub.m_chain.size(); ++i) {
+            const auto parent_number =
+                i == 0 ? m_router_number
+                       : m_ctx.get()[sub.m_chain[i - 1]].get_router_number();
+            m_ctx.get()[sub.m_chain[i]].update_base_router(parent_number);
+        }
+        // Only the first segment was ever counted as a base-router child — undo that once,
+        // then bump this router's own child count to reflect the new nesting.
         m_ctx.get().decrement_base_router_children();
         m_ctx.get()[m_router_index]
             .increment_child_routes(); // FIXME(clang-tidy): unchecked operator[], consider .at()
@@ -1033,6 +1001,8 @@ private:
     std::reference_wrapper<RouterContext<>> m_ctx;
     std::size_t m_router_number;
     std::size_t m_router_index;
+    /// @brief Indices of every segment of this router's path chain, root segment first.
+    std::vector<std::size_t> m_chain{};
 };
 
 class RouteBuilder
@@ -1095,11 +1065,11 @@ public:
      * @brief Finalizes the build: drops the root and fallback routes into slots 0 and 1 of `ctx`,
      * syncs the root's child count from the context's tracked base-router children, and delegates
      * to `RouterContext::build()`.
-     * @param ctx the router context to build from, taken by value (this builder owns its own copy
-     * to finalize).
+     * @param ctx the router context to build from, taken by rvalue reference — a by-value
+     * parameter would copy the multi-megabyte route array onto the (small) call stack.
      * @return the fully built `RouteHandler`, straight from `ctx.build()`.
      */
-    auto build(RouterContext<> ctx)
+    auto build(RouterContext<>&& ctx)
     {
         // sync the root's child count from whatever the context actually tracked, then drop
         // the root and fallback routes into their reserved slots before compiling everything

@@ -11,6 +11,8 @@ congelado_module_library(
         "handler.cppm",
         "middleware.cppm",
         "types.cppm",
+        "node.cppm",
+        "tree.cppm",
         "executor.cppm",
         "consts.cppm",
         "route_config.cppm",

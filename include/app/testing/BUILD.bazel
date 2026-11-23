@@ -1,7 +1,20 @@
-load("//bazel:build_defs.bzl", "congelado_cc_binary")
+load("//bazel:build_defs.bzl", "congelado_cc_binary", "congelado_cc_test")
 
 # Minimal HTTP/1.1 front end for the real C++ Hyperswitch port (app_handlers).
 # Used to back the Hyperswitch Control Center UI on port 8080.
+congelado_cc_test(
+    name = "route_reachability",
+    srcs = ["route_reachability_test.cc"],
+    linkopts = ["-lcrypto", "-lssl", "-luring"],
+    deps = [
+        "//include/app/handlers:app_handlers",
+        "//include/core/router:core_router",
+        "//include/interfaces:interfaces",
+        "//include/io/layer/http2:io_layer_http2",
+        "//include/utils/openapi:utils_openapi",
+    ],
+)
+
 congelado_cc_binary(
     name = "app_api_server",
     srcs = ["app_api_server.cc"],

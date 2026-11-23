@@ -140,11 +140,13 @@ int main(int argc, char** argv)
 {
     const int port = argc > 1 ? std::atoi(argv[1]) : 8080;
 
-    app::api::AppHandlers handlers;
-    core::router::RouterContext<> context;
-    app::api::AppRoutes{}.install(context, handlers);
+    // RouterContext owns a 4096-entry array of heavyweight Route objects (~tens of MB),
+    // so keep it on the heap — the default 8 MiB stack overflows otherwise.
+    auto handlers = std::make_unique<app::api::AppHandlers>();
+    auto context = std::make_unique<core::router::RouterContext<>>();
+    app::api::AppRoutes{}.install(*context, *handlers);
     io::layer::http2::Server server;
-    server.build(&context);
+    server.build(context.get());
 
     const int listener = socket(AF_INET, SOCK_STREAM, 0);
     int reuse = 1;

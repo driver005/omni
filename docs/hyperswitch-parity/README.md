@@ -22,6 +22,30 @@ evidence. External dependencies (live PSP/network, Redis/Kafka brokers, RSA/X.50
 compile-time feature gates, internal upstream modules with no route) are implemented as
 documented local in-process substitutes with upstream-identical observable behavior.
 
+## Runtime route reachability
+
+The `MATCH` verdict above is a **static source comparison** (path, verb, input, output, DB
+call, cache, auth) — it does not prove that a route can be dispatched at runtime. The
+runtime half is checked by `//include/app/testing:route_reachability_test`, which builds
+the real `AppHandlers` route table, enumerates every (method, path) pair in the compiled
+trie, and calls `RouteHandler::match()` on each with a concrete path.
+
+Latest result (after the tree-based route table refactor):
+
+| Metric | Value |
+|---|---|
+| OpenAPI registry operations | 554 |
+| Dispatch entries in compiled trie | 554 |
+| Probed | 554 |
+| Routed to a handler | 554 |
+| Unrouted (`Route not found`) | 0 |
+| Matched but no handler for method | 0 |
+
+The route table is built from a canonical `RouteTree` (`core_router:node` / `core_router:tree`):
+duplicate scope registrations (e.g. the 78 `v2` / 56 `payments` nodes the old flat build
+produced) are merged into one node with the union of their method handlers, and
+`RouteTree::flatten()` emits a contiguous, correctly-offset vector for the matcher.
+
 ## Reports
 
 - [admin](admin.md)

@@ -70,146 +70,47 @@ public:
      * @return the matched child node, or `std::nullopt` if nothing in this node's children matches
      * `seg` (not even a wildcard).
      */
-    // Not noexcept: the body calls std::println (formatting/IO may throw). Its sole caller,
-    // RouteHandler::match() below, isn't noexcept either (it already throws std::runtime_error
-    // on a routing miss), so dropping noexcept here doesn't tighten any contract.
     constexpr std::optional<RouterNode> find_child(
         std::string_view seg,
         std::span<RouterNode> table,
-        std::size_t& current_index,
-        std::span<const std::string_view> rest = {}
+        std::size_t& current_index
     ) const
     {
-        // no children at all — nothing to probe, bail immediately
-        if (m_children_length == 0) {
-            return std::nullopt;
-        }
+        if (m_children_length == 0) return std::nullopt;
 
-        // shift into this node's slice of the flat table — note this mutates the caller's
-        // out-param even if the probe below ends up finding nothing
+        // Children are a contiguous slice starting at this offset in the flattened table.
         current_index += m_children_offset;
 
+        std::optional<std::size_t> literal_index{std::nullopt};
+        std::optional<std::size_t> param_index{std::nullopt};
         std::optional<std::size_t> wild_index{std::nullopt};
-        std::vector<std::size_t> param_indexes{};
-        // Duplicate literal siblings can exist (a leaf Route{"x"} with a handler and a
-        // router Router{"x"} with children). Collect all exact matches and pick the one
-        // that fits: with no remaining segments use the leaf that has a handler; with
-        // remaining segments use the router that has children.
-        std::vector<std::size_t> literal_indexes{};
 
-        if (m_children_length > 1) {
-            // multiple siblings — hash-probe starting from a bucket derived from the segment,
-            // walking the whole sibling range so every child gets checked exactly once
-            const std::uint32_t HASH = fnv1a(seg) % m_children_length;
-
-            for (std::uint32_t i = 0; i < m_children_length; ++i) {
-                std::size_t idx = current_index + ((HASH + i) % m_children_length);
-
-                auto& node = table[idx]; // FIXME(clang-tidy): unchecked operator[], consider .at()
-                std::println(
-                    "Checking node at index {}: kind={}, literal={}",
-                    idx,
-                    std::to_underlying(node.get_kind()),
-                    node.get_literal()
-                );
-                std::println(
-                    "wild_index: {}",
-                    wild_index.has_value() ? std::to_string(*wild_index) : "nullopt"
-                );
-
-                // precedence: exact literal match wins on the spot, no cap; a param child also
-                // matches immediately (first one found, no backtracking); a wildcard is only
-                // remembered as a fallback in case nothing better turns up in the probe
-                switch (node.get_kind()) {
-                    case EdgeKind::PATH:
-                        if (node.get_literal() == seg) {
-                            literal_indexes.push_back(idx);
-                        }
-                        break;
-                    case EdgeKind::PARAM:
-                        param_indexes.push_back(idx);
-                        continue;
-                    case EdgeKind::WILD:
-                        wild_index = std::make_optional(idx);
-                        continue;
-                }
-            }
-        } else {
-            // single child — no hashing needed, just check the one node directly
-            auto& node =
-                table[current_index]; // FIXME(clang-tidy): unchecked operator[], consider .at()
-
+        for (std::size_t i = 0; i < m_children_length; ++i) {
+            const std::size_t idx = current_index + i;
+            if (idx >= table.size()) break;
+            auto& node = table[idx];
             switch (node.get_kind()) {
                 case EdgeKind::PATH:
-                    if (node.get_literal() == seg) {
-                        return std::make_optional(node);
-                    }
+                    if (!literal_index && node.get_literal() == seg) literal_index = idx;
                     break;
                 case EdgeKind::PARAM:
-                    param_indexes.push_back(current_index);
+                    if (!param_index) param_index = idx;
                     break;
                 case EdgeKind::WILD:
-                    wild_index = std::make_optional(current_index);
+                    wild_index = idx;
+                    break;
             }
         }
 
-        // Choose among duplicate literal matches: when the request path ends here,
-        // prefer a leaf that has a handler; when segments remain, prefer a router with
-        // children whose literal subtree can consume them.
-        if (!literal_indexes.empty()) {
-            std::size_t chosen = literal_indexes.front();
-            if (rest.empty()) {
-                // Path ends here: prefer a leaf with a handler over a pure router.
-                for (const auto candidate : literal_indexes) {
-                    auto& node = table[candidate];
-                    if (node.get_handler_mask() != HANDLER_MASK &&
-                        node.get_children_length() == 0) { chosen = candidate; break; }
-                }
-            } else {
-                // Segments remain: pick the duplicate whose children contain a literal
-                // matching the next segment (handles 78 duplicate v2 scope nodes).
-                for (const auto candidate : literal_indexes) {
-                    auto& node = table[candidate];
-                    const std::size_t base = candidate + node.get_data_offset();
-                    for (std::size_t i = 0; i < node.get_children_length(); ++i) {
-                        auto& child = table[base + i];
-                        if (child.get_kind() == EdgeKind::PATH &&
-                            child.get_literal() == rest[0]) { chosen = candidate; break; }
-                    }
-                    if (chosen != literal_indexes.front()) break;
-                }
-            }
-            current_index = chosen;
-            return std::make_optional(table[chosen]);
+        // Precedence is fixed: exact literal > param > wildcard fallback. The tree build
+        // guarantees there is at most one canonical node for each (parent, literal), so no
+        // disambiguation heuristics are needed here.
+        if (literal_index || param_index || wild_index) {
+            current_index = literal_index ? *literal_index
+                            : param_index ? *param_index
+                                          : *wild_index;
+            return std::make_optional(table[current_index]);
         }
-
-        if (!param_indexes.empty()) {
-            std::size_t chosen = param_indexes.front();
-            if (param_indexes.size() > 1 && !rest.empty()) {
-                for (const auto candidate : param_indexes) {
-                    auto& node = table[candidate];
-                    for (std::size_t i = 0; i < node.get_children_length(); ++i) {
-                        auto& child = table[candidate + node.get_data_offset() + i];
-                        if (child.get_kind() == EdgeKind::PATH && child.get_literal() == rest[0]) {
-                            chosen = candidate;
-                            break;
-                        }
-                    }
-                }
-            }
-            current_index = chosen;
-            return std::make_optional(table[chosen]);
-        }
-        // nothing matched outright during the probe — fall back to the wildcard we saw, if any
-        if (wild_index) {
-            std::println("Returning wildcard node at index {}", *wild_index);
-            current_index = *wild_index;
-            return std::make_optional(
-                table[*wild_index]
-            ); // FIXME(clang-tidy): unchecked operator[], consider .at()
-        }
-
-        // truly nothing matched, not even a wildcard
         return std::nullopt;
     }
 
@@ -389,9 +290,7 @@ public:
             std::size_t current_index = 0;
 
             for (; it != end; ++it) {
-                const auto position = static_cast<std::size_t>(it - segments.begin());
-                const auto rest = std::span<const std::string_view>{segments}.subspan(position + 1);
-                auto node = current.find_child(*it, m_table, current_index, rest);
+                auto node = current.find_child(*it, m_table, current_index);
                 // segment has no matching child anywhere in the trie — walk stops short,
                 // `it != end` below is what flags this as an incomplete match
                 if (!node) {
@@ -534,6 +433,66 @@ public:
         // either the segment walk broke early or the node had no handlers at all — 404
         core::events::publish("router.request.not_found", {{"path", std::string{path}}});
         throw std::runtime_error("Route not found");
+    }
+
+    /// @brief One dispatchable (method, path) pair present in the compiled trie.
+    struct DispatchRoute
+    {
+        interfaces::io::types::Method method{interfaces::io::types::Method::UNKNOWN};
+        std::string path{};
+    };
+
+    /**
+     * @brief Enumerates every method handler actually present in the compiled table by
+     * walking it from the root. Unlike the OpenAPI Registry this sees every segment of a
+     * multi-segment router path, so it is the authoritative list of dispatchable routes.
+     */
+    std::vector<DispatchRoute> enumerate_routes()
+    {
+        std::vector<DispatchRoute> result;
+        if (m_table_index == 0) return result;
+
+        auto walk = [&](auto&& self, std::size_t index, const std::string& prefix) -> void
+        {
+            if (index >= m_table_index) return;
+            auto& node = m_table[index];
+            std::string path = prefix;
+
+            if (node.get_kind() == EdgeKind::WILD) {
+                return; // wildcard is a fallback, not a registered route
+            }
+            if (node.get_kind() == EdgeKind::PATH) {
+                if (!node.get_literal().empty()) {
+                    path += '/';
+                    path += node.get_literal();
+                }
+            } else {
+                path += "/{param}";
+            }
+            if (node.get_handler_mask() != HANDLER_MASK) {
+                for (std::size_t method = 0; method < 8; ++method) {
+                    if (node.get_handler_mask()[method] != 0xFFFF) {
+                        result.push_back({
+                            static_cast<interfaces::io::types::Method>(method),
+                            path.empty() ? "/" : path,
+                        });
+                    }
+                }
+            }
+
+            const std::size_t base = index + node.get_data_offset();
+            for (std::size_t i = 0; i < node.get_children_length(); ++i) {
+                if (base + i < m_table_index) self(self, base + i, path);
+            }
+        };
+
+        // index 0 is the synthetic root added by RouteTree::flatten()
+        auto& root = m_table[0];
+        const std::size_t base = root.get_data_offset();
+        for (std::size_t i = 0; i < root.get_children_length(); ++i) {
+            if (base + i < m_table_index) walk(walk, base + i, "");
+        }
+        return result;
     }
 
     /**

@@ -1049,6 +1049,9 @@ namespace serde {
     }
 
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::EmailValue);
+CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::MerchantIdValue);
+CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::OrganizationIdValue);
+CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::ProfileIdValue);
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::TokenPurposeValue);
 #undef CONGELADO_SCALAR_WRAPPER_CONVERTER
 } // namespace serde

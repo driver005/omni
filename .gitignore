@@ -1,0 +1,3 @@
+# Local dependency / Bazel convenience artifacts (never source-controlled)
+node_modules/
+bazel-*/

@@ -41,7 +41,16 @@ public:
         const auto merchant_id = app::http::merchant_id_from_header{}(req);
         const auto org_id = app::http::org_id_from_header{}(req);
         const auto auth_ctx = app::auth::AuthContextBuilder{}(req);
-        const auto effective_merchant_id = merchant_id.empty() ? auth_ctx.merchant_id() : merchant_id;
+
+        // The bearer token is a signed JWT, not a user id. Decode its `sub` claim
+        // and use the persisted user/merchant so a freshly signed-up account has a
+        // selected merchant/org even on its very first request (no headers yet).
+        const auto owner = token_subject(auth_ctx.token().value());
+        std::optional<app::store::users::UserRecord> user{};
+        if (!owner.empty()) user = m_context->repository().find_user_by_string(owner);
+
+        std::string effective_merchant_id = merchant_id.empty() ? auth_ctx.merchant_id() : merchant_id;
+        if (effective_merchant_id.empty() && user) effective_merchant_id = user->get_merchant_id();
         std::string effective_org_id = org_id.empty() ? auth_ctx.org_id() : org_id;
 
         const auto body = std::string{R"({"op":"get_active_user_details"})"};
@@ -96,11 +105,6 @@ public:
 
         // Port of core/user.rs:211-227: identity fields come from the active
         // user row; role/profile/entity come from the verified token context.
-        const auto owner = app::auth::TokenParser{}(req).value();
-        std::optional<app::store::users::UserRecord> user{};
-        if (!owner.empty()) {
-            user = m_context->repository().find_user_by_string(owner);
-        }
         if (user) {
             response.set_user_id(user->get_user_id());
             app::model::user::EmailValue email{};
@@ -289,6 +293,26 @@ public:
         const auto user_id = m_context->ids().uuid_v4();
         const auto email = parsed->get_email().get_value();
 
+        // First-run setup: create the default organization and merchant for this new
+        // user so the Control Center can list/select them and enable setup actions.
+        // Upstream does this in insert_user_and_merchant_in_db; the local substitute
+        // persists the same records in the in-memory store.
+        const auto org_id_str = m_context->ids().payment_id("org_");
+        const auto merchant_id_str = m_context->ids().payment_id("merchant_");
+
+        app::store::organizations::OrganizationRecord org{};
+        org.set_organization_id(org_id_str);
+        org.set_organization_name(email);
+        org.set_organization_type("orchestration");
+        m_context->repository().save_organization(std::move(org));
+
+        app::store::merchant_accounts::MerchantAccountRecord merchant{};
+        merchant.set_merchant_id(merchant_id_str);
+        merchant.set_merchant_name(email);
+        merchant.set_organization_id(org_id_str);
+        merchant.set_merchant_account_type("orchestration");
+        m_context->repository().save_merchant_account(std::move(merchant));
+
         // Local substitute for validate_email_domain_auth_type_using_db: an
         // optional config allowlist gates signup by email domain.
         const auto allowlist = m_context->repository().get_config("user.email_domain_allowlist");
@@ -320,9 +344,18 @@ public:
         const auto password_hash = app::crypto::KeyedHasher{"user-password-pepper"}.hash(password_secret.value());
 
         store_password(email, password_hash);
-        persist_new_user(
-            user_id, email, email, "active",
-            app::http::merchant_id_from_header{}(req), "admin");
+        persist_new_user(user_id, email, email, "active", merchant_id_str, "admin");
+        // The local role record ("role_admin") isn't one of the predefined role
+        // seeds, so seed its permission groups explicitly. The Control Center
+        // gates setup actions on GET /user/role/v2, which reads this cache.
+        m_context->cache().put(
+            "user_role.groups.role_admin",
+            core::cache::to_cache_value(std::string{
+                "connectors_view,connectors_manage,operations_view,operations_manage,"
+                "workflows_view,workflows_manage,analytics_view,users_view,users_manage,"
+                "account_view,account_manage,configurations_view,configurations_manage,"
+                "theme_view,theme_manage,offers_view,offers_manage,clone_connector_manage"})
+        );
         publish_identity_event("user.signed_up", user_id);
 
         m_context->metrics().record_flow("user_signup");
@@ -4179,6 +4212,45 @@ private:
     {
         send_invalid_request_data(res, send,
             "Failed to deserialize the JSON body into the target type");
+    }
+
+    /** @brief Minimal JWT subject extractor: the port signs JWTs, so decode the
+     *  payload's `sub` claim to find the persisted user row (the bearer token
+     *  itself is not a user id). */
+    static std::string token_subject(std::string_view token)
+    {
+        const auto first = token.find('.');
+        if (first == std::string_view::npos) return {};
+        const auto second = token.find('.', first + 1);
+        if (second == std::string_view::npos) return {};
+
+        static constexpr std::string_view alphabet =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        std::string decoded;
+        for (std::size_t i = first + 1; i < second;) {
+            std::uint32_t bits{0};
+            int count{0};
+            for (; count < 4 && i < second; ++count, ++i) {
+                const auto pos = alphabet.find(token[i]);
+                if (pos == std::string_view::npos) return {};
+                bits = (bits << 6) | static_cast<std::uint32_t>(pos);
+            }
+            if (count >= 2) {
+                // 4 chars -> 3 bytes, 3 chars -> 2 bytes, 2 chars -> 1 byte.
+                for (int byte = count - 2; byte >= 0; --byte) {
+                    decoded.push_back(static_cast<char>((bits >> (8 * byte)) & 0xFF));
+                }
+            }
+        }
+
+        const auto key = decoded.find("\"sub\"");
+        if (key == std::string::npos) return {};
+        const auto colon = decoded.find(':', key + 5);
+        const auto open = decoded.find('"', colon == std::string::npos ? key : colon);
+        if (open == std::string::npos) return {};
+        const auto close = decoded.find('"', open + 1);
+        if (close == std::string::npos) return {};
+        return decoded.substr(open + 1, close - open - 1);
     }
 
     /** @brief Epoch seconds as a stable DB timestamp value. */

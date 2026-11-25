@@ -168,7 +168,8 @@ suite<"core_workflow_step_response"> core_workflow_step_response_suite = []
         const StepResponse<std::string> response{"brand_01"};
         expect(std::get<std::string>(response.compensate_input()) == "brand_01");
         const auto overridden = StepResponse<std::string>{"brand_01"}.with_compensate_input(
-            WorkflowValue{std::string{"backup_id"}});
+            WorkflowValue{std::string{"backup_id"}}
+        );
         expect(std::get<std::string>(overridden.compensate_input()) == "backup_id");
     };
 

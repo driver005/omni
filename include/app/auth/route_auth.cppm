@@ -38,14 +38,14 @@ public:
     [[nodiscard]] bool requires_bearer(AuthScheme scheme) const noexcept
     {
         switch (scheme) {
-        case AuthScheme::API_KEY:
-        case AuthScheme::JWT:
-        case AuthScheme::PLATFORM_ADMIN:
-        case AuthScheme::V2_API_KEY:
-        case AuthScheme::JWT_AND_EMBEDDED:
-            return true;
-        default:
-            return false;
+            case AuthScheme::API_KEY:
+            case AuthScheme::JWT:
+            case AuthScheme::PLATFORM_ADMIN:
+            case AuthScheme::V2_API_KEY:
+            case AuthScheme::JWT_AND_EMBEDDED:
+                return true;
+            default:
+                return false;
         }
     }
 

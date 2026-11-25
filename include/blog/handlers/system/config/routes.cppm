@@ -21,23 +21,30 @@ public:
         // config.read declares permissions:false, so no require_ghost_permission stage.
         Router{router, "/config"}
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.config_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.config_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost config GET")
             .add_route(
                 Route{"/featurebase"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.config_config_featurebase_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.config_config_featurebase_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost featurebase GET")
             );
     }

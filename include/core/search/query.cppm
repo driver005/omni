@@ -81,9 +81,21 @@ public:
         return m_includes;
     }
 
-    SearchQuery& where(std::string_view expression) { m_where = expression; return *this; }
-    [[nodiscard]] std::string_view where_expression() const noexcept { return m_where; }
-    [[nodiscard]] const std::map<std::string, std::string>& filters() const noexcept { return m_filters; }
+    SearchQuery& where(std::string_view expression)
+    {
+        m_where = expression;
+        return *this;
+    }
+
+    [[nodiscard]] std::string_view where_expression() const noexcept
+    {
+        return m_where;
+    }
+
+    [[nodiscard]] const std::map<std::string, std::string>& filters() const noexcept
+    {
+        return m_filters;
+    }
 
 private:
     [[nodiscard]] static std::vector<std::string> split(std::string_view csv)
@@ -97,7 +109,9 @@ private:
                 const auto end = part.find_last_not_of(" \t");
                 out.emplace_back(part.substr(begin, end - begin + 1));
             }
-            if (comma == std::string_view::npos) break;
+            if (comma == std::string_view::npos) {
+                break;
+            }
             csv.remove_prefix(comma + 1);
         }
         return out;

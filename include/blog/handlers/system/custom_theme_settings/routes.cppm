@@ -19,21 +19,27 @@ public:
         Router{router, "/custom_theme_settings"}
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.custom_theme_settings_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.custom_theme_settings_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost custom_theme_settings GET")
-            .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.custom_theme_settings_bulk_edit().handle(req, res, std::move(send));
-    })
+            .put(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.custom_theme_settings_bulk_edit().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost custom_theme_settings PUT");
     }
 };

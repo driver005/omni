@@ -21,18 +21,21 @@ public:
         // so no JSON Content-Type/Accept gate on this GET. The C++ flat router has
         // no per-app mount layer, so the path is bound verbatim under /api/member;
         // member identity is carried by X-Member-Id (see the execute step).
-        Router{router, "/api/member"}
-            .add_route(
-                Route{"/metafields/:namespace"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.member_metafields_members_metafields_browse().handle(req, res, std::move(send));
-    })
-                    .summary("Ghost memberMetafieldsMembers.browse")
-            );
+        Router{router, "/api/member"}.add_route(
+            Route{"/metafields/:namespace"}
+                .get(
+                    [&handler](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    )
+                    {
+                        handler.member_metafields_members_metafields_browse()
+                            .handle(req, res, std::move(send));
+                    }
+                )
+                .summary("Ghost memberMetafieldsMembers.browse")
+        );
     }
 };
 

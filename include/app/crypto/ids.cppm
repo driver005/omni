@@ -74,7 +74,8 @@ private:
     {
         ++m_counter;
         const std::uint64_t mixed = static_cast<std::uint64_t>(
-            std::hash<std::uint64_t>{}(m_counter ^ 0x9E3779B97F4A7C15ULL));
+            std::hash<std::uint64_t>{}(m_counter ^ 0x9E'37'79'B9'7F'4A'7C'15ULL)
+        );
         return mixed ^ (m_counter << 32);
     }
 

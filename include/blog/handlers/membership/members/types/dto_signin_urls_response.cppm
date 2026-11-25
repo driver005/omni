@@ -11,12 +11,18 @@ export namespace blog::dto::members {
 class SigninUrlsResponse
 {
 public:
-    void set_signin_urls(std::vector<SigninUrl> value) { signin_urls = std::move(value); }
-    [[nodiscard]] const std::vector<SigninUrl>& get_signin_urls() const noexcept { return signin_urls; }
+    void set_signin_urls(std::vector<SigninUrl> value)
+    {
+        signin_urls = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<SigninUrl>& get_signin_urls() const noexcept
+    {
+        return signin_urls;
+    }
 
     std::vector<SigninUrl> signin_urls{};
 };
-
 
 
 } // namespace blog::dto::members
@@ -26,9 +32,11 @@ struct serde::Serializable<blog::dto::members::SigninUrlsResponse>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"member_signin_urls", &blog::dto::members::SigninUrlsResponse::get_signin_urls, &blog::dto::members::SigninUrlsResponse::set_signin_urls, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "member_signin_urls",
+            &blog::dto::members::SigninUrlsResponse::get_signin_urls,
+            &blog::dto::members::SigninUrlsResponse::set_signin_urls,
+            serde::FieldOptions{}>{}};
     }
 
     static constexpr std::string_view table_name()
@@ -36,4 +44,3 @@ struct serde::Serializable<blog::dto::members::SigninUrlsResponse>
         return "signin_urls_response";
     }
 };
-

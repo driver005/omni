@@ -19,8 +19,11 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
     {
         using blog::handlers::middleware::kGhostContextHeader;
         using blog::handlers::middleware::kGhostPermissionsHeader;
@@ -34,29 +37,43 @@ public:
         }
         bool allowed{false};
         blog::handlers::middleware::require_ghost_permission(
-            req, res,
-            [&allowed](interfaces::io::IRequest&, interfaces::io::IResponse&,
-                       std::function<void()>) noexcept { allowed = true; },
-            send, "labels", "destroy");
-        if (!allowed) return;
+            req,
+            res,
+            [&allowed](
+                interfaces::io::IRequest&,
+                interfaces::io::IResponse&,
+                std::function<void()>
+            ) noexcept
+            {
+                allowed = true;
+            },
+            send,
+            "labels",
+            "destroy"
+        );
+        if (!allowed) {
+            return;
+        }
 
         const auto execution = m_workflow.run("labels_destroy", req);
         const auto* result = execution.result_of("labels_destroy_execute");
         auto payload = result && result->typed_output.has_value()
                            ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
-                           : std::map<std::string, std::string>{{"status", "404"},
-                                                                {"body", "{}"}};
-        const std::string code = payload.contains("status") ? payload.at("status")
-                                                            : std::string{"404"};
-        const std::string body = payload.contains("body") ? payload.at("body")
-                                                          : std::string{"{}"};
+                           : std::map<std::string, std::string>{{"status", "404"}, {"body", "{}"}};
+        const std::string code =
+            payload.contains("status") ? payload.at("status") : std::string{"404"};
+        const std::string body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
         std::vector<std::byte> bytes;
         auto status = interfaces::io::types::Status::NO_CONTENT;
         if (code == "404") {
-            for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+            for (const char c: body) {
+                bytes.push_back(static_cast<std::byte>(c));
+            }
             status = interfaces::io::types::Status::NOT_FOUND;
         } else if (code == "422") {
-            for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+            for (const char c: body) {
+                bytes.push_back(static_cast<std::byte>(c));
+            }
             status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT;
         } else {
             // statusCode 204 -> empty body; cacheInvalidate:true -> '/*'.

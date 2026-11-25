@@ -190,10 +190,26 @@ enum class TokenStatus
 class UnresolvedResponseReason
 {
 public:
-    void set_code(std::string value) { code = std::move(value); }
-    [[nodiscard]] const std::string& get_code() const noexcept { return code; }
-    void set_message(std::string value) { message = std::move(value); }
-    [[nodiscard]] const std::string& get_message() const noexcept { return message; }
+    void set_code(std::string value)
+    {
+        code = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_code() const noexcept
+    {
+        return code;
+    }
+
+    void set_message(std::string value)
+    {
+        message = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_message() const noexcept
+    {
+        return message;
+    }
+
     std::string code{};
     std::string message{};
 };
@@ -219,20 +235,37 @@ struct serde::Serializable<app::dto::enums::UnresolvedResponseReason>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"code", &app::dto::enums::UnresolvedResponseReason::get_code, &app::dto::enums::UnresolvedResponseReason::set_code, serde::FieldOptions{}>{},
-            serde::FieldDesc<"message", &app::dto::enums::UnresolvedResponseReason::get_message, &app::dto::enums::UnresolvedResponseReason::set_message, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "code",
+                &app::dto::enums::UnresolvedResponseReason::get_code,
+                &app::dto::enums::UnresolvedResponseReason::set_code,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "message",
+                &app::dto::enums::UnresolvedResponseReason::get_message,
+                &app::dto::enums::UnresolvedResponseReason::set_message,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "unresolved_response_reason"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "unresolved_response_reason";
+    }
 };
 
 #ifdef CONGELADO_TEST
 namespace app::dto::enums::tests {
 using namespace boost::ut;
-suite<"app_dto_enums"> app_dto_enums_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::enums::UnresolvedResponseReason>::fields())> > 0);
+suite<"app_dto_enums"> app_dto_enums_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<decltype(serde::Serializable<
+                                       app::dto::enums::UnresolvedResponseReason>::fields())> > 0
+        );
     };
 };
-}
+} // namespace app::dto::enums::tests
 #endif

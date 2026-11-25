@@ -37,12 +37,14 @@ public:
     {
         std::optional<EventRecord> event = m_events.find_by_event_id(event_id);
         if (!event) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "event not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "event not found"
+            );
             return false;
         }
-        const std::string payload = std::format(
-            "{{\"event_id\":\"{}\",\"endpoint\":\"{}\"}}", event_id, endpoint
-        );
+        const std::string payload =
+            std::format("{{\"event_id\":\"{}\",\"endpoint\":\"{}\"}}", event_id, endpoint);
         const std::int64_t tracker_id = m_trackers.schedule("webhook_delivery", payload, "0");
         m_tracker_ids.insert_or_assign(event_id, tracker_id);
 
@@ -62,11 +64,17 @@ public:
     {
         std::optional<EventRecord> event = m_events.find_by_event_id(event_id);
         if (!event) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "event not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "event not found"
+            );
             return false;
         }
         if (event->get_status() == "DELIVERED") {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::PRECONDITION_FAILED, "event already delivered");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::PRECONDITION_FAILED,
+                "event already delivered"
+            );
             return false;
         }
 
@@ -92,7 +100,12 @@ public:
         return success;
     }
 
-    bool record_attempt(std::string event_id, std::string endpoint, bool success, std::string response)
+    bool record_attempt(
+        std::string event_id,
+        std::string endpoint,
+        bool success,
+        std::string response
+    )
     {
         WebhookDeliveryAttemptRecord attempt{};
         attempt.set_event_id(std::move(event_id));
@@ -110,12 +123,18 @@ public:
     {
         std::optional<EventRecord> event = m_events.find_by_event_id(event_id);
         if (!event) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "event not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "event not found"
+            );
             return false;
         }
         const auto tracked = m_tracker_ids.find(event_id);
         if (tracked == m_tracker_ids.end()) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::PRECONDITION_FAILED, "event has no queued delivery");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::PRECONDITION_FAILED,
+                "event has no queued delivery"
+            );
             return false;
         }
         const auto retried = m_trackers.retry(tracked->second, policy);
@@ -143,7 +162,8 @@ private:
         return std::to_string(
             std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()
-            ).count()
+            )
+                .count()
         );
     }
 

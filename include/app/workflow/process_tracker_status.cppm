@@ -12,12 +12,35 @@ export namespace app::workflow {
 class ProcessTrackerStatus
 {
 public:
-    [[nodiscard]] std::string_view pending() const noexcept { return "PENDING"; }
-    [[nodiscard]] std::string_view running() const noexcept { return "RUNNING"; }
-    [[nodiscard]] std::string_view retrying() const noexcept { return "RETRYING"; }
-    [[nodiscard]] std::string_view completed() const noexcept { return "COMPLETED"; }
-    [[nodiscard]] std::string_view failed() const noexcept { return "FAILED"; }
-    [[nodiscard]] std::string_view cancelled() const noexcept { return "CANCELLED"; }
+    [[nodiscard]] std::string_view pending() const noexcept
+    {
+        return "PENDING";
+    }
+
+    [[nodiscard]] std::string_view running() const noexcept
+    {
+        return "RUNNING";
+    }
+
+    [[nodiscard]] std::string_view retrying() const noexcept
+    {
+        return "RETRYING";
+    }
+
+    [[nodiscard]] std::string_view completed() const noexcept
+    {
+        return "COMPLETED";
+    }
+
+    [[nodiscard]] std::string_view failed() const noexcept
+    {
+        return "FAILED";
+    }
+
+    [[nodiscard]] std::string_view cancelled() const noexcept
+    {
+        return "CANCELLED";
+    }
 };
 
 } // namespace app::workflow

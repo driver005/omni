@@ -20,7 +20,7 @@ class CoreClientTransport final : public HttpTransport
 public:
     explicit CoreClientTransport(
         interfaces::IClient& runtime,
-        std::chrono::milliseconds timeout = std::chrono::milliseconds{5000}
+        std::chrono::milliseconds timeout = std::chrono::milliseconds{5'000}
     ) :
         m_runtime{runtime},
         m_timeout{timeout}
@@ -61,9 +61,8 @@ public:
             [promise](interfaces::io::IResponse& response)
             {
                 HttpResponse result;
-                result.status = static_cast<int>(
-                    interfaces::io::types::status_code(response.get_status())
-                );
+                result.status =
+                    static_cast<int>(interfaces::io::types::status_code(response.get_status()));
                 for (const std::byte byte: response.get_body()) {
                     result.body.push_back(static_cast<char>(byte));
                 }
@@ -72,10 +71,8 @@ public:
         );
 
         if (future.wait_for(m_timeout) != std::future_status::ready) {
-            failure.error = std::format(
-                "core_client response timeout after {}ms",
-                m_timeout.count()
-            );
+            failure.error =
+                std::format("core_client response timeout after {}ms", m_timeout.count());
             return failure;
         }
         return future.get();

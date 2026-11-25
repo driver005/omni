@@ -33,16 +33,14 @@ public:
         }
         return issue("token", "GET", path, {});
     }
+
     [[nodiscard]] std::string token() const
     {
         return token_detailed().body;
     }
 
     /** @brief Queries a Tinybird stats pipe; params is a raw query string (e.g. "range=7d"). */
-    [[nodiscard]] Result stats_detailed(
-        std::string_view pipe,
-        std::string_view params = {}
-    ) const
+    [[nodiscard]] Result stats_detailed(std::string_view pipe, std::string_view params = {}) const
     {
         std::string path = std::format("/v0/pipes/{}.json", url_encode(pipe));
         if (!params.empty()) {
@@ -51,6 +49,7 @@ public:
         }
         return issue("stats", "GET", path, {});
     }
+
     [[nodiscard]] std::string stats(std::string_view pipe, std::string_view params = {}) const
     {
         return stats_detailed(pipe, params).body;
@@ -83,7 +82,10 @@ private:
         request.method = method;
         request.url = std::format("{}{}", trim_slash(m_config.base_url), path);
         if (!m_config.api_key.empty()) {
-            request.headers.emplace_back("Authorization", std::format("Bearer {}", m_config.api_key));
+            request.headers.emplace_back(
+                "Authorization",
+                std::format("Bearer {}", m_config.api_key)
+            );
         }
         request.headers.emplace_back("Accept", "application/json");
         request.body = body;
@@ -105,9 +107,8 @@ private:
 
     [[nodiscard]] static std::string trim_slash(std::string_view url)
     {
-        return url.empty() || url.back() != '/'
-            ? std::string{url}
-            : std::string{url.substr(0, url.size() - 1)};
+        return url.empty() || url.back() != '/' ? std::string{url}
+                                                : std::string{url.substr(0, url.size() - 1)};
     }
 
     Config m_config;

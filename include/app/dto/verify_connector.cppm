@@ -11,7 +11,8 @@ import boost.ut;
  * Typed wire shapes for the upstream `POST /account/connectors/verify` request.
  *
  * Upstream reference (READ-ONLY, SHA 7736d55adaf235f7af74e133ae408573b1826823):
- *  - api_models/src/verify_connector.rs:5-9    VerifyConnectorRequest { connector_name, connector_account_details }
+ *  - api_models/src/verify_connector.rs:5-9    VerifyConnectorRequest { connector_name,
+ * connector_account_details }
  *  - api_models/src/enums.rs:8                 re-export of common_enums Connector
  *  - common_enums/src/connector_enums.rs:29-32 #[serde(rename_all = "snake_case")] enum Connector
  *  - api_models/src/admin.rs:1582-1615         #[serde(tag = "auth_type")] enum ConnectorAuthType
@@ -362,7 +363,7 @@ inline constexpr std::array<ConnectorName, 161> kConnectorNames{{
 /** @brief Parse an upstream snake_case connector wire name into the typed enum. */
 [[nodiscard]] inline std::optional<Connector> connector_from_wire(std::string_view wire) noexcept
 {
-    for (const auto& entry : kConnectorNames) {
+    for (const auto& entry: kConnectorNames) {
         if (entry.wire == wire) {
             return entry.value;
         }
@@ -374,7 +375,7 @@ inline constexpr std::array<ConnectorName, 161> kConnectorNames{{
 [[nodiscard]] inline std::string_view connector_to_wire(Connector value) noexcept
 {
     // First entry wins so serde aliases (e.g. "bluecode" -> calida) map to the canonical name.
-    for (const auto& entry : kConnectorNames) {
+    for (const auto& entry: kConnectorNames) {
         if (entry.value == value) {
             return entry.wire;
         }
@@ -390,22 +391,85 @@ inline constexpr std::array<ConnectorName, 161> kConnectorNames{{
 class ConnectorAuthTypeValue
 {
 public:
-    void set_auth_type(std::string value) { auth_type = std::move(value); }
-    [[nodiscard]] const std::string& get_auth_type() const noexcept { return auth_type; }
-    void set_api_key(std::string value) { api_key = std::move(value); }
-    [[nodiscard]] const std::string& get_api_key() const noexcept { return api_key; }
-    void set_key1(std::string value) { key1 = std::move(value); }
-    [[nodiscard]] const std::string& get_key1() const noexcept { return key1; }
-    void set_api_secret(std::string value) { api_secret = std::move(value); }
-    [[nodiscard]] const std::string& get_api_secret() const noexcept { return api_secret; }
-    void set_key2(std::string value) { key2 = std::move(value); }
-    [[nodiscard]] const std::string& get_key2() const noexcept { return key2; }
-    void set_certificate(std::string value) { certificate = std::move(value); }
-    [[nodiscard]] const std::string& get_certificate() const noexcept { return certificate; }
-    void set_private_key(std::string value) { private_key = std::move(value); }
-    [[nodiscard]] const std::string& get_private_key() const noexcept { return private_key; }
-    void set_auth_key_map(std::string value) { auth_key_map = std::move(value); }
-    [[nodiscard]] const std::string& get_auth_key_map() const noexcept { return auth_key_map; }
+    void set_auth_type(std::string value)
+    {
+        auth_type = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_auth_type() const noexcept
+    {
+        return auth_type;
+    }
+
+    void set_api_key(std::string value)
+    {
+        api_key = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_api_key() const noexcept
+    {
+        return api_key;
+    }
+
+    void set_key1(std::string value)
+    {
+        key1 = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_key1() const noexcept
+    {
+        return key1;
+    }
+
+    void set_api_secret(std::string value)
+    {
+        api_secret = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_api_secret() const noexcept
+    {
+        return api_secret;
+    }
+
+    void set_key2(std::string value)
+    {
+        key2 = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_key2() const noexcept
+    {
+        return key2;
+    }
+
+    void set_certificate(std::string value)
+    {
+        certificate = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_certificate() const noexcept
+    {
+        return certificate;
+    }
+
+    void set_private_key(std::string value)
+    {
+        private_key = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_private_key() const noexcept
+    {
+        return private_key;
+    }
+
+    void set_auth_key_map(std::string value)
+    {
+        auth_key_map = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_auth_key_map() const noexcept
+    {
+        return auth_key_map;
+    }
 
     std::string auth_type{};
     std::string api_key{};
@@ -421,8 +485,16 @@ public:
 class ConnectorValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
@@ -430,10 +502,25 @@ public:
 class VerifyConnectorRequest
 {
 public:
-    void set_connector_name(std::string value) { connector_name = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_name() const noexcept { return connector_name; }
-    void set_connector_account_details(ConnectorAuthTypeValue value) { connector_account_details = std::move(value); }
-    [[nodiscard]] const ConnectorAuthTypeValue& get_connector_account_details() const noexcept { return connector_account_details; }
+    void set_connector_name(std::string value)
+    {
+        connector_name = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector_name() const noexcept
+    {
+        return connector_name;
+    }
+
+    void set_connector_account_details(ConnectorAuthTypeValue value)
+    {
+        connector_account_details = std::move(value);
+    }
+
+    [[nodiscard]] const ConnectorAuthTypeValue& get_connector_account_details() const noexcept
+    {
+        return connector_account_details;
+    }
 
     std::string connector_name{};
     ConnectorAuthTypeValue connector_account_details{};
@@ -448,17 +535,45 @@ struct serde::Serializable<app::dto::verify_connector::ConnectorAuthTypeValue>
     {
         using Type = app::dto::verify_connector::ConnectorAuthTypeValue;
         return std::tuple{
-            serde::FieldDesc<"auth_type", &Type::get_auth_type, &Type::set_auth_type, serde::FieldOptions{}>{},
-            serde::FieldDesc<"api_key", &Type::get_api_key, &Type::set_api_key, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "auth_type",
+                &Type::get_auth_type,
+                &Type::set_auth_type,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "api_key",
+                &Type::get_api_key,
+                &Type::set_api_key,
+                serde::FieldOptions{}>{},
             serde::FieldDesc<"key1", &Type::get_key1, &Type::set_key1, serde::FieldOptions{}>{},
-            serde::FieldDesc<"api_secret", &Type::get_api_secret, &Type::set_api_secret, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "api_secret",
+                &Type::get_api_secret,
+                &Type::set_api_secret,
+                serde::FieldOptions{}>{},
             serde::FieldDesc<"key2", &Type::get_key2, &Type::set_key2, serde::FieldOptions{}>{},
-            serde::FieldDesc<"certificate", &Type::get_certificate, &Type::set_certificate, serde::FieldOptions{}>{},
-            serde::FieldDesc<"private_key", &Type::get_private_key, &Type::set_private_key, serde::FieldOptions{}>{},
-            serde::FieldDesc<"auth_key_map", &Type::get_auth_key_map, &Type::set_auth_key_map, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "certificate",
+                &Type::get_certificate,
+                &Type::set_certificate,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "private_key",
+                &Type::get_private_key,
+                &Type::set_private_key,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "auth_key_map",
+                &Type::get_auth_key_map,
+                &Type::set_auth_key_map,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "verify_connector_auth_type_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "verify_connector_auth_type_value";
+    }
 };
 
 template<>
@@ -468,21 +583,40 @@ struct serde::Serializable<app::dto::verify_connector::VerifyConnectorRequest>
     {
         using Type = app::dto::verify_connector::VerifyConnectorRequest;
         return std::tuple{
-            serde::FieldDesc<"connector_name", &Type::get_connector_name, &Type::set_connector_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_account_details", &Type::get_connector_account_details, &Type::set_connector_account_details, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "connector_name",
+                &Type::get_connector_name,
+                &Type::set_connector_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector_account_details",
+                &Type::get_connector_account_details,
+                &Type::set_connector_account_details,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "verify_connector_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "verify_connector_request";
+    }
 };
 
 #ifdef CONGELADO_TEST
 namespace app::dto::verify_connector::tests {
 using namespace boost::ut;
-suite<"app_dto_verify_connector"> app_dto_verify_connector_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::verify_connector::VerifyConnectorRequest>::fields())> > 0);
+suite<"app_dto_verify_connector"> app_dto_verify_connector_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<
+                         app::dto::verify_connector::VerifyConnectorRequest>::fields())> > 0
+        );
     };
-    "parses upstream snake_case connector names"_test = [] {
+    "parses upstream snake_case connector names"_test = []
+    {
         expect(connector_from_wire("stripe").has_value());
         expect(connector_from_wire("paypal").has_value());
         expect(connector_from_wire("ctp_mastercard").has_value());
@@ -490,5 +624,5 @@ suite<"app_dto_verify_connector"> app_dto_verify_connector_suite = [] {
         expect(connector_to_wire(Connector::stripe) == "stripe");
     };
 };
-}
+} // namespace app::dto::verify_connector::tests
 #endif

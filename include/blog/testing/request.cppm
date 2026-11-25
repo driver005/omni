@@ -19,8 +19,15 @@ public:
     {
     }
 
-    [[nodiscard]] const std::string& method() const noexcept { return m_method; }
-    [[nodiscard]] const std::string& path() const noexcept { return m_path; }
+    [[nodiscard]] const std::string& method() const noexcept
+    {
+        return m_method;
+    }
+
+    [[nodiscard]] const std::string& path() const noexcept
+    {
+        return m_path;
+    }
 
     ApiRequest& param(std::string key, std::string value)
     {
@@ -39,11 +46,27 @@ public:
         return it == m_params.end() ? std::nullopt : std::optional<std::string>{it->second};
     }
 
-    ApiRequest& body(std::string value) { m_body = std::move(value); return *this; }
-    [[nodiscard]] const std::string& body() const noexcept { return m_body; }
+    ApiRequest& body(std::string value)
+    {
+        m_body = std::move(value);
+        return *this;
+    }
 
-    ApiRequest& token(std::string value) { m_token = std::move(value); return *this; }
-    [[nodiscard]] const std::string& token() const noexcept { return m_token; }
+    [[nodiscard]] const std::string& body() const noexcept
+    {
+        return m_body;
+    }
+
+    ApiRequest& token(std::string value)
+    {
+        m_token = std::move(value);
+        return *this;
+    }
+
+    [[nodiscard]] const std::string& token() const noexcept
+    {
+        return m_token;
+    }
 
 private:
     std::string m_method{"GET"};

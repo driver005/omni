@@ -64,9 +64,7 @@ suite<"core_storage_storage_result"> core_storage_storage_result_suite = []
 {
     "carries status, data and ref"_test = []
     {
-        const StorageResult result{
-            StorageResult::Status::OK, "payload", StorageRef{"mem://1"}
-        };
+        const StorageResult result{StorageResult::Status::OK, "payload", StorageRef{"mem://1"}};
         expect(result.ok());
         expect(result.data() == "payload");
         expect(result.ref().uri() == "mem://1");

@@ -22,22 +22,37 @@ import :outbox_shim;
 export namespace blog::handlers::webhooks::support {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 inline constexpr std::string_view kIntegrationHeader{"x-blog-integration-id"};
@@ -51,7 +66,9 @@ inline constexpr std::string_view kDefaultApiVersion{"v5.0"};
 /** @brief Plain scalar from a raw JSON value; JSON `null` becomes the empty string. */
 [[nodiscard]] inline std::string unquote(std::string_view raw)
 {
-    if (raw == "null") return {};
+    if (raw == "null") {
+        return {};
+    }
     if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {
         return std::string{raw.substr(1, raw.size() - 2)};
     }
@@ -61,9 +78,14 @@ inline constexpr std::string_view kDefaultApiVersion{"v5.0"};
 [[nodiscard]] inline std::string lower(std::string_view text)
 {
     std::string out{text};
-    std::ranges::transform(out, out.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-    });
+    std::ranges::transform(
+        out,
+        out.begin(),
+        [](unsigned char c)
+        {
+            return static_cast<char>(std::tolower(c));
+        }
+    );
     return out;
 }
 
@@ -72,21 +94,29 @@ inline constexpr std::string_view kDefaultApiVersion{"v5.0"};
 {
     using namespace std::chrono;
     const auto tick = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    const long long seconds = tick / 1000;
-    const long long millis = tick % 1000;
-    long long z = seconds / 86400 + 719468;
-    const long long era = (z >= 0 ? z : z - 146096) / 146097;
-    const unsigned doe = static_cast<unsigned>(z - era * 146097);
-    const unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    const long long seconds = tick / 1'000;
+    const long long millis = tick % 1'000;
+    long long z = seconds / 86'400 + 719'468;
+    const long long era = (z >= 0 ? z : z - 146'096) / 146'097;
+    const unsigned doe = static_cast<unsigned>(z - era * 146'097);
+    const unsigned yoe = (doe - doe / 1'460 + doe / 36'524 - doe / 146'096) / 365;
     long long year = static_cast<long long>(yoe) + era * 400;
     const unsigned doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     const unsigned mp = (5 * doy + 2) / 153;
     const unsigned day = doy - (153 * mp + 2) / 5 + 1;
     const unsigned month = mp < 10 ? mp + 3 : mp - 9;
     year += (month <= 2) ? 1 : 0;
-    const unsigned sod = static_cast<unsigned>(seconds % 86400);
-    return std::format("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
-                       year, month, day, sod / 3600, (sod % 3600) / 60, sod % 60, millis);
+    const unsigned sod = static_cast<unsigned>(seconds % 86'400);
+    return std::format(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+        year,
+        month,
+        day,
+        sod / 3'600,
+        (sod % 3'600) / 60,
+        sod % 60,
+        millis
+    );
 }
 
 /** @brief Input-pipeline unwrap: `data.webhooks[0]` / `webhooks[0]`, else the raw object. */
@@ -97,15 +127,17 @@ inline constexpr std::string_view kDefaultApiVersion{"v5.0"};
     if (const auto it = fields.find("webhooks");
         it != fields.end() && it->second.starts_with('[')) {
         const auto rows = blog::api::parse_array(it->second);
-        if (!rows.empty()) return rows.front();
+        if (!rows.empty()) {
+            return rows.front();
+        }
     }
-    if (const auto it = fields.find("data");
-        it != fields.end() && it->second.starts_with('{')) {
+    if (const auto it = fields.find("data"); it != fields.end() && it->second.starts_with('{')) {
         const auto data = parser.parse_raw(it->second);
-        if (const auto w = data.find("webhooks");
-            w != data.end() && w->second.starts_with('[')) {
+        if (const auto w = data.find("webhooks"); w != data.end() && w->second.starts_with('[')) {
             const auto rows = blog::api::parse_array(w->second);
-            if (!rows.empty()) return rows.front();
+            if (!rows.empty()) {
+                return rows.front();
+            }
         }
     }
     return fields;
@@ -133,33 +165,43 @@ inline constexpr std::string_view kDefaultApiVersion{"v5.0"};
  * last_triggered_at,last_triggered_status,last_triggered_error`. Ghost's snapshot has
  * no `status` field, so none is emitted. `secret` is deliberately not masked.
  */
-[[nodiscard]] inline std::string webhook_model(const blog::api::RecordDto& stored,
-                                               const blog::api::RecordDto& input,
-                                               std::string_view id,
-                                               bool touch_updated)
+[[nodiscard]] inline std::string webhook_model(
+    const blog::api::RecordDto& stored,
+    const blog::api::RecordDto& input,
+    std::string_view id,
+    bool touch_updated
+)
 {
-    const auto raw = [&](const char* key) -> std::string {
-        if (const auto it = input.find(key); it != input.end()) return it->second;
-        if (const auto it = stored.find(key); it != stored.end()) return it->second;
+    const auto raw = [&](const char* key) -> std::string
+    {
+        if (const auto it = input.find(key); it != input.end()) {
+            return it->second;
+        }
+        if (const auto it = stored.find(key); it != stored.end()) {
+            return it->second;
+        }
         return "null";
     };
 
     blog::api::RecordDto out;
     out["id"] = quote(id);
-    for (const char* key : {"name", "event", "target_url", "secret"}) {
+    for (const char* key: {"name", "event", "target_url", "secret"}) {
         out[key] = raw(key);
     }
     const std::string api_version = raw("api_version");
-    out["api_version"] = api_version.empty() || api_version == "null"
-                       ? quote(kDefaultApiVersion) : api_version;
+    out["api_version"] =
+        api_version.empty() || api_version == "null" ? quote(kDefaultApiVersion) : api_version;
     out["integration_id"] = raw("integration_id");
-    const std::string created = [&] {
-        if (const auto it = stored.find("created_at"); it != stored.end()) return it->second;
+    const std::string created = [&]
+    {
+        if (const auto it = stored.find("created_at"); it != stored.end()) {
+            return it->second;
+        }
         return quote(now_iso());
     }();
     out["created_at"] = created;
     out["updated_at"] = touch_updated ? quote(now_iso()) : created;
-    for (const char* key : {"last_triggered_at", "last_triggered_status", "last_triggered_error"}) {
+    for (const char* key: {"last_triggered_at", "last_triggered_status", "last_triggered_error"}) {
         out[key] = raw(key);
     }
     return blog::api::record_to_json(out);
@@ -176,14 +218,14 @@ public:
     using Output = std::string;
     static constexpr std::string_view name{"webhooks_create_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         namespace support = blog::handlers::webhooks::support;
         auto& ctx = *s_ctx;
 
-        const std::string raw = in.body_as_string().empty()
-                              ? std::string{"{}"} : std::string{in.body_as_string()};
+        const std::string raw =
+            in.body_as_string().empty() ? std::string{"{}"} : std::string{in.body_as_string()};
         const auto fields = support::unwrap(raw);
         if (fields.empty()) {
             return core::workflow::StepResponse<Output>{"__VALIDATION__"};
@@ -209,7 +251,7 @@ public:
         }
 
         // WebhooksService.add dedupe: getByEventAndTarget compares case-insensitively.
-        for (const auto& record : blog::api::parse_array(ctx.store().resources().list("webhooks"))) {
+        for (const auto& record: blog::api::parse_array(ctx.store().resources().list("webhooks"))) {
             const auto e = record.find("event");
             const auto t = record.find("target_url");
             if (e != record.end() && t != record.end() &&
@@ -226,8 +268,8 @@ public:
 
         auto& outbox = blog::handlers::outbox::global_outbox();
         outbox.begin_transaction();
-        const auto created = ctx.store().create(
-            "webhooks", blog::api::record_to_json(stored_fields));
+        const auto created =
+            ctx.store().create("webhooks", blog::api::record_to_json(stored_fields));
         if (!created.ok() || created.status() >= 400) {
             outbox.rollback();
             return core::workflow::StepResponse<Output>{"__VALIDATION__"};
@@ -235,9 +277,9 @@ public:
 
         std::string id;
         const auto created_fields = blog::api::JsonBody{}.parse(created.body());
-        const std::string created_json = created_fields.contains("webhooks")
-                                       ? created_fields.at("webhooks") : created.body();
-        for (const auto& record : blog::api::parse_array(created_json)) {
+        const std::string created_json =
+            created_fields.contains("webhooks") ? created_fields.at("webhooks") : created.body();
+        for (const auto& record: blog::api::parse_array(created_json)) {
             if (const auto it = record.find("id"); it != record.end()) {
                 id = support::unquote(it->second);
                 break;
@@ -248,10 +290,10 @@ public:
             return core::workflow::StepResponse<Output>{"__VALIDATION__"};
         }
 
-        const auto record = blog::api::JsonBody{}.parse_raw(
-            ctx.store().resources().get("webhooks", id));
-        const std::string body = "{\"webhooks\":["
-                               + support::webhook_model(record, stored_fields, id, false) + "]}";
+        const auto record =
+            blog::api::JsonBody{}.parse_raw(ctx.store().resources().get("webhooks", id));
+        const std::string body =
+            "{\"webhooks\":[" + support::webhook_model(record, stored_fields, id, false) + "]}";
         // webhook.added == Ghost Webhook.onCreated -> emitChange('added').
         outbox.emit(blog::handlers::outbox::Event{"webhook.added", body, id});
         outbox.commit();
@@ -259,6 +301,7 @@ public:
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 };
 

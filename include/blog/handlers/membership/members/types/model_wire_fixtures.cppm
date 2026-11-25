@@ -44,7 +44,6 @@ struct EmailWire
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
 
-
 struct AutomatedEmailWire
 {
     std::string id{serde::ghost_id(1)};
@@ -54,30 +53,30 @@ struct AutomatedEmailWire
     std::string created_at{"2024-01-01T00:00:00.000Z"};
 };
 
-
 struct EventWire
 {
     std::string type{"comment_event"};
-    serde::Value data{blog::model::members::parse_wire_json(R"({"post_id":"1","member_id":"1","comment_id":"1"})")};
+    serde::Value data{
+        blog::model::members::parse_wire_json(R"({"post_id":"1","member_id":"1","comment_id":"1"})")
+    };
 };
-
 
 struct CommentSubWire
 {
     std::string id{serde::ghost_id(1)};
     std::string comment_id{serde::ghost_id(2)};
     std::string member_id{serde::ghost_id(3)};
-    serde::Value member{blog::model::members::parse_wire_json(R"({"id":"1","name":"Ghost Member","email":"member2@test.com"})")};
+    serde::Value member{blog::model::members::parse_wire_json(
+        R"({"id":"1","name":"Ghost Member","email":"member2@test.com"})"
+    )};
     std::string created_at{"2024-01-01T00:00:00.000Z"};
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
-
 
 struct DbWire
 {
     std::string status{"success"};
 };
-
 
 struct BatchWire
 {
@@ -92,7 +91,6 @@ struct BatchWire
     std::string created_at{"2024-01-01T00:00:00.000Z"};
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
-
 
 struct FailureWire
 {
@@ -110,7 +108,6 @@ struct FailureWire
     std::string member_id{serde::ghost_id(3)};
 };
 
-
 struct CustomThemeSettingWire
 {
     std::string id{serde::ghost_id(1)};
@@ -121,7 +118,6 @@ struct CustomThemeSettingWire
     std::string type{"color"};
     serde::Value options{blog::model::members::parse_wire_json("[]")};
 };
-
 
 struct AutomationWire
 {
@@ -135,7 +131,6 @@ struct AutomationWire
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
 
-
 struct LabelWire
 {
     std::string id{serde::ghost_id(1)};
@@ -145,7 +140,6 @@ struct LabelWire
     std::string created_at{"2024-01-01T00:00:00.000Z"};
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
-
 
 struct SnippetWire
 {
@@ -157,7 +151,6 @@ struct SnippetWire
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
 
-
 struct RoleWire
 {
     std::string id{serde::ghost_id(1)};
@@ -166,7 +159,6 @@ struct RoleWire
     std::string created_at{"2024-01-01T00:00:00.000Z"};
     std::string updated_at{"2024-01-01T00:00:00.000Z"};
 };
-
 
 struct RecommendationWire
 {
@@ -187,14 +179,14 @@ struct RecommendationWire
     serde::Value count{blog::model::members::parse_wire_json(R"({"clicks":0,"subscribers":0})")};
 };
 
-
 struct LinkWire
 {
     std::string post_id{serde::ghost_id(1)};
-    serde::Value link{blog::model::members::parse_wire_json(R"({"url":"https://ghost.local","title":"Ghost"})")};
+    serde::Value link{
+        blog::model::members::parse_wire_json(R"({"url":"https://ghost.local","title":"Ghost"})")
+    };
     serde::Value count{blog::model::members::parse_wire_json(R"({"clicks":0})")};
 };
-
 
 struct OfferWire
 {
@@ -251,12 +243,14 @@ struct WebhookWire
 
 export namespace blog::model::members {
 
-[[nodiscard]] inline std::string encode_wire_key(const std::string& json, std::string_view from, std::string_view to)
+[[nodiscard]] inline std::string
+encode_wire_key(const std::string& json, std::string_view from, std::string_view to)
 {
     std::string out = json;
     const std::string needle = std::string{"\""} + std::string{from} + "\":";
     const std::string replacement = std::string{"\""} + std::string{to} + "\":";
-    for (std::size_t at = out.find(needle); at != std::string::npos; at = out.find(needle, at + replacement.size())) {
+    for (std::size_t at = out.find(needle); at != std::string::npos;
+         at = out.find(needle, at + replacement.size())) {
         out.replace(at, needle.size(), replacement);
     }
     return out;
@@ -264,7 +258,11 @@ export namespace blog::model::members {
 
 [[nodiscard]] inline std::string encode_notification_wire()
 {
-    return encode_wire_key(core_serde::JsonCodec{}.encode(NotificationWire{}), "type_value", "type");
+    return encode_wire_key(
+        core_serde::JsonCodec{}.encode(NotificationWire{}),
+        "type_value",
+        "type"
+    );
 }
 
 [[nodiscard]] inline std::string encode_offer_wire()
@@ -274,7 +272,11 @@ export namespace blog::model::members {
 
 [[nodiscard]] inline std::string encode_custom_theme_setting_wire()
 {
-    return encode_wire_key(core_serde::JsonCodec{}.encode(CustomThemeSettingWire{}), "default_value", "default");
+    return encode_wire_key(
+        core_serde::JsonCodec{}.encode(CustomThemeSettingWire{}),
+        "default_value",
+        "default"
+    );
 }
 
 } // namespace blog::model::members

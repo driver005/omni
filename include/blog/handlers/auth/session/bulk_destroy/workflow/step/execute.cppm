@@ -15,8 +15,8 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"session_bulk_destroy_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         auto& ctx = *s_ctx;
@@ -40,6 +40,7 @@ public:
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 };
 

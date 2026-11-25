@@ -27,8 +27,7 @@ public:
 
     [[nodiscard]] AuthStatus check(std::string_view role_name, Permission permission) const
     {
-        return allowed(role_name, permission) ? AuthStatus{AuthStatus::OK}
-                                              : AuthStatus::FORBIDDEN;
+        return allowed(role_name, permission) ? AuthStatus{AuthStatus::OK} : AuthStatus::FORBIDDEN;
     }
 
     [[nodiscard]] std::size_t size() const noexcept

@@ -37,10 +37,8 @@ public:
         return m_runtime->provider().send(message);
     }
 
-    [[nodiscard]] std::string render(
-        std::string_view source,
-        const std::map<std::string, std::string>& values
-    ) const
+    [[nodiscard]] std::string
+    render(std::string_view source, const std::map<std::string, std::string>& values) const
     {
         return m_template_engine.render(source, values);
     }
@@ -74,7 +72,9 @@ suite<"core_email_email"> core_email_email_suite = []
         const auto rendered = email.render("Hi {{name}}", {{"name", "Ada"}});
         expect(rendered == "Hi Ada");
         const EmailMessage message{
-            EmailAddress{"from@example.com"}, EmailAddress{"to@example.com"}, rendered
+            EmailAddress{"from@example.com"},
+            EmailAddress{"to@example.com"},
+            rendered
         };
         expect(email.send(message));
         expect(email.sent_count() == 1);

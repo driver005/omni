@@ -21,22 +21,27 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& request, interfaces::io::IResponse& response,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& request,
+        interfaces::io::IResponse& response,
+        std::function<void()> send
+    )
     {
-        if (!blog::handlers::posts::support::authorize(
-                request, response, send, "posts", "add")) {
+        if (!blog::handlers::posts::support::authorize(request, response, send, "posts", "add")) {
             return;
         }
         const auto execution = m_workflow.run("posts_create", request);
         const auto* result = execution.result_of("posts_create_execute");
-        const auto payload = result && result->typed_output.has_value()
-                               ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
-                               : std::map<std::string, std::string>{{"status", "201"}, {"body", "{}"}};
+        const auto payload =
+            result && result->typed_output.has_value()
+                ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
+                : std::map<std::string, std::string>{{"status", "201"}, {"body", "{}"}};
         const int status = payload.contains("status") ? std::stoi(payload.at("status")) : 201;
         const auto body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
         std::vector<std::byte> bytes;
-        for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+        for (const char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
         if (payload.contains("published") && payload.at("published") == "true") {
             response.set_header("X-Cache-Invalidate", "/*");
         }
@@ -53,4 +58,4 @@ private:
     core::workflow::Workflow m_workflow{};
 };
 
-} // namespace
+} // namespace blog::handlers::posts::create

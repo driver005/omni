@@ -58,7 +58,8 @@ public:
     [[nodiscard]] std::string operator()(const WorkflowValue& value) const
     {
         return std::visit(
-            [](const auto& v) -> std::string {
+            [](const auto& v) -> std::string
+            {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::same_as<T, std::monostate>) {
                     return "";
@@ -67,23 +68,33 @@ public:
                 } else if constexpr (std::same_as<T, std::string>) {
                     return v;
                 } else if constexpr (std::same_as<T, std::vector<std::string>>) {
-                    return std::ranges::fold_left(v, std::string{}, [](std::string acc, const std::string& s) {
-                        if (!acc.empty()) {
-                            acc += ',';
+                    return std::ranges::fold_left(
+                        v,
+                        std::string{},
+                        [](std::string acc, const std::string& s)
+                        {
+                            if (!acc.empty()) {
+                                acc += ',';
+                            }
+                            acc += s;
+                            return acc;
                         }
-                        acc += s;
-                        return acc;
-                    });
+                    );
                 } else if constexpr (std::same_as<T, std::map<std::string, std::string>>) {
-                    return std::ranges::fold_left(v, std::string{}, [](std::string acc, const auto& kv) {
-                        if (!acc.empty()) {
-                            acc += ',';
+                    return std::ranges::fold_left(
+                        v,
+                        std::string{},
+                        [](std::string acc, const auto& kv)
+                        {
+                            if (!acc.empty()) {
+                                acc += ',';
+                            }
+                            acc += kv.first;
+                            acc += '=';
+                            acc += kv.second;
+                            return acc;
                         }
-                        acc += kv.first;
-                        acc += '=';
-                        acc += kv.second;
-                        return acc;
-                    });
+                    );
                 } else {
                     return std::format("{}", v);
                 }
@@ -114,7 +125,8 @@ public:
             return false;
         } else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>) {
             return std::visit(
-                [](const auto& v) -> T {
+                [](const auto& v) -> T
+                {
                     using V = std::decay_t<decltype(v)>;
                     if constexpr (std::is_arithmetic_v<V> && !std::same_as<V, bool>) {
                         return static_cast<T>(v);
@@ -149,7 +161,10 @@ suite<"core_workflow_value"> core_workflow_value_suite = []
     "round trips primitives through WorkflowValue"_test = []
     {
         expect(std::get<std::string>(ToWorkflowValue{}(std::string{"prom_01"})) == "prom_01");
-        expect(WorkflowValueAs{}.operator()<std::string>(WorkflowValue{std::string{"prom_01"}}) == "prom_01");
+        expect(
+            WorkflowValueAs{}.operator()<std::string>(WorkflowValue{std::string{"prom_01"}}) ==
+            "prom_01"
+        );
         expect(WorkflowValueAs{}.operator()<std::int64_t>(WorkflowValue{std::int64_t{7}}) == 7);
     };
 

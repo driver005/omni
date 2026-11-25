@@ -45,7 +45,8 @@ public:
     void install() const
     {
         static serde::SerdeFormatRegistry registry;
-        static const bool installed = [this] {
+        static const bool installed = [this]
+        {
             registry.add_format(std::make_shared<JsonSerdeFormat>());
             serde::SerdeFormatRegistry::set_active(&registry);
             return true;

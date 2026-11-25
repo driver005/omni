@@ -32,24 +32,20 @@ public:
             "application/json"
         );
     }
+
     [[nodiscard]] std::string fetch(std::string_view target) const
     {
         return fetch_detailed(target).body;
     }
 
     /** @brief Sends a webmention (source -> target) as application/x-www-form-urlencoded. */
-    [[nodiscard]] Result source_detailed(
-        std::string_view source,
-        std::string_view target
-    ) const
+    [[nodiscard]] Result source_detailed(std::string_view source, std::string_view target) const
     {
-        const std::string body = std::format(
-            "source={}&target={}",
-            url_encode(source),
-            url_encode(target)
-        );
+        const std::string body =
+            std::format("source={}&target={}", url_encode(source), url_encode(target));
         return issue("source", "POST", {}, body, "application/x-www-form-urlencoded");
     }
+
     [[nodiscard]] std::string source(std::string_view source, std::string_view target) const
     {
         return source_detailed(source, target).body;
@@ -66,6 +62,7 @@ public:
             "application/json"
         );
     }
+
     [[nodiscard]] std::string target(std::string_view target) const
     {
         return target_detailed(target).body;
@@ -99,7 +96,10 @@ private:
         request.method = method;
         request.url = std::format("{}/webmention{}", trim_slash(m_config.base_url), query);
         if (!m_config.api_key.empty()) {
-            request.headers.emplace_back("Authorization", std::format("Bearer {}", m_config.api_key));
+            request.headers.emplace_back(
+                "Authorization",
+                std::format("Bearer {}", m_config.api_key)
+            );
         }
         request.headers.emplace_back("Content-Type", content_type);
         request.headers.emplace_back("Accept", "application/json");
@@ -123,9 +123,8 @@ private:
 
     [[nodiscard]] static std::string trim_slash(std::string_view url)
     {
-        return url.empty() || url.back() != '/'
-            ? std::string{url}
-            : std::string{url.substr(0, url.size() - 1)};
+        return url.empty() || url.back() != '/' ? std::string{url}
+                                                : std::string{url.substr(0, url.size() - 1)};
     }
 
     Config m_config;

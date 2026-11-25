@@ -65,8 +65,12 @@ struct BuiltSample
 {
     std::int64_t id{};
 };
-CORE_DB_REFLECT(BuiltSample, "built_samples",
-    CORE_DB_FIELD("id", &BuiltSample::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY));
+
+CORE_DB_REFLECT(
+    BuiltSample,
+    "built_samples",
+    CORE_DB_FIELD("id", &BuiltSample::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY)
+);
 
 using namespace boost::ut;
 

@@ -21,12 +21,35 @@ public:
     {
     }
 
-    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
-    [[nodiscard]] core::db::ColumnType get_type() const noexcept { return m_type; }
-    [[nodiscard]] bool is_primary_key() const noexcept { return m_primary_key; }
-    [[nodiscard]] bool is_unique() const noexcept { return m_unique; }
-    [[nodiscard]] const std::string& get_references_table() const noexcept { return m_references_table; }
-    [[nodiscard]] const std::string& get_references_column() const noexcept { return m_references_column; }
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
+    [[nodiscard]] core::db::ColumnType get_type() const noexcept
+    {
+        return m_type;
+    }
+
+    [[nodiscard]] bool is_primary_key() const noexcept
+    {
+        return m_primary_key;
+    }
+
+    [[nodiscard]] bool is_unique() const noexcept
+    {
+        return m_unique;
+    }
+
+    [[nodiscard]] const std::string& get_references_table() const noexcept
+    {
+        return m_references_table;
+    }
+
+    [[nodiscard]] const std::string& get_references_column() const noexcept
+    {
+        return m_references_column;
+    }
 
     std::string m_name{};
     core::db::ColumnType m_type{core::db::ColumnType::TEXT};
@@ -48,8 +71,15 @@ public:
     {
     }
 
-    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
-    [[nodiscard]] const std::vector<std::string>& get_columns() const noexcept { return m_columns; }
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& get_columns() const noexcept
+    {
+        return m_columns;
+    }
 
     std::string m_name{};
     std::vector<std::string> m_columns{};
@@ -68,9 +98,20 @@ public:
     {
     }
 
-    [[nodiscard]] const std::string& get_column() const noexcept { return m_column; }
-    [[nodiscard]] const std::string& get_references_table() const noexcept { return m_references_table; }
-    [[nodiscard]] const std::string& get_references_column() const noexcept { return m_references_column; }
+    [[nodiscard]] const std::string& get_column() const noexcept
+    {
+        return m_column;
+    }
+
+    [[nodiscard]] const std::string& get_references_table() const noexcept
+    {
+        return m_references_table;
+    }
+
+    [[nodiscard]] const std::string& get_references_column() const noexcept
+    {
+        return m_references_column;
+    }
 
     std::string m_column{};
     std::string m_references_table{};
@@ -109,24 +150,51 @@ public:
         return *this;
     }
 
-    TableDescriptor& with_foreign_key(std::string column, std::string references_table, std::string references_column)
+    TableDescriptor& with_foreign_key(
+        std::string column,
+        std::string references_table,
+        std::string references_column
+    )
     {
-        for (ColumnDescriptor& descriptor : m_columns) {
+        for (ColumnDescriptor& descriptor: m_columns) {
             if (descriptor.m_name == column) {
                 descriptor.m_references_table = references_table;
                 descriptor.m_references_column = references_column;
                 break;
             }
         }
-        m_foreign_keys.emplace_back(std::move(column), std::move(references_table), std::move(references_column));
+        m_foreign_keys.emplace_back(
+            std::move(column),
+            std::move(references_table),
+            std::move(references_column)
+        );
         return *this;
     }
 
-    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
-    [[nodiscard]] const std::string& get_primary_key() const noexcept { return m_primary_key; }
-    [[nodiscard]] const std::vector<ColumnDescriptor>& get_columns() const noexcept { return m_columns; }
-    [[nodiscard]] const std::vector<UniqueIndex>& get_unique_indexes() const noexcept { return m_unique_indexes; }
-    [[nodiscard]] const std::vector<ForeignKey>& get_foreign_keys() const noexcept { return m_foreign_keys; }
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
+    [[nodiscard]] const std::string& get_primary_key() const noexcept
+    {
+        return m_primary_key;
+    }
+
+    [[nodiscard]] const std::vector<ColumnDescriptor>& get_columns() const noexcept
+    {
+        return m_columns;
+    }
+
+    [[nodiscard]] const std::vector<UniqueIndex>& get_unique_indexes() const noexcept
+    {
+        return m_unique_indexes;
+    }
+
+    [[nodiscard]] const std::vector<ForeignKey>& get_foreign_keys() const noexcept
+    {
+        return m_foreign_keys;
+    }
 
     std::string m_name{};
     std::string m_primary_key{};
@@ -144,20 +212,30 @@ public:
         std::string out = std::format("CREATE TABLE IF NOT EXISTS {} (", table.get_name());
         const auto& columns = table.get_columns();
         for (std::size_t i = 0; i < columns.size(); ++i) {
-            if (i > 0) { out += ", "; }
+            if (i > 0) {
+                out += ", ";
+            }
             const ColumnDescriptor& column = columns[i];
             out += column.m_name;
             out += " ";
             out += core::db::SqlTypeName{}(column.m_type);
-            if (column.m_primary_key) { out += " PRIMARY KEY"; }
+            if (column.m_primary_key) {
+                out += " PRIMARY KEY";
+            }
             if (!column.m_references_table.empty()) {
-                out += std::format(" REFERENCES {}({})", column.m_references_table, column.m_references_column);
+                out += std::format(
+                    " REFERENCES {}({})",
+                    column.m_references_table,
+                    column.m_references_column
+                );
             }
         }
-        for (const UniqueIndex& index : table.get_unique_indexes()) {
+        for (const UniqueIndex& index: table.get_unique_indexes()) {
             out += ", UNIQUE (";
             for (std::size_t i = 0; i < index.m_columns.size(); ++i) {
-                if (i > 0) { out += ", "; }
+                if (i > 0) {
+                    out += ", ";
+                }
                 out += index.m_columns[i];
             }
             out += ")";
@@ -183,7 +261,7 @@ public:
 
     [[nodiscard]] std::optional<TableDescriptor> find(std::string_view name) const
     {
-        for (const TableDescriptor& table : m_tables) {
+        for (const TableDescriptor& table: m_tables) {
             if (table.get_name() == name) {
                 return table;
             }
@@ -318,7 +396,10 @@ private:
             .with_column({"business_country", core::db::ColumnType::TEXT})
             .with_column({"business_label", core::db::ColumnType::TEXT})
             .with_column({"created_at", core::db::ColumnType::TEXT})
-            .with_unique("uq_merchant_connectors_merchant_connector", {"merchant_id", "connector_name"})
+            .with_unique(
+                "uq_merchant_connectors_merchant_connector",
+                {"merchant_id", "connector_name"}
+            )
             .with_foreign_key("merchant_id", "merchant_accounts", "merchant_id");
 
         add(TableDescriptor{"api_key_expiries"}.with_primary_key("id"))
@@ -805,7 +886,7 @@ suite<"app_db_schema_registry"> schema_registry_suite = []
     "every descriptor carries a primary key and at least one unique index"_test = []
     {
         const SchemaRegistry registry{};
-        for (const TableDescriptor& table : registry.tables()) {
+        for (const TableDescriptor& table: registry.tables()) {
             expect(!table.get_primary_key().empty());
             expect(!table.get_unique_indexes().empty());
             expect(!table.get_columns().empty());

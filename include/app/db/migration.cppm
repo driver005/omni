@@ -34,7 +34,7 @@ public:
     /** @brief Registers every table not yet applied by this runner. */
     std::size_t migrate(core::db::Database& db)
     {
-        for (const TableDescriptor& table : m_registry.tables()) {
+        for (const TableDescriptor& table: m_registry.tables()) {
             apply_table(db, table);
         }
         return m_applied.size();

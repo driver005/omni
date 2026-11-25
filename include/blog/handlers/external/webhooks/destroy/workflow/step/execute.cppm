@@ -15,8 +15,8 @@ public:
     using Output = std::string;
     static constexpr std::string_view name{"webhooks_destroy_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         namespace support = blog::handlers::webhooks::support;
         auto& ctx = *s_ctx;
@@ -37,8 +37,8 @@ public:
         if (!caller.empty()) {
             const auto stored = blog::api::JsonBody{}.parse_raw(stored_raw);
             const auto owner = stored.find("integration_id");
-            const std::string stored_owner = owner == stored.end()
-                                           ? std::string{} : support::unquote(owner->second);
+            const std::string stored_owner =
+                owner == stored.end() ? std::string{} : support::unquote(owner->second);
             if (stored_owner != caller) {
                 return core::workflow::StepResponse<Output>{"__FORBIDDEN__"};
             }
@@ -62,6 +62,7 @@ public:
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 };
 

@@ -46,9 +46,13 @@ public:
 
     [[nodiscard]] std::optional<ProcessTrackerRecord> find_by_id(std::int64_t id)
     {
-        std::optional<ProcessTrackerRecord> found = m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
+        std::optional<ProcessTrackerRecord> found =
+            m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
         if (!found) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "process tracker not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "process tracker not found"
+            );
         } else {
             m_last_error.reset();
         }
@@ -57,21 +61,31 @@ public:
 
     bool update_status(std::int64_t id, std::string status)
     {
-        std::optional<ProcessTrackerRecord> record = m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
+        std::optional<ProcessTrackerRecord> record =
+            m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
         if (!record) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "process tracker not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "process tracker not found"
+            );
             return false;
         }
         record->set_status(std::move(status));
         record->set_updated_at(now_string(0));
         const bool updated = m_db.update_where_column<ProcessTrackerRecord>(
-                                 *record, "id", core::db::Compare::EQ, core::db::DbValue{id}
+                                 *record,
+                                 "id",
+                                 core::db::Compare::EQ,
+                                 core::db::DbValue{id}
                              ) > 0;
         if (updated) {
             m_metrics.counter("process_tracker_status_updated").increment();
             m_last_error.reset();
         } else {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::INTERNAL_ERROR, "process tracker update failed");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INTERNAL_ERROR,
+                "process tracker update failed"
+            );
         }
         return updated;
     }
@@ -79,13 +93,20 @@ public:
     /** @brief Re-arms a tracker with the next attempt and backoff from the policy. */
     std::optional<ProcessTrackerRecord> retry(std::int64_t id, const RetryPolicy& policy)
     {
-        std::optional<ProcessTrackerRecord> record = m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
+        std::optional<ProcessTrackerRecord> record =
+            m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
         if (!record) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "process tracker not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "process tracker not found"
+            );
             return std::nullopt;
         }
         if (!policy.should_retry(record->get_attempts())) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::PRECONDITION_FAILED, "process tracker retry limit reached");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::PRECONDITION_FAILED,
+                "process tracker retry limit reached"
+            );
             return std::nullopt;
         }
 
@@ -95,7 +116,10 @@ public:
         record->set_run_at(now_string(policy.delay_seconds(attempts)));
         record->set_updated_at(now_string(0));
         m_db.update_where_column<ProcessTrackerRecord>(
-            *record, "id", core::db::Compare::EQ, core::db::DbValue{id}
+            *record,
+            "id",
+            core::db::Compare::EQ,
+            core::db::DbValue{id}
         );
         m_metrics.counter("process_tracker_retried").increment();
         m_last_error.reset();
@@ -104,22 +128,32 @@ public:
 
     bool mark_terminal(std::int64_t id, std::string result)
     {
-        std::optional<ProcessTrackerRecord> record = m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
+        std::optional<ProcessTrackerRecord> record =
+            m_db.find<ProcessTrackerRecord>(core::db::DbValue{id});
         if (!record) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "process tracker not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "process tracker not found"
+            );
             return false;
         }
         record->set_status(std::string{ProcessTrackerStatus{}.completed()});
         record->set_result(std::move(result));
         record->set_updated_at(now_string(0));
         const bool updated = m_db.update_where_column<ProcessTrackerRecord>(
-                                 *record, "id", core::db::Compare::EQ, core::db::DbValue{id}
+                                 *record,
+                                 "id",
+                                 core::db::Compare::EQ,
+                                 core::db::DbValue{id}
                              ) > 0;
         if (updated) {
             m_metrics.counter("process_tracker_terminal").increment();
             m_last_error.reset();
         } else {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::INTERNAL_ERROR, "process tracker terminal update failed");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INTERNAL_ERROR,
+                "process tracker terminal update failed"
+            );
         }
         return updated;
     }
@@ -134,7 +168,8 @@ private:
     {
         const std::int64_t now = std::chrono::duration_cast<std::chrono::seconds>(
                                      std::chrono::system_clock::now().time_since_epoch()
-                                 ).count();
+        )
+                                     .count();
         return std::to_string(now + offset_seconds);
     }
 

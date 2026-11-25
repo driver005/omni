@@ -70,13 +70,12 @@ public:
      * @return the matched child node, or `std::nullopt` if nothing in this node's children matches
      * `seg` (not even a wildcard).
      */
-    constexpr std::optional<RouterNode> find_child(
-        std::string_view seg,
-        std::span<RouterNode> table,
-        std::size_t& current_index
-    ) const
+    constexpr std::optional<RouterNode>
+    find_child(std::string_view seg, std::span<RouterNode> table, std::size_t& current_index) const
     {
-        if (m_children_length == 0) return std::nullopt;
+        if (m_children_length == 0) {
+            return std::nullopt;
+        }
 
         // Children are a contiguous slice starting at this offset in the flattened table.
         current_index += m_children_offset;
@@ -87,14 +86,20 @@ public:
 
         for (std::size_t i = 0; i < m_children_length; ++i) {
             const std::size_t idx = current_index + i;
-            if (idx >= table.size()) break;
+            if (idx >= table.size()) {
+                break;
+            }
             auto& node = table[idx];
             switch (node.get_kind()) {
                 case EdgeKind::PATH:
-                    if (!literal_index && node.get_literal() == seg) literal_index = idx;
+                    if (!literal_index && node.get_literal() == seg) {
+                        literal_index = idx;
+                    }
                     break;
                 case EdgeKind::PARAM:
-                    if (!param_index) param_index = idx;
+                    if (!param_index) {
+                        param_index = idx;
+                    }
                     break;
                 case EdgeKind::WILD:
                     wild_index = idx;
@@ -200,8 +205,8 @@ private:
 };
 
 template<
-    std::size_t RouterSize = 4096,
-    std::size_t HandlerSize = 4096,
+    std::size_t RouterSize = 4'096,
+    std::size_t HandlerSize = 4'096,
     std::size_t MiddlewareSize = 192>
 class RouteHandler
 {
@@ -324,8 +329,7 @@ public:
                     const std::size_t base = current_index + current.get_data_offset();
                     for (std::size_t i = 0; i < current.get_children_length(); ++i) {
                         auto& child = m_table[base + i];
-                        if (child.get_kind() == EdgeKind::PATH &&
-                            child.get_literal().empty() &&
+                        if (child.get_kind() == EdgeKind::PATH && child.get_literal().empty() &&
                             child.get_handler_mask() != HANDLER_MASK) {
                             current = child;
                             break;
@@ -450,11 +454,15 @@ public:
     std::vector<DispatchRoute> enumerate_routes()
     {
         std::vector<DispatchRoute> result;
-        if (m_table_index == 0) return result;
+        if (m_table_index == 0) {
+            return result;
+        }
 
         auto walk = [&](auto&& self, std::size_t index, const std::string& prefix) -> void
         {
-            if (index >= m_table_index) return;
+            if (index >= m_table_index) {
+                return;
+            }
             auto& node = m_table[index];
             std::string path = prefix;
 
@@ -471,7 +479,7 @@ public:
             }
             if (node.get_handler_mask() != HANDLER_MASK) {
                 for (std::size_t method = 0; method < 8; ++method) {
-                    if (node.get_handler_mask()[method] != 0xFFFF) {
+                    if (node.get_handler_mask()[method] != 0xFF'FF) {
                         result.push_back({
                             static_cast<interfaces::io::types::Method>(method),
                             path.empty() ? "/" : path,
@@ -482,7 +490,9 @@ public:
 
             const std::size_t base = index + node.get_data_offset();
             for (std::size_t i = 0; i < node.get_children_length(); ++i) {
-                if (base + i < m_table_index) self(self, base + i, path);
+                if (base + i < m_table_index) {
+                    self(self, base + i, path);
+                }
             }
         };
 
@@ -490,7 +500,9 @@ public:
         auto& root = m_table[0];
         const std::size_t base = root.get_data_offset();
         for (std::size_t i = 0; i < root.get_children_length(); ++i) {
-            if (base + i < m_table_index) walk(walk, base + i, "");
+            if (base + i < m_table_index) {
+                walk(walk, base + i, "");
+            }
         }
         return result;
     }
@@ -627,7 +639,7 @@ suite<"RouterNode"> router_node_suite = []
         expect(node.get_middleware_offset() == 1);
         expect(node.get_middleware_length() == 4);
         expect(node.get_handler_offset() == 5);
-        expect(node.get_handler_mask()[0] == 0xFFFF);
+        expect(node.get_handler_mask()[0] == 0xFF'FF);
     };
 
     "find_child returns nullopt when the node has no children"_test = []

@@ -174,6 +174,7 @@ public:
 
 private:
     friend class AppContextBuilder;
+
     explicit AppContext(std::shared_ptr<AppContextState> state) :
         m_state{std::move(state)}
     {

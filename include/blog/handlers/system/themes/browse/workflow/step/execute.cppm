@@ -15,17 +15,17 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"themes_browse_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         (void)in;
         auto& ctx = *s_ctx;
         const auto rows = ctx.store().json_for("themes", {});
-        return core::workflow::StepResponse<Output>{
-            Output{{"body", "{\"themes\":" + rows + "}"}}};
+        return core::workflow::StepResponse<Output>{Output{{"body", "{\"themes\":" + rows + "}"}}};
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 };
 

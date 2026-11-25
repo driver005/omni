@@ -11,22 +11,37 @@ import interfaces;
 export namespace blog::handlers::posts::create::workflow {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 class ExecuteStep
@@ -36,14 +51,15 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"posts_create_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& input, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& input, core::workflow::WorkflowContext&) const
     {
         using namespace blog::handlers::posts::support;
         const auto parsed = parse(input.get_path(), kAddOptions);
         if (!parsed.error.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", parsed.status},
-                {"body", parsed.error}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", parsed.status}, {"body", parsed.error}}
+            };
         }
         if (const auto error = validate_options(parsed.query)) {
             return core::workflow::StepResponse<Output>{{{"status", "422"}, {"body", *error}}};
@@ -59,7 +75,8 @@ public:
                     if (const auto posts = value_for(std::get<Object>(data->get()), "posts")) {
                         if (std::holds_alternative<serde::Value::Array>(posts->get())) {
                             const auto& array = std::get<serde::Value::Array>(posts->get());
-                            if (!array.empty() && std::holds_alternative<Object>(array.front().get())) {
+                            if (!array.empty() &&
+                                std::holds_alternative<Object>(array.front().get())) {
                                 post_json = core_serde::JsonCodec{}.encode(array.front());
                             }
                         }
@@ -79,9 +96,12 @@ public:
         emit("posts.added", result.body(), id);
         blog::handlers::outbox::global_outbox().commit();
 
-        return core::workflow::StepResponse<Output>{{{"status", std::to_string(result.status())},
-            {"body", mapped(result.body())}, {"published", status == "published" ? "true" : "false"},
-            {"location", "/posts/" + id + "/"}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", std::to_string(result.status())},
+             {"body", mapped(result.body())},
+             {"published", status == "published" ? "true" : "false"},
+             {"location", "/posts/" + id + "/"}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -93,8 +113,10 @@ private:
 
     [[nodiscard]] static const serde::Value* value_for(const Object& object, std::string_view key)
     {
-        for (const auto& [name, value] : object) {
-            if (name == key) return &value;
+        for (const auto& [name, value]: object) {
+            if (name == key) {
+                return &value;
+            }
         }
         return nullptr;
     }
@@ -108,8 +130,10 @@ private:
             if (posts != nullptr && std::holds_alternative<serde::Value::Array>(posts->get())) {
                 std::string rows = "[";
                 bool first = true;
-                for (const auto& row : std::get<serde::Value::Array>(posts->get())) {
-                    if (!first) rows += ',';
+                for (const auto& row: std::get<serde::Value::Array>(posts->get())) {
+                    if (!first) {
+                        rows += ',';
+                    }
                     rows += local_mapping::clean(core_serde::JsonCodec{}.encode(row), "post");
                     first = false;
                 }
@@ -123,4 +147,4 @@ private:
 
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
 
-} // namespace
+} // namespace blog::handlers::posts::create::workflow

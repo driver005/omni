@@ -17,22 +17,30 @@ import interfaces;
 import blog_handlers_middleware;
 
 export namespace blog::handlers::stats::subscriptions_get::workflow {
-class ExecuteStep {
+class ExecuteStep
+{
 public:
- using Input=interfaces::io::IRequest&; using Output=std::string;
- static constexpr std::string_view name{"subscriptions_get_execute"};
- [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx;
-  namespace s=blog::handlers::stats::support;
-  static constexpr std::span<const std::string_view> kOptions{};
-  const auto q=core::query::parse(in.get_path(), kOptions);
-  (void)q;
-  const auto rows=ctx.store().json_for("stats", s::store_params(q));
-  const std::string body=s::wrap(rows, s::meta_subscriptions(rows));
-  return core::workflow::StepResponse<Output>{body};
- }
- void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx;
+    using Input = interfaces::io::IRequest&;
+    using Output = std::string;
+    static constexpr std::string_view name{"subscriptions_get_execute"};
+
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
+        auto& ctx = *s_ctx;
+        namespace s = blog::handlers::stats::support;
+        static constexpr std::span<const std::string_view> kOptions{};
+        const auto q = core::query::parse(in.get_path(), kOptions);
+        (void)q;
+        const auto rows = ctx.store().json_for("stats", s::store_params(q));
+        const std::string body = s::wrap(rows, s::meta_subscriptions(rows));
+        return core::workflow::StepResponse<Output>{body};
+    }
+
+    void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
+    static blog::BlogContext* s_ctx;
 };
+
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::stats::subscriptions_get::workflow

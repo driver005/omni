@@ -37,10 +37,8 @@ public:
         return m_runtime->hasher().hash(password);
     }
 
-    [[nodiscard]] AuthStatus verify_password(
-        std::string_view password,
-        const PasswordHash& stored
-    ) const
+    [[nodiscard]] AuthStatus
+    verify_password(std::string_view password, const PasswordHash& stored) const
     {
         return m_runtime->hasher().check(password, stored);
     }
@@ -75,10 +73,7 @@ public:
         m_runtime->rbac().add(std::move(role));
     }
 
-    [[nodiscard]] AuthStatus check_permission(
-        std::string_view role,
-        Permission permission
-    ) const
+    [[nodiscard]] AuthStatus check_permission(std::string_view role, Permission permission) const
     {
         return m_runtime->rbac().check(role, permission);
     }

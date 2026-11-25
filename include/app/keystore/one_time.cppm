@@ -48,7 +48,10 @@ public:
     }
 
     void record_consumption(
-        std::string_view code_hash, std::string_view kind, std::int64_t at_seconds) override
+        std::string_view code_hash,
+        std::string_view kind,
+        std::int64_t at_seconds
+    ) override
     {
         std::optional<OneTimeCodeRecord> record = find_by_hash_and_kind(code_hash, kind);
         if (!record) {
@@ -66,9 +69,11 @@ public:
     }
 
     void save_recovery_codes(
-        std::string_view owner, const std::vector<std::string>& code_hashes) override
+        std::string_view owner,
+        const std::vector<std::string>& code_hashes
+    ) override
     {
-        for (const std::string& hash : code_hashes) {
+        for (const std::string& hash: code_hashes) {
             if (find_by_owner_hash_kind(owner, hash, "recovery_code")) {
                 continue;
             }
@@ -83,8 +88,7 @@ public:
         }
     }
 
-    bool consume_recovery_code(
-        std::string_view owner, std::string_view code_hash) override
+    bool consume_recovery_code(std::string_view owner, std::string_view code_hash) override
     {
         std::optional<OneTimeCodeRecord> record =
             find_by_owner_hash_kind(owner, code_hash, "recovery_code");
@@ -96,49 +100,61 @@ public:
     }
 
 private:
-    [[nodiscard]] std::optional<OneTimeCodeRecord> find_by_hash_and_kind(
-        std::string_view code_hash, std::string_view kind) const
+    [[nodiscard]] std::optional<OneTimeCodeRecord>
+    find_by_hash_and_kind(std::string_view code_hash, std::string_view kind) const
     {
         core::db::QuerySpec spec = m_db.query<OneTimeCodeRecord>().spec();
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "code_hash",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{code_hash}},
-        });
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "kind",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{kind}},
-        });
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "code_hash",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{code_hash}},
+            }
+        );
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "kind",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{kind}},
+            }
+        );
         spec.limit_count = 1;
         return first(spec);
     }
 
     [[nodiscard]] std::optional<OneTimeCodeRecord> find_by_owner_hash_kind(
-        std::string_view owner, std::string_view code_hash, std::string_view kind) const
+        std::string_view owner,
+        std::string_view code_hash,
+        std::string_view kind
+    ) const
     {
         core::db::QuerySpec spec = m_db.query<OneTimeCodeRecord>().spec();
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "owner",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{owner}},
-        });
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "code_hash",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{code_hash}},
-        });
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "kind",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{kind}},
-        });
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "owner",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{owner}},
+            }
+        );
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "code_hash",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{code_hash}},
+            }
+        );
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "kind",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{kind}},
+            }
+        );
         spec.limit_count = 1;
         return first(spec);
     }
 
-    [[nodiscard]] std::optional<OneTimeCodeRecord> first(
-        const core::db::QuerySpec& spec) const
+    [[nodiscard]] std::optional<OneTimeCodeRecord> first(const core::db::QuerySpec& spec) const
     {
         const std::vector<OneTimeCodeRecord> rows = m_db.collect<OneTimeCodeRecord>(spec);
         if (rows.empty()) {
@@ -150,8 +166,11 @@ private:
     bool update(const OneTimeCodeRecord& record)
     {
         return m_db.update_where_column<OneTimeCodeRecord>(
-                   record, "id", core::db::Compare::EQ,
-                   core::db::DbValue{record.get_id()}) > 0;
+                   record,
+                   "id",
+                   core::db::Compare::EQ,
+                   core::db::DbValue{record.get_id()}
+               ) > 0;
     }
 
     core::db::Database& m_db;
@@ -167,8 +186,9 @@ suite<"app_keystore_one_time"> one_time_suite = []
 {
     "implements the crypto one-time state interface"_test = []
     {
-        static_assert(std::derived_from<
-                      RepositoryOneTimeStateStore, app::crypto::IOneTimeStateStore>);
+        static_assert(
+            std::derived_from<RepositoryOneTimeStateStore, app::crypto::IOneTimeStateStore>
+        );
         core::db::Database db{};
         RepositoryOneTimeStateStore store{db};
         (void)store;

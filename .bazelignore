@@ -3,3 +3,5 @@
 old
 visual/node_modules
 docs/hyperswitch
+include/blog
+sdk

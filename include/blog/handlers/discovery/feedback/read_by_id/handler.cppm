@@ -21,8 +21,11 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
     {
         using blog::handlers::middleware::kGhostContextHeader;
         using blog::handlers::middleware::kGhostPermissionsHeader;
@@ -44,11 +47,23 @@ public:
         // Declared controller permission: {docName:'posts', method:'browse'}.
         bool allowed{false};
         blog::handlers::middleware::require_ghost_permission(
-            req, res,
-            [&allowed](interfaces::io::IRequest&, interfaces::io::IResponse&,
-                       std::function<void()>) noexcept { allowed = true; },
-            send, "posts", "browse");
-        if (!allowed) return;
+            req,
+            res,
+            [&allowed](
+                interfaces::io::IRequest&,
+                interfaces::io::IResponse&,
+                std::function<void()>
+            ) noexcept
+            {
+                allowed = true;
+            },
+            send,
+            "posts",
+            "browse"
+        );
+        if (!allowed) {
+            return;
+        }
 
         // In-service downgrade gate: permissions.canThis(context).browse.member()
         // succeeds only for an identity allowed to browse members; any throw is
@@ -60,24 +75,30 @@ public:
 
         const auto execution = m_workflow.run("feedback_read_by_id", req);
         const auto* result = execution.result_of("feedback_read_by_id_execute");
-        const auto payload = result && result->typed_output.has_value()
-                                 ? std::any_cast<std::map<std::string, std::string>>(
-                                       result->typed_output)
-                                 : std::map<std::string, std::string>{{"status", "200"},
-                                                                      {"body", "{}"}};
-        const std::string code = payload.contains("status") ? payload.at("status")
-                                                            : std::string{"200"};
-        const std::string body = payload.contains("body") ? payload.at("body")
-                                                          : std::string{"{}"};
+        const auto payload =
+            result && result->typed_output.has_value()
+                ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
+                : std::map<std::string, std::string>{{"status", "200"}, {"body", "{}"}};
+        const std::string code =
+            payload.contains("status") ? payload.at("status") : std::string{"200"};
+        const std::string body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
         std::vector<std::byte> bytes;
-        for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+        for (const char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
 
         auto status = interfaces::io::types::Status::OK;
-        if (code == "400") status = interfaces::io::types::Status::BAD_REQUEST;
-        else if (code == "401") status = interfaces::io::types::Status::UNAUTHORIZED;
-        else if (code == "403") status = interfaces::io::types::Status::FORBIDDEN;
-        else if (code == "404") status = interfaces::io::types::Status::NOT_FOUND;
-        else if (code == "422") status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT;
+        if (code == "400") {
+            status = interfaces::io::types::Status::BAD_REQUEST;
+        } else if (code == "401") {
+            status = interfaces::io::types::Status::UNAUTHORIZED;
+        } else if (code == "403") {
+            status = interfaces::io::types::Status::FORBIDDEN;
+        } else if (code == "404") {
+            status = interfaces::io::types::Status::NOT_FOUND;
+        } else if (code == "422") {
+            status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT;
+        }
 
         // controller headers.cacheInvalidate:false -> X-Cache-Invalidate:false.
         res.set_header("X-Cache-Invalidate", "false");

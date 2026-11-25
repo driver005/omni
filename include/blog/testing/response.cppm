@@ -20,10 +20,25 @@ public:
     {
     }
 
-    [[nodiscard]] int status() const noexcept { return m_status; }
-    [[nodiscard]] const std::string& body() const noexcept { return m_body; }
-    [[nodiscard]] bool error() const noexcept { return m_error; }
-    [[nodiscard]] bool ok() const noexcept { return !m_error && m_status >= 200 && m_status < 300; }
+    [[nodiscard]] int status() const noexcept
+    {
+        return m_status;
+    }
+
+    [[nodiscard]] const std::string& body() const noexcept
+    {
+        return m_body;
+    }
+
+    [[nodiscard]] bool error() const noexcept
+    {
+        return m_error;
+    }
+
+    [[nodiscard]] bool ok() const noexcept
+    {
+        return !m_error && m_status >= 200 && m_status < 300;
+    }
 
 private:
     int m_status{200};

@@ -907,7 +907,7 @@ public:
     [[nodiscard]] std::string body_as_string() const
     {
         std::string out;
-        for (const std::byte byte : get_body()) {
+        for (const std::byte byte: get_body()) {
             out += static_cast<char>(byte);
         }
         return out;

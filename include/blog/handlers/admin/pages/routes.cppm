@@ -19,119 +19,158 @@ public:
         Router{router, "/pages"}
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.pages_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost pages GET")
-            .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_bulk_destroy().handle(req, res, std::move(send));
-    })
+            .delt(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.pages_bulk_destroy().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost pages DELETE")
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.pages_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost pages POST")
             .add_router(
                 Router{router, "/:id"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.pages_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id GET")
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.pages_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
-                    .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_destroy().handle(req, res, std::move(send));
-    })
+                    .delt(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.pages_destroy().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id DELETE")
                     .add_route(
                         Route{"/copy"}
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_pages_id_copy_post().handle(req, res, std::move(send));
-    })
+                            .post(
+                                [&handler](
+                                    interfaces::io::IRequest& req,
+                                    interfaces::io::IResponse& res,
+                                    std::function<void()> send
+                                )
+                                {
+                                    handler.pages_pages_id_copy_post()
+                                        .handle(req, res, std::move(send));
+                                }
+                            )
                             .summary("Ghost copy POST")
                     )
                     .add_route(
                         Route{"/gift_links"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_gift_links_get().handle(req, res, std::move(send));
-    })
+                            .get(
+                                [&handler](
+                                    interfaces::io::IRequest& req,
+                                    interfaces::io::IResponse& res,
+                                    std::function<void()> send
+                                )
+                                {
+                                    handler.pages_gift_links_get()
+                                        .handle(req, res, std::move(send));
+                                }
+                            )
                             .summary("Ghost gift_links GET")
-                            .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_gift_links_put().handle(req, res, std::move(send));
-    })
+                            .put(
+                                [&handler](
+                                    interfaces::io::IRequest& req,
+                                    interfaces::io::IResponse& res,
+                                    std::function<void()> send
+                                )
+                                {
+                                    handler.pages_gift_links_put()
+                                        .handle(req, res, std::move(send));
+                                }
+                            )
                             .summary("Ghost gift_links PUT")
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_gift_links_post().handle(req, res, std::move(send));
-    })
+                            .post(
+                                [&handler](
+                                    interfaces::io::IRequest& req,
+                                    interfaces::io::IResponse& res,
+                                    std::function<void()> send
+                                )
+                                {
+                                    handler.pages_gift_links_post()
+                                        .handle(req, res, std::move(send));
+                                }
+                            )
                             .summary("Ghost gift_links POST")
                     )
             )
             .add_route(
                 Route{"/bulk"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_bulk_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.pages_bulk_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost bulk PUT")
             )
             .add_router(
-                Router{router, "/slug"}
-                    .add_route(
-                        Route{"/:slug"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.pages_read_by_slug().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost :slug GET")
-                    )
+                Router{router, "/slug"}.add_route(
+                    Route{"/:slug"}
+                        .get(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.pages_read_by_slug().handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost :slug GET")
+                )
             );
     }
 };

@@ -34,10 +34,10 @@ inline void write_error(
     const auto body = core_serde::JsonCodec{}.encode(envelope);
     std::vector<std::byte> bytes;
     bytes.reserve(body.size());
-    for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
-    std::move(response)
-        .with_status(status)
-        .with_body(std::move(bytes));
+    for (const char c: body) {
+        bytes.push_back(static_cast<std::byte>(c));
+    }
+    std::move(response).with_status(status).with_body(std::move(bytes));
     send();
 }
 

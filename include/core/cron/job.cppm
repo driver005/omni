@@ -23,10 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::optional<CronJob> create(
-        std::string_view name,
-        std::string_view expression
-    )
+    [[nodiscard]] std::optional<CronJob> create(std::string_view name, std::string_view expression)
     {
         if (name.empty()) {
             return std::nullopt;

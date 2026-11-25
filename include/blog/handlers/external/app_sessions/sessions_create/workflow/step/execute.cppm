@@ -35,13 +35,23 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
 [[nodiscard]] inline std::string quote(std::string_view value)
 {
     std::string out{"\""};
-    for (const unsigned char c : value) {
+    for (const unsigned char c: value) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
             default:
                 if (c < 0x20) {
                     out += std::format("\\u{:04x}", static_cast<unsigned>(c));
@@ -58,10 +68,16 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
 [[nodiscard]] inline std::string scalar(const serde::Value& value, std::string_view key)
 {
     const auto* object = std::get_if<Object>(&value.get());
-    if (object == nullptr) return {};
-    for (const auto& [name, member] : *object) {
-        if (name != key) continue;
-        if (const auto* text = std::get_if<std::string>(&member.get())) return *text;
+    if (object == nullptr) {
+        return {};
+    }
+    for (const auto& [name, member]: *object) {
+        if (name != key) {
+            continue;
+        }
+        if (const auto* text = std::get_if<std::string>(&member.get())) {
+            return *text;
+        }
         const auto encoded = core_serde::JsonCodec{}.encode(member);
         return encoded == "null" ? std::string{} : encoded;
     }
@@ -80,7 +96,9 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
     try {
         std::size_t used{0};
         const long long value = std::stoll(std::string{raw}, &used);
-        if (used == raw.size()) return value;
+        if (used == raw.size()) {
+            return value;
+        }
     } catch (...) {
     }
     return 0;
@@ -90,11 +108,17 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
 [[nodiscard]] inline std::string raw_member(std::string_view json, std::string_view key)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return {};
+    if (!parsed) {
+        return {};
+    }
     const auto* object = std::get_if<Object>(&parsed->get());
-    if (object == nullptr) return {};
-    for (const auto& [name, member] : *object) {
-        if (name == key) return core_serde::JsonCodec{}.encode(member);
+    if (object == nullptr) {
+        return {};
+    }
+    for (const auto& [name, member]: *object) {
+        if (name == key) {
+            return core_serde::JsonCodec{}.encode(member);
+        }
     }
     return {};
 }
@@ -104,7 +128,8 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
     blog::BlogContext& ctx,
     std::string_view resource,
     std::vector<std::pair<std::string, std::string>> filters,
-    std::string_view order = {})
+    std::string_view order = {}
+)
 {
     core::query::ParsedQuery q;
     q.filters = std::move(filters);
@@ -113,39 +138,51 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
     q.page = 1;
     const auto json = core::query::apply(ctx.store().json_for(resource, {}), q);
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return {};
+    if (!parsed) {
+        return {};
+    }
     const auto* array = std::get_if<Array>(&parsed->get());
     return array == nullptr ? std::vector<serde::Value>{} : *array;
 }
 
 [[nodiscard]] inline std::optional<std::string> find_one(
-    blog::BlogContext& ctx, std::string_view resource, std::string_view key,
-    std::string_view value)
+    blog::BlogContext& ctx,
+    std::string_view resource,
+    std::string_view key,
+    std::string_view value
+)
 {
     const auto rows = rows_for(ctx, resource, {{std::string{key}, std::string{value}}});
-    if (rows.empty()) return std::nullopt;
+    if (rows.empty()) {
+        return std::nullopt;
+    }
     return core_serde::JsonCodec{}.encode(rows.front());
 }
 
 /** @brief repository.find(id): uninstalled rows still exist but are not "current". */
-[[nodiscard]] inline std::optional<std::string> find_installation(
-    blog::BlogContext& ctx, std::string_view id)
+[[nodiscard]] inline std::optional<std::string>
+find_installation(blog::BlogContext& ctx, std::string_view id)
 {
     return find_one(ctx, kInstallation, "id", id);
 }
 
-[[nodiscard]] inline std::optional<std::string> current_installation(
-    blog::BlogContext& ctx, std::string_view id)
+[[nodiscard]] inline std::optional<std::string>
+current_installation(blog::BlogContext& ctx, std::string_view id)
 {
     auto row = find_installation(ctx, id);
-    if (row && scalar_raw(*row, "status") == "uninstalled") return std::nullopt;
+    if (row && scalar_raw(*row, "status") == "uninstalled") {
+        return std::nullopt;
+    }
     return row;
 }
 
 /** @brief Full Ghost error envelope, including the app failure code. */
 [[nodiscard]] inline std::string ghost_error(
-    std::string_view message, std::string_view type, std::string_view code,
-    std::string_view context = {})
+    std::string_view message,
+    std::string_view type,
+    std::string_view code,
+    std::string_view context = {}
+)
 {
     static std::uint64_t counter{0};
     return std::format(
@@ -153,7 +190,9 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
         ++counter,
         code.empty() ? std::string{"null"} : quote(code),
         context.empty() ? std::string{"null"} : quote(context),
-        quote(message), quote(type));
+        quote(message),
+        quote(type)
+    );
 }
 
 /** @brief service.ts:76-82 - notInstalled() = 404 with code APP_NOT_INSTALLED. */
@@ -169,24 +208,29 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
 }
 
 /** @brief service.ts:98-104 - unavailable() = 409 ConflictError. */
-[[nodiscard]] inline std::string unavailable(
-    std::string_view message, std::string_view code, std::string_view context)
+[[nodiscard]] inline std::string
+unavailable(std::string_view message, std::string_view code, std::string_view context)
 {
     return ghost_error(message, "ConflictError", code, context);
 }
 
 /** @brief AppInstallationResource (serializers.ts:7-19); no history on read(). */
-[[nodiscard]] inline std::string installation_resource(
-    blog::BlogContext& ctx, std::string_view row)
+[[nodiscard]] inline std::string installation_resource(blog::BlogContext& ctx, std::string_view row)
 {
     const auto id = scalar_raw(row, "id");
     const auto app_id = scalar_raw(row, "app_id");
     auto status = scalar_raw(row, "status");
-    if (status.empty()) status = "active";
+    if (status.empty()) {
+        status = "active";
+    }
     auto revision = scalar_raw(row, "revision");
-    if (revision.empty()) revision = "0";
+    if (revision.empty()) {
+        revision = "0";
+    }
     auto created = scalar_raw(row, "created_at");
-    if (created.empty()) created = std::string{kDefaultTime};
+    if (created.empty()) {
+        created = std::string{kDefaultTime};
+    }
     const auto updated = scalar_raw(row, "updated_at");
 
     auto manifest_url = scalar_raw(row, "manifest_url");
@@ -195,46 +239,57 @@ inline constexpr std::string_view kDefaultTime{"1970-01-01T00:00:00.000Z"};
     const auto manifest_id = scalar_raw(row, "manifest_id");
     if (!manifest_id.empty()) {
         if (const auto stored = find_one(ctx, kManifests, "id", manifest_id)) {
-            if (manifest_url.empty()) manifest_url = scalar_raw(*stored, "manifest_url");
+            if (manifest_url.empty()) {
+                manifest_url = scalar_raw(*stored, "manifest_url");
+            }
             const auto value = raw_member(*stored, "manifest");
-            if (!value.empty()) manifest = value;
+            if (!value.empty()) {
+                manifest = value;
+            }
             const auto icon_value = raw_member(*stored, "icon_data_url");
-            if (!icon_value.empty() && icon_value != "null") icon = icon_value;
+            if (!icon_value.empty() && icon_value != "null") {
+                icon = icon_value;
+            }
         }
     }
 
-    return "{\"id\":" + quote(id)
-         + ",\"app_id\":" + quote(app_id)
-         + ",\"status\":" + quote(status)
-         + ",\"revision\":" + revision
-         + ",\"manifest_url\":" + quote(manifest_url)
-         + ",\"manifest\":" + manifest
-         + ",\"icon_data_url\":" + icon
-         + ",\"created_at\":" + quote(created)
-         + ",\"updated_at\":" + (updated.empty() ? std::string{"null"} : quote(updated))
-         + "}";
+    return "{\"id\":" + quote(id) + ",\"app_id\":" + quote(app_id) +
+           ",\"status\":" + quote(status) + ",\"revision\":" + revision +
+           ",\"manifest_url\":" + quote(manifest_url) + ",\"manifest\":" + manifest +
+           ",\"icon_data_url\":" + icon + ",\"created_at\":" + quote(created) +
+           ",\"updated_at\":" + (updated.empty() ? std::string{"null"} : quote(updated)) + "}";
 }
 
 /** @brief Replace one member of a flat JSON object (raw JSON value). */
-[[nodiscard]] inline std::string set_member(std::string_view json, std::string_view key,
-                                            std::string_view raw_value)
+[[nodiscard]] inline std::string
+set_member(std::string_view json, std::string_view key, std::string_view raw_value)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return std::string{json};
+    if (!parsed) {
+        return std::string{json};
+    }
     const auto* object = std::get_if<Object>(&parsed->get());
-    if (object == nullptr) return std::string{json};
+    if (object == nullptr) {
+        return std::string{json};
+    }
     std::string out{"{"};
     bool first{true};
     bool replaced{false};
-    for (const auto& [name, member] : *object) {
-        if (!first) out.push_back(',');
+    for (const auto& [name, member]: *object) {
+        if (!first) {
+            out.push_back(',');
+        }
         first = false;
         out += quote(name) + ':';
         out += name == key ? std::string{raw_value} : core_serde::JsonCodec{}.encode(member);
-        if (name == key) replaced = true;
+        if (name == key) {
+            replaced = true;
+        }
     }
     if (!replaced) {
-        if (!first) out.push_back(',');
+        if (!first) {
+            out.push_back(',');
+        }
         out += quote(key) + ':' + std::string{raw_value};
     }
     out.push_back('}');
@@ -271,11 +326,17 @@ struct RecheckResult
 
 /** @brief ValidationError from recheckOnce -> unavailableUnlessChanged (service.ts:577-584). */
 [[nodiscard]] inline RecheckResult unavailable_unless_changed(
-    blog::BlogContext& ctx, std::string_view before, std::string_view code,
-    std::string_view message, std::string_view context)
+    blog::BlogContext& ctx,
+    std::string_view before,
+    std::string_view code,
+    std::string_view message,
+    std::string_view context
+)
 {
     const auto current = current_installation(ctx, scalar_raw(before, "id"));
-    if (!current) return {404, not_installed()};
+    if (!current) {
+        return {404, not_installed()};
+    }
     if (scalar_raw(*current, "revision") != scalar_raw(before, "revision")) {
         return {}; // The installation changed while the manifest was loading: proceed.
     }
@@ -288,23 +349,29 @@ struct RecheckResult
  *        the gone app / different app / failed identity cases map to Ghost failures, and
  *        silent changes are applied while approval-requiring changes suspend.
  */
-[[nodiscard]] inline RecheckResult recheck_once(
-    blog::BlogContext& ctx, std::string_view id,
-    blog::handlers::outbox::Outbox& outbox)
+[[nodiscard]] inline RecheckResult
+recheck_once(blog::BlogContext& ctx, std::string_view id, blog::handlers::outbox::Outbox& outbox)
 {
     const auto before = current_installation(ctx, id);
-    if (!before) return {404, not_installed()};
+    if (!before) {
+        return {404, not_installed()};
+    }
 
     const auto url = scalar_raw(*before, "manifest_url");
     // load(): identity.challenge(url) + loadManifest(url) run together (service.ts:345-350).
     outbox.emit({"identity.challenge", "{\"manifest_url\":" + quote(url) + "}", std::string{id}});
     outbox.emit({"manifest.fetch", "{\"manifest_url\":" + quote(url) + "}", std::string{id}});
 
-    const auto manifests = rows_for(ctx, kManifests, {{"installation_id", std::string{id}}},
-                                    "created_at desc");
+    const auto manifests =
+        rows_for(ctx, kManifests, {{"installation_id", std::string{id}}}, "created_at desc");
     if (manifests.empty()) {
-        return unavailable_unless_changed(ctx, *before, "APP_UNAVAILABLE",
-            "App manifest could not be loaded.", "manifest_url");
+        return unavailable_unless_changed(
+            ctx,
+            *before,
+            "APP_UNAVAILABLE",
+            "App manifest could not be loaded.",
+            "manifest_url"
+        );
     }
     const auto loaded = core_serde::JsonCodec{}.encode(manifests.front());
 
@@ -313,8 +380,13 @@ struct RecheckResult
     const auto served_app = scalar_raw(loaded_manifest, "id");
     const auto app_id = scalar_raw(*before, "app_id");
     if (!served_app.empty() && !app_id.empty() && served_app != app_id) {
-        return unavailable_unless_changed(ctx, *before, "APP_MANIFEST_OTHER_APP",
-            url + " now serves " + served_app + ".", "manifest_url");
+        return unavailable_unless_changed(
+            ctx,
+            *before,
+            "APP_MANIFEST_OTHER_APP",
+            url + " now serves " + served_app + ".",
+            "manifest_url"
+        );
     }
 
     // identity.check(loaded, pinned, started) (service.ts:573). A stored thumbprint
@@ -322,8 +394,13 @@ struct RecheckResult
     const auto loaded_key = scalar_raw(loaded, "backend_key_thumbprint");
     const auto pinned_key = scalar_raw(*before, "identity_key_thumbprint");
     if (!loaded_key.empty() && !pinned_key.empty() && loaded_key != pinned_key) {
-        return unavailable_unless_changed(ctx, *before, "APP_UNAVAILABLE",
-            "App manifest failed the identity check.", "manifest");
+        return unavailable_unless_changed(
+            ctx,
+            *before,
+            "APP_UNAVAILABLE",
+            "App manifest failed the identity check.",
+            "manifest"
+        );
     }
 
     const auto approved_id = scalar_raw(*before, "manifest_id");
@@ -346,9 +423,17 @@ struct RecheckResult
     }
 
     // decideOnManifest/recheckWrite (decide-on-manifest.ts:133-168).
-    enum class Write { None, Resume, Approve, Suspend } write{Write::None};
+    enum class Write
+    {
+        None,
+        Resume,
+        Approve,
+        Suspend
+    } write{Write::None};
     if (!loaded_digest.empty() && loaded_digest == approved_digest) {
-        if (!pending_id.empty()) write = Write::Resume; // app reverted pending changes
+        if (!pending_id.empty()) {
+            write = Write::Resume; // app reverted pending changes
+        }
     } else if (!loaded_digest.empty() && loaded_digest == pending_digest) {
         write = Write::None; // use_pending
     } else if (needs_approval) {
@@ -357,7 +442,9 @@ struct RecheckResult
         write = Write::Approve;
     }
 
-    if (write == Write::None) return {};
+    if (write == Write::None) {
+        return {};
+    }
 
     // withIconCopy(): only writes that add a row fetch the icon.
     outbox.emit({"icon.fetch", "{\"manifest_url\":" + quote(url) + "}", std::string{id}});
@@ -365,22 +452,35 @@ struct RecheckResult
     // whileUnchanged(): re-read before writing, so an uninstall/change during the
     // manifest load wins and this recheck does nothing.
     const auto current = current_installation(ctx, id);
-    if (!current) return {404, not_installed()};
-    if (scalar_raw(*current, "revision") != scalar_raw(*before, "revision")) return {};
+    if (!current) {
+        return {404, not_installed()};
+    }
+    if (scalar_raw(*current, "revision") != scalar_raw(*before, "revision")) {
+        return {};
+    }
 
     outbox.begin_transaction();
     auto copy = loaded;
-    const auto strip = [](std::string_view json, std::string_view key) {
+    const auto strip = [](std::string_view json, std::string_view key)
+    {
         // Rows are flat JSON objects; remove a member without a full serde rewrite.
         const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-        if (!parsed) return std::string{json};
+        if (!parsed) {
+            return std::string{json};
+        }
         const auto* object = std::get_if<Object>(&parsed->get());
-        if (object == nullptr) return std::string{json};
+        if (object == nullptr) {
+            return std::string{json};
+        }
         std::string out{"{"};
         bool first{true};
-        for (const auto& [name, member] : *object) {
-            if (name == key || name == "id") continue;
-            if (!first) out.push_back(',');
+        for (const auto& [name, member]: *object) {
+            if (name == key || name == "id") {
+                continue;
+            }
+            if (!first) {
+                out.push_back(',');
+            }
             first = false;
             out += quote(name) + ':' + core_serde::JsonCodec{}.encode(member);
         }
@@ -389,35 +489,43 @@ struct RecheckResult
     };
     copy = strip(loaded, "created_at");
     // decide-on-manifest.ts:154-168 - the new row records why it was added.
-    copy = set_member(copy, "source",
-                      quote(write == Write::Resume ? "resume" : "update"));
-    copy = set_member(copy, "requires_approval",
-                      write == Write::Suspend ? "true" : "false");
+    copy = set_member(copy, "source", quote(write == Write::Resume ? "resume" : "update"));
+    copy = set_member(copy, "requires_approval", write == Write::Suspend ? "true" : "false");
     const std::string new_manifest_id = ctx.store().resources().create(kManifests, copy);
-    outbox.emit({"manifest.added", "{\"id\":\"" + new_manifest_id + "\",\"installation_id\":\"" +
-        std::string{id} + "\"}", std::string{id}});
+    outbox.emit(
+        {"manifest.added",
+         "{\"id\":\"" + new_manifest_id + "\",\"installation_id\":\"" + std::string{id} + "\"}",
+         std::string{id}}
+    );
 
     std::string patch;
-    const auto next_revision = std::to_string(revision_number(scalar_raw(*current, "revision")) + 1);
+    const auto next_revision =
+        std::to_string(revision_number(scalar_raw(*current, "revision")) + 1);
     if (write == Write::Suspend) {
         patch = "{\"status\":\"suspended\",\"pending_manifest_id\":\"" + new_manifest_id +
                 "\",\"revision\":" + next_revision + "}";
-        outbox.emit({"installation.suspended", "{\"id\":\"" + std::string{id} + "\"}", std::string{id}});
+        outbox.emit(
+            {"installation.suspended", "{\"id\":\"" + std::string{id} + "\"}", std::string{id}}
+        );
     } else {
         patch = "{\"status\":\"active\",\"manifest_id\":\"" + new_manifest_id +
                 "\",\"pending_manifest_id\":null,\"revision\":" + next_revision + "}";
-        outbox.emit({"installation.activated", "{\"id\":\"" + std::string{id} + "\"}", std::string{id}});
+        outbox.emit(
+            {"installation.activated", "{\"id\":\"" + std::string{id} + "\"}", std::string{id}}
+        );
     }
     ctx.store().resources().edit(kInstallation, id, patch);
     outbox.commit();
 
     const auto stored = current_installation(ctx, id);
-    if (!stored) return {404, not_installed()};
+    if (!stored) {
+        return {404, not_installed()};
+    }
     return {};
 }
 
-[[nodiscard]] inline RecheckResult recheck(
-    blog::BlogContext& ctx, std::string_view id, blog::handlers::outbox::Outbox& outbox)
+[[nodiscard]] inline RecheckResult
+recheck(blog::BlogContext& ctx, std::string_view id, blog::handlers::outbox::Outbox& outbox)
 {
     std::shared_ptr<RecheckSlot> slot;
     bool owner{false};
@@ -435,7 +543,13 @@ struct RecheckResult
     }
     if (!owner) {
         std::unique_lock lock{slot->mutex};
-        slot->cv.wait(lock, [&slot] { return slot->done; });
+        slot->cv.wait(
+            lock,
+            [&slot]
+            {
+                return slot->done;
+            }
+        );
         return {slot->status, slot->error};
     }
 
@@ -460,19 +574,25 @@ struct RecheckResult
 }
 
 /** @brief service.ts:286-294 then read(id): recheck first, then load the installation. */
-[[nodiscard]] inline RecheckResult start_session(
-    blog::BlogContext& ctx, std::string_view id, blog::handlers::outbox::Outbox& outbox)
+[[nodiscard]] inline RecheckResult
+start_session(blog::BlogContext& ctx, std::string_view id, blog::handlers::outbox::Outbox& outbox)
 {
     const auto checked = recheck(ctx, id, outbox);
-    if (checked.status != 200) return checked;
+    if (checked.status != 200) {
+        return checked;
+    }
 
     const auto row = find_installation(ctx, id);
-    if (!row) return {404, not_found()};
-    if (scalar_raw(*row, "status") == "uninstalled") return {404, not_installed()};
+    if (!row) {
+        return {404, not_found()};
+    }
+    if (scalar_raw(*row, "status") == "uninstalled") {
+        return {404, not_installed()};
+    }
 
     // serializers.ts:27-29 -> {"app_sessions":[{"installation": AppInstallationResource}]}
-    const std::string body = "{\"app_sessions\":[{\"installation\":" +
-                             installation_resource(ctx, *row) + "}]}";
+    const std::string body =
+        "{\"app_sessions\":[{\"installation\":" + installation_resource(ctx, *row) + "}]}";
     return {200, body};
 }
 
@@ -487,25 +607,32 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"app_sessions_sessions_create_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
 
         // options:['id'], validation.options.id.required=true (app-sessions.ts:16-17).
         const std::string raw{in.get_path()};
         auto path = std::string_view{raw}.substr(0, raw.find('?'));
-        while (path.size() > 1 && path.back() == '/') path.remove_suffix(1);
+        while (path.size() > 1 && path.back() == '/') {
+            path.remove_suffix(1);
+        }
         const auto slash = path.find_last_of('/');
-        const std::string id{slash == std::string_view::npos ? std::string{path}
-                                                            : std::string{path.substr(slash + 1)}};
-        if (id.empty()) return invalid();
+        const std::string id{
+            slash == std::string_view::npos ? std::string{path}
+                                            : std::string{path.substr(slash + 1)}
+        };
+        if (id.empty()) {
+            return invalid();
+        }
 
         auto& ctx = *s_ctx;
         auto& outbox = blog::handlers::outbox::global_outbox();
         const auto result = start_session(ctx, id, outbox);
-        return core::workflow::StepResponse<Output>{{{"status", std::to_string(result.status)},
-                                                     {"body", result.error}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", std::to_string(result.status)}, {"body", result.error}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -515,8 +642,10 @@ public:
 private:
     [[nodiscard]] static core::workflow::StepResponse<Output> invalid()
     {
-        return core::workflow::StepResponse<Output>{{{"status", "422"},
-            {"body", blog::api::ApiError{}.validation("id is required", {}, "id")}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "422"},
+             {"body", blog::api::ApiError{}.validation("id is required", {}, "id")}}
+        };
     }
 };
 

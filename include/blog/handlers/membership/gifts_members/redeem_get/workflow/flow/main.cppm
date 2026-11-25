@@ -6,7 +6,8 @@ import :gifts_members_redeem_get_step;
 
 export namespace blog::handlers::gifts_members::redeem_get::workflow {
 
-class MainFlow {
+class MainFlow
+{
 public:
     [[nodiscard]] core::workflow::WorkflowDefinition build() const
     {

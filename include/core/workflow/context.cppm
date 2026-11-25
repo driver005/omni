@@ -43,7 +43,9 @@ public:
     {
         const auto it = m_step_outputs.find(std::string{name});
         if (it == m_step_outputs.end()) {
-            throw std::out_of_range{"core_workflow: no output recorded for step " + std::string{name}};
+            throw std::out_of_range{
+                "core_workflow: no output recorded for step " + std::string{name}
+            };
         }
         return std::any_cast<const T&>(it->second);
     }

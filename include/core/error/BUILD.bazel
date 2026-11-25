@@ -20,6 +20,7 @@ congelado_cc_test(
     deps = [
         ":core_error",
         "//include/core/serde:core_serde",
+        "//include/interfaces:interfaces",
     ],
     linkopts = ["-lcrypto", "-lssl"],
 )

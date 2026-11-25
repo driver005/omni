@@ -12,8 +12,11 @@ class MainFlow
 public:
     [[nodiscard]] core::workflow::WorkflowDefinition build() const
     {
-        return core::workflow::WorkflowBuilder{}.name("posts_gift_links_edit").step<ExecuteStep>().build();
+        return core::workflow::WorkflowBuilder{}
+            .name("posts_gift_links_edit")
+            .step<ExecuteStep>()
+            .build();
     }
 };
 
-} // namespace
+} // namespace blog::handlers::posts::gift_links_edit::workflow

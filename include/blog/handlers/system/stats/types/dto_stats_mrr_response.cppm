@@ -12,15 +12,29 @@ export namespace blog::dto::stats {
 class StatsMrrResponse
 {
 public:
-    void set_stats(std::vector<StatsMrrEntry> value) { stats = std::move(value); }
-    [[nodiscard]] const std::vector<StatsMrrEntry>& get_stats() const noexcept { return stats; }
-    void set_meta(StatsMrrMeta value) { meta = std::move(value); }
-    [[nodiscard]] const StatsMrrMeta& get_meta() const noexcept { return meta; }
+    void set_stats(std::vector<StatsMrrEntry> value)
+    {
+        stats = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<StatsMrrEntry>& get_stats() const noexcept
+    {
+        return stats;
+    }
+
+    void set_meta(StatsMrrMeta value)
+    {
+        meta = std::move(value);
+    }
+
+    [[nodiscard]] const StatsMrrMeta& get_meta() const noexcept
+    {
+        return meta;
+    }
 
     std::vector<StatsMrrEntry> stats{};
     StatsMrrMeta meta{};
 };
-
 
 
 } // namespace blog::dto::stats
@@ -31,8 +45,16 @@ struct serde::Serializable<blog::dto::stats::StatsMrrResponse>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"stats", &blog::dto::stats::StatsMrrResponse::get_stats, &blog::dto::stats::StatsMrrResponse::set_stats, serde::FieldOptions{}>{},
-            serde::FieldDesc<"meta", &blog::dto::stats::StatsMrrResponse::get_meta, &blog::dto::stats::StatsMrrResponse::set_meta, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "stats",
+                &blog::dto::stats::StatsMrrResponse::get_stats,
+                &blog::dto::stats::StatsMrrResponse::set_stats,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "meta",
+                &blog::dto::stats::StatsMrrResponse::get_meta,
+                &blog::dto::stats::StatsMrrResponse::set_meta,
+                serde::FieldOptions{}>{}
         };
     }
 
@@ -41,4 +63,3 @@ struct serde::Serializable<blog::dto::stats::StatsMrrResponse>
         return "stats_mrr_response";
     }
 };
-

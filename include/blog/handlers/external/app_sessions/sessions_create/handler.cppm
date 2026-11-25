@@ -19,8 +19,11 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
     {
         using blog::handlers::middleware::kGhostContextHeader;
         using blog::handlers::middleware::kGhostPermissionsHeader;
@@ -42,31 +45,53 @@ public:
         // envelope and sends the response itself on denial.
         bool allowed{false};
         blog::handlers::middleware::require_ghost_permission(
-            req, res,
-            [&allowed](interfaces::io::IRequest&, interfaces::io::IResponse&,
-                       std::function<void()>) noexcept { allowed = true; },
-            send, "app_installations", "read");
-        if (!allowed) return;
+            req,
+            res,
+            [&allowed](
+                interfaces::io::IRequest&,
+                interfaces::io::IResponse&,
+                std::function<void()>
+            ) noexcept
+            {
+                allowed = true;
+            },
+            send,
+            "app_installations",
+            "read"
+        );
+        if (!allowed) {
+            return;
+        }
 
         const auto execution = m_workflow.run("app_sessions_sessions_create", req);
         const auto* result = execution.result_of("app_sessions_sessions_create_execute");
-        auto payload = result && result->typed_output.has_value()
-                           ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
-                           : std::map<std::string, std::string>{{"status", "404"},
-                               {"body", blog::api::ApiError{}.json("Installation not found.", "Not Found")}};
-        const std::string code = payload.contains("status") ? payload.at("status")
-                                                            : std::string{"200"};
-        const std::string body = payload.contains("body") ? payload.at("body")
-                                                           : std::string{"{}"};
+        auto payload =
+            result && result->typed_output.has_value()
+                ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
+                : std::map<std::string, std::string>{
+                      {"status", "404"},
+                      {"body", blog::api::ApiError{}.json("Installation not found.", "Not Found")}
+                  };
+        const std::string code =
+            payload.contains("status") ? payload.at("status") : std::string{"200"};
+        const std::string body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
         std::vector<std::byte> bytes;
-        for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+        for (const char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
 
         auto status = interfaces::io::types::Status::OK;
-        if (code == "400") status = interfaces::io::types::Status::BAD_REQUEST;
-        else if (code == "404") status = interfaces::io::types::Status::NOT_FOUND;
-        else if (code == "409") status = interfaces::io::types::Status::CONFLICT;
-        else if (code == "422") status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT;
-        else if (code == "500") status = interfaces::io::types::Status::INTERNAL_SERVER_ERROR;
+        if (code == "400") {
+            status = interfaces::io::types::Status::BAD_REQUEST;
+        } else if (code == "404") {
+            status = interfaces::io::types::Status::NOT_FOUND;
+        } else if (code == "409") {
+            status = interfaces::io::types::Status::CONFLICT;
+        } else if (code == "422") {
+            status = interfaces::io::types::Status::UNPROCESSABLE_CONTENT;
+        } else if (code == "500") {
+            status = interfaces::io::types::Status::INTERNAL_SERVER_ERROR;
+        }
         // headers.cacheInvalidate:false (app-sessions.ts:15) makes the framework
         // skip X-Cache-Invalidate entirely - no header on success, 404, 409 or 422.
         res.set_status(status);

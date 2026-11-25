@@ -68,7 +68,8 @@ public:
 inline void install_serde_formats()
 {
     static serde::SerdeFormatRegistry registry;
-    static const bool installed = [] {
+    static const bool installed = []
+    {
         registry.add_format(std::make_shared<JsonSerdeFormat>());
         serde::SerdeFormatRegistry::set_active(&registry);
         return true;
@@ -99,10 +100,9 @@ inline void content_type_middleware(
         write_error(
             response,
             interfaces::io::types::Status::UNSUPPORTED_MEDIA_TYPE,
-            ErrorEnvelope{std::vector{ErrorItem{
-                .message = "Unsupported Media Type",
-                .type = "UnsupportedMediaTypeError"
-            }}},
+            ErrorEnvelope{std::vector{
+                ErrorItem{.message = "Unsupported Media Type", .type = "UnsupportedMediaTypeError"}
+            }},
             std::move(send)
         );
         return;
@@ -112,10 +112,9 @@ inline void content_type_middleware(
         write_error(
             response,
             interfaces::io::types::Status::NOT_ACCEPTABLE,
-            ErrorEnvelope{std::vector{ErrorItem{
-                .message = "Not Acceptable",
-                .type = "NotAcceptableError"
-            }}},
+            ErrorEnvelope{
+                std::vector{ErrorItem{.message = "Not Acceptable", .type = "NotAcceptableError"}}
+            },
             std::move(send)
         );
         return;
@@ -126,7 +125,7 @@ inline void content_type_middleware(
 }
 
 /** @brief Serde encode with the request media type; returns wire-ready text. */
-template <class T>
+template<class T>
 [[nodiscard]] std::string encode_with(std::string_view type, const T& value)
 {
     const auto bytes = serde::Ser::serialize(type, value);
@@ -134,7 +133,7 @@ template <class T>
 }
 
 /** @brief Serde decode with the request media type. */
-template <class T>
+template<class T>
 [[nodiscard]] std::optional<T> decode_with(std::string_view type, std::string_view text)
 {
     auto decoded = serde::Ser::deserialize<T>(type, text);
@@ -151,14 +150,14 @@ template <class T>
 }
 
 /** @brief Serde encode using the current request's media type. */
-template <class T>
+template<class T>
 [[nodiscard]] std::string encode(const T& value)
 {
     return encode_with(media_type(), value);
 }
 
 /** @brief Serde decode using the current request's media type. */
-template <class T>
+template<class T>
 [[nodiscard]] std::optional<T> decode(std::string_view text)
 {
     return decode_with<T>(media_type(), text);

@@ -13,21 +13,35 @@ export namespace core::adapters {
     static constexpr char hex[] = "0123456789abcdef";
     for (const unsigned char character: text) {
         switch (character) {
-        case '"': out += "\\\""; break;
-        case '\\': out += "\\\\"; break;
-        case '\b': out += "\\b"; break;
-        case '\f': out += "\\f"; break;
-        case '\n': out += "\\n"; break;
-        case '\r': out += "\\r"; break;
-        case '\t': out += "\\t"; break;
-        default:
-            if (character < 0x20) {
-                out += "\\u00";
-                out.push_back(hex[(character >> 4) & 0xF]);
-                out.push_back(hex[character & 0xF]);
-            } else {
-                out.push_back(static_cast<char>(character));
-            }
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\b':
+                out += "\\b";
+                break;
+            case '\f':
+                out += "\\f";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
+            default:
+                if (character < 0x20) {
+                    out += "\\u00";
+                    out.push_back(hex[(character >> 4) & 0xF]);
+                    out.push_back(hex[character & 0xF]);
+                } else {
+                    out.push_back(static_cast<char>(character));
+                }
         }
     }
     out.push_back('"');
@@ -84,16 +98,21 @@ export namespace core::adapters {
             continue;
         }
         switch (character) {
-        case '"': in_string = true; break;
-        case '{':
-        case '[': ++depth; break;
-        case '}':
-        case ']':
-            if (--depth < 0) {
-                return false;
-            }
-            break;
-        default: break;
+            case '"':
+                in_string = true;
+                break;
+            case '{':
+            case '[':
+                ++depth;
+                break;
+            case '}':
+            case ']':
+                if (--depth < 0) {
+                    return false;
+                }
+                break;
+            default:
+                break;
         }
     }
     return depth == 0 && !in_string;
@@ -106,11 +125,10 @@ export namespace core::adapters {
     out.reserve(text.size());
     static constexpr char hex[] = "0123456789ABCDEF";
     for (const unsigned char character: text) {
-        const bool unreserved =
-            (character >= 'a' && character <= 'z') ||
-            (character >= 'A' && character <= 'Z') ||
-            (character >= '0' && character <= '9') ||
-            character == '-' || character == '_' || character == '.' || character == '~';
+        const bool unreserved = (character >= 'a' && character <= 'z') ||
+                                (character >= 'A' && character <= 'Z') ||
+                                (character >= '0' && character <= '9') || character == '-' ||
+                                character == '_' || character == '.' || character == '~';
         if (unreserved) {
             out.push_back(static_cast<char>(character));
         } else {

@@ -27,7 +27,10 @@ class ConnectorSelector
 public:
     ConnectorSelector() = default;
 
-    ConnectorSelector(app::store::AppRepository repository, app::metrics::MetricsRegistry& metrics) :
+    ConnectorSelector(
+        app::store::AppRepository repository,
+        app::metrics::MetricsRegistry& metrics
+    ) :
         m_repository{std::make_shared<app::store::AppRepository>(std::move(repository))},
         m_metrics{&metrics}
     {
@@ -68,7 +71,7 @@ public:
             return result;
         }
 
-        for (const auto& config : m_repository->list_routing_configs()) {
+        for (const auto& config: m_repository->list_routing_configs()) {
             if (config.get_merchant_id() != merchant_id) {
                 continue;
             }
@@ -78,12 +81,11 @@ public:
             }
         }
 
-        for (const auto& connector : m_repository->list_merchant_connectors()) {
+        for (const auto& connector: m_repository->list_merchant_connectors()) {
             if (connector.get_merchant_id() != merchant_id || connector.get_disabled()) {
                 continue;
             }
-            if (!payment_method_type.empty() &&
-                !connector.get_payment_methods_enabled().empty() &&
+            if (!payment_method_type.empty() && !connector.get_payment_methods_enabled().empty() &&
                 !connector.get_payment_methods_enabled().contains(payment_method_type)) {
                 continue;
             }
@@ -93,7 +95,8 @@ public:
     }
 
     /** @brief Routing preference wins; otherwise a deterministic currency bucket rotates. */
-    [[nodiscard]] std::optional<std::string> choose(const ConnectorCandidates& candidates, std::string_view currency) const
+    [[nodiscard]] std::optional<std::string>
+    choose(const ConnectorCandidates& candidates, std::string_view currency) const
     {
         if (!candidates.routing.empty()) {
             return candidates.routing.front();
@@ -151,7 +154,8 @@ private:
         }
         m_metrics->record_flow("connector.select");
         m_metrics->counter(std::string{"connector.select."} + std::string{connector}).increment();
-        m_metrics->counter(std::string{"connector.select.merchant."} + std::string{merchant_id}).increment();
+        m_metrics->counter(std::string{"connector.select.merchant."} + std::string{merchant_id})
+            .increment();
     }
 
     std::shared_ptr<app::store::AppRepository> m_repository{};

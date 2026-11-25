@@ -129,8 +129,9 @@ suite<"core_cron_expression"> core_cron_expression_suite = []
     {
         const auto expression = CronExpression{}.parse("0 0 * * *");
         expect(expression.has_value());
-        const auto base = std::chrono::sys_days{std::chrono::year{2026} / std::chrono::January / 1} +
-                          std::chrono::hours{12};
+        const auto base =
+            std::chrono::sys_days{std::chrono::year{2'026} / std::chrono::January / 1} +
+            std::chrono::hours{12};
         const auto next = expression->next_after(base);
         expect(next.has_value());
         const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(*next)};

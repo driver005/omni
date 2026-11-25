@@ -20,7 +20,8 @@ public:
     }
 
     /** @brief Acquires `key` when free, returning the lock snapshot; nullopt when already held. */
-    std::optional<ApiLock> acquire(std::string_view key, core::cache::Ttl ttl, std::string owner = {})
+    std::optional<ApiLock>
+    acquire(std::string_view key, core::cache::Ttl ttl, std::string owner = {})
     {
         const std::string cache_key = scoped(key);
         if (m_cache.get(cache_key).hit) {
@@ -38,7 +39,8 @@ public:
     }
 
     /** @brief Convenience overload taking a TTL in seconds. */
-    std::optional<ApiLock> acquire(std::string_view key, std::int64_t ttl_seconds, std::string owner = {})
+    std::optional<ApiLock>
+    acquire(std::string_view key, std::int64_t ttl_seconds, std::string owner = {})
     {
         return acquire(key, core::cache::Ttl{}.seconds(ttl_seconds), std::move(owner));
     }
@@ -63,7 +65,8 @@ private:
     {
         return std::chrono::duration_cast<std::chrono::seconds>(
                    std::chrono::system_clock::now().time_since_epoch()
-               ).count();
+        )
+            .count();
     }
 
     [[nodiscard]] std::int64_t expiry_seconds(std::int64_t now, const core::cache::Ttl& ttl) const

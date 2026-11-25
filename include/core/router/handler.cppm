@@ -49,7 +49,7 @@ public:
         const std::size_t SLOT = std::to_underlying(method);
 
         // lane already claimed (not the 0xFF "unset" sentinel) means a dupe registration — cooked
-        if (m_handler_mask[SLOT] != 0xFFFF) {
+        if (m_handler_mask[SLOT] != 0xFF'FF) {
             throw std::runtime_error("Handler for method already exists");
         }
 
@@ -71,8 +71,9 @@ public:
     find(interfaces::io::types::Method method) const noexcept
     {
         const std::uint16_t IDX = m_handler_mask[std::to_underlying(method)];
-        return IDX != 0xFFFF ? m_handler[IDX] : nullptr; // FIXME(clang-tidy): unchecked operator[],
-                                                       // consider .at(); non-constant array index
+        return IDX != 0xFF'FF ? m_handler[IDX]
+                              : nullptr; // FIXME(clang-tidy): unchecked operator[],
+                                         // consider .at(); non-constant array index
     }
 
     /**
@@ -138,9 +139,9 @@ public:
     ) const noexcept
     {
         const std::uint16_t OFFSET = handler_mask[std::to_underlying(method)];
-        return OFFSET != 0xFFFF ? m_handler[idx + OFFSET]
-                              : nullptr; // FIXME(clang-tidy): unchecked operator[], consider .at();
-                                         // non-constant array index
+        return OFFSET != 0xFF'FF ? m_handler[idx + OFFSET]
+                                 : nullptr; // FIXME(clang-tidy): unchecked operator[], consider
+                                            // .at(); non-constant array index
     }
 
     /**

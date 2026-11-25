@@ -34,7 +34,9 @@ public:
     {
         std::size_t n{0};
         for (const auto& r: blog::testing::RouteCatalog::values) {
-            if (!r.admin()) ++n;
+            if (!r.admin()) {
+                ++n;
+            }
         }
         return n;
     }
@@ -51,7 +53,9 @@ public:
             req.set_header(interfaces::io::types::Token::AUTHORIZATION, request.token());
         }
         std::vector<std::byte> bytes;
-        for (const char chr : request.body()) bytes.push_back(static_cast<std::byte>(chr));
+        for (const char chr: request.body()) {
+            bytes.push_back(static_cast<std::byte>(chr));
+        }
         if (!bytes.empty()) {
             auto* node = new utils::buffering::BufferNode{std::move(bytes)};
             req.get_body().push_back(node, 0, request.body().size());
@@ -65,22 +69,30 @@ public:
         m_server->executor().enqueue(req, res, [] {});
         m_server->executor().on_execute()();
         std::string body;
-        for (const std::byte byte : res.get_body()) body += static_cast<char>(byte);
+        for (const std::byte byte: res.get_body()) {
+            body += static_cast<char>(byte);
+        }
         int status = 200;
-        for (const auto& entry : res.get_headers()) {
-            std::visit([&status](const auto& field) {
-                if (field == nullptr) return;
-                using NameType = std::decay_t<decltype(field->get_name())>;
-                std::string_view name;
-                if constexpr (std::is_same_v<NameType, interfaces::io::types::Token>) {
-                    name = interfaces::io::types::token_to_string(field->get_name());
-                } else {
-                    name = field->get_name();
-                }
-                if (name == ":status") {
-                    status = std::stoi(std::string{field->get_value()});
-                }
-            }, entry);
+        for (const auto& entry: res.get_headers()) {
+            std::visit(
+                [&status](const auto& field)
+                {
+                    if (field == nullptr) {
+                        return;
+                    }
+                    using NameType = std::decay_t<decltype(field->get_name())>;
+                    std::string_view name;
+                    if constexpr (std::is_same_v<NameType, interfaces::io::types::Token>) {
+                        name = interfaces::io::types::token_to_string(field->get_name());
+                    } else {
+                        name = field->get_name();
+                    }
+                    if (name == ":status") {
+                        status = std::stoi(std::string{field->get_value()});
+                    }
+                },
+                entry
+            );
         }
         return ApiResponse{status, body};
     }

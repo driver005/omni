@@ -18,11 +18,15 @@ inline void require_auth(
 {
     if (token(request).empty()) {
         ErrorEnvelope envelope;
-        envelope.errors.push_back(ErrorItem{
-            .message = "Unauthorized",
-            .type = "UnauthorizedError"
-        });
-        write_error(response, interfaces::io::types::Status::UNAUTHORIZED, envelope, std::move(send));
+        envelope.errors.push_back(
+            ErrorItem{.message = "Unauthorized", .type = "UnauthorizedError"}
+        );
+        write_error(
+            response,
+            interfaces::io::types::Status::UNAUTHORIZED,
+            envelope,
+            std::move(send)
+        );
         return;
     }
     next(request, response, std::move(send));

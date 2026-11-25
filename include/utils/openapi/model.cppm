@@ -1029,10 +1029,7 @@ struct serde::Serializable<utils::openapi::Operation>
                 &Operation::get_description,
                 &Operation::set_description>{},
             serde::FieldDesc<"tags", &Operation::get_tags, &Operation::add_tag>{},
-            serde::FieldDesc<
-                "parameters",
-                &Operation::get_parameters,
-                &Operation::add_parameter>{},
+            serde::FieldDesc<"parameters", &Operation::get_parameters, &Operation::add_parameter>{},
             serde::FieldDesc<
                 "requestBody",
                 &Operation::get_request_body,

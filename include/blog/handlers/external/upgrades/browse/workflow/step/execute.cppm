@@ -26,34 +26,50 @@ import :outbox_shim;
 export namespace blog::handlers::upgrades::support {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 using Output = std::map<std::string, std::string>;
 using Object = serde::Value::Object;
 
 inline constexpr std::string_view kDocName{"upgrades"};
-inline constexpr std::string_view kNoopStatus{
-    R"({"supported":false,"reason":"not-configured"})"};
+inline constexpr std::string_view kNoopStatus{R"({"supported":false,"reason":"not-configured"})"};
 inline constexpr std::string_view kUnavailableStatus{
-    R"({"supported":true,"availability":"unavailable","one_click":[],"manual":[]})"};
+    R"({"supported":true,"availability":"unavailable","one_click":[],"manual":[]})"
+};
 inline constexpr std::string_view kValidationHelp{
-    "Generate a lowercase UUID v4 idempotency_key once and reuse it when retrying."};
+    "Generate a lowercase UUID v4 idempotency_key once and reuse it when retrying."
+};
 
 // Defined with the adapter model below; adapter_error needs it earlier.
 [[nodiscard]] inline std::string adapter_option(blog::BlogContext& ctx, std::string_view name);
@@ -61,13 +77,23 @@ inline constexpr std::string_view kValidationHelp{
 [[nodiscard]] inline std::string json_quote(std::string_view text)
 {
     std::string out = "\"";
-    for (const unsigned char c : text) {
+    for (const unsigned char c: text) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
             default:
                 if (c < 0x20) {
                     out += std::format("\\u{:04x}", static_cast<unsigned>(c));
@@ -92,7 +118,7 @@ inline constexpr std::string_view kValidationHelp{
 {
     std::size_t count{0};
     if (object != nullptr) {
-        for (const auto& [key, value] : *object) {
+        for (const auto& [key, value]: *object) {
             (void)key;
             (void)value;
             ++count;
@@ -106,7 +132,7 @@ inline constexpr std::string_view kValidationHelp{
     if (object == nullptr) {
         return nullptr;
     }
-    for (const auto& [name, value] : *object) {
+    for (const auto& [name, value]: *object) {
         if (name == key) {
             return &value;
         }
@@ -155,7 +181,8 @@ inline constexpr std::string_view kValidationHelp{
     std::string_view code,
     std::string_view help,
     std::string_view property = {},
-    std::string_view details = {})
+    std::string_view details = {}
+)
 {
     static std::atomic<unsigned long long> counter{0};
     const auto id = std::format("{:032x}", ++counter);
@@ -167,13 +194,15 @@ inline constexpr std::string_view kValidationHelp{
         help.empty() ? "null" : json_quote(help),
         json_quote(message),
         property.empty() ? "null" : json_quote(property),
-        json_quote(type));
+        json_quote(type)
+    );
 }
 
 [[nodiscard]] inline Output validation_error(
     std::string_view message,
     std::string_view help = {},
-    std::string_view property = {})
+    std::string_view property = {}
+)
 {
     return result(422, error_envelope(message, "ValidationError", {}, help, property));
 }
@@ -185,7 +214,8 @@ inline constexpr std::string_view kValidationHelp{
 
 [[nodiscard]] inline Output adapter_error(blog::BlogContext& ctx, std::string_view code)
 {
-    struct Spec {
+    struct Spec
+    {
         std::string_view code;
         int status;
         std::string_view type;
@@ -193,30 +223,48 @@ inline constexpr std::string_view kValidationHelp{
         std::string_view help;
         std::string_view ghost_code;
     };
+
     static constexpr std::array<Spec, 6> kSpecs{{
-        {"unsupported", 409, "DisabledFeatureError",
-            "This host does not support updating Ghost from Admin.",
-            "Ask your host to configure an upgrade adapter.", "UPGRADE_UNSUPPORTED"},
-        {"unavailable", 502, "InternalServerError",
-            "The update service is temporarily unavailable.",
-            "Retry later. Reuse the same idempotency_key if an update request lost its response.",
-            "UPGRADE_UNAVAILABLE"},
-        {"busy", 409, "ConflictError", "An update is already in progress.",
-            "Wait for the active job to finish before requesting another update.", "UPGRADE_BUSY"},
-        {"target-unapproved", 422, "ValidationError",
-            "This update is not available as a one-click update.",
-            "Refresh the available updates before choosing one.", "UPGRADE_TARGET_UNAPPROVED"},
-        {"idempotency-conflict", 409, "ConflictError",
-            "This idempotency_key was already used for a different update.",
-            "Use a new idempotency_key for a new update request.",
-            "UPGRADE_IDEMPOTENCY_CONFLICT"},
-        {"request-expired", 409, "ConflictError", "This update request has expired.",
-            "Check the outcome of the earlier request before making a new one.",
-            "UPGRADE_REQUEST_EXPIRED"},
+        {"unsupported",
+         409,
+         "DisabledFeatureError",
+         "This host does not support updating Ghost from Admin.",
+         "Ask your host to configure an upgrade adapter.",
+         "UPGRADE_UNSUPPORTED"},
+        {"unavailable",
+         502,
+         "InternalServerError",
+         "The update service is temporarily unavailable.",
+         "Retry later. Reuse the same idempotency_key if an update request lost its response.",
+         "UPGRADE_UNAVAILABLE"},
+        {"busy",
+         409,
+         "ConflictError",
+         "An update is already in progress.",
+         "Wait for the active job to finish before requesting another update.",
+         "UPGRADE_BUSY"},
+        {"target-unapproved",
+         422,
+         "ValidationError",
+         "This update is not available as a one-click update.",
+         "Refresh the available updates before choosing one.",
+         "UPGRADE_TARGET_UNAPPROVED"},
+        {"idempotency-conflict",
+         409,
+         "ConflictError",
+         "This idempotency_key was already used for a different update.",
+         "Use a new idempotency_key for a new update request.",
+         "UPGRADE_IDEMPOTENCY_CONFLICT"},
+        {"request-expired",
+         409,
+         "ConflictError",
+         "This update request has expired.",
+         "Check the outcome of the earlier request before making a new one.",
+         "UPGRADE_REQUEST_EXPIRED"},
     }};
 
     const Spec* selected = nullptr;
-    for (const auto& spec : kSpecs) {
+    for (const auto& spec: kSpecs) {
         if (spec.code == code) {
             selected = &spec;
             break;
@@ -231,9 +279,17 @@ inline constexpr std::string_view kValidationHelp{
     if (!diagnostics.empty() && diagnostics.front() == '[') {
         details = "{\"diagnostics\":" + diagnostics + "}";
     }
-    return result(selected->status,
-        error_envelope(selected->message, selected->type, selected->ghost_code,
-                       selected->help, {}, details));
+    return result(
+        selected->status,
+        error_envelope(
+            selected->message,
+            selected->type,
+            selected->ghost_code,
+            selected->help,
+            {},
+            details
+        )
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -243,87 +299,116 @@ inline constexpr std::string_view kValidationHelp{
 // ---------------------------------------------------------------------------
 namespace detail {
 
-inline constexpr std::array<std::uint32_t, 64> kSha256K{
-    0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
-    0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
-    0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
-    0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
-    0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
-    0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
-    0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
-    0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+    inline constexpr std::array<std::uint32_t, 64> kSha256K{
+        0x42'8A'2F'98u, 0x71'37'44'91u, 0xB5'C0'FB'CFu, 0xE9'B5'DB'A5u, 0x39'56'C2'5Bu,
+        0x59'F1'11'F1u, 0x92'3F'82'A4u, 0xAB'1C'5E'D5u, 0xD8'07'AA'98u, 0x12'83'5B'01u,
+        0x24'31'85'BEu, 0x55'0C'7D'C3u, 0x72'BE'5D'74u, 0x80'DE'B1'FEu, 0x9B'DC'06'A7u,
+        0xC1'9B'F1'74u, 0xE4'9B'69'C1u, 0xEF'BE'47'86u, 0x0F'C1'9D'C6u, 0x24'0C'A1'CCu,
+        0x2D'E9'2C'6Fu, 0x4A'74'84'AAu, 0x5C'B0'A9'DCu, 0x76'F9'88'DAu, 0x98'3E'51'52u,
+        0xA8'31'C6'6Du, 0xB0'03'27'C8u, 0xBF'59'7F'C7u, 0xC6'E0'0B'F3u, 0xD5'A7'91'47u,
+        0x06'CA'63'51u, 0x14'29'29'67u, 0x27'B7'0A'85u, 0x2E'1B'21'38u, 0x4D'2C'6D'FCu,
+        0x53'38'0D'13u, 0x65'0A'73'54u, 0x76'6A'0A'BBu, 0x81'C2'C9'2Eu, 0x92'72'2C'85u,
+        0xA2'BF'E8'A1u, 0xA8'1A'66'4Bu, 0xC2'4B'8B'70u, 0xC7'6C'51'A3u, 0xD1'92'E8'19u,
+        0xD6'99'06'24u, 0xF4'0E'35'85u, 0x10'6A'A0'70u, 0x19'A4'C1'16u, 0x1E'37'6C'08u,
+        0x27'48'77'4Cu, 0x34'B0'BC'B5u, 0x39'1C'0C'B3u, 0x4E'D8'AA'4Au, 0x5B'9C'CA'4Fu,
+        0x68'2E'6F'F3u, 0x74'8F'82'EEu, 0x78'A5'63'6Fu, 0x84'C8'78'14u, 0x8C'C7'02'08u,
+        0x90'BE'FF'FAu, 0xA4'50'6C'EBu, 0xBE'F9'A3'F7u, 0xC6'71'78'F2u
+    };
 
-[[nodiscard]] inline constexpr std::uint32_t rotr(std::uint32_t x, unsigned n) noexcept
-{
-    return (x >> n) | (x << (32u - n));
-}
-
-[[nodiscard]] inline std::array<std::uint8_t, 32> sha256(std::string_view data)
-{
-    const std::uint64_t bit_length = static_cast<std::uint64_t>(data.size()) * 8u;
-    std::vector<std::uint8_t> message(data.begin(), data.end());
-    message.push_back(0x80u);
-    while (message.size() % 64u != 56u) {
-        message.push_back(0u);
-    }
-    for (int i = 7; i >= 0; --i) {
-        message.push_back(static_cast<std::uint8_t>(bit_length >> (i * 8)));
+    [[nodiscard]] inline constexpr std::uint32_t rotr(std::uint32_t x, unsigned n) noexcept
+    {
+        return (x >> n) | (x << (32u - n));
     }
 
-    std::uint32_t h[8]{0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
-                       0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
-    std::uint32_t w[64]{};
-    for (std::size_t offset = 0; offset < message.size(); offset += 64u) {
-        for (int i = 0; i < 16; ++i) {
-            w[i] = (static_cast<std::uint32_t>(message[offset + i * 4u]) << 24u) |
-                   (static_cast<std::uint32_t>(message[offset + i * 4u + 1u]) << 16u) |
-                   (static_cast<std::uint32_t>(message[offset + i * 4u + 2u]) << 8u) |
-                   static_cast<std::uint32_t>(message[offset + i * 4u + 3u]);
+    [[nodiscard]] inline std::array<std::uint8_t, 32> sha256(std::string_view data)
+    {
+        const std::uint64_t bit_length = static_cast<std::uint64_t>(data.size()) * 8u;
+        std::vector<std::uint8_t> message(data.begin(), data.end());
+        message.push_back(0x80u);
+        while (message.size() % 64u != 56u) {
+            message.push_back(0u);
         }
-        for (int i = 16; i < 64; ++i) {
-            const std::uint32_t s0 = rotr(w[i - 15], 7u) ^ rotr(w[i - 15], 18u) ^ (w[i - 15] >> 3u);
-            const std::uint32_t s1 = rotr(w[i - 2], 17u) ^ rotr(w[i - 2], 19u) ^ (w[i - 2] >> 10u);
-            w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+        for (int i = 7; i >= 0; --i) {
+            message.push_back(static_cast<std::uint8_t>(bit_length >> (i * 8)));
         }
-        std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
-        std::uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
-        for (int i = 0; i < 64; ++i) {
-            const std::uint32_t s1 = rotr(e, 6u) ^ rotr(e, 11u) ^ rotr(e, 25u);
-            const std::uint32_t ch = (e & f) ^ ((~e) & g);
-            const std::uint32_t t1 = hh + s1 + ch + kSha256K[static_cast<std::size_t>(i)] + w[i];
-            const std::uint32_t s0 = rotr(a, 2u) ^ rotr(a, 13u) ^ rotr(a, 22u);
-            const std::uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
-            const std::uint32_t t2 = s0 + maj;
-            hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+
+        std::uint32_t h[8]{
+            0x6A'09'E6'67u,
+            0xBB'67'AE'85u,
+            0x3C'6E'F3'72u,
+            0xA5'4F'F5'3Au,
+            0x51'0E'52'7Fu,
+            0x9B'05'68'8Cu,
+            0x1F'83'D9'ABu,
+            0x5B'E0'CD'19u
+        };
+        std::uint32_t w[64]{};
+        for (std::size_t offset = 0; offset < message.size(); offset += 64u) {
+            for (int i = 0; i < 16; ++i) {
+                w[i] = (static_cast<std::uint32_t>(message[offset + i * 4u]) << 24u) |
+                       (static_cast<std::uint32_t>(message[offset + i * 4u + 1u]) << 16u) |
+                       (static_cast<std::uint32_t>(message[offset + i * 4u + 2u]) << 8u) |
+                       static_cast<std::uint32_t>(message[offset + i * 4u + 3u]);
+            }
+            for (int i = 16; i < 64; ++i) {
+                const std::uint32_t s0 =
+                    rotr(w[i - 15], 7u) ^ rotr(w[i - 15], 18u) ^ (w[i - 15] >> 3u);
+                const std::uint32_t s1 =
+                    rotr(w[i - 2], 17u) ^ rotr(w[i - 2], 19u) ^ (w[i - 2] >> 10u);
+                w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+            }
+            std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
+            std::uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
+            for (int i = 0; i < 64; ++i) {
+                const std::uint32_t s1 = rotr(e, 6u) ^ rotr(e, 11u) ^ rotr(e, 25u);
+                const std::uint32_t ch = (e & f) ^ ((~e) & g);
+                const std::uint32_t t1 =
+                    hh + s1 + ch + kSha256K[static_cast<std::size_t>(i)] + w[i];
+                const std::uint32_t s0 = rotr(a, 2u) ^ rotr(a, 13u) ^ rotr(a, 22u);
+                const std::uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+                const std::uint32_t t2 = s0 + maj;
+                hh = g;
+                g = f;
+                f = e;
+                e = d + t1;
+                d = c;
+                c = b;
+                b = a;
+                a = t1 + t2;
+            }
+            h[0] += a;
+            h[1] += b;
+            h[2] += c;
+            h[3] += d;
+            h[4] += e;
+            h[5] += f;
+            h[6] += g;
+            h[7] += hh;
         }
-        h[0] += a; h[1] += b; h[2] += c; h[3] += d;
-        h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+        std::array<std::uint8_t, 32> digest{};
+        for (int i = 0; i < 8; ++i) {
+            digest[static_cast<std::size_t>(i) * 4u] = static_cast<std::uint8_t>(h[i] >> 24u);
+            digest[static_cast<std::size_t>(i) * 4u + 1u] = static_cast<std::uint8_t>(h[i] >> 16u);
+            digest[static_cast<std::size_t>(i) * 4u + 2u] = static_cast<std::uint8_t>(h[i] >> 8u);
+            digest[static_cast<std::size_t>(i) * 4u + 3u] = static_cast<std::uint8_t>(h[i]);
+        }
+        return digest;
     }
-    std::array<std::uint8_t, 32> digest{};
-    for (int i = 0; i < 8; ++i) {
-        digest[static_cast<std::size_t>(i) * 4u] = static_cast<std::uint8_t>(h[i] >> 24u);
-        digest[static_cast<std::size_t>(i) * 4u + 1u] = static_cast<std::uint8_t>(h[i] >> 16u);
-        digest[static_cast<std::size_t>(i) * 4u + 2u] = static_cast<std::uint8_t>(h[i] >> 8u);
-        digest[static_cast<std::size_t>(i) * 4u + 3u] = static_cast<std::uint8_t>(h[i]);
-    }
-    return digest;
-}
 
 } // namespace detail
 
 /** @brief node:crypto sha256(JSON.stringify([userId, clientKey])).digest('hex'). */
-[[nodiscard]] inline std::string scoped_idempotency_key(
-    std::string_view user_id,
-    std::string_view client_key)
+[[nodiscard]] inline std::string
+scoped_idempotency_key(std::string_view user_id, std::string_view client_key)
 {
     const auto input = "[" + json_quote(user_id) + "," + json_quote(client_key) + "]";
     const auto digest = detail::sha256(input);
     static constexpr std::string_view kHex{"0123456789abcdef"};
     std::string out;
     out.reserve(digest.size() * 2u);
-    for (const std::uint8_t byte : digest) {
+    for (const std::uint8_t byte: digest) {
         out.push_back(kHex[byte >> 4u]);
-        out.push_back(kHex[byte & 0x0fu]);
+        out.push_back(kHex[byte & 0x0Fu]);
     }
     return out;
 }
@@ -334,18 +419,17 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 // modeled with context config/settings and UPGRADE_* env overrides until a
 // `core_adapters:upgrades` partition is registered (recorded as a need).
 // ---------------------------------------------------------------------------
-[[nodiscard]] inline std::string env_or_config(
-    blog::BlogContext& ctx,
-    std::string_view name,
-    std::string_view env_suffix)
+[[nodiscard]] inline std::string
+env_or_config(blog::BlogContext& ctx, std::string_view name, std::string_view env_suffix)
 {
     const std::string env_key = "UPGRADE_" + std::string{env_suffix};
     if (const char* value = std::getenv(env_key.c_str()); value != nullptr && *value != '\0') {
         return std::string{value};
     }
 
-    const auto lookup = [&](const std::vector<blog::api::RecordDto>& rows) {
-        for (const auto& row : rows) {
+    const auto lookup = [&](const std::vector<blog::api::RecordDto>& rows)
+    {
+        for (const auto& row: rows) {
             const auto key = row.find("key");
             if (key == row.end()) {
                 continue;
@@ -373,8 +457,10 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 [[nodiscard]] inline std::string adapter_option(blog::BlogContext& ctx, std::string_view name)
 {
     std::string suffix;
-    for (const char c : name) {
-        suffix.push_back(c == ':' ? '_' : static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+    for (const char c: name) {
+        suffix.push_back(
+            c == ':' ? '_' : static_cast<char>(std::toupper(static_cast<unsigned char>(c)))
+        );
     }
     return env_or_config(ctx, name, suffix);
 }
@@ -385,17 +471,21 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     if (active.empty()) {
         return false; // default NoopUpgradeAdapter
     }
-    return active != "NoopUpgradeAdapter" && active != "noop" && active != "false" &&
-           active != "0";
+    return active != "NoopUpgradeAdapter" && active != "noop" && active != "false" && active != "0";
 }
 
 [[nodiscard]] inline std::string error_code(blog::BlogContext& ctx)
 {
     const auto code = adapter_option(ctx, "error_code");
     static constexpr std::array<std::string_view, 6> kCodes{
-        "unsupported", "unavailable", "busy", "target-unapproved",
-        "idempotency-conflict", "request-expired"};
-    for (const auto known : kCodes) {
+        "unsupported",
+        "unavailable",
+        "busy",
+        "target-unapproved",
+        "idempotency-conflict",
+        "request-expired"
+    };
+    for (const auto known: kCodes) {
         if (code == known) {
             return code;
         }
@@ -422,10 +512,8 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     return field(object, name);
 }
 
-[[nodiscard]] inline std::string inject_default(
-    std::string json,
-    std::string_view name,
-    std::string_view value)
+[[nodiscard]] inline std::string
+inject_default(std::string json, std::string_view name, std::string_view value)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
     const auto* object = parsed ? std::get_if<Object>(&parsed->get()) : nullptr;
@@ -445,8 +533,8 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 
 [[nodiscard]] inline bool valid_availability(std::string_view value)
 {
-    return value == "ready" || value == "busy" || value == "unavailable" ||
-           value == "stale" || value == "incompatible";
+    return value == "ready" || value == "busy" || value == "unavailable" || value == "stale" ||
+           value == "incompatible";
 }
 
 [[nodiscard]] inline bool valid_component(std::string_view value)
@@ -522,18 +610,17 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     return std::string{slash == std::string_view::npos ? path : path.substr(slash + 1)};
 }
 
-[[nodiscard]] inline bool valid_job(std::string_view json,
-                                    std::string_view component,
-                                    std::string_view to_version)
+[[nodiscard]] inline bool
+valid_job(std::string_view json, std::string_view component, std::string_view to_version)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
     const auto* object = parsed ? std::get_if<Object>(&parsed->get()) : nullptr;
     if (object == nullptr) {
         return false;
     }
-    static constexpr std::array<std::string_view, 5> kRequired{
-        "id", "state", "component", "to_version", "created_at"};
-    for (const auto name : kRequired) {
+    static constexpr std::array<std::string_view, 5>
+        kRequired{"id", "state", "component", "to_version", "created_at"};
+    for (const auto name: kRequired) {
         if (field(object, name).empty()) {
             return false;
         }
@@ -588,7 +675,8 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     std::string_view component,
     std::string_view to_version,
     std::string_view scoped_key,
-    std::string_view user_id)
+    std::string_view user_id
+)
 {
     const auto configured_error = error_code(ctx);
     if (!configured_error.empty()) {
@@ -607,10 +695,15 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     const auto job_id = field_from_json(job, "id");
     const auto payload = std::format(
         R"({{"idempotency_key":{},"user_id":{},"component":{},"to_version":{},"job":{}}})",
-        json_quote(scoped_key), json_quote(user_id), json_quote(component),
-        json_quote(to_version), job);
+        json_quote(scoped_key),
+        json_quote(user_id),
+        json_quote(component),
+        json_quote(to_version),
+        job
+    );
     blog::handlers::outbox::global_outbox().emit(
-        blog::handlers::outbox::Event{"upgrade.create_request", payload, job_id});
+        blog::handlers::outbox::Event{"upgrade.create_request", payload, job_id}
+    );
 
     return result(202, wrap(job));
 }
@@ -625,8 +718,10 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     if (adapter_active(ctx)) {
         const auto expired = adapter_option(ctx, "expired_job_id");
         if (!expired.empty() && expired == id) {
-            return result(200, wrap(std::format(R"({{"id":{},"state":"expired"}})",
-                                                json_quote(id))));
+            return result(
+                200,
+                wrap(std::format(R"({{"id":{},"state":"expired"}})", json_quote(id)))
+            );
         }
         const auto job = adapter_option(ctx, "job_json");
         if (!job.empty()) {
@@ -686,14 +781,15 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
     } else if (context == "ADMIN_API") {
         principal.context = ApiContext::ADMIN_API;
     } else {
-        principal.context = request.get_authorization().empty() ? ApiContext::ANONYMOUS
-                                                                 : ApiContext::ADMIN_API;
+        principal.context =
+            request.get_authorization().empty() ? ApiContext::ANONYMOUS : ApiContext::ADMIN_API;
     }
     principal.role = std::string{request.find_header(kGhostRoleHeader)};
     if (principal.role.empty() && principal.context == ApiContext::ADMIN_API) {
         principal.role = "Administrator";
     }
-    for (auto part : std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
+    for (auto part:
+         std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
         if (!scope.empty()) {
             principal.permissions.insert(scope);
@@ -708,9 +804,8 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 }
 
 /** @brief Ghost controller `permissions:true`, docName `upgrades`. */
-[[nodiscard]] inline core::auth::ghost::AuthResult authorize(
-    interfaces::io::IRequest& request,
-    std::string_view method)
+[[nodiscard]] inline core::auth::ghost::AuthResult
+authorize(interfaces::io::IRequest& request, std::string_view method)
 {
     core::auth::ghost::GhostAuthorizer authorizer;
     return authorizer.authorize(principal_for(request), true, kDocName, method);
@@ -730,14 +825,15 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 
 export namespace blog::handlers::upgrades::browse::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
     using Input = interfaces::io::IRequest&;
     using Output = support::Output;
     static constexpr std::string_view name{"upgrades_browse_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input&, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input&, core::workflow::WorkflowContext&) const
     {
         auto& ctx = *s_ctx;
         // Ghost GET /upgrades/: no options, no validation, no rate-limit or event

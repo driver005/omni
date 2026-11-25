@@ -21,9 +21,8 @@ public:
         std::size_t start = 0;
         while (start <= field.size()) {
             const auto comma = field.find(',', start);
-            const auto token = comma == std::string_view::npos
-                                   ? field.substr(start)
-                                   : field.substr(start, comma - start);
+            const auto token = comma == std::string_view::npos ? field.substr(start)
+                                                               : field.substr(start, comma - start);
             if (!result.parse_token(token)) {
                 return std::nullopt;
             }

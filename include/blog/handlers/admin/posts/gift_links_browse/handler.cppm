@@ -20,22 +20,38 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& request, interfaces::io::IResponse& response,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& request,
+        interfaces::io::IResponse& response,
+        std::function<void()> send
+    )
     {
         // Ghost: mw.authAdminApi + assertCanEditAndGift(manage.gift_link, edit.post).
-        if (!blog::api::gift_links_ops::permitted(request, response, send, "gift_links", "manage")) return;
-        if (!blog::api::gift_links_ops::permitted(request, response, send, "posts", "edit")) return;
+        if (!blog::api::gift_links_ops::permitted(
+                request,
+                response,
+                send,
+                "gift_links",
+                "manage"
+            )) {
+            return;
+        }
+        if (!blog::api::gift_links_ops::permitted(request, response, send, "posts", "edit")) {
+            return;
+        }
 
         const auto execution = m_workflow.run("posts_gift_links_browse", request);
         const auto* result = execution.result_of("posts_gift_links_browse_execute");
-        const auto payload = result && result->typed_output.has_value()
-                                 ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
-                                 : std::map<std::string, std::string>{{"status", "200"}, {"body", "{}"}};
+        const auto payload =
+            result && result->typed_output.has_value()
+                ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
+                : std::map<std::string, std::string>{{"status", "200"}, {"body", "{}"}};
         const int status = payload.contains("status") ? std::stoi(payload.at("status")) : 200;
         const auto body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
         std::vector<std::byte> bytes;
-        for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+        for (const char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
         response.set_status(static_cast<interfaces::io::types::Status>(status));
         response.set_body(std::move(bytes));
         send();
@@ -46,4 +62,4 @@ private:
     core::workflow::Workflow m_workflow{};
 };
 
-} // namespace
+} // namespace blog::handlers::posts::gift_links_browse

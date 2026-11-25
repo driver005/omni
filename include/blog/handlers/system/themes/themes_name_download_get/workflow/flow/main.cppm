@@ -3,9 +3,17 @@ export import core_workflow;
 import std;
 import core_workflow;
 import :themes_themes_name_download_get_step;
+
 export namespace blog::handlers::themes::themes_name_download_get::workflow {
-class MainFlow { public:
- [[nodiscard]] core::workflow::WorkflowDefinition build() const {
-  return core::workflow::WorkflowBuilder{}.name("themes_themes_name_download_get").step<ExecuteStep>().build();
- }};
-}
+class MainFlow
+{
+public:
+    [[nodiscard]] core::workflow::WorkflowDefinition build() const
+    {
+        return core::workflow::WorkflowBuilder{}
+            .name("themes_themes_name_download_get")
+            .step<ExecuteStep>()
+            .build();
+    }
+};
+} // namespace blog::handlers::themes::themes_name_download_get::workflow

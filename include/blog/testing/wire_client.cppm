@@ -51,7 +51,8 @@ public:
         blog::api::ApiRoutes{}.install(m_context, handlers);
         m_server.build(&m_context);
         m_read = m_server.on_connect(
-            [this](utils::buffering::BufferNode&& node) {
+            [this](utils::buffering::BufferNode&& node)
+            {
                 const auto* data = node.get_data();
                 for (std::size_t i = 0; i < node.get_written(); ++i) {
                     m_sent.push_back(data[i]);
@@ -81,7 +82,7 @@ public:
         }
         if (!body.empty()) {
             std::vector<std::byte> bytes;
-            for (const char chr : body) {
+            for (const char chr: body) {
                 bytes.push_back(static_cast<std::byte>(chr));
             }
             auto* node = new utils::buffering::BufferNode{std::move(bytes)};
@@ -89,11 +90,11 @@ public:
         }
 
         io::codec::hpack::HPackTable table;
-        auto block = utils::buffering::BufferNode{16384};
-        block | io::layer::http2::WriteHttpRequestAdaptor{outgoing, table, 16384};
+        auto block = utils::buffering::BufferNode{16'384};
+        block | io::layer::http2::WriteHttpRequestAdaptor{outgoing, table, 16'384};
 
         std::vector<std::byte> wire;
-        for (const char chr : std::string_view{"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"}) {
+        for (const char chr: std::string_view{"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"}) {
             wire.push_back(static_cast<std::byte>(chr));
         }
         for (int i = 0; i < 9; ++i) {
@@ -102,7 +103,8 @@ public:
         wire[24 + 3] = static_cast<std::byte>(4);
         wire.insert(wire.end(), block.get_data(), block.get_data() + block.get_written());
 
-        const auto feed = [this](auto begin, auto end) {
+        const auto feed = [this](auto begin, auto end)
+        {
             auto* node = new utils::buffering::BufferNode{std::vector<std::byte>{begin, end}};
             utils::buffering::BufferReader reader;
             reader.push_back(node);
@@ -110,12 +112,12 @@ public:
         };
         feed(wire.begin(), wire.begin() + 33);
         for (std::size_t offset = 33; offset + 9 <= wire.size();) {
-            const std::size_t length =
-                (std::to_integer<std::size_t>(wire[offset]) << 16) |
-                (std::to_integer<std::size_t>(wire[offset + 1]) << 8) |
-                std::to_integer<std::size_t>(wire[offset + 2]);
-            const auto end = wire.begin() +
-                             static_cast<std::ptrdiff_t>(std::min(offset + 9 + length, wire.size()));
+            const std::size_t length = (std::to_integer<std::size_t>(wire[offset]) << 16) |
+                                       (std::to_integer<std::size_t>(wire[offset + 1]) << 8) |
+                                       std::to_integer<std::size_t>(wire[offset + 2]);
+            const auto end =
+                wire.begin() +
+                static_cast<std::ptrdiff_t>(std::min(offset + 9 + length, wire.size()));
             feed(wire.begin() + static_cast<std::ptrdiff_t>(offset), end);
             offset += 9 + length;
         }
@@ -124,7 +126,8 @@ public:
         int status = -1;
         std::string response_body;
         for (std::size_t offset = 0; offset + 9 <= m_sent.size();) {
-            const auto at = [&](std::size_t index) {
+            const auto at = [&](std::size_t index)
+            {
                 return std::to_integer<std::size_t>(m_sent[offset + index]);
             };
             const std::size_t length = (at(0) << 16) | (at(1) << 8) | at(2);

@@ -78,10 +78,7 @@ public:
             reflect::is_entity_member_v<E, Member>,
             "order_by() member is not reflected on this entity"
         );
-        m_spec.ordering = std::make_pair(
-            std::string{reflect::column_of<E, Member>()},
-            direction
-        );
+        m_spec.ordering = std::make_pair(std::string{reflect::column_of<E, Member>()}, direction);
         return *this;
     }
 
@@ -130,9 +127,13 @@ struct Widget
     std::int64_t id{};
     std::string label{};
 };
-CORE_DB_REFLECT(Widget, "widgets",
+
+CORE_DB_REFLECT(
+    Widget,
+    "widgets",
     CORE_DB_FIELD("id", &Widget::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY),
-    CORE_DB_FIELD("label", &Widget::label, ColumnType::TEXT));
+    CORE_DB_FIELD("label", &Widget::label, ColumnType::TEXT)
+);
 
 using namespace boost::ut;
 
@@ -152,9 +153,10 @@ suite<"core_db_query"> core_db_query_suite = []
             .order_by<&Widget::id>(SortOrder::DESC)
             .limit(10)
             .offset(5);
-        expect(query.to_sql() ==
-               "SELECT id,label FROM widgets WHERE id > 3 AND label LIKE 'a%' "
-               "ORDER BY id DESC LIMIT 10 OFFSET 5");
+        expect(
+            query.to_sql() == "SELECT id,label FROM widgets WHERE id > 3 AND label LIKE 'a%' "
+                              "ORDER BY id DESC LIMIT 10 OFFSET 5"
+        );
     };
 
     "select restricts the projection"_test = []

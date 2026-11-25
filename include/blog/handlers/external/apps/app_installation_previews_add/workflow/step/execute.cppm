@@ -23,20 +23,33 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"apps_app_installation_previews_add_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
-        const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(std::string{in.body_as_string()});
+        const auto parsed =
+            core_serde::JsonCodec{}.decode<serde::Value>(std::string{in.body_as_string()});
         const auto* item = parsed ? first_data_item(*parsed, "app_installation_previews") : nullptr;
         if (item == nullptr) {
-            return result({422, validation_error("Validation error",
-                "Expected the manifest_url to preview.", "manifest_url")});
+            return result(
+                {422,
+                 validation_error(
+                     "Validation error",
+                     "Expected the manifest_url to preview.",
+                     "manifest_url"
+                 )}
+            );
         }
         const auto manifest_url = scalar_of(*item, "manifest_url");
         if (manifest_url.empty()) {
-            return result({422, validation_error("Validation error",
-                "Expected the manifest_url to preview.", "manifest_url")});
+            return result(
+                {422,
+                 validation_error(
+                     "Validation error",
+                     "Expected the manifest_url to preview.",
+                     "manifest_url"
+                 )}
+            );
         }
         return result(preview(*s_ctx, blog::handlers::outbox::global_outbox(), manifest_url));
     }
@@ -49,7 +62,8 @@ private:
     [[nodiscard]] static core::workflow::StepResponse<Output> result(const support::Result& value)
     {
         return core::workflow::StepResponse<Output>{
-            {{"status", std::to_string(value.status)}, {"body", value.body}}};
+            {{"status", std::to_string(value.status)}, {"body", value.body}}
+        };
     }
 };
 

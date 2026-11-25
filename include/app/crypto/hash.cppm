@@ -43,22 +43,22 @@ public:
     /** @brief 16 lowercase hex digits derived from key + input. */
     [[nodiscard]] std::string hash(std::string_view input) const
     {
-        constexpr std::uint64_t offset{14695981039346656037ULL};
-        constexpr std::uint64_t prime{1099511628211ULL};
+        constexpr std::uint64_t offset{14'695'981'039'346'656'037ULL};
+        constexpr std::uint64_t prime{1'099'511'628'211ULL};
 
         std::uint64_t state{offset};
-        for (const char c : m_key) {
+        for (const char c: m_key) {
             state ^= static_cast<std::uint64_t>(static_cast<unsigned char>(c));
             state *= prime;
         }
-        state ^= 0xA5A5A5A5A5A5A5A5ULL;
+        state ^= 0xA5'A5'A5'A5'A5'A5'A5'A5ULL;
         state *= prime;
-        for (const char c : input) {
+        for (const char c: input) {
             state ^= static_cast<std::uint64_t>(static_cast<unsigned char>(c));
             state *= prime;
         }
         state ^= state >> 33;
-        state *= 0xFF51AFD7ED558CCDULL;
+        state *= 0xFF'51'AF'D7'ED'55'8C'CDULL;
         state ^= state >> 33;
         return to_hex(state);
     }
@@ -71,29 +71,28 @@ public:
      *  material; use hash() only where the legacy undomain-separated digest is
      *  required for compatibility.
      */
-    [[nodiscard]] std::string hash_with_domain(
-        std::string_view domain, std::string_view input) const
+    [[nodiscard]] std::string
+    hash_with_domain(std::string_view domain, std::string_view input) const
     {
-        constexpr std::uint64_t offset{14695981039346656037ULL};
-        constexpr std::uint64_t prime{1099511628211ULL};
+        constexpr std::uint64_t offset{14'695'981'039'346'656'037ULL};
+        constexpr std::uint64_t prime{1'099'511'628'211ULL};
 
         std::uint64_t state{offset};
         absorb(state, domain, prime);
-        state ^= 0xA5A5A5A5A5A5A5A5ULL;
+        state ^= 0xA5'A5'A5'A5'A5'A5'A5'A5ULL;
         state *= prime;
         absorb(state, m_key, prime);
-        state ^= 0x5A5A5A5A5A5A5A5AULL;
+        state ^= 0x5A'5A'5A'5A'5A'5A'5A'5AULL;
         state *= prime;
         absorb(state, input, prime);
         state ^= state >> 33;
-        state *= 0xFF51AFD7ED558CCDULL;
+        state *= 0xFF'51'AF'D7'ED'55'8C'CDULL;
         state ^= state >> 33;
         return to_hex(state);
     }
 
     /** @brief Typed-domain overload; see HashDomain. */
-    [[nodiscard]] std::string hash_with_domain(
-        HashDomain domain, std::string_view input) const
+    [[nodiscard]] std::string hash_with_domain(HashDomain domain, std::string_view input) const
     {
         return hash_with_domain(domain_name(domain), input);
     }
@@ -106,14 +105,17 @@ public:
 
     /** @brief Constant-shape comparison of a domain-separated digest. */
     [[nodiscard]] bool verify_with_domain(
-        std::string_view domain, std::string_view input, std::string_view expected) const
+        std::string_view domain,
+        std::string_view input,
+        std::string_view expected
+    ) const
     {
         return equal_digest(hash_with_domain(domain, input), expected);
     }
 
     /** @brief Typed-domain verification overload. */
-    [[nodiscard]] bool verify_with_domain(
-        HashDomain domain, std::string_view input, std::string_view expected) const
+    [[nodiscard]] bool
+    verify_with_domain(HashDomain domain, std::string_view input, std::string_view expected) const
     {
         return verify_with_domain(domain_name(domain), input, expected);
     }
@@ -123,31 +125,38 @@ private:
     [[nodiscard]] std::string_view domain_name(HashDomain domain) const
     {
         switch (domain) {
-            case HashDomain::ApiKey: return "api_key";
-            case HashDomain::ClientSecret: return "client_secret";
-            case HashDomain::WebhookSignature: return "webhook_signature";
-            case HashDomain::Idempotency: return "idempotency";
-            case HashDomain::Token: return "token";
-            case HashDomain::Otp: return "otp";
-            case HashDomain::RecoveryCode: return "recovery_code";
+            case HashDomain::ApiKey:
+                return "api_key";
+            case HashDomain::ClientSecret:
+                return "client_secret";
+            case HashDomain::WebhookSignature:
+                return "webhook_signature";
+            case HashDomain::Idempotency:
+                return "idempotency";
+            case HashDomain::Token:
+                return "token";
+            case HashDomain::Otp:
+                return "otp";
+            case HashDomain::RecoveryCode:
+                return "recovery_code";
             case HashDomain::Generic:
-            default: return "generic";
+            default:
+                return "generic";
         }
     }
 
     /** @brief Absorb bytes plus a length frame so field boundaries cannot alias. */
     void absorb(std::uint64_t& state, std::string_view bytes, std::uint64_t prime) const
     {
-        for (const char c : bytes) {
+        for (const char c: bytes) {
             state ^= static_cast<std::uint64_t>(static_cast<unsigned char>(c));
             state *= prime;
         }
-        state ^= static_cast<std::uint64_t>(bytes.size()) + 0x9E3779B97F4A7C15ULL;
+        state ^= static_cast<std::uint64_t>(bytes.size()) + 0x9E'37'79'B9'7F'4A'7C'15ULL;
         state *= prime;
     }
 
-    [[nodiscard]] bool equal_digest(
-        std::string_view actual, std::string_view expected) const
+    [[nodiscard]] bool equal_digest(std::string_view actual, std::string_view expected) const
     {
         if (actual.size() != expected.size()) {
             return false;
@@ -155,8 +164,8 @@ private:
         unsigned diff{0};
         for (std::size_t i{0}; i < actual.size(); ++i) {
             diff |= static_cast<unsigned>(
-                static_cast<unsigned char>(actual[i]) ^
-                static_cast<unsigned char>(expected[i]));
+                static_cast<unsigned char>(actual[i]) ^ static_cast<unsigned char>(expected[i])
+            );
         }
         return diff == 0;
     }

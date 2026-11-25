@@ -119,13 +119,18 @@ void reset_log()
 
 std::string joined_log()
 {
-    return std::ranges::fold_left(g_log, std::string{}, [](std::string acc, const std::string& entry) {
-        if (!acc.empty()) {
-            acc += '|';
+    return std::ranges::fold_left(
+        g_log,
+        std::string{},
+        [](std::string acc, const std::string& entry)
+        {
+            if (!acc.empty()) {
+                acc += '|';
+            }
+            acc += entry;
+            return acc;
         }
-        acc += entry;
-        return acc;
-    });
+    );
 }
 
 } // namespace
@@ -149,7 +154,12 @@ int main()
                               .hook("thingCreated")
                               .build();
         bool hook_fired{false};
-        definition.hooks[0].set_handler([&](const WorkflowValue&, WorkflowContext&) { hook_fired = true; });
+        definition.hooks[0].set_handler(
+            [&](const WorkflowValue&, WorkflowContext&)
+            {
+                hook_fired = true;
+            }
+        );
 
         Workflow workflow;
         workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
@@ -188,10 +198,7 @@ int main()
     // 3. Skip signal keeps the workflow successful.
     {
         reset_log();
-        const auto definition = WorkflowBuilder{}
-                                    .name("skip-flow")
-                                    .step<SkipStep>()
-                                    .build();
+        const auto definition = WorkflowBuilder{}.name("skip-flow").step<SkipStep>().build();
         Workflow workflow;
         workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
         workflow.register_workflow(definition);

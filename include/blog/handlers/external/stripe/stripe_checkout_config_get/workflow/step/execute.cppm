@@ -25,40 +25,65 @@ import :outbox_shim;
 export namespace blog::handlers::stripe::support {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 using Rows = std::map<std::string, std::string>;
 
 /** @brief Ghost `StripeCheckoutDesign` snake_case fields (models.ts:23-30). */
-inline constexpr std::array<std::string_view, 4> kDesignFields{
-    "button_color", "background_color", "border_style", "font_family"};
+inline constexpr std::array<std::string_view, 4>
+    kDesignFields{"button_color", "background_color", "border_style", "font_family"};
 
 [[nodiscard]] inline std::string json_quote(std::string_view text)
 {
     std::string out = "\"";
-    for (const unsigned char c : text) {
+    for (const unsigned char c: text) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
             default:
                 if (c < 0x20) {
                     out += std::format("\\u{:04x}", static_cast<unsigned>(c));
@@ -99,30 +124,42 @@ inline constexpr std::array<std::string_view, 4> kDesignFields{
     using core::auth::ghost::ApiContext;
     core::auth::ghost::Principal p;
     const auto context = req.find_header("x-blog-context");
-    if (context == "CONTENT_API") p.context = ApiContext::CONTENT_API;
-    else if (context == "MEMBERS_APP") p.context = ApiContext::MEMBERS_APP;
-    else if (context == "INTERNAL") p.context = ApiContext::INTERNAL;
-    else if (context == "SYSTEM") p.context = ApiContext::SYSTEM;
-    else if (context == "ADMIN_API") p.context = ApiContext::ADMIN_API;
-    else p.context = req.get_authorization().empty() ? ApiContext::ANONYMOUS
-                                                      : ApiContext::ADMIN_API;
+    if (context == "CONTENT_API") {
+        p.context = ApiContext::CONTENT_API;
+    } else if (context == "MEMBERS_APP") {
+        p.context = ApiContext::MEMBERS_APP;
+    } else if (context == "INTERNAL") {
+        p.context = ApiContext::INTERNAL;
+    } else if (context == "SYSTEM") {
+        p.context = ApiContext::SYSTEM;
+    } else if (context == "ADMIN_API") {
+        p.context = ApiContext::ADMIN_API;
+    } else {
+        p.context = req.get_authorization().empty() ? ApiContext::ANONYMOUS : ApiContext::ADMIN_API;
+    }
 
     p.role = std::string{req.find_header("x-blog-role")};
-    if (p.role.empty() && p.context == ApiContext::ADMIN_API) p.role = "Administrator";
-    for (auto part : std::string_view{req.find_header("x-blog-permissions")} |
-                         std::views::split(',')) {
+    if (p.role.empty() && p.context == ApiContext::ADMIN_API) {
+        p.role = "Administrator";
+    }
+    for (auto part:
+         std::string_view{req.find_header("x-blog-permissions")} | std::views::split(',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
-        if (!scope.empty()) p.permissions.insert(scope);
+        if (!scope.empty()) {
+            p.permissions.insert(scope);
+        }
     }
     const auto staff = req.find_header("x-blog-staff");
     p.staff = staff == "true" || staff == "1";
-    if (!req.get_authorization().empty()) p.id = "bearer";
+    if (!req.get_authorization().empty()) {
+        p.id = "bearer";
+    }
     return p;
 }
 
 /** @brief Ghost `permissions:{docName:'products', method:read|edit}` gate. */
-[[nodiscard]] inline core::auth::ghost::AuthResult authorize(
-    interfaces::io::IRequest& req, std::string_view method)
+[[nodiscard]] inline core::auth::ghost::AuthResult
+authorize(interfaces::io::IRequest& req, std::string_view method)
 {
     core::auth::ghost::GhostAuthorizer authorizer;
     return authorizer.authorize(principal_for(req), true, "products", method);
@@ -134,7 +171,9 @@ inline constexpr std::array<std::string_view, 4> kDesignFields{
 [[nodiscard]] inline bool stripe_connected()
 {
     const char* value = std::getenv("STRIPE_CONNECTED");
-    if (value == nullptr) return true;
+    if (value == nullptr) {
+        return true;
+    }
     const std::string_view v{value};
     return !(v == "0" || v == "false" || v == "no");
 }
@@ -151,26 +190,42 @@ inline constexpr std::array<std::string_view, 4> kDesignFields{
  *        registers the real adapter can consume it unchanged once the
  *        core_adapters dependency is wired.
  */
-inline void outbound(std::string_view operation, std::string_view method,
-                     std::string_view url, std::string_view request_body,
-                     std::string_view response_body, int status)
+inline void outbound(
+    std::string_view operation,
+    std::string_view method,
+    std::string_view url,
+    std::string_view request_body,
+    std::string_view response_body,
+    int status
+)
 {
     const bool ok = status >= 200 && status < 300;
     const auto payload = std::format(
         R"({{"adapter":"stripe","operation":{},"method":{},"url":{},"status":{},"ok":{},"error":{},"request_body":{},"response_body":{}}})",
-        json_quote(operation), json_quote(method), json_quote(url), status,
+        json_quote(operation),
+        json_quote(method),
+        json_quote(url),
+        status,
         ok ? "true" : "false",
         ok ? std::string{"\"\""} : json_quote("Stripe upstream error"),
-        json_quote(request_body), json_quote(response_body));
+        json_quote(request_body),
+        json_quote(response_body)
+    );
     blog::handlers::outbox::global_outbox().emit(
-        blog::handlers::outbox::Event{"adapter.outbound", payload, std::string{operation}});
+        blog::handlers::outbox::Event{"adapter.outbound", payload, std::string{operation}}
+    );
 }
 
-inline void domain_event(std::string_view type, std::string_view payload,
-                         std::string_view aggregate_id)
+inline void
+domain_event(std::string_view type, std::string_view payload, std::string_view aggregate_id)
 {
-    blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-        std::string{type}, std::string{payload}, std::string{aggregate_id}});
+    blog::handlers::outbox::global_outbox().emit(
+        blog::handlers::outbox::Event{
+            std::string{type},
+            std::string{payload},
+            std::string{aggregate_id}
+        }
+    );
 }
 
 /** @brief Ghost's logging.warn shape for an unreadable Stripe design. */
@@ -183,14 +238,18 @@ inline void warn(std::string_view event_name)
  *         ({customize:false} or {customize:true, <four snake fields>}). */
 [[nodiscard]] inline std::string snake_design_response(std::string_view raw)
 {
-    if (raw.empty() || raw == "null" || raw == "{}") return R"({"customize":false})";
+    if (raw.empty() || raw == "null" || raw == "{}") {
+        return R"({"customize":false})";
+    }
     const auto doc = core_serde::JsonCodec{}.decode<serde::Value>(raw);
     const auto* object = doc ? std::get_if<serde::Value::Object>(&doc->get()) : nullptr;
-    if (object == nullptr) return R"({"customize":false})";
+    if (object == nullptr) {
+        return R"({"customize":false})";
+    }
 
     std::string out = "{\"customize\":true";
-    for (const auto field : kDesignFields) {
-        for (const auto& [key, value] : *object) {
+    for (const auto field: kDesignFields) {
+        for (const auto& [key, value]: *object) {
             if (key == field) {
                 out += "," + json_quote(field) + ":" + core_serde::JsonCodec{}.encode(value);
                 break;
@@ -205,25 +264,44 @@ inline void warn(std::string_view event_name)
 [[nodiscard]] inline bool valid_design_input(const serde::Value& value, std::string& encoded)
 {
     const auto* object = std::get_if<serde::Value::Object>(&value.get());
-    if (object == nullptr) return false;
-    const serde::Value* customize = nullptr;
-    for (const auto& [key, field] : *object) {
-        if (key == "customize") { customize = &field; break; }
+    if (object == nullptr) {
+        return false;
     }
-    if (customize == nullptr) return false;
+    const serde::Value* customize = nullptr;
+    for (const auto& [key, field]: *object) {
+        if (key == "customize") {
+            customize = &field;
+            break;
+        }
+    }
+    if (customize == nullptr) {
+        return false;
+    }
     const auto flag = core_serde::JsonCodec{}.encode(*customize);
-    if (flag == "false") { encoded = R"({"customize":false})"; return true; }
-    if (flag != "true") return false;
+    if (flag == "false") {
+        encoded = R"({"customize":false})";
+        return true;
+    }
+    if (flag != "true") {
+        return false;
+    }
 
     encoded = "{\"customize\":true";
-    for (const auto field : kDesignFields) {
+    for (const auto field: kDesignFields) {
         const serde::Value* found = nullptr;
-        for (const auto& [key, value] : *object) {
-            if (key == field) { found = &value; break; }
+        for (const auto& [key, value]: *object) {
+            if (key == field) {
+                found = &value;
+                break;
+            }
         }
-        if (found == nullptr) return false;
+        if (found == nullptr) {
+            return false;
+        }
         const auto text = core_serde::JsonCodec{}.encode(*found);
-        if (text.size() < 2 || text.front() != '"') return false;
+        if (text.size() < 2 || text.front() != '"') {
+            return false;
+        }
         encoded += "," + json_quote(field) + ":" + text;
     }
     encoded += "}";
@@ -243,7 +321,9 @@ inline void warn(std::string_view event_name)
         filtered = rows;
     }
     const auto records = blog::api::parse_array(filtered);
-    if (records.empty()) return R"({"customize":false})";
+    if (records.empty()) {
+        return R"({"customize":false})";
+    }
 
     const auto design = field_text(records.front(), "design");
     const auto result = snake_design_response(design);
@@ -278,14 +358,15 @@ inline void warn(std::string_view event_name)
 
 export namespace blog::handlers::stripe::stripe_checkout_config_get::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
     using Input = interfaces::io::IRequest&;
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"stripe_stripe_checkout_config_get_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace blog::handlers::stripe::support;
         auto& ctx = *s_ctx;
@@ -293,17 +374,20 @@ public:
         // Ghost: permissions:{docName:'products',method:'read'} on config.read.
         const auto authorized = authorize(in, "read");
         if (!authorized.allowed) {
-            return core::workflow::StepResponse<Output>{{{"status", std::to_string(authorized.status)},
-                                                          {"body", authorized.error_json}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", std::to_string(authorized.status)}, {"body", authorized.error_json}}
+            };
         }
 
         // Ghost config.read is uncached and makes no Stripe call; the single
         // `slug='default'` row is the authoritative source.
-        return core::workflow::StepResponse<Output>{{{"status", "200"},
-                                                      {"body", config_response(ctx)}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "200"}, {"body", config_response(ctx)}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
     static blog::api::StripeHandler* s_stripe;
 };

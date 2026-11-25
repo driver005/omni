@@ -25,13 +25,17 @@ public:
             .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/installations/:id/sessions"}
-                    .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.app_sessions_sessions_create().handle(req, res, std::move(send));
-    })
+                    .post(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.app_sessions_sessions_create()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost app session start POST")
             );
     }

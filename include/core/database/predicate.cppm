@@ -31,7 +31,8 @@ public:
     [[nodiscard]] std::string operator()(const DbValue& value) const
     {
         return std::visit(
-            [this](const auto& v) -> std::string {
+            [this](const auto& v) -> std::string
+            {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::same_as<T, Null>) {
                     return "NULL";

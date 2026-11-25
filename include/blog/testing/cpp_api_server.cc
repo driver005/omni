@@ -1,15 +1,14 @@
 // Minimal HTTP/1.1 front end for the C++ Ghost API. Used by the e2e-api suite
 // when it runs against this implementation instead of the Node Ghost server.
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <netinet/in.h>
 #include <string>
 #include <string_view>
+#include <sys/socket.h>
+#include <unistd.h>
 #include <vector>
 
 import std;
@@ -24,9 +23,14 @@ namespace {
 
 std::string lower(std::string value)
 {
-    std::ranges::transform(value, value.begin(), [](char c) {
-        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    });
+    std::ranges::transform(
+        value,
+        value.begin(),
+        [](char c)
+        {
+            return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+    );
     return value;
 }
 
@@ -41,7 +45,7 @@ struct Request
 std::optional<Request> read_request(int fd)
 {
     std::string raw;
-    char buffer[8192];
+    char buffer[8'192];
     while (raw.find("\r\n\r\n") == std::string::npos) {
         const ssize_t got = recv(fd, buffer, sizeof(buffer), 0);
         if (got <= 0) {
@@ -55,32 +59,40 @@ std::optional<Request> read_request(int fd)
     std::size_t pos = 0;
     for (;;) {
         const auto line_end = head.find("\r\n", pos);
-        const auto line = head.substr(pos, line_end == std::string_view::npos
-                                               ? std::string_view::npos
-                                               : line_end - pos);
-        if (line.empty()) break;
+        const auto line = head.substr(
+            pos,
+            line_end == std::string_view::npos ? std::string_view::npos : line_end - pos
+        );
+        if (line.empty()) {
+            break;
+        }
         if (request.method.empty()) {
             const auto space = line.find(' ');
             if (space != std::string_view::npos) {
                 request.method = std::string{line.substr(0, space)};
                 const auto second = line.find(' ', space + 1);
                 request.path = std::string{line.substr(
-                    space + 1, second == std::string_view::npos ? std::string_view::npos
-                                                                : second - space - 1)};
+                    space + 1,
+                    second == std::string_view::npos ? std::string_view::npos : second - space - 1
+                )};
             }
         } else {
             const auto colon = line.find(':');
             if (colon != std::string_view::npos) {
                 const auto name = lower(std::string{line.substr(0, colon)});
                 const auto value = std::string{line.substr(colon + 1)};
-                if (name == "authorization") request.authorization = value;
+                if (name == "authorization") {
+                    request.authorization = value;
+                }
             }
         }
-        if (line_end == std::string_view::npos) break;
+        if (line_end == std::string_view::npos) {
+            break;
+        }
         pos = line_end + 2;
     }
     std::size_t content_length = request.body.size();
-    for (const auto& line : head | std::views::split('\n')) {
+    for (const auto& line: head | std::views::split('\n')) {
         const std::string text{std::ranges::begin(line), std::ranges::end(line)};
         const auto colon = text.find(':');
         if (colon != std::string::npos && lower(text.substr(0, colon)) == "content-length") {
@@ -93,7 +105,9 @@ std::optional<Request> read_request(int fd)
     std::size_t available = raw.size() - header_end - 4;
     while (available < content_length) {
         const ssize_t got = recv(fd, buffer, sizeof(buffer), 0);
-        if (got <= 0) break;
+        if (got <= 0) {
+            break;
+        }
         raw.append(buffer, static_cast<std::size_t>(got));
         available += static_cast<std::size_t>(got);
     }
@@ -106,13 +120,16 @@ void write_response(int fd, int status, std::string_view body)
     const std::string head = std::format(
         "HTTP/1.1 {} OK\r\nContent-Type: application/json; charset=utf-8\r\n"
         "Content-Length: {}\r\nConnection: close\r\n\r\n",
-        status, body.size()
+        status,
+        body.size()
     );
     std::string out = head + std::string{body};
     std::size_t sent = 0;
     while (sent < out.size()) {
         const ssize_t wrote = send(fd, out.data() + sent, out.size() - sent, 0);
-        if (wrote <= 0) break;
+        if (wrote <= 0) {
+            break;
+        }
         sent += static_cast<std::size_t>(wrote);
     }
 }
@@ -121,7 +138,7 @@ void write_response(int fd, int status, std::string_view body)
 
 int main(int argc, char** argv)
 {
-    const int port = argc > 1 ? std::atoi(argv[1]) : 2369;
+    const int port = argc > 1 ? std::atoi(argv[1]) : 2'369;
     blog::api::BlogHandlers handlers;
     core::router::RouterContext<> context;
     blog::api::ApiRoutes{}.install(context, handlers);
@@ -144,7 +161,9 @@ int main(int argc, char** argv)
 
     for (;;) {
         const int client = accept(listener, nullptr, nullptr);
-        if (client < 0) continue;
+        if (client < 0) {
+            continue;
+        }
         const auto request = read_request(client);
         if (!request) {
             close(client);
@@ -161,30 +180,44 @@ int main(int argc, char** argv)
         }
         if (!request->body.empty()) {
             std::vector<std::byte> bytes;
-            for (const char chr : request->body) bytes.push_back(static_cast<std::byte>(chr));
-            req.get_body().push_back(new utils::buffering::BufferNode{std::move(bytes)}, 0,
-                                     request->body.size());
+            for (const char chr: request->body) {
+                bytes.push_back(static_cast<std::byte>(chr));
+            }
+            req.get_body().push_back(
+                new utils::buffering::BufferNode{std::move(bytes)},
+                0,
+                request->body.size()
+            );
         }
         server.executor().enqueue(req, res, [] {});
         server.executor().on_execute()();
 
         std::string body;
-        for (const std::byte byte : res.get_body()) body += static_cast<char>(byte);
+        for (const std::byte byte: res.get_body()) {
+            body += static_cast<char>(byte);
+        }
         int status = 200;
-        for (const auto& entry : res.get_headers()) {
-            std::visit([&status](const auto& field) {
-                if (!field) return;
-                const auto& name = field->get_name();
-                if constexpr (std::is_same_v<std::decay_t<decltype(name)>,
-                                             interfaces::io::types::Token>) {
-                    if (name == interfaces::io::types::Token::STATUS) {
-                        try {
-                            status = std::stoi(field->get_value());
-                        } catch (...) {
+        for (const auto& entry: res.get_headers()) {
+            std::visit(
+                [&status](const auto& field)
+                {
+                    if (!field) {
+                        return;
+                    }
+                    const auto& name = field->get_name();
+                    if constexpr (
+                        std::is_same_v<std::decay_t<decltype(name)>, interfaces::io::types::Token>
+                    ) {
+                        if (name == interfaces::io::types::Token::STATUS) {
+                            try {
+                                status = std::stoi(field->get_value());
+                            } catch (...) {
+                            }
                         }
                     }
-                }
-            }, entry);
+                },
+                entry
+            );
         }
         write_response(client, status, body);
         close(client);

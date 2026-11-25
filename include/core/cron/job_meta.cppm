@@ -27,9 +27,7 @@ public:
 };
 
 template<typename E>
-concept ReflectedCronJob = requires {
-    cron_reflect_meta(static_cast<E*>(nullptr));
-} && requires {
+concept ReflectedCronJob = requires { cron_reflect_meta(static_cast<E*>(nullptr)); } && requires {
     { CronJobMeta<E>::name } -> std::convertible_to<std::string_view>;
     { CronJobMeta<E>::expression } -> std::convertible_to<std::string_view>;
     typename CronJobMeta<E>::entity_type;
@@ -41,16 +39,14 @@ concept ReflectedCronJob = requires {
  * @brief Declares a class as a reflected cron job with a compile-time name and
  * expression. The metadata is validated at compile time by the static_assert.
  */
-#define CORE_CRON_JOB(Type, Name, Expression)                                    \
-    consteval auto cron_reflect_meta(Type*) {                                    \
-        return ::std::make_tuple(                                                \
-            ::std::string_view{Name},                                            \
-            ::std::string_view{Expression}                                       \
-        );                                                                       \
-    }                                                                            \
-    static_assert(                                                               \
-        ::core::cron::reflect::ReflectedCronJob<Type>,                          \
-        "CORE_CRON_JOB: " #Type " failed entity validation"                     \
+#define CORE_CRON_JOB(Type, Name, Expression)                                                      \
+    consteval auto cron_reflect_meta(Type*)                                                        \
+    {                                                                                              \
+        return ::std::make_tuple(::std::string_view{Name}, ::std::string_view{Expression});        \
+    }                                                                                              \
+    static_assert(                                                                                 \
+        ::core::cron::reflect::ReflectedCronJob<Type>,                                             \
+        "CORE_CRON_JOB: " #Type " failed entity validation"                                        \
     )
 
 #ifdef CONGELADO_TEST
@@ -58,8 +54,9 @@ namespace core::cron::reflect::tests {
 
 struct NightlyJob
 {
-     void run() {}
+    void run() {}
 };
+
 CORE_CRON_JOB(NightlyJob, "nightly-backup", "0 2 * * *");
 
 using namespace boost::ut;

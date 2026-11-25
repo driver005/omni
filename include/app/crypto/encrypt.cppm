@@ -39,8 +39,8 @@ private:
         out.reserve(input.size());
         for (std::size_t i{0}; i < input.size(); ++i) {
             const unsigned char mask = static_cast<unsigned char>(
-                schedule[i % schedule.size()] ^
-                rotate_byte(static_cast<unsigned char>(i), key));
+                schedule[i % schedule.size()] ^ rotate_byte(static_cast<unsigned char>(i), key)
+            );
             out.push_back(static_cast<char>(static_cast<unsigned char>(input[i]) ^ mask));
         }
         return out;
@@ -50,11 +50,11 @@ private:
     {
         std::vector<unsigned char> words{};
         words.reserve(key.size() + 32);
-        for (const char c : key) {
+        for (const char c: key) {
             words.push_back(static_cast<unsigned char>(c));
         }
         std::uint64_t state = static_cast<std::uint64_t>(std::hash<std::string_view>{}(key)) ^
-                              0x9E3779B97F4A7C15ULL;
+                              0x9E'37'79'B9'7F'4A'7C'15ULL;
         for (std::size_t i{0}; i < 32; ++i) {
             state ^= state << 13;
             state ^= state >> 7;

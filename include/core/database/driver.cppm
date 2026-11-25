@@ -78,11 +78,7 @@ public:
         return m_backend->update(table, values, key, key_value);
     }
 
-    std::uint64_t remove(
-        std::string_view table,
-        std::string_view key,
-        const DbValue& key_value
-    )
+    std::uint64_t remove(std::string_view table, std::string_view key, const DbValue& key_value)
     {
         return m_backend->remove(table, key, key_value);
     }
@@ -121,7 +117,14 @@ suite<"core_db_driver"> core_db_driver_suite = []
 
     "postgres engine is rejected until a plugin registers"_test = []
     {
-        expect(throws<std::runtime_error>([] { Driver driver{StorageEngine::POSTGRES}; }));
+        expect(
+            throws<std::runtime_error>(
+                []
+                {
+                    Driver driver{StorageEngine::POSTGRES};
+                }
+            )
+        );
     };
 };
 

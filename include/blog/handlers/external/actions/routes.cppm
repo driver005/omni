@@ -20,13 +20,16 @@ public:
             // Ghost routes.js:544 registers only mw.authAdminApi; there is no
             // body/content-type requirement on this GET (no 415 gate).
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.actions_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.actions_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost actions GET");
     }
 };

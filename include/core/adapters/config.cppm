@@ -15,30 +15,31 @@ struct Config
 
 namespace detail {
 
-[[nodiscard]] inline std::string upper(std::string_view text)
-{
-    std::string result;
-    result.reserve(text.size());
-    for (const char character: text) {
-        result.push_back(
-            static_cast<char>(std::toupper(static_cast<unsigned char>(character)))
-        );
-    }
-    return result;
-}
-
-/// @brief First non-empty env var from the candidate list, or an empty string.
-[[nodiscard]] inline std::string env_first(std::initializer_list<std::string_view> names)
-{
-    for (const auto& name: names) {
-        // std::getenv is env access, not locale/concurrency-sensitive in this boot-time path.
-        const char* value = std::getenv(std::string{name}.c_str()); // NOLINT(concurrency-mt-unsafe)
-        if (value != nullptr && *value != '\0') {
-            return std::string{value};
+    [[nodiscard]] inline std::string upper(std::string_view text)
+    {
+        std::string result;
+        result.reserve(text.size());
+        for (const char character: text) {
+            result.push_back(
+                static_cast<char>(std::toupper(static_cast<unsigned char>(character)))
+            );
         }
+        return result;
     }
-    return {};
-}
+
+    /// @brief First non-empty env var from the candidate list, or an empty string.
+    [[nodiscard]] inline std::string env_first(std::initializer_list<std::string_view> names)
+    {
+        for (const auto& name: names) {
+            // std::getenv is env access, not locale/concurrency-sensitive in this boot-time path.
+            const char* value =
+                std::getenv(std::string{name}.c_str()); // NOLINT(concurrency-mt-unsafe)
+            if (value != nullptr && *value != '\0') {
+                return std::string{value};
+            }
+        }
+        return {};
+    }
 
 } // namespace detail
 
@@ -83,9 +84,24 @@ namespace detail {
 }
 
 /// @brief Named helpers — thin wrappers over from_env(), no extra env semantics.
-[[nodiscard]] inline Config stripe_from_env() { return from_env("STRIPE"); }
-[[nodiscard]] inline Config tinybird_from_env() { return from_env("TINYBIRD"); }
-[[nodiscard]] inline Config smtp_from_env() { return from_env("SMTP"); }
-[[nodiscard]] inline Config webmention_from_env() { return from_env("WEBMENTION"); }
+[[nodiscard]] inline Config stripe_from_env()
+{
+    return from_env("STRIPE");
+}
+
+[[nodiscard]] inline Config tinybird_from_env()
+{
+    return from_env("TINYBIRD");
+}
+
+[[nodiscard]] inline Config smtp_from_env()
+{
+    return from_env("SMTP");
+}
+
+[[nodiscard]] inline Config webmention_from_env()
+{
+    return from_env("WEBMENTION");
+}
 
 } // namespace core::adapters

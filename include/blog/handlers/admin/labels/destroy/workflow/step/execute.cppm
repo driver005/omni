@@ -16,26 +16,27 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"labels_destroy_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         auto& ctx = *s_ctx;
 
         constexpr std::array<std::string_view, 1> kOptions{"id"};
-        (void)core::query::parse(in.get_path(), kOptions);  // options:['id'], require:true
+        (void)core::query::parse(in.get_path(), kOptions); // options:['id'], require:true
 
         const auto id = last_segment(in.get_path());
         if (id.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "422"},
-                {"body", validation("Validation error, cannot destroy label.",
-                                    "id is required", "id")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "422"},
+                 {"body",
+                  validation("Validation error, cannot destroy label.", "id is required", "id")}}
+            };
         }
         const std::string numeric = numeric_id(id);
         const auto existing = ctx.store().resources().get("labels", numeric);
         if (existing.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "404"},
-                {"body", not_found()}}};
+            return core::workflow::StepResponse<Output>{{{"status", "404"}, {"body", not_found()}}};
         }
 
         // Ghost Label.destroy uses a transaction with a linked-member row lock
@@ -46,8 +47,7 @@ public:
         outbox.begin_transaction();
         if (!ctx.store().resources().destroy("labels", numeric)) {
             outbox.rollback();
-            return core::workflow::StepResponse<Output>{{{"status", "404"},
-                {"body", not_found()}}};
+            return core::workflow::StepResponse<Output>{{{"status", "404"}, {"body", not_found()}}};
         }
         outbox.emit(blog::handlers::outbox::Event{"label.deleted", existing, wire_id(numeric)});
         outbox.commit();

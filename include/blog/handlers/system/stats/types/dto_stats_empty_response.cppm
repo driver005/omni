@@ -13,30 +13,52 @@ import blog_handlers_middleware;
 export namespace blog::dto::stats {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 /** @brief Ghost API DTO: StatsEmptyResponse. */
 class StatsEmptyResponse
 {
 public:
-    void set_stats(std::vector<rfl::Generic> value) { stats = std::move(value); }
-    [[nodiscard]] const std::vector<rfl::Generic>& get_stats() const noexcept { return stats; }
+    void set_stats(std::vector<rfl::Generic> value)
+    {
+        stats = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<rfl::Generic>& get_stats() const noexcept
+    {
+        return stats;
+    }
 
     std::vector<rfl::Generic> stats{};
 };
@@ -64,20 +86,29 @@ inline constexpr std::string_view kDocName{"stats"};
 [[nodiscard]] inline std::string unquote(std::string_view value)
 {
     auto text = value;
-    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) text.remove_prefix(1);
-    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) text.remove_suffix(1);
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+        text.remove_prefix(1);
+    }
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
+        text.remove_suffix(1);
+    }
     if (text.size() >= 2 && text.front() == '"' && text.back() == '"') {
         std::string out;
         for (std::size_t i = 1; i + 1 < text.size(); ++i) {
-            if (text[i] == '\\' && i + 2 < text.size()) { out.push_back(text[i + 1]); ++i; }
-            else out.push_back(text[i]);
+            if (text[i] == '\\' && i + 2 < text.size()) {
+                out.push_back(text[i + 1]);
+                ++i;
+            } else {
+                out.push_back(text[i]);
+            }
         }
         return out;
     }
     return std::string{text};
 }
 
-[[nodiscard]] inline std::string plain_field(const blog::api::RecordDto& record, std::string_view key)
+[[nodiscard]] inline std::string
+plain_field(const blog::api::RecordDto& record, std::string_view key)
 {
     const auto it = record.find(std::string{key});
     return it == record.end() ? std::string{} : unquote(it->second);
@@ -94,21 +125,31 @@ inline constexpr std::string_view kDocName{"stats"};
 [[nodiscard]] inline std::string wrap(std::string_view rows, std::string_view meta = {})
 {
     auto text = rows;
-    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) text.remove_prefix(1);
-    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) text.remove_suffix(1);
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+        text.remove_prefix(1);
+    }
+    while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
+        text.remove_suffix(1);
+    }
     // clean("") yields "{}" (no members); an empty store must stay an empty array.
-    if (text.empty()) return dto::stats::local_mapping::wrap(kDocName, "[]", meta);
+    if (text.empty()) {
+        return dto::stats::local_mapping::wrap(kDocName, "[]", meta);
+    }
     return dto::stats::local_mapping::wrap(kDocName, clean(text), meta);
 }
 
-[[nodiscard]] inline std::string error(std::string_view message, std::string_view type,
-                                       std::string_view property = {}, std::string_view context = {})
+[[nodiscard]] inline std::string error(
+    std::string_view message,
+    std::string_view type,
+    std::string_view property = {},
+    std::string_view context = {}
+)
 {
     return blog::api::ApiError{}.validation(message, context, property, type);
 }
 
-[[nodiscard]] inline std::string invalid(std::string_view message,
-                                         std::string_view property = {}, std::string_view context = {})
+[[nodiscard]] inline std::string
+invalid(std::string_view message, std::string_view property = {}, std::string_view context = {})
 {
     return error(message, "ValidationError", property, context);
 }
@@ -123,7 +164,8 @@ inline constexpr std::string_view kDocName{"stats"};
     return blog::api::ApiError{}.json(message, "", "");
 }
 
-[[nodiscard]] inline std::map<std::string, std::string> result(std::string_view status, std::string body)
+[[nodiscard]] inline std::map<std::string, std::string>
+result(std::string_view status, std::string body)
 {
     return {{"status", std::string{status}}, {"body", std::move(body)}};
 }
@@ -132,7 +174,9 @@ inline constexpr std::string_view kDocName{"stats"};
 {
     std::string out;
     for (std::size_t i = 0; i < values.size(); ++i) {
-        if (i != 0u) out += sep;
+        if (i != 0u) {
+            out += sep;
+        }
         out += values[i];
     }
     return out;
@@ -142,75 +186,127 @@ inline constexpr std::string_view kDocName{"stats"};
 [[nodiscard]] inline std::string path_id(std::string_view path)
 {
     const auto at = path.find("/posts/");
-    if (at == std::string_view::npos) return {};
+    if (at == std::string_view::npos) {
+        return {};
+    }
     const auto start = at + 7u;
     auto end = path.size();
-    if (const auto slash = path.find('/', start); slash != std::string_view::npos) end = slash;
-    if (const auto query = path.find('?', start); query != std::string_view::npos && query < end) end = query;
+    if (const auto slash = path.find('/', start); slash != std::string_view::npos) {
+        end = slash;
+    }
+    if (const auto query = path.find('?', start); query != std::string_view::npos && query < end) {
+        end = query;
+    }
     return std::string{path.substr(start, end - start)};
 }
 
 /** @brief Reads `data.<key>` (framework frame.data) or a top-level `<key>` array. */
-[[nodiscard]] inline std::optional<std::vector<std::string>> body_array(std::string_view body,
-                                                                        std::string_view key)
+[[nodiscard]] inline std::optional<std::vector<std::string>>
+body_array(std::string_view body, std::string_view key)
 {
     const auto decoded = core_serde::JsonCodec{}.decode<serde::Value>(body);
-    if (!decoded) return std::nullopt;
+    if (!decoded) {
+        return std::nullopt;
+    }
     const auto* root = std::get_if<serde::Value::Object>(&decoded->get());
-    if (root == nullptr) return std::nullopt;
+    if (root == nullptr) {
+        return std::nullopt;
+    }
 
     const serde::Value* array_value = nullptr;
-    for (const auto& [name, value] : *root) {
-        if (name == key) { array_value = &value; break; }
+    for (const auto& [name, value]: *root) {
+        if (name == key) {
+            array_value = &value;
+            break;
+        }
         if (name == "data") {
             const auto* data = std::get_if<serde::Value::Object>(&value.get());
-            if (data == nullptr) continue;
-            for (const auto& [data_name, data_value] : *data) {
-                if (data_name == key) { array_value = &data_value; break; }
+            if (data == nullptr) {
+                continue;
+            }
+            for (const auto& [data_name, data_value]: *data) {
+                if (data_name == key) {
+                    array_value = &data_value;
+                    break;
+                }
             }
         }
     }
-    if (array_value == nullptr) return std::nullopt;
+    if (array_value == nullptr) {
+        return std::nullopt;
+    }
     const auto* array = std::get_if<serde::Value::Array>(&array_value->get());
-    if (array == nullptr) return std::nullopt;
+    if (array == nullptr) {
+        return std::nullopt;
+    }
 
     std::vector<std::string> out;
     out.reserve(array->size());
-    for (const auto& item : *array) {
-        if (const auto* text = std::get_if<std::string>(&item.get())) out.push_back(*text);
-        else out.push_back(core_serde::JsonCodec{}.encode(item));
+    for (const auto& item: *array) {
+        if (const auto* text = std::get_if<std::string>(&item.get())) {
+            out.push_back(*text);
+        } else {
+            out.push_back(core_serde::JsonCodec{}.encode(item));
+        }
     }
     return out;
 }
 
 /** @brief Only Ghost options that map to service filters go to the store stand-in. */
-[[nodiscard]] inline std::map<std::string, std::string> store_params(const core::query::ParsedQuery& q)
+[[nodiscard]] inline std::map<std::string, std::string>
+store_params(const core::query::ParsedQuery& q)
 {
     std::map<std::string, std::string> params;
-    for (const auto& [key, value] : q.options) {
-        if (key == "fail_on_error" || key == "timezone" || key == "order" ||
-            key == "limit" || key == "page" || key == "after_id" || key == "after_date") continue;
+    for (const auto& [key, value]: q.options) {
+        if (key == "fail_on_error" || key == "timezone" || key == "order" || key == "limit" ||
+            key == "page" || key == "after_id" || key == "after_date") {
+            continue;
+        }
         params["filter[" + key + "]"] = value;
     }
     return params;
 }
 
-[[nodiscard]] inline bool order_valid(std::string_view order, std::span<const std::string_view> fields)
+[[nodiscard]] inline bool
+order_valid(std::string_view order, std::span<const std::string_view> fields)
 {
-    if (order.empty()) return true;
-    if (!core::query::valid_option("order", order)) return false;
-    for (auto piece : std::views::split(order, ',')) {
+    if (order.empty()) {
+        return true;
+    }
+    if (!core::query::valid_option("order", order)) {
+        return false;
+    }
+    for (auto piece: std::views::split(order, ',')) {
         const std::string text{std::ranges::begin(piece), std::ranges::end(piece)};
         const auto field = text.substr(0, text.find_first_of(" \t"));
         bool found = false;
-        for (const auto allowed : fields) {
+        for (const auto allowed: fields) {
             std::string a{field};
             std::string b{allowed};
-            std::ranges::transform(a, a.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-            std::ranges::transform(b, b.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-            if (a == b) { found = true; break; }
+            std::ranges::transform(
+                a,
+                a.begin(),
+                [](unsigned char c)
+                {
+                    return static_cast<char>(std::tolower(c));
+                }
+            );
+            std::ranges::transform(
+                b,
+                b.begin(),
+                [](unsigned char c)
+                {
+                    return static_cast<char>(std::tolower(c));
+                }
+            );
+            if (a == b) {
+                found = true;
+                break;
+            }
         }
-        if (!found) return false;
+        if (!found) {
+            return false;
+        }
     }
     return true;
 }
@@ -222,18 +318,24 @@ inline constexpr std::string_view kDocName{"stats"};
 inline void record_tinybird(std::string_view pipe, std::string_view params)
 {
     const char* base = std::getenv("TINYBIRD_BASE_URL"); // NOLINT(concurrency-mt-unsafe)
-    if (base == nullptr || *base == '\0') return;
-    blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-        .type = "tinybird.stats.query",
-        .payload = "{\"pipe\":" + quote(pipe) + ",\"params\":" + quote(params) + "}",
-        .aggregate_id = "stats",
-    });
+    if (base == nullptr || *base == '\0') {
+        return;
+    }
+    blog::handlers::outbox::global_outbox().emit(
+        blog::handlers::outbox::Event{
+            .type = "tinybird.stats.query",
+            .payload = "{\"pipe\":" + quote(pipe) + ",\"params\":" + quote(params) + "}",
+            .aggregate_id = "stats",
+        }
+    );
 }
 
 [[nodiscard]] inline double number_field(const blog::api::RecordDto& record, std::string_view key)
 {
     const auto text = plain_field(record, key);
-    if (text.empty()) return 0.0;
+    if (text.empty()) {
+        return 0.0;
+    }
     try {
         return std::stod(text);
     } catch (...) {
@@ -245,13 +347,16 @@ inline void record_tinybird(std::string_view pipe, std::string_view params)
 [[nodiscard]] inline std::string meta_member_totals(std::string_view rows)
 {
     double paid = 0.0, free = 0.0, comped = 0.0, gift = 0.0;
-    for (const auto& row : blog::api::parse_array(rows)) {
+    for (const auto& row: blog::api::parse_array(rows)) {
         paid += number_field(row, "paid");
         free += number_field(row, "free");
         comped += number_field(row, "comped");
         gift += number_field(row, "gift");
     }
-    const auto whole = [](double value) { return std::to_string(static_cast<long long>(value)); };
+    const auto whole = [](double value)
+    {
+        return std::to_string(static_cast<long long>(value));
+    };
     return "{\"totals\":{\"paid\":" + whole(paid) + ",\"free\":" + whole(free) +
            ",\"comped\":" + whole(comped) + ",\"gift\":" + whole(gift) + "}}";
 }
@@ -260,14 +365,20 @@ inline void record_tinybird(std::string_view pipe, std::string_view params)
 [[nodiscard]] inline std::string meta_mrr_totals(std::string_view rows)
 {
     std::string out;
-    for (const auto& row : blog::api::parse_array(rows)) {
+    for (const auto& row: blog::api::parse_array(rows)) {
         const auto currency = plain_field(row, "currency");
-        if (currency.empty()) continue;
-        if (!out.empty()) out += ',';
-        out += "{\"currency\":" + quote(currency) + ",\"mrr\":" +
-               std::to_string(static_cast<long long>(number_field(row, "mrr"))) + "}";
+        if (currency.empty()) {
+            continue;
+        }
+        if (!out.empty()) {
+            out += ',';
+        }
+        out += "{\"currency\":" + quote(currency) +
+               ",\"mrr\":" + std::to_string(static_cast<long long>(number_field(row, "mrr"))) + "}";
     }
-    if (out.empty()) out = R"({"currency":"usd","mrr":0})";
+    if (out.empty()) {
+        out = R"({"currency":"usd","mrr":0})";
+    }
     return "{\"totals\":[" + out + "]}";
 }
 
@@ -277,27 +388,36 @@ inline void record_tinybird(std::string_view pipe, std::string_view params)
     std::string cadences;
     std::string tiers;
     std::string totals;
-    for (const auto& row : blog::api::parse_array(rows)) {
+    for (const auto& row: blog::api::parse_array(rows)) {
         const auto cadence = plain_field(row, "cadence");
         const auto tier = plain_field(row, "tier");
         if (!cadence.empty() && cadences.find(quote(cadence)) == std::string::npos) {
-            if (!cadences.empty()) cadences += ',';
+            if (!cadences.empty()) {
+                cadences += ',';
+            }
             cadences += quote(cadence);
         }
         if (!tier.empty() && tiers.find(quote(tier)) == std::string::npos) {
-            if (!tiers.empty()) tiers += ',';
+            if (!tiers.empty()) {
+                tiers += ',';
+            }
             tiers += quote(tier);
         }
     }
-    for (const auto& row : blog::api::parse_array(rows)) {
+    for (const auto& row: blog::api::parse_array(rows)) {
         const auto tier = plain_field(row, "tier");
         const auto cadence = plain_field(row, "cadence");
-        if (tier.empty() || cadence.empty()) continue;
-        if (!totals.empty()) totals += ',';
-        totals += "{\"tier\":" + quote(tier) + ",\"cadence\":" + quote(cadence) +
-                  ",\"count\":" + std::to_string(static_cast<long long>(number_field(row, "count"))) + "}";
+        if (tier.empty() || cadence.empty()) {
+            continue;
+        }
+        if (!totals.empty()) {
+            totals += ',';
+        }
+        totals += "{\"tier\":" + quote(tier) + ",\"cadence\":" + quote(cadence) + ",\"count\":" +
+                  std::to_string(static_cast<long long>(number_field(row, "count"))) + "}";
     }
-    return "{\"cadences\":[" + cadences + "],\"tiers\":[" + tiers + "],\"totals\":[" + totals + "]}";
+    return "{\"cadences\":[" + cadences + "],\"tiers\":[" + tiers + "],\"totals\":[" + totals +
+           "]}";
 }
 
 /** @brief newsletter-basic-stats `meta.pagination` (page / limit / next). */
@@ -318,9 +438,11 @@ struct serde::Serializable<blog::dto::stats::StatsEmptyResponse>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"stats", &blog::dto::stats::StatsEmptyResponse::get_stats, &blog::dto::stats::StatsEmptyResponse::set_stats, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "stats",
+            &blog::dto::stats::StatsEmptyResponse::get_stats,
+            &blog::dto::stats::StatsEmptyResponse::set_stats,
+            serde::FieldOptions{}>{}};
     }
 
     static constexpr std::string_view table_name()

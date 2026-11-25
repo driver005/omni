@@ -19,52 +19,68 @@ public:
         Router{router, "/newsletters"}
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.newsletters_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.newsletters_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost newsletters GET")
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.newsletters_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.newsletters_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost newsletters POST")
             .add_route(
                 Route{"/:id"}
                     .use(blog::handlers::middleware::require_auth)
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.newsletters_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.newsletters_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id GET")
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.newsletters_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.newsletters_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
             )
             .add_route(
                 Route{"/verifications"}
                     .use(blog::handlers::middleware::require_auth)
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.newsletters_newsletters_verifications_put().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.newsletters_newsletters_verifications_put()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost verifications PUT")
             );
     }

@@ -4,9 +4,11 @@
 # Bazel binary with `make BAZEL=bazelisk`. Configs come from .bazelrc.
 
 BAZEL   ?= bazel
+TARGET  ?= //include/app/testing:app_api_server
 TARGETS ?= //...
 FMT     ?= clang-format
-FMT_DIRS = include bazel third_party
+FMT_DIRS = include bazel
+LINT_DIRS = $(FMT_DIRS)
 
 .PHONY: all build dev test prod release clean run query deps status fmt format lint help core fresh openapi sdk-build sdk-wasm sdk-lint visual-install visual-dev visual-e2e
 
@@ -28,7 +30,7 @@ test:
 prod release:
 	$(BAZEL) build --config=prod $(TARGETS)
 
-## run: run a single target, e.g. make run TARGET=//include/src:server
+## run: run a single binary target, e.g. make run TARGET=//plugins/generator/openapi_generator:openapi_dump
 run:
 	$(BAZEL) run $(TARGET)
 
@@ -59,7 +61,7 @@ fmt format:
 
 ## lint: verify formatting without modifying files
 lint:
-	@find $(FMT_DIRS) -type f \( -name '*.cppm' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' \) \
+	@find $(LINT_DIRS) -type f \( -name '*.cppm' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' \) \
 		-not -path '*/build/*' -print0 | xargs -0 -r $(FMT) --dry-run -Werror
 
 ## openapi: regenerate sdk/openapi/openapi.json from registered C++ routes

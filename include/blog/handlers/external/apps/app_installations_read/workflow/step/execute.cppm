@@ -21,12 +21,14 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"apps_app_installations_read_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         const auto id = path_id(in.get_path());
-        if (id.empty()) return result(invalid("id is required", "id"));
+        if (id.empty()) {
+            return result(invalid("id is required", "id"));
+        }
 
         const auto params = query_params(in.get_path());
         const auto include = params.contains("include") ? params.at("include") : std::string{};
@@ -44,7 +46,8 @@ private:
     [[nodiscard]] static core::workflow::StepResponse<Output> result(const support::Result& value)
     {
         return core::workflow::StepResponse<Output>{
-            {{"status", std::to_string(value.status)}, {"body", value.body}}};
+            {{"status", std::to_string(value.status)}, {"body", value.body}}
+        };
     }
 };
 

@@ -16,7 +16,8 @@ public:
     [[nodiscard]] std::string encode(std::string_view input) const
     {
         constexpr std::string_view alphabet{
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"};
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        };
 
         std::string out{};
         out.reserve(((input.size() + 2) / 3) * 4);
@@ -25,7 +26,8 @@ public:
             const std::uint32_t word{
                 (static_cast<std::uint32_t>(byte_at(input, i)) << 16) |
                 (static_cast<std::uint32_t>(byte_at(input, i + 1)) << 8) |
-                static_cast<std::uint32_t>(byte_at(input, i + 2))};
+                static_cast<std::uint32_t>(byte_at(input, i + 2))
+            };
             out.push_back(alphabet[(word >> 18) & 0x3FU]);
             out.push_back(alphabet[(word >> 12) & 0x3FU]);
             out.push_back(alphabet[(word >> 6) & 0x3FU]);
@@ -34,14 +36,14 @@ public:
         }
         const std::size_t remaining = input.size() - i;
         if (remaining == 1) {
-            const std::uint32_t word{
-                static_cast<std::uint32_t>(byte_at(input, i)) << 16};
+            const std::uint32_t word{static_cast<std::uint32_t>(byte_at(input, i)) << 16};
             out.push_back(alphabet[(word >> 18) & 0x3FU]);
             out.push_back(alphabet[(word >> 12) & 0x3FU]);
         } else if (remaining == 2) {
             const std::uint32_t word{
                 (static_cast<std::uint32_t>(byte_at(input, i)) << 16) |
-                (static_cast<std::uint32_t>(byte_at(input, i + 1)) << 8)};
+                (static_cast<std::uint32_t>(byte_at(input, i + 1)) << 8)
+            };
             out.push_back(alphabet[(word >> 18) & 0x3FU]);
             out.push_back(alphabet[(word >> 12) & 0x3FU]);
             out.push_back(alphabet[(word >> 6) & 0x3FU]);
@@ -63,10 +65,9 @@ public:
                 return std::string{};
             }
             const std::uint32_t word{
-                (static_cast<std::uint32_t>(a) << 18) |
-                (static_cast<std::uint32_t>(b) << 12) |
-                (static_cast<std::uint32_t>(c) << 6) |
-                static_cast<std::uint32_t>(d)};
+                (static_cast<std::uint32_t>(a) << 18) | (static_cast<std::uint32_t>(b) << 12) |
+                (static_cast<std::uint32_t>(c) << 6) | static_cast<std::uint32_t>(d)
+            };
             push_bytes(out, word, 3);
             i += 4;
         }
@@ -78,8 +79,8 @@ public:
                 return std::string{};
             }
             const std::uint32_t word{
-                (static_cast<std::uint32_t>(a) << 18) |
-                (static_cast<std::uint32_t>(b) << 12)};
+                (static_cast<std::uint32_t>(a) << 18) | (static_cast<std::uint32_t>(b) << 12)
+            };
             push_bytes(out, word, 1);
         } else if (remaining == 3) {
             const int a = index_of(input[i]);
@@ -89,9 +90,9 @@ public:
                 return std::string{};
             }
             const std::uint32_t word{
-                (static_cast<std::uint32_t>(a) << 18) |
-                (static_cast<std::uint32_t>(b) << 12) |
-                (static_cast<std::uint32_t>(c) << 6)};
+                (static_cast<std::uint32_t>(a) << 18) | (static_cast<std::uint32_t>(b) << 12) |
+                (static_cast<std::uint32_t>(c) << 6)
+            };
             push_bytes(out, word, 2);
         } else if (remaining == 1) {
             return std::string{};
@@ -108,7 +109,8 @@ private:
     [[nodiscard]] int index_of(char c) const
     {
         constexpr std::string_view alphabet{
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"};
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        };
         const std::size_t pos = alphabet.find(c);
         return pos == std::string_view::npos ? -1 : static_cast<int>(pos);
     }
@@ -137,8 +139,8 @@ class ISecretResolver
 public:
     virtual ~ISecretResolver() = default;
 
-    [[nodiscard]] virtual std::optional<std::string> resolve(
-        std::string_view purpose, std::string_view key_id) = 0;
+    [[nodiscard]] virtual std::optional<std::string>
+    resolve(std::string_view purpose, std::string_view key_id) = 0;
 };
 
 /** @brief Typed JWT claim set used to build a signed payload. */
@@ -183,13 +185,40 @@ public:
         return *this;
     }
 
-    [[nodiscard]] const std::string& get_issuer() const noexcept { return m_issuer; }
-    [[nodiscard]] const std::string& get_audience() const noexcept { return m_audience; }
-    [[nodiscard]] const std::string& get_subject() const noexcept { return m_subject; }
-    [[nodiscard]] std::int64_t get_expires_at() const noexcept { return m_expires_at; }
-    [[nodiscard]] std::int64_t get_issued_at() const noexcept { return m_issued_at; }
-    [[nodiscard]] const std::string& get_key_id() const noexcept { return m_key_id; }
-    [[nodiscard]] bool has_expiry() const noexcept { return m_has_expiry; }
+    [[nodiscard]] const std::string& get_issuer() const noexcept
+    {
+        return m_issuer;
+    }
+
+    [[nodiscard]] const std::string& get_audience() const noexcept
+    {
+        return m_audience;
+    }
+
+    [[nodiscard]] const std::string& get_subject() const noexcept
+    {
+        return m_subject;
+    }
+
+    [[nodiscard]] std::int64_t get_expires_at() const noexcept
+    {
+        return m_expires_at;
+    }
+
+    [[nodiscard]] std::int64_t get_issued_at() const noexcept
+    {
+        return m_issued_at;
+    }
+
+    [[nodiscard]] const std::string& get_key_id() const noexcept
+    {
+        return m_key_id;
+    }
+
+    [[nodiscard]] bool has_expiry() const noexcept
+    {
+        return m_has_expiry;
+    }
 
     /** @brief Serializes the populated claims into the signed JSON payload. */
     [[nodiscard]] std::string to_json() const
@@ -220,7 +249,11 @@ public:
 
 private:
     void append_string(
-        std::string& out, bool& first, std::string_view key, std::string_view value) const
+        std::string& out,
+        bool& first,
+        std::string_view key,
+        std::string_view value
+    ) const
     {
         if (!first) {
             out.push_back(',');
@@ -229,7 +262,7 @@ private:
         out.push_back('"');
         out.append(key);
         out.append("\":\"");
-        for (const char c : value) {
+        for (const char c: value) {
             if (c == '"' || c == '\\') {
                 out.push_back('\\');
             }
@@ -239,7 +272,11 @@ private:
     }
 
     void append_number(
-        std::string& out, bool& first, std::string_view key, std::int64_t value) const
+        std::string& out,
+        bool& first,
+        std::string_view key,
+        std::int64_t value
+    ) const
     {
         if (!first) {
             out.push_back(',');
@@ -299,16 +336,26 @@ public:
     {
         return m_expected_issuer;
     }
+
     [[nodiscard]] const std::string& get_expected_audience() const noexcept
     {
         return m_expected_audience;
     }
+
     [[nodiscard]] const std::string& get_expected_subject() const noexcept
     {
         return m_expected_subject;
     }
-    [[nodiscard]] std::int64_t get_now_seconds() const noexcept { return m_now_seconds; }
-    [[nodiscard]] bool get_require_expiry() const noexcept { return m_require_expiry; }
+
+    [[nodiscard]] std::int64_t get_now_seconds() const noexcept
+    {
+        return m_now_seconds;
+    }
+
+    [[nodiscard]] bool get_require_expiry() const noexcept
+    {
+        return m_require_expiry;
+    }
 
 private:
     std::string m_expected_issuer{};
@@ -330,8 +377,15 @@ public:
     {
     }
 
-    [[nodiscard]] bool ok() const noexcept { return m_ok; }
-    [[nodiscard]] const std::string& reason() const noexcept { return m_reason; }
+    [[nodiscard]] bool ok() const noexcept
+    {
+        return m_ok;
+    }
+
+    [[nodiscard]] const std::string& reason() const noexcept
+    {
+        return m_reason;
+    }
 
 private:
     bool m_ok{false};
@@ -364,8 +418,7 @@ public:
     }
 
     /** @brief Repository-backed lookup; the resolver supplies the secret on each use. */
-    JwtSigner(
-        ISecretResolver& resolver, std::string key_id, std::string purpose = "jwt") :
+    JwtSigner(ISecretResolver& resolver, std::string key_id, std::string purpose = "jwt") :
         m_resolver{&resolver},
         m_key_id{std::move(key_id)},
         m_purpose{std::move(purpose)}
@@ -392,7 +445,8 @@ public:
         const std::string encoded_header = m_codec.encode(header());
         const std::string encoded_payload = m_codec.encode(payload);
         const std::string signing_input = encoded_header + "." + encoded_payload;
-        const std::string encoded_signature = m_codec.encode(signature_bytes(signing_input, *secret));
+        const std::string encoded_signature =
+            m_codec.encode(signature_bytes(signing_input, *secret));
         return signing_input + "." + encoded_signature;
     }
 
@@ -405,21 +459,18 @@ public:
     /** @brief Legacy shape-and-signature check; kept for existing callers. */
     [[nodiscard]] bool verify(std::string_view token) const
     {
-        return verify_with_options(token, JwtVerificationOptions{}
-                                              .require_expiry(false))
-            .ok();
+        return verify_with_options(token, JwtVerificationOptions{}.require_expiry(false)).ok();
     }
 
     /** @brief Strict verification of signature, expiry, issuer, audience and subject. */
-    [[nodiscard]] bool verify(
-        std::string_view token, const JwtVerificationOptions& options) const
+    [[nodiscard]] bool verify(std::string_view token, const JwtVerificationOptions& options) const
     {
         return verify_with_options(token, options).ok();
     }
 
     /** @brief Detailed strict verification with a machine-readable reason. */
-    [[nodiscard]] JwtVerifyResult verify_with_options(
-        std::string_view token, const JwtVerificationOptions& options) const
+    [[nodiscard]] JwtVerifyResult
+    verify_with_options(std::string_view token, const JwtVerificationOptions& options) const
     {
         const std::size_t first = token.find('.');
         if (first == std::string_view::npos) {
@@ -490,15 +541,13 @@ private:
         return std::string{"{\"alg\":\""} + m_algorithm + "\",\"typ\":\"JWT\"}";
     }
 
-    [[nodiscard]] std::string signature_bytes(
-        std::string_view signing_input, std::string_view secret) const
+    [[nodiscard]] std::string
+    signature_bytes(std::string_view signing_input, std::string_view secret) const
     {
-        return KeyedHasher{std::string{secret}}
-            .hash_with_domain(HashDomain::Token, signing_input);
+        return KeyedHasher{std::string{secret}}.hash_with_domain(HashDomain::Token, signing_input);
     }
 
-    [[nodiscard]] std::size_t field_value_start(
-        std::string_view json, std::string_view key) const
+    [[nodiscard]] std::size_t field_value_start(std::string_view json, std::string_view key) const
     {
         std::string needle{"\""};
         needle.append(key);
@@ -521,8 +570,8 @@ private:
         return pos;
     }
 
-    [[nodiscard]] std::optional<std::string> string_field(
-        std::string_view json, std::string_view key) const
+    [[nodiscard]] std::optional<std::string>
+    string_field(std::string_view json, std::string_view key) const
     {
         const std::size_t start = field_value_start(json, key);
         if (start == std::string_view::npos || start >= json.size() || json[start] != '"') {
@@ -542,8 +591,8 @@ private:
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<std::int64_t> number_field(
-        std::string_view json, std::string_view key) const
+    [[nodiscard]] std::optional<std::int64_t>
+    number_field(std::string_view json, std::string_view key) const
     {
         const std::size_t start = field_value_start(json, key);
         if (start == std::string_view::npos || start >= json.size()) {
@@ -582,26 +631,26 @@ namespace app::crypto::tests {
 using namespace boost::ut;
 
 namespace {
-class TestSecretResolver final : public ISecretResolver
-{
-public:
-    explicit TestSecretResolver(std::string secret) :
-        m_secret{std::move(secret)}
+    class TestSecretResolver final : public ISecretResolver
     {
-    }
-
-    [[nodiscard]] std::optional<std::string> resolve(
-        std::string_view purpose, std::string_view key_id) override
-    {
-        if (purpose == "jwt" && key_id == "key_test") {
-            return m_secret;
+    public:
+        explicit TestSecretResolver(std::string secret) :
+            m_secret{std::move(secret)}
+        {
         }
-        return std::nullopt;
-    }
 
-private:
-    std::string m_secret{};
-};
+        [[nodiscard]] std::optional<std::string>
+        resolve(std::string_view purpose, std::string_view key_id) override
+        {
+            if (purpose == "jwt" && key_id == "key_test") {
+                return m_secret;
+            }
+            return std::nullopt;
+        }
+
+    private:
+        std::string m_secret{};
+    };
 } // namespace
 
 suite<"app_crypto_token"> token_suite = []
@@ -610,8 +659,12 @@ suite<"app_crypto_token"> token_suite = []
     {
         const Base64Url codec;
         const std::string source{
-            static_cast<char>(0xFB), static_cast<char>(0xFF), static_cast<char>(0xBF),
-            static_cast<char>(0x00), static_cast<char>(0x41)};
+            static_cast<char>(0xFB),
+            static_cast<char>(0xFF),
+            static_cast<char>(0xBF),
+            static_cast<char>(0x00),
+            static_cast<char>(0x41)
+        };
         const std::string encoded = codec.encode(source);
         expect(encoded.find('+') == std::string::npos);
         expect(encoded.find('/') == std::string::npos);
@@ -664,28 +717,30 @@ suite<"app_crypto_token"> token_suite = []
                                      .issuer("hyperswitch")
                                      .audience("api")
                                      .subject("user-1")
-                                     .expires_at(2000)
-                                     .issued_at(1000);
+                                     .expires_at(2'000)
+                                     .issued_at(1'000);
         const std::string token = signer.sign_claims(claims);
         const JwtVerificationOptions options = JwtVerificationOptions{}
                                                    .expected_issuer("hyperswitch")
                                                    .expected_audience("api")
                                                    .expected_subject("user-1")
-                                                   .now_seconds(1500);
+                                                   .now_seconds(1'500);
         expect(signer.verify(token, options));
         expect(signer.verify_with_options(token, options).ok());
 
-        expect(!signer.verify(token, JwtVerificationOptions{}
-                                         .now_seconds(2000)));
-        expect(!signer.verify(token, JwtVerificationOptions{}
-                                         .expected_issuer("other")
-                                         .now_seconds(1500)));
-        expect(!signer.verify(token, JwtVerificationOptions{}
-                                         .expected_audience("other")
-                                         .now_seconds(1500)));
-        expect(!signer.verify(token, JwtVerificationOptions{}
-                                         .expected_subject("other")
-                                         .now_seconds(1500)));
+        expect(!signer.verify(token, JwtVerificationOptions{}.now_seconds(2'000)));
+        expect(!signer.verify(
+            token,
+            JwtVerificationOptions{}.expected_issuer("other").now_seconds(1'500)
+        ));
+        expect(!signer.verify(
+            token,
+            JwtVerificationOptions{}.expected_audience("other").now_seconds(1'500)
+        ));
+        expect(!signer.verify(
+            token,
+            JwtVerificationOptions{}.expected_subject("other").now_seconds(1'500)
+        ));
         expect(!signer.verify(signer.sign("payload"), JwtVerificationOptions{}));
     };
 

@@ -8,14 +8,15 @@ import interfaces;
 
 export namespace blog::handlers::upgrades::create::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
     using Input = interfaces::io::IRequest&;
     using Output = support::Output;
     static constexpr std::string_view name{"upgrades_create_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         auto& ctx = *s_ctx;
 
@@ -52,14 +53,16 @@ public:
         const auto user = support::staff_user_id(in);
         if (user.empty()) {
             return core::workflow::StepResponse<Output>{
-                support::no_permission_error("Only staff users can request updates.")};
+                support::no_permission_error("Only staff users can request updates.")
+            };
         }
 
         // UpgradeService.createRequest hashes JSON.stringify([userId, clientKey])
         // before the adapter sees it; the raw key is never echoed or persisted.
         const auto scoped_key = support::scoped_idempotency_key(user, client_key);
         return core::workflow::StepResponse<Output>{
-            support::create_request(ctx, component, to_version, scoped_key, user)};
+            support::create_request(ctx, component, to_version, scoped_key, user)
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -71,7 +74,8 @@ private:
     {
         return core::workflow::StepResponse<Output>{support::validation_error(
             "Expected one update with component, to_version and idempotency_key.",
-            support::kValidationHelp)};
+            support::kValidationHelp
+        )};
     }
 };
 

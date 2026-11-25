@@ -11,10 +11,8 @@ export namespace core::email {
 class TemplateEngine
 {
 public:
-    [[nodiscard]] std::string render(
-        std::string_view source,
-        const std::map<std::string, std::string>& values
-    ) const
+    [[nodiscard]] std::string
+    render(std::string_view source, const std::map<std::string, std::string>& values) const
     {
         std::string out;
         out.reserve(source.size());

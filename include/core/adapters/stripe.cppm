@@ -12,10 +12,7 @@ export namespace core::adapters {
 class StripeAdapter
 {
 public:
-    explicit StripeAdapter(
-        Config config = {},
-        std::shared_ptr<HttpTransport> transport = nullptr
-    ) :
+    explicit StripeAdapter(Config config = {}, std::shared_ptr<HttpTransport> transport = nullptr) :
         m_config{std::move(config)},
         m_transport{transport ? std::move(transport) : std::make_shared<SocketHttpTransport>()}
     {
@@ -30,6 +27,7 @@ public:
             session_json.empty() ? std::string{"{}"} : std::string{session_json}
         );
     }
+
     [[nodiscard]] std::string create_session(std::string_view session_json) const
     {
         return create_session_detailed(session_json).body;
@@ -44,6 +42,7 @@ public:
             config_json.empty() ? std::string{"{}"} : std::string{config_json}
         );
     }
+
     [[nodiscard]] std::string configure(std::string_view config_json) const
     {
         return configure_detailed(config_json).body;
@@ -53,6 +52,7 @@ public:
     {
         return issue("branding", "GET", "/v1/checkout/branding", {});
     }
+
     [[nodiscard]] std::string branding() const
     {
         return branding_detailed().body;
@@ -67,6 +67,7 @@ public:
             preview_json.empty() ? std::string{"{}"} : std::string{preview_json}
         );
     }
+
     [[nodiscard]] std::string preview(std::string_view preview_json) const
     {
         return preview_detailed(preview_json).body;
@@ -99,7 +100,10 @@ private:
         request.method = method;
         request.url = std::format("{}{}", trim_slash(m_config.base_url), path);
         if (!m_config.api_key.empty()) {
-            request.headers.emplace_back("Authorization", std::format("Bearer {}", m_config.api_key));
+            request.headers.emplace_back(
+                "Authorization",
+                std::format("Bearer {}", m_config.api_key)
+            );
         }
         request.headers.emplace_back("Content-Type", "application/json");
         request.body = body;
@@ -121,9 +125,8 @@ private:
 
     [[nodiscard]] static std::string trim_slash(std::string_view url)
     {
-        return url.empty() || url.back() != '/'
-            ? std::string{url}
-            : std::string{url.substr(0, url.size() - 1)};
+        return url.empty() || url.back() != '/' ? std::string{url}
+                                                : std::string{url.substr(0, url.size() - 1)};
     }
 
     Config m_config;

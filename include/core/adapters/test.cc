@@ -66,26 +66,29 @@ public:
         socklen_t length = sizeof(bound);
         ::getsockname(m_fd, reinterpret_cast<sockaddr*>(&bound), &length);
         m_port = ntohs(bound.sin_port);
-        m_thread = std::thread{[this]
-        {
-            while (!m_stop.load(std::memory_order_relaxed)) {
-                const int client = ::accept(m_fd, nullptr, nullptr);
-                if (client < 0) {
-                    break;
+        m_thread = std::thread{
+            [this]
+            {
+                while (!m_stop.load(std::memory_order_relaxed)) {
+                    const int client = ::accept(m_fd, nullptr, nullptr);
+                    if (client < 0) {
+                        break;
+                    }
+                    char buffer[4'096];
+                    ::recv(client, buffer, sizeof(buffer), 0);
+                    static constexpr std::string_view body =
+                        R"({"checkout_config":[{"design":{"customize":false}}]})";
+                    const auto response = std::format(
+                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                        "{}\r\nConnection: close\r\n\r\n{}",
+                        body.size(),
+                        body
+                    );
+                    ::send(client, response.data(), response.size(), 0);
+                    ::close(client);
                 }
-                char buffer[4096];
-                ::recv(client, buffer, sizeof(buffer), 0);
-                static constexpr std::string_view body =
-                    R"({"checkout_config":[{"design":{"customize":false}}]})";
-                const auto response = std::format(
-                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-                    body.size(),
-                    body
-                );
-                ::send(client, response.data(), response.size(), 0);
-                ::close(client);
             }
-        }};
+        };
     }
 
     ~LocalServer()
@@ -118,46 +121,95 @@ private:
 std::shared_ptr<MockHttpTransport> make_mock()
 {
     auto transport = std::make_shared<MockHttpTransport>();
-    transport->route("POST", "/v1/checkout/sessions", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"id":"cs_test_1"})"};
-    });
-    transport->route("PUT", "/v1/checkout/config", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"checkout_config":[{"design":{"customize":true}}]})"};
-    });
-    transport->route("GET", "/v1/checkout/branding", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"displayName":"Ghost","design":null})"};
-    });
-    transport->route("POST", "/v1/checkout/preview", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"checkout_preview":[{"url":"https://checkout.stripe.com/c/pay/x"}]})"};
-    });
-    transport->route("GET", "/v0/token", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"tinybird":{"token":"tb_1"}})"};
-    });
-    transport->route("GET", "/v0/pipes/", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"data":[{"visits":42}]})"};
-    });
-    transport->route("POST", "/send", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 202};
-    });
-    transport->route("POST", "webmention", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 202};
-    });
-    transport->route("GET", "?target=", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"webmentions":[]})"};
-    });
-    transport->route("GET", "?url=", [](const HttpRequest&)
-    {
-        return HttpResponse{.status = 200, .body = R"({"webmention":{"endpoint":"https://webmention.io/webmention"}})"};
-    });
+    transport->route(
+        "POST",
+        "/v1/checkout/sessions",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 200, .body = R"({"id":"cs_test_1"})"};
+        }
+    );
+    transport->route(
+        "PUT",
+        "/v1/checkout/config",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{
+                .status = 200,
+                .body = R"({"checkout_config":[{"design":{"customize":true}}]})"
+            };
+        }
+    );
+    transport->route(
+        "GET",
+        "/v1/checkout/branding",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 200, .body = R"({"displayName":"Ghost","design":null})"};
+        }
+    );
+    transport->route(
+        "POST",
+        "/v1/checkout/preview",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{
+                .status = 200,
+                .body = R"({"checkout_preview":[{"url":"https://checkout.stripe.com/c/pay/x"}]})"
+            };
+        }
+    );
+    transport->route(
+        "GET",
+        "/v0/token",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 200, .body = R"({"tinybird":{"token":"tb_1"}})"};
+        }
+    );
+    transport->route(
+        "GET",
+        "/v0/pipes/",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 200, .body = R"({"data":[{"visits":42}]})"};
+        }
+    );
+    transport->route(
+        "POST",
+        "/send",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 202};
+        }
+    );
+    transport->route(
+        "POST",
+        "webmention",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 202};
+        }
+    );
+    transport->route(
+        "GET",
+        "?target=",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 200, .body = R"({"webmentions":[]})"};
+        }
+    );
+    transport->route(
+        "GET",
+        "?url=",
+        [](const HttpRequest&)
+        {
+            return HttpResponse{
+                .status = 200,
+                .body = R"({"webmention":{"endpoint":"https://webmention.io/webmention"}})"
+            };
+        }
+    );
     return transport;
 }
 
@@ -197,7 +249,12 @@ int main()
     // 3. Adapter happy paths against the in-process mock.
     clear_recorded_calls();
     std::size_t hook_calls = 0;
-    set_outbound_hook([&hook_calls](const OutboundCall&) { ++hook_calls; });
+    set_outbound_hook(
+        [&hook_calls](const OutboundCall&)
+        {
+            ++hook_calls;
+        }
+    );
     auto transport = make_mock();
     const Config stripe{"http://127.0.0.1:1", "sk_test", "", ""};
     StripeAdapter stripe_adapter{stripe, transport};
@@ -212,7 +269,10 @@ int main()
         "stripe configure"
     );
     check.yes(stripe_adapter.branding().contains("Ghost"), "stripe branding");
-    check.yes(stripe_adapter.preview(R"({"tier_id":"t1"})").contains("checkout_preview"), "stripe preview");
+    check.yes(
+        stripe_adapter.preview(R"({"tier_id":"t1"})").contains("checkout_preview"),
+        "stripe preview"
+    );
 
     const Config tinybird_cfg2{"http://127.0.0.1:2", "tb_key", "ws_1", ""};
     TinybirdAdapter tinybird_adapter{tinybird_cfg2, transport};
@@ -226,9 +286,18 @@ int main()
 
     const Config webmention_cfg{"http://127.0.0.1:4", "", "", ""};
     WebmentionAdapter webmention_adapter{webmention_cfg, transport};
-    check.yes(webmention_adapter.source("https://a.test", "https://b.test").contains("webmention"), "webmention source");
-    check.yes(webmention_adapter.target("https://b.test").contains("webmentions"), "webmention target");
-    check.yes(webmention_adapter.fetch("https://b.test").contains("webmention"), "webmention fetch");
+    check.yes(
+        webmention_adapter.source("https://a.test", "https://b.test").contains("webmention"),
+        "webmention source"
+    );
+    check.yes(
+        webmention_adapter.target("https://b.test").contains("webmentions"),
+        "webmention target"
+    );
+    check.yes(
+        webmention_adapter.fetch("https://b.test").contains("webmention"),
+        "webmention fetch"
+    );
 
     const auto calls = recorded_calls();
     check.equal(calls.size(), 10U, "outbox recorded every outbound call");
@@ -246,37 +315,58 @@ int main()
             );
         }
     }
-    check.yes(std::ranges::all_of(calls, [](const OutboundCall& call)
-    {
-        return call.ok && call.status >= 200 && call.status < 300;
-    }), "all recorded calls succeeded");
-    check.yes(std::ranges::any_of(calls, [](const OutboundCall& call)
-    {
-        return call.adapter == "smtp" && call.operation == "send" &&
-               call.request_body.contains("ghost@example.test");
-    }), "smtp From address recorded");
+    check.yes(
+        std::ranges::all_of(
+            calls,
+            [](const OutboundCall& call)
+            {
+                return call.ok && call.status >= 200 && call.status < 300;
+            }
+        ),
+        "all recorded calls succeeded"
+    );
+    check.yes(
+        std::ranges::any_of(
+            calls,
+            [](const OutboundCall& call)
+            {
+                return call.adapter == "smtp" && call.operation == "send" &&
+                       call.request_body.contains("ghost@example.test");
+            }
+        ),
+        "smtp From address recorded"
+    );
 
     // 4. Failure paths return Ghost-shaped errors, never crash.
     auto failing = std::make_shared<MockHttpTransport>();
-    failing->set_default([](const HttpRequest&)
-    {
-        HttpResponse response;
-        response.error = "connection refused";
-        return response;
-    });
+    failing->set_default(
+        [](const HttpRequest&)
+        {
+            HttpResponse response;
+            response.error = "connection refused";
+            return response;
+        }
+    );
     StripeAdapter failing_stripe{stripe, failing};
     const auto failure_body = failing_stripe.branding();
-    check.yes(failure_body.contains("\"errors\"") && failure_body.contains("AdapterTransportError"),
-              "transport failure is Ghost-shaped");
+    check.yes(
+        failure_body.contains("\"errors\"") && failure_body.contains("AdapterTransportError"),
+        "transport failure is Ghost-shaped"
+    );
     check.equal(failing_stripe.branding_detailed().status, 502, "transport failure status");
 
     auto http_error = std::make_shared<MockHttpTransport>();
-    http_error->set_default([](const HttpRequest&)
-    {
-        return HttpResponse{.status = 500, .body = "boom"};
-    });
+    http_error->set_default(
+        [](const HttpRequest&)
+        {
+            return HttpResponse{.status = 500, .body = "boom"};
+        }
+    );
     const auto upstream = TinybirdAdapter{tinybird_cfg2, http_error}.token();
-    check.yes(upstream.contains("UpstreamError") && upstream.contains("http_500"), "HTTP 500 Ghost error");
+    check.yes(
+        upstream.contains("UpstreamError") && upstream.contains("http_500"),
+        "HTTP 500 Ghost error"
+    );
     check.yes(upstream.contains("boom"), "error context carries upstream body");
 
     // 5. Unconfigured adapters return a Ghost error without any outbound call.
@@ -291,10 +381,16 @@ int main()
     StripeAdapter real_adapter{Config{server.url(), "", "", ""}};
     const auto real_body = real_adapter.branding();
     check.yes(real_body.contains("checkout_config"), "real socket HTTP round-trip");
-    check.yes(std::ranges::any_of(recorded_calls(), [](const OutboundCall& call)
-    {
-        return call.adapter == "stripe" && call.operation == "branding" && call.ok;
-    }), "real socket call recorded in outbox");
+    check.yes(
+        std::ranges::any_of(
+            recorded_calls(),
+            [](const OutboundCall& call)
+            {
+                return call.adapter == "stripe" && call.operation == "branding" && call.ok;
+            }
+        ),
+        "real socket call recorded in outbox"
+    );
 
     if (check.failures() == 0) {
         std::println("core_adapters: all checks passed");

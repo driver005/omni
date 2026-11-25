@@ -53,7 +53,6 @@ public:
     Ttl() = default;
 
 private:
-
     constexpr Ttl(Duration duration, bool never) noexcept :
         m_duration{duration},
         m_never{never}

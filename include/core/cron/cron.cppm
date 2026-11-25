@@ -151,6 +151,7 @@ struct FacadeJob
 {
     void run() {}
 };
+
 CORE_CRON_JOB(FacadeJob, "facade-job", "0 3 * * *");
 
 using namespace boost::ut;
@@ -162,7 +163,8 @@ suite<"core_cron_cron"> core_cron_cron_suite = []
         Cron cron;
         expect(cron.validate("*/5 * * * *"));
         expect(!cron.validate("bogus"));
-        const auto base = std::chrono::sys_days{std::chrono::year{2026} / std::chrono::January / 1};
+        const auto base =
+            std::chrono::sys_days{std::chrono::year{2'026} / std::chrono::January / 1};
         expect(cron.next_after("0 0 * * *", base).has_value());
         expect(cron.next_runs("0 0 * * *", base, 2).size() == 2);
         expect(reflect::CronJobMeta<FacadeJob>::name == "facade-job");

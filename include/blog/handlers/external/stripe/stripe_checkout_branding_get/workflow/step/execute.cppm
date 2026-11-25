@@ -9,14 +9,15 @@ import :stripe_stripe_checkout_config_get_step;
 
 export namespace blog::handlers::stripe::stripe_checkout_branding_get::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
     using Input = interfaces::io::IRequest&;
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"stripe_stripe_checkout_branding_get_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace blog::handlers::stripe::support;
         auto& ctx = *s_ctx;
@@ -24,8 +25,9 @@ public:
         // Ghost: permissions:{docName:'products',method:'read'} on branding.read.
         const auto authorized = authorize(in, "read");
         if (!authorized.allowed) {
-            return core::workflow::StepResponse<Output>{{{"status", std::to_string(authorized.status)},
-                                                          {"body", authorized.error_json}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", std::to_string(authorized.status)}, {"body", authorized.error_json}}
+            };
         }
         if (!stripe_connected()) {
             return validation("Connect Stripe to read its checkout branding.", nullptr);
@@ -39,11 +41,23 @@ public:
         const auto session_request =
             R"({"mode":"setup","payment_method_types":["card"],"metadata":{"ghost_checkout_preview":true}})";
         domain_event("stripe.rate_limit.throttle", "{}", "stripe");
-        outbound("create_session", "POST", base + "/v1/checkout/sessions",
-                 session_request, R"({"id":"cs_preview_branding","object":"checkout.session"})", 200);
+        outbound(
+            "create_session",
+            "POST",
+            base + "/v1/checkout/sessions",
+            session_request,
+            R"({"id":"cs_preview_branding","object":"checkout.session"})",
+            200
+        );
         domain_event("stripe.rate_limit.throttle", "{}", "stripe");
-        outbound("expire", "POST", base + "/v1/checkout/sessions/cs_preview_branding/expire",
-                 "{}", R"({"id":"cs_preview_branding","status":"expired"})", 200);
+        outbound(
+            "expire",
+            "POST",
+            base + "/v1/checkout/sessions/cs_preview_branding/expire",
+            "{}",
+            R"({"id":"cs_preview_branding","status":"expired"})",
+            200
+        );
 
         // branding_settings comes from a local mock store (`stripe_branding`),
         // falling back to the checkout config display name. An explicit
@@ -57,24 +71,34 @@ public:
         if (explicit_branding) {
             const auto& row = records.back();
             display_name = unquote(field_text(row, "display_name"));
-            if (display_name.empty()) display_name = unquote(field_text(row, "displayName"));
+            if (display_name.empty()) {
+                display_name = unquote(field_text(row, "displayName"));
+            }
             design_raw = field_text(row, "design");
         } else {
             const auto config_rows = ctx.store().json_for("stripe_checkout_config", {});
             const auto config = blog::api::parse_array(config_rows);
             if (!config.empty()) {
                 display_name = unquote(field_text(config.back(), "display_name"));
-                if (display_name.empty()) display_name = unquote(field_text(config.back(), "displayName"));
+                if (display_name.empty()) {
+                    display_name = unquote(field_text(config.back(), "displayName"));
+                }
                 design_raw = field_text(config.back(), "design");
             }
         }
         if (explicit_branding && display_name.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "500"},
-                {"body", blog::api::ApiError{}.json(
-                    "Stripe reported checkout branding Ghost cannot show.",
-                    "StripeCheckoutBranding")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "500"},
+                 {"body",
+                  blog::api::ApiError{}.json(
+                      "Stripe reported checkout branding Ghost cannot show.",
+                      "StripeCheckoutBranding"
+                  )}}
+            };
         }
-        if (display_name.empty()) display_name = "Ghost";
+        if (display_name.empty()) {
+            display_name = "Ghost";
+        }
 
         auto design = snake_design_response(design_raw);
         if (!design_raw.empty() && design_raw != "null" && design_raw != "{}" &&
@@ -83,21 +107,25 @@ public:
         }
 
         // Ghost serializer: {"checkout_branding":[{display_name, design}]}.
-        const auto body = wrap("checkout_branding",
-            "{\"display_name\":" + json_quote(display_name) + ",\"design\":" + design + "}");
+        const auto body = wrap(
+            "checkout_branding",
+            "{\"display_name\":" + json_quote(display_name) + ",\"design\":" + design + "}"
+        );
         return core::workflow::StepResponse<Output>{{{"status", "200"}, {"body", body}}};
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
     static blog::api::StripeHandler* s_stripe;
 
 private:
-    [[nodiscard]] static core::workflow::StepResponse<Output> validation(
-        std::string_view message, const char* /* property intentionally null */)
+    [[nodiscard]] static core::workflow::StepResponse<Output>
+    validation(std::string_view message, const char* /* property intentionally null */)
     {
-        return core::workflow::StepResponse<Output>{{{"status", "422"},
-            {"body", blog::api::ApiError{}.json(message, "ValidationError")}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "422"}, {"body", blog::api::ApiError{}.json(message, "ValidationError")}}
+        };
     }
 };
 

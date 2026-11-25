@@ -97,7 +97,12 @@ public:
 
     [[nodiscard]] ConnectorResponse check_feature_matrix(const ConnectorRequest& request) override
     {
-        return next("check_feature_matrix", "feature_matrix_checked", m_feature_matrix_count, request);
+        return next(
+            "check_feature_matrix",
+            "feature_matrix_checked",
+            m_feature_matrix_count,
+            request
+        );
     }
 
     [[nodiscard]] ConnectorResponse webhook_source_verify(const ConnectorRequest& request) override
@@ -133,13 +138,16 @@ private:
         response.set_status(std::string{status});
         response.set_reference_id(std::move(reference_id));
         response.set_message(std::format("local {} accepted", operation));
-        response.set_raw_json(std::format(
-            "{{\"operation\":\"{}\",\"reference_id\":\"{}\",\"status\":\"{}\",\"resource_id\":\"{}\"}}",
-            operation,
-            response.get_reference_id(),
-            status,
-            request.get_resource_id()
-        ));
+        response.set_raw_json(
+            std::format(
+                "{{\"operation\":\"{}\",\"reference_id\":\"{}\",\"status\":\"{}\",\"resource_id\":"
+                "\"{}\"}}",
+                operation,
+                response.get_reference_id(),
+                status,
+                request.get_resource_id()
+            )
+        );
         response.set_retryable(false);
         response.set_shadow_killed(false);
         response.set_attempt(1);
@@ -201,8 +209,14 @@ suite<"app_connector_local"> local_suite = []
         expect(connector.delete_token(request).get_reference_id() == "local_delete_token_1");
         expect(connector.create_link(request).get_reference_id() == "local_create_link_1");
         expect(connector.exchange_token(request).get_reference_id() == "local_exchange_token_1");
-        expect(connector.check_feature_matrix(request).get_reference_id() == "local_check_feature_matrix_1");
-        expect(connector.webhook_source_verify(request).get_reference_id() == "local_webhook_source_verify_1");
+        expect(
+            connector.check_feature_matrix(request).get_reference_id() ==
+            "local_check_feature_matrix_1"
+        );
+        expect(
+            connector.webhook_source_verify(request).get_reference_id() ==
+            "local_webhook_source_verify_1"
+        );
     };
 
     "statuses form a fixed operation-to-status mapping"_test = []

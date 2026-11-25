@@ -22,31 +22,49 @@ import core_workflow;
 import core_serde;
 import interfaces;
 import :members_operations;
+
 export namespace blog::handlers::members::members_account::read::workflow {
-class ExecuteStep {
+class ExecuteStep
+{
 public:
- using Input=interfaces::io::IRequest&; using Output=std::map<std::string, std::string>;
- static constexpr std::string_view name{"members_account_read_execute"};
- [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  auto& ctx=*s_ctx;
- const std::string id=req_member_id(in);
-  if (id.empty())
-   return core::workflow::StepResponse<Output>{{{"status","204"},{"body",""}}};
-  const auto one=ctx.store().find_by_resource("members", id);
-  if (!one)
-   return core::workflow::StepResponse<Output>{{{"status","404"},{"body",blog::api::ApiError{}.json("Resource not found","Member not found")}}};
-  const auto overlay=s_ops->account_fields_get(id);
-  return core::workflow::StepResponse<Output>{{{"status","200"},
-    {"body",blog::api::members::MembersOperations::account_projection(*one, overlay)}}};
- }
- void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx; static blog::api::members::MembersOperations* s_ops;
+    using Input = interfaces::io::IRequest&;
+    using Output = std::map<std::string, std::string>;
+    static constexpr std::string_view name{"members_account_read_execute"};
+
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
+        auto& ctx = *s_ctx;
+        const std::string id = req_member_id(in);
+        if (id.empty()) {
+            return core::workflow::StepResponse<Output>{{{"status", "204"}, {"body", ""}}};
+        }
+        const auto one = ctx.store().find_by_resource("members", id);
+        if (!one) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "404"},
+                 {"body", blog::api::ApiError{}.json("Resource not found", "Member not found")}}
+            };
+        }
+        const auto overlay = s_ops->account_fields_get(id);
+        return core::workflow::StepResponse<Output>{
+            {{"status", "200"},
+             {"body", blog::api::members::MembersOperations::account_projection(*one, overlay)}}
+        };
+    }
+
+    void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
+    static blog::BlogContext* s_ctx;
+    static blog::api::members::MembersOperations* s_ops;
 
 private:
-static std::string req_member_id(const interfaces::io::IRequest& in) {
-  return std::string{in.find_header("x-member-id")};
- }
+    static std::string req_member_id(const interfaces::io::IRequest& in)
+    {
+        return std::string{in.find_header("x-member-id")};
+    }
 };
+
 blog::api::members::MembersOperations* ExecuteStep::s_ops{nullptr};
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::members::members_account::read::workflow

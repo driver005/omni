@@ -10,22 +10,37 @@ import core_auth;
 export namespace blog::handlers::previews::preview_get::workflow {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 // Strict parity for the `previews.read` api-framework endpoint reached by the
@@ -41,15 +56,18 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"previews_preview_get_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& input, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& input, core::workflow::WorkflowContext&) const
     {
         const std::string path{input.get_path()};
 
         // Ghost input pipeline (previews.js:63-79). The api-framework exposes
         // exactly three options for previews; everything else is dropped.
         static constexpr std::string_view kAllowedOptions[]{
-            "include", "member_status", "member_tier"};
+            "include",
+            "member_status",
+            "member_tier"
+        };
         const std::span<const std::string_view> allowed{kAllowedOptions};
         const core::query::ParsedQuery query = core::query::parse(path, allowed);
 
@@ -76,7 +94,8 @@ public:
         // status='all' (controllers/previews.js:19-25).
         const auto includeIt = query.options.find("include");
         const std::string include = includeIt != query.options.end()
-            ? includeIt->second : std::string{"authors,tags,tiers"};
+                                        ? includeIt->second
+                                        : std::string{"authors,tags,tiers"};
         if (!valid_tokens(include, kIncludes)) {
             return invalid("include", "Invalid include value");
         }
@@ -104,11 +123,13 @@ public:
         // principal supplied by a caller is still authorizable via this service.
         const core::auth::ghost::GhostAuthorizer authorizer;
         const core::auth::ghost::Principal principal{
-            .context = core::auth::ghost::ApiContext::INTERNAL};
+            .context = core::auth::ghost::ApiContext::INTERNAL
+        };
         const auto auth = authorizer.authorize(principal, "previews", "read");
         if (!auth.allowed) {
-            return core::workflow::StepResponse<Output>{{{"status", std::to_string(auth.status)},
-                                                        {"body", auth.error_json}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", std::to_string(auth.status)}, {"body", auth.error_json}}
+            };
         }
 
         // `_addMemberContextToFrame` (previews.js:16-52): only writes a synthetic
@@ -116,8 +137,8 @@ public:
         // store-backed lookup of paid tiers (create-paid-member-shim.ts:18-42).
         // It feeds content gating; this store has no per-tier restricted columns,
         // so materialise it for the mapping decision below.
-        const std::string memberTiers = memberStatus == "paid"
-            ? paid_member_shim(memberTier) : std::string{"[]"};
+        const std::string memberTiers =
+            memberStatus == "paid" ? paid_member_shim(memberTier) : std::string{"[]"};
         (void)memberTiers;
 
         // forceUrlRelations(frame,'posts') (previews.js:84) is mirrored by the
@@ -125,7 +146,9 @@ public:
         // computation the post mapper performs from the row. status:'all'
         // makes drafts, sent and published posts all resolvable.
         const std::map<std::string, std::string> storeParams{
-            {"include", include}, {"status", "all"}};
+            {"include", include},
+            {"status", "all"}
+        };
         auto filterQuery = query;
         filterQuery.filters.emplace_back("uuid", uuid);
         // Ghost findOne is not paginated: lift core::query's default limit.
@@ -134,8 +157,10 @@ public:
         const auto posts = blog::api::parse_array(core::query::apply(rows, filterQuery));
         if (posts.empty()) {
             // models.Post.findOne returns falsy -> NotFoundError (previews.js:90-94).
-            return core::workflow::StepResponse<Output>{{{"status", "404"},
-                {"body", blog::api::ApiError{}.json("Post not found.", "Not Found")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "404"},
+                 {"body", blog::api::ApiError{}.json("Post not found.", "Not Found")}}
+            };
         }
 
         // output/previews.js:4-35: tiersService.api.browse({}) feeds the post
@@ -144,9 +169,10 @@ public:
         // local_mapping::wrap builds the collection envelope.
         auto post = posts.front();
         const std::string type = post.contains("type") && !post.at("type").empty()
-            ? post.at("type") : std::string{"\"post\""};
-        const std::string visibility = unquote(post.contains("visibility")
-            ? post.at("visibility") : std::string{});
+                                     ? post.at("type")
+                                     : std::string{"\"post\""};
+        const std::string visibility =
+            unquote(post.contains("visibility") ? post.at("visibility") : std::string{});
         post["tiers"] = tiers_browse(visibility == "paid" || visibility == "tiers");
 
         std::string mapped = local_mapping::clean(blog::api::record_to_json(post), "post");
@@ -156,16 +182,17 @@ public:
         // (controllers/previews.js:68-71). Carry that onto the mapped post.
         if (memberStatus.empty() && post.contains("html")) {
             const std::string html = unquote(post.at("html"));
-            mapped = with_member(mapped, "access",
-                (html.empty() || html == "null") ? "false" : "true");
+            mapped =
+                with_member(mapped, "access", (html.empty() || html == "null") ? "false" : "true");
         }
 
         // `type` is not a clean.post field: Ghost sets it on the envelope entry
         // after mapping (output/previews.js:34).
         mapped = with_member(mapped, "type", type);
 
-        return core::workflow::StepResponse<Output>{{{"status", "200"},
-            {"body", local_mapping::wrap("previews", mapped)}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "200"}, {"body", local_mapping::wrap("previews", mapped)}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -177,13 +204,16 @@ private:
     static std::string segment(std::string_view path, std::size_t n)
     {
         const auto qpos = path.find('?');
-        const std::string_view bare = qpos == std::string_view::npos
-            ? path : path.substr(0, qpos);
+        const std::string_view bare = qpos == std::string_view::npos ? path : path.substr(0, qpos);
         std::size_t i = 0;
-        for (auto part : std::views::split(bare, '/')) {
+        for (auto part: std::views::split(bare, '/')) {
             const std::string s{std::ranges::begin(part), std::ranges::end(part)};
-            if (s.empty()) continue;
-            if (i++ == n) return s;
+            if (s.empty()) {
+                continue;
+            }
+            if (i++ == n) {
+                return s;
+            }
         }
         return {};
     }
@@ -192,15 +222,23 @@ private:
     static std::string repeated_option(std::string_view path)
     {
         const auto qpos = path.find('?');
-        if (qpos == std::string_view::npos) return {};
+        if (qpos == std::string_view::npos) {
+            return {};
+        }
         std::set<std::string> seen;
-        for (auto pair : std::views::split(path.substr(qpos + 1), '&')) {
+        for (auto pair: std::views::split(path.substr(qpos + 1), '&')) {
             const std::string text{std::ranges::begin(pair), std::ranges::end(pair)};
             const auto eq = text.find('=');
-            if (eq == std::string::npos) continue;
+            if (eq == std::string::npos) {
+                continue;
+            }
             const std::string key = text.substr(0, eq);
-            if (key != "include" && key != "member_status" && key != "member_tier") continue;
-            if (!seen.insert(key).second) return key;
+            if (key != "include" && key != "member_status" && key != "member_tier") {
+                continue;
+            }
+            if (!seen.insert(key).second) {
+                return key;
+            }
         }
         return {};
     }
@@ -214,14 +252,17 @@ private:
     }
 
     // Insert a member into a JSON object string without re-serialising it.
-    static std::string with_member(std::string_view object,
-                                   std::string_view key,
-                                   std::string_view raw_value)
+    static std::string
+    with_member(std::string_view object, std::string_view key, std::string_view raw_value)
     {
         const auto close = object.find_last_of('}');
-        if (close == std::string_view::npos) return std::string{object};
+        if (close == std::string_view::npos) {
+            return std::string{object};
+        }
         std::string out{object.substr(0, close)};
-        if (out.size() > 1) out.push_back(',');
+        if (out.size() > 1) {
+            out.push_back(',');
+        }
         out += '"';
         out += key;
         out += "\":";
@@ -237,16 +278,20 @@ private:
         const auto tiers = blog::api::parse_array(s_ctx->store().json_for("tiers", {}));
         std::string out{"["};
         bool first = true;
-        for (const auto& tier : tiers) {
+        for (const auto& tier: tiers) {
             const auto type = tier.find("type");
-            if (type == tier.end() || type->second != "\"paid\"") continue;
+            if (type == tier.end() || type->second != "\"paid\"") {
+                continue;
+            }
             if (!tierSlug.empty()) {
                 const auto slug = tier.find("slug");
                 if (slug == tier.end() || slug->second != "\"" + std::string{tierSlug} + "\"") {
                     continue;
                 }
             }
-            if (!first) out.push_back(',');
+            if (!first) {
+                out.push_back(',');
+            }
             first = false;
             out += local_mapping::clean(blog::api::record_to_json(tier), "tier");
         }
@@ -261,12 +306,16 @@ private:
         const auto tiers = blog::api::parse_array(s_ctx->store().json_for("tiers", {}));
         std::string out{"["};
         bool first = true;
-        for (const auto& tier : tiers) {
+        for (const auto& tier: tiers) {
             if (paid_only) {
                 const auto type = tier.find("type");
-                if (type == tier.end() || type->second != "\"paid\"") continue;
+                if (type == tier.end() || type->second != "\"paid\"") {
+                    continue;
+                }
             }
-            if (!first) out.push_back(',');
+            if (!first) {
+                out.push_back(',');
+            }
             first = false;
             out += local_mapping::clean(blog::api::record_to_json(tier), "tier");
         }
@@ -283,19 +332,22 @@ private:
     template<typename Range>
     static bool valid_tokens(std::string_view csv, const Range& allowed)
     {
-        for (auto part : std::views::split(csv, ',')) {
+        for (auto part: std::views::split(csv, ',')) {
             const std::string token{std::ranges::begin(part), std::ranges::end(part)};
-            if (!in(allowed, token)) return false;
+            if (!in(allowed, token)) {
+                return false;
+            }
         }
         return true;
     }
 
-    static core::workflow::StepResponse<Output> invalid(
-        std::string_view property,
-        std::string_view context)
+    static core::workflow::StepResponse<Output>
+    invalid(std::string_view property, std::string_view context)
     {
-        return core::workflow::StepResponse<Output>{{{"status", "422"},
-            {"body", blog::api::ApiError{}.validation("Validation error", context, property)}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "422"},
+             {"body", blog::api::ApiError{}.validation("Validation error", context, property)}}
+        };
     }
 };
 

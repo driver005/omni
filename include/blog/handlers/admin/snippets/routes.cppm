@@ -19,47 +19,62 @@ public:
         Router{router, "/snippets"}
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.snippets_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.snippets_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost snippets GET")
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.snippets_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.snippets_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost snippets POST")
             .add_route(
                 Route{"/:id"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.snippets_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.snippets_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id GET")
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.snippets_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.snippets_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
-                    .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.snippets_destroy().handle(req, res, std::move(send));
-    })
+                    .delt(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.snippets_destroy().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id DELETE")
             );
     }

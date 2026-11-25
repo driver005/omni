@@ -11,12 +11,18 @@ export namespace blog::dto::stats {
 class StatsMrrMeta
 {
 public:
-    void set_totals(std::vector<StatsMrrTotal> value) { totals = std::move(value); }
-    [[nodiscard]] const std::vector<StatsMrrTotal>& get_totals() const noexcept { return totals; }
+    void set_totals(std::vector<StatsMrrTotal> value)
+    {
+        totals = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<StatsMrrTotal>& get_totals() const noexcept
+    {
+        return totals;
+    }
 
     std::vector<StatsMrrTotal> totals{};
 };
-
 
 
 } // namespace blog::dto::stats
@@ -26,9 +32,11 @@ struct serde::Serializable<blog::dto::stats::StatsMrrMeta>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"totals", &blog::dto::stats::StatsMrrMeta::get_totals, &blog::dto::stats::StatsMrrMeta::set_totals, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "totals",
+            &blog::dto::stats::StatsMrrMeta::get_totals,
+            &blog::dto::stats::StatsMrrMeta::set_totals,
+            serde::FieldOptions{}>{}};
     }
 
     static constexpr std::string_view table_name()
@@ -36,4 +44,3 @@ struct serde::Serializable<blog::dto::stats::StatsMrrMeta>
         return "stats_mrr_meta";
     }
 };
-

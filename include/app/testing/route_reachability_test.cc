@@ -16,13 +16,23 @@ import io_layer_http2;
 
 namespace {
 
-enum class Outcome { Ok, HandlerRan, Unrouted, NoHandler };
+enum class Outcome
+{
+    Ok,
+    HandlerRan,
+    Unrouted,
+    NoHandler
+};
 
 Outcome classify(const std::exception& error)
 {
     std::string_view message{error.what()};
-    if (message.starts_with("Route not found")) return Outcome::Unrouted;
-    if (message.starts_with("Wrong method for route")) return Outcome::NoHandler;
+    if (message.starts_with("Route not found")) {
+        return Outcome::Unrouted;
+    }
+    if (message.starts_with("Wrong method for route")) {
+        return Outcome::NoHandler;
+    }
     return Outcome::HandlerRan; // handler itself threw — routing worked
 }
 
@@ -41,12 +51,8 @@ int main()
     auto route_handler = core::router::RouteBuilder{}.build(std::move(*context));
 
     if (std::getenv("ROUTE_DUMP") != nullptr) {
-        for (const auto& r : route_handler.enumerate_routes()) {
-            std::println(
-                "{} {}",
-                interfaces::io::types::method_str(r.method),
-                r.path
-            );
+        for (const auto& r: route_handler.enumerate_routes()) {
+            std::println("{} {}", interfaces::io::types::method_str(r.method), r.path);
         }
         return 0;
     }
@@ -77,28 +83,38 @@ int main()
     // intermediate segments of multi-segment Router paths, so it cannot reconstruct
     // every full path accurately.
     std::size_t registry_operations{0};
-    for (const auto& route : registry) registry_operations += route.get_operations().size();
+    for (const auto& route: registry) {
+        registry_operations += route.get_operations().size();
+    }
 
     const auto compiled = route_handler.enumerate_routes();
-    for (const auto& [want_method, want_path] : required) {
-        if (std::ranges::none_of(compiled, [&](const auto& entry) {
-                return interfaces::io::types::method_str(entry.method) == want_method &&
-                       entry.path == want_path;
-            })) {
+    for (const auto& [want_method, want_path]: required) {
+        if (std::ranges::none_of(
+                compiled,
+                [&](const auto& entry)
+                {
+                    return interfaces::io::types::method_str(entry.method) == want_method &&
+                           entry.path == want_path;
+                }
+            )) {
             ++missing_required;
             std::println("MISSING_REQUIRED {} {}", want_method, want_path);
         }
     }
 
-    for (const auto& registered : compiled) {
+    for (const auto& registered: compiled) {
         const auto method = registered.method;
         const std::string method_name{interfaces::io::types::method_str(method)};
-        if (method_name.empty()) continue;
+        if (method_name.empty()) {
+            continue;
+        }
 
         std::string path = registered.path;
         for (;;) {
             const auto pos = path.find("{param}");
-            if (pos == std::string::npos) break;
+            if (pos == std::string::npos) {
+                break;
+            }
             path.replace(pos, 7, "1");
         }
         ++total;
@@ -111,7 +127,10 @@ int main()
         req.set_header(interfaces::io::types::Token::ACCEPT, "application/json");
 
         bool sent = false;
-        const auto send = [&sent] { sent = true; };
+        const auto send = [&sent]
+        {
+            sent = true;
+        };
         try {
             route_handler.match(method, path, req, res, send);
             ++routed;
@@ -135,8 +154,14 @@ int main()
     }
 
     std::println("registry operations: {} | trie dispatch entries: {}", registry_operations, total);
-    std::println("probes: {} | routed: {} | unrouted: {} | no handler: {} | handler threw: {}",
-                 total, routed, unrouted, no_handler, handler_errors);
+    std::println(
+        "probes: {} | routed: {} | unrouted: {} | no handler: {} | handler threw: {}",
+        total,
+        routed,
+        unrouted,
+        no_handler,
+        handler_errors
+    );
 
     return (unrouted == 0 && no_handler == 0 && missing_required == 0) ? 0 : 1;
 }

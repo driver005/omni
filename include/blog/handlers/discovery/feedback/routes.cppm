@@ -27,13 +27,16 @@ public:
             .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/:id"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.feedback_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.feedback_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost feedback members browse")
             );
 
@@ -46,13 +49,16 @@ public:
             .use(blog::handlers::middleware::optional_auth)
             .add_route(
                 Route{"/feedback"}
-                    .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.feedback_add().handle(req, res, std::move(send));
-    })
+                    .post(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.feedback_add().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost feedback members add")
             );
     }

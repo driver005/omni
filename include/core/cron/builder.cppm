@@ -50,8 +50,9 @@ namespace core::cron::tests {
 
 struct BuiltCronJob
 {
-     void run() {}
+    void run() {}
 };
+
 CORE_CRON_JOB(BuiltCronJob, "built-cron-job", "*/5 * * * *");
 
 using namespace boost::ut;
@@ -66,7 +67,12 @@ suite<"core_cron_cron_builder"> core_cron_cron_builder_suite = []
         expect(cron.engine_name() == "local");
 
         std::vector<std::string> fired;
-        cron.set_fire_callback([&](std::string_view name) { fired.emplace_back(name); });
+        cron.set_fire_callback(
+            [&](std::string_view name)
+            {
+                fired.emplace_back(name);
+            }
+        );
 
         const auto job = cron.schedule<BuiltCronJob>();
         expect(job.has_value());

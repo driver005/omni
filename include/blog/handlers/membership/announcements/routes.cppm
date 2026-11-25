@@ -23,13 +23,16 @@ public:
         // JSON serde gate: Ghost's GET route accepts any Content-Type/Accept,
         // so content_type_middleware (415/406) is deliberately not installed.
         Router{router, "/api/announcement"}.add_route(
-            Route{"/"}.get([&handler](
-                interfaces::io::IRequest& req,
-                interfaces::io::IResponse& res,
-                std::function<void()> send
-            ) {
-                handler.announcements_announcement_get().handle(req, res, std::move(send));
-            })
+            Route{"/"}.get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.announcements_announcement_get().handle(req, res, std::move(send));
+                }
+            )
         );
     }
 };

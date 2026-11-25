@@ -24,31 +24,40 @@ public:
         using Router = utils::openapi::ApiRouter;
 
         Router{router, "/webhooks"}
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.webhooks_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.webhooks_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost webhooks POST")
             .add_route(
                 Route{"/:id"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.webhooks_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.webhooks_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
-                    .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.webhooks_destroy().handle(req, res, std::move(send));
-    })
+                    .delt(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.webhooks_destroy().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id DELETE")
             );
     }

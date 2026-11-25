@@ -22,13 +22,16 @@ public:
         Router{router, "/oembed"}
             .use(blog::handlers::middleware::bearer_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.oembed_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.oembed_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost oembed GET");
     }
 };

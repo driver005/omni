@@ -14,24 +14,48 @@ export namespace app::dto::external_service_auth {
 class ExternalSignoutTokenRequest
 {
 public:
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
+    void set_token(std::string value)
+    {
+        token = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token() const noexcept
+    {
+        return token;
+    }
+
     std::string token{};
 };
 
 class ExternalTokenResponse
 {
 public:
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
+    void set_token(std::string value)
+    {
+        token = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token() const noexcept
+    {
+        return token;
+    }
+
     std::string token{};
 };
 
 class ExternalVerifyTokenRequest
 {
 public:
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
+    void set_token(std::string value)
+    {
+        token = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token() const noexcept
+    {
+        return token;
+    }
+
     std::string token{};
 };
 
@@ -62,14 +86,45 @@ enum class ValidatingService
 class ExternalVerifyTokenResponse
 {
 public:
-    void set_merchant_id(std::string value) { merchant_id = std::move(value); }
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept { return merchant_id; }
-    void set_context(std::string value) { context = std::move(value); }
-    [[nodiscard]] const std::string& get_context() const noexcept { return context; }
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
-    void set_permissions(std::vector<std::string> value) { permissions = std::move(value); }
-    [[nodiscard]] const std::vector<std::string>& get_permissions() const noexcept { return permissions; }
+    void set_merchant_id(std::string value)
+    {
+        merchant_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_merchant_id() const noexcept
+    {
+        return merchant_id;
+    }
+
+    void set_context(std::string value)
+    {
+        context = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_context() const noexcept
+    {
+        return context;
+    }
+
+    void set_token(std::string value)
+    {
+        token = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token() const noexcept
+    {
+        return token;
+    }
+
+    void set_permissions(std::vector<std::string> value)
+    {
+        permissions = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<std::string>& get_permissions() const noexcept
+    {
+        return permissions;
+    }
 
     std::string merchant_id{};
     std::string context{};
@@ -88,14 +143,45 @@ public:
 class ExternalVerifyTokenResponseHypersense
 {
 public:
-    void set_user_id(std::string value) { user_id = std::move(value); }
-    [[nodiscard]] const std::string& get_user_id() const noexcept { return user_id; }
-    void set_merchant_id(std::string value) { merchant_id = std::move(value); }
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept { return merchant_id; }
-    void set_name(std::string value) { name = std::move(value); }
-    [[nodiscard]] const std::string& get_name() const noexcept { return name; }
-    void set_email(std::string value) { email = std::move(value); }
-    [[nodiscard]] const std::string& get_email() const noexcept { return email; }
+    void set_user_id(std::string value)
+    {
+        user_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_user_id() const noexcept
+    {
+        return user_id;
+    }
+
+    void set_merchant_id(std::string value)
+    {
+        merchant_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_merchant_id() const noexcept
+    {
+        return merchant_id;
+    }
+
+    void set_name(std::string value)
+    {
+        name = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return name;
+    }
+
+    void set_email(std::string value)
+    {
+        email = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_email() const noexcept
+    {
+        return email;
+    }
 
     std::string user_id{};
     std::string merchant_id{};
@@ -106,10 +192,26 @@ public:
 class ValidateTokenRequest
 {
 public:
-    void set_token(std::string value) { token = std::move(value); }
-    [[nodiscard]] const std::string& get_token() const noexcept { return token; }
-    void set_service(ValidatingService value) { service = std::move(value); }
-    [[nodiscard]] const ValidatingService& get_service() const noexcept { return service; }
+    void set_token(std::string value)
+    {
+        token = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token() const noexcept
+    {
+        return token;
+    }
+
+    void set_service(ValidatingService value)
+    {
+        service = std::move(value);
+    }
+
+    [[nodiscard]] const ValidatingService& get_service() const noexcept
+    {
+        return service;
+    }
+
     std::string token{};
     ValidatingService service{};
 };
@@ -128,8 +230,8 @@ struct serde::FieldConverter<app::dto::external_service_auth::ValidatingService>
     [[nodiscard]] static rfl_type to_rfl(const Enum& value)
     {
         switch (value) {
-        case Enum::OfferEngine:
-            return "offer_engine";
+            case Enum::OfferEngine:
+                return "offer_engine";
         }
         return "offer_engine";
     }
@@ -176,11 +278,17 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalTokenRespons
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"token", &app::dto::external_service_auth::ExternalTokenResponse::get_token, &app::dto::external_service_auth::ExternalTokenResponse::set_token, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "token",
+            &app::dto::external_service_auth::ExternalTokenResponse::get_token,
+            &app::dto::external_service_auth::ExternalTokenResponse::set_token,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "external_token_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "external_token_response";
+    }
 };
 
 template<>
@@ -188,11 +296,17 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenR
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"token", &app::dto::external_service_auth::ExternalVerifyTokenRequest::get_token, &app::dto::external_service_auth::ExternalVerifyTokenRequest::set_token, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "token",
+            &app::dto::external_service_auth::ExternalVerifyTokenRequest::get_token,
+            &app::dto::external_service_auth::ExternalVerifyTokenRequest::set_token,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "external_verify_token_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "external_verify_token_request";
+    }
 };
 
 template<>
@@ -200,11 +314,17 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalSignoutToken
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"token", &app::dto::external_service_auth::ExternalSignoutTokenRequest::get_token, &app::dto::external_service_auth::ExternalSignoutTokenRequest::set_token, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "token",
+            &app::dto::external_service_auth::ExternalSignoutTokenRequest::get_token,
+            &app::dto::external_service_auth::ExternalSignoutTokenRequest::set_token,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "external_signout_token_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "external_signout_token_request";
+    }
 };
 
 template<>
@@ -213,11 +333,23 @@ struct serde::Serializable<app::dto::external_service_auth::ValidateTokenRequest
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"token", &app::dto::external_service_auth::ValidateTokenRequest::get_token, &app::dto::external_service_auth::ValidateTokenRequest::set_token, serde::FieldOptions{}>{},
-            serde::FieldDesc<"service", &app::dto::external_service_auth::ValidateTokenRequest::get_service, &app::dto::external_service_auth::ValidateTokenRequest::set_service, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "token",
+                &app::dto::external_service_auth::ValidateTokenRequest::get_token,
+                &app::dto::external_service_auth::ValidateTokenRequest::set_token,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "service",
+                &app::dto::external_service_auth::ValidateTokenRequest::get_service,
+                &app::dto::external_service_auth::ValidateTokenRequest::set_service,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "validate_token_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "validate_token_request";
+    }
 };
 
 template<>
@@ -227,13 +359,25 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenR
     {
         using R = app::dto::external_service_auth::ExternalVerifyTokenResponse;
         return std::tuple{
-            serde::FieldDesc<"merchant_id", &R::get_merchant_id, &R::set_merchant_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "merchant_id",
+                &R::get_merchant_id,
+                &R::set_merchant_id,
+                serde::FieldOptions{}>{},
             serde::FieldDesc<"context", &R::get_context, &R::set_context, serde::FieldOptions{}>{},
             serde::FieldDesc<"token", &R::get_token, &R::set_token, serde::FieldOptions{}>{},
-            serde::FieldDesc<"permissions", &R::get_permissions, &R::set_permissions, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "permissions",
+                &R::get_permissions,
+                &R::set_permissions,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "external_verify_token_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "external_verify_token_response";
+    }
 };
 
 template<>
@@ -244,11 +388,16 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenR
         using R = app::dto::external_service_auth::ExternalVerifyTokenResponseHypersense;
         return std::tuple{
             serde::FieldDesc<"user_id", &R::get_user_id, &R::set_user_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"merchant_id", &R::get_merchant_id, &R::set_merchant_id, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "merchant_id",
+                &R::get_merchant_id,
+                &R::set_merchant_id,
+                serde::FieldOptions{}>{},
             serde::FieldDesc<"name", &R::get_name, &R::set_name, serde::FieldOptions{}>{},
             serde::FieldDesc<"email", &R::get_email, &R::set_email, serde::FieldOptions{}>{}
         };
     }
+
     static constexpr std::string_view table_name()
     {
         return "external_verify_token_response_hypersense";
@@ -258,13 +407,28 @@ struct serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenR
 #ifdef CONGELADO_TEST
 namespace app::dto::external_service_auth::tests {
 using namespace boost::ut;
-suite<"app_dto_external_service_auth"> app_dto_external_service_auth_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::external_service_auth::ExternalTokenResponse>::fields())> > 0);
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenResponse>::fields())> == 4);
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::external_service_auth::ExternalVerifyTokenResponseHypersense>::fields())> == 4);
+suite<"app_dto_external_service_auth"> app_dto_external_service_auth_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<
+                         app::dto::external_service_auth::ExternalTokenResponse>::fields())> > 0
+        );
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<app::dto::external_service_auth::
+                                                 ExternalVerifyTokenResponse>::fields())> == 4
+        );
+        expect(
+            std::tuple_size_v<decltype(serde::Serializable<
+                                       app::dto::external_service_auth::
+                                           ExternalVerifyTokenResponseHypersense>::fields())> == 4
+        );
     };
-    "ValidatingService snake_case serde matches upstream"_test = [] {
+    "ValidatingService snake_case serde matches upstream"_test = []
+    {
         using Enum = app::dto::external_service_auth::ValidatingService;
         using Converter = serde::FieldConverter<Enum>;
         expect(Converter::to_rfl(Enum::OfferEngine) == "offer_engine");
@@ -275,7 +439,8 @@ suite<"app_dto_external_service_auth"> app_dto_external_service_auth_suite = [] 
         expect(parsed.has_value());
         expect(parsed.value() == Enum::OfferEngine);
     };
-    "OfferEngine response emits upstream untagged field order"_test = [] {
+    "OfferEngine response emits upstream untagged field order"_test = []
+    {
         using Response = app::dto::external_service_auth::ExternalVerifyTokenResponse;
         Response response{};
         response.set_merchant_id("merchant_1");
@@ -289,5 +454,5 @@ suite<"app_dto_external_service_auth"> app_dto_external_service_auth_suite = [] 
         expect(json.find(R"("permissions":["offers_read","offers_write"])") != std::string::npos);
     };
 };
-}
+} // namespace app::dto::external_service_auth::tests
 #endif

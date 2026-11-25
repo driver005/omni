@@ -36,14 +36,17 @@ public:
                 .use(blog::handlers::middleware::content_type_middleware)
                 .use(blog::handlers::middleware::bearer_middleware)
                 .use(blog::handlers::middleware::optional_auth)
-                .get([&handler](
-            interfaces::io::IRequest& req,
-            interfaces::io::IResponse& res,
-            std::function<void()> send
-        ) {
-            req.set_header(kGhostContextHeader, "CONTENT_API");
-            handler.tiers_browse().handle(req, res, std::move(send));
-        })
+                .get(
+                    [&handler](
+                        interfaces::io::IRequest& req,
+                        interfaces::io::IResponse& res,
+                        std::function<void()> send
+                    )
+                    {
+                        req.set_header(kGhostContextHeader, "CONTENT_API");
+                        handler.tiers_browse().handle(req, res, std::move(send));
+                    }
+                )
                 .summary("Ghost content tiers GET");
             return;
         }
@@ -51,43 +54,55 @@ public:
         Router{router, "/tiers"}
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        req.set_header(kGhostContextHeader, "ADMIN_API");
-        handler.tiers_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    req.set_header(kGhostContextHeader, "ADMIN_API");
+                    handler.tiers_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost tiers GET")
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        req.set_header(kGhostContextHeader, "ADMIN_API");
-        handler.tiers_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    req.set_header(kGhostContextHeader, "ADMIN_API");
+                    handler.tiers_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost tiers POST")
             .add_route(
                 Route{"/:id"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        req.set_header(kGhostContextHeader, "ADMIN_API");
-        handler.tiers_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            req.set_header(kGhostContextHeader, "ADMIN_API");
+                            handler.tiers_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id GET")
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        req.set_header(kGhostContextHeader, "ADMIN_API");
-        handler.tiers_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            req.set_header(kGhostContextHeader, "ADMIN_API");
+                            handler.tiers_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
             );
     }

@@ -15,7 +15,11 @@ int main()
     db.insert(rec);
 
     const auto all = db.all<blog::model::Recommendation>();
-    if (all.size() != 1) return 1;
-    if (all.front().get_title() != "Ghost") return 2;
+    if (all.size() != 1) {
+        return 1;
+    }
+    if (all.front().get_title() != "Ghost") {
+        return 2;
+    }
     return 0;
 }

@@ -66,16 +66,24 @@ suite<"core_cache_cache_aside"> core_cache_cache_aside_suite = []
         Cache cache;
         CacheAside<std::string> aside{cache};
         int calls{0};
-        const auto first = aside.get_or_load("key", [&] {
-            ++calls;
-            return std::string{"value"};
-        });
+        const auto first = aside.get_or_load(
+            "key",
+            [&]
+            {
+                ++calls;
+                return std::string{"value"};
+            }
+        );
         expect(first == "value");
         expect(calls == 1);
-        const auto second = aside.get_or_load("key", [&] {
-            ++calls;
-            return std::string{"other"};
-        });
+        const auto second = aside.get_or_load(
+            "key",
+            [&]
+            {
+                ++calls;
+                return std::string{"other"};
+            }
+        );
         expect(second == "value");
         expect(calls == 1);
         expect(aside.load("key") == std::string{"value"});

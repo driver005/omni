@@ -1,6 +1,7 @@
 import std;
 import core_error;
 import core_serde;
+import interfaces;
 
 int main()
 {
@@ -10,5 +11,6 @@ int main()
     );
     const auto text = serde::Ser::encode_json(error);
     const auto expected = std::string{R"({"error":"INVALID_JSON","message":"invalid JSON"})"};
-    return text == expected ? 0 : 1;
+    const auto status_ok = error.get_status() == interfaces::io::types::Status::BAD_REQUEST;
+    return text == expected && status_ok ? 0 : 1;
 }

@@ -36,21 +36,36 @@ public:
     [[nodiscard]] std::string_view operator()(AppErrorKind kind) const noexcept
     {
         switch (kind) {
-        case AppErrorKind::EMPTY_REQUEST: return "EMPTY_REQUEST";
-        case AppErrorKind::INVALID_JSON: return "INVALID_JSON";
-        case AppErrorKind::NOT_FOUND: return "NOT_FOUND";
-        case AppErrorKind::UNAUTHORIZED: return "UNAUTHORIZED";
-        case AppErrorKind::FORBIDDEN: return "FORBIDDEN";
-        case AppErrorKind::INTERNAL: return "INTERNAL";
-        case AppErrorKind::ALREADY_EXISTS: return "ALREADY_EXISTS";
-        case AppErrorKind::PRECONDITION_FAILED: return "PRECONDITION_FAILED";
-        case AppErrorKind::INVALID_REQUEST: return "INVALID_REQUEST";
-        case AppErrorKind::INTERNAL_ERROR: return "INTERNAL_ERROR";
-        case AppErrorKind::DUPLICATE_REQUEST: return "DUPLICATE_REQUEST";
-        case AppErrorKind::CONNECTOR_ERROR: return "CONNECTOR_ERROR";
-        case AppErrorKind::VALIDATION_FAILED: return "VALIDATION_FAILED";
-        case AppErrorKind::RATE_LIMITED: return "RATE_LIMITED";
-        case AppErrorKind::TIMEOUT: return "TIMEOUT";
+            case AppErrorKind::EMPTY_REQUEST:
+                return "EMPTY_REQUEST";
+            case AppErrorKind::INVALID_JSON:
+                return "INVALID_JSON";
+            case AppErrorKind::NOT_FOUND:
+                return "NOT_FOUND";
+            case AppErrorKind::UNAUTHORIZED:
+                return "UNAUTHORIZED";
+            case AppErrorKind::FORBIDDEN:
+                return "FORBIDDEN";
+            case AppErrorKind::INTERNAL:
+                return "INTERNAL";
+            case AppErrorKind::ALREADY_EXISTS:
+                return "ALREADY_EXISTS";
+            case AppErrorKind::PRECONDITION_FAILED:
+                return "PRECONDITION_FAILED";
+            case AppErrorKind::INVALID_REQUEST:
+                return "INVALID_REQUEST";
+            case AppErrorKind::INTERNAL_ERROR:
+                return "INTERNAL_ERROR";
+            case AppErrorKind::DUPLICATE_REQUEST:
+                return "DUPLICATE_REQUEST";
+            case AppErrorKind::CONNECTOR_ERROR:
+                return "CONNECTOR_ERROR";
+            case AppErrorKind::VALIDATION_FAILED:
+                return "VALIDATION_FAILED";
+            case AppErrorKind::RATE_LIMITED:
+                return "RATE_LIMITED";
+            case AppErrorKind::TIMEOUT:
+                return "TIMEOUT";
         }
         return "INTERNAL";
     }
@@ -65,21 +80,36 @@ public:
         using interfaces::io::types::Status;
 
         switch (kind) {
-        case AppErrorKind::EMPTY_REQUEST: return Status::BAD_REQUEST;
-        case AppErrorKind::INVALID_JSON: return Status::BAD_REQUEST;
-        case AppErrorKind::NOT_FOUND: return Status::NOT_FOUND;
-        case AppErrorKind::UNAUTHORIZED: return Status::UNAUTHORIZED;
-        case AppErrorKind::FORBIDDEN: return Status::FORBIDDEN;
-        case AppErrorKind::INTERNAL: return Status::INTERNAL_SERVER_ERROR;
-        case AppErrorKind::ALREADY_EXISTS: return Status::CONFLICT;
-        case AppErrorKind::PRECONDITION_FAILED: return Status::CONFLICT;
-        case AppErrorKind::INVALID_REQUEST: return Status::BAD_REQUEST;
-        case AppErrorKind::INTERNAL_ERROR: return Status::INTERNAL_SERVER_ERROR;
-        case AppErrorKind::DUPLICATE_REQUEST: return Status::CONFLICT;
-        case AppErrorKind::CONNECTOR_ERROR: return Status::BAD_GATEWAY;
-        case AppErrorKind::VALIDATION_FAILED: return Status::UNPROCESSABLE_CONTENT;
-        case AppErrorKind::RATE_LIMITED: return Status::TOO_MANY_REQUESTS;
-        case AppErrorKind::TIMEOUT: return Status::GATEWAY_TIMEOUT;
+            case AppErrorKind::EMPTY_REQUEST:
+                return Status::BAD_REQUEST;
+            case AppErrorKind::INVALID_JSON:
+                return Status::BAD_REQUEST;
+            case AppErrorKind::NOT_FOUND:
+                return Status::NOT_FOUND;
+            case AppErrorKind::UNAUTHORIZED:
+                return Status::UNAUTHORIZED;
+            case AppErrorKind::FORBIDDEN:
+                return Status::FORBIDDEN;
+            case AppErrorKind::INTERNAL:
+                return Status::INTERNAL_SERVER_ERROR;
+            case AppErrorKind::ALREADY_EXISTS:
+                return Status::CONFLICT;
+            case AppErrorKind::PRECONDITION_FAILED:
+                return Status::CONFLICT;
+            case AppErrorKind::INVALID_REQUEST:
+                return Status::BAD_REQUEST;
+            case AppErrorKind::INTERNAL_ERROR:
+                return Status::INTERNAL_SERVER_ERROR;
+            case AppErrorKind::DUPLICATE_REQUEST:
+                return Status::CONFLICT;
+            case AppErrorKind::CONNECTOR_ERROR:
+                return Status::BAD_GATEWAY;
+            case AppErrorKind::VALIDATION_FAILED:
+                return Status::UNPROCESSABLE_CONTENT;
+            case AppErrorKind::RATE_LIMITED:
+                return Status::TOO_MANY_REQUESTS;
+            case AppErrorKind::TIMEOUT:
+                return Status::GATEWAY_TIMEOUT;
         }
         return Status::INTERNAL_SERVER_ERROR;
     }

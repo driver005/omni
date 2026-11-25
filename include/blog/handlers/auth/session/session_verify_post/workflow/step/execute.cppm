@@ -15,8 +15,8 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"session_session_verify_post_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         auto& ctx = *s_ctx;
@@ -26,12 +26,14 @@ public:
         // sendAuthCodeToUser: cookieCsrfProtection + user_id guard
         // (session-service.ts:424-432).
         if (!csrf_ok(in, state.origin)) {
-            return core::workflow::StepResponse<Output>{{{"status", "400"},
-                {"body", bad_request("Request made from incorrect origin.")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "400"}, {"body", bad_request("Request made from incorrect origin.")}}
+            };
         }
         if (state.user_id.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "400"},
-                {"body", bad_request("Could not fetch user from the session.")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "400"}, {"body", bad_request("Could not fetch user from the session.")}}
+            };
         }
 
         // rotateAuthCodeChallenge + generateAuthCodeForUser + GhostMailer.send
@@ -43,6 +45,7 @@ public:
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 };
 

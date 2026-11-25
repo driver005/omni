@@ -2,7 +2,6 @@ export module blog_handlers_middleware:registry;
 
 import std;
 
-
 export namespace blog::handlers::middleware {
 
 /**

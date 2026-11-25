@@ -44,10 +44,8 @@ using Object = serde::Value::Object;
     return blog::api::ApiError{}.json(message, "Not Found");
 }
 
-[[nodiscard]] inline std::string validation_error(
-    std::string_view property,
-    std::string_view context
-)
+[[nodiscard]] inline std::string
+validation_error(std::string_view property, std::string_view context)
 {
     return blog::api::ApiError{}.validation("Validation error", context, property);
 }
@@ -70,7 +68,9 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     using blog::handlers::middleware::kGhostContextHeader;
     using blog::handlers::middleware::kGhostRoleHeader;
-    if (request.get_authorization().empty()) return;
+    if (request.get_authorization().empty()) {
+        return;
+    }
     if (request.find_header(kGhostRoleHeader).empty()) {
         request.set_header(kGhostRoleHeader, "Administrator");
     }
@@ -92,7 +92,8 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     prepare_principal(request);
     bool denied = false;
-    auto sentinel = [&denied, send = std::move(send)]() mutable {
+    auto sentinel = [&denied, send = std::move(send)]() mutable
+    {
         denied = true;
         send();
     };
@@ -111,9 +112,13 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 
 [[nodiscard]] inline const serde::Value* field(const Object* object, std::string_view key)
 {
-    if (object == nullptr) return nullptr;
-    for (const auto& [name, value] : *object) {
-        if (name == key) return &value;
+    if (object == nullptr) {
+        return nullptr;
+    }
+    for (const auto& [name, value]: *object) {
+        if (name == key) {
+            return &value;
+        }
     }
     return nullptr;
 }
@@ -121,15 +126,21 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 [[nodiscard]] inline std::string field_string(const Object* object, std::string_view key)
 {
     const auto* value = field(object, key);
-    if (value == nullptr) return {};
-    if (const auto* text = std::get_if<std::string>(&value->get())) return *text;
+    if (value == nullptr) {
+        return {};
+    }
+    if (const auto* text = std::get_if<std::string>(&value->get())) {
+        return *text;
+    }
     return core_serde::JsonCodec{}.encode(*value);
 }
 
 [[nodiscard]] inline std::int64_t field_number(const Object* object, std::string_view key)
 {
     const auto text = field_string(object, key);
-    if (text.empty() || text == "null") return 0;
+    if (text.empty() || text == "null") {
+        return 0;
+    }
     try {
         return std::stoll(text);
     } catch (...) {
@@ -141,10 +152,14 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     std::vector<Object> out;
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return out;
+    if (!parsed) {
+        return out;
+    }
     if (const auto* list = std::get_if<serde::Value::Array>(&parsed->get())) {
-        for (const auto& item : *list) {
-            if (const auto* object = std::get_if<Object>(&item.get())) out.push_back(*object);
+        for (const auto& item: *list) {
+            if (const auto* object = std::get_if<Object>(&item.get())) {
+                out.push_back(*object);
+            }
         }
     }
     return out;
@@ -159,9 +174,11 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     const auto route = path.substr(0, path.find('?'));
     std::vector<std::string> segments;
-    for (auto part : std::views::split(route, '/')) {
+    for (auto part: std::views::split(route, '/')) {
         const std::string token{std::ranges::begin(part), std::ranges::end(part)};
-        if (!token.empty()) segments.push_back(token);
+        if (!token.empty()) {
+            segments.push_back(token);
+        }
     }
     return segments.size() >= 2 ? segments[1] : std::string{};
 }
@@ -171,19 +188,16 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 /** @brief core::query::parse plus Ghost's restrictAdminApiQueryOptions guard.
  *  Restricted fields in filter/order produce the Ghost 400 BadRequestError body.
  */
-[[nodiscard]] inline std::optional<core::query::ParsedQuery> parse_query(
-    std::string_view path,
-    std::span<const std::string_view> allowed,
-    std::string& error
-)
+[[nodiscard]] inline std::optional<core::query::ParsedQuery>
+parse_query(std::string_view path, std::span<const std::string_view> allowed, std::string& error)
 {
     auto q = core::query::parse(path, allowed);
-    const bool restricted = core::query::has_restricted_field(q.raw_filter)
-        || core::query::has_restricted_field(q.order);
+    const bool restricted = core::query::has_restricted_field(q.raw_filter) ||
+                            core::query::has_restricted_field(q.order);
     if (!restricted) {
-        for (const auto& [name, value] : q.filters) {
-            if (core::query::has_restricted_field(name)
-                || core::query::has_restricted_field(value)) {
+        for (const auto& [name, value]: q.filters) {
+            if (core::query::has_restricted_field(name) ||
+                core::query::has_restricted_field(value)) {
                 error = bad_request("Restricted fields cannot be used in order.");
                 return std::nullopt;
             }
@@ -198,30 +212,30 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 
 // ---------- response envelope ----------
 
-[[nodiscard]] inline std::string pagination(
-    std::size_t total,
-    std::size_t limit,
-    std::size_t page
-)
+[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page)
 {
     const std::size_t pages = limit == 0 ? 1 : (total + limit - 1) / limit;
     const std::string prev = page > 1 ? std::to_string(page - 1) : "null";
     const std::string next = page < pages ? std::to_string(page + 1) : "null";
     return std::format(
         R"({{"limit":{},"page":{},"pages":{},"prev":{},"next":{},"total":{}}})",
-        limit, page, pages, prev, next, total
+        limit,
+        page,
+        pages,
+        prev,
+        next,
+        total
     );
 }
 
-[[nodiscard]] inline std::string envelope(
-    std::string_view resource,
-    std::string_view rows_json,
-    std::string_view meta_json = {}
-)
+[[nodiscard]] inline std::string
+envelope(std::string_view resource, std::string_view rows_json, std::string_view meta_json = {})
 {
-    std::string out = "{" + json_quote(resource) + ":"
-        + (rows_json.empty() ? std::string{"[]"} : std::string{rows_json});
-    if (!meta_json.empty()) out += ",\"meta\":" + std::string{meta_json};
+    std::string out = "{" + json_quote(resource) + ":" +
+                      (rows_json.empty() ? std::string{"[]"} : std::string{rows_json});
+    if (!meta_json.empty()) {
+        out += ",\"meta\":" + std::string{meta_json};
+    }
     out += "}";
     return out;
 }
@@ -233,7 +247,9 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 )
 {
     const auto it = values.find(std::string{key});
-    if (it == values.end()) return fallback;
+    if (it == values.end()) {
+        return fallback;
+    }
     try {
         return std::stoul(it->second);
     } catch (...) {
@@ -246,17 +262,21 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     const auto parts = blog::api::JsonBody{}.parse_raw(ran_json);
     const auto meta = blog::api::JsonBody{}.parse_raw(
-        parts.contains("meta") ? parts.at("meta") : std::string{"{}"});
+        parts.contains("meta") ? parts.at("meta") : std::string{"{}"}
+    );
     const auto pag = blog::api::JsonBody{}.parse_raw(
-        meta.contains("pagination") ? meta.at("pagination") : std::string{"{}"});
+        meta.contains("pagination") ? meta.at("pagination") : std::string{"{}"}
+    );
     const auto page = pagination(
         number_from(pag, "total", 0),
         number_from(pag, "limit", 15),
         number_from(pag, "page", 1)
     );
-    return envelope(resource,
+    return envelope(
+        resource,
         parts.contains("data") ? parts.at("data") : std::string{"[]"},
-        "{\"pagination\":" + page + "}");
+        "{\"pagination\":" + page + "}"
+    );
 }
 
 /** @brief Find one email by id through core_query filtering (no hardcoded id branch). */
@@ -274,7 +294,8 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 [[nodiscard]] inline std::string replace_definitions(std::string_view text)
 {
     static constexpr std::pair<std::string_view, std::string_view> kReplacements[]{
-        {"%%{unsubscribe_url}%%", "http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme"},
+        {"%%{unsubscribe_url}%%",
+         "http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme"},
         {"%%{uuid}%%", "memberuuid"},
         {"%%{member_uuid}%%", "memberuuid"},
         {"%%{email}%%", "member@example.com"},
@@ -284,7 +305,7 @@ inline void prepare_principal(interfaces::io::IRequest& request)
         {"%%{first_name}%%", "Ghost"},
     };
     std::string out{text};
-    for (const auto& [from, to] : kReplacements) {
+    for (const auto& [from, to]: kReplacements) {
         for (std::size_t at = out.find(from); at != std::string::npos;
              at = out.find(from, at + to.size())) {
             out.replace(at, from.size(), to);
@@ -296,11 +317,10 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 [[nodiscard]] inline Object map_email(const Object& raw)
 {
     Object out;
-    for (const auto& [name, value] : raw) {
-        if (name == "post" || name == "preflight_email_count"
-            || name == "candidate_count" || name == "preparation_excluded_count"
-            || name == "prepared_at") {
-            continue;  // mappers/emails.js: delete post + stripEmailAccounting
+    for (const auto& [name, value]: raw) {
+        if (name == "post" || name == "preflight_email_count" || name == "candidate_count" ||
+            name == "preparation_excluded_count" || name == "prepared_at") {
+            continue; // mappers/emails.js: delete post + stripEmailAccounting
         }
         if (name == "html" || name == "plaintext") {
             if (const auto* text = std::get_if<std::string>(&value.get())) {
@@ -317,8 +337,10 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 {
     std::string rows = "[";
     bool first = true;
-    for (const auto& object : decode_objects(rows_json)) {
-        if (!first) rows += ",";
+    for (const auto& object: decode_objects(rows_json)) {
+        if (!first) {
+            rows += ",";
+        }
         rows += encode_object(map_email(object));
         first = false;
     }
@@ -328,31 +350,43 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 
 // ---------- mappers/email-batches.ts ----------
 
-[[nodiscard]] inline std::string map_batches(
-    std::string_view rows_json,
-    bool include_count_recipients
-)
+[[nodiscard]] inline std::string
+map_batches(std::string_view rows_json, bool include_count_recipients)
 {
     static constexpr std::string_view kFields[]{
-        "id", "mailgun_message_id", "status", "member_segment",
-        "created_at", "updated_at", "error_status_code", "error_message", "error_data"};
+        "id",
+        "mailgun_message_id",
+        "status",
+        "member_segment",
+        "created_at",
+        "updated_at",
+        "error_status_code",
+        "error_message",
+        "error_data"
+    };
     std::string out = "[";
     bool first = true;
-    for (const auto& object : decode_objects(rows_json)) {
+    for (const auto& object: decode_objects(rows_json)) {
         Object row;
-        for (auto key : kFields) {
-            if (const auto* value = field(&object, key)) row[std::string{key}] = *value;
+        for (auto key: kFields) {
+            if (const auto* value = field(&object, key)) {
+                row[std::string{key}] = *value;
+            }
         }
         if (include_count_recipients) {
             if (const auto* count = field(&object, "count")) {
                 if (const auto* co = std::get_if<Object>(&count->get())) {
                     Object c;
-                    if (const auto* r = field(co, "recipients")) c["recipients"] = *r;
+                    if (const auto* r = field(co, "recipients")) {
+                        c["recipients"] = *r;
+                    }
                     row["count"] = serde::Value{std::move(c)};
                 }
             }
         }
-        if (!first) out += ",";
+        if (!first) {
+            out += ",";
+        }
         out += encode_object(row);
         first = false;
     }
@@ -364,43 +398,62 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 
 [[nodiscard]] inline std::string map_failures(std::string_view rows_json)
 {
-    static constexpr std::string_view kFields[]{
-        "id", "code", "enhanced_code", "message", "severity", "failed_at", "event_id"};
-    static constexpr std::string_view kMemberFields[]{
-        "id", "uuid", "name", "email", "avatar_image"};
+    static constexpr std::string_view
+        kFields[]{"id", "code", "enhanced_code", "message", "severity", "failed_at", "event_id"};
+    static constexpr std::string_view
+        kMemberFields[]{"id", "uuid", "name", "email", "avatar_image"};
     static constexpr std::string_view kRecipientFields[]{
-        "id", "batch_id", "processed_at", "delivered_at", "opened_at", "failed_at",
-        "member_uuid", "member_email", "member_name"};
+        "id",
+        "batch_id",
+        "processed_at",
+        "delivered_at",
+        "opened_at",
+        "failed_at",
+        "member_uuid",
+        "member_email",
+        "member_name"
+    };
     std::string out = "[";
     bool first = true;
-    for (const auto& object : decode_objects(rows_json)) {
+    for (const auto& object: decode_objects(rows_json)) {
         Object row;
-        for (auto key : kFields) {
-            if (const auto* value = field(&object, key)) row[std::string{key}] = *value;
+        for (auto key: kFields) {
+            if (const auto* value = field(&object, key)) {
+                row[std::string{key}] = *value;
+            }
         }
         const serde::Value null = blog::model::emails::parse_wire_json("null");
         const auto* member = field(&object, "member");
         if (const auto* mo = member != nullptr ? std::get_if<Object>(&member->get()) : nullptr) {
             Object m;
-            for (auto key : kMemberFields) {
-                if (const auto* value = field(mo, key)) m[std::string{key}] = *value;
+            for (auto key: kMemberFields) {
+                if (const auto* value = field(mo, key)) {
+                    m[std::string{key}] = *value;
+                }
             }
             row["member"] = serde::Value{std::move(m)};
         } else {
             row["member"] = null;
         }
         const auto* recipient = field(&object, "emailRecipient");
-        if (recipient == nullptr) recipient = field(&object, "email_recipient");
-        if (const auto* ro = recipient != nullptr ? std::get_if<Object>(&recipient->get()) : nullptr) {
+        if (recipient == nullptr) {
+            recipient = field(&object, "email_recipient");
+        }
+        if (const auto* ro =
+                recipient != nullptr ? std::get_if<Object>(&recipient->get()) : nullptr) {
             Object r;
-            for (auto key : kRecipientFields) {
-                if (const auto* value = field(ro, key)) r[std::string{key}] = *value;
+            for (auto key: kRecipientFields) {
+                if (const auto* value = field(ro, key)) {
+                    r[std::string{key}] = *value;
+                }
             }
             row["email_recipient"] = serde::Value{std::move(r)};
         } else {
             row["email_recipient"] = null;
         }
-        if (!first) out += ",";
+        if (!first) {
+            out += ",";
+        }
         out += encode_object(row);
         first = false;
     }
@@ -421,9 +474,11 @@ inline void prepare_principal(interfaces::io::IRequest& request)
     std::string_view recipients_json
 )
 {
-    (void)recipients_json;  // recipient total comes from the email row
+    (void)recipients_json; // recipient total comes from the email row
     const auto emails = decode_objects(email_json);
-    if (emails.empty()) return not_found("Email not found.");
+    if (emails.empty()) {
+        return not_found("Email not found.");
+    }
     const Object& email = emails.front();
     const std::string status = field_string(&email, "status");
     const std::int64_t expected = field_number(&email, "email_count");
@@ -442,13 +497,17 @@ inline void prepare_principal(interfaces::io::IRequest& request)
         total = expected;
         eta = 0;
     } else {
-        const bool submitting = std::ranges::any_of(batches, [](const Object& b) {
-            const auto value = field_string(&b, "status");
-            return !value.empty() && value != "pending";
-        });
+        const bool submitting = std::ranges::any_of(
+            batches,
+            [](const Object& b)
+            {
+                const auto value = field_string(&b, "status");
+                return !value.empty() && value != "pending";
+            }
+        );
         phase = submitting ? "submitting" : "preparing";
         std::int64_t prepared = 0;
-        for (const auto& b : batches) {
+        for (const auto& b: batches) {
             const auto rc = field_number(&b, "recipient_count");
             prepared += rc;
             const auto bs = field_string(&b, "status");
@@ -456,7 +515,9 @@ inline void prepare_principal(interfaces::io::IRequest& request)
                 std::int64_t done = rc;
                 if (phase == "submitting") {
                     const auto accounted = field_number(&b, "accounted_recipient_count");
-                    if (accounted != 0) done = accounted;
+                    if (accounted != 0) {
+                        done = accounted;
+                    }
                 }
                 completed += done;
             }
@@ -466,22 +527,25 @@ inline void prepare_principal(interfaces::io::IRequest& request)
         if (status == "failed") {
             phase = "failed";
             failed_during = submitting ? "submitting" : "preparing";
-            retryable = std::ranges::none_of(batches, [](const Object& b) {
-                return field_string(&b, "status") == "submitting";
-            });
+            retryable = std::ranges::none_of(
+                batches,
+                [](const Object& b)
+                {
+                    return field_string(&b, "status") == "submitting";
+                }
+            );
         } else {
             eta = total - completed <= 0
-                ? std::optional<std::int64_t>{0}
-                : std::nullopt;  // no timing samples in the context-local store
+                      ? std::optional<std::int64_t>{0}
+                      : std::nullopt; // no timing samples in the context-local store
         }
     }
 
-    std::string out = "{\"email_statuses\":[{\"id\":" + json_quote(id)
-        + ",\"sending\":{\"status\":" + json_quote(phase)
-        + ",\"progress\":{\"completed\":" + std::to_string(completed)
-        + ",\"total\":" + std::to_string(total)
-        + ",\"estimated_seconds_remaining\":"
-        + (eta ? std::to_string(*eta) : std::string{"null"}) + "}";
+    std::string out = "{\"email_statuses\":[{\"id\":" + json_quote(id) +
+                      ",\"sending\":{\"status\":" + json_quote(phase) +
+                      ",\"progress\":{\"completed\":" + std::to_string(completed) +
+                      ",\"total\":" + std::to_string(total) + ",\"estimated_seconds_remaining\":" +
+                      (eta ? std::to_string(*eta) : std::string{"null"}) + "}";
     if (phase == "failed") {
         out += ",\"failed_during\":" + json_quote(failed_during);
         out += ",\"retryable\":" + std::string{retryable ? "true" : "false"};
@@ -494,11 +558,16 @@ inline void prepare_principal(interfaces::io::IRequest& request)
 
 [[nodiscard]] inline std::int64_t iso_to_seconds(std::string_view s)
 {
-    if (s.size() < 19) return 0;
-    const auto digits = [&](std::size_t at, std::size_t n) {
+    if (s.size() < 19) {
+        return 0;
+    }
+    const auto digits = [&](std::size_t at, std::size_t n)
+    {
         int v = 0;
         for (std::size_t i = 0; i < n && at + i < s.size(); ++i) {
-            if (s[at + i] < '0' || s[at + i] > '9') return 0;
+            if (s[at + i] < '0' || s[at + i] > '9') {
+                return 0;
+            }
             v = v * 10 + (s[at + i] - '0');
         }
         return v;
@@ -508,26 +577,32 @@ inline void prepare_principal(interfaces::io::IRequest& request)
     const int yy = y - (mo <= 2 ? 1 : 0);
     const int era = (yy >= 0 ? yy : yy - 399) / 400;
     const unsigned yoe = static_cast<unsigned>(yy - era * 400);
-    const unsigned doy = (153u * static_cast<unsigned>(mo + (mo > 2 ? -3 : 9)) + 2) / 5
-        + static_cast<unsigned>(d) - 1;
+    const unsigned doy = (153u * static_cast<unsigned>(mo + (mo > 2 ? -3 : 9)) + 2) / 5 +
+                         static_cast<unsigned>(d) - 1;
     const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    const std::int64_t days = static_cast<std::int64_t>(era) * 146097
-        + static_cast<std::int64_t>(doe) - 719468;
-    return days * 86400 + h * 3600 + mi * 60 + se;
+    const std::int64_t days =
+        static_cast<std::int64_t>(era) * 146'097 + static_cast<std::int64_t>(doe) - 719'468;
+    return days * 86'400 + h * 3'600 + mi * 60 + se;
 }
 
 /** @brief EmailAnalyticsService.getStatus(): lagSeconds for the three lag-bearing jobs. */
 [[nodiscard]] inline std::string patch_lag(std::string_view analytics_json)
 {
     const auto now = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
+                         std::chrono::system_clock::now().time_since_epoch()
+    )
+                         .count();
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(analytics_json);
-    if (!parsed) return std::string{analytics_json};
+    if (!parsed) {
+        return std::string{analytics_json};
+    }
     const auto* root = std::get_if<Object>(&parsed->get());
-    if (root == nullptr) return std::string{analytics_json};
+    if (root == nullptr) {
+        return std::string{analytics_json};
+    }
 
     Object patched;
-    for (const auto& [name, value] : *root) {
+    for (const auto& [name, value]: *root) {
         if (name != "latest" && name != "latestOpened" && name != "missing") {
             patched[name] = value;
             continue;
@@ -539,7 +614,7 @@ inline void prepare_principal(interfaces::io::IRequest& request)
         }
         Object new_job;
         std::string fetched_through;
-        for (const auto& [key, field_value] : *job) {
+        for (const auto& [key, field_value]: *job) {
             if (key == "fetchedThrough") {
                 if (const auto* text = std::get_if<std::string>(&field_value.get())) {
                     fetched_through = *text;
@@ -593,9 +668,14 @@ public:
                         if (const auto* running = field(so, "running")) {
                             if (const auto* flag = std::get_if<bool>(&running->get())) {
                                 if (*flag) {
-                                    return {400, blog::api::ApiError{}.json(
-                                        "Already fetching scheduled events. Wait for it to finish before scheduling a new one.",
-                                        "Validation Error")};
+                                    return {
+                                        400,
+                                        blog::api::ApiError{}.json(
+                                            "Already fetching scheduled events. Wait for it to "
+                                            "finish before scheduling a new one.",
+                                            "Validation Error"
+                                        )
+                                    };
                                 }
                             }
                         }
@@ -604,30 +684,49 @@ public:
             }
         }
 
-        const std::string resolved_begin = begin.empty() ? std::string{created_at} : std::string{begin};
+        const std::string resolved_begin =
+            begin.empty() ? std::string{created_at} : std::string{begin};
         std::string resolved_end{end};
         if (resolved_end.empty()) {
             const auto begin_seconds = iso_to_seconds(resolved_begin);
             const auto now = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-            const auto plus_7d = begin_seconds == 0 ? now : begin_seconds + 7 * 86400;
-            const auto default_end = std::min(now - 3600, plus_7d);
-            resolved_end = std::format("{:%Y-%m-%dT%H:%M:%S.000Z}",
-                std::chrono::system_clock::time_point{std::chrono::seconds{default_end}});
+                                 std::chrono::system_clock::now().time_since_epoch()
+            )
+                                 .count();
+            const auto plus_7d = begin_seconds == 0 ? now : begin_seconds + 7 * 86'400;
+            const auto default_end = std::min(now - 3'600, plus_7d);
+            resolved_end = std::format(
+                "{:%Y-%m-%dT%H:%M:%S.000Z}",
+                std::chrono::system_clock::time_point{std::chrono::seconds{default_end}}
+            );
         }
 
-        m_cache.put(kScheduleKey,
-            core::cache::to_cache_value(std::format(
-                R"({{"id":{},"begin":{},"end":{}}})",
-                json_quote(id), json_quote(resolved_begin), json_quote(resolved_end))),
-            core::cache::Ttl{}.never(), {"emails"});
+        m_cache.put(
+            kScheduleKey,
+            core::cache::to_cache_value(
+                std::format(
+                    R"({{"id":{},"begin":{},"end":{}}})",
+                    json_quote(id),
+                    json_quote(resolved_begin),
+                    json_quote(resolved_end)
+                )
+            ),
+            core::cache::Ttl{}.never(),
+            {"emails"}
+        );
 
-        blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-            .type = "email-analytics.scheduled",
-            .payload = std::format(R"({{"id":{},"begin":{},"end":{}}})",
-                json_quote(id), json_quote(resolved_begin), json_quote(resolved_end)),
-            .aggregate_id = std::string{id}
-        });
+        blog::handlers::outbox::global_outbox().emit(
+            blog::handlers::outbox::Event{
+                .type = "email-analytics.scheduled",
+                .payload = std::format(
+                    R"({{"id":{},"begin":{},"end":{}}})",
+                    json_quote(id),
+                    json_quote(resolved_begin),
+                    json_quote(resolved_end)
+                ),
+                .aggregate_id = std::string{id}
+            }
+        );
         // Ghost returns void from scheduleAnalytics -> empty body, no email edit.
         return {200, ""};
     }
@@ -637,11 +736,13 @@ public:
     {
         m_cache.erase(kAnalyticsKey);
         m_cache.erase(kScheduleKey);
-        blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-            .type = "email-analytics.cancelled",
-            .payload = R"({"jobName":"email-analytics-scheduled"})",
-            .aggregate_id = "email-analytics-scheduled"
-        });
+        blog::handlers::outbox::global_outbox().emit(
+            blog::handlers::outbox::Event{
+                .type = "email-analytics.cancelled",
+                .payload = R"({"jobName":"email-analytics-scheduled"})",
+                .aggregate_id = "email-analytics-scheduled"
+            }
+        );
         return {200, ""};
     }
 
@@ -649,16 +750,20 @@ public:
      *  longer call these (empty store now yields an empty collection, total 0). */
     [[nodiscard]] std::pair<int, std::string> emails_batches()
     {
-        return {200, "{\"batches\":["
-            + core_serde::JsonCodec{}.encode(blog::model::emails::BatchWire{})
-            + "],\"meta\":{\"pagination\":" + pagination(1, 15, 1) + "}}"};
+        return {
+            200,
+            "{\"batches\":[" + core_serde::JsonCodec{}.encode(blog::model::emails::BatchWire{}) +
+                "],\"meta\":{\"pagination\":" + pagination(1, 15, 1) + "}}"
+        };
     }
 
     [[nodiscard]] std::pair<int, std::string> emails_failures()
     {
-        return {200, "{\"failures\":["
-            + core_serde::JsonCodec{}.encode(blog::model::emails::FailureWire{})
-            + "],\"meta\":{\"pagination\":" + pagination(1, 15, 1) + "}}"};
+        return {
+            200,
+            "{\"failures\":[" + core_serde::JsonCodec{}.encode(blog::model::emails::FailureWire{}) +
+                "],\"meta\":{\"pagination\":" + pagination(1, 15, 1) + "}}"
+        };
     }
 
 private:
@@ -670,10 +775,12 @@ private:
         return json_quote(text);
     }
 
-    [[nodiscard]] static blog::dto::emails::AnalyticsStatus load_analytics(core::cache::Cache& cache)
+    [[nodiscard]] static blog::dto::emails::AnalyticsStatus
+    load_analytics(core::cache::Cache& cache)
     {
         const auto stored = core::cache::value_as<std::string>(cache.get(kAnalyticsKey).value);
-        if (auto analytics = blog::handlers::middleware::decode<blog::dto::emails::AnalyticsStatus>(stored)) {
+        if (auto analytics =
+                blog::handlers::middleware::decode<blog::dto::emails::AnalyticsStatus>(stored)) {
             return *analytics;
         }
         blog::dto::emails::AnalyticsStatus analytics;
@@ -684,11 +791,15 @@ private:
         return analytics;
     }
 
-    static void store_analytics(core::cache::Cache& cache, const blog::dto::emails::AnalyticsStatus& analytics)
+    static void
+    store_analytics(core::cache::Cache& cache, const blog::dto::emails::AnalyticsStatus& analytics)
     {
-        cache.put(kAnalyticsKey,
+        cache.put(
+            kAnalyticsKey,
             core::cache::to_cache_value(blog::handlers::middleware::encode(analytics)),
-            core::cache::Ttl{}.never(), {"emails"});
+            core::cache::Ttl{}.never(),
+            {"emails"}
+        );
     }
 
     core::cache::Cache& m_cache;

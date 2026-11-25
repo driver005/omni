@@ -18,16 +18,12 @@ enum class FieldFlags : std::uint8_t
 
 [[nodiscard]] constexpr FieldFlags operator|(FieldFlags a, FieldFlags b) noexcept
 {
-    return static_cast<FieldFlags>(
-        static_cast<std::uint8_t>(a) | static_cast<std::uint8_t>(b)
-    );
+    return static_cast<FieldFlags>(static_cast<std::uint8_t>(a) | static_cast<std::uint8_t>(b));
 }
 
 [[nodiscard]] constexpr FieldFlags operator&(FieldFlags a, FieldFlags b) noexcept
 {
-    return static_cast<FieldFlags>(
-        static_cast<std::uint8_t>(a) & static_cast<std::uint8_t>(b)
-    );
+    return static_cast<FieldFlags>(static_cast<std::uint8_t>(a) & static_cast<std::uint8_t>(b));
 }
 
 /** @brief Instance functor testing a FieldFlags bitmask. */

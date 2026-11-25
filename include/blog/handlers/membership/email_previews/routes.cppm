@@ -20,26 +20,33 @@ public:
             .use(blog::handlers::middleware::content_type_middleware)
             .use(blog::handlers::middleware::require_auth)
             .add_router(
-                Router{router, "/posts"}
-                    .add_route(
-                        Route{"/:id"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.email_previews_get_detail().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost :id GET")
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.email_previews_post_detail().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost :id POST")
-                    )
+                Router{router, "/posts"}.add_route(
+                    Route{"/:id"}
+                        .get(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.email_previews_get_detail()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost :id GET")
+                        .post(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.email_previews_post_detail()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost :id POST")
+                )
             );
     }
 };

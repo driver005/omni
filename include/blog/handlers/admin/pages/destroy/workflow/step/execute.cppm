@@ -9,56 +9,86 @@ import interfaces;
 
 export namespace blog::handlers::pages::destroy::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
- using Input=interfaces::io::IRequest&; using Output=std::map<std::string,std::string>;
- static constexpr std::string_view name{"pages_destroy_execute"};
- [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-  using namespace blog::handlers::pages::support;
-  auto& ctx=*s_ctx; auto& mutations=ctx.store();
+    using Input = interfaces::io::IRequest&;
+    using Output = std::map<std::string, std::string>;
+    static constexpr std::string_view name{"pages_destroy_execute"};
 
-  const auto principal=principal_for(in);
-  core::auth::ghost::GhostAuthorizer authorizer;
-  const auto authorized=authorizer.authorize(principal,true,"posts","destroy");
-  if(!authorized.allowed)
-   return core::workflow::StepResponse<Output>{{{"status",std::to_string(authorized.status)},{"body",authorized.error_json}}};
-  for(const char* attr:{"status","authors","visibility"}) {
-   const auto unsafe=authorizer.unsafe_attrs(principal,attr,"");
-   if(!unsafe.allowed)
-    return core::workflow::StepResponse<Output>{{{"status",std::to_string(unsafe.status)},{"body",unsafe.error_json}}};
-  }
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
+        using namespace blog::handlers::pages::support;
+        auto& ctx = *s_ctx;
+        auto& mutations = ctx.store();
 
-  const std::string raw{in.get_path()};
-  auto path=std::string_view{raw}.substr(0,raw.find('?'));
-  while(path.size()>1 && path.back()=='/') path.remove_suffix(1);
-  const auto slash=path.find_last_of('/');
-  const std::string id{slash==std::string_view::npos?std::string{path}:std::string{path.substr(slash+1)}};
-  if(id.empty())
-   return core::workflow::StepResponse<Output>{{{"status","400"},
-     {"body",blog::api::ApiError{}.validation("An id is required.","Validation Error","id")}}};
+        const auto principal = principal_for(in);
+        core::auth::ghost::GhostAuthorizer authorizer;
+        const auto authorized = authorizer.authorize(principal, true, "posts", "destroy");
+        if (!authorized.allowed) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", std::to_string(authorized.status)}, {"body", authorized.error_json}}
+            };
+        }
+        for (const char* attr: {"status", "authors", "visibility"}) {
+            const auto unsafe = authorizer.unsafe_attrs(principal, attr, "");
+            if (!unsafe.allowed) {
+                return core::workflow::StepResponse<Output>{
+                    {{"status", std::to_string(unsafe.status)}, {"body", unsafe.error_json}}
+                };
+            }
+        }
 
-  // Ghost: findOne({id, type:'page', status:'all'}) then destroy(require:true).
-  const auto page=ctx.store().find_by_resource("pages",id);
-  if(!page)
-   return core::workflow::StepResponse<Output>{{{"status","404"},
-     {"body",blog::api::ApiError{}.json("Page not found.","Page not found")}}};
-  const bool draft=row_field(*page,"status")=="draft";
+        const std::string raw{in.get_path()};
+        auto path = std::string_view{raw}.substr(0, raw.find('?'));
+        while (path.size() > 1 && path.back() == '/') {
+            path.remove_suffix(1);
+        }
+        const auto slash = path.find_last_of('/');
+        const std::string id{
+            slash == std::string_view::npos ? std::string{path}
+                                            : std::string{path.substr(slash + 1)}
+        };
+        if (id.empty()) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "400"},
+                 {"body",
+                  blog::api::ApiError{}.validation("An id is required.", "Validation Error", "id")}}
+            };
+        }
 
-  blog::handlers::outbox::global_outbox().begin_transaction();
-  const auto result=mutations.destroy("pages",id);
-  if(!result.ok()) {
-   blog::handlers::outbox::global_outbox().rollback();
-   return core::workflow::StepResponse<Output>{{{"status",std::to_string(result.status())},{"body",result.body()}}};
-  }
-  emit_event("post.destroyed",R"({"resource":"page"})",id);
-  blog::handlers::outbox::global_outbox().commit();
+        // Ghost: findOne({id, type:'page', status:'all'}) then destroy(require:true).
+        const auto page = ctx.store().find_by_resource("pages", id);
+        if (!page) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "404"},
+                 {"body", blog::api::ApiError{}.json("Page not found.", "Page not found")}}
+            };
+        }
+        const bool draft = row_field(*page, "status") == "draft";
 
-  // statusCode:204, body empty; framework auto "/*", overridden with "" when draft.
-  return core::workflow::StepResponse<Output>{{{"status","204"},{"body",""},
-    {"x-cache-invalidate",draft?"":"/*"}}};
- }
- void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx;
+        blog::handlers::outbox::global_outbox().begin_transaction();
+        const auto result = mutations.destroy("pages", id);
+        if (!result.ok()) {
+            blog::handlers::outbox::global_outbox().rollback();
+            return core::workflow::StepResponse<Output>{
+                {{"status", std::to_string(result.status())}, {"body", result.body()}}
+            };
+        }
+        emit_event("post.destroyed", R"({"resource":"page"})", id);
+        blog::handlers::outbox::global_outbox().commit();
+
+        // statusCode:204, body empty; framework auto "/*", overridden with "" when draft.
+        return core::workflow::StepResponse<Output>{
+            {{"status", "204"}, {"body", ""}, {"x-cache-invalidate", draft ? "" : "/*"}}
+        };
+    }
+
+    void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
+    static blog::BlogContext* s_ctx;
 };
+
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::pages::destroy::workflow

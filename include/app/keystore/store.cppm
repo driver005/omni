@@ -27,8 +27,8 @@ public:
     }
 
     /** @brief Returns the active secret for (purpose, key_id), or nothing. */
-    [[nodiscard]] std::optional<app::crypto::SecretString> get(
-        std::string_view purpose, std::string_view key_id) const
+    [[nodiscard]] std::optional<app::crypto::SecretString>
+    get(std::string_view purpose, std::string_view key_id) const
     {
         const std::optional<KeyStoreRecord> record = find_record(purpose, key_id);
         if (!record || !record->get_active()) {
@@ -43,7 +43,8 @@ public:
         std::string_view key_id,
         std::string_view algorithm,
         app::crypto::SecretString value,
-        std::int64_t created_at = 0)
+        std::int64_t created_at = 0
+    )
     {
         if (find_record(purpose, key_id)) {
             return false;
@@ -65,7 +66,8 @@ public:
         std::string_view purpose,
         std::string_view key_id,
         app::crypto::SecretString new_value,
-        std::int64_t rotated_at = 0)
+        std::int64_t rotated_at = 0
+    )
     {
         std::optional<KeyStoreRecord> record = find_record(purpose, key_id);
         if (!record) {
@@ -75,8 +77,11 @@ public:
         record->set_rotated_at(rotated_at);
         record->set_active(true);
         return m_db.update_where_column<KeyStoreRecord>(
-                   *record, "id", core::db::Compare::EQ,
-                   core::db::DbValue{record->get_id()}) > 0;
+                   *record,
+                   "id",
+                   core::db::Compare::EQ,
+                   core::db::DbValue{record->get_id()}
+               ) > 0;
     }
 
     /** @brief Internal lookup; the returned record contains the raw value.
@@ -84,20 +89,24 @@ public:
      *  Callers must not pass this record to a logger, response DTO or cache key.
      *  Only get() and KeyStoreSecretResolver are presentation-safe entry points.
      */
-    [[nodiscard]] std::optional<KeyStoreRecord> find_record(
-        std::string_view purpose, std::string_view key_id) const
+    [[nodiscard]] std::optional<KeyStoreRecord>
+    find_record(std::string_view purpose, std::string_view key_id) const
     {
         core::db::QuerySpec spec = m_db.query<KeyStoreRecord>().spec();
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "purpose",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{purpose}},
-        });
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "key_id",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{key_id}},
-        });
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "purpose",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{purpose}},
+            }
+        );
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "key_id",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{key_id}},
+            }
+        );
         spec.limit_count = 1;
         const std::vector<KeyStoreRecord> rows = m_db.collect<KeyStoreRecord>(spec);
         if (rows.empty()) {
@@ -119,8 +128,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::optional<std::string> resolve(
-        std::string_view purpose, std::string_view key_id) override
+    [[nodiscard]] std::optional<std::string>
+    resolve(std::string_view purpose, std::string_view key_id) override
     {
         const std::optional<app::crypto::SecretString> secret = m_store.get(purpose, key_id);
         if (!secret) {

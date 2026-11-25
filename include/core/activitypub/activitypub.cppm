@@ -50,10 +50,8 @@ public:
         return m_runtime->signature().sign(message);
     }
 
-    [[nodiscard]] bool verify(
-        std::string_view message,
-        std::span<const unsigned char> signature
-    ) const
+    [[nodiscard]] bool
+    verify(std::string_view message, std::span<const unsigned char> signature) const
     {
         return m_runtime->signature().verify(message, signature);
     }

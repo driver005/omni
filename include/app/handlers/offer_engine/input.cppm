@@ -1,0 +1,83 @@
+export module app_handlers_offer_engine:input;
+
+import std;
+import interfaces;
+import core_error;
+import app_context;
+import app_dto;
+import app_auth;
+
+export namespace app::handlers::offer_engine {
+
+/** @brief Local mirror of `core::configs::dimension_state::Dimensions`. */
+struct OfferEngineDimensions
+{
+    std::string processor_merchant_id{};
+    std::string organization_id{};
+    std::optional<std::string> profile_id{};
+
+    [[nodiscard]] std::string context() const
+    {
+        std::string out{};
+        if (!processor_merchant_id.empty()) {
+            out += "merchant:" + processor_merchant_id;
+        }
+        if (!organization_id.empty()) {
+            if (!out.empty()) {
+                out += '/';
+            }
+            out += "org:" + organization_id;
+        }
+        if (profile_id.has_value() && !profile_id->empty()) {
+            if (!out.empty()) {
+                out += '/';
+            }
+            out += "profile:" + *profile_id;
+        }
+        return out;
+    }
+};
+
+/**
+ * @brief Parse/auth/path/query support for the offer_engine handlers.
+ *
+ * Kept free of business logic: it only resolves the route auth rule and turns
+ * request data into the plain Input structs consumed by the domain runtime.
+ */
+class OfferEngineInputSupport
+{
+public:
+    explicit OfferEngineInputSupport(app::context::AppContext& context) noexcept :
+        m_context{context}
+    {
+    }
+
+    /**
+     * @brief Upstream `&auth::AdminApiAuth` / `HeaderAuth(ApiKeyAuth { ... })`
+     * (routes/offer_engine.rs:23, :46-49). The registry entry carries the equivalent
+     * rule and `authorize_route` enforces it, exactly as in the original handler.
+     */
+    [[nodiscard]] std::optional<core::error::AppError>
+    authorize(const app::auth::AuthContext& auth, std::string_view operation) const
+    {
+        const auto rule = m_context.auth_rules().rule_for(operation);
+        return m_context.authorizer().authorize_route(auth, rule);
+    }
+
+private:
+    app::context::AppContext& m_context;
+};
+
+struct ConnectivityCheckInput
+{
+    app::auth::AuthContext auth{};
+};
+
+struct BrowseOffersInput
+{
+    app::dto::offer_engine::BrowseOffersRequest request{};
+    OfferEngineDimensions dimensions{};
+    app::auth::AuthContext auth{};
+};
+
+} // namespace app::handlers::offer_engine

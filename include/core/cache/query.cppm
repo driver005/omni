@@ -34,11 +34,13 @@ public:
             reflect::is_entity_member_v<E, Member>,
             "where() member is not reflected on this entity"
         );
-        m_spec.predicates.push_back(CachePredicate{
-            .field = std::string{reflect::name_of<E, Member>()},
-            .comparison = comparison,
-            .value = std::move(value),
-        });
+        m_spec.predicates.push_back(
+            CachePredicate{
+                .field = std::string{reflect::name_of<E, Member>()},
+                .comparison = comparison,
+                .value = std::move(value),
+            }
+        );
         return *this;
     }
 
@@ -89,10 +91,14 @@ struct QuerySample
     std::string name{};
     bool active{};
 };
-CORE_CACHE_ENTITY(QuerySample, "users",
+
+CORE_CACHE_ENTITY(
+    QuerySample,
+    "users",
     CORE_CACHE_FIELD("id", &QuerySample::id, FieldRole::KEY),
     CORE_CACHE_FIELD("name", &QuerySample::name, FieldRole::TAG),
-    CORE_CACHE_FIELD("active", &QuerySample::active));
+    CORE_CACHE_FIELD("active", &QuerySample::active)
+);
 
 using namespace boost::ut;
 
@@ -101,9 +107,7 @@ suite<"core_cache_query"> core_cache_query_suite = []
     "composes typed predicates, tags and limits"_test = []
     {
         CacheQuery<QuerySample> query;
-        query.where<&QuerySample::id>(CacheCompare::GE, "18")
-            .with_tag("admin")
-            .limit(5);
+        query.where<&QuerySample::id>(CacheCompare::GE, "18").with_tag("admin").limit(5);
         expect(query.spec().prefix == "users:v1");
         expect(query.spec().predicates.size() == 1);
         expect(query.spec().predicates[0].field == "id");

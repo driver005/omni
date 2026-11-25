@@ -18,11 +18,17 @@ public:
     [[nodiscard]] E from_row(const Row& row)
     {
         E entity{};
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto assign = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto assign = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 if (row.contains(std::string_view{F::name})) {
-                    set_field(entity, F{}, row.get<typename F::value_type>(std::string_view{F::name}));
+                    set_field(
+                        entity,
+                        F{},
+                        row.get<typename F::value_type>(std::string_view{F::name})
+                    );
                 }
             };
             (assign(field_at_t<E, I>{}), ...);
@@ -35,8 +41,10 @@ public:
     [[nodiscard]] std::map<std::string, DbValue> to_values(const E& entity)
     {
         std::map<std::string, DbValue> values;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto append = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto append = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 values.emplace(
                     std::string{std::string_view{F::name}},
@@ -60,10 +68,14 @@ struct MapSample
     std::string name{};
     bool active{};
 };
-CORE_DB_REFLECT(MapSample, "map_samples",
+
+CORE_DB_REFLECT(
+    MapSample,
+    "map_samples",
     CORE_DB_FIELD("id", &MapSample::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY),
     CORE_DB_FIELD("name", &MapSample::name, ColumnType::TEXT),
-    CORE_DB_FIELD("active", &MapSample::active, ColumnType::BOOLEAN));
+    CORE_DB_FIELD("active", &MapSample::active, ColumnType::BOOLEAN)
+);
 
 using namespace boost::ut;
 

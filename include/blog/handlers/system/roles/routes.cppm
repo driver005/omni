@@ -24,14 +24,17 @@ public:
         // not require application/json (serde.cppm:97-108 was a divergence).
         Router{router, "/roles"}
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        req.set_header(kGhostContextHeader, "ADMIN_API");
-        handler.roles_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    req.set_header(kGhostContextHeader, "ADMIN_API");
+                    handler.roles_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost roles GET");
     }
 };

@@ -25,13 +25,16 @@ public:
             .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/token"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tinybird_tinybird_token_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.tinybird_tinybird_token_get().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost token GET")
             );
     }

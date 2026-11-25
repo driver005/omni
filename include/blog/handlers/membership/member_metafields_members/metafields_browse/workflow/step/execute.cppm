@@ -26,161 +26,211 @@ import interfaces;
 export namespace blog::handlers::member_metafields_members::metafields_browse::workflow {
 
 namespace local_mapping {
-[[nodiscard]] inline std::string wrap(std::string_view resource, std::string_view rows,
-                                      std::string_view meta = {})
-{
-    return "{\"" + std::string{resource} + "\":" + std::string{rows} +
-           (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
-}
-[[nodiscard]] inline std::string clean(std::string_view json, std::string_view) { return std::string{json}; }
-[[nodiscard]] inline std::string pagination(std::size_t total, std::size_t limit, std::size_t page,
-                                            std::size_t pages, std::string_view prev,
-                                            std::string_view next)
-{
-    return std::format(R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
-                       total, limit, page, pages,
-                       prev.empty() ? std::string{"null"} : std::string{prev},
-                       next.empty() ? std::string{"null"} : std::string{next});
-}
+    [[nodiscard]] inline std::string
+    wrap(std::string_view resource, std::string_view rows, std::string_view meta = {})
+    {
+        return "{\"" + std::string{resource} + "\":" + std::string{rows} +
+               (meta.empty() ? std::string{} : ",\"meta\":" + std::string{meta}) + "}";
+    }
+
+    [[nodiscard]] inline std::string clean(std::string_view json, std::string_view)
+    {
+        return std::string{json};
+    }
+
+    [[nodiscard]] inline std::string pagination(
+        std::size_t total,
+        std::size_t limit,
+        std::size_t page,
+        std::size_t pages,
+        std::string_view prev,
+        std::string_view next
+    )
+    {
+        return std::format(
+            R"("total":{},"limit":{},"page":{},"pages":{},"prev":{},"next":{})",
+            total,
+            limit,
+            page,
+            pages,
+            prev.empty() ? std::string{"null"} : std::string{prev},
+            next.empty() ? std::string{"null"} : std::string{next}
+        );
+    }
 } // namespace local_mapping
 
 namespace metafields_detail {
 
-using Value = serde::Value;
-using Object = Value::Object;
-using Array = Value::Array;
-using ResultMap = std::map<std::string, std::string>;
+    using Value = serde::Value;
+    using Object = Value::Object;
+    using Array = Value::Array;
+    using ResultMap = std::map<std::string, std::string>;
 
-inline constexpr std::string_view kNamespaceMessage{
-    "A namespace can only contain lowercase letters, numbers and underscores."};
-inline constexpr std::string_view kUnauthorizedMessage{"You must be signed in to do this."};
-// Ghost inFieldOrder: namespace asc, sort_order asc, created_at asc, id asc
-// (services/members-metafields/queries.ts:209-215).
-inline constexpr std::string_view kOrder{"namespace asc, sort_order asc, created_at asc, id asc"};
+    inline constexpr std::string_view kNamespaceMessage{
+        "A namespace can only contain lowercase letters, numbers and underscores."
+    };
+    inline constexpr std::string_view kUnauthorizedMessage{"You must be signed in to do this."};
+    // Ghost inFieldOrder: namespace asc, sort_order asc, created_at asc, id asc
+    // (services/members-metafields/queries.ts:209-215).
+    inline constexpr std::string_view kOrder{
+        "namespace asc, sort_order asc, created_at asc, id asc"
+    };
 
-[[nodiscard]] inline core::workflow::StepResponse<ResultMap> result(int status, std::string body)
-{
-    return core::workflow::StepResponse<ResultMap>{
-        {{"status", std::to_string(status)}, {"body", std::move(body)}}};
-}
-
-[[nodiscard]] inline const Value* value_for(const Object* object, std::string_view key)
-{
-    if (object == nullptr) return nullptr;
-    for (const auto& [name, value] : *object) {
-        if (name == key) return &value;
+    [[nodiscard]] inline core::workflow::StepResponse<ResultMap>
+    result(int status, std::string body)
+    {
+        return core::workflow::StepResponse<ResultMap>{
+            {{"status", std::to_string(status)}, {"body", std::move(body)}}
+        };
     }
-    return nullptr;
-}
 
-/** @brief Scalar as text; rfl::Generic keeps booleans/numbers as their own alternatives. */
-[[nodiscard]] inline std::string scalar(const Object* object, std::string_view key)
-{
-    const auto* value = value_for(object, key);
-    if (value == nullptr) return {};
-    if (const auto* text = std::get_if<std::string>(&value->get())) return *text;
-    if (const auto* flag = std::get_if<bool>(&value->get())) return *flag ? "true" : "false";
-    if (const auto* number = std::get_if<std::int64_t>(&value->get())) return std::to_string(*number);
-    if (const auto* number = std::get_if<double>(&value->get())) return std::to_string(*number);
-    return {};
-}
+    [[nodiscard]] inline const Value* value_for(const Object* object, std::string_view key)
+    {
+        if (object == nullptr) {
+            return nullptr;
+        }
+        for (const auto& [name, value]: *object) {
+            if (name == key) {
+                return &value;
+            }
+        }
+        return nullptr;
+    }
 
-/** @brief Ghost re-emits dates as ISO strings (serializers.ts:25-34). Null stays null. */
-[[nodiscard]] inline Value iso_date(const Value* value)
-{
-    if (value == nullptr || std::holds_alternative<std::nullopt_t>(value->get())) return Value{};
-    if (const auto* text = std::get_if<std::string>(&value->get())) {
-        std::string out = *text;
-        if (out.size() == 19 && out[10] == ' ') {
-            out[10] = 'T';
-            out += ".000Z"; // SQLite-style datetime -> IS0 8601
+    /** @brief Scalar as text; rfl::Generic keeps booleans/numbers as their own alternatives. */
+    [[nodiscard]] inline std::string scalar(const Object* object, std::string_view key)
+    {
+        const auto* value = value_for(object, key);
+        if (value == nullptr) {
+            return {};
+        }
+        if (const auto* text = std::get_if<std::string>(&value->get())) {
+            return *text;
+        }
+        if (const auto* flag = std::get_if<bool>(&value->get())) {
+            return *flag ? "true" : "false";
+        }
+        if (const auto* number = std::get_if<std::int64_t>(&value->get())) {
+            return std::to_string(*number);
+        }
+        if (const auto* number = std::get_if<double>(&value->get())) {
+            return std::to_string(*number);
+        }
+        return {};
+    }
+
+    /** @brief Ghost re-emits dates as ISO strings (serializers.ts:25-34). Null stays null. */
+    [[nodiscard]] inline Value iso_date(const Value* value)
+    {
+        if (value == nullptr || std::holds_alternative<std::nullopt_t>(value->get())) {
+            return Value{};
+        }
+        if (const auto* text = std::get_if<std::string>(&value->get())) {
+            std::string out = *text;
+            if (out.size() == 19 && out[10] == ' ') {
+                out[10] = 'T';
+                out += ".000Z"; // SQLite-style datetime -> IS0 8601
+            }
+            return Value{std::move(out)};
+        }
+        return Value{*value};
+    }
+
+    /** @brief Typed settings decoding with Ghost defaults (metafieldCodecWithDefaults).
+     *         Only `list` has settings on the wire; defaults are {options:[],multiple:false}
+     *         (contracts/metafield-types/src/index.ts:313-343). */
+    [[nodiscard]] inline Value wire_settings(const Value* stored)
+    {
+        Object result;
+        result["options"] = Value{Array{}};
+        result["multiple"] = Value{false};
+
+        const Object* source = nullptr;
+        std::optional<Value> decoded; // keeps a decoded JSON-string settings value alive
+        if (stored != nullptr) {
+            if (const auto* object = std::get_if<Object>(&stored->get())) {
+                source = object;
+            } else if (const auto* text = std::get_if<std::string>(&stored->get())) {
+                decoded = core_serde::JsonCodec{}.decode<Value>(*text);
+                if (decoded) {
+                    if (const auto* object = std::get_if<Object>(&decoded->get())) {
+                        source = object;
+                    }
+                }
+            }
+        }
+        if (source == nullptr) {
+            return Value{std::move(result)};
+        }
+
+        if (const auto* options = value_for(source, "options")) {
+            if (const auto* list = std::get_if<Array>(&options->get())) {
+                Array values;
+                for (const auto& item: *list) {
+                    if (std::holds_alternative<std::string>(item.get())) {
+                        values.push_back(item);
+                    }
+                }
+                result["options"] = Value{std::move(values)};
+            }
+        }
+        if (const auto* multiple = value_for(source, "multiple")) {
+            if (const auto* flag = std::get_if<bool>(&multiple->get())) {
+                result["multiple"] = Value{*flag};
+            }
+        }
+        return Value{std::move(result)};
+    }
+
+    /** @brief Store row -> Ghost `MetafieldDefinitionSchema` wire object
+     *         (contracts/metafield-types/src/index.ts:382-393). Drops id, member_access,
+     *         sort_order; nests access.member; emits ISO dates. */
+    [[nodiscard]] inline Value to_definition(const Object* raw)
+    {
+        const std::string type = scalar(raw, "type");
+
+        Object out;
+        out["namespace"] = Value{scalar(raw, "namespace")};
+        out["key"] = Value{scalar(raw, "key")};
+        out["name"] = Value{scalar(raw, "name")};
+        out["status"] = Value{scalar(raw, "status")};
+
+        Object access;
+        access["member"] = Value{scalar(raw, "member_access")};
+        out["access"] = Value{std::move(access)};
+
+        out["created_at"] = iso_date(value_for(raw, "created_at"));
+        out["updated_at"] = iso_date(value_for(raw, "updated_at"));
+        out["type"] = Value{type};
+        if (type == "list") {
+            out["settings"] = wire_settings(value_for(raw, "settings"));
         }
         return Value{std::move(out)};
     }
-    return Value{*value};
-}
 
-/** @brief Typed settings decoding with Ghost defaults (metafieldCodecWithDefaults).
- *         Only `list` has settings on the wire; defaults are {options:[],multiple:false}
- *         (contracts/metafield-types/src/index.ts:313-343). */
-[[nodiscard]] inline Value wire_settings(const Value* stored)
-{
-    Object result;
-    result["options"] = Value{Array{}};
-    result["multiple"] = Value{false};
+    [[nodiscard]] inline std::string namespace_from(std::string_view path)
+    {
+        auto bare = path.substr(0, path.find('?'));
+        while (bare.size() > 1 && bare.back() == '/') {
+            bare.remove_suffix(1);
+        }
+        const auto slash = bare.find_last_of('/');
+        return std::string{slash == std::string_view::npos ? bare : bare.substr(slash + 1)};
+    }
 
-    const Object* source = nullptr;
-    std::optional<Value> decoded; // keeps a decoded JSON-string settings value alive
-    if (stored != nullptr) {
-        if (const auto* object = std::get_if<Object>(&stored->get())) {
-            source = object;
-        } else if (const auto* text = std::get_if<std::string>(&stored->get())) {
-            decoded = core_serde::JsonCodec{}.decode<Value>(*text);
-            if (decoded) {
-                if (const auto* object = std::get_if<Object>(&decoded->get())) source = object;
+    /** @brief Ghost NamespaceSchema /^[a-z0-9_]+$/ (identity.ts:30-38). */
+    [[nodiscard]] inline bool valid_namespace(std::string_view ns)
+    {
+        if (ns.empty()) {
+            return false;
+        }
+        for (const char c: ns) {
+            if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) {
+                return false;
             }
         }
+        return true;
     }
-    if (source == nullptr) return Value{std::move(result)};
-
-    if (const auto* options = value_for(source, "options")) {
-        if (const auto* list = std::get_if<Array>(&options->get())) {
-            Array values;
-            for (const auto& item : *list) {
-                if (std::holds_alternative<std::string>(item.get())) values.push_back(item);
-            }
-            result["options"] = Value{std::move(values)};
-        }
-    }
-    if (const auto* multiple = value_for(source, "multiple")) {
-        if (const auto* flag = std::get_if<bool>(&multiple->get())) {
-            result["multiple"] = Value{*flag};
-        }
-    }
-    return Value{std::move(result)};
-}
-
-/** @brief Store row -> Ghost `MetafieldDefinitionSchema` wire object
- *         (contracts/metafield-types/src/index.ts:382-393). Drops id, member_access,
- *         sort_order; nests access.member; emits ISO dates. */
-[[nodiscard]] inline Value to_definition(const Object* raw)
-{
-    const std::string type = scalar(raw, "type");
-
-    Object out;
-    out["namespace"] = Value{scalar(raw, "namespace")};
-    out["key"] = Value{scalar(raw, "key")};
-    out["name"] = Value{scalar(raw, "name")};
-    out["status"] = Value{scalar(raw, "status")};
-
-    Object access;
-    access["member"] = Value{scalar(raw, "member_access")};
-    out["access"] = Value{std::move(access)};
-
-    out["created_at"] = iso_date(value_for(raw, "created_at"));
-    out["updated_at"] = iso_date(value_for(raw, "updated_at"));
-    out["type"] = Value{type};
-    if (type == "list") out["settings"] = wire_settings(value_for(raw, "settings"));
-    return Value{std::move(out)};
-}
-
-[[nodiscard]] inline std::string namespace_from(std::string_view path)
-{
-    auto bare = path.substr(0, path.find('?'));
-    while (bare.size() > 1 && bare.back() == '/') bare.remove_suffix(1);
-    const auto slash = bare.find_last_of('/');
-    return std::string{slash == std::string_view::npos ? bare : bare.substr(slash + 1)};
-}
-
-/** @brief Ghost NamespaceSchema /^[a-z0-9_]+$/ (identity.ts:30-38). */
-[[nodiscard]] inline bool valid_namespace(std::string_view ns)
-{
-    if (ns.empty()) return false;
-    for (const char c : ns) {
-        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) return false;
-    }
-    return true;
-}
 
 } // namespace metafields_detail
 
@@ -191,10 +241,9 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"member_metafields_members_metafields_browse_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in,
-        core::workflow::WorkflowContext&
-    ) const {
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
         using namespace metafields_detail;
 
         // Ghost: router.use(loadMemberIdentity) + rejectWhenAnonymous on this route
@@ -211,8 +260,10 @@ public:
         // body or multipart on this route.
         const std::string ns = namespace_from(in.get_path());
         if (!valid_namespace(ns)) {
-            return result(422, blog::api::ApiError{}.validation(
-                kNamespaceMessage, "namespace", "namespace"));
+            return result(
+                422,
+                blog::api::ApiError{}.validation(kNamespaceMessage, "namespace", "namespace")
+            );
         }
 
         // definitions.browse({namespace}, MEMBERS) -> fields.definitions(...,
@@ -222,19 +273,29 @@ public:
         const auto rows = ctx.store().json_for("members_metafields");
         const auto parsed = core_serde::JsonCodec{}.decode<Value>(rows);
         if (!parsed) {
-            return result(500, blog::api::ApiError{}.json(
-                "Definition read failed", "members_metafields"));
+            return result(
+                500,
+                blog::api::ApiError{}.json("Definition read failed", "members_metafields")
+            );
         }
 
         Array kept;
         if (const auto* list = std::get_if<Array>(&parsed->get())) {
-            for (const auto& item : *list) {
+            for (const auto& item: *list) {
                 const auto* object = std::get_if<Object>(&item.get());
-                if (object == nullptr) continue;
-                if (scalar(object, "namespace") != ns) continue;
-                if (scalar(object, "status") != "active") continue;
+                if (object == nullptr) {
+                    continue;
+                }
+                if (scalar(object, "namespace") != ns) {
+                    continue;
+                }
+                if (scalar(object, "status") != "active") {
+                    continue;
+                }
                 const auto access = scalar(object, "member_access");
-                if (access != "read" && access != "write") continue;
+                if (access != "read" && access != "write") {
+                    continue;
+                }
                 kept.push_back(item);
             }
         }
@@ -249,8 +310,10 @@ public:
         try {
             ordered = core::query::apply(core_serde::JsonCodec{}.encode(Value{kept}), q);
         } catch (...) {
-            return result(500, blog::api::ApiError{}.json(
-                "Definition read failed", "members_metafields"));
+            return result(
+                500,
+                blog::api::ApiError{}.json("Definition read failed", "members_metafields")
+            );
         }
         const auto sorted = core_serde::JsonCodec{}.decode<Value>(ordered);
 
@@ -259,7 +322,7 @@ public:
         Array definitions;
         if (sorted) {
             if (const auto* list = std::get_if<Array>(&sorted->get())) {
-                for (const auto& item : *list) {
+                for (const auto& item: *list) {
                     if (const auto* object = std::get_if<Object>(&item.get())) {
                         definitions.push_back(to_definition(object));
                     }
@@ -269,8 +332,8 @@ public:
 
         // Local equivalent of local_mapping::wrap (that partition is not registered
         // yet): no meta, status 200 on success.
-        const auto body = "{\"members_metafields\":"
-                        + core_serde::JsonCodec{}.encode(Value{definitions}) + "}";
+        const auto body =
+            "{\"members_metafields\":" + core_serde::JsonCodec{}.encode(Value{definitions}) + "}";
         return result(200, body);
     }
 

@@ -88,12 +88,20 @@ public:
         return run(name, WorkflowValue{std::monostate{}});
     }
 
-    bool set_step_success(WorkflowExecution& execution, std::string_view step_name, WorkflowValue output)
+    bool set_step_success(
+        WorkflowExecution& execution,
+        std::string_view step_name,
+        WorkflowValue output
+    )
     {
         return m_runtime->driver().set_step_success(execution, step_name, std::move(output));
     }
 
-    bool set_step_failure(WorkflowExecution& execution, std::string_view step_name, std::string message)
+    bool set_step_failure(
+        WorkflowExecution& execution,
+        std::string_view step_name,
+        std::string message
+    )
     {
         return m_runtime->driver().set_step_failure(execution, step_name, std::move(message));
     }
@@ -134,10 +142,7 @@ suite<"core_workflow_facade"> core_workflow_facade_suite = []
 {
     "runs a workflow and reverts on permanent failure"_test = []
     {
-        const auto definition = WorkflowBuilder{}
-                                    .name("delete-thing")
-                                    .step<DeleteStep>()
-                                    .build();
+        const auto definition = WorkflowBuilder{}.name("delete-thing").step<DeleteStep>().build();
 
         Workflow workflow;
         workflow.register_workflow(definition);

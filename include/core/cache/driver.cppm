@@ -144,9 +144,14 @@ suite<"core_cache_driver"> core_cache_driver_suite = []
 
     "redis engine is rejected until a plugin registers"_test = []
     {
-        expect(throws<std::runtime_error>([] {
-            CacheDriver driver{CacheEngine::REDIS, 0, EvictionPolicy::LRU};
-        }));
+        expect(
+            throws<std::runtime_error>(
+                []
+                {
+                    CacheDriver driver{CacheEngine::REDIS, 0, EvictionPolicy::LRU};
+                }
+            )
+        );
     };
 };
 

@@ -22,81 +22,104 @@ public:
         // (core_auth:ghost) after the router-level presence check.
         Router{router, "/settings"}
             .use(blog::handlers::middleware::require_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.settings_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost settings GET")
-            .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_bulk_edit().handle(req, res, std::move(send));
-    })
+            .put(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.settings_bulk_edit().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost settings PUT")
             .add_router(
-                Router{router, "/access_code"}
-                    .add_route(
-                        Route{"/regenerate"}
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_settings_access_code_regenerate_post().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost regenerate POST")
-                    )
+                Router{router, "/access_code"}.add_route(
+                    Route{"/regenerate"}
+                        .post(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.settings_settings_access_code_regenerate_post()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost regenerate POST")
+                )
             )
             .add_router(
-                Router{router, "/routes"}
-                    .add_route(
-                        Route{"/yaml"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_settings_routes_yaml_get().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost yaml GET")
-                            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_settings_routes_yaml_post().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost yaml POST")
-                    )
+                Router{router, "/routes"}.add_route(
+                    Route{"/yaml"}
+                        .get(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.settings_settings_routes_yaml_get()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost yaml GET")
+                        .post(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.settings_settings_routes_yaml_post()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost yaml POST")
+                )
             )
             .add_router(
-                Router{router, "/stripe"}
-                    .add_route(
-                        Route{"/connect"}
-                            .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_settings_stripe_connect_delete().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost connect DELETE")
-                    )
+                Router{router, "/stripe"}.add_route(
+                    Route{"/connect"}
+                        .delt(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.settings_settings_stripe_connect_delete()
+                                    .handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost connect DELETE")
+                )
             )
             .add_route(
                 Route{"/verifications"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.settings_settings_verifications_put().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.settings_settings_verifications_put()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost verifications PUT")
             );
     }

@@ -15,80 +15,273 @@ class Member
 public:
     Member() = default;
 
-    void set_id(std::int64_t value) { m_id = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
-    void set_uuid(std::string value) { m_uuid = std::move(value); }
-    [[nodiscard]] const std::string& get_uuid() const noexcept { return m_uuid; }
-    void set_transient_id(std::string value) { m_transient_id = std::move(value); }
-    [[nodiscard]] const std::string& get_transient_id() const noexcept { return m_transient_id; }
-    void set_email(std::string value) { m_email = std::move(value); }
-    [[nodiscard]] const std::string& get_email() const noexcept { return m_email; }
-    void set_status(std::string value) { m_status = std::move(value); }
-    [[nodiscard]] const std::string& get_status() const noexcept { return m_status; }
-    void set_name(std::string value) { m_name = std::move(value); }
-    [[nodiscard]] const std::string& get_name() const noexcept { return m_name; }
-    void set_expertise(std::string value) { m_expertise = std::move(value); }
-    [[nodiscard]] const std::string& get_expertise() const noexcept { return m_expertise; }
-    void set_note(std::string value) { m_note = std::move(value); }
-    [[nodiscard]] const std::string& get_note() const noexcept { return m_note; }
-    void set_geolocation(std::string value) { m_geolocation = std::move(value); }
-    [[nodiscard]] const std::string& get_geolocation() const noexcept { return m_geolocation; }
-    void set_enable_comment_notifications(bool value) { m_enable_comment_notifications = std::move(value); }
-    [[nodiscard]] const bool& get_enable_comment_notifications() const noexcept { return m_enable_comment_notifications; }
-    void set_enable_updates_and_announcements(bool value) { m_enable_updates_and_announcements = std::move(value); }
-    [[nodiscard]] const bool& get_enable_updates_and_announcements() const noexcept { return m_enable_updates_and_announcements; }
-    void set_email_count(std::int64_t value) { m_email_count = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_email_count() const noexcept { return m_email_count; }
-    void set_email_opened_count(std::int64_t value) { m_email_opened_count = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_email_opened_count() const noexcept { return m_email_opened_count; }
-    void set_email_open_rate(std::int64_t value) { m_email_open_rate = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_email_open_rate() const noexcept { return m_email_open_rate; }
-    void set_email_disabled(bool value) { m_email_disabled = std::move(value); }
-    [[nodiscard]] const bool& get_email_disabled() const noexcept { return m_email_disabled; }
-    void set_last_seen_at(std::chrono::system_clock::time_point value) { m_last_seen_at = std::move(value); }
-    [[nodiscard]] const std::chrono::system_clock::time_point& get_last_seen_at() const noexcept { return m_last_seen_at; }
-    void set_last_commented_at(std::chrono::system_clock::time_point value) { m_last_commented_at = std::move(value); }
-    [[nodiscard]] const std::chrono::system_clock::time_point& get_last_commented_at() const noexcept { return m_last_commented_at; }
-    void set_commenting(bool value) { m_commenting = std::move(value); }
-    [[nodiscard]] const bool& get_commenting() const noexcept { return m_commenting; }
-    void set_created_at(std::chrono::system_clock::time_point value) { m_created_at = std::move(value); }
-    [[nodiscard]] const std::chrono::system_clock::time_point& get_created_at() const noexcept { return m_created_at; }
-    void set_updated_at(std::chrono::system_clock::time_point value) { m_updated_at = std::move(value); }
-    [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept { return m_updated_at; }
+    void set_id(std::int64_t value)
+    {
+        m_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_id() const noexcept
+    {
+        return m_id;
+    }
+
+    void set_uuid(std::string value)
+    {
+        m_uuid = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_uuid() const noexcept
+    {
+        return m_uuid;
+    }
+
+    void set_transient_id(std::string value)
+    {
+        m_transient_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_transient_id() const noexcept
+    {
+        return m_transient_id;
+    }
+
+    void set_email(std::string value)
+    {
+        m_email = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_email() const noexcept
+    {
+        return m_email;
+    }
+
+    void set_status(std::string value)
+    {
+        m_status = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_status() const noexcept
+    {
+        return m_status;
+    }
+
+    void set_name(std::string value)
+    {
+        m_name = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return m_name;
+    }
+
+    void set_expertise(std::string value)
+    {
+        m_expertise = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_expertise() const noexcept
+    {
+        return m_expertise;
+    }
+
+    void set_note(std::string value)
+    {
+        m_note = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_note() const noexcept
+    {
+        return m_note;
+    }
+
+    void set_geolocation(std::string value)
+    {
+        m_geolocation = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_geolocation() const noexcept
+    {
+        return m_geolocation;
+    }
+
+    void set_enable_comment_notifications(bool value)
+    {
+        m_enable_comment_notifications = std::move(value);
+    }
+
+    [[nodiscard]] const bool& get_enable_comment_notifications() const noexcept
+    {
+        return m_enable_comment_notifications;
+    }
+
+    void set_enable_updates_and_announcements(bool value)
+    {
+        m_enable_updates_and_announcements = std::move(value);
+    }
+
+    [[nodiscard]] const bool& get_enable_updates_and_announcements() const noexcept
+    {
+        return m_enable_updates_and_announcements;
+    }
+
+    void set_email_count(std::int64_t value)
+    {
+        m_email_count = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_email_count() const noexcept
+    {
+        return m_email_count;
+    }
+
+    void set_email_opened_count(std::int64_t value)
+    {
+        m_email_opened_count = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_email_opened_count() const noexcept
+    {
+        return m_email_opened_count;
+    }
+
+    void set_email_open_rate(std::int64_t value)
+    {
+        m_email_open_rate = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_email_open_rate() const noexcept
+    {
+        return m_email_open_rate;
+    }
+
+    void set_email_disabled(bool value)
+    {
+        m_email_disabled = std::move(value);
+    }
+
+    [[nodiscard]] const bool& get_email_disabled() const noexcept
+    {
+        return m_email_disabled;
+    }
+
+    void set_last_seen_at(std::chrono::system_clock::time_point value)
+    {
+        m_last_seen_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_last_seen_at() const noexcept
+    {
+        return m_last_seen_at;
+    }
+
+    void set_last_commented_at(std::chrono::system_clock::time_point value)
+    {
+        m_last_commented_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::chrono::system_clock::time_point&
+    get_last_commented_at() const noexcept
+    {
+        return m_last_commented_at;
+    }
+
+    void set_commenting(bool value)
+    {
+        m_commenting = std::move(value);
+    }
+
+    [[nodiscard]] const bool& get_commenting() const noexcept
+    {
+        return m_commenting;
+    }
+
+    void set_created_at(std::chrono::system_clock::time_point value)
+    {
+        m_created_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_created_at() const noexcept
+    {
+        return m_created_at;
+    }
+
+    void set_updated_at(std::chrono::system_clock::time_point value)
+    {
+        m_updated_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::chrono::system_clock::time_point& get_updated_at() const noexcept
+    {
+        return m_updated_at;
+    }
 
     // Ghost wire-shape accessors (serde FieldDesc uses these for API JSON).
     [[nodiscard]] std::string wire_uuid() const
     {
         return m_uuid.empty() ? uuid_for(m_id) : m_uuid;
     }
+
     [[nodiscard]] serde::RawJson wire_note() const
     {
         return {m_note.empty() ? std::string{"null"} : std::string{"\"" + m_note + "\""}};
     }
+
     [[nodiscard]] serde::RawJson wire_commenting() const
     {
         return {R"({"disabled":false,"disabled_reason":null,"disabled_until":null})"};
     }
-    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
-    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
-    [[nodiscard]] bool wire_comped() const { return false; }
-    [[nodiscard]] bool wire_can_comment() const { return true; }
-    [[nodiscard]] bool wire_subscribed() const { return m_status == "paid"; }
-    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
+
+    [[nodiscard]] serde::RawJson wire_null() const
+    {
+        return {"null"};
+    }
+
+    [[nodiscard]] serde::RawJson wire_empty_array() const
+    {
+        return {"[]"};
+    }
+
+    [[nodiscard]] bool wire_comped() const
+    {
+        return false;
+    }
+
+    [[nodiscard]] bool wire_can_comment() const
+    {
+        return true;
+    }
+
+    [[nodiscard]] bool wire_subscribed() const
+    {
+        return m_status == "paid";
+    }
+
+    [[nodiscard]] serde::RawJson wire_timestamp() const
+    {
+        return {R"("2024-01-01T00:00:00.000Z")"};
+    }
+
     [[nodiscard]] std::string wire_unsubscribe_url() const
     {
         return "http://domain.com/unsubscribe/?uuid=memberuuid&key=abc123dontstealme";
     }
+
     [[nodiscard]] serde::RawJson wire_attribution() const
     {
-        return {R"({"id":null,"referrer_medium":"Ghost Admin","referrer_source":"Created manually",)"
-                R"("referrer_url":null,"title":null,"type":null,"url":null})"};
+        return {
+            R"({"id":null,"referrer_medium":"Ghost Admin","referrer_source":"Created manually",)"
+            R"("referrer_url":null,"title":null,"type":null,"url":null})"
+        };
     }
+
     [[nodiscard]] serde::RawJson wire_email_suppression() const
     {
         return {R"({"info":null,"suppressed":false})"};
     }
+
     void set_wire_noop(serde::RawJson) {}
+
     void set_wire_string_noop(std::string) {}
 
     [[nodiscard]] static std::string ghost_id(std::int64_t value)
@@ -96,9 +289,14 @@ public:
         static constexpr std::string_view digits{"0123456789abcdef"};
         std::string out(24, '0');
         auto n = static_cast<std::uint64_t>(value < 0 ? 0 : value);
-        for (int i = 23; i >= 0 && n > 0; --i) { out[static_cast<std::size_t>(i)] = digits[n & 0xF]; n >>= 4; }
+        for (int i = 23; i >= 0 && n > 0; --i) {
+            out[static_cast<std::size_t>(i)] = digits[n & 0xF];
+            n >>= 4;
+        }
         for (std::size_t i = 0; i < out.size(); ++i) {
-            if (out[i] == '0') out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+            if (out[i] == '0') {
+                out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+            }
         }
         return out;
     }
@@ -106,8 +304,8 @@ public:
     [[nodiscard]] static std::string uuid_for(std::int64_t id)
     {
         const std::string hex = ghost_id(id);
-        return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) +
-               "-" + hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
+        return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) + "-" +
+               hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
     }
 
 public:
@@ -134,8 +332,6 @@ public:
 };
 
 
-
-
 } // namespace blog::model::members
 
 namespace serde {
@@ -145,9 +341,14 @@ inline std::string ghost_id(std::int64_t value)
     static constexpr std::string_view digits{"0123456789abcdef"};
     std::string out(24, '0');
     auto n = static_cast<std::uint64_t>(value < 0 ? 0 : value);
-    for (int i = 23; i >= 0 && n > 0; --i) { out[static_cast<std::size_t>(i)] = digits[n & 0xF]; n >>= 4; }
+    for (int i = 23; i >= 0 && n > 0; --i) {
+        out[static_cast<std::size_t>(i)] = digits[n & 0xF];
+        n >>= 4;
+    }
     for (std::size_t i = 0; i < out.size(); ++i) {
-        if (out[i] == '0') out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+        if (out[i] == '0') {
+            out[i] = digits[(static_cast<std::uint64_t>(value) + i) & 0xF];
+        }
     }
     return out;
 }
@@ -155,13 +356,16 @@ inline std::string ghost_id(std::int64_t value)
 inline std::string uuid_for(std::int64_t id)
 {
     const std::string hex = ghost_id(id);
-    return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) +
-           "-" + hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
+    return hex.substr(0, 8) + "-" + hex.substr(8, 4) + "-" + hex.substr(12, 4) + "-" +
+           hex.substr(16, 4) + "-" + hex.substr(20, 4) + "-" + hex.substr(0, 12);
 }
 
 struct members_zero_normalizer
 {
-    [[nodiscard]] std::int64_t operator()(std::int64_t) const { return 0; }
+    [[nodiscard]] std::int64_t operator()(std::int64_t) const
+    {
+        return 0;
+    }
 };
 
 struct members_wire_id_normalizer
@@ -176,10 +380,16 @@ template<>
 struct Serializable<blog::model::members::Member>
 {
     using M = blog::model::members::Member;
+
     static constexpr auto fields()
     {
         return std::tuple{
-            FieldDesc<"id", &M::get_id, &M::set_id, FieldOptions::init().with_db(FieldOptionsDb::init().pk()), members_wire_id_normalizer{}>{},
+            FieldDesc<
+                "id",
+                &M::get_id,
+                &M::set_id,
+                FieldOptions::init().with_db(FieldOptionsDb::init().pk()),
+                members_wire_id_normalizer{}>{},
             FieldDesc<"uuid", &M::wire_uuid, &M::set_uuid>{},
             FieldDesc<"email", &M::get_email, &M::set_email>{},
             FieldDesc<"name", &M::get_name, &M::set_name>{},
@@ -190,9 +400,15 @@ struct Serializable<blog::model::members::Member>
             FieldDesc<"can_comment", &M::wire_can_comment, &M::set_wire_noop>{},
             FieldDesc<"subscribed", &M::wire_subscribed, &M::set_wire_noop>{},
             FieldDesc<"email_count", &M::get_email_count, &M::set_email_count>{},
-            FieldDesc<"email_opened_count", &M::get_email_opened_count, &M::set_email_opened_count>{},
+            FieldDesc<
+                "email_opened_count",
+                &M::get_email_opened_count,
+                &M::set_email_opened_count>{},
             FieldDesc<"email_open_rate", &M::wire_null, &M::set_wire_noop>{},
-            FieldDesc<"enable_comment_notifications", &M::get_enable_comment_notifications, &M::set_enable_comment_notifications>{},
+            FieldDesc<
+                "enable_comment_notifications",
+                &M::get_enable_comment_notifications,
+                &M::set_enable_comment_notifications>{},
             FieldDesc<"enable_updates_and_announcements", &M::wire_null, &M::set_wire_noop>{},
             FieldDesc<"geolocation", &M::wire_null, &M::set_wire_noop>{},
             FieldDesc<"description", &M::wire_null, &M::set_wire_noop>{},
@@ -210,32 +426,117 @@ struct Serializable<blog::model::members::Member>
             FieldDesc<"tiers", &M::wire_empty_array, &M::set_wire_noop>{}
         };
     }
+
     static constexpr auto db_fields()
     {
         return std::tuple{
-            serde::FieldDesc<"id", &blog::model::members::Member::get_id, &blog::model::members::Member::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
-            serde::FieldDesc<"uuid", &blog::model::members::Member::get_uuid, &blog::model::members::Member::set_uuid, serde::FieldOptions{}>{},
-            serde::FieldDesc<"transient_id", &blog::model::members::Member::get_transient_id, &blog::model::members::Member::set_transient_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"email", &blog::model::members::Member::get_email, &blog::model::members::Member::set_email, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &blog::model::members::Member::get_status, &blog::model::members::Member::set_status, serde::FieldOptions{}>{},
-            serde::FieldDesc<"name", &blog::model::members::Member::get_name, &blog::model::members::Member::set_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"expertise", &blog::model::members::Member::get_expertise, &blog::model::members::Member::set_expertise, serde::FieldOptions{}>{},
-            serde::FieldDesc<"note", &blog::model::members::Member::get_note, &blog::model::members::Member::set_note, serde::FieldOptions{}>{},
-            serde::FieldDesc<"geolocation", &blog::model::members::Member::get_geolocation, &blog::model::members::Member::set_geolocation, serde::FieldOptions{}>{},
-            serde::FieldDesc<"enable_comment_notifications", &blog::model::members::Member::get_enable_comment_notifications, &blog::model::members::Member::set_enable_comment_notifications, serde::FieldOptions{}>{},
-            serde::FieldDesc<"enable_updates_and_announcements", &blog::model::members::Member::get_enable_updates_and_announcements, &blog::model::members::Member::set_enable_updates_and_announcements, serde::FieldOptions{}>{},
-            serde::FieldDesc<"email_count", &blog::model::members::Member::get_email_count, &blog::model::members::Member::set_email_count, serde::FieldOptions{}>{},
-            serde::FieldDesc<"email_opened_count", &blog::model::members::Member::get_email_opened_count, &blog::model::members::Member::set_email_opened_count, serde::FieldOptions{}>{},
-            serde::FieldDesc<"email_open_rate", &blog::model::members::Member::get_email_open_rate, &blog::model::members::Member::set_email_open_rate, serde::FieldOptions{}>{},
-            serde::FieldDesc<"email_disabled", &blog::model::members::Member::get_email_disabled, &blog::model::members::Member::set_email_disabled, serde::FieldOptions{}>{},
-            serde::FieldDesc<"last_seen_at", &blog::model::members::Member::get_last_seen_at, &blog::model::members::Member::set_last_seen_at, serde::FieldOptions{}>{},
-            serde::FieldDesc<"last_commented_at", &blog::model::members::Member::get_last_commented_at, &blog::model::members::Member::set_last_commented_at, serde::FieldOptions{}>{},
-            serde::FieldDesc<"commenting", &blog::model::members::Member::get_commenting, &blog::model::members::Member::set_commenting, serde::FieldOptions{}>{},
-            serde::FieldDesc<"created_at", &blog::model::members::Member::get_created_at, &blog::model::members::Member::set_created_at, serde::FieldOptions{}>{},
-            serde::FieldDesc<"updated_at", &blog::model::members::Member::get_updated_at, &blog::model::members::Member::set_updated_at, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "id",
+                &blog::model::members::Member::get_id,
+                &blog::model::members::Member::set_id,
+                serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<
+                "uuid",
+                &blog::model::members::Member::get_uuid,
+                &blog::model::members::Member::set_uuid,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "transient_id",
+                &blog::model::members::Member::get_transient_id,
+                &blog::model::members::Member::set_transient_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "email",
+                &blog::model::members::Member::get_email,
+                &blog::model::members::Member::set_email,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "status",
+                &blog::model::members::Member::get_status,
+                &blog::model::members::Member::set_status,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "name",
+                &blog::model::members::Member::get_name,
+                &blog::model::members::Member::set_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "expertise",
+                &blog::model::members::Member::get_expertise,
+                &blog::model::members::Member::set_expertise,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "note",
+                &blog::model::members::Member::get_note,
+                &blog::model::members::Member::set_note,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "geolocation",
+                &blog::model::members::Member::get_geolocation,
+                &blog::model::members::Member::set_geolocation,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "enable_comment_notifications",
+                &blog::model::members::Member::get_enable_comment_notifications,
+                &blog::model::members::Member::set_enable_comment_notifications,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "enable_updates_and_announcements",
+                &blog::model::members::Member::get_enable_updates_and_announcements,
+                &blog::model::members::Member::set_enable_updates_and_announcements,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "email_count",
+                &blog::model::members::Member::get_email_count,
+                &blog::model::members::Member::set_email_count,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "email_opened_count",
+                &blog::model::members::Member::get_email_opened_count,
+                &blog::model::members::Member::set_email_opened_count,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "email_open_rate",
+                &blog::model::members::Member::get_email_open_rate,
+                &blog::model::members::Member::set_email_open_rate,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "email_disabled",
+                &blog::model::members::Member::get_email_disabled,
+                &blog::model::members::Member::set_email_disabled,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "last_seen_at",
+                &blog::model::members::Member::get_last_seen_at,
+                &blog::model::members::Member::set_last_seen_at,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "last_commented_at",
+                &blog::model::members::Member::get_last_commented_at,
+                &blog::model::members::Member::set_last_commented_at,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "commenting",
+                &blog::model::members::Member::get_commenting,
+                &blog::model::members::Member::set_commenting,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "created_at",
+                &blog::model::members::Member::get_created_at,
+                &blog::model::members::Member::set_created_at,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "updated_at",
+                &blog::model::members::Member::get_updated_at,
+                &blog::model::members::Member::set_updated_at,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "members"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "members";
+    }
 };
 } // namespace serde
 

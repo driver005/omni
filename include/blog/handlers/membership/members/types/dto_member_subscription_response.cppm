@@ -11,12 +11,18 @@ export namespace blog::dto::members {
 class MemberSubscriptionResponse
 {
 public:
-    void set_members(std::vector<SubscriptionMember> value) { members = std::move(value); }
-    [[nodiscard]] const std::vector<SubscriptionMember>& get_members() const noexcept { return members; }
+    void set_members(std::vector<SubscriptionMember> value)
+    {
+        members = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<SubscriptionMember>& get_members() const noexcept
+    {
+        return members;
+    }
 
     std::vector<SubscriptionMember> members{};
 };
-
 
 
 } // namespace blog::dto::members
@@ -26,9 +32,11 @@ struct serde::Serializable<blog::dto::members::MemberSubscriptionResponse>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"members", &blog::dto::members::MemberSubscriptionResponse::get_members, &blog::dto::members::MemberSubscriptionResponse::set_members, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "members",
+            &blog::dto::members::MemberSubscriptionResponse::get_members,
+            &blog::dto::members::MemberSubscriptionResponse::set_members,
+            serde::FieldOptions{}>{}};
     }
 
     static constexpr std::string_view table_name()
@@ -36,4 +44,3 @@ struct serde::Serializable<blog::dto::members::MemberSubscriptionResponse>
         return "member_subscription_response";
     }
 };
-

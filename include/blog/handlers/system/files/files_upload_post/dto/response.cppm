@@ -14,12 +14,35 @@ export namespace blog::dto::files {
 class FileMetaDto
 {
 public:
-    void set_name(std::string value) { name = std::move(value); }
-    [[nodiscard]] const std::string& get_name() const noexcept { return name; }
-    void set_path(std::string value) { path = std::move(value); }
-    [[nodiscard]] const std::string& get_path() const noexcept { return path; }
-    void set_type(std::string value) { type = std::move(value); }
-    [[nodiscard]] const std::string& get_type() const noexcept { return type; }
+    void set_name(std::string value)
+    {
+        name = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_name() const noexcept
+    {
+        return name;
+    }
+
+    void set_path(std::string value)
+    {
+        path = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_path() const noexcept
+    {
+        return path;
+    }
+
+    void set_type(std::string value)
+    {
+        type = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_type() const noexcept
+    {
+        return type;
+    }
 
     std::string name{};
     std::string path{};
@@ -28,18 +51,32 @@ public:
 
 } // namespace blog::dto::files
 
-template<> struct serde::Serializable<blog::dto::files::FileMetaDto>
+template<>
+struct serde::Serializable<blog::dto::files::FileMetaDto>
 {
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"name", &blog::dto::files::FileMetaDto::get_name,
-                             &blog::dto::files::FileMetaDto::set_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"path", &blog::dto::files::FileMetaDto::get_path,
-                             &blog::dto::files::FileMetaDto::set_path, serde::FieldOptions{}>{},
-            serde::FieldDesc<"type", &blog::dto::files::FileMetaDto::get_type,
-                             &blog::dto::files::FileMetaDto::set_type, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "name",
+                &blog::dto::files::FileMetaDto::get_name,
+                &blog::dto::files::FileMetaDto::set_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "path",
+                &blog::dto::files::FileMetaDto::get_path,
+                &blog::dto::files::FileMetaDto::set_path,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "type",
+                &blog::dto::files::FileMetaDto::get_type,
+                &blog::dto::files::FileMetaDto::set_type,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "files_upload_meta"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "files_upload_meta";
+    }
 };

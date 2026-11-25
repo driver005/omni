@@ -7,12 +7,24 @@ export namespace blog::testing {
 /** @brief Minimal JSON tree used by the structural snapshot oracle. */
 struct JsonNode
 {
-    enum class Kind { Null, Bool, Number, String, Array, Object };
+    enum class Kind
+    {
+        Null,
+        Bool,
+        Number,
+        String,
+        Array,
+        Object
+    };
     Kind kind{Kind::Null};
     std::string scalar{};
     std::vector<JsonNode> array{};
     std::map<std::string, JsonNode> object{};
-    [[nodiscard]] bool is(Kind k) const noexcept { return kind == k; }
+
+    [[nodiscard]] bool is(Kind k) const noexcept
+    {
+        return kind == k;
+    }
 };
 
 /** @brief Dependency-free recursive-descent JSON parser for response bodies. */
@@ -21,113 +33,195 @@ class JsonParser
 public:
     [[nodiscard]] std::optional<JsonNode> parse(std::string_view text) const
     {
-        m_text = text; m_pos = 0;
+        m_text = text;
+        m_pos = 0;
         skip();
         auto node = value();
-        if (!node) return std::nullopt;
+        if (!node) {
+            return std::nullopt;
+        }
         return node;
     }
+
 private:
     void skip() const
     {
-        while (m_pos < m_text.size() && std::isspace(static_cast<unsigned char>(m_text[m_pos]))) ++m_pos;
+        while (m_pos < m_text.size() && std::isspace(static_cast<unsigned char>(m_text[m_pos]))) {
+            ++m_pos;
+        }
     }
+
     [[nodiscard]] bool eat(char c) const
     {
         skip();
-        if (m_pos < m_text.size() && m_text[m_pos] == c) { ++m_pos; return true; }
+        if (m_pos < m_text.size() && m_text[m_pos] == c) {
+            ++m_pos;
+            return true;
+        }
         return false;
     }
+
     [[nodiscard]] std::optional<JsonNode> value() const
     {
         skip();
-        if (m_pos >= m_text.size()) return std::nullopt;
+        if (m_pos >= m_text.size()) {
+            return std::nullopt;
+        }
         const char c = m_text[m_pos];
-        if (c == '{') return object_value();
-        if (c == '[') return array_value();
+        if (c == '{') {
+            return object_value();
+        }
+        if (c == '[') {
+            return array_value();
+        }
         if (c == '"') {
-            JsonNode n; n.kind = JsonNode::Kind::String;
+            JsonNode n;
+            n.kind = JsonNode::Kind::String;
             auto s = string_value();
-            if (!s) return std::nullopt;
+            if (!s) {
+                return std::nullopt;
+            }
             n.scalar = *s;
             return n;
         }
         if (c == 't' || c == 'f') {
-            JsonNode n; n.kind = JsonNode::Kind::Bool;
-            if (m_text.substr(m_pos, 4) == "true") { n.scalar = "true"; m_pos += 4; }
-            else if (m_text.substr(m_pos, 5) == "false") { n.scalar = "false"; m_pos += 5; }
-            else return std::nullopt;
+            JsonNode n;
+            n.kind = JsonNode::Kind::Bool;
+            if (m_text.substr(m_pos, 4) == "true") {
+                n.scalar = "true";
+                m_pos += 4;
+            } else if (m_text.substr(m_pos, 5) == "false") {
+                n.scalar = "false";
+                m_pos += 5;
+            } else {
+                return std::nullopt;
+            }
             return n;
         }
         if (c == 'n') {
-            if (m_text.substr(m_pos, 4) != "null") return std::nullopt;
+            if (m_text.substr(m_pos, 4) != "null") {
+                return std::nullopt;
+            }
             m_pos += 4;
             return JsonNode{};
         }
         if (c == '-' || std::isdigit(static_cast<unsigned char>(c))) {
-            JsonNode n; n.kind = JsonNode::Kind::Number;
+            JsonNode n;
+            n.kind = JsonNode::Kind::Number;
             const auto start = m_pos;
-            if (m_text[m_pos] == '-') ++m_pos;
-            while (m_pos < m_text.size() && (std::isdigit(static_cast<unsigned char>(m_text[m_pos])) ||
-                   m_text[m_pos] == '.' || m_text[m_pos] == 'e' || m_text[m_pos] == 'E' ||
-                   m_text[m_pos] == '+' || m_text[m_pos] == '-')) ++m_pos;
+            if (m_text[m_pos] == '-') {
+                ++m_pos;
+            }
+            while (m_pos < m_text.size() &&
+                   (std::isdigit(static_cast<unsigned char>(m_text[m_pos])) ||
+                    m_text[m_pos] == '.' || m_text[m_pos] == 'e' || m_text[m_pos] == 'E' ||
+                    m_text[m_pos] == '+' || m_text[m_pos] == '-')) {
+                ++m_pos;
+            }
             n.scalar = std::string{m_text.substr(start, m_pos - start)};
             return n;
         }
         return std::nullopt;
     }
+
     [[nodiscard]] std::optional<std::string> string_value() const
     {
-        if (!eat('"')) return std::nullopt;
+        if (!eat('"')) {
+            return std::nullopt;
+        }
         std::string out;
         while (m_pos < m_text.size()) {
             const char c = m_text[m_pos++];
-            if (c == '"') return out;
+            if (c == '"') {
+                return out;
+            }
             if (c == '\\' && m_pos < m_text.size()) {
                 const char e = m_text[m_pos++];
                 switch (e) {
-                    case '"': out += '"'; break;
-                    case '\\': out += '\\'; break;
-                    case 'n': out += '\n'; break;
-                    case 'r': out += '\r'; break;
-                    case 't': out += '\t'; break;
-                    default: out += e;
+                    case '"':
+                        out += '"';
+                        break;
+                    case '\\':
+                        out += '\\';
+                        break;
+                    case 'n':
+                        out += '\n';
+                        break;
+                    case 'r':
+                        out += '\r';
+                        break;
+                    case 't':
+                        out += '\t';
+                        break;
+                    default:
+                        out += e;
                 }
-            } else out += c;
+            } else {
+                out += c;
+            }
         }
         return std::nullopt;
     }
+
     [[nodiscard]] std::optional<JsonNode> object_value() const
     {
-        if (!eat('{')) return std::nullopt;
-        JsonNode n; n.kind = JsonNode::Kind::Object;
-        if (eat('}')) return n;
+        if (!eat('{')) {
+            return std::nullopt;
+        }
+        JsonNode n;
+        n.kind = JsonNode::Kind::Object;
+        if (eat('}')) {
+            return n;
+        }
         for (;;) {
             auto key = string_value();
-            if (!key) return std::nullopt;
-            if (!eat(':')) return std::nullopt;
+            if (!key) {
+                return std::nullopt;
+            }
+            if (!eat(':')) {
+                return std::nullopt;
+            }
             auto val = value();
-            if (!val) return std::nullopt;
+            if (!val) {
+                return std::nullopt;
+            }
             n.object[*key] = *val;
-            if (eat('}')) break;
-            if (!eat(',')) return std::nullopt;
+            if (eat('}')) {
+                break;
+            }
+            if (!eat(',')) {
+                return std::nullopt;
+            }
         }
         return n;
     }
+
     [[nodiscard]] std::optional<JsonNode> array_value() const
     {
-        if (!eat('[')) return std::nullopt;
-        JsonNode n; n.kind = JsonNode::Kind::Array;
-        if (eat(']')) return n;
+        if (!eat('[')) {
+            return std::nullopt;
+        }
+        JsonNode n;
+        n.kind = JsonNode::Kind::Array;
+        if (eat(']')) {
+            return n;
+        }
         for (;;) {
             auto val = value();
-            if (!val) return std::nullopt;
+            if (!val) {
+                return std::nullopt;
+            }
             n.array.push_back(*val);
-            if (eat(']')) break;
-            if (!eat(',')) return std::nullopt;
+            if (eat(']')) {
+                break;
+            }
+            if (!eat(',')) {
+                return std::nullopt;
+            }
         }
         return n;
     }
+
     mutable std::string_view m_text{};
     mutable std::size_t m_pos{0};
 };
@@ -158,21 +252,21 @@ inline const EntitySchema kPostSchema{
         FieldSpec{"comment_id", {"string"}, 1},
         FieldSpec{"count", {"object"}, 1},
         FieldSpec{"created_at", {"string"}, 1},
-        FieldSpec{"custom_excerpt", {"null","string"}, 2},
+        FieldSpec{"custom_excerpt", {"null", "string"}, 2},
         FieldSpec{"custom_template", {"null"}, 1},
         FieldSpec{"email", {"null"}, 1},
         FieldSpec{"email_only", {"boolean"}, 1},
         FieldSpec{"email_segment", {"string"}, 1},
         FieldSpec{"email_subject", {"null"}, 1},
-        FieldSpec{"excerpt", {"null","string"}, 2},
-        FieldSpec{"feature_image", {"null","string"}, 2},
+        FieldSpec{"excerpt", {"null", "string"}, 2},
+        FieldSpec{"feature_image", {"null", "string"}, 2},
         FieldSpec{"feature_image_alt", {"null"}, 1},
         FieldSpec{"feature_image_caption", {"null"}, 1},
         FieldSpec{"featured", {"boolean"}, 1},
         FieldSpec{"frontmatter", {"null"}, 1},
         FieldSpec{"html", {"string"}, 1},
         FieldSpec{"id", {"string"}, 1},
-        FieldSpec{"lexical", {"null","string"}, 2},
+        FieldSpec{"lexical", {"null", "string"}, 2},
         FieldSpec{"meta_description", {"null"}, 1},
         FieldSpec{"meta_title", {"null"}, 1},
         FieldSpec{"mobiledoc", {"string"}, 1},
@@ -239,12 +333,12 @@ inline const EntitySchema kNewsletterSchema{
         FieldSpec{"button_style", {"string"}, 1},
         FieldSpec{"count", {"object"}, 1},
         FieldSpec{"created_at", {"string"}, 1},
-        FieldSpec{"description", {"null","string"}, 2},
+        FieldSpec{"description", {"null", "string"}, 2},
         FieldSpec{"divider_color", {"null"}, 1},
         FieldSpec{"feedback_enabled", {"boolean"}, 1},
         FieldSpec{"footer_content", {"null"}, 1},
         FieldSpec{"header_background_color", {"string"}, 1},
-        FieldSpec{"header_image", {"null","string"}, 2},
+        FieldSpec{"header_image", {"null", "string"}, 2},
         FieldSpec{"id", {"string"}, 1},
         FieldSpec{"image_corners", {"string"}, 1},
         FieldSpec{"link_color", {"string"}, 1},
@@ -252,8 +346,8 @@ inline const EntitySchema kNewsletterSchema{
         FieldSpec{"name", {"string"}, 1},
         FieldSpec{"post_title_color", {"null"}, 1},
         FieldSpec{"section_title_color", {"null"}, 1},
-        FieldSpec{"sender_email", {"null","string"}, 2},
-        FieldSpec{"sender_name", {"null","string"}, 2},
+        FieldSpec{"sender_email", {"null", "string"}, 2},
+        FieldSpec{"sender_name", {"null", "string"}, 2},
         FieldSpec{"sender_reply_to", {"string"}, 1},
         FieldSpec{"show_badge", {"boolean"}, 1},
         FieldSpec{"show_comment_cta", {"boolean"}, 1},
@@ -287,16 +381,16 @@ inline const EntitySchema kTierSchema{
         FieldSpec{"benefits", {"array"}, 1},
         FieldSpec{"created_at", {"string"}, 1},
         FieldSpec{"currency", {"string"}, 1},
-        FieldSpec{"description", {"null","string"}, 2},
+        FieldSpec{"description", {"null", "string"}, 2},
         FieldSpec{"id", {"string"}, 1},
         FieldSpec{"monthly_price", {"number"}, 1},
         FieldSpec{"name", {"string"}, 1},
         FieldSpec{"slug", {"string"}, 1},
         FieldSpec{"trial_days", {"number"}, 1},
         FieldSpec{"type", {"string"}, 1},
-        FieldSpec{"updated_at", {"null","string"}, 2},
+        FieldSpec{"updated_at", {"null", "string"}, 2},
         FieldSpec{"visibility", {"string"}, 1},
-        FieldSpec{"welcome_page_url", {"null","string"}, 2},
+        FieldSpec{"welcome_page_url", {"null", "string"}, 2},
         FieldSpec{"yearly_price", {"number"}, 1},
     },
     false
@@ -308,11 +402,11 @@ inline const EntitySchema kCommentSchema{
         FieldSpec{"count", {"object"}, 1},
         FieldSpec{"created_at", {"string"}, 1},
         FieldSpec{"disliked", {"boolean"}, 1},
-        FieldSpec{"edited_at", {"null","string"}, 2},
-        FieldSpec{"html", {"null","string"}, 2},
+        FieldSpec{"edited_at", {"null", "string"}, 2},
+        FieldSpec{"html", {"null", "string"}, 2},
         FieldSpec{"id", {"string"}, 1},
         FieldSpec{"in_reply_to_id", {"null"}, 1},
-        FieldSpec{"in_reply_to_snippet", {"null","string"}, 2},
+        FieldSpec{"in_reply_to_snippet", {"null", "string"}, 2},
         FieldSpec{"liked", {"any"}, 1},
         FieldSpec{"member", {"object"}, 1},
         FieldSpec{"parent", {"object"}, 1},
@@ -332,7 +426,7 @@ inline const EntitySchema kOfferSchema{
         FieldSpec{"cadence", {"string"}, 1},
         FieldSpec{"code", {"string"}, 1},
         FieldSpec{"created_at", {"string"}, 1},
-        FieldSpec{"currency", {"null","string"}, 2},
+        FieldSpec{"currency", {"null", "string"}, 2},
         FieldSpec{"currency_restriction", {"boolean"}, 1},
         FieldSpec{"display_description", {"string"}, 1},
         FieldSpec{"display_title", {"string"}, 1},
@@ -344,7 +438,7 @@ inline const EntitySchema kOfferSchema{
         FieldSpec{"redemption_count", {"number"}, 1},
         FieldSpec{"redemption_type", {"string"}, 1},
         FieldSpec{"status", {"string"}, 1},
-        FieldSpec{"tier", {"null","object"}, 2},
+        FieldSpec{"tier", {"null", "object"}, 2},
         FieldSpec{"type", {"string"}, 1},
     },
     false
@@ -390,11 +484,11 @@ inline const EntitySchema kEmailSchema{
         FieldSpec{"csd_email_count", {"null"}, 1},
         FieldSpec{"delivered_count", {"number"}, 1},
         FieldSpec{"email_count", {"number"}, 1},
-        FieldSpec{"error", {"null","string"}, 2},
+        FieldSpec{"error", {"null", "string"}, 2},
         FieldSpec{"error_data", {"null"}, 1},
         FieldSpec{"failed_count", {"number"}, 1},
         FieldSpec{"feedback_enabled", {"boolean"}, 1},
-        FieldSpec{"from", {"null","string"}, 2},
+        FieldSpec{"from", {"null", "string"}, 2},
         FieldSpec{"html", {"string"}, 1},
         FieldSpec{"id", {"string"}, 1},
         FieldSpec{"newsletter_id", {"null"}, 1},
@@ -434,7 +528,7 @@ inline const EntitySchema kSnippetSchema{
     std::vector<FieldSpec>{
         FieldSpec{"created_at", {"string"}, 1},
         FieldSpec{"id", {"string"}, 1},
-        FieldSpec{"lexical", {"null","string"}, 2},
+        FieldSpec{"lexical", {"null", "string"}, 2},
         FieldSpec{"mobiledoc", {"string"}, 1},
         FieldSpec{"name", {"string"}, 1},
         FieldSpec{"updated_at", {"string"}, 1},
@@ -459,18 +553,18 @@ inline const EntitySchema kRecommendationSchema{
     std::vector<FieldSpec>{
         FieldSpec{"count", {"object"}, 1},
         FieldSpec{"createdAt", {"string"}, 1},
-        FieldSpec{"created_at", {"null","string"}, 2},
-        FieldSpec{"description", {"null","string"}, 2},
-        FieldSpec{"excerpt", {"null","string"}, 2},
-        FieldSpec{"favicon", {"null","string"}, 2},
+        FieldSpec{"created_at", {"null", "string"}, 2},
+        FieldSpec{"description", {"null", "string"}, 2},
+        FieldSpec{"excerpt", {"null", "string"}, 2},
+        FieldSpec{"favicon", {"null", "string"}, 2},
         FieldSpec{"featuredImage", {"null"}, 1},
-        FieldSpec{"featured_image", {"null","string"}, 2},
-        FieldSpec{"id", {"null","string"}, 2},
+        FieldSpec{"featured_image", {"null", "string"}, 2},
+        FieldSpec{"id", {"null", "string"}, 2},
         FieldSpec{"oneClickSubscribe", {"boolean"}, 1},
         FieldSpec{"one_click_subscribe", {"boolean"}, 1},
-        FieldSpec{"reason", {"null","string"}, 2},
-        FieldSpec{"title", {"null","string"}, 2},
-        FieldSpec{"updated_at", {"null","string"}, 2},
+        FieldSpec{"reason", {"null", "string"}, 2},
+        FieldSpec{"title", {"null", "string"}, 2},
+        FieldSpec{"updated_at", {"null", "string"}, 2},
         FieldSpec{"url", {"string"}, 1},
     },
     false
@@ -535,13 +629,13 @@ inline const EntitySchema kPagesSchema{
         FieldSpec{"created_at", {"string"}, 1},
         FieldSpec{"custom_excerpt", {"null"}, 1},
         FieldSpec{"custom_template", {"null"}, 1},
-        FieldSpec{"excerpt", {"null","string"}, 2},
+        FieldSpec{"excerpt", {"null", "string"}, 2},
         FieldSpec{"feature_image", {"null"}, 1},
         FieldSpec{"feature_image_alt", {"null"}, 1},
         FieldSpec{"feature_image_caption", {"null"}, 1},
         FieldSpec{"featured", {"boolean"}, 1},
         FieldSpec{"frontmatter", {"null"}, 1},
-        FieldSpec{"html", {"null","string"}, 2},
+        FieldSpec{"html", {"null", "string"}, 2},
         FieldSpec{"id", {"string"}, 1},
         FieldSpec{"lexical", {"string"}, 1},
     },
@@ -688,13 +782,13 @@ inline const EntitySchema kFailuresSchema{
     std::vector<FieldSpec>{
         FieldSpec{"code", {"number"}, 1},
         FieldSpec{"email_id", {"string"}, 1},
-        FieldSpec{"email_recipient", {"null","object"}, 2},
+        FieldSpec{"email_recipient", {"null", "object"}, 2},
         FieldSpec{"email_recipient_id", {"string"}, 1},
         FieldSpec{"enhanced_code", {"string"}, 1},
         FieldSpec{"event_id", {"string"}, 1},
         FieldSpec{"failed_at", {"string"}, 1},
         FieldSpec{"id", {"string"}, 1},
-        FieldSpec{"member", {"null","object"}, 2},
+        FieldSpec{"member", {"null", "object"}, 2},
         FieldSpec{"member_id", {"string"}, 1},
         FieldSpec{"message", {"string"}, 1},
         FieldSpec{"severity", {"string"}, 1},
@@ -790,7 +884,7 @@ inline const EntitySchema kSettingSchema{
     "settings",
     std::vector<FieldSpec>{
         FieldSpec{"key", {"string"}, 1},
-        FieldSpec{"value", {"null","string","boolean"}, 3},
+        FieldSpec{"value", {"null", "string", "boolean"}, 3},
     },
     false
 };
@@ -865,7 +959,7 @@ struct ValidationReport
     }
     if (entity_node->is(JsonNode::Kind::Object)) {
         const auto& object = entity_node->object;
-        for (const auto& spec : schema.fields) {
+        for (const auto& spec: schema.fields) {
             ++report.checked;
             const auto it = object.find(std::string{spec.name});
             if (it == object.end()) {
@@ -876,26 +970,52 @@ struct ValidationReport
             bool ok = false;
             for (std::size_t i = 0; i < spec.type_count; ++i) {
                 const auto t = spec.types[i];
-                if (t == "any") { ok = true; break; }
-                if (t == "null" && node.is(JsonNode::Kind::Null)) { ok = true; break; }
-                if (t == "string" && node.is(JsonNode::Kind::String)) { ok = true; break; }
-                if (t == "number" && node.is(JsonNode::Kind::Number)) { ok = true; break; }
-                if (t == "boolean" && node.is(JsonNode::Kind::Bool)) { ok = true; break; }
-                if (t == "object" && node.is(JsonNode::Kind::Object)) { ok = true; break; }
-                if (t == "array" && node.is(JsonNode::Kind::Array)) { ok = true; break; }
+                if (t == "any") {
+                    ok = true;
+                    break;
+                }
+                if (t == "null" && node.is(JsonNode::Kind::Null)) {
+                    ok = true;
+                    break;
+                }
+                if (t == "string" && node.is(JsonNode::Kind::String)) {
+                    ok = true;
+                    break;
+                }
+                if (t == "number" && node.is(JsonNode::Kind::Number)) {
+                    ok = true;
+                    break;
+                }
+                if (t == "boolean" && node.is(JsonNode::Kind::Bool)) {
+                    ok = true;
+                    break;
+                }
+                if (t == "object" && node.is(JsonNode::Kind::Object)) {
+                    ok = true;
+                    break;
+                }
+                if (t == "array" && node.is(JsonNode::Kind::Array)) {
+                    ok = true;
+                    break;
+                }
             }
-            if (ok) ++report.passed;
-            else report.failures.push_back("wrong type: " + std::string{spec.name});
+            if (ok) {
+                ++report.passed;
+            } else {
+                report.failures.push_back("wrong type: " + std::string{spec.name});
+            }
         }
         return report;
     }
-    if (entity_node->array.empty()) return report;
+    if (entity_node->array.empty()) {
+        return report;
+    }
     if (!entity_node->array.front().is(JsonNode::Kind::Object)) {
         report.failures.push_back("collection element is not an object");
         return report;
     }
     const auto& entity = entity_node->array.front().object;
-    for (const auto& spec : schema.fields) {
+    for (const auto& spec: schema.fields) {
         ++report.checked;
         const auto it = entity.find(std::string{spec.name});
         if (it == entity.end()) {
@@ -906,16 +1026,40 @@ struct ValidationReport
         bool ok = false;
         for (std::size_t i = 0; i < spec.type_count; ++i) {
             const auto t = spec.types[i];
-            if (t == "any") { ok = true; break; }
-            if (t == "null" && node.is(JsonNode::Kind::Null)) { ok = true; break; }
-            if (t == "string" && node.is(JsonNode::Kind::String)) { ok = true; break; }
-            if (t == "number" && node.is(JsonNode::Kind::Number)) { ok = true; break; }
-            if (t == "boolean" && node.is(JsonNode::Kind::Bool)) { ok = true; break; }
-            if (t == "object" && node.is(JsonNode::Kind::Object)) { ok = true; break; }
-            if (t == "array" && node.is(JsonNode::Kind::Array)) { ok = true; break; }
+            if (t == "any") {
+                ok = true;
+                break;
+            }
+            if (t == "null" && node.is(JsonNode::Kind::Null)) {
+                ok = true;
+                break;
+            }
+            if (t == "string" && node.is(JsonNode::Kind::String)) {
+                ok = true;
+                break;
+            }
+            if (t == "number" && node.is(JsonNode::Kind::Number)) {
+                ok = true;
+                break;
+            }
+            if (t == "boolean" && node.is(JsonNode::Kind::Bool)) {
+                ok = true;
+                break;
+            }
+            if (t == "object" && node.is(JsonNode::Kind::Object)) {
+                ok = true;
+                break;
+            }
+            if (t == "array" && node.is(JsonNode::Kind::Array)) {
+                ok = true;
+                break;
+            }
         }
-        if (ok) ++report.passed;
-        else report.failures.push_back("wrong type: " + std::string{spec.name});
+        if (ok) {
+            ++report.passed;
+        } else {
+            report.failures.push_back("wrong type: " + std::string{spec.name});
+        }
     }
     return report;
 }

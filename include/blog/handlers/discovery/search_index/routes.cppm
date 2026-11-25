@@ -26,57 +26,77 @@ public:
             // bearer-token gate would wrongly reject anonymous public reads.
             .add_route(
                 Route{"/authors"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.search_index_search_index_authors_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.search_index_search_index_authors_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost authors GET")
             )
             .add_route(
                 Route{"/pages"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.search_index_search_index_pages_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.search_index_search_index_pages_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost pages GET")
             )
             .add_route(
                 Route{"/posts"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.search_index_search_index_posts_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.search_index_search_index_posts_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost posts GET")
             )
             .add_route(
                 Route{"/tags"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.search_index_search_index_tags_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.search_index_search_index_tags_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost tags GET")
             )
             .add_route(
                 Route{"/users"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.search_index_search_index_users_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.search_index_search_index_users_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost users GET")
             );
     }

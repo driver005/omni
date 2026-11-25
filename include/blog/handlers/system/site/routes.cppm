@@ -18,13 +18,16 @@ public:
         using Router = utils::openapi::ApiRouter;
         Router{router, "/site"}
             .use(blog::handlers::middleware::optional_auth)
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.site_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.site_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost site GET");
     }
 };

@@ -60,8 +60,9 @@ namespace core::cron::tests {
 
 struct ScheduledJob
 {
-     void run() {}
+    void run() {}
 };
+
 CORE_CRON_JOB(ScheduledJob, "scheduled", "*/5 * * * *");
 
 using namespace boost::ut;
@@ -79,9 +80,9 @@ suite<"core_cron_query"> core_cron_query_suite = []
 
         CronQuery reflected;
         reflected.where_job<ScheduledJob>();
-        expect(reflected.spec().predicates[0].matches(
-            *CronJob{}.create("scheduled", "*/5 * * * *")
-        ));
+        expect(
+            reflected.spec().predicates[0].matches(*CronJob{}.create("scheduled", "*/5 * * * *"))
+        );
     };
 };
 

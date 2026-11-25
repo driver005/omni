@@ -24,17 +24,25 @@ public:
     using Key = std::pair<EdgeKind, std::string>;
 
     RouteTreeNode() = default;
+
     explicit RouteTreeNode(EdgeKind kind, std::string segment) :
-        m_kind{kind}, m_segment{std::move(segment)}
+        m_kind{kind},
+        m_segment{std::move(segment)}
     {
     }
 
     /// @brief Classify a raw path segment into an edge kind and the stored literal.
     static std::pair<EdgeKind, std::string> classify(std::string_view segment)
     {
-        if (segment.empty()) return {EdgeKind::PATH, std::string{}};
-        if (segment == "*") return {EdgeKind::WILD, std::string{}};
-        if (segment.front() == ':') return {EdgeKind::PARAM, std::string{}};
+        if (segment.empty()) {
+            return {EdgeKind::PATH, std::string{}};
+        }
+        if (segment == "*") {
+            return {EdgeKind::WILD, std::string{}};
+        }
+        if (segment.front() == ':') {
+            return {EdgeKind::PARAM, std::string{}};
+        }
         return {EdgeKind::PATH, std::string{segment}};
     }
 
@@ -71,10 +79,26 @@ public:
         }
     }
 
-    [[nodiscard]] EdgeKind kind() const noexcept { return m_kind; }
-    [[nodiscard]] const std::string& segment() const noexcept { return m_segment; }
-    [[nodiscard]] const Handler<8>& handlers() const noexcept { return m_handlers; }
-    [[nodiscard]] const Middleware<192>& middlewares() const noexcept { return m_middlewares; }
+    [[nodiscard]] EdgeKind kind() const noexcept
+    {
+        return m_kind;
+    }
+
+    [[nodiscard]] const std::string& segment() const noexcept
+    {
+        return m_segment;
+    }
+
+    [[nodiscard]] const Handler<8>& handlers() const noexcept
+    {
+        return m_handlers;
+    }
+
+    [[nodiscard]] const Middleware<192>& middlewares() const noexcept
+    {
+        return m_middlewares;
+    }
+
     [[nodiscard]] const std::map<Key, std::unique_ptr<RouteTreeNode>>& children() const noexcept
     {
         return m_children;

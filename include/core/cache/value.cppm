@@ -39,8 +39,7 @@ template<typename T>
         return CacheValue{static_cast<std::uint64_t>(value)};
     } else if constexpr (std::floating_point<U>) {
         return CacheValue{static_cast<double>(value)};
-    } else if constexpr (std::same_as<U, std::string> ||
-                         std::convertible_to<U, std::string_view>) {
+    } else if constexpr (std::same_as<U, std::string> || std::convertible_to<U, std::string_view>) {
         return CacheValue{std::string{std::string_view{value}}};
     } else {
         return CacheValue{std::forward<T>(value)};

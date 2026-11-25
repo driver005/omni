@@ -19,7 +19,8 @@ public:
     [[nodiscard]] int operator()(const DbValue& a, const DbValue& b) const noexcept
     {
         return std::visit(
-            [&](const auto& x, const auto& y) noexcept -> int {
+            [&](const auto& x, const auto& y) noexcept -> int
+            {
                 using X = std::decay_t<decltype(x)>;
                 using Y = std::decay_t<decltype(y)>;
                 if constexpr (std::same_as<X, Null> || std::same_as<Y, Null>) {
@@ -71,9 +72,9 @@ public:
                 p.pop_back();
             }
             return leading && trailing ? text->find(p) != std::string::npos
-                 : leading ? text->ends_with(p)
-                 : trailing ? text->starts_with(p)
-                            : *text == p;
+                   : leading           ? text->ends_with(p)
+                   : trailing          ? text->starts_with(p)
+                                       : *text == p;
         }
         switch (predicate.comparison) {
             case Compare::LIKE:
@@ -113,18 +114,16 @@ public:
 
     virtual void create_table(std::string_view table) = 0;
     [[nodiscard]] virtual QueryResult run(const QuerySpec& spec) = 0;
-    virtual std::uint64_t insert(std::string_view table, const std::map<std::string, DbValue>& values) = 0;
+    virtual std::uint64_t
+    insert(std::string_view table, const std::map<std::string, DbValue>& values) = 0;
     virtual std::uint64_t update(
         std::string_view table,
         const std::map<std::string, DbValue>& values,
         std::string_view key,
         const DbValue& key_value
     ) = 0;
-    virtual std::uint64_t remove(
-        std::string_view table,
-        std::string_view key,
-        const DbValue& key_value
-    ) = 0;
+    virtual std::uint64_t
+    remove(std::string_view table, std::string_view key, const DbValue& key_value) = 0;
 };
 
 } // namespace core::db

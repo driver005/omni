@@ -12,7 +12,7 @@ export namespace blog::handlers::mentions::receive::support {
 using namespace blog::handlers::mentions::support;
 
 /** @brief webmentions/routes.js:23 — bodyParser.urlencoded(limit:'64kb'). */
-inline constexpr std::size_t kMaxBodyBytes = 64 * 1024;
+inline constexpr std::size_t kMaxBodyBytes = 64 * 1'024;
 /** @brief webmentionsBlock backoff budget (approximated as a fixed window). */
 inline constexpr int kRateLimit = 10;
 inline constexpr auto kRateWindow = std::chrono::seconds{60};
@@ -23,12 +23,22 @@ inline constexpr auto kRateWindow = std::chrono::seconds{60};
     std::string out;
     out.reserve(text.size());
     for (std::size_t i = 0; i < text.size(); ++i) {
-        if (text[i] == '+') { out += ' '; continue; }
+        if (text[i] == '+') {
+            out += ' ';
+            continue;
+        }
         if (text[i] == '%' && i + 2 < text.size()) {
-            const auto hex = [](char c) -> int {
-                if (c >= '0' && c <= '9') return c - '0';
-                if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-                if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            const auto hex = [](char c) -> int
+            {
+                if (c >= '0' && c <= '9') {
+                    return c - '0';
+                }
+                if (c >= 'a' && c <= 'f') {
+                    return c - 'a' + 10;
+                }
+                if (c >= 'A' && c <= 'F') {
+                    return c - 'A' + 10;
+                }
                 return -1;
             };
             const int hi = hex(text[i + 1]);
@@ -51,14 +61,19 @@ inline constexpr auto kRateWindow = std::chrono::seconds{60};
     std::string source;
     std::string target;
     if (body.find('=') != std::string_view::npos && body.find('{') == std::string_view::npos) {
-        for (auto part : std::views::split(body, '&')) {
+        for (auto part: std::views::split(body, '&')) {
             const std::string text{std::ranges::begin(part), std::ranges::end(part)};
             const auto eq = text.find('=');
-            if (eq == std::string::npos) continue;
+            if (eq == std::string::npos) {
+                continue;
+            }
             const auto key = form_decode(std::string_view{text}.substr(0, eq));
             const auto value = form_decode(std::string_view{text}.substr(eq + 1));
-            if (key == "source") source = value;
-            else if (key == "target") target = value;
+            if (key == "source") {
+                source = value;
+            } else if (key == "target") {
+                target = value;
+            }
         }
         return {source, target};
     }
@@ -101,32 +116,48 @@ public:
     void dispatch(const blog::handlers::outbox::Event& event) override
     {
         processed_log().push_back({event.type, event.payload});
-        if (event.type != "job.dispatch") return;
+        if (event.type != "job.dispatch") {
+            return;
+        }
 
         auto* ctx = job_context();
-        if (ctx == nullptr) return;
+        if (ctx == nullptr) {
+            return;
+        }
         const std::string source = row_field(event.payload, "source");
         const std::string target = row_field(event.payload, "target");
 
         // Outbound webmention metadata fetch (CONTRACTS.md §5 WebmentionAdapter).
-        emit_event("webmention.fetch",
-                   "{\"source\":\"" + source + "\",\"target\":\"" + target + "\"}", target);
+        emit_event(
+            "webmention.fetch",
+            "{\"source\":\"" + source + "\",\"target\":\"" + target + "\"}",
+            target
+        );
 
         // Mention.create + repository.save; timestamp mirrors created_at.
-        const std::string record =
-            "{\"source\":\"" + source + "\",\"target\":\"" + target +
-            "\",\"created_at\":\"" + std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count()) +
-            "\",\"verified\":false,\"deleted\":false,\"revalidation_failure_count\":0,\"payload\":null}";
+        const std::string record = "{\"source\":\"" + source + "\",\"target\":\"" + target +
+                                   "\",\"created_at\":\"" +
+                                   std::to_string(
+                                       std::chrono::duration_cast<std::chrono::seconds>(
+                                           std::chrono::system_clock::now().time_since_epoch()
+                                       )
+                                           .count()
+                                   ) +
+                                   "\",\"verified\":false,\"deleted\":false,\"revalidation_failure_"
+                                   "count\":0,\"payload\":null}";
         const std::string id = ctx->store().resources().create("mentions", record);
-        emit_event("mention.added", "{\"id\":\"" + id + "\",\"source\":\"" + source +
-                                    "\",\"target\":\"" + target + "\"}", id);
+        emit_event(
+            "mention.added",
+            "{\"id\":\"" + id + "\",\"source\":\"" + source + "\",\"target\":\"" + target + "\"}",
+            id
+        );
     }
 };
 
 inline void ensure_adapter()
 {
-    static const bool registered = [] {
+    static const bool registered = []
+    {
         blog::handlers::outbox::register_adapter(std::make_shared<WebmentionJobAdapter>());
         return true;
     }();
@@ -136,14 +167,23 @@ inline void ensure_adapter()
 /** @brief Fixed-window limiter keyed by (context, client IP). */
 [[nodiscard]] inline bool rate_limited(blog::BlogContext* ctx, std::string_view ip)
 {
-    struct Window { std::chrono::steady_clock::time_point start; int count{0}; };
+    struct Window
+    {
+        std::chrono::steady_clock::time_point start;
+        int count{0};
+    };
+
     static std::mutex mutex;
     static std::map<std::pair<blog::BlogContext*, std::string>, Window> windows;
     const auto now = std::chrono::steady_clock::now();
     std::lock_guard lock{mutex};
     auto& window = windows[{ctx, std::string{ip}}];
-    if (now - window.start >= kRateWindow) window = {now, 0};
-    if (++window.count > kRateLimit) return true;
+    if (now - window.start >= kRateWindow) {
+        window = {now, 0};
+    }
+    if (++window.count > kRateLimit) {
+        return true;
+    }
     return false;
 }
 
@@ -151,51 +191,72 @@ inline void ensure_adapter()
 
 export namespace blog::handlers::mentions::receive::workflow {
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
-  using Input = interfaces::io::IRequest&;
-  using Output = std::map<std::string, std::string>;
-  static constexpr std::string_view name{"mentions_receive_execute"};
-  [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input& in, core::workflow::WorkflowContext&) const {
-    using namespace blog::handlers::mentions::receive::support;
-    auto& ctx = *s_ctx;
+    using Input = interfaces::io::IRequest&;
+    using Output = std::map<std::string, std::string>;
+    static constexpr std::string_view name{"mentions_receive_execute"};
 
-    const std::string body = in.body_as_string().empty() ? std::string{"{}"}
-                                                         : std::string{in.body_as_string()};
-    if (body.size() > kMaxBodyBytes) {
-      return core::workflow::StepResponse<Output>{{{"status", "413"},
-        {"body", blog::api::ApiError{}.validation(
-            "Request Entity Too Large", "Payload Too Large", "body", "PayloadTooLargeError")}}};
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
+        using namespace blog::handlers::mentions::receive::support;
+        auto& ctx = *s_ctx;
+
+        const std::string body =
+            in.body_as_string().empty() ? std::string{"{}"} : std::string{in.body_as_string()};
+        if (body.size() > kMaxBodyBytes) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "413"},
+                 {"body",
+                  blog::api::ApiError{}.validation(
+                      "Request Entity Too Large",
+                      "Payload Too Large",
+                      "body",
+                      "PayloadTooLargeError"
+                  )}}
+            };
+        }
+
+        // permissions:false — the only gate is webmentionsBlock (429 on excess).
+        const auto ip = in.find_header("x-forwarded-for");
+        if (rate_limited(&ctx, ip.empty() ? "unknown" : ip)) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "429"},
+                 {"body",
+                  blog::api::ApiError{}.validation(
+                      "Too many mention attempts",
+                      "Too many mention attempts",
+                      "",
+                      "TooManyRequestsError"
+                  )}}
+            };
+        }
+
+        const auto [source, target] = parse_source_target(body);
+
+        // MentionController.receive queues ProcessWebmentionJob and returns null.
+        const std::string job = "{\"type\":\"process-webmention\",\"source\":\"" + source +
+                                "\",\"target\":\"" + target + "\",\"replayAfterRestart\":true}";
+        emit_event("job.dispatch", job, target);
+
+        // Run the queued job through the registered outbox adapter. Its own emits
+        // (webmention.fetch / mention.added) stay pending for verification.
+        ensure_adapter();
+        job_context() = &ctx;
+        auto& outbox = blog::handlers::outbox::global_outbox();
+        [[maybe_unused]] const auto drained = outbox.drain();
+        job_context() = nullptr;
+
+        // statusCode 202 + response.format 'plain' + `return null` -> empty body.
+        return core::workflow::StepResponse<Output>{{{"status", "202"}, {"body", ""}}};
     }
 
-    // permissions:false — the only gate is webmentionsBlock (429 on excess).
-    const auto ip = in.find_header("x-forwarded-for");
-    if (rate_limited(&ctx, ip.empty() ? "unknown" : ip)) {
-      return core::workflow::StepResponse<Output>{{{"status", "429"},
-        {"body", blog::api::ApiError{}.validation(
-            "Too many mention attempts", "Too many mention attempts", "", "TooManyRequestsError")}}};
-    }
+    void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
 
-    const auto [source, target] = parse_source_target(body);
-
-    // MentionController.receive queues ProcessWebmentionJob and returns null.
-    const std::string job = "{\"type\":\"process-webmention\",\"source\":\"" + source +
-                            "\",\"target\":\"" + target + "\",\"replayAfterRestart\":true}";
-    emit_event("job.dispatch", job, target);
-
-    // Run the queued job through the registered outbox adapter. Its own emits
-    // (webmention.fetch / mention.added) stay pending for verification.
-    ensure_adapter();
-    job_context() = &ctx;
-    auto& outbox = blog::handlers::outbox::global_outbox();
-    [[maybe_unused]] const auto drained = outbox.drain();
-    job_context() = nullptr;
-
-    // statusCode 202 + response.format 'plain' + `return null` -> empty body.
-    return core::workflow::StepResponse<Output>{{{"status", "202"}, {"body", ""}}};
-  }
-  void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
-  static blog::BlogContext* s_ctx;
+    static blog::BlogContext* s_ctx;
 };
+
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::mentions::receive::workflow

@@ -24,24 +24,30 @@ public:
         Router{router, "/p"}
             .add_route(
                 Route{"/:uuid"}
-                    .get([&handler](
-                interfaces::io::IRequest& req,
-                interfaces::io::IResponse& res,
-                std::function<void()> send
-            ) {
-                handler.previews_preview_get().handle(req, res, std::move(send));
-            })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.previews_preview_get().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost previews read GET")
             )
             .add_route(
                 Route{"/:uuid/:options"}
-                    .get([&handler](
-                interfaces::io::IRequest& req,
-                interfaces::io::IResponse& res,
-                std::function<void()> send
-            ) {
-                handler.previews_preview_get().handle(req, res, std::move(send));
-            })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.previews_preview_get().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost previews read GET (options)")
             );
     }

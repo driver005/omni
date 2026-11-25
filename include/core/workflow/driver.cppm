@@ -21,7 +21,8 @@ public:
 
     [[nodiscard]] virtual std::string_view name() const noexcept = 0;
 
-    virtual WorkflowExecution run(const WorkflowDefinition& definition, WorkflowContext& context) = 0;
+    virtual WorkflowExecution
+    run(const WorkflowDefinition& definition, WorkflowContext& context) = 0;
 
     virtual bool set_step_success(
         WorkflowExecution& execution,

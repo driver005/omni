@@ -26,11 +26,8 @@ public:
 
     /** @brief Fully qualified key for a role value (e.g. "users:v1:7"). */
     template<typename Value>
-    [[nodiscard]] std::string composite(
-        std::string_view prefix,
-        std::string_view role,
-        const Value& value
-    )
+    [[nodiscard]] std::string
+    composite(std::string_view prefix, std::string_view role, const Value& value)
     {
         return std::string{prefix} + ":v1:" + std::string{role} + ":" +
                key_part(to_cache_value(value));
@@ -38,10 +35,12 @@ public:
 
 private:
     template<ReflectedCacheEntity E, typename Entity>
-     void append_keys(const Entity& entity, std::string& out)
+    void append_keys(const Entity& entity, std::string& out)
     {
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto append = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto append = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 if constexpr (F::is_key) {
                     out += ":" + key_part(to_cache_value(entity.*F::member));
@@ -54,7 +53,8 @@ private:
     [[nodiscard]] std::string key_part(const CacheValue& value)
     {
         return std::visit(
-            [](const auto& v) -> std::string {
+            [](const auto& v) -> std::string
+            {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::same_as<T, Miss>) {
                     return "miss";
@@ -81,9 +81,13 @@ struct KeySample
     std::int64_t id{};
     std::string name{};
 };
-CORE_CACHE_ENTITY(KeySample, "users",
+
+CORE_CACHE_ENTITY(
+    KeySample,
+    "users",
     CORE_CACHE_FIELD("id", &KeySample::id, FieldRole::KEY),
-    CORE_CACHE_FIELD("name", &KeySample::name, FieldRole::TAG));
+    CORE_CACHE_FIELD("name", &KeySample::name, FieldRole::TAG)
+);
 
 using namespace boost::ut;
 

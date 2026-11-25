@@ -23,6 +23,7 @@ public:
     {
         m_action = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_action() const noexcept
     {
         return m_action;
@@ -32,6 +33,7 @@ public:
     {
         m_connector_name = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_connector_name() const noexcept
     {
         return m_connector_name;
@@ -41,6 +43,7 @@ public:
     {
         m_reason = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_reason() const noexcept
     {
         return m_reason;
@@ -50,6 +53,7 @@ public:
     {
         m_matched = value;
     }
+
     [[nodiscard]] const bool& get_matched() const noexcept
     {
         return m_matched;
@@ -60,6 +64,7 @@ public:
     {
         m_error_kind = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_error_kind() const noexcept
     {
         return m_error_kind;
@@ -136,8 +141,10 @@ public:
         return evaluate_program(*program, *context);
     }
 
-    /** @brief Value-returning facade: on failure Decision carries error_kind = VALIDATION_FAILED. */
-    [[nodiscard]] Decision evaluate(std::string_view program_json, std::string_view context_json) const
+    /** @brief Value-returning facade: on failure Decision carries error_kind = VALIDATION_FAILED.
+     */
+    [[nodiscard]] Decision
+    evaluate(std::string_view program_json, std::string_view context_json) const
     {
         auto checked = evaluate_checked(program_json, context_json);
         if (checked.has_value()) {
@@ -186,7 +193,10 @@ public:
 private:
     [[nodiscard]] core::error::AppError validation_error(std::string message) const
     {
-        return core::error::AppErrorBuilder{}(core::error::AppErrorKind::VALIDATION_FAILED, std::move(message));
+        return core::error::AppErrorBuilder{}(
+            core::error::AppErrorKind::VALIDATION_FAILED,
+            std::move(message)
+        );
     }
 
     [[nodiscard]] std::expected<bool, core::error::AppError> matches(
@@ -244,7 +254,8 @@ private:
                field != "country" && field != "connector";
     }
 
-    [[nodiscard]] std::string field_value(std::string_view field, const DecisionContext& context) const
+    [[nodiscard]] std::string
+    field_value(std::string_view field, const DecisionContext& context) const
     {
         if (field == "amount") {
             return context.amount;
@@ -286,7 +297,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::optional<ConfigRecord> get_config(std::string_view config_namespace, std::string_view key) const
+    [[nodiscard]] std::optional<ConfigRecord>
+    get_config(std::string_view config_namespace, std::string_view key) const
     {
         return m_store.get(config_namespace, key);
     }
@@ -313,7 +325,12 @@ public:
         return m_store.audit_logs();
     }
 
-    void put_config(std::string_view config_namespace, std::string_view key, std::string value, std::string context = {})
+    void put_config(
+        std::string_view config_namespace,
+        std::string_view key,
+        std::string value,
+        std::string context = {}
+    )
     {
         m_store.put(config_namespace, key, std::move(value), std::move(context));
     }
@@ -335,11 +352,31 @@ struct serde::Serializable<app::services::Decision>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"action", &app::services::Decision::get_action, &app::services::Decision::set_action, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_name", &app::services::Decision::get_connector_name, &app::services::Decision::set_connector_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"reason", &app::services::Decision::get_reason, &app::services::Decision::set_reason, serde::FieldOptions{}>{},
-            serde::FieldDesc<"matched", &app::services::Decision::get_matched, &app::services::Decision::set_matched, serde::FieldOptions{}>{},
-            serde::FieldDesc<"error_kind", &app::services::Decision::get_error_kind, &app::services::Decision::set_error_kind, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "action",
+                &app::services::Decision::get_action,
+                &app::services::Decision::set_action,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector_name",
+                &app::services::Decision::get_connector_name,
+                &app::services::Decision::set_connector_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "reason",
+                &app::services::Decision::get_reason,
+                &app::services::Decision::set_reason,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "matched",
+                &app::services::Decision::get_matched,
+                &app::services::Decision::set_matched,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "error_kind",
+                &app::services::Decision::get_error_kind,
+                &app::services::Decision::set_error_kind,
+                serde::FieldOptions{}>{},
         };
     }
 
@@ -359,8 +396,10 @@ suite<"app_services_decision"> decision_suite = []
     {
         constexpr std::string_view program =
             R"({"rules":[{"if_condition":{"field":"amount","op":"gte","value":"5000"},"action":"route","connector":"stripe"}],"default_action":"allow","default_connector":"local"})";
-        constexpr std::string_view high = R"({"amount":"6000","currency":"USD","payment_method":"card","country":"US","connector":""})";
-        constexpr std::string_view low = R"({"amount":"100","currency":"USD","payment_method":"card","country":"US","connector":""})";
+        constexpr std::string_view high =
+            R"({"amount":"6000","currency":"USD","payment_method":"card","country":"US","connector":""})";
+        constexpr std::string_view low =
+            R"({"amount":"100","currency":"USD","payment_method":"card","country":"US","connector":""})";
 
         const auto routed = DecisionEngine{}.evaluate(program, high);
         expect(routed.get_action() == "route");
@@ -378,7 +417,8 @@ suite<"app_services_decision"> decision_suite = []
     {
         constexpr std::string_view program =
             R"({"rules":[{"if_condition":{"field":"currency","op":"in","value":"USD,EUR"},"action":"allow","connector":""}],"default_action":"deny"})";
-        constexpr std::string_view context = R"({"amount":"1","currency":"EUR","payment_method":"card","country":"DE","connector":""})";
+        constexpr std::string_view context =
+            R"({"amount":"1","currency":"EUR","payment_method":"card","country":"DE","connector":""})";
         const auto decision = DecisionEngine{}.evaluate(program, context);
         expect(decision.get_action() == "allow");
         expect(decision.get_error_kind().empty());
@@ -388,7 +428,8 @@ suite<"app_services_decision"> decision_suite = []
     {
         constexpr std::string_view bad_field =
             R"({"rules":[{"if_condition":{"field":"colour","op":"eq","value":"red"},"action":"allow","connector":""}],"default_action":"deny"})";
-        constexpr std::string_view context = R"({"amount":"1","currency":"USD","payment_method":"card","country":"US","connector":""})";
+        constexpr std::string_view context =
+            R"({"amount":"1","currency":"USD","payment_method":"card","country":"US","connector":""})";
 
         const auto checked = DecisionEngine{}.evaluate_checked(bad_field, context);
         expect(!checked.has_value());

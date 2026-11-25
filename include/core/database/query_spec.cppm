@@ -34,8 +34,7 @@ public:
             }
         }
         if (ordering) {
-            out += " ORDER BY " + ordering->first +
-                   std::string{SortOrderSql{}(ordering->second)};
+            out += " ORDER BY " + ordering->first + std::string{SortOrderSql{}(ordering->second)};
         }
         if (limit_count) {
             out += " LIMIT " + std::to_string(*limit_count);
@@ -47,10 +46,8 @@ public:
     }
 
 private:
-    [[nodiscard]] std::string join(
-        const std::vector<std::string>& parts,
-        std::string_view separator
-    ) const
+    [[nodiscard]] std::string
+    join(const std::vector<std::string>& parts, std::string_view separator) const
     {
         std::string out;
         for (std::size_t i = 0; i < parts.size(); ++i) {
@@ -77,8 +74,10 @@ suite<"core_db_query_spec"> core_db_query_spec_suite = []
         spec.ordering = std::make_pair(std::string{"name"}, SortOrder::DESC);
         spec.limit_count = 5;
         spec.offset_count = 10;
-        expect(spec.to_sql() ==
-               "SELECT id,name FROM users WHERE age > 21 ORDER BY name DESC LIMIT 5 OFFSET 10");
+        expect(
+            spec.to_sql() ==
+            "SELECT id,name FROM users WHERE age > 21 ORDER BY name DESC LIMIT 5 OFFSET 10"
+        );
     };
 };
 

@@ -205,7 +205,7 @@ public:
 /** @brief Default encode normalizer — leaves the stored value untouched. */
 struct identity_normalizer
 {
-    template <typename T>
+    template<typename T>
     [[nodiscard]] constexpr T&& operator()(T&& value) const noexcept
     {
         return std::forward<T>(value);

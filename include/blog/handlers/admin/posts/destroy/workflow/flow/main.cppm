@@ -16,4 +16,4 @@ public:
     }
 };
 
-} // namespace
+} // namespace blog::handlers::posts::destroy::workflow

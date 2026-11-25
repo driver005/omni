@@ -5,7 +5,11 @@ import std;
 export namespace core::workflow {
 
 /** @brief Selects the workflow backend, mirroring CronEngine / StorageEngine. */
-enum class WorkflowEngine { IN_MEMORY, DISTRIBUTED };
+enum class WorkflowEngine
+{
+    IN_MEMORY,
+    DISTRIBUTED
+};
 
 /** @brief Instance functor naming an engine. */
 class WorkflowEngineName
@@ -14,8 +18,10 @@ public:
     [[nodiscard]] std::string_view operator()(WorkflowEngine engine) const noexcept
     {
         switch (engine) {
-            case WorkflowEngine::IN_MEMORY: return "in-memory";
-            case WorkflowEngine::DISTRIBUTED: return "distributed";
+            case WorkflowEngine::IN_MEMORY:
+                return "in-memory";
+            case WorkflowEngine::DISTRIBUTED:
+                return "distributed";
         }
         return "unknown";
     }

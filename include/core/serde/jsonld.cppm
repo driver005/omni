@@ -100,7 +100,9 @@ suite<"serde_jsonld"> serde_jsonld_suite = []
     "builds a JSON-LD document"_test = []
     {
         JsonLdDocument document{
-            JsonLdContext{"https://www.w3.org/ns/activitystreams"}, "Note", "https://x/note/1"
+            JsonLdContext{"https://www.w3.org/ns/activitystreams"},
+            "Note",
+            "https://x/note/1"
         };
         document.set("content", "hello");
         expect(document.valid());

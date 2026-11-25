@@ -12,15 +12,29 @@ export namespace blog::dto::members {
 class StatsMemberResponse
 {
 public:
-    void set_stats(std::vector<StatsMemberEntry> value) { stats = std::move(value); }
-    [[nodiscard]] const std::vector<StatsMemberEntry>& get_stats() const noexcept { return stats; }
-    void set_meta(StatsMemberMeta value) { meta = std::move(value); }
-    [[nodiscard]] const StatsMemberMeta& get_meta() const noexcept { return meta; }
+    void set_stats(std::vector<StatsMemberEntry> value)
+    {
+        stats = std::move(value);
+    }
+
+    [[nodiscard]] const std::vector<StatsMemberEntry>& get_stats() const noexcept
+    {
+        return stats;
+    }
+
+    void set_meta(StatsMemberMeta value)
+    {
+        meta = std::move(value);
+    }
+
+    [[nodiscard]] const StatsMemberMeta& get_meta() const noexcept
+    {
+        return meta;
+    }
 
     std::vector<StatsMemberEntry> stats{};
     StatsMemberMeta meta{};
 };
-
 
 
 } // namespace blog::dto::members
@@ -31,8 +45,16 @@ struct serde::Serializable<blog::dto::members::StatsMemberResponse>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"stats", &blog::dto::members::StatsMemberResponse::get_stats, &blog::dto::members::StatsMemberResponse::set_stats, serde::FieldOptions{}>{},
-            serde::FieldDesc<"meta", &blog::dto::members::StatsMemberResponse::get_meta, &blog::dto::members::StatsMemberResponse::set_meta, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "stats",
+                &blog::dto::members::StatsMemberResponse::get_stats,
+                &blog::dto::members::StatsMemberResponse::set_stats,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "meta",
+                &blog::dto::members::StatsMemberResponse::get_meta,
+                &blog::dto::members::StatsMemberResponse::set_meta,
+                serde::FieldOptions{}>{}
         };
     }
 
@@ -41,4 +63,3 @@ struct serde::Serializable<blog::dto::members::StatsMemberResponse>
         return "stats_member_response";
     }
 };
-

@@ -190,8 +190,7 @@ suite<"app_connector_response"> response_suite = []
 
     "response is serde serializable with seven reflected fields"_test = []
     {
-        expect(std::tuple_size_v<
-                   decltype(serde::Serializable<ConnectorResponse>::fields())> == 7);
+        expect(std::tuple_size_v<decltype(serde::Serializable<ConnectorResponse>::fields())> == 7);
         expect(serde::Serializable<ConnectorResponse>::table_name() == "connector_response");
     };
 };

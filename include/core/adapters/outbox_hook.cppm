@@ -47,18 +47,18 @@ using OutboundHook = std::function<void(const OutboundCall&)>;
 
 namespace detail {
 
-struct OutboxState
-{
-    std::mutex mutex;
-    OutboundHook hook;
-    std::vector<OutboundCall> calls;
-};
+    struct OutboxState
+    {
+        std::mutex mutex;
+        OutboundHook hook;
+        std::vector<OutboundCall> calls;
+    };
 
-[[nodiscard]] inline OutboxState& outbox_state()
-{
-    static OutboxState state;
-    return state;
-}
+    [[nodiscard]] inline OutboxState& outbox_state()
+    {
+        static OutboxState state;
+        return state;
+    }
 
 } // namespace detail
 

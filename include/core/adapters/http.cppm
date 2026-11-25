@@ -1,12 +1,12 @@
 module;
 
 #if defined(__linux__) || defined(__APPLE__) || defined(__unix__)
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>
+    #include <sys/socket.h>
+    #include <sys/time.h>
+    #include <sys/types.h>
+    #include <unistd.h>
 #endif
 
 export module core_adapters:http;
@@ -21,9 +21,9 @@ struct ParsedUrl
 {
     std::string scheme{};
     std::string host{};
-    std::string authority{};  // host[:port], for the Host header
-    std::string path{};        // always begins with '/'
-    std::string query{};       // without '?'
+    std::string authority{}; // host[:port], for the Host header
+    std::string path{};      // always begins with '/'
+    std::string query{};     // without '?'
     std::uint16_t port{80};
 };
 
@@ -53,11 +53,8 @@ struct ParsedUrl
     if (colon != std::string_view::npos && colon + 1 < hostport.size()) {
         const auto port_text = hostport.substr(colon + 1);
         std::uint16_t parsed_port = 0;
-        const auto result = std::from_chars(
-            port_text.data(),
-            port_text.data() + port_text.size(),
-            parsed_port
-        );
+        const auto result =
+            std::from_chars(port_text.data(), port_text.data() + port_text.size(), parsed_port);
         if (result.ec != std::errc{} || parsed_port == 0) {
             return std::nullopt;
         }
@@ -67,8 +64,8 @@ struct ParsedUrl
         parsed.host = std::string{hostport};
     }
     parsed.authority = parsed.host == std::string{hostport}
-        ? parsed.host
-        : std::format("{}:{}", parsed.host, parsed.port);
+                           ? parsed.host
+                           : std::format("{}:{}", parsed.host, parsed.port);
     if (parsed.host.empty()) {
         return std::nullopt;
     }
@@ -83,9 +80,8 @@ struct ParsedUrl
         parsed.query = std::string{tail.substr(1)};
     } else {
         const auto question = tail.find('?');
-        parsed.path = question == std::string_view::npos
-            ? std::string{tail}
-            : std::string{tail.substr(0, question)};
+        parsed.path = question == std::string_view::npos ? std::string{tail}
+                                                         : std::string{tail.substr(0, question)};
         if (question != std::string_view::npos) {
             parsed.query = std::string{tail.substr(question + 1)};
         }
@@ -179,7 +175,8 @@ public:
 
         int socket_fd = -1;
         for (auto* candidate = resolved; candidate != nullptr; candidate = candidate->ai_next) {
-            socket_fd = ::socket(candidate->ai_family, candidate->ai_socktype, candidate->ai_protocol);
+            socket_fd =
+                ::socket(candidate->ai_family, candidate->ai_socktype, candidate->ai_protocol);
             if (socket_fd < 0) {
                 continue;
             }
@@ -218,12 +215,7 @@ public:
 
         std::size_t sent = 0;
         while (sent < wire.size()) {
-            const auto count = ::send(
-                socket_fd,
-                wire.data() + sent,
-                wire.size() - sent,
-                0
-            );
+            const auto count = ::send(socket_fd, wire.data() + sent, wire.size() - sent, 0);
             if (count <= 0) {
                 response.error = "socket send failed";
                 ::close(socket_fd);
@@ -233,7 +225,7 @@ public:
         }
 
         std::string received;
-        char buffer[4096];
+        char buffer[4'096];
         std::size_t expected_body = std::string::npos;
         while (true) {
             const auto count = ::recv(socket_fd, buffer, sizeof(buffer), 0);
@@ -259,25 +251,25 @@ public:
                     trim(value);
                     response.headers.emplace_back(std::move(name), std::move(value));
                     std::string lower = name;
-                    std::ranges::transform(lower, lower.begin(), [](const char c)
-                    {
-                        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-                    });
+                    std::ranges::transform(
+                        lower,
+                        lower.begin(),
+                        [](const char c)
+                        {
+                            return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                        }
+                    );
                     if (lower == "content-length") {
                         std::size_t length = 0;
-                        const auto parsed_length = std::from_chars(
-                            value.data(),
-                            value.data() + value.size(),
-                            length
-                        );
+                        const auto parsed_length =
+                            std::from_chars(value.data(), value.data() + value.size(), length);
                         if (parsed_length.ec == std::errc{}) {
                             expected_body = length;
                         }
                     }
                 }
             }
-            if (header_end != std::string::npos &&
-                expected_body != std::string::npos &&
+            if (header_end != std::string::npos && expected_body != std::string::npos &&
                 received.size() >= header_end + 4 + expected_body) {
                 break;
             }
@@ -364,11 +356,7 @@ public:
     /** @brief Routes by HTTP method and a substring of the full request URL. */
     void route(std::string method, std::string url_contains, Handler handler)
     {
-        m_routes.push_back({
-            std::move(method),
-            std::move(url_contains),
-            std::move(handler)
-        });
+        m_routes.push_back({std::move(method), std::move(url_contains), std::move(handler)});
     }
 
     void set_default(Handler handler)
@@ -389,7 +377,10 @@ public:
         }
         HttpResponse response;
         response.status = 404;
-        response.body = ghost_error("NotFound", std::format("no mock route for {} {}", request.method, request.url));
+        response.body = ghost_error(
+            "NotFound",
+            std::format("no mock route for {} {}", request.method, request.url)
+        );
         return response;
     }
 
@@ -405,6 +396,7 @@ private:
         std::string url_contains;
         Handler handler;
     };
+
     std::vector<Route> m_routes{};
     std::vector<HttpRequest> m_requests{};
     Handler m_default{};
@@ -416,11 +408,8 @@ private:
  * Success bodies are passed through verbatim (the upstream mock already returns a Ghost
  * envelope). Failures return documented Ghost error envelopes instead of throwing.
  */
-[[nodiscard]] inline Result normalize(
-    const HttpResponse& response,
-    std::string_view provider,
-    bool require_json = true
-)
+[[nodiscard]] inline Result
+normalize(const HttpResponse& response, std::string_view provider, bool require_json = true)
 {
     if (!response.error.empty()) {
         return {

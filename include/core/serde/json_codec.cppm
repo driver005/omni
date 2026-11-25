@@ -31,7 +31,6 @@ public:
 
 } // namespace core_serde
 
-
 export namespace serde {
 
 template<>

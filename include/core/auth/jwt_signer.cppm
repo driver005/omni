@@ -38,18 +38,21 @@ public:
             signing_input.size(),
             m_key.data()
         );
-        return signing_input + "." + b64url(
-            std::string_view{reinterpret_cast<const char*>(signature.data()), signature.size()}
-        );
+        return signing_input + "." +
+               b64url(
+                   std::string_view{
+                       reinterpret_cast<const char*>(signature.data()),
+                       signature.size()
+                   }
+               );
     }
 
     /** @brief Verifies signature and returns the payload, or nullopt. */
     [[nodiscard]] std::optional<std::string> verify(std::string_view token) const
     {
         const auto first = token.find('.');
-        const auto second = first == std::string_view::npos
-                                ? std::string_view::npos
-                                : token.find('.', first + 1);
+        const auto second =
+            first == std::string_view::npos ? std::string_view::npos : token.find('.', first + 1);
         if (first == std::string_view::npos || second == std::string_view::npos) {
             return std::nullopt;
         }
@@ -81,10 +84,9 @@ private:
         out.reserve((input.size() * 4 / 3) + 4);
         std::size_t i = 0;
         while (i + 2 < input.size()) {
-            const unsigned value =
-                (static_cast<unsigned char>(input[i]) << 16) |
-                (static_cast<unsigned char>(input[i + 1]) << 8) |
-                static_cast<unsigned char>(input[i + 2]);
+            const unsigned value = (static_cast<unsigned char>(input[i]) << 16) |
+                                   (static_cast<unsigned char>(input[i + 1]) << 8) |
+                                   static_cast<unsigned char>(input[i + 2]);
             out += TABLE[(value >> 18) & 63];
             out += TABLE[(value >> 12) & 63];
             out += TABLE[(value >> 6) & 63];

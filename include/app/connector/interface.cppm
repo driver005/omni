@@ -51,8 +51,10 @@ public:
     [[nodiscard]] virtual ConnectorResponse exchange_token(const ConnectorRequest& request) = 0;
 
     // Capability discovery and inbound webhook verification.
-    [[nodiscard]] virtual ConnectorResponse check_feature_matrix(const ConnectorRequest& request) = 0;
-    [[nodiscard]] virtual ConnectorResponse webhook_source_verify(const ConnectorRequest& request) = 0;
+    [[nodiscard]] virtual ConnectorResponse
+    check_feature_matrix(const ConnectorRequest& request) = 0;
+    [[nodiscard]] virtual ConnectorResponse
+    webhook_source_verify(const ConnectorRequest& request) = 0;
 };
 
 } // namespace app::connector

@@ -5,8 +5,15 @@ import core_workflow;
 import :previews_preview_get_step;
 
 export namespace blog::handlers::previews::preview_get::workflow {
-class MainFlow { public:
- [[nodiscard]] core::workflow::WorkflowDefinition build() const {
-  return core::workflow::WorkflowBuilder{}.name("previews_preview_get").step<ExecuteStep>().build();
- }};
-}
+class MainFlow
+{
+public:
+    [[nodiscard]] core::workflow::WorkflowDefinition build() const
+    {
+        return core::workflow::WorkflowBuilder{}
+            .name("previews_preview_get")
+            .step<ExecuteStep>()
+            .build();
+    }
+};
+} // namespace blog::handlers::previews::preview_get::workflow

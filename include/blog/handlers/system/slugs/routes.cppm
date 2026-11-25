@@ -33,29 +33,35 @@ public:
             .use(blog::handlers::middleware::bearer_middleware)
             .use(blog::handlers::middleware::require_auth)
             .add_router(
-                Router{router, "/:type"}
-                    .add_router(
-                        Router{router, "/:name"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.slugs_get_detail().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost /slugs/:type/:name GET")
-                            .add_route(
-                                Route{"/:id"}
-                                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.slugs_get_detail().handle(req, res, std::move(send));
-    })
-                                    .summary("Ghost /slugs/:type/:name/:id GET")
+                Router{router, "/:type"}.add_router(
+                    Router{router, "/:name"}
+                        .get(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
                             )
-                    )
+                            {
+                                handler.slugs_get_detail().handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost /slugs/:type/:name GET")
+                        .add_route(
+                            Route{"/:id"}
+                                .get(
+                                    [&handler](
+                                        interfaces::io::IRequest& req,
+                                        interfaces::io::IResponse& res,
+                                        std::function<void()> send
+                                    )
+                                    {
+                                        handler.slugs_get_detail()
+                                            .handle(req, res, std::move(send));
+                                    }
+                                )
+                                .summary("Ghost /slugs/:type/:name/:id GET")
+                        )
+                )
             );
     }
 };

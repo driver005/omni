@@ -17,24 +17,48 @@ enum class ActionUrlResponse
 class ConnectorValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class MerchantConnectorAccountIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class MerchantIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
@@ -46,16 +70,32 @@ enum class OnboardingStatus
 class PayPalActionUrlResponse
 {
 public:
-    void set_action_url(std::string value) { action_url = std::move(value); }
-    [[nodiscard]] const std::string& get_action_url() const noexcept { return action_url; }
+    void set_action_url(std::string value)
+    {
+        action_url = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_action_url() const noexcept
+    {
+        return action_url;
+    }
+
     std::string action_url{};
 };
 
 class PayPalIntegrationDone
 {
 public:
-    void set_connector_id(std::string value) { connector_id = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
+    void set_connector_id(std::string value)
+    {
+        connector_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector_id() const noexcept
+    {
+        return connector_id;
+    }
+
     std::string connector_id{};
 };
 
@@ -73,8 +113,16 @@ enum class PayPalOnboardingStatus
 class ProfileIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
@@ -85,12 +133,36 @@ public:
 class ActionUrlRequest
 {
 public:
-    void set_connector(std::string value) { connector = std::move(value); }
-    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
-    void set_connector_id(std::string value) { connector_id = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
-    void set_return_url(std::string value) { return_url = std::move(value); }
-    [[nodiscard]] const std::string& get_return_url() const noexcept { return return_url; }
+    void set_connector(std::string value)
+    {
+        connector = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector() const noexcept
+    {
+        return connector;
+    }
+
+    void set_connector_id(std::string value)
+    {
+        connector_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector_id() const noexcept
+    {
+        return connector_id;
+    }
+
+    void set_return_url(std::string value)
+    {
+        return_url = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_return_url() const noexcept
+    {
+        return return_url;
+    }
+
     std::string connector{};
     std::string connector_id{};
     std::string return_url{};
@@ -99,12 +171,36 @@ public:
 class OnboardingSyncRequest
 {
 public:
-    void set_profile_id(std::string value) { profile_id = std::move(value); }
-    [[nodiscard]] const std::string& get_profile_id() const noexcept { return profile_id; }
-    void set_connector_id(std::string value) { connector_id = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
-    void set_connector(std::string value) { connector = std::move(value); }
-    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
+    void set_profile_id(std::string value)
+    {
+        profile_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_profile_id() const noexcept
+    {
+        return profile_id;
+    }
+
+    void set_connector_id(std::string value)
+    {
+        connector_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector_id() const noexcept
+    {
+        return connector_id;
+    }
+
+    void set_connector(std::string value)
+    {
+        connector = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector() const noexcept
+    {
+        return connector;
+    }
+
     std::string profile_id{};
     std::string connector_id{};
     std::string connector{};
@@ -113,18 +209,42 @@ public:
 class PayPalOnboardingDone
 {
 public:
-    void set_payer_id(std::string value) { payer_id = std::move(value); }
-    [[nodiscard]] const std::string& get_payer_id() const noexcept { return payer_id; }
+    void set_payer_id(std::string value)
+    {
+        payer_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_payer_id() const noexcept
+    {
+        return payer_id;
+    }
+
     std::string payer_id{};
 };
 
 class ResetTrackingIdRequest
 {
 public:
-    void set_connector_id(std::string value) { connector_id = std::move(value); }
-    [[nodiscard]] const std::string& get_connector_id() const noexcept { return connector_id; }
-    void set_connector(std::string value) { connector = std::move(value); }
-    [[nodiscard]] const std::string& get_connector() const noexcept { return connector; }
+    void set_connector_id(std::string value)
+    {
+        connector_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector_id() const noexcept
+    {
+        return connector_id;
+    }
+
+    void set_connector(std::string value)
+    {
+        connector = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_connector() const noexcept
+    {
+        return connector;
+    }
+
     std::string connector_id{};
     std::string connector{};
 };
@@ -136,12 +256,28 @@ struct serde::Serializable<app::dto::connector_onboarding::ActionUrlRequest>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"connector", &app::dto::connector_onboarding::ActionUrlRequest::get_connector, &app::dto::connector_onboarding::ActionUrlRequest::set_connector, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_id", &app::dto::connector_onboarding::ActionUrlRequest::get_connector_id, &app::dto::connector_onboarding::ActionUrlRequest::set_connector_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"return_url", &app::dto::connector_onboarding::ActionUrlRequest::get_return_url, &app::dto::connector_onboarding::ActionUrlRequest::set_return_url, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "connector",
+                &app::dto::connector_onboarding::ActionUrlRequest::get_connector,
+                &app::dto::connector_onboarding::ActionUrlRequest::set_connector,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector_id",
+                &app::dto::connector_onboarding::ActionUrlRequest::get_connector_id,
+                &app::dto::connector_onboarding::ActionUrlRequest::set_connector_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "return_url",
+                &app::dto::connector_onboarding::ActionUrlRequest::get_return_url,
+                &app::dto::connector_onboarding::ActionUrlRequest::set_return_url,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "action_url_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "action_url_request";
+    }
 };
 
 template<>
@@ -150,12 +286,28 @@ struct serde::Serializable<app::dto::connector_onboarding::OnboardingSyncRequest
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"profile_id", &app::dto::connector_onboarding::OnboardingSyncRequest::get_profile_id, &app::dto::connector_onboarding::OnboardingSyncRequest::set_profile_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector_id", &app::dto::connector_onboarding::OnboardingSyncRequest::get_connector_id, &app::dto::connector_onboarding::OnboardingSyncRequest::set_connector_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector", &app::dto::connector_onboarding::OnboardingSyncRequest::get_connector, &app::dto::connector_onboarding::OnboardingSyncRequest::set_connector, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "profile_id",
+                &app::dto::connector_onboarding::OnboardingSyncRequest::get_profile_id,
+                &app::dto::connector_onboarding::OnboardingSyncRequest::set_profile_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector_id",
+                &app::dto::connector_onboarding::OnboardingSyncRequest::get_connector_id,
+                &app::dto::connector_onboarding::OnboardingSyncRequest::set_connector_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector",
+                &app::dto::connector_onboarding::OnboardingSyncRequest::get_connector,
+                &app::dto::connector_onboarding::OnboardingSyncRequest::set_connector,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "onboarding_sync_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "onboarding_sync_request";
+    }
 };
 
 template<>
@@ -163,11 +315,17 @@ struct serde::Serializable<app::dto::connector_onboarding::PayPalActionUrlRespon
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"action_url", &app::dto::connector_onboarding::PayPalActionUrlResponse::get_action_url, &app::dto::connector_onboarding::PayPalActionUrlResponse::set_action_url, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "action_url",
+            &app::dto::connector_onboarding::PayPalActionUrlResponse::get_action_url,
+            &app::dto::connector_onboarding::PayPalActionUrlResponse::set_action_url,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "pay_pal_action_url_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "pay_pal_action_url_response";
+    }
 };
 
 template<>
@@ -175,11 +333,17 @@ struct serde::Serializable<app::dto::connector_onboarding::PayPalOnboardingDone>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"payer_id", &app::dto::connector_onboarding::PayPalOnboardingDone::get_payer_id, &app::dto::connector_onboarding::PayPalOnboardingDone::set_payer_id, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "payer_id",
+            &app::dto::connector_onboarding::PayPalOnboardingDone::get_payer_id,
+            &app::dto::connector_onboarding::PayPalOnboardingDone::set_payer_id,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "pay_pal_onboarding_done"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "pay_pal_onboarding_done";
+    }
 };
 
 template<>
@@ -187,11 +351,17 @@ struct serde::Serializable<app::dto::connector_onboarding::PayPalIntegrationDone
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"connector_id", &app::dto::connector_onboarding::PayPalIntegrationDone::get_connector_id, &app::dto::connector_onboarding::PayPalIntegrationDone::set_connector_id, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "connector_id",
+            &app::dto::connector_onboarding::PayPalIntegrationDone::get_connector_id,
+            &app::dto::connector_onboarding::PayPalIntegrationDone::set_connector_id,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "pay_pal_integration_done"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "pay_pal_integration_done";
+    }
 };
 
 template<>
@@ -200,20 +370,38 @@ struct serde::Serializable<app::dto::connector_onboarding::ResetTrackingIdReques
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"connector_id", &app::dto::connector_onboarding::ResetTrackingIdRequest::get_connector_id, &app::dto::connector_onboarding::ResetTrackingIdRequest::set_connector_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"connector", &app::dto::connector_onboarding::ResetTrackingIdRequest::get_connector, &app::dto::connector_onboarding::ResetTrackingIdRequest::set_connector, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "connector_id",
+                &app::dto::connector_onboarding::ResetTrackingIdRequest::get_connector_id,
+                &app::dto::connector_onboarding::ResetTrackingIdRequest::set_connector_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "connector",
+                &app::dto::connector_onboarding::ResetTrackingIdRequest::get_connector,
+                &app::dto::connector_onboarding::ResetTrackingIdRequest::set_connector,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "reset_tracking_id_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "reset_tracking_id_request";
+    }
 };
 
 #ifdef CONGELADO_TEST
 namespace app::dto::connector_onboarding::tests {
 using namespace boost::ut;
-suite<"app_dto_connector_onboarding"> app_dto_connector_onboarding_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::connector_onboarding::ActionUrlRequest>::fields())> > 0);
+suite<"app_dto_connector_onboarding"> app_dto_connector_onboarding_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<
+                         app::dto::connector_onboarding::ActionUrlRequest>::fields())> > 0
+        );
     };
 };
-}
+} // namespace app::dto::connector_onboarding::tests
 #endif

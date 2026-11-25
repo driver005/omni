@@ -37,7 +37,10 @@ public:
         const std::string event_id = std::format("evt_{}", stored.get_id());
         stored.set_event_id(event_id);
         m_db.update_where_column<EventRecord>(
-            stored, "id", core::db::Compare::EQ, core::db::DbValue{stored.get_id()}
+            stored,
+            "id",
+            core::db::Compare::EQ,
+            core::db::DbValue{stored.get_id()}
         );
 
         m_metrics.counter("event_published").increment();
@@ -49,15 +52,20 @@ public:
     [[nodiscard]] std::optional<EventRecord> find_by_event_id(std::string_view event_id)
     {
         core::db::QuerySpec spec = m_db.query<EventRecord>().spec();
-        spec.predicates.push_back(core::db::Predicate{
-            .column = "event_id",
-            .comparison = core::db::Compare::EQ,
-            .value = core::db::DbValue{std::string{event_id}},
-        });
+        spec.predicates.push_back(
+            core::db::Predicate{
+                .column = "event_id",
+                .comparison = core::db::Compare::EQ,
+                .value = core::db::DbValue{std::string{event_id}},
+            }
+        );
         spec.limit_count = 1;
         const std::vector<EventRecord> records = m_db.collect<EventRecord>(spec);
         if (records.empty()) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::NOT_FOUND, "event not found");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::NOT_FOUND,
+                "event not found"
+            );
             return std::nullopt;
         }
         m_last_error.reset();
@@ -67,10 +75,16 @@ public:
     bool save(const EventRecord& record)
     {
         const bool saved = m_db.update_where_column<EventRecord>(
-                               record, "id", core::db::Compare::EQ, core::db::DbValue{record.get_id()}
+                               record,
+                               "id",
+                               core::db::Compare::EQ,
+                               core::db::DbValue{record.get_id()}
                            ) > 0;
         if (!saved) {
-            m_last_error = core::error::AppErrorBuilder{}(core::error::AppErrorKind::INTERNAL_ERROR, "event update failed");
+            m_last_error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INTERNAL_ERROR,
+                "event update failed"
+            );
         }
         return saved;
     }
@@ -86,7 +100,8 @@ private:
         return std::to_string(
             std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()
-            ).count()
+            )
+                .count()
         );
     }
 

@@ -11,20 +11,24 @@ export namespace blog::handlers::posts::gift_links_edit::workflow {
 class ExecuteStep
 {
 public:
-    using Input=interfaces::io::IRequest&;
+    using Input = interfaces::io::IRequest&;
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"posts_gift_links_edit_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& input, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& input, core::workflow::WorkflowContext&) const
     {
         const std::string id = blog::api::gift_links_ops::parse_resource_id(input.get_path());
         if (id.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "400"}, {"body", blog::api::gift_links_ops::validation_error_body()}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "400"}, {"body", blog::api::gift_links_ops::validation_error_body()}}
+            };
         }
         const auto actor = blog::api::gift_links_ops::actor_from_request(input);
         const auto result = blog::api::gift_links_ops::ensure(s_ctx->store(), id, "posts", actor);
-        return core::workflow::StepResponse<Output>{{{"status", std::to_string(result.first)}, {"body", result.second}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", std::to_string(result.first)}, {"body", result.second}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -34,4 +38,4 @@ public:
 
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
 
-} // namespace
+} // namespace blog::handlers::posts::gift_links_edit::workflow

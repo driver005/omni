@@ -241,10 +241,14 @@ struct CacheUser
     std::string name{};
     bool admin{};
 };
-CORE_CACHE_ENTITY(CacheUser, "users",
+
+CORE_CACHE_ENTITY(
+    CacheUser,
+    "users",
     CORE_CACHE_FIELD("id", &CacheUser::id, FieldRole::KEY),
     CORE_CACHE_FIELD("name", &CacheUser::name, FieldRole::TAG),
-    CORE_CACHE_FIELD("admin", &CacheUser::admin));
+    CORE_CACHE_FIELD("admin", &CacheUser::admin)
+);
 
 using namespace boost::ut;
 

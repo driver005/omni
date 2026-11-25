@@ -15,31 +15,120 @@ class Page
 public:
     Page() = default;
 
-    void set_id(std::int64_t value) { m_id = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_id() const noexcept { return m_id; }
-    void set_uuid(std::string value) { m_uuid = std::move(value); }
-    [[nodiscard]] const std::string& get_uuid() const noexcept { return m_uuid; }
-    void set_title(std::string value) { m_title = std::move(value); }
-    [[nodiscard]] const std::string& get_title() const noexcept { return m_title; }
-    void set_slug(std::string value) { m_slug = std::move(value); }
-    [[nodiscard]] const std::string& get_slug() const noexcept { return m_slug; }
-    void set_html(std::string value) { m_html = std::move(value); }
-    [[nodiscard]] const std::string& get_html() const noexcept { return m_html; }
-    void set_status(std::string value) { m_status = std::move(value); }
-    [[nodiscard]] const std::string& get_status() const noexcept { return m_status; }
+    void set_id(std::int64_t value)
+    {
+        m_id = std::move(value);
+    }
 
-    [[nodiscard]] std::string wire_uuid() const { return m_uuid.empty() ? serde::uuid_for(m_id) : m_uuid; }
-    [[nodiscard]] std::string wire_excerpt() const { return m_title; }
-    [[nodiscard]] std::string wire_comment_id() const { return "comment-" + std::to_string(m_id); }
-    [[nodiscard]] static std::string wire_lexical() { return "{}"; }
-    [[nodiscard]] std::string wire_lexical_value() const { return "{}"; }
-    [[nodiscard]] serde::RawJson wire_count() const { return {R"({"clicks":0,"positive_feedback":0,"negative_feedback":0})"}; }
-    [[nodiscard]] bool wire_featured() const { return false; }
-    [[nodiscard]] serde::RawJson wire_timestamp() const { return {R"("2024-01-01T00:00:00.000Z")"}; }
-    [[nodiscard]] serde::RawJson wire_null() const { return {"null"}; }
-    [[nodiscard]] serde::RawJson wire_empty_array() const { return {"[]"}; }
+    [[nodiscard]] const std::int64_t& get_id() const noexcept
+    {
+        return m_id;
+    }
+
+    void set_uuid(std::string value)
+    {
+        m_uuid = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_uuid() const noexcept
+    {
+        return m_uuid;
+    }
+
+    void set_title(std::string value)
+    {
+        m_title = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_title() const noexcept
+    {
+        return m_title;
+    }
+
+    void set_slug(std::string value)
+    {
+        m_slug = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_slug() const noexcept
+    {
+        return m_slug;
+    }
+
+    void set_html(std::string value)
+    {
+        m_html = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_html() const noexcept
+    {
+        return m_html;
+    }
+
+    void set_status(std::string value)
+    {
+        m_status = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_status() const noexcept
+    {
+        return m_status;
+    }
+
+    [[nodiscard]] std::string wire_uuid() const
+    {
+        return m_uuid.empty() ? serde::uuid_for(m_id) : m_uuid;
+    }
+
+    [[nodiscard]] std::string wire_excerpt() const
+    {
+        return m_title;
+    }
+
+    [[nodiscard]] std::string wire_comment_id() const
+    {
+        return "comment-" + std::to_string(m_id);
+    }
+
+    [[nodiscard]] static std::string wire_lexical()
+    {
+        return "{}";
+    }
+
+    [[nodiscard]] std::string wire_lexical_value() const
+    {
+        return "{}";
+    }
+
+    [[nodiscard]] serde::RawJson wire_count() const
+    {
+        return {R"({"clicks":0,"positive_feedback":0,"negative_feedback":0})"};
+    }
+
+    [[nodiscard]] bool wire_featured() const
+    {
+        return false;
+    }
+
+    [[nodiscard]] serde::RawJson wire_timestamp() const
+    {
+        return {R"("2024-01-01T00:00:00.000Z")"};
+    }
+
+    [[nodiscard]] serde::RawJson wire_null() const
+    {
+        return {"null"};
+    }
+
+    [[nodiscard]] serde::RawJson wire_empty_array() const
+    {
+        return {"[]"};
+    }
+
     void set_wire_noop(serde::RawJson) {}
+
     void set_wire_string_noop(std::string) {}
+
     std::int64_t m_id{};
     std::string m_uuid{};
     std::string m_title{};
@@ -49,8 +138,6 @@ public:
 };
 
 
-
-
 } // namespace blog::model
 
 namespace serde {
@@ -58,10 +145,16 @@ template<>
 struct Serializable<blog::model::Page>
 {
     using M = blog::model::Page;
+
     static constexpr auto fields()
     {
         return std::tuple{
-            FieldDesc<"id", &M::get_id, &M::set_id, FieldOptions::init().with_db(FieldOptionsDb::init().pk()), wire_id_normalizer{}>{},
+            FieldDesc<
+                "id",
+                &M::get_id,
+                &M::set_id,
+                FieldOptions::init().with_db(FieldOptionsDb::init().pk()),
+                wire_id_normalizer{}>{},
             FieldDesc<"uuid", &M::wire_uuid, &M::set_uuid>{},
             FieldDesc<"title", &M::get_title, &M::set_title>{},
             FieldDesc<"slug", &M::get_slug, &M::set_slug>{},
@@ -86,18 +179,47 @@ struct Serializable<blog::model::Page>
             FieldDesc<"updated_at", &M::wire_timestamp, &M::set_wire_noop>{}
         };
     }
+
     static constexpr auto db_fields()
     {
         return std::tuple{
-            serde::FieldDesc<"id", &blog::model::Page::get_id, &blog::model::Page::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
-            serde::FieldDesc<"uuid", &blog::model::Page::get_uuid, &blog::model::Page::set_uuid, serde::FieldOptions{}>{},
-            serde::FieldDesc<"title", &blog::model::Page::get_title, &blog::model::Page::set_title, serde::FieldOptions{}>{},
-            serde::FieldDesc<"slug", &blog::model::Page::get_slug, &blog::model::Page::set_slug, serde::FieldOptions{}>{},
-            serde::FieldDesc<"html", &blog::model::Page::get_html, &blog::model::Page::set_html, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &blog::model::Page::get_status, &blog::model::Page::set_status, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "id",
+                &blog::model::Page::get_id,
+                &blog::model::Page::set_id,
+                serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<
+                "uuid",
+                &blog::model::Page::get_uuid,
+                &blog::model::Page::set_uuid,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "title",
+                &blog::model::Page::get_title,
+                &blog::model::Page::set_title,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "slug",
+                &blog::model::Page::get_slug,
+                &blog::model::Page::set_slug,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "html",
+                &blog::model::Page::get_html,
+                &blog::model::Page::set_html,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "status",
+                &blog::model::Page::get_status,
+                &blog::model::Page::set_status,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "pages"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "pages";
+    }
 };
 } // namespace serde
 

@@ -71,10 +71,7 @@ export namespace blog::api {
 class ApiRoutes
 {
 public:
-    void install(
-        core::router::RouterContext<>& router,
-        blog::api::BlogHandlers& handlers
-    )
+    void install(core::router::RouterContext<>& router, blog::api::BlogHandlers& handlers)
     {
         blog::handlers::middleware::install_serde_formats();
         ActionsRoutes{}.install(router, handlers);

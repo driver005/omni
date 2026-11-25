@@ -36,7 +36,6 @@ public:
     ServiceKey() = default;
 
 private:
-
     ServiceKey(std::string name, const std::type_info* type) :
         m_name{std::move(name)},
         m_type{type}

@@ -81,9 +81,13 @@ struct RepoItem
     std::int64_t id{};
     std::string name{};
 };
-CORE_DB_REFLECT(RepoItem, "repo_items",
+
+CORE_DB_REFLECT(
+    RepoItem,
+    "repo_items",
     CORE_DB_FIELD("id", &RepoItem::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY),
-    CORE_DB_FIELD("name", &RepoItem::name, ColumnType::TEXT));
+    CORE_DB_FIELD("name", &RepoItem::name, ColumnType::TEXT)
+);
 
 using namespace boost::ut;
 

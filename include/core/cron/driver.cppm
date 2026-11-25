@@ -102,7 +102,14 @@ suite<"core_cron_driver"> core_cron_driver_suite = []
 
     "external engine is rejected until a plugin registers"_test = []
     {
-        expect(throws<std::runtime_error>([] { CronDriver driver{CronEngine::EXTERNAL}; }));
+        expect(
+            throws<std::runtime_error>(
+                []
+                {
+                    CronDriver driver{CronEngine::EXTERNAL};
+                }
+            )
+        );
     };
 };
 

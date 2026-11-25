@@ -24,7 +24,10 @@ public:
         }
     }
 
-    int failures() const { return m_failures; }
+    int failures() const
+    {
+        return m_failures;
+    }
 
 private:
     int m_failures{0};
@@ -32,8 +35,8 @@ private:
 
 constexpr auto kAll = std::numeric_limits<std::size_t>::max();
 
-constexpr std::array<std::string_view, 7> kAllow{
-    "filter", "fields", "include", "order", "limit", "page", "offset"};
+constexpr std::array<std::string_view, 7>
+    kAllow{"filter", "fields", "include", "order", "limit", "page", "offset"};
 
 constexpr std::string_view kRows = R"([
 {"id":"1","title":"Hello Ghost","status":"published","featured":true,"monthly_price":0,"created_at":"2024-01-01"},
@@ -44,8 +47,7 @@ constexpr std::string_view kRows = R"([
 std::size_t count(std::string_view haystack, std::string_view needle)
 {
     std::size_t n = 0;
-    for (std::size_t pos = 0; (pos = haystack.find(needle, pos)) != std::string_view::npos;
-         ++pos) {
+    for (std::size_t pos = 0; (pos = haystack.find(needle, pos)) != std::string_view::npos; ++pos) {
         ++n;
     }
     return n;
@@ -62,11 +64,15 @@ int main()
         const auto q = parse(
             "?filter[status]=published&fields=id,title&include=author,tags"
             "&order=created_at%20desc&limit=all&page=2&bogus=ignored",
-            kAllow);
+            kAllow
+        );
         check.eq(q.options.at("limit"), "all", "option limit preserved");
         check.yes(!q.options.contains("bogus"), "non-allowlisted option dropped");
-        check.yes(q.filters.size() == 1 && q.filters[0].first == "status" &&
-                      q.filters[0].second == "published", "bracket filter");
+        check.yes(
+            q.filters.size() == 1 && q.filters[0].first == "status" &&
+                q.filters[0].second == "published",
+            "bracket filter"
+        );
         check.yes(q.fields.contains("id") && q.fields.contains("title"), "fields parsed");
         check.yes(q.include.contains("author") && q.include.contains("tags"), "include parsed");
         check.eq(q.order, "created_at desc", "order decoded");
@@ -167,7 +173,10 @@ int main()
         q.include.insert("authors");
         const auto out = apply(kRows, q);
         check.yes(out.find(R"("html":)") == std::string::npos, "projection drops keys");
-        check.yes(out.find(R"("title":"Hello Ghost")") != std::string::npos, "projection keeps key");
+        check.yes(
+            out.find(R"("title":"Hello Ghost")") != std::string::npos,
+            "projection keeps key"
+        );
         check.yes(q.include.contains("authors"), "include untouched by apply");
     }
     {
@@ -200,15 +209,24 @@ int main()
         ParsedQuery q;
         q.limit = 2;
         q.page = 1;
-        check.eq(pagination_meta(5, q),
-                 R"({"page":1,"limit":2,"pages":3,"total":5,"next":2,"prev":null})", "meta page 1");
+        check.eq(
+            pagination_meta(5, q),
+            R"({"page":1,"limit":2,"pages":3,"total":5,"next":2,"prev":null})",
+            "meta page 1"
+        );
         q.page = 3;
-        check.eq(pagination_meta(5, q),
-                 R"({"page":3,"limit":2,"pages":3,"total":5,"next":null,"prev":2})", "meta last page");
+        check.eq(
+            pagination_meta(5, q),
+            R"({"page":3,"limit":2,"pages":3,"total":5,"next":null,"prev":2})",
+            "meta last page"
+        );
         q.limit = kAll;
         q.page = 1;
-        check.eq(pagination_meta(5, q),
-                 R"({"page":1,"limit":5,"pages":1,"total":5,"next":null,"prev":null})", "meta all");
+        check.eq(
+            pagination_meta(5, q),
+            R"({"page":1,"limit":5,"pages":1,"total":5,"next":null,"prev":null})",
+            "meta all"
+        );
     }
     {
         ParsedQuery q;

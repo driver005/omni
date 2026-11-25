@@ -25,13 +25,16 @@ public:
         // via core::auth::ghost + require_ghost_permission. See
         // docs/parity/behavior/incoming-recommendations.md.
         Router{router, "/incoming_recommendations"}
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.incoming_recommendations_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.incoming_recommendations_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost incoming_recommendations GET");
     }
 };

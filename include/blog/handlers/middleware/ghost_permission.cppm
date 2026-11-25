@@ -24,10 +24,12 @@ inline constexpr std::string_view kGhostStaffHeader{"x-blog-staff"};
 class GhostPermissionRegistry
 {
 public:
-    static void set_active(interfaces::io::IRequest* request,
-                           interfaces::io::IResponse* response,
-                           std::function<void()> send,
-                           const core::auth::ghost::GhostAuthorizer* authorizer = nullptr) noexcept
+    static void set_active(
+        interfaces::io::IRequest* request,
+        interfaces::io::IResponse* response,
+        std::function<void()> send,
+        const core::auth::ghost::GhostAuthorizer* authorizer = nullptr
+    ) noexcept
     {
         s_request = request;
         s_response = response;
@@ -43,9 +45,20 @@ public:
         s_authorizer = nullptr;
     }
 
-    [[nodiscard]] static interfaces::io::IRequest* request() noexcept { return s_request; }
-    [[nodiscard]] static interfaces::io::IResponse* response() noexcept { return s_response; }
-    [[nodiscard]] static std::function<void()> send() { return s_send; }
+    [[nodiscard]] static interfaces::io::IRequest* request() noexcept
+    {
+        return s_request;
+    }
+
+    [[nodiscard]] static interfaces::io::IResponse* response() noexcept
+    {
+        return s_response;
+    }
+
+    [[nodiscard]] static std::function<void()> send()
+    {
+        return s_send;
+    }
 
     [[nodiscard]] static const core::auth::ghost::GhostAuthorizer& authorizer() noexcept
     {
@@ -61,49 +74,67 @@ private:
 };
 
 /** @brief Builds a ghost::Principal from the x-blog-* request headers. */
-[[nodiscard]] inline core::auth::ghost::Principal principal_from_request(
-    interfaces::io::IRequest& request)
+[[nodiscard]] inline core::auth::ghost::Principal
+principal_from_request(interfaces::io::IRequest& request)
 {
     using core::auth::ghost::ApiContext;
 
     core::auth::ghost::Principal principal;
 
     const std::string_view context = request.find_header(kGhostContextHeader);
-    if (context == "ADMIN_API") principal.context = ApiContext::ADMIN_API;
-    else if (context == "CONTENT_API") principal.context = ApiContext::CONTENT_API;
-    else if (context == "MEMBERS_APP") principal.context = ApiContext::MEMBERS_APP;
-    else if (context == "INTERNAL") principal.context = ApiContext::INTERNAL;
-    else if (context == "SYSTEM") principal.context = ApiContext::SYSTEM;
-    else principal.context = ApiContext::ANONYMOUS;
+    if (context == "ADMIN_API") {
+        principal.context = ApiContext::ADMIN_API;
+    } else if (context == "CONTENT_API") {
+        principal.context = ApiContext::CONTENT_API;
+    } else if (context == "MEMBERS_APP") {
+        principal.context = ApiContext::MEMBERS_APP;
+    } else if (context == "INTERNAL") {
+        principal.context = ApiContext::INTERNAL;
+    } else if (context == "SYSTEM") {
+        principal.context = ApiContext::SYSTEM;
+    } else {
+        principal.context = ApiContext::ANONYMOUS;
+    }
 
     principal.role = std::string{request.find_header(kGhostRoleHeader)};
 
-    for (auto part : std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
+    for (auto part:
+         std::views::split(std::string_view{request.find_header(kGhostPermissionsHeader)}, ',')) {
         const std::string scope{std::ranges::begin(part), std::ranges::end(part)};
-        if (!scope.empty()) principal.permissions.insert(scope);
+        if (!scope.empty()) {
+            principal.permissions.insert(scope);
+        }
     }
 
     const std::string_view staff = request.find_header(kGhostStaffHeader);
     principal.staff = staff == "true" || staff == "1";
 
     if (!request.get_authorization().empty()) {
-        if (principal.id.empty()) principal.id = "bearer";
+        if (principal.id.empty()) {
+            principal.id = "bearer";
+        }
         // Repo convention: an admin bearer token in harnesses maps to the
         // Administrator role with all permissions when no explicit role header
         // is supplied.
-        if (principal.role.empty()) principal.role = "Administrator";
-        if (principal.permissions.empty()) principal.permissions.insert("*");
+        if (principal.role.empty()) {
+            principal.role = "Administrator";
+        }
+        if (principal.permissions.empty()) {
+            principal.permissions.insert("*");
+        }
         principal.staff = true;
     }
     return principal;
 }
 
 /** @brief Translates an AuthResult into the existing Ghost error envelope writer. */
-inline void write_ghost_denial(interfaces::io::IResponse& response,
-                               const core::auth::ghost::AuthResult& result,
-                               std::string_view docName,
-                               std::string_view method,
-                               std::function<void()> send)
+inline void write_ghost_denial(
+    interfaces::io::IResponse& response,
+    const core::auth::ghost::AuthResult& result,
+    std::string_view docName,
+    std::string_view method,
+    std::function<void()> send
+)
 {
     ErrorEnvelope envelope;
     ErrorItem item;
@@ -122,12 +153,14 @@ inline void write_ghost_denial(interfaces::io::IResponse& response,
 }
 
 /** @brief Full middleware shape, usable directly by the central pipeline. */
-inline void require_ghost_permission(interfaces::io::IRequest& request,
-                                     interfaces::io::IResponse& response,
-                                     interfaces::NextFn&& next,
-                                     std::function<void()> send,
-                                     std::string_view docName,
-                                     std::string_view method)
+inline void require_ghost_permission(
+    interfaces::io::IRequest& request,
+    interfaces::io::IResponse& response,
+    interfaces::NextFn&& next,
+    std::function<void()> send,
+    std::string_view docName,
+    std::string_view method
+)
 {
     const auto principal = principal_from_request(request);
     const auto result = GhostPermissionRegistry::authorizer().authorize(principal, docName, method);
@@ -146,11 +179,15 @@ inline void require_ghost_permission(std::string_view docName, std::string_view 
 {
     auto* request = GhostPermissionRegistry::request();
     auto* response = GhostPermissionRegistry::response();
-    if (request == nullptr || response == nullptr) return;
+    if (request == nullptr || response == nullptr) {
+        return;
+    }
 
     const auto principal = principal_from_request(*request);
     const auto result = GhostPermissionRegistry::authorizer().authorize(principal, docName, method);
-    if (result.allowed) return;
+    if (result.allowed) {
+        return;
+    }
 
     write_ghost_denial(*response, result, docName, method, GhostPermissionRegistry::send());
 }

@@ -23,26 +23,31 @@ public:
     {
         using Route = utils::openapi::ApiRoute;
         using Router = utils::openapi::ApiRouter;
-        Router{router, "/gifts"}
-            .add_route(
-                Route{"/:token/redeem"}
-                    .get([&handler](
+        Router{router, "/gifts"}.add_route(
+            Route{"/:token/redeem"}
+                .get(
+                    [&handler](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
                         std::function<void()> send
-                    ) {
+                    )
+                    {
                         handler.gifts_members_redeem_get().handle(req, res, std::move(send));
-                    })
-                    .summary("Ghost getRedeemable (gifts-members)")
-                    .post([&handler](
+                    }
+                )
+                .summary("Ghost getRedeemable (gifts-members)")
+                .post(
+                    [&handler](
                         interfaces::io::IRequest& req,
                         interfaces::io::IResponse& res,
                         std::function<void()> send
-                    ) {
+                    )
+                    {
                         handler.gifts_members_redeem_post().handle(req, res, std::move(send));
-                    })
-                    .summary("Ghost redeem (gifts-members)")
-            );
+                    }
+                )
+                .summary("Ghost redeem (gifts-members)")
+        );
     }
 };
 

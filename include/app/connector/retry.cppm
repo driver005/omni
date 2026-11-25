@@ -19,6 +19,7 @@ public:
     {
         m_retry = value;
     }
+
     [[nodiscard]] const bool& get_retry() const noexcept
     {
         return m_retry;
@@ -28,6 +29,7 @@ public:
     {
         m_attempt = value;
     }
+
     [[nodiscard]] const std::int64_t& get_attempt() const noexcept
     {
         return m_attempt;
@@ -37,6 +39,7 @@ public:
     {
         m_backoff_ms = value;
     }
+
     [[nodiscard]] const std::int64_t& get_backoff_ms() const noexcept
     {
         return m_backoff_ms;
@@ -65,7 +68,8 @@ public:
     {
     }
 
-    [[nodiscard]] RetryDecision decide(const ConnectorResponse& response, std::int64_t current_attempt) const
+    [[nodiscard]] RetryDecision
+    decide(const ConnectorResponse& response, std::int64_t current_attempt) const
     {
         RetryDecision decision{};
         const std::int64_t next_attempt = current_attempt + 1;
@@ -102,7 +106,8 @@ private:
     std::int64_t m_max_attempts{3};
     std::int64_t m_base_backoff_ms{100};
     std::int64_t m_multiplier{2};
-    std::vector<std::string> m_retryable_statuses{"failed", "timeout", "connector_error", "pending"};
+    std::vector<std::string>
+        m_retryable_statuses{"failed", "timeout", "connector_error", "pending"};
 };
 
 } // namespace app::connector

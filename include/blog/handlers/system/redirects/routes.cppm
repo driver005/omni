@@ -32,24 +32,32 @@ public:
         Router{router, "/redirects"}
             .add_route(
                 Route{"/download"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.redirects_redirects_download_get().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.redirects_redirects_download_get()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost download GET")
             )
             .add_route(
                 Route{"/upload"}
-                    .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.redirects_redirects_upload_post().handle(req, res, std::move(send));
-    })
+                    .post(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.redirects_redirects_upload_post()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost upload POST")
             );
     }

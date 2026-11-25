@@ -1,8 +1,8 @@
 module;
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/rand.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
 
 export module core_activitypub:http_signature;
 
@@ -50,7 +50,8 @@ public:
         return signature;
     }
 
-    [[nodiscard]] bool verify(std::string_view message, std::span<const unsigned char> signature) const
+    [[nodiscard]] bool
+    verify(std::string_view message, std::span<const unsigned char> signature) const
     {
         const auto expected = sign(message);
         if (expected.size() != signature.size()) {

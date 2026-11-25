@@ -46,13 +46,23 @@ struct Result
 [[nodiscard]] inline std::string quote(std::string_view value)
 {
     std::string out{"\""};
-    for (const unsigned char c : value) {
+    for (const unsigned char c: value) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
             default:
                 if (c < 0x20) {
                     out += std::format("\\u{:04x}", static_cast<unsigned>(c));
@@ -76,18 +86,23 @@ struct Result
         const unsigned char c = i + 2 < input.size() ? static_cast<unsigned char>(input[i + 2]) : 0;
         out.push_back(kAlphabet[(a >> 2) & 0x3F]);
         out.push_back(kAlphabet[((a & 0x03) << 4) | ((b >> 4) & 0x0F)]);
-        out.push_back(i + 1 < input.size() ? kAlphabet[((b & 0x0F) << 2) | ((c >> 6) & 0x03)] : '=');
+        out.push_back(
+            i + 1 < input.size() ? kAlphabet[((b & 0x0F) << 2) | ((c >> 6) & 0x03)] : '='
+        );
         out.push_back(i + 2 < input.size() ? kAlphabet[c & 0x3F] : '=');
     }
     return out;
 }
 
-[[nodiscard]] inline std::string object_of(std::initializer_list<std::pair<std::string_view, std::string>> fields)
+[[nodiscard]] inline std::string
+object_of(std::initializer_list<std::pair<std::string_view, std::string>> fields)
 {
     std::string out{"{"};
     bool first{true};
-    for (const auto& [name, value] : fields) {
-        if (!first) out.push_back(',');
+    for (const auto& [name, value]: fields) {
+        if (!first) {
+            out.push_back(',');
+        }
         first = false;
         out += quote(name) + ':' + value;
     }
@@ -104,10 +119,16 @@ struct Result
 [[nodiscard]] inline std::string scalar(const serde::Value& value, std::string_view key)
 {
     const auto* object = std::get_if<Object>(&value.get());
-    if (object == nullptr) return {};
-    for (const auto& [name, member] : *object) {
-        if (name != key) continue;
-        if (const auto* text = std::get_if<std::string>(&member.get())) return *text;
+    if (object == nullptr) {
+        return {};
+    }
+    for (const auto& [name, member]: *object) {
+        if (name != key) {
+            continue;
+        }
+        if (const auto* text = std::get_if<std::string>(&member.get())) {
+            return *text;
+        }
         const auto encoded = core_serde::JsonCodec{}.encode(member);
         return encoded == "null" ? std::string{} : encoded;
     }
@@ -124,11 +145,17 @@ struct Result
 [[nodiscard]] inline std::string raw_member(std::string_view json, std::string_view key)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return {};
+    if (!parsed) {
+        return {};
+    }
     const auto* object = std::get_if<Object>(&parsed->get());
-    if (object == nullptr) return {};
-    for (const auto& [name, member] : *object) {
-        if (name == key) return core_serde::JsonCodec{}.encode(member);
+    if (object == nullptr) {
+        return {};
+    }
+    for (const auto& [name, member]: *object) {
+        if (name == key) {
+            return core_serde::JsonCodec{}.encode(member);
+        }
     }
     return {};
 }
@@ -138,7 +165,9 @@ struct Result
     try {
         std::size_t used{0};
         const long long value = std::stoll(std::string{raw}, &used);
-        if (used == raw.size()) return value;
+        if (used == raw.size()) {
+            return value;
+        }
     } catch (...) {
     }
     return 0;
@@ -149,7 +178,8 @@ struct Result
     blog::BlogContext& ctx,
     std::string_view resource,
     std::vector<std::pair<std::string, std::string>> filters,
-    std::string_view order = {})
+    std::string_view order = {}
+)
 {
     core::query::ParsedQuery q;
     q.filters = std::move(filters);
@@ -158,51 +188,68 @@ struct Result
     q.page = 1;
     const auto json = core::query::apply(ctx.store().json_for(resource, {}), q);
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return {};
+    if (!parsed) {
+        return {};
+    }
     const auto* array = std::get_if<Array>(&parsed->get());
     return array == nullptr ? std::vector<serde::Value>{} : *array;
 }
 
 [[nodiscard]] inline std::optional<std::string> find_one(
-    blog::BlogContext& ctx, std::string_view resource, std::string_view key,
-    std::string_view value)
+    blog::BlogContext& ctx,
+    std::string_view resource,
+    std::string_view key,
+    std::string_view value
+)
 {
     const auto rows = rows_for(ctx, resource, {{std::string{key}, std::string{value}}});
-    if (rows.empty()) return std::nullopt;
+    if (rows.empty()) {
+        return std::nullopt;
+    }
     return core_serde::JsonCodec{}.encode(rows.front());
 }
 
-[[nodiscard]] inline std::optional<std::string> find_installation(
-    blog::BlogContext& ctx, std::string_view id)
+[[nodiscard]] inline std::optional<std::string>
+find_installation(blog::BlogContext& ctx, std::string_view id)
 {
     return find_one(ctx, kInstallation, "id", id);
 }
 
-[[nodiscard]] inline std::optional<std::string> current_installation(
-    blog::BlogContext& ctx, std::string_view id)
+[[nodiscard]] inline std::optional<std::string>
+current_installation(blog::BlogContext& ctx, std::string_view id)
 {
     auto row = find_installation(ctx, id);
-    if (row && scalar_raw(*row, "status") == "uninstalled") return std::nullopt;
+    if (row && scalar_raw(*row, "status") == "uninstalled") {
+        return std::nullopt;
+    }
     return row;
 }
 
-[[nodiscard]] inline std::optional<std::string> current_installation_of(
-    blog::BlogContext& ctx, std::string_view app_id)
+[[nodiscard]] inline std::optional<std::string>
+current_installation_of(blog::BlogContext& ctx, std::string_view app_id)
 {
-    if (app_id.empty()) return std::nullopt;
+    if (app_id.empty()) {
+        return std::nullopt;
+    }
     const auto rows = rows_for(ctx, kInstallation, {{"app_id", std::string{app_id}}});
-    for (const auto& row : rows) {
+    for (const auto& row: rows) {
         const auto encoded = core_serde::JsonCodec{}.encode(row);
-        if (scalar_raw(encoded, "status") != "uninstalled") return encoded;
+        if (scalar_raw(encoded, "status") != "uninstalled") {
+            return encoded;
+        }
     }
     return std::nullopt;
 }
 
 /** @brief Full Ghost error envelope, including optional code/details/errorDetails. */
 [[nodiscard]] inline std::string ghost_error(
-    std::string_view message, std::string_view type, std::string_view code = {},
-    std::string_view context = {}, std::string_view details = {},
-    std::string_view error_details = {})
+    std::string_view message,
+    std::string_view type,
+    std::string_view code = {},
+    std::string_view context = {},
+    std::string_view details = {},
+    std::string_view error_details = {}
+)
 {
     static std::uint64_t counter{0};
     return std::format(
@@ -213,11 +260,12 @@ struct Result
         details.empty() ? std::string{"null"} : details,
         quote(message),
         quote(type),
-        error_details.empty() ? std::string{} : ",\"errorDetails\":" + std::string{error_details});
+        error_details.empty() ? std::string{} : ",\"errorDetails\":" + std::string{error_details}
+    );
 }
 
-[[nodiscard]] inline std::string validation_error(
-    std::string_view message, std::string_view context, std::string_view property)
+[[nodiscard]] inline std::string
+validation_error(std::string_view message, std::string_view context, std::string_view property)
 {
     return blog::api::ApiError{}.validation(message, context, property);
 }
@@ -239,44 +287,61 @@ struct Result
 
 [[nodiscard]] inline std::string uninstalled_error()
 {
-    return ghost_error("This app has been uninstalled.", "ConflictError",
-                       "APP_INSTALLATION_UNINSTALLED");
+    return ghost_error(
+        "This app has been uninstalled.",
+        "ConflictError",
+        "APP_INSTALLATION_UNINSTALLED"
+    );
 }
 
-[[nodiscard]] inline std::string unavailable(
-    std::string_view message, std::string_view code, std::string_view context)
+[[nodiscard]] inline std::string
+unavailable(std::string_view message, std::string_view code, std::string_view context)
 {
     return ghost_error(message, "ConflictError", code, context);
 }
 
-[[nodiscard]] inline std::string manifest_invalid(std::string_view message, std::string_view context)
+[[nodiscard]] inline std::string
+manifest_invalid(std::string_view message, std::string_view context)
 {
-    return ghost_error("The app manifest is not valid.", "ValidationError",
-                       "APP_MANIFEST_INVALID", context,
-                       object_of({{"path", quote(context)},
-                                  {"message", quote(message)}}));
+    return ghost_error(
+        "The app manifest is not valid.",
+        "ValidationError",
+        "APP_MANIFEST_INVALID",
+        context,
+        object_of({{"path", quote(context)}, {"message", quote(message)}})
+    );
 }
 
 /** @brief Replace/append one raw JSON member. */
-[[nodiscard]] inline std::string set_member_impl(std::string_view json, std::string_view key,
-                                                 std::string_view raw_value)
+[[nodiscard]] inline std::string
+set_member_impl(std::string_view json, std::string_view key, std::string_view raw_value)
 {
     const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-    if (!parsed) return std::string{json};
+    if (!parsed) {
+        return std::string{json};
+    }
     const auto* object = std::get_if<Object>(&parsed->get());
-    if (object == nullptr) return std::string{json};
+    if (object == nullptr) {
+        return std::string{json};
+    }
     std::string out{"{"};
     bool first{true};
     bool replaced{false};
-    for (const auto& [name, member] : *object) {
-        if (!first) out.push_back(',');
+    for (const auto& [name, member]: *object) {
+        if (!first) {
+            out.push_back(',');
+        }
         first = false;
         out += quote(name) + ':';
         out += name == key ? std::string{raw_value} : core_serde::JsonCodec{}.encode(member);
-        if (name == key) replaced = true;
+        if (name == key) {
+            replaced = true;
+        }
     }
     if (!replaced) {
-        if (!first) out.push_back(',');
+        if (!first) {
+            out.push_back(',');
+        }
         out += quote(key) + ':' + std::string{raw_value};
     }
     out.push_back('}');
@@ -288,34 +353,51 @@ struct Result
 {
     std::string out{row};
     const auto manifest_id = scalar_raw(row, "manifest_id");
-    if (manifest_id.empty() || !raw_member(row, "manifest").empty()) return out;
+    if (manifest_id.empty() || !raw_member(row, "manifest").empty()) {
+        return out;
+    }
     const auto manifest = find_one(ctx, kManifests, "id", manifest_id);
-    if (!manifest) return out;
-    for (const auto key : {"manifest_url", "manifest", "icon_data_url"}) {
-        if (!raw_member(out, key).empty()) continue;
+    if (!manifest) {
+        return out;
+    }
+    for (const auto key: {"manifest_url", "manifest", "icon_data_url"}) {
+        if (!raw_member(out, key).empty()) {
+            continue;
+        }
         const auto value = raw_member(*manifest, key);
-        if (value.empty()) continue;
+        if (value.empty()) {
+            continue;
+        }
         out = set_member_impl(out, key, value);
     }
     return out;
 }
 
 /** @brief AppInstallationResource (serializers.ts:7-19). */
-[[nodiscard]] inline std::string installation_resource(blog::BlogContext& ctx,
-                                                      std::string_view row,
-                                                      std::string_view history = {})
+[[nodiscard]] inline std::string
+installation_resource(blog::BlogContext& ctx, std::string_view row, std::string_view history = {})
 {
     const auto joined = join_manifest(ctx, row);
     auto status = scalar_raw(joined, "status");
-    if (status.empty()) status = "active";
+    if (status.empty()) {
+        status = "active";
+    }
     auto revision = scalar_raw(joined, "revision");
-    if (revision.empty()) revision = "0";
+    if (revision.empty()) {
+        revision = "0";
+    }
     auto created = scalar_raw(joined, "created_at");
-    if (created.empty()) created = std::string{kDefaultTime};
+    if (created.empty()) {
+        created = std::string{kDefaultTime};
+    }
     auto manifest = raw_member(joined, "manifest");
-    if (manifest.empty()) manifest = "null";
+    if (manifest.empty()) {
+        manifest = "null";
+    }
     auto icon = raw_member(joined, "icon_data_url");
-    if (icon.empty() || icon == "null") icon = "null";
+    if (icon.empty() || icon == "null") {
+        icon = "null";
+    }
     const auto updated = raw_member(joined, "updated_at");
 
     std::string out = object_of({
@@ -338,7 +420,9 @@ struct Result
 
 [[nodiscard]] inline std::string actor_value(std::string_view id, std::string_view name)
 {
-    if (id.empty() && name.empty()) return "null";
+    if (id.empty() && name.empty()) {
+        return "null";
+    }
     return object_of({{"id", quote(id)}, {"name", null_if_empty(name)}});
 }
 
@@ -352,60 +436,82 @@ struct Result
         std::string actor;
         std::string created;
     };
+
     std::vector<Entry> entries;
 
-    const auto manifests = rows_for(ctx, kManifests, {{"installation_id", std::string{id}}},
-                                    "created_at asc");
-    const auto actions = rows_for(ctx, kActions, {{"resource_id", std::string{id}}},
-                                  "created_at asc");
+    const auto manifests =
+        rows_for(ctx, kManifests, {{"installation_id", std::string{id}}}, "created_at asc");
+    const auto actions =
+        rows_for(ctx, kActions, {{"resource_id", std::string{id}}}, "created_at asc");
 
-    auto action_json = [](const serde::Value& value) { return core_serde::JsonCodec{}.encode(value); };
-    auto is_event = [](const std::string& json, std::string_view event) {
+    auto action_json = [](const serde::Value& value)
+    {
+        return core_serde::JsonCodec{}.encode(value);
+    };
+    auto is_event = [](const std::string& json, std::string_view event)
+    {
         return scalar_raw(json, "event") == event;
     };
-    auto actor_of = [](const std::string& json) {
+    auto actor_of = [](const std::string& json)
+    {
         const auto aid = scalar_raw(json, "actor_id");
         const auto aname = scalar_raw(json, "actor_name");
         return actor_value(aid, aname);
     };
 
     // installOf: the install manifest row, with the recorded `installed` action if any.
-    for (const auto& manifest : manifests) {
+    for (const auto& manifest: manifests) {
         const auto mjson = action_json(manifest);
-        if (scalar_raw(mjson, "source") != "install") continue;
+        if (scalar_raw(mjson, "source") != "install") {
+            continue;
+        }
         std::string entry_id = scalar_raw(mjson, "id");
         std::string actor{"null"};
-        for (const auto& action : actions) {
+        for (const auto& action: actions) {
             const auto aj = action_json(action);
-            if (!is_event(aj, "installed")) continue;
+            if (!is_event(aj, "installed")) {
+                continue;
+            }
             entry_id = scalar_raw(aj, "id");
             actor = actor_of(aj);
             break;
         }
         auto created = scalar_raw(mjson, "created_at");
-        if (created.empty()) created = std::string{kDefaultTime};
+        if (created.empty()) {
+            created = std::string{kDefaultTime};
+        }
         entries.push_back({entry_id, "installed", actor, created});
         break;
     }
 
     // updates / suspensions / resumes from recheck manifest rows.
-    for (const auto& manifest : manifests) {
+    for (const auto& manifest: manifests) {
         const auto mjson = action_json(manifest);
         const auto source = scalar_raw(mjson, "source");
-        if (source != "update" && source != "resume") continue;
-        const std::string event = source == "resume" ? "resumed"
-            : (scalar_raw(mjson, "requires_approval") == "true" ? "suspended" : "updated");
+        if (source != "update" && source != "resume") {
+            continue;
+        }
+        const std::string event =
+            source == "resume"
+                ? "resumed"
+                : (scalar_raw(mjson, "requires_approval") == "true" ? "suspended" : "updated");
         auto created = scalar_raw(mjson, "created_at");
-        if (created.empty()) created = std::string{kDefaultTime};
+        if (created.empty()) {
+            created = std::string{kDefaultTime};
+        }
         entries.push_back({scalar_raw(mjson, "id"), event, "null", created});
     }
 
     // approvals and uninstalls from staff actions.
-    for (const auto& action : actions) {
+    for (const auto& action: actions) {
         const auto aj = action_json(action);
-        if (!is_event(aj, "changes_approved") && !is_event(aj, "uninstalled")) continue;
+        if (!is_event(aj, "changes_approved") && !is_event(aj, "uninstalled")) {
+            continue;
+        }
         auto created = scalar_raw(aj, "created_at");
-        if (created.empty()) created = std::string{kDefaultTime};
+        if (created.empty()) {
+            created = std::string{kDefaultTime};
+        }
         std::string moved_to;
         if (is_event(aj, "changes_approved")) {
             const auto context = raw_member(aj, "context");
@@ -430,15 +536,24 @@ struct Result
         entries.push_back({scalar_raw(aj, "id"), json, "null", created});
     }
 
-    std::stable_sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) {
-        if (a.created != b.created) return a.created > b.created;
-        return a.id > b.id;
-    });
+    std::stable_sort(
+        entries.begin(),
+        entries.end(),
+        [](const Entry& a, const Entry& b)
+        {
+            if (a.created != b.created) {
+                return a.created > b.created;
+            }
+            return a.id > b.id;
+        }
+    );
 
     std::string out{"["};
     bool first{true};
-    for (const auto& entry : entries) {
-        if (!first) out.push_back(',');
+    for (const auto& entry: entries) {
+        if (!first) {
+            out.push_back(',');
+        }
         first = false;
         if (entry.event.front() == '{') {
             out += entry.event;
@@ -456,14 +571,20 @@ struct Result
 }
 
 /** @brief browse()/read() read path; history is attached for include=history. */
-[[nodiscard]] inline Result read_one(blog::BlogContext& ctx, std::string_view id,
-                                     bool with_history)
+[[nodiscard]] inline Result read_one(blog::BlogContext& ctx, std::string_view id, bool with_history)
 {
     const auto row = find_installation(ctx, id);
-    if (!row) return {404, not_found()};
+    if (!row) {
+        return {404, not_found()};
+    }
     std::string history;
-    if (with_history) history = history_for(ctx, id);
-    return {200, object_of({{"app_installations", "[" + installation_resource(ctx, *row, history) + "]"}})};
+    if (with_history) {
+        history = history_for(ctx, id);
+    }
+    return {
+        200,
+        object_of({{"app_installations", "[" + installation_resource(ctx, *row, history) + "]"}})
+    };
 }
 
 /** @brief service.browse() -> repository.list(): uninstalled excluded, oldest first. */
@@ -479,9 +600,11 @@ struct Result
     bool first{true};
     if (parsed) {
         if (const auto* array = std::get_if<Array>(&parsed->get())) {
-            for (const auto& row : *array) {
+            for (const auto& row: *array) {
                 const auto encoded = core_serde::JsonCodec{}.encode(row);
-                if (!first) data.push_back(',');
+                if (!first) {
+                    data.push_back(',');
+                }
                 first = false;
                 data += installation_resource(ctx, encoded);
             }
@@ -516,27 +639,39 @@ struct Reviewed
 {
     // No crypto primitive in the shared set: use the stored digest when present,
     // otherwise a deterministic stand-in covering the manifest and its URL.
-    if (!loaded.digest.empty()) return loaded.digest;
-    return "sha256-" + std::to_string(std::hash<std::string>{}(loaded.manifest_url + loaded.manifest));
+    if (!loaded.digest.empty()) {
+        return loaded.digest;
+    }
+    return "sha256-" +
+           std::to_string(std::hash<std::string>{}(loaded.manifest_url + loaded.manifest));
 }
 
-[[nodiscard]] inline Result load(blog::BlogContext& ctx, blog::handlers::outbox::Outbox& outbox,
-                                 std::string_view manifest_url)
+[[nodiscard]] inline Result
+load(blog::BlogContext& ctx, blog::handlers::outbox::Outbox& outbox, std::string_view manifest_url)
 {
     outbox.emit({"identity.challenge", object_of({{"manifest_url", quote(manifest_url)}}), {}});
     outbox.emit({"manifest.fetch", object_of({{"manifest_url", quote(manifest_url)}}), {}});
 
-    const auto rows = rows_for(ctx, kManifests, {{"manifest_url", std::string{manifest_url}}},
-                               "created_at desc");
+    const auto rows =
+        rows_for(ctx, kManifests, {{"manifest_url", std::string{manifest_url}}}, "created_at desc");
     if (rows.empty()) {
-        return {422, ghost_error("The app manifest could not be loaded.", "ValidationError",
-                                 "APP_MANIFEST_UNREACHABLE", "manifest_url")};
+        return {
+            422,
+            ghost_error(
+                "The app manifest could not be loaded.",
+                "ValidationError",
+                "APP_MANIFEST_UNREACHABLE",
+                "manifest_url"
+            )
+        };
     }
     Loaded loaded;
     loaded.row = core_serde::JsonCodec{}.encode(rows.front());
     loaded.manifest_url = std::string{manifest_url};
     auto manifest = raw_member(loaded.row, "manifest");
-    if (manifest.empty() || manifest == "null") manifest = "{}";
+    if (manifest.empty() || manifest == "null") {
+        manifest = "{}";
+    }
     loaded.manifest = manifest;
     loaded.digest = scalar_raw(loaded.row, "digest");
     auto icon = raw_member(loaded.row, "icon");
@@ -552,39 +687,57 @@ struct Reviewed
     return {200, loaded.row};
 }
 
-[[nodiscard]] inline Result review(blog::BlogContext& ctx, blog::handlers::outbox::Outbox& outbox,
-                                   const Loaded& loaded, std::optional<std::string> installation)
+[[nodiscard]] inline Result review(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    const Loaded& loaded,
+    std::optional<std::string> installation
+)
 {
     (void)outbox;
     Reviewed reviewed;
     reviewed.loaded = loaded;
     reviewed.trusted_origins = loaded.trusted_origins;
-    reviewed.installation = installation
-        ? installation
-        : current_installation_of(ctx, loaded.app_id);
+    reviewed.installation =
+        installation ? installation : current_installation_of(ctx, loaded.app_id);
 
     const auto pinned = reviewed.installation
-        ? scalar_raw(*reviewed.installation, "identity_key_thumbprint") : std::string{};
+                            ? scalar_raw(*reviewed.installation, "identity_key_thumbprint")
+                            : std::string{};
     if (!pinned.empty() && !loaded.identity_key_thumbprint.empty() &&
         pinned != loaded.identity_key_thumbprint) {
-        return {422, ghost_error("App manifest failed the identity check.", "ValidationError",
-                                 "APP_IDENTITY_MISMATCH", "manifest")};
+        return {
+            422,
+            ghost_error(
+                "App manifest failed the identity check.",
+                "ValidationError",
+                "APP_IDENTITY_MISMATCH",
+                "manifest"
+            )
+        };
     }
     return {200, core_serde::JsonCodec{}.encode(loaded.row)};
 }
 
 /** @brief compareManifests stand-in: recursive path/requires_approval diff. */
-[[nodiscard]] inline std::string manifest_changes(std::string_view approved, std::string_view loaded)
+[[nodiscard]] inline std::string
+manifest_changes(std::string_view approved, std::string_view loaded)
 {
-    auto flatten = [](std::string_view json, auto&& self, std::string prefix,
-                      std::map<std::string, std::string>& out) -> void {
+    auto flatten = [](std::string_view json,
+                      auto&& self,
+                      std::string prefix,
+                      std::map<std::string, std::string>& out) -> void
+    {
         const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(json);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         if (const auto* object = std::get_if<Object>(&parsed->get())) {
-            for (const auto& [name, value] : *object) {
+            for (const auto& [name, value]: *object) {
                 const auto path = prefix.empty() ? name : prefix + "." + name;
                 const auto encoded = core_serde::JsonCodec{}.encode(value);
-                if (std::holds_alternative<Object>(value.get()) || std::holds_alternative<Array>(value.get())) {
+                if (std::holds_alternative<Object>(value.get()) ||
+                    std::holds_alternative<Array>(value.get())) {
                     self(encoded, self, path, out);
                 } else {
                     out[path] = encoded;
@@ -594,7 +747,8 @@ struct Reviewed
             for (std::size_t i = 0; i < array->size(); ++i) {
                 const auto path = prefix + "[" + std::to_string(i) + "]";
                 const auto encoded = core_serde::JsonCodec{}.encode((*array)[i]);
-                if (std::holds_alternative<Object>((*array)[i].get()) || std::holds_alternative<Array>((*array)[i].get())) {
+                if (std::holds_alternative<Object>((*array)[i].get()) ||
+                    std::holds_alternative<Array>((*array)[i].get())) {
                     self(encoded, self, path, out);
                 } else {
                     out[path] = encoded;
@@ -609,27 +763,35 @@ struct Reviewed
 
     std::string out{"["};
     bool first{true};
-    auto emit = [&](const std::string& path) {
-        if (!first) out.push_back(',');
+    auto emit = [&](const std::string& path)
+    {
+        if (!first) {
+            out.push_back(',');
+        }
         first = false;
         static constexpr std::string_view kApprovalKeys[]{"id", "name", "icon", "url"};
         bool needs_approval{false};
-        for (const auto key : kApprovalKeys) {
+        for (const auto key: kApprovalKeys) {
             if (path == key || path.starts_with(std::string{key} + ".") ||
                 path.starts_with(std::string{key} + "[")) {
                 needs_approval = true;
                 break;
             }
         }
-        out += object_of({{"path", quote(path)},
-                          {"requires_approval", needs_approval ? "true" : "false"}});
+        out += object_of(
+            {{"path", quote(path)}, {"requires_approval", needs_approval ? "true" : "false"}}
+        );
     };
-    for (const auto& [path, value] : after) {
-        if (before.contains(path) && before.at(path) == value) continue;
+    for (const auto& [path, value]: after) {
+        if (before.contains(path) && before.at(path) == value) {
+            continue;
+        }
         emit(path);
     }
-    for (const auto& [path, value] : before) {
-        if (after.contains(path)) continue;
+    for (const auto& [path, value]: before) {
+        if (after.contains(path)) {
+            continue;
+        }
         (void)value;
         emit(path);
     }
@@ -637,31 +799,40 @@ struct Reviewed
     return out;
 }
 
-[[nodiscard]] inline Result fetch_icon(blog::BlogContext& ctx,
-                                       blog::handlers::outbox::Outbox& outbox,
-                                       std::string_view icon)
+[[nodiscard]] inline Result
+fetch_icon(blog::BlogContext& ctx, blog::handlers::outbox::Outbox& outbox, std::string_view icon)
 {
     (void)ctx;
-    if (icon.empty() || icon == "null") return {200, "null"};
+    if (icon.empty() || icon == "null") {
+        return {200, "null"};
+    }
     const auto url = scalar_raw(icon, "url");
-    if (url.empty()) return {200, "null"};
+    if (url.empty()) {
+        return {200, "null"};
+    }
     outbox.emit({"icon.fetch", object_of({{"url", quote(url)}}), {}});
     // A named icon has no URL; a URL icon yields a data URL stand-in.
     return {200, quote("data:image/png;base64," + base64(url))};
 }
 
-[[nodiscard]] inline std::string icon_kept_by(std::string_view write_kind,
-                                              std::string_view write_icon,
-                                              std::string_view current_icon)
+[[nodiscard]] inline std::string icon_kept_by(
+    std::string_view write_kind,
+    std::string_view write_icon,
+    std::string_view current_icon
+)
 {
-    if (write_kind == "add_approved" || write_kind == "add_pending") return std::string{write_icon};
+    if (write_kind == "add_approved" || write_kind == "add_pending") {
+        return std::string{write_icon};
+    }
     return current_icon.empty() ? std::string{"null"} : std::string{current_icon};
 }
 
 /** @brief service.preview() -> load -> review -> previewOf; stores nothing. */
-[[nodiscard]] inline Result preview(blog::BlogContext& ctx,
-                                    blog::handlers::outbox::Outbox& outbox,
-                                    std::string_view manifest_url)
+[[nodiscard]] inline Result preview(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    std::string_view manifest_url
+)
 {
     const auto loaded_result = load(ctx, outbox, manifest_url);
     if (loaded_result.status != 200) {
@@ -673,11 +844,15 @@ struct Reviewed
     loaded.row = loaded_result.body;
     loaded.manifest_url = std::string{manifest_url};
     auto manifest = raw_member(loaded.row, "manifest");
-    if (manifest.empty() || manifest == "null") manifest = "{}";
+    if (manifest.empty() || manifest == "null") {
+        manifest = "{}";
+    }
     loaded.manifest = manifest;
     loaded.digest = scalar_raw(loaded.row, "digest");
     auto icon = raw_member(loaded.row, "icon");
-    if (icon.empty() || icon == "null") icon = raw_member(loaded.row, "icon_data_url");
+    if (icon.empty() || icon == "null") {
+        icon = raw_member(loaded.row, "icon_data_url");
+    }
     loaded.icon = icon.empty() ? std::string{"null"} : icon;
     loaded.app_id = scalar_raw(manifest, "id");
     loaded.identity_key_thumbprint = scalar_raw(loaded.row, "backend_key_thumbprint");
@@ -685,7 +860,9 @@ struct Reviewed
     loaded.trusted_origins = origins.empty() ? std::string{"[]"} : origins;
 
     const auto reviewed_result = review(ctx, outbox, loaded, std::nullopt);
-    if (reviewed_result.status != 200) return reviewed_result;
+    if (reviewed_result.status != 200) {
+        return reviewed_result;
+    }
     Reviewed reviewed;
     reviewed.loaded = loaded;
     reviewed.trusted_origins = loaded.trusted_origins;
@@ -697,36 +874,49 @@ struct Reviewed
         icon_data_url = icon_result.body;
     } else {
         auto current_icon = raw_member(*reviewed.installation, "icon_data_url");
-        if (current_icon.empty()) current_icon = "null";
-        const auto changes = manifest_changes(raw_member(*reviewed.installation, "manifest"), loaded.manifest);
+        if (current_icon.empty()) {
+            current_icon = "null";
+        }
+        const auto changes =
+            manifest_changes(raw_member(*reviewed.installation, "manifest"), loaded.manifest);
         std::string installation = object_of({
             {"id", quote(scalar_raw(*reviewed.installation, "id"))},
             {"status", quote(scalar_raw(*reviewed.installation, "status"))},
-            {"revision", scalar_raw(*reviewed.installation, "revision").empty()
-                ? std::string{"0"} : scalar_raw(*reviewed.installation, "revision")},
+            {"revision",
+             scalar_raw(*reviewed.installation, "revision").empty()
+                 ? std::string{"0"}
+                 : scalar_raw(*reviewed.installation, "revision")},
             {"manifest_url", quote(scalar_raw(*reviewed.installation, "manifest_url"))},
-            {"manifest", raw_member(*reviewed.installation, "manifest").empty()
-                ? std::string{"null"} : raw_member(*reviewed.installation, "manifest")},
+            {"manifest",
+             raw_member(*reviewed.installation, "manifest").empty()
+                 ? std::string{"null"}
+                 : raw_member(*reviewed.installation, "manifest")},
             {"icon_data_url", current_icon},
             {"changes", changes},
         });
-        return {200, object_of({
+        return {
+            200,
+            object_of({
+                {"manifest_url", quote(loaded.manifest_url)},
+                {"manifest", loaded.manifest},
+                {"digest", quote(digest_for(loaded))},
+                {"icon_data_url", current_icon},
+                {"trusted_origins", reviewed.trusted_origins},
+                {"installation", installation},
+            })
+        };
+    }
+    return {
+        200,
+        object_of({
             {"manifest_url", quote(loaded.manifest_url)},
             {"manifest", loaded.manifest},
             {"digest", quote(digest_for(loaded))},
-            {"icon_data_url", current_icon},
+            {"icon_data_url", icon_data_url},
             {"trusted_origins", reviewed.trusted_origins},
-            {"installation", installation},
-        })};
-    }
-    return {200, object_of({
-        {"manifest_url", quote(loaded.manifest_url)},
-        {"manifest", loaded.manifest},
-        {"digest", quote(digest_for(loaded))},
-        {"icon_data_url", icon_data_url},
-        {"trusted_origins", reviewed.trusted_origins},
-        {"installation", "null"},
-    })};
+            {"installation", "null"},
+        })
+    };
 }
 
 struct CheckedManifest
@@ -736,43 +926,70 @@ struct CheckedManifest
     std::optional<std::string> installation;
 };
 
-[[nodiscard]] inline Result fetch_reviewed(blog::BlogContext& ctx,
-                                            blog::handlers::outbox::Outbox& outbox,
-                                            std::string_view manifest_url,
-                                            std::string_view digest,
-                                            std::optional<std::string> installation = std::nullopt)
+[[nodiscard]] inline Result fetch_reviewed(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    std::string_view manifest_url,
+    std::string_view digest,
+    std::optional<std::string> installation = std::nullopt
+)
 {
     const auto loaded_result = load(ctx, outbox, manifest_url);
-    if (loaded_result.status != 200) return loaded_result;
+    if (loaded_result.status != 200) {
+        return loaded_result;
+    }
     Loaded loaded;
     loaded.row = loaded_result.body;
     loaded.manifest_url = std::string{manifest_url};
     auto manifest = raw_member(loaded.row, "manifest");
-    if (manifest.empty() || manifest == "null") manifest = "{}";
+    if (manifest.empty() || manifest == "null") {
+        manifest = "{}";
+    }
     loaded.manifest = manifest;
     loaded.digest = scalar_raw(loaded.row, "digest");
     auto icon = raw_member(loaded.row, "icon");
-    if (icon.empty() || icon == "null") icon = raw_member(loaded.row, "icon_data_url");
+    if (icon.empty() || icon == "null") {
+        icon = raw_member(loaded.row, "icon_data_url");
+    }
     loaded.icon = icon.empty() ? std::string{"null"} : icon;
     loaded.app_id = scalar_raw(manifest, "id");
     loaded.identity_key_thumbprint = scalar_raw(loaded.row, "backend_key_thumbprint");
 
     if (installation && !loaded.app_id.empty() &&
         scalar_raw(*installation, "app_id") != loaded.app_id) {
-        return {422, ghost_error("The reviewed manifest is for " + loaded.app_id +
-            ", not the app that is installed.", "ValidationError", "APP_MANIFEST_OTHER_APP",
-            "manifest_url")};
+        return {
+            422,
+            ghost_error(
+                "The reviewed manifest is for " + loaded.app_id +
+                    ", not the app that is installed.",
+                "ValidationError",
+                "APP_MANIFEST_OTHER_APP",
+                "manifest_url"
+            )
+        };
     }
     const auto review_result = review(ctx, outbox, loaded, installation);
-    if (review_result.status != 200) return review_result;
+    if (review_result.status != 200) {
+        return review_result;
+    }
     CheckedManifest checked;
     checked.loaded = loaded;
     checked.trusted_origins = loaded.trusted_origins;
-    checked.installation = installation ? installation : current_installation_of(ctx, loaded.app_id);
+    checked.installation =
+        installation ? installation : current_installation_of(ctx, loaded.app_id);
 
     if (digest_for(loaded) != digest) {
-        return {409, ghost_error("The app changed while it was being reviewed.", "ConflictError",
-                                 "APP_MANIFEST_CHANGED", {}, {}, "null")};
+        return {
+            409,
+            ghost_error(
+                "The app changed while it was being reviewed.",
+                "ConflictError",
+                "APP_MANIFEST_CHANGED",
+                {},
+                {},
+                "null"
+            )
+        };
     }
     return {200, core_serde::JsonCodec{}.encode(loaded.row)};
 }
@@ -789,12 +1006,18 @@ struct CheckedManifest
 }
 
 /** @brief Best-effort staff Action write: store row + outbox record. */
-[[nodiscard]] inline void record_action(blog::BlogContext& ctx,
-                                        blog::handlers::outbox::Outbox& outbox,
-                                        std::string_view event, std::string_view subject,
-                                        std::string_view details, std::string_view actor_id)
+[[nodiscard]] inline void record_action(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    std::string_view event,
+    std::string_view subject,
+    std::string_view details,
+    std::string_view actor_id
+)
 {
-    if (actor_id.empty()) return;
+    if (actor_id.empty()) {
+        return;
+    }
     const auto id = new_id();
     auto context = std::string{details};
     context.pop_back();
@@ -810,31 +1033,51 @@ struct CheckedManifest
         {"created_at", quote(timestamp())},
     });
     ctx.store().resources().create(kActions, row);
-    outbox.emit({"action.add", object_of({
-        {"event", quote(event)}, {"resource_type", quote("app_installation")},
-        {"resource_id", quote(subject)}, {"actor_id", quote(actor_id)}}), std::string{subject}});
+    outbox.emit(
+        {"action.add",
+         object_of(
+             {{"event", quote(event)},
+              {"resource_type", quote("app_installation")},
+              {"resource_id", quote(subject)},
+              {"actor_id", quote(actor_id)}}
+         ),
+         std::string{subject}}
+    );
 }
 
 [[nodiscard]] inline std::string actor_from_request(const interfaces::io::IRequest& req)
 {
-    if (req.get_authorization().empty()) return {};
+    if (req.get_authorization().empty()) {
+        return {};
+    }
     const auto header = req.find_header("x-blog-user");
     return header.empty() ? std::string{"bearer"} : std::string{header};
 }
 
 /** @brief service.create() -> repository.insert(); 201 Installation envelope. */
-[[nodiscard]] inline Result install(blog::BlogContext& ctx,
-                                    blog::handlers::outbox::Outbox& outbox,
-                                    const CheckedManifest& checked,
-                                    std::string_view actor_id)
+[[nodiscard]] inline Result install(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    const CheckedManifest& checked,
+    std::string_view actor_id
+)
 {
     const auto& loaded = checked.loaded;
     if (current_installation_of(ctx, loaded.app_id)) {
-        return {409, ghost_error("This app is already installed.", "ConflictError",
-                                 "APP_ALREADY_INSTALLED", "app_id")};
+        return {
+            409,
+            ghost_error(
+                "This app is already installed.",
+                "ConflictError",
+                "APP_ALREADY_INSTALLED",
+                "app_id"
+            )
+        };
     }
     const auto icon_result = fetch_icon(ctx, outbox, loaded.icon);
-    if (icon_result.status != 200) return icon_result;
+    if (icon_result.status != 200) {
+        return icon_result;
+    }
 
     outbox.begin_transaction();
     const auto manifest_id = new_id();
@@ -868,47 +1111,74 @@ struct CheckedManifest
         {"icon_data_url", icon_result.body},
     });
     ctx.store().resources().create(kInstallation, row);
-    outbox.emit({"installation.installed", object_of({
-        {"id", quote(installation_id)}, {"app_id", quote(loaded.app_id)}}), installation_id});
+    outbox.emit(
+        {"installation.installed",
+         object_of({{"id", quote(installation_id)}, {"app_id", quote(loaded.app_id)}}),
+         installation_id}
+    );
     outbox.commit();
 
-    record_action(ctx, outbox, "installed", installation_id, object_of({
-        {"primary_name", quote(scalar_raw(loaded.manifest, "name"))},
-        {"app_id", quote(loaded.app_id)}}), actor_id);
+    record_action(
+        ctx,
+        outbox,
+        "installed",
+        installation_id,
+        object_of(
+            {{"primary_name", quote(scalar_raw(loaded.manifest, "name"))},
+             {"app_id", quote(loaded.app_id)}}
+        ),
+        actor_id
+    );
 
     return {201, object_of({{"app_installations", "[" + installation_resource(ctx, row) + "]"}})};
 }
 
-[[nodiscard]] inline std::optional<std::string> pending_manifest_of(
-    blog::BlogContext& ctx, std::string_view installation)
+[[nodiscard]] inline std::optional<std::string>
+pending_manifest_of(blog::BlogContext& ctx, std::string_view installation)
 {
     const auto id = scalar_raw(installation, "pending_manifest_id");
-    if (id.empty()) return std::nullopt;
+    if (id.empty()) {
+        return std::nullopt;
+    }
     return find_one(ctx, kManifests, "id", id);
 }
 
 /** @brief service.approve() - revision-guarded approval write. */
-[[nodiscard]] inline Result approve(blog::BlogContext& ctx,
-                                    blog::handlers::outbox::Outbox& outbox,
-                                    std::string_view id, std::string_view manifest_url,
-                                    std::string_view digest, std::string_view revision,
-                                    std::string_view actor_id)
+[[nodiscard]] inline Result approve(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    std::string_view id,
+    std::string_view manifest_url,
+    std::string_view digest,
+    std::string_view revision,
+    std::string_view actor_id
+)
 {
     auto current = find_installation(ctx, id);
-    if (!current) return {404, not_found()};
-    if (scalar_raw(*current, "status") == "uninstalled") return {409, uninstalled_error()};
+    if (!current) {
+        return {404, not_found()};
+    }
+    if (scalar_raw(*current, "status") == "uninstalled") {
+        return {409, uninstalled_error()};
+    }
 
     const auto reviewed = fetch_reviewed(ctx, outbox, manifest_url, digest, current);
-    if (reviewed.status != 200) return reviewed;
+    if (reviewed.status != 200) {
+        return reviewed;
+    }
     CheckedManifest checked;
     checked.loaded.row = reviewed.body;
     checked.loaded.manifest_url = std::string{manifest_url};
     auto manifest = raw_member(reviewed.body, "manifest");
-    if (manifest.empty() || manifest == "null") manifest = "{}";
+    if (manifest.empty() || manifest == "null") {
+        manifest = "{}";
+    }
     checked.loaded.manifest = manifest;
     checked.loaded.digest = scalar_raw(reviewed.body, "digest");
     auto icon = raw_member(reviewed.body, "icon");
-    if (icon.empty() || icon == "null") icon = raw_member(reviewed.body, "icon_data_url");
+    if (icon.empty() || icon == "null") {
+        icon = raw_member(reviewed.body, "icon_data_url");
+    }
     checked.loaded.icon = icon.empty() ? std::string{"null"} : icon;
     checked.loaded.app_id = scalar_raw(manifest, "id");
     checked.loaded.identity_key_thumbprint = scalar_raw(reviewed.body, "backend_key_thumbprint");
@@ -916,13 +1186,22 @@ struct CheckedManifest
 
     const auto reviewed_revision = scalar_raw(*current, "revision");
     if (reviewed_revision != revision) {
-        return {409, ghost_error("The installation changed while the app was being reviewed.",
-                                 "ConflictError", "APP_INSTALLATION_CHANGED")};
+        return {
+            409,
+            ghost_error(
+                "The installation changed while the app was being reviewed.",
+                "ConflictError",
+                "APP_INSTALLATION_CHANGED"
+            )
+        };
     }
 
     const auto original_manifest_id = scalar_raw(*current, "manifest_id");
-    const auto approved_digest = [&] {
-        if (original_manifest_id.empty()) return std::string{};
+    const auto approved_digest = [&]
+    {
+        if (original_manifest_id.empty()) {
+            return std::string{};
+        }
         const auto row = find_one(ctx, kManifests, "id", original_manifest_id);
         return row ? scalar_raw(*row, "digest") : std::string{};
     }();
@@ -931,9 +1210,16 @@ struct CheckedManifest
     const auto loaded_digest = digest_for(checked.loaded);
     const bool needs_approval = scalar_raw(checked.loaded.row, "requires_approval") == "true";
 
-    enum class Write { None, ApproveExisting, AddApproved } write{Write::None};
+    enum class Write
+    {
+        None,
+        ApproveExisting,
+        AddApproved
+    } write{Write::None};
     if (!loaded_digest.empty() && loaded_digest == approved_digest) {
-        if (pending) write = Write::ApproveExisting;
+        if (pending) {
+            write = Write::ApproveExisting;
+        }
     } else if (!loaded_digest.empty() && loaded_digest == pending_digest) {
         write = Write::ApproveExisting;
     } else if (!loaded_digest.empty()) {
@@ -944,16 +1230,26 @@ struct CheckedManifest
     std::string write_icon;
     if (write == Write::AddApproved) {
         const auto icon_result = fetch_icon(ctx, outbox, checked.loaded.icon);
-        if (icon_result.status != 200) return icon_result;
+        if (icon_result.status != 200) {
+            return icon_result;
+        }
         write_icon = icon_result.body;
     }
 
     // whileUnchanged stand-in: re-read and compare the revision before writing.
     const auto locked = current_installation(ctx, id);
-    if (!locked) return {409, uninstalled_error()};
+    if (!locked) {
+        return {409, uninstalled_error()};
+    }
     if (scalar_raw(*locked, "revision") != reviewed_revision) {
-        return {409, ghost_error("The installation changed while the app was being reviewed.",
-                                 "ConflictError", "APP_INSTALLATION_CHANGED")};
+        return {
+            409,
+            ghost_error(
+                "The installation changed while the app was being reviewed.",
+                "ConflictError",
+                "APP_INSTALLATION_CHANGED"
+            )
+        };
     }
 
     outbox.begin_transaction();
@@ -976,7 +1272,9 @@ struct CheckedManifest
     }
     const auto next_revision = std::to_string(revision_number(reviewed_revision) + 1);
     auto kept_icon = raw_member(*current, "icon_data_url");
-    if (kept_icon.empty()) kept_icon = "null";
+    if (kept_icon.empty()) {
+        kept_icon = "null";
+    }
     auto patch = object_of({
         {"status", quote("active")},
         {"manifest_id", quote(approved_id)},
@@ -988,28 +1286,46 @@ struct CheckedManifest
         {"icon_data_url", write == Write::AddApproved ? write_icon : kept_icon},
     });
     ctx.store().resources().edit(kInstallation, id, patch);
-    outbox.emit({"installation.approved", object_of({
-        {"id", quote(id)}, {"manifest_id", quote(approved_id)}}), std::string{id}});
+    outbox.emit(
+        {"installation.approved",
+         object_of({{"id", quote(id)}, {"manifest_id", quote(approved_id)}}),
+         std::string{id}}
+    );
     outbox.commit();
 
     if (write != Write::None) {
-        record_action(ctx, outbox, "changes_approved", id, object_of({
-            {"primary_name", quote(scalar_raw(checked.loaded.manifest, "name"))},
-            {"app_id", quote(checked.loaded.app_id)},
-            {"from_manifest_id", quote(original_manifest_id)},
-            {"to_manifest_id", quote(approved_id)}}), actor_id);
+        record_action(
+            ctx,
+            outbox,
+            "changes_approved",
+            id,
+            object_of(
+                {{"primary_name", quote(scalar_raw(checked.loaded.manifest, "name"))},
+                 {"app_id", quote(checked.loaded.app_id)},
+                 {"from_manifest_id", quote(original_manifest_id)},
+                 {"to_manifest_id", quote(approved_id)}}
+            ),
+            actor_id
+        );
     }
     return read_one(ctx, id, false);
 }
 
 /** @brief service.uninstall() - soft transition, idempotent, 204 empty. */
-[[nodiscard]] inline Result uninstall(blog::BlogContext& ctx,
-                                      blog::handlers::outbox::Outbox& outbox,
-                                      std::string_view id, std::string_view actor_id)
+[[nodiscard]] inline Result uninstall(
+    blog::BlogContext& ctx,
+    blog::handlers::outbox::Outbox& outbox,
+    std::string_view id,
+    std::string_view actor_id
+)
 {
     const auto row = find_installation(ctx, id);
-    if (!row) return {404, not_found()};
-    if (scalar_raw(*row, "status") == "uninstalled") return {204, {}};
+    if (!row) {
+        return {404, not_found()};
+    }
+    if (scalar_raw(*row, "status") == "uninstalled") {
+        return {204, {}};
+    }
 
     outbox.begin_transaction();
     const auto next = std::to_string(revision_number(scalar_raw(*row, "revision")) + 1);
@@ -1023,9 +1339,17 @@ struct CheckedManifest
     outbox.emit({"installation.uninstalled", object_of({{"id", quote(id)}}), std::string{id}});
     outbox.commit();
 
-    record_action(ctx, outbox, "uninstalled", id, object_of({
-        {"primary_name", quote(scalar_raw(*row, "name"))},
-        {"app_id", quote(scalar_raw(*row, "app_id"))}}), actor_id);
+    record_action(
+        ctx,
+        outbox,
+        "uninstalled",
+        id,
+        object_of(
+            {{"primary_name", quote(scalar_raw(*row, "name"))},
+             {"app_id", quote(scalar_raw(*row, "app_id"))}}
+        ),
+        actor_id
+    );
     return {204, {}};
 }
 
@@ -1033,7 +1357,9 @@ struct CheckedManifest
 [[nodiscard]] inline std::string path_id(std::string_view raw)
 {
     auto path = raw.substr(0, raw.find('?'));
-    while (path.size() > 1 && path.back() == '/') path.remove_suffix(1);
+    while (path.size() > 1 && path.back() == '/') {
+        path.remove_suffix(1);
+    }
     const auto slash = path.find_last_of('/');
     return slash == std::string_view::npos ? std::string{path}
                                            : std::string{path.substr(slash + 1)};
@@ -1044,30 +1370,45 @@ struct CheckedManifest
 {
     std::map<std::string, std::string> params;
     const auto q = raw.find('?');
-    if (q == std::string_view::npos) return params;
-    for (auto part : std::std::views::split(string_view{raw}.substr(q + 1), '&')) {
+    if (q == std::string_view::npos) {
+        return params;
+    }
+    for (auto part: std::std::views::split(string_view{raw}.substr(q + 1), '&')) {
         const std::string text{std::ranges::begin(part), std::ranges::end(part)};
         const auto eq = text.find('=');
-        if (eq != std::string::npos) params[text.substr(0, eq)] = text.substr(eq + 1);
+        if (eq != std::string::npos) {
+            params[text.substr(0, eq)] = text.substr(eq + 1);
+        }
     }
     return params;
 }
 
 /** @brief Unwrap a Ghost write frame: data.<resource>[0]. */
-[[nodiscard]] inline const serde::Value* first_data_item(const serde::Value& root,
-                                                         std::string_view resource)
+[[nodiscard]] inline const serde::Value*
+first_data_item(const serde::Value& root, std::string_view resource)
 {
     const auto* data = std::get_if<Object>(&root.get());
-    if (data == nullptr) return nullptr;
-    const serde::Value* collection{nullptr};
-    for (const auto& [name, value] : *data) {
-        if (name == "data") { collection = &value; break; }
+    if (data == nullptr) {
+        return nullptr;
     }
-    if (collection == nullptr) return nullptr;
+    const serde::Value* collection{nullptr};
+    for (const auto& [name, value]: *data) {
+        if (name == "data") {
+            collection = &value;
+            break;
+        }
+    }
+    if (collection == nullptr) {
+        return nullptr;
+    }
     const auto* data_object = std::get_if<Object>(&collection->get());
-    if (data_object == nullptr) return nullptr;
-    for (const auto& [name, value] : *data_object) {
-        if (name != resource) continue;
+    if (data_object == nullptr) {
+        return nullptr;
+    }
+    for (const auto& [name, value]: *data_object) {
+        if (name != resource) {
+            continue;
+        }
         const auto* array = std::get_if<Array>(&value.get());
         return array == nullptr || array->empty() ? nullptr : &array->front();
     }
@@ -1090,12 +1431,13 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"apps_app_installations_browse_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input&, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input&, core::workflow::WorkflowContext&) const
     {
         const auto result = support::browse(*s_ctx);
         return core::workflow::StepResponse<Output>{
-            {{"status", std::to_string(result.status)}, {"body", result.body}}};
+            {{"status", std::to_string(result.status)}, {"body", result.body}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}

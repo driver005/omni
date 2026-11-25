@@ -18,9 +18,9 @@ public:
     [[nodiscard]] std::string select_columns()
     {
         std::string out;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            ((out += (I == 0 ? "" : ",") +
-                      std::string{std::string_view{field_at_t<E, I>::name}}),
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            ((out += (I == 0 ? "" : ",") + std::string{std::string_view{field_at_t<E, I>::name}}),
              ...);
         }(std::make_index_sequence<field_count_v<E>>{});
         return out;
@@ -32,9 +32,10 @@ public:
     {
         const std::string prefix = alias.empty() ? std::string{} : std::string{alias} + ".";
         std::string out;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            ((out += (I == 0 ? "" : ",") + prefix +
-                      std::string{std::string_view{field_at_t<E, I>::name}}),
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            ((out +=
+              (I == 0 ? "" : ",") + prefix + std::string{std::string_view{field_at_t<E, I>::name}}),
              ...);
         }(std::make_index_sequence<field_count_v<E>>{});
         return out;
@@ -51,8 +52,10 @@ public:
         out += std::string{EntityMeta<E>::table} + " (";
 
         std::vector<std::string> keys;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto append = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto append = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 out += std::string{std::string_view{F::name}} + " " +
                        std::string{SqlTypeName{}(F::type)};
@@ -103,10 +106,14 @@ struct SqlSample
     std::string name{};
     bool active{};
 };
-CORE_DB_REFLECT(SqlSample, "sql_samples",
+
+CORE_DB_REFLECT(
+    SqlSample,
+    "sql_samples",
     CORE_DB_FIELD("id", &SqlSample::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY),
     CORE_DB_FIELD("name", &SqlSample::name, ColumnType::TEXT, FieldFlags::NOT_NULL),
-    CORE_DB_FIELD("active", &SqlSample::active, ColumnType::BOOLEAN));
+    CORE_DB_FIELD("active", &SqlSample::active, ColumnType::BOOLEAN)
+);
 
 using namespace boost::ut;
 

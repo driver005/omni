@@ -255,7 +255,7 @@
   "moduleExtensions": {
     "//bazel:system_libstdcxx.bzl%system_libstdcxx": {
       "general": {
-        "bzlTransitiveDigest": "j97rPigrOsKMwO5ikCPhMBrx9TEbF7tJTvbXQYNDr5E=",
+        "bzlTransitiveDigest": "Sq2tHcLAIBM2t1siTVB8qBA4sry0e1lmjdAkWCVO0hA=",
         "usagesDigest": "lbc38lqxIkU/fLBecqcItqg8WHZ9vSRJ2W76VcVkY/U=",
         "recordedInputs": [],
         "generatedRepoSpecs": {

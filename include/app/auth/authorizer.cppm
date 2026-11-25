@@ -21,12 +21,10 @@ public:
         std::function<core::error::AppError(core::error::AppErrorKind, std::string)>;
 
     AppAuthorizer() :
-        m_factory{
-            [](core::error::AppErrorKind kind, std::string message)
-            {
-                return core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
-            }
-        }
+        m_factory{[](core::error::AppErrorKind kind, std::string message)
+                  {
+                      return core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
+                  }}
     {
     }
 
@@ -78,9 +76,8 @@ public:
         }
 
         if (scheme == AuthScheme::V2_API_KEY || scheme == AuthScheme::INTERNAL_API_KEY) {
-            const std::string_view claim = scheme == AuthScheme::V2_API_KEY
-                                               ? kClaimApiKey
-                                               : kClaimInternalApiKey;
+            const std::string_view claim =
+                scheme == AuthScheme::V2_API_KEY ? kClaimApiKey : kClaimInternalApiKey;
             if (!has_claim(context, claim)) {
                 return m_factory(
                     core::error::AppErrorKind::UNAUTHORIZED,
@@ -97,8 +94,7 @@ public:
         }
 
         if (scheme == AuthScheme::SDK && !has_claim(context, kClaimSdkKey) &&
-            !(has_claim(context, kClaimPublishableKey) &&
-              has_claim(context, kClaimClientSecret))) {
+            !(has_claim(context, kClaimPublishableKey) && has_claim(context, kClaimClientSecret))) {
             return m_factory(
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "missing SDK authorization header"
@@ -380,7 +376,12 @@ suite<"app_auth_authorizer"> authorizer_suite = []
     "NO_AUTH bypasses every check and FORBIDDEN always denies"_test = []
     {
         const AppAuthorizer authorizer;
-        expect(!authorizer.authorize_route(AuthContext{}, RouteAuthRule{AuthScheme::NO_AUTH, AppPermission::ADMIN}).has_value());
+        expect(!authorizer
+                    .authorize_route(
+                        AuthContext{},
+                        RouteAuthRule{AuthScheme::NO_AUTH, AppPermission::ADMIN}
+                    )
+                    .has_value());
         const auto denied = authorizer.authorize_route(
             AuthContext{BearerToken{"abc"}, "", "", "", {}},
             RouteAuthRule{AuthScheme::FORBIDDEN, AppPermission::ADMIN}
@@ -393,24 +394,64 @@ suite<"app_auth_authorizer"> authorizer_suite = []
     {
         const AppAuthorizer authorizer;
         const AuthContext empty{};
-        expect(authorizer.authorize_route(empty, RouteAuthRule{AuthScheme::V2_API_KEY, AppPermission::PAYMENT_READ}).has_value());
-        expect(authorizer.authorize_route(empty, RouteAuthRule{AuthScheme::INTERNAL_API_KEY, AppPermission::ADMIN}).has_value());
-        expect(authorizer.authorize_route(empty, RouteAuthRule{AuthScheme::SDK, AppPermission::PAYMENT_WRITE}).has_value());
-        expect(authorizer.authorize_route(empty, RouteAuthRule{AuthScheme::EMBEDDED, AppPermission::PAYMENT_READ}).has_value());
+        expect(authorizer
+                   .authorize_route(
+                       empty,
+                       RouteAuthRule{AuthScheme::V2_API_KEY, AppPermission::PAYMENT_READ}
+                   )
+                   .has_value());
+        expect(authorizer
+                   .authorize_route(
+                       empty,
+                       RouteAuthRule{AuthScheme::INTERNAL_API_KEY, AppPermission::ADMIN}
+                   )
+                   .has_value());
+        expect(authorizer
+                   .authorize_route(
+                       empty,
+                       RouteAuthRule{AuthScheme::SDK, AppPermission::PAYMENT_WRITE}
+                   )
+                   .has_value());
+        expect(authorizer
+                   .authorize_route(
+                       empty,
+                       RouteAuthRule{AuthScheme::EMBEDDED, AppPermission::PAYMENT_READ}
+                   )
+                   .has_value());
 
         AuthContext api{BearerToken{}, "", "", "", {}};
         api.add_claim(std::string{kClaimApiKey}, "key_1");
-        expect(!authorizer.authorize_route(api, RouteAuthRule{AuthScheme::V2_API_KEY, AppPermission::PAYMENT_READ}).has_value());
+        expect(!authorizer
+                    .authorize_route(
+                        api,
+                        RouteAuthRule{AuthScheme::V2_API_KEY, AppPermission::PAYMENT_READ}
+                    )
+                    .has_value());
 
         AuthContext internal{BearerToken{}, "", "", "", {}};
         internal.add_claim(std::string{kClaimInternalApiKey}, "internal_1");
-        expect(!authorizer.authorize_route(internal, RouteAuthRule{AuthScheme::INTERNAL_API_KEY, AppPermission::ADMIN}).has_value());
+        expect(!authorizer
+                    .authorize_route(
+                        internal,
+                        RouteAuthRule{AuthScheme::INTERNAL_API_KEY, AppPermission::ADMIN}
+                    )
+                    .has_value());
 
         AuthContext embedded{BearerToken{}, "merchant_1", "", "", {}};
         embedded.add_claim(std::string{kClaimPublishableKey}, "pk_1");
         embedded.add_claim(std::string{kClaimClientSecret}, "cs_1");
-        expect(!authorizer.authorize_route(embedded, RouteAuthRule{AuthScheme::EMBEDDED, AppPermission::PAYMENT_READ}).has_value());
-        expect(!authorizer.authorize_route(embedded, RouteAuthRule{AuthScheme::MERCHANT_ID, AppPermission::MERCHANT_READ}).has_value());
+        expect(!authorizer
+                    .authorize_route(
+                        embedded,
+                        RouteAuthRule{AuthScheme::EMBEDDED, AppPermission::PAYMENT_READ}
+                    )
+                    .has_value());
+        expect(!authorizer
+                    .authorize_route(
+                        embedded,
+                        RouteAuthRule{AuthScheme::MERCHANT_ID, AppPermission::MERCHANT_READ}
+                    )
+                    .has_value());
     };
 };
 

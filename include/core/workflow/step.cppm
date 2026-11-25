@@ -90,7 +90,8 @@ suite<"core_workflow_step"> core_workflow_step_suite = []
     {
         StepDescriptor descriptor;
         descriptor.name = std::string{GoodStep::name};
-        descriptor.invoke = [](WorkflowContext& ctx) {
+        descriptor.invoke = [](WorkflowContext& ctx)
+        {
             GoodStep step;
             const auto response = step.invoke(ctx.input_as<std::string>(), ctx);
             StepOutcome outcome;

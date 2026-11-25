@@ -53,38 +53,70 @@ public:
     [[nodiscard]] std::string_view operator()(AppPermission permission) const noexcept
     {
         switch (permission) {
-        case AppPermission::PAYMENT_READ: return "PAYMENT_READ";
-        case AppPermission::PAYMENT_WRITE: return "PAYMENT_WRITE";
-        case AppPermission::REFUND_WRITE: return "REFUND_WRITE";
-        case AppPermission::API_KEY_READ: return "API_KEY_READ";
-        case AppPermission::API_KEY_WRITE: return "API_KEY_WRITE";
-        case AppPermission::USER_READ: return "USER_READ";
-        case AppPermission::USER_WRITE: return "USER_WRITE";
-        case AppPermission::ROUTING_READ: return "ROUTING_READ";
-        case AppPermission::ROUTING_WRITE: return "ROUTING_WRITE";
-        case AppPermission::WEBHOOK_READ: return "WEBHOOK_READ";
-        case AppPermission::WEBHOOK_WRITE: return "WEBHOOK_WRITE";
-        case AppPermission::ADMIN: return "ADMIN";
-        case AppPermission::MANDATE_READ: return "MANDATE_READ";
-        case AppPermission::PAYMENT_METHOD_READ: return "PAYMENT_METHOD_READ";
-        case AppPermission::PAYMENT_METHOD_WRITE: return "PAYMENT_METHOD_WRITE";
-        case AppPermission::CONNECTOR_READ: return "CONNECTOR_READ";
-        case AppPermission::CONNECTOR_WRITE: return "CONNECTOR_WRITE";
-        case AppPermission::MERCHANT_READ: return "MERCHANT_READ";
-        case AppPermission::MERCHANT_WRITE: return "MERCHANT_WRITE";
-        case AppPermission::ORGANIZATION_READ: return "ORGANIZATION_READ";
-        case AppPermission::ORGANIZATION_WRITE: return "ORGANIZATION_WRITE";
-        case AppPermission::PROFILE_READ: return "PROFILE_READ";
-        case AppPermission::PROFILE_WRITE: return "PROFILE_WRITE";
-        case AppPermission::REFUND_READ: return "REFUND_READ";
-        case AppPermission::MANDATE_WRITE: return "MANDATE_WRITE";
-        case AppPermission::FILE_READ: return "FILE_READ";
-        case AppPermission::FILE_WRITE: return "FILE_WRITE";
-        case AppPermission::DISPUTE_READ: return "DISPUTE_READ";
-        case AppPermission::DISPUTE_WRITE: return "DISPUTE_WRITE";
-        case AppPermission::SUBSCRIPTION_READ: return "SUBSCRIPTION_READ";
-        case AppPermission::SUBSCRIPTION_WRITE: return "SUBSCRIPTION_WRITE";
-        case AppPermission::FRM_WRITE: return "FRM_WRITE";
+            case AppPermission::PAYMENT_READ:
+                return "PAYMENT_READ";
+            case AppPermission::PAYMENT_WRITE:
+                return "PAYMENT_WRITE";
+            case AppPermission::REFUND_WRITE:
+                return "REFUND_WRITE";
+            case AppPermission::API_KEY_READ:
+                return "API_KEY_READ";
+            case AppPermission::API_KEY_WRITE:
+                return "API_KEY_WRITE";
+            case AppPermission::USER_READ:
+                return "USER_READ";
+            case AppPermission::USER_WRITE:
+                return "USER_WRITE";
+            case AppPermission::ROUTING_READ:
+                return "ROUTING_READ";
+            case AppPermission::ROUTING_WRITE:
+                return "ROUTING_WRITE";
+            case AppPermission::WEBHOOK_READ:
+                return "WEBHOOK_READ";
+            case AppPermission::WEBHOOK_WRITE:
+                return "WEBHOOK_WRITE";
+            case AppPermission::ADMIN:
+                return "ADMIN";
+            case AppPermission::MANDATE_READ:
+                return "MANDATE_READ";
+            case AppPermission::PAYMENT_METHOD_READ:
+                return "PAYMENT_METHOD_READ";
+            case AppPermission::PAYMENT_METHOD_WRITE:
+                return "PAYMENT_METHOD_WRITE";
+            case AppPermission::CONNECTOR_READ:
+                return "CONNECTOR_READ";
+            case AppPermission::CONNECTOR_WRITE:
+                return "CONNECTOR_WRITE";
+            case AppPermission::MERCHANT_READ:
+                return "MERCHANT_READ";
+            case AppPermission::MERCHANT_WRITE:
+                return "MERCHANT_WRITE";
+            case AppPermission::ORGANIZATION_READ:
+                return "ORGANIZATION_READ";
+            case AppPermission::ORGANIZATION_WRITE:
+                return "ORGANIZATION_WRITE";
+            case AppPermission::PROFILE_READ:
+                return "PROFILE_READ";
+            case AppPermission::PROFILE_WRITE:
+                return "PROFILE_WRITE";
+            case AppPermission::REFUND_READ:
+                return "REFUND_READ";
+            case AppPermission::MANDATE_WRITE:
+                return "MANDATE_WRITE";
+            case AppPermission::FILE_READ:
+                return "FILE_READ";
+            case AppPermission::FILE_WRITE:
+                return "FILE_WRITE";
+            case AppPermission::DISPUTE_READ:
+                return "DISPUTE_READ";
+            case AppPermission::DISPUTE_WRITE:
+                return "DISPUTE_WRITE";
+            case AppPermission::SUBSCRIPTION_READ:
+                return "SUBSCRIPTION_READ";
+            case AppPermission::SUBSCRIPTION_WRITE:
+                return "SUBSCRIPTION_WRITE";
+            case AppPermission::FRM_WRITE:
+                return "FRM_WRITE";
         }
         return std::string_view{};
     }

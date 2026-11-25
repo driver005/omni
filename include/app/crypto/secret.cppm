@@ -85,8 +85,7 @@ public:
      *  Never returns any part of the secret. A caller that needs an
      *  idempotency or lookup key must use this instead of value().
      */
-    [[nodiscard]] std::string cache_key(
-        HashDomain domain = HashDomain::Idempotency) const
+    [[nodiscard]] std::string cache_key(HashDomain domain = HashDomain::Idempotency) const
     {
         return KeyedHasher{"app-secret-cache-key"}.hash_with_domain(domain, m_value);
     }
@@ -112,8 +111,7 @@ private:
 class SecretMasker
 {
 public:
-    [[nodiscard]] std::string mask(
-        SecretFieldKind kind, std::string_view value) const
+    [[nodiscard]] std::string mask(SecretFieldKind kind, std::string_view value) const
     {
         return SecretString{std::string{value}}.masked_as(kind);
     }

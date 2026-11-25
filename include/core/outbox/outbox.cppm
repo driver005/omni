@@ -43,22 +43,23 @@ struct Adapter
 
 namespace detail {
 
-/** @brief Optional host event sink, wired by the host instead of importing core_events here. */
-using EventSink = void (*)(const Event&);
-[[nodiscard]] inline EventSink& event_sink() noexcept
-{
-    static EventSink sink{nullptr};
-    return sink;
-}
+    /** @brief Optional host event sink, wired by the host instead of importing core_events here. */
+    using EventSink = void (*)(const Event&);
 
-/** Process-wide adapter registry. Function-local static avoids static-initialisation order
- * issues; the registry is intentionally global because `register_adapter()` is a free
- * function with no `Outbox` context argument. */
-[[nodiscard]] inline std::vector<std::shared_ptr<Adapter>>& adapters()
-{
-    static std::vector<std::shared_ptr<Adapter>> registry;
-    return registry;
-}
+    [[nodiscard]] inline EventSink& event_sink() noexcept
+    {
+        static EventSink sink{nullptr};
+        return sink;
+    }
+
+    /** Process-wide adapter registry. Function-local static avoids static-initialisation order
+     * issues; the registry is intentionally global because `register_adapter()` is a free
+     * function with no `Outbox` context argument. */
+    [[nodiscard]] inline std::vector<std::shared_ptr<Adapter>>& adapters()
+    {
+        static std::vector<std::shared_ptr<Adapter>> registry;
+        return registry;
+    }
 
 } // namespace detail
 
@@ -114,9 +115,11 @@ public:
         auto staged = std::move(m_transactions.back());
         m_transactions.pop_back();
         auto& target = m_transactions.empty() ? m_pending : m_transactions.back();
-        target.insert(target.end(),
+        target.insert(
+            target.end(),
             std::make_move_iterator(staged.begin()),
-            std::make_move_iterator(staged.end()));
+            std::make_move_iterator(staged.end())
+        );
     }
 
     /** Rolls back the innermost transaction, discarding its staged events. No-op if no

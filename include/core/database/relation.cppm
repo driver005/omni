@@ -78,8 +78,7 @@ suite<"core_db_relation"> core_db_relation_suite = []
     {
         const Relation relation{"posts", "author_id", "authors", "id"};
         expect(relation.from_table() == "posts");
-        expect(relation.join_clause() ==
-               " JOIN authors ON posts.author_id = authors.id");
+        expect(relation.join_clause() == " JOIN authors ON posts.author_id = authors.id");
     };
 };
 

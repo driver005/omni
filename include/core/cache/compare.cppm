@@ -29,10 +29,14 @@ suite<"core_cache_compare"> core_cache_compare_suite = []
 {
     "comparison enum preserves distinct values"_test = []
     {
-        expect(static_cast<std::uint8_t>(CacheCompare::EQ) !=
-               static_cast<std::uint8_t>(CacheCompare::NE));
-        expect(static_cast<std::uint8_t>(CacheCompare::HAS_TAG) ==
-               static_cast<std::uint8_t>(CacheCompare::HAS_TAG));
+        expect(
+            static_cast<std::uint8_t>(CacheCompare::EQ) !=
+            static_cast<std::uint8_t>(CacheCompare::NE)
+        );
+        expect(
+            static_cast<std::uint8_t>(CacheCompare::HAS_TAG) ==
+            static_cast<std::uint8_t>(CacheCompare::HAS_TAG)
+        );
     };
 };
 

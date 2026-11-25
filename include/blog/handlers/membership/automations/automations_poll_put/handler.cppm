@@ -13,26 +13,50 @@ import core_workflow;
 import memory_backends;
 import :automations_operations;
 import :automations_automations_poll_put_flow;
+
 export namespace blog::handlers::automations::automations_poll_put {
-class AutomationsPollPutHandler {
+class AutomationsPollPutHandler
+{
 public:
-   AutomationsPollPutHandler(blog::BlogContext& ctx, blog::api::automations::AutomationsOperations* ops=nullptr) noexcept {
-    workflow::ExecuteStep::s_ctx=&ctx; workflow::ExecuteStep::s_ops=ops;
-    m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
-    m_workflow.register_workflow(workflow::MainFlow{}.build());
-   }
-   void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res, std::function<void()> send) {
-    // Ghost: authAdminApiWithUrl + permissions {docName:'automations', method:'poll'}.
-    // Admin-token enforcement + the shared permission gate close the wire-level
-    // auth gap; URL-token matching is an architecture residual.
-    if (!blog::api::automations::authorize(req, res, send, "automations", "poll")) return;
-    const auto ex=m_workflow.run("automations_automations_poll_put", req);
-    const auto* r=ex.result_of("automations_automations_poll_put_execute");
-    const auto body=r&&r->typed_output.has_value()?std::any_cast<std::string>(r->typed_output):std::string{""};
-    std::vector<std::byte> bytes; for(char c:body) bytes.push_back(static_cast<std::byte>(c));
-    // Ghost statusCode:204 with no body; no X-Cache-Invalidate header.
-    res.set_status(interfaces::io::types::Status::NO_CONTENT); res.set_body(std::move(bytes)); send();
-   }
-  private: core::workflow::Workflow m_workflow{};
+    AutomationsPollPutHandler(
+        blog::BlogContext& ctx,
+        blog::api::automations::AutomationsOperations* ops = nullptr
+    ) noexcept
+    {
+        workflow::ExecuteStep::s_ctx = &ctx;
+        workflow::ExecuteStep::s_ops = ops;
+        m_workflow.use_backend(std::make_unique<core::workflow::LocalWorkflowDriver>());
+        m_workflow.register_workflow(workflow::MainFlow{}.build());
+    }
+
+    void handle(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        // Ghost: authAdminApiWithUrl + permissions {docName:'automations', method:'poll'}.
+        // Admin-token enforcement + the shared permission gate close the wire-level
+        // auth gap; URL-token matching is an architecture residual.
+        if (!blog::api::automations::authorize(req, res, send, "automations", "poll")) {
+            return;
+        }
+        const auto ex = m_workflow.run("automations_automations_poll_put", req);
+        const auto* r = ex.result_of("automations_automations_poll_put_execute");
+        const auto body = r && r->typed_output.has_value()
+                              ? std::any_cast<std::string>(r->typed_output)
+                              : std::string{""};
+        std::vector<std::byte> bytes;
+        for (char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
+        // Ghost statusCode:204 with no body; no X-Cache-Invalidate header.
+        res.set_status(interfaces::io::types::Status::NO_CONTENT);
+        res.set_body(std::move(bytes));
+        send();
+    }
+
+private:
+    core::workflow::Workflow m_workflow{};
 };
-}
+} // namespace blog::handlers::automations::automations_poll_put

@@ -82,7 +82,9 @@ suite<"core_email_email_message"> core_email_email_message_suite = []
     "carries sender, recipient, subject and bodies"_test = []
     {
         EmailMessage message{
-            EmailAddress{"from@example.com"}, EmailAddress{"to@example.com"}, "Hello"
+            EmailAddress{"from@example.com"},
+            EmailAddress{"to@example.com"},
+            "Hello"
         };
         message.set_text("plain").set_html("<b>html</b>");
         expect(message.valid());

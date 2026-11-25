@@ -1,0 +1,22 @@
+export module app_handlers_superposition_proxy;
+
+export import :input;
+export import :result;
+export import :runtime_common;
+export import :runtime_list_contexts;
+export import :runtime_create_context;
+export import :runtime_list_default_configs;
+export import :runtime_get_default_config;
+export import :runtime_list_dimensions;
+export import :runtime_get_dimension;
+export import :runtime_resolve_detailed_config;
+export import :runtime_resolve_config_explanation;
+export import :runtime_list_audit_logs;
+export import :runtime;
+export import :handlers_v1_contexts;
+export import :handlers_v1_default_configs;
+export import :handlers_v1_dimensions;
+export import :handlers_v1_resolve;
+export import :handlers_v1_audit;
+export import :handlers_v1;
+export import :handler;

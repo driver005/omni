@@ -20,7 +20,7 @@ template<std::size_t MaxMiddlewareSize = 192>
 class Router;
 
 template<
-    std::size_t RouterSize = 4096,
+    std::size_t RouterSize = 4'096,
     std::size_t MaxHandlerSize = 8,
     std::size_t MaxMiddlewareSize = 192>
 class RouterContext
@@ -97,16 +97,20 @@ public:
         std::vector<RouteInput> inputs;
         inputs.reserve(m_router_size);
         for (std::size_t i = 0; i < m_router_size; ++i) {
-            if (i == 0) continue; // reserved root slot — the tree's own root is the table entry
+            if (i == 0) {
+                continue; // reserved root slot — the tree's own root is the table entry
+            }
             const auto& route = m_routes[i];
             const auto parent = route.get_base_router() == SENTINEL ? 0 : route.get_base_router();
-            inputs.push_back(RouteInput{
-                route.get_path(),
-                parent,
-                route.get_router_number(),
-                &route.get_handlers(),
-                &route.get_middlewares(),
-            });
+            inputs.push_back(
+                RouteInput{
+                    route.get_path(),
+                    parent,
+                    route.get_router_number(),
+                    &route.get_handlers(),
+                    &route.get_middlewares(),
+                }
+            );
         }
 
         RouteTree tree;
@@ -388,8 +392,7 @@ public:
      * call sites keep working. Multi-segment paths are NOT leaves — they must be expressed
      * as nested sub-routers via `Router::add_router()`.
      */
-    constexpr Route<>(std::string_view path)
-        :
+    constexpr Route<>(std::string_view path) :
         m_path{path.size() > 1 && path.starts_with('/') ? path.substr(1) : path},
         m_is_build{false},
         m_router_number{0},
@@ -399,7 +402,9 @@ public:
         m_local_middleware{}
     {
         // A lone "/" is the scope-root resource — treat it the same as "".
-        if (path == "/") m_path.clear();
+        if (path == "/") {
+            m_path.clear();
+        }
         if (path != "*" && m_path.find('/') != std::string::npos) {
             throw std::runtime_error(
                 std::format("Leaf route path must be a single segment: '{}'", path)
@@ -431,7 +436,9 @@ public:
     {
         // leaf routes are single segments; ws::resource("") and "*" are valid.
         // A lone "/" is the scope-root resource — treat it the same as "".
-        if (path == "/") m_path.clear();
+        if (path == "/") {
+            m_path.clear();
+        }
         if (path != "*" && m_path.find('/') != std::string::npos) {
             throw std::runtime_error(
                 std::format("Leaf route path must be a single segment: '{}'", path)
@@ -766,7 +773,9 @@ private:
     )
     {
         std::vector<std::string_view> segments;
-        for (const auto part: split_path(path)) segments.push_back(part);
+        for (const auto part: split_path(path)) {
+            segments.push_back(part);
+        }
         if (segments.empty()) {
             const auto idx = ctx.add_route(Route<>{""}.set_router_number(router_number));
             chain.push_back(idx);
@@ -777,13 +786,18 @@ private:
         for (std::size_t i = 0; i < segments.size(); ++i) {
             const bool is_root = (i == 0);
             const bool is_last = (i + 1 == segments.size());
-            const std::size_t own_number = is_last ? router_number : ctx.get_highest_router_number();
+            const std::size_t own_number =
+                is_last ? router_number : ctx.get_highest_router_number();
             const std::size_t base = is_root ? std::size_t{0} : prev_router;
 
             Route<> node = Route<>{segments[i]}.set_router_number(own_number);
-            if (!is_root) node.update_base_router(base);
+            if (!is_root) {
+                node.update_base_router(base);
+            }
             const std::size_t idx = ctx.add_route(std::move(node));
-            if (!is_root) ctx[prev_index].increment_child_routes();
+            if (!is_root) {
+                ctx[prev_index].increment_child_routes();
+            }
             chain.push_back(idx);
             prev_index = idx;
             prev_router = own_number;
@@ -792,7 +806,6 @@ private:
     }
 
 public:
-
     /**
      * @brief Registers a new root-level route for this router against `ctx` and claims a fresh
      * router number.
@@ -950,8 +963,7 @@ public:
         // left an orphan at the root whose child offset pointed into the wrong table row.
         for (std::size_t i = 0; i < sub.m_chain.size(); ++i) {
             const auto parent_number =
-                i == 0 ? m_router_number
-                       : m_ctx.get()[sub.m_chain[i - 1]].get_router_number();
+                i == 0 ? m_router_number : m_ctx.get()[sub.m_chain[i - 1]].get_router_number();
             m_ctx.get()[sub.m_chain[i]].update_base_router(parent_number);
         }
         // Only the first segment was ever counted as a base-router child — undo that once,

@@ -21,13 +21,17 @@ public:
             .use(blog::handlers::middleware::require_auth)
             .add_route(
                 Route{"/remove_all"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.gift_links_gift_links_remove_all_put().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.gift_links_gift_links_remove_all_put()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost remove_all PUT")
             );
     }

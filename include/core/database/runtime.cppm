@@ -89,8 +89,20 @@ suite<"core_db_database_runtime"> core_db_database_runtime_suite = []
         expect(!runtime.table_registered("users"));
         runtime.register_table("users");
         expect(runtime.table_registered("users"));
-        expect(not throws<std::runtime_error>([&] { runtime.require_table("users"); }));
-        expect(throws<std::runtime_error>([&] { runtime.require_table("ghosts"); }));
+        expect(not throws<std::runtime_error>(
+            [&]
+            {
+                runtime.require_table("users");
+            }
+        ));
+        expect(
+            throws<std::runtime_error>(
+                [&]
+                {
+                    runtime.require_table("ghosts");
+                }
+            )
+        );
         expect(runtime.name() == "in_memory");
     };
 };

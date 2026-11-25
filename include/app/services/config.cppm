@@ -21,6 +21,7 @@ public:
     {
         m_id = value;
     }
+
     [[nodiscard]] const std::int64_t& get_id() const noexcept
     {
         return m_id;
@@ -30,6 +31,7 @@ public:
     {
         m_config_namespace = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_config_namespace() const noexcept
     {
         return m_config_namespace;
@@ -39,6 +41,7 @@ public:
     {
         m_config_key = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_config_key() const noexcept
     {
         return m_config_key;
@@ -48,6 +51,7 @@ public:
     {
         m_value = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_value() const noexcept
     {
         return m_value;
@@ -57,6 +61,7 @@ public:
     {
         m_context = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_context() const noexcept
     {
         return m_context;
@@ -66,6 +71,7 @@ public:
     {
         m_sequence = value;
     }
+
     [[nodiscard]] const std::int64_t& get_sequence() const noexcept
     {
         return m_sequence;
@@ -90,6 +96,7 @@ public:
     {
         m_name = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_name() const noexcept
     {
         return m_name;
@@ -99,6 +106,7 @@ public:
     {
         m_value = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_value() const noexcept
     {
         return m_value;
@@ -108,6 +116,7 @@ public:
     {
         m_weight = value;
     }
+
     [[nodiscard]] const std::int64_t& get_weight() const noexcept
     {
         return m_weight;
@@ -129,6 +138,7 @@ public:
     {
         m_id = value;
     }
+
     [[nodiscard]] const std::int64_t& get_id() const noexcept
     {
         return m_id;
@@ -138,6 +148,7 @@ public:
     {
         m_config_namespace = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_config_namespace() const noexcept
     {
         return m_config_namespace;
@@ -147,6 +158,7 @@ public:
     {
         m_config_key = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_config_key() const noexcept
     {
         return m_config_key;
@@ -156,6 +168,7 @@ public:
     {
         m_action = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_action() const noexcept
     {
         return m_action;
@@ -165,6 +178,7 @@ public:
     {
         m_detail = std::move(value);
     }
+
     [[nodiscard]] const std::string& get_detail() const noexcept
     {
         return m_detail;
@@ -174,6 +188,7 @@ public:
     {
         m_sequence = value;
     }
+
     [[nodiscard]] const std::int64_t& get_sequence() const noexcept
     {
         return m_sequence;
@@ -213,7 +228,12 @@ public:
         return m_repository != nullptr;
     }
 
-    void put(std::string_view config_namespace, std::string_view key, std::string value, std::string context = {})
+    void put(
+        std::string_view config_namespace,
+        std::string_view key,
+        std::string value,
+        std::string context = {}
+    )
     {
         const std::string composed = compose_key(config_namespace, key);
         ++m_sequence;
@@ -229,7 +249,8 @@ public:
         record_flow("config.put");
     }
 
-    [[nodiscard]] std::optional<ConfigRecord> get(std::string_view config_namespace, std::string_view key) const
+    [[nodiscard]] std::optional<ConfigRecord>
+    get(std::string_view config_namespace, std::string_view key) const
     {
         const auto it = m_records.find(compose_key(config_namespace, key));
         if (it == m_records.end()) {
@@ -238,7 +259,8 @@ public:
         return it->second;
     }
 
-    [[nodiscard]] std::optional<std::string> get_value(std::string_view config_namespace, std::string_view key) const
+    [[nodiscard]] std::optional<std::string>
+    get_value(std::string_view config_namespace, std::string_view key) const
     {
         const auto record = get(config_namespace, key);
         if (!record) {
@@ -251,7 +273,7 @@ public:
     {
         std::vector<ConfigRecord> result{};
         const std::string prefix{std::string{config_namespace} + "/"};
-        for (const auto& [key, record] : m_records) {
+        for (const auto& [key, record]: m_records) {
             if (key.starts_with(prefix)) {
                 result.push_back(record);
             }
@@ -328,12 +350,18 @@ public:
     }
 
 private:
-    [[nodiscard]] std::string compose_key(std::string_view config_namespace, std::string_view key) const
+    [[nodiscard]] std::string
+    compose_key(std::string_view config_namespace, std::string_view key) const
     {
         return std::string{config_namespace} + "/" + std::string{key};
     }
 
-    void append_audit(std::string_view config_namespace, std::string_view key, std::string_view action, std::string_view detail)
+    void append_audit(
+        std::string_view config_namespace,
+        std::string_view key,
+        std::string_view action,
+        std::string_view detail
+    )
     {
         ++m_audit_sequence;
         AuditLogRecord entry{};
@@ -371,12 +399,36 @@ struct serde::Serializable<app::services::ConfigRecord>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"id", &app::services::ConfigRecord::get_id, &app::services::ConfigRecord::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
-            serde::FieldDesc<"config_namespace", &app::services::ConfigRecord::get_config_namespace, &app::services::ConfigRecord::set_config_namespace, serde::FieldOptions{}>{},
-            serde::FieldDesc<"config_key", &app::services::ConfigRecord::get_config_key, &app::services::ConfigRecord::set_config_key, serde::FieldOptions{}>{},
-            serde::FieldDesc<"value", &app::services::ConfigRecord::get_value, &app::services::ConfigRecord::set_value, serde::FieldOptions{}>{},
-            serde::FieldDesc<"context", &app::services::ConfigRecord::get_context, &app::services::ConfigRecord::set_context, serde::FieldOptions{}>{},
-            serde::FieldDesc<"sequence", &app::services::ConfigRecord::get_sequence, &app::services::ConfigRecord::set_sequence, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "id",
+                &app::services::ConfigRecord::get_id,
+                &app::services::ConfigRecord::set_id,
+                serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<
+                "config_namespace",
+                &app::services::ConfigRecord::get_config_namespace,
+                &app::services::ConfigRecord::set_config_namespace,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "config_key",
+                &app::services::ConfigRecord::get_config_key,
+                &app::services::ConfigRecord::set_config_key,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "value",
+                &app::services::ConfigRecord::get_value,
+                &app::services::ConfigRecord::set_value,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "context",
+                &app::services::ConfigRecord::get_context,
+                &app::services::ConfigRecord::set_context,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "sequence",
+                &app::services::ConfigRecord::get_sequence,
+                &app::services::ConfigRecord::set_sequence,
+                serde::FieldOptions{}>{},
         };
     }
 
@@ -392,9 +444,21 @@ struct serde::Serializable<app::services::ContextRecord>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"name", &app::services::ContextRecord::get_name, &app::services::ContextRecord::set_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"value", &app::services::ContextRecord::get_value, &app::services::ContextRecord::set_value, serde::FieldOptions{}>{},
-            serde::FieldDesc<"weight", &app::services::ContextRecord::get_weight, &app::services::ContextRecord::set_weight, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "name",
+                &app::services::ContextRecord::get_name,
+                &app::services::ContextRecord::set_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "value",
+                &app::services::ContextRecord::get_value,
+                &app::services::ContextRecord::set_value,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "weight",
+                &app::services::ContextRecord::get_weight,
+                &app::services::ContextRecord::set_weight,
+                serde::FieldOptions{}>{},
         };
     }
 
@@ -410,12 +474,36 @@ struct serde::Serializable<app::services::AuditLogRecord>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"id", &app::services::AuditLogRecord::get_id, &app::services::AuditLogRecord::set_id, serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
-            serde::FieldDesc<"config_namespace", &app::services::AuditLogRecord::get_config_namespace, &app::services::AuditLogRecord::set_config_namespace, serde::FieldOptions{}>{},
-            serde::FieldDesc<"config_key", &app::services::AuditLogRecord::get_config_key, &app::services::AuditLogRecord::set_config_key, serde::FieldOptions{}>{},
-            serde::FieldDesc<"action", &app::services::AuditLogRecord::get_action, &app::services::AuditLogRecord::set_action, serde::FieldOptions{}>{},
-            serde::FieldDesc<"detail", &app::services::AuditLogRecord::get_detail, &app::services::AuditLogRecord::set_detail, serde::FieldOptions{}>{},
-            serde::FieldDesc<"sequence", &app::services::AuditLogRecord::get_sequence, &app::services::AuditLogRecord::set_sequence, serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "id",
+                &app::services::AuditLogRecord::get_id,
+                &app::services::AuditLogRecord::set_id,
+                serde::FieldOptions::init().with_db(serde::FieldOptionsDb::init().pk())>{},
+            serde::FieldDesc<
+                "config_namespace",
+                &app::services::AuditLogRecord::get_config_namespace,
+                &app::services::AuditLogRecord::set_config_namespace,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "config_key",
+                &app::services::AuditLogRecord::get_config_key,
+                &app::services::AuditLogRecord::set_config_key,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "action",
+                &app::services::AuditLogRecord::get_action,
+                &app::services::AuditLogRecord::set_action,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "detail",
+                &app::services::AuditLogRecord::get_detail,
+                &app::services::AuditLogRecord::set_detail,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "sequence",
+                &app::services::AuditLogRecord::get_sequence,
+                &app::services::AuditLogRecord::set_sequence,
+                serde::FieldOptions{}>{},
         };
     }
 

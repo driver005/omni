@@ -9,72 +9,72 @@ export namespace blog::handlers::announcements::announcement_get::workflow {
 
 namespace announcement_detail {
 
-// Ghost ANNOUNCEMENT_VISIBILITY values (announcement.values.ts:4-7).
-inline constexpr std::string_view kVisitors{"visitors"};
-inline constexpr std::string_view kFreeMembers{"free_members"};
-inline constexpr std::string_view kPaidMembers{"paid_members"};
+    // Ghost ANNOUNCEMENT_VISIBILITY values (announcement.values.ts:4-7).
+    inline constexpr std::string_view kVisitors{"visitors"};
+    inline constexpr std::string_view kFreeMembers{"free_members"};
+    inline constexpr std::string_view kPaidMembers{"paid_members"};
 
-// Decode a store value (a JSON fragment) to plain text. "null"/empty -> empty.
-[[nodiscard]] inline std::string text(std::string_view raw)
-{
-    if (raw.empty() || raw == "null") {
-        return {};
-    }
-    if (raw.front() == '"') {
-        if (const auto decoded = core_serde::JsonCodec{}.decode<std::string>(raw)) {
-            return *decoded;
+    // Decode a store value (a JSON fragment) to plain text. "null"/empty -> empty.
+    [[nodiscard]] inline std::string text(std::string_view raw)
+    {
+        if (raw.empty() || raw == "null") {
+            return {};
         }
-        return std::string{raw.substr(1, raw.size() - 2)};
+        if (raw.front() == '"') {
+            if (const auto decoded = core_serde::JsonCodec{}.decode<std::string>(raw)) {
+                return *decoded;
+            }
+            return std::string{raw.substr(1, raw.size() - 2)};
+        }
+        return std::string{raw};
     }
-    return std::string{raw};
-}
 
-// Parse announcement_visibility as a typed JSON array of Ghost tokens and test
-// exact membership - never a bare substring match (announcements.js:22-27).
-[[nodiscard]] inline bool visibility_contains(std::string_view raw, std::string_view wanted)
-{
-    const auto arr = text(raw); // e.g. ["visitors","free_members"]
-    std::size_t i = 0;
-    while (i < arr.size()) {
-        const auto q1 = arr.find('"', i);
-        if (q1 == std::string_view::npos) {
-            break;
-        }
-        std::string token;
-        bool closed = false;
-        for (std::size_t j = q1 + 1; j < arr.size(); ++j) {
-            if (arr[j] == '\\' && j + 1 < arr.size()) {
-                token += arr[++j];
-            } else if (arr[j] == '"') {
-                i = j + 1;
-                closed = true;
+    // Parse announcement_visibility as a typed JSON array of Ghost tokens and test
+    // exact membership - never a bare substring match (announcements.js:22-27).
+    [[nodiscard]] inline bool visibility_contains(std::string_view raw, std::string_view wanted)
+    {
+        const auto arr = text(raw); // e.g. ["visitors","free_members"]
+        std::size_t i = 0;
+        while (i < arr.size()) {
+            const auto q1 = arr.find('"', i);
+            if (q1 == std::string_view::npos) {
                 break;
-            } else {
-                token += arr[j];
+            }
+            std::string token;
+            bool closed = false;
+            for (std::size_t j = q1 + 1; j < arr.size(); ++j) {
+                if (arr[j] == '\\' && j + 1 < arr.size()) {
+                    token += arr[++j];
+                } else if (arr[j] == '"') {
+                    i = j + 1;
+                    closed = true;
+                    break;
+                } else {
+                    token += arr[j];
+                }
+            }
+            if (!closed) {
+                break;
+            }
+            if (token == wanted) {
+                return true;
             }
         }
-        if (!closed) {
-            break;
-        }
-        if (token == wanted) {
-            return true;
-        }
+        return false;
     }
-    return false;
-}
 
 } // namespace announcement_detail
 
-class ExecuteStep {
+class ExecuteStep
+{
 public:
     using Input = interfaces::io::IRequest&;
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"announcements_announcement_get_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in,
-        core::workflow::WorkflowContext&
-    ) const {
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
+    {
         auto& ctx = *s_ctx;
 
         // Ghost reads frame.options.context?.member (announcements.js:47). C++
@@ -92,16 +92,15 @@ public:
         // "announcement_settings" record set is accepted as a read-only fixture
         // source for contexts that cannot seed json_for("settings").
         auto rows = blog::api::parse_array(ctx.store().json_for("settings", {}));
-        const auto injected = blog::api::parse_array(
-            ctx.store().resources().list("announcement_settings")
-        );
+        const auto injected =
+            blog::api::parse_array(ctx.store().resources().list("announcement_settings"));
         rows.insert(rows.end(), injected.begin(), injected.end());
 
-        auto setting = [&rows](std::string_view key) -> std::string {
-            for (const auto& rec : rows) {
+        auto setting = [&rows](std::string_view key) -> std::string
+        {
+            for (const auto& rec: rows) {
                 const auto kit = rec.find("key");
-                if (kit != rec.end() &&
-                    announcement_detail::text(kit->second) == key) {
+                if (kit != rec.end() && announcement_detail::text(kit->second) == key) {
                     const auto vit = rec.find("value");
                     return vit == rec.end() ? std::string{} : vit->second;
                 }
@@ -116,21 +115,26 @@ public:
         // visibility "[]" (default-settings.json:634-647).
         const auto content = announcement_detail::text(setting("announcement_content"));
         const auto visibility = setting("announcement_visibility");
-        const auto background_decoded = announcement_detail::text(setting("announcement_background"));
-        const auto background = background_decoded.empty()
-            ? std::string{"dark"}
-            : background_decoded;
+        const auto background_decoded =
+            announcement_detail::text(setting("announcement_background"));
+        const auto background =
+            background_decoded.empty() ? std::string{"dark"} : background_decoded;
 
         // Visibility: visitors -> everyone; free_members -> visitor+member;
         // paid_members -> paid member (announcements.js:20-27).
-        const bool visible = !content.empty() && (
-            (!has_member && announcement_detail::visibility_contains(
-                                visibility, announcement_detail::kVisitors)) ||
-            (is_free && announcement_detail::visibility_contains(
-                            visibility, announcement_detail::kFreeMembers)) ||
-            (is_paid && announcement_detail::visibility_contains(
-                            visibility, announcement_detail::kPaidMembers))
-        );
+        const bool visible =
+            !content.empty() && ((!has_member && announcement_detail::visibility_contains(
+                                                     visibility,
+                                                     announcement_detail::kVisitors
+                                                 )) ||
+                                 (is_free && announcement_detail::visibility_contains(
+                                                 visibility,
+                                                 announcement_detail::kFreeMembers
+                                             )) ||
+                                 (is_paid && announcement_detail::visibility_contains(
+                                                 visibility,
+                                                 announcement_detail::kPaidMembers
+                                             )));
 
         std::string body{"{}"};
         if (visible) {

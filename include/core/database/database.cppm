@@ -95,20 +95,26 @@ public:
     template<reflect::ReflectedEntity E>
     [[nodiscard]] std::optional<E> find(const DbValue& id) const
     {
-        static_assert([]<std::size_t... I>(std::index_sequence<I...>) {
+        static_assert(
+            []<std::size_t... I>(std::index_sequence<I...>)
+            {
                 return (... || reflect::field_at_t<E, I>::primary_key);
             }(std::make_index_sequence<
-              std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{}), "find() requires a reflected primary key");
+                std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{}),
+            "find() requires a reflected primary key"
+        );
         const std::string table{std::string{reflect::EntityMeta<E>::table}};
         m_runtime->require_table(table);
         QuerySpec spec;
         spec.table = table;
         spec.columns = split(reflect::SqlGenerator{}.select_columns<E>());
-        spec.predicates.push_back(Predicate{
-            .column = std::string{pk_column<E>()},
-            .comparison = Compare::EQ,
-            .value = id,
-        });
+        spec.predicates.push_back(
+            Predicate{
+                .column = std::string{pk_column<E>()},
+                .comparison = Compare::EQ,
+                .value = id,
+            }
+        );
         spec.limit_count = 1;
         const QueryResult result = execute(spec);
         if (result.rows.empty()) {
@@ -129,11 +135,13 @@ public:
         QuerySpec spec;
         spec.table = table;
         spec.columns = split(reflect::SqlGenerator{}.select_columns<E>());
-        spec.predicates.push_back(Predicate{
-            .column = std::string{reflect::column_of<E, Member>()},
-            .comparison = comparison,
-            .value = std::move(value),
-        });
+        spec.predicates.push_back(
+            Predicate{
+                .column = std::string{reflect::column_of<E, Member>()},
+                .comparison = comparison,
+                .value = std::move(value),
+            }
+        );
         spec.limit_count = 1;
         const QueryResult result = execute(spec);
         if (result.rows.empty()) {
@@ -156,33 +164,40 @@ public:
         const std::string table{std::string{reflect::EntityMeta<E>::table}};
         m_runtime->require_table(table);
         auto values = reflect::EntityMapper{}.to_values(entity);
-        if constexpr ([]<std::size_t... I>(std::index_sequence<I...>) {
+        if constexpr (
+            []<std::size_t... I>(std::index_sequence<I...>)
+            {
                 return (... || reflect::field_at_t<E, I>::primary_key);
             }(std::make_index_sequence<
-              std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{})) {
+                std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{})
+        ) {
             const std::string pk{std::string{pk_column<E>()}};
             const auto pk_it = values.find(pk);
             const bool pk_unset = pk_it == values.end() ||
-                std::holds_alternative<Null>(pk_it->second) ||
-                (std::holds_alternative<std::int64_t>(pk_it->second) &&
-                 std::get<std::int64_t>(pk_it->second) == 0);
+                                  std::holds_alternative<Null>(pk_it->second) ||
+                                  (std::holds_alternative<std::int64_t>(pk_it->second) &&
+                                   std::get<std::int64_t>(pk_it->second) == 0);
             if (pk_unset) {
                 const std::uint64_t id = m_runtime->driver().next_id();
                 values[pk] = to_db_value(id);
-                [&]<std::size_t... I>(std::index_sequence<I...>) {
-                    auto assign = [&](auto descriptor) {
+                [&]<std::size_t... I>(std::index_sequence<I...>)
+                {
+                    auto assign = [&](auto descriptor)
+                    {
                         using F = decltype(descriptor);
                         if constexpr (F::primary_key) {
                             if constexpr (std::integral<typename F::value_type>) {
                                 set_field(entity, F{}, static_cast<typename F::value_type>(id));
-                            } else if constexpr (std::same_as<typename F::value_type, std::string>) {
+                            } else if constexpr (
+                                std::same_as<typename F::value_type, std::string>
+                            ) {
                                 set_field(entity, F{}, std::to_string(id));
                             }
                         }
                     };
                     (assign(reflect::field_at_t<E, I>{}), ...);
                 }(std::make_index_sequence<
-                  std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
+                    std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
             }
         }
         m_runtime->driver().insert(table, values);
@@ -200,38 +215,32 @@ public:
         m_runtime->require_table(table);
         auto values = reflect::EntityMapper{}.to_values(entity);
         values.erase(std::string{pk_column<E>()});
-        return m_runtime->driver().update(
-            table,
-            values,
-            std::string{reflect::column_of<E, Member>()},
-            std::move(value)
-        );
+        return m_runtime->driver()
+            .update(table, values, std::string{reflect::column_of<E, Member>()}, std::move(value));
     }
 
     template<reflect::ReflectedEntity E>
-    std::uint64_t update_where_column(
-        const E& entity,
-        std::string_view column,
-        Compare comparison,
-        DbValue value
-    )
+    std::uint64_t
+    update_where_column(const E& entity, std::string_view column, Compare comparison, DbValue value)
     {
         const std::string table{std::string{reflect::EntityMeta<E>::table}};
         m_runtime->require_table(table);
         auto values = reflect::EntityMapper{}.to_values(entity);
         values.erase(std::string{pk_column<E>()});
-        return m_runtime->driver().update(
-            table, values, std::string{column}, std::move(value)
-        );
+        return m_runtime->driver().update(table, values, std::string{column}, std::move(value));
     }
 
     template<reflect::ReflectedEntity E>
     std::uint64_t remove(const DbValue& id)
     {
-        static_assert([]<std::size_t... I>(std::index_sequence<I...>) {
+        static_assert(
+            []<std::size_t... I>(std::index_sequence<I...>)
+            {
                 return (... || reflect::field_at_t<E, I>::primary_key);
             }(std::make_index_sequence<
-              std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{}), "remove() requires a reflected primary key");
+                std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{}),
+            "remove() requires a reflected primary key"
+        );
         const std::string table{std::string{reflect::EntityMeta<E>::table}};
         m_runtime->require_table(table);
         return m_runtime->driver().remove(table, pk_column<E>(), id);
@@ -254,22 +263,23 @@ private:
     template<reflect::ReflectedEntity E>
     [[nodiscard]] constexpr bool has_pk() const
     {
-        return []<std::size_t... I>(std::index_sequence<I...>) {
+        return []<std::size_t... I>(std::index_sequence<I...>)
+        {
             return (... || reflect::field_at_t<E, I>::primary_key);
-        }(std::make_index_sequence<
-          std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
+        }(std::make_index_sequence<std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
     }
 
     template<reflect::ReflectedEntity E>
     [[nodiscard]] constexpr std::string_view pk_column() const
     {
         std::string_view result;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
             ((reflect::field_at_t<E, I>::primary_key
                   ? (result = std::string_view{reflect::field_at_t<E, I>::name}, 0)
-                  : 0), ...);
-        }(std::make_index_sequence<
-          std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
+                  : 0),
+             ...);
+        }(std::make_index_sequence<std::tuple_size_v<typename reflect::EntityMeta<E>::fields>>{});
         return result;
     }
 
@@ -287,9 +297,13 @@ struct DbFacadeItem
     std::int64_t id{};
     std::string name{};
 };
-CORE_DB_REFLECT(DbFacadeItem, "facade_items",
+
+CORE_DB_REFLECT(
+    DbFacadeItem,
+    "facade_items",
     CORE_DB_FIELD("id", &DbFacadeItem::id, ColumnType::BIGINT, FieldFlags::PRIMARY_KEY),
-    CORE_DB_FIELD("name", &DbFacadeItem::name, ColumnType::TEXT));
+    CORE_DB_FIELD("name", &DbFacadeItem::name, ColumnType::TEXT)
+);
 
 suite<"core_db_facade"> core_db_facade_suite = []
 {

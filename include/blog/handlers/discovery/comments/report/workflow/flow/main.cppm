@@ -4,9 +4,17 @@ import :domain_all;
 import std;
 import core_workflow;
 import :comments_report_step;
+
 export namespace blog::handlers::comments::report::workflow {
-class MainFlow { public:
- [[nodiscard]] core::workflow::WorkflowDefinition build() const {
-  return core::workflow::WorkflowBuilder{}.name("comments_report").step<ExecuteStep>().build();
- }};
-}
+class MainFlow
+{
+public:
+    [[nodiscard]] core::workflow::WorkflowDefinition build() const
+    {
+        return core::workflow::WorkflowBuilder{}
+            .name("comments_report")
+            .step<ExecuteStep>()
+            .build();
+    }
+};
+} // namespace blog::handlers::comments::report::workflow

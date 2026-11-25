@@ -29,25 +29,32 @@ public:
                     .use(blog::handlers::middleware::require_auth)
                     .add_route(
                         Route{"/upload"}
-                            .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.media_media_thumbnail_upload_put().handle(req, res, std::move(send));
-    })
+                            .put(
+                                [&handler](
+                                    interfaces::io::IRequest& req,
+                                    interfaces::io::IResponse& res,
+                                    std::function<void()> send
+                                )
+                                {
+                                    handler.media_media_thumbnail_upload_put()
+                                        .handle(req, res, std::move(send));
+                                }
+                            )
                             .summary("Ghost upload PUT")
                     )
             )
             .add_route(
                 Route{"/upload"}
-                    .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.media_media_upload_post().handle(req, res, std::move(send));
-    })
+                    .post(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.media_media_upload_post().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost upload POST")
             );
     }

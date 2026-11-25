@@ -22,21 +22,22 @@ public:
         // permissions -> query) is enforced inside PutDetailHandler through the
         // registered core_auth:ghost helper, so no router-level middleware is
         // installed here.
-        Router{router, "/schedules"}
-            .add_router(
-                Router{router, "/:resource"}
-                    .add_route(
-                        Route{"/:id"}
-                            .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.schedules_put_detail().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost :resource/:id PUT")
+        Router{router, "/schedules"}.add_router(
+            Router{router, "/:resource"}.add_route(
+                Route{"/:id"}
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.schedules_put_detail().handle(req, res, std::move(send));
+                        }
                     )
-            );
+                    .summary("Ghost :resource/:id PUT")
+            )
+        );
     }
 };
 

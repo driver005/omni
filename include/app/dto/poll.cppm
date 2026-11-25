@@ -24,18 +24,42 @@ enum class PollStatus
 class PollId
 {
 public:
-    void set_poll_id(std::string value) { poll_id = std::move(value); }
-    [[nodiscard]] const std::string& get_poll_id() const noexcept { return poll_id; }
+    void set_poll_id(std::string value)
+    {
+        poll_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_poll_id() const noexcept
+    {
+        return poll_id;
+    }
+
     std::string poll_id{};
 };
 
 class PollResponse
 {
 public:
-    void set_poll_id(std::string value) { poll_id = std::move(value); }
-    [[nodiscard]] const std::string& get_poll_id() const noexcept { return poll_id; }
-    void set_status(PollStatus value) { status = std::move(value); }
-    [[nodiscard]] const PollStatus& get_status() const noexcept { return status; }
+    void set_poll_id(std::string value)
+    {
+        poll_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_poll_id() const noexcept
+    {
+        return poll_id;
+    }
+
+    void set_status(PollStatus value)
+    {
+        status = std::move(value);
+    }
+
+    [[nodiscard]] const PollStatus& get_status() const noexcept
+    {
+        return status;
+    }
+
     std::string poll_id{};
     PollStatus status{};
 };
@@ -54,10 +78,25 @@ public:
 class PollResponseWire
 {
 public:
-    void set_poll_id(std::string value) { poll_id = std::move(value); }
-    [[nodiscard]] const std::string& get_poll_id() const noexcept { return poll_id; }
-    void set_status(std::string value) { status = std::move(value); }
-    [[nodiscard]] const std::string& get_status() const noexcept { return status; }
+    void set_poll_id(std::string value)
+    {
+        poll_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_poll_id() const noexcept
+    {
+        return poll_id;
+    }
+
+    void set_status(std::string value)
+    {
+        status = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_status() const noexcept
+    {
+        return status;
+    }
 
     std::string poll_id{};
     std::string status{};
@@ -70,12 +109,12 @@ public:
     [[nodiscard]] const char* operator()(PollStatus status) const noexcept
     {
         switch (status) {
-        case PollStatus::Pending:
-            return "pending";
-        case PollStatus::Completed:
-            return "completed";
-        case PollStatus::NotFound:
-            return "not_found";
+            case PollStatus::Pending:
+                return "pending";
+            case PollStatus::Completed:
+                return "completed";
+            case PollStatus::NotFound:
+                return "not_found";
         }
         return "pending";
     }
@@ -88,11 +127,17 @@ struct serde::Serializable<app::dto::poll::PollId>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"poll_id", &app::dto::poll::PollId::get_poll_id, &app::dto::poll::PollId::set_poll_id, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "poll_id",
+            &app::dto::poll::PollId::get_poll_id,
+            &app::dto::poll::PollId::set_poll_id,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "poll_id"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "poll_id";
+    }
 };
 
 template<>
@@ -101,11 +146,23 @@ struct serde::Serializable<app::dto::poll::PollResponse>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"poll_id", &app::dto::poll::PollResponse::get_poll_id, &app::dto::poll::PollResponse::set_poll_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &app::dto::poll::PollResponse::get_status, &app::dto::poll::PollResponse::set_status, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "poll_id",
+                &app::dto::poll::PollResponse::get_poll_id,
+                &app::dto::poll::PollResponse::set_poll_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "status",
+                &app::dto::poll::PollResponse::get_status,
+                &app::dto::poll::PollResponse::set_status,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "poll_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "poll_response";
+    }
 };
 
 template<>
@@ -114,28 +171,51 @@ struct serde::Serializable<app::dto::poll::PollResponseWire>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"poll_id", &app::dto::poll::PollResponseWire::get_poll_id, &app::dto::poll::PollResponseWire::set_poll_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"status", &app::dto::poll::PollResponseWire::get_status, &app::dto::poll::PollResponseWire::set_status, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "poll_id",
+                &app::dto::poll::PollResponseWire::get_poll_id,
+                &app::dto::poll::PollResponseWire::set_poll_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "status",
+                &app::dto::poll::PollResponseWire::get_status,
+                &app::dto::poll::PollResponseWire::set_status,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "poll_response_wire"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "poll_response_wire";
+    }
 };
 
 #ifdef CONGELADO_TEST
 namespace app::dto::poll::tests {
 using namespace boost::ut;
-suite<"app_dto_poll"> app_dto_poll_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::poll::PollResponse>::fields())> > 0);
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::poll::PollId>::fields())> > 0);
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::poll::PollResponseWire>::fields())> > 0);
+suite<"app_dto_poll"> app_dto_poll_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<app::dto::poll::PollResponse>::fields())> > 0
+        );
+        expect(
+            std::tuple_size_v<decltype(serde::Serializable<app::dto::poll::PollId>::fields())> > 0
+        );
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<app::dto::poll::PollResponseWire>::fields())> > 0
+        );
     };
-    "snake_case status names match upstream"_test = [] {
+    "snake_case status names match upstream"_test = []
+    {
         const PollStatusWireName name;
         expect(std::string_view{name(PollStatus::Pending)} == "pending");
         expect(std::string_view{name(PollStatus::Completed)} == "completed");
         expect(std::string_view{name(PollStatus::NotFound)} == "not_found");
     };
 };
-}
+} // namespace app::dto::poll::tests
 #endif

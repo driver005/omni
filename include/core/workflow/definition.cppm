@@ -61,7 +61,10 @@ suite<"core_workflow_definition"> core_workflow_definition_suite = []
         expect(!definition.valid());
         StepDescriptor step;
         step.name = "delete-promotions";
-        step.invoke = [](WorkflowContext&) { return StepOutcome{}; };
+        step.invoke = [](WorkflowContext&)
+        {
+            return StepOutcome{};
+        };
         definition.steps.push_back(step);
         expect(definition.valid());
         expect(definition.has_step("delete-promotions"));

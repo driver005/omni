@@ -127,11 +127,8 @@ public:
             return value;
         };
 
-        const auto capture = [&claims, &read](
-                                 std::string_view name,
-                                 std::string_view alternate,
-                                 std::string& target
-                             )
+        const auto capture =
+            [&claims, &read](std::string_view name, std::string_view alternate, std::string& target)
         {
             const std::string_view value = read(name, alternate);
             if (value.empty()) {
@@ -141,11 +138,9 @@ public:
             claims.insert_or_assign(std::string{name}, std::string{value});
         };
 
-        const auto capture_named = [&claims, &read](
-                                       std::string_view canonical,
-                                       std::string_view name,
-                                       std::string_view alternate
-                                   )
+        const auto capture_named =
+            [&claims,
+             &read](std::string_view canonical, std::string_view name, std::string_view alternate)
         {
             const std::string_view value = read(name, alternate);
             if (!value.empty()) {
@@ -156,7 +151,11 @@ public:
         capture("x-merchant-id", "X-Merchant-Id", merchant_id);
         capture("x-organization-id", "X-Organization-Id", org_id);
         capture("x-profile-id", "X-Profile-Id", profile_id);
-        capture_named(kClaimConnectedMerchantId, "x-connected-merchant-id", "X-Connected-Merchant-Id");
+        capture_named(
+            kClaimConnectedMerchantId,
+            "x-connected-merchant-id",
+            "X-Connected-Merchant-Id"
+        );
         capture_named(kClaimPublishableKey, "x-publishable-key", "X-Publishable-Key");
         capture_named(kClaimClientSecret, "x-client-secret", "X-Client-Secret");
         capture_named(kClaimApiKey, "x-api-key", "X-API-KEY");
@@ -169,16 +168,16 @@ public:
         const std::string_view authorization = request.find_header("authorization");
         constexpr std::string_view bearer_prefix{"Bearer "};
         const bool is_bearer = authorization.size() > bearer_prefix.size() &&
-            std::equal(
-                bearer_prefix.begin(),
-                bearer_prefix.end(),
-                authorization.begin(),
-                [](char lhs, char rhs)
-                {
-                    return std::tolower(static_cast<unsigned char>(lhs)) ==
-                           std::tolower(static_cast<unsigned char>(rhs));
-                }
-            );
+                               std::equal(
+                                   bearer_prefix.begin(),
+                                   bearer_prefix.end(),
+                                   authorization.begin(),
+                                   [](char lhs, char rhs)
+                                   {
+                                       return std::tolower(static_cast<unsigned char>(lhs)) ==
+                                              std::tolower(static_cast<unsigned char>(rhs));
+                                   }
+                               );
         if (!authorization.empty() && !is_bearer) {
             const auto trim = [](std::string_view text)
             {
@@ -200,9 +199,15 @@ public:
                     const std::string_view value = trim(pair.substr(equals + 1));
                     if (!value.empty()) {
                         if (key == "publishable-key") {
-                            claims.insert_or_assign(std::string{kClaimPublishableKey}, std::string{value});
+                            claims.insert_or_assign(
+                                std::string{kClaimPublishableKey},
+                                std::string{value}
+                            );
                         } else if (key == "client-secret") {
-                            claims.insert_or_assign(std::string{kClaimClientSecret}, std::string{value});
+                            claims.insert_or_assign(
+                                std::string{kClaimClientSecret},
+                                std::string{value}
+                            );
                         } else if (key == "api-key") {
                             claims.insert_or_assign(std::string{kClaimApiKey}, std::string{value});
                         } else if (key == "sdk-key" || key == "token") {
@@ -236,7 +241,8 @@ public:
      * @note Upstream overwrites payload.client_secret with the authenticated value
      * (routes/pm_auth.rs:62-64, :119-121); callers pass the already-read request body here.
      */
-    [[nodiscard]] AuthContext operator()(interfaces::io::IRequest& request, std::string_view body) const
+    [[nodiscard]] AuthContext
+    operator()(interfaces::io::IRequest& request, std::string_view body) const
     {
         AuthContext context = this->operator()(request);
         const auto json_string = [body](std::string_view key) -> std::optional<std::string>
@@ -285,10 +291,8 @@ public:
         return context;
     }
 
-    [[nodiscard]] AuthContext from_request_with_body(
-        interfaces::io::IRequest& request,
-        std::string_view body
-    ) const
+    [[nodiscard]] AuthContext
+    from_request_with_body(interfaces::io::IRequest& request, std::string_view body) const
     {
         return this->operator()(request, body);
     }
@@ -326,17 +330,15 @@ suite<"app_auth_context"> context_suite = []
             std::map<std::string, std::string> m_headers{};
         };
 
-        FakeRequest request{
-            {
-                {"authorization", "Bearer abc.def"},
-                {"x-merchant-id", "merchant_1"},
-                {"x-organization-id", "org_1"},
-                {"x-profile-id", "profile_1"},
-                {"x-connected-merchant-id", "connected_1"},
-                {"x-publishable-key", "pk_1"},
-                {"x-client-secret", "cs_1"},
-            }
-        };
+        FakeRequest request{{
+            {"authorization", "Bearer abc.def"},
+            {"x-merchant-id", "merchant_1"},
+            {"x-organization-id", "org_1"},
+            {"x-profile-id", "profile_1"},
+            {"x-connected-merchant-id", "connected_1"},
+            {"x-publishable-key", "pk_1"},
+            {"x-client-secret", "cs_1"},
+        }};
 
         const AuthContext context = AuthContextBuilder{}(request);
         expect(context.token().value() == "abc.def");
@@ -419,21 +421,17 @@ suite<"app_auth_context"> context_suite = []
             std::map<std::string, std::string> m_headers{};
         };
 
-        AuthHeadersRequest api_key_request{
-            {
-                {"x-api-key", "key_1"},
-                {"x-internal-api-key", "internal_1"},
-            }
-        };
+        AuthHeadersRequest api_key_request{{
+            {"x-api-key", "key_1"},
+            {"x-internal-api-key", "internal_1"},
+        }};
         const AuthContext api_key = AuthContextBuilder{}(api_key_request);
         expect(api_key.claim(kClaimApiKey) == "key_1");
         expect(api_key.claim(kClaimInternalApiKey) == "internal_1");
 
-        AuthHeadersRequest sdk_request{
-            {
-                {"authorization", "publishable-key=pk_2, client-secret=cs_2, sdk-key=sdk_2"},
-            }
-        };
+        AuthHeadersRequest sdk_request{{
+            {"authorization", "publishable-key=pk_2, client-secret=cs_2, sdk-key=sdk_2"},
+        }};
         const AuthContext sdk = AuthContextBuilder{}(sdk_request);
         expect(sdk.token().is_empty());
         expect(sdk.claim(kClaimPublishableKey) == "pk_2");

@@ -12,8 +12,11 @@ class MainFlow
 public:
     [[nodiscard]] core::workflow::WorkflowDefinition build() const
     {
-        return core::workflow::WorkflowBuilder{}.name("posts_bulk_destroy").step<ExecuteStep>().build();
+        return core::workflow::WorkflowBuilder{}
+            .name("posts_bulk_destroy")
+            .step<ExecuteStep>()
+            .build();
     }
 };
 
-} // namespace
+} // namespace blog::handlers::posts::bulk_destroy::workflow

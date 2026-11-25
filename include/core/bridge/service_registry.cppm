@@ -97,8 +97,9 @@ suite<"core_bridge_service_registry"> core_bridge_service_registry_suite = []
     {
         ServiceRegistry registry;
         const auto int_key = ServiceKey{}.make<int>("n");
-        expect(registry.register_service(int_key, std::string{"bad"}) ==
-               BridgeStatus::TYPE_MISMATCH);
+        expect(
+            registry.register_service(int_key, std::string{"bad"}) == BridgeStatus::TYPE_MISMATCH
+        );
         expect(registry.register_service(int_key, 42) == BridgeStatus::OK);
         expect(registry.remove(int_key));
         expect(!registry.contains(int_key));

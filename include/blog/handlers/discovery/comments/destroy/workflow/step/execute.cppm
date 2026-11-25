@@ -9,17 +9,27 @@ import core_serde;
 import interfaces;
 
 export namespace blog::handlers::comments::destroy::workflow {
-class ExecuteStep {
+class ExecuteStep
+{
 public:
- using Input=interfaces::io::IRequest&;
- using Output=std::map<std::string,std::string>;
- static constexpr std::string_view name{"comments_destroy_execute"};
- [[nodiscard]] core::workflow::StepResponse<Output> invoke(const Input&, core::workflow::WorkflowContext&) const {
-  return core::workflow::StepResponse<Output>{{{"status","405"},
-   {"body",blog::api::ApiError{}.json("Comment deletion is not allowed","Method Not Allowed")}}};
- }
- void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
- static blog::BlogContext* s_ctx;
+    using Input = interfaces::io::IRequest&;
+    using Output = std::map<std::string, std::string>;
+    static constexpr std::string_view name{"comments_destroy_execute"};
+
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input&, core::workflow::WorkflowContext&) const
+    {
+        return core::workflow::StepResponse<Output>{
+            {{"status", "405"},
+             {"body",
+              blog::api::ApiError{}.json("Comment deletion is not allowed", "Method Not Allowed")}}
+        };
+    }
+
+    void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
+    static blog::BlogContext* s_ctx;
 };
+
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::comments::destroy::workflow

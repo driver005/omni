@@ -14,14 +14,45 @@ class ApiLock
 public:
     ApiLock() = default;
 
-    void set_key(std::string value) { m_key = std::move(value); }
-    [[nodiscard]] const std::string& get_key() const noexcept { return m_key; }
-    void set_owner(std::string value) { m_owner = std::move(value); }
-    [[nodiscard]] const std::string& get_owner() const noexcept { return m_owner; }
-    void set_acquired_at(std::int64_t value) { m_acquired_at = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_acquired_at() const noexcept { return m_acquired_at; }
-    void set_expires_at(std::int64_t value) { m_expires_at = std::move(value); }
-    [[nodiscard]] const std::int64_t& get_expires_at() const noexcept { return m_expires_at; }
+    void set_key(std::string value)
+    {
+        m_key = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_key() const noexcept
+    {
+        return m_key;
+    }
+
+    void set_owner(std::string value)
+    {
+        m_owner = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_owner() const noexcept
+    {
+        return m_owner;
+    }
+
+    void set_acquired_at(std::int64_t value)
+    {
+        m_acquired_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_acquired_at() const noexcept
+    {
+        return m_acquired_at;
+    }
+
+    void set_expires_at(std::int64_t value)
+    {
+        m_expires_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::int64_t& get_expires_at() const noexcept
+    {
+        return m_expires_at;
+    }
 
     std::string m_key{};
     std::string m_owner{};

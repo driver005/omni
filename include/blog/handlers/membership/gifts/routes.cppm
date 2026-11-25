@@ -26,24 +26,32 @@ public:
         Router{router, "/gifts"}
             .add_route(
                 Route{"/flush_deliveries"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.gifts_gifts_flush_deliveries_put().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.gifts_gifts_flush_deliveries_put()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost flush_deliveries PUT")
             )
             .add_route(
                 Route{"/flush_reminders"}
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.gifts_gifts_flush_reminders_put().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.gifts_gifts_flush_reminders_put()
+                                .handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost flush_reminders PUT")
             );
     }

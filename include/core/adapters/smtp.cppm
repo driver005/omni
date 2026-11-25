@@ -18,10 +18,7 @@ export namespace core::adapters {
 class SmtpAdapter
 {
 public:
-    explicit SmtpAdapter(
-        Config config = {},
-        std::shared_ptr<HttpTransport> transport = nullptr
-    ) :
+    explicit SmtpAdapter(Config config = {}, std::shared_ptr<HttpTransport> transport = nullptr) :
         m_config{std::move(config)},
         m_transport{transport ? std::move(transport) : std::make_shared<SocketHttpTransport>()}
     {
@@ -55,17 +52,17 @@ private:
     [[nodiscard]] Result issue(std::string_view message) const
     {
         if (m_config.base_url.empty()) {
-            return {
-                503,
-                ghost_error("AdapterNotConfigured", "SMTP_URL is not set", "config")
-            };
+            return {503, ghost_error("AdapterNotConfigured", "SMTP_URL is not set", "config")};
         }
         HttpRequest request;
         request.method = "POST";
         request.url = std::format("{}/send", trim_slash(m_config.base_url));
         request.headers.emplace_back("Content-Type", "application/json");
         if (!m_config.api_key.empty()) {
-            request.headers.emplace_back("Authorization", std::format("Bearer {}", m_config.api_key));
+            request.headers.emplace_back(
+                "Authorization",
+                std::format("Bearer {}", m_config.api_key)
+            );
         }
         request.body = std::format(
             R"({{"from":{},"message":{}}})",
@@ -91,9 +88,8 @@ private:
 
     [[nodiscard]] static std::string trim_slash(std::string_view url)
     {
-        return url.empty() || url.back() != '/'
-            ? std::string{url}
-            : std::string{url.substr(0, url.size() - 1)};
+        return url.empty() || url.back() != '/' ? std::string{url}
+                                                : std::string{url.substr(0, url.size() - 1)};
     }
 
     Config m_config;

@@ -25,15 +25,17 @@ public:
 
     /** @brief Records a verification/consumption event for audit. */
     virtual void record_consumption(
-        std::string_view code_hash, std::string_view kind, std::int64_t at_seconds) = 0;
+        std::string_view code_hash,
+        std::string_view kind,
+        std::int64_t at_seconds
+    ) = 0;
 
     /** @brief Persists the hashed recovery codes issued to an owner. */
-    virtual void save_recovery_codes(
-        std::string_view owner, const std::vector<std::string>& code_hashes) = 0;
+    virtual void
+    save_recovery_codes(std::string_view owner, const std::vector<std::string>& code_hashes) = 0;
 
     /** @brief Consumes one recovery code; false means unknown or already used. */
-    virtual bool consume_recovery_code(
-        std::string_view owner, std::string_view code_hash) = 0;
+    virtual bool consume_recovery_code(std::string_view owner, std::string_view code_hash) = 0;
 };
 
 /** @brief Domain-separated digests for stored one-time codes.
@@ -43,18 +45,14 @@ public:
 class OneTimeCodeHasher
 {
 public:
-    [[nodiscard]] std::string totp(
-        std::string_view secret, std::string_view code) const
+    [[nodiscard]] std::string totp(std::string_view secret, std::string_view code) const
     {
-        return KeyedHasher{std::string{secret}}
-            .hash_with_domain(HashDomain::Otp, code);
+        return KeyedHasher{std::string{secret}}.hash_with_domain(HashDomain::Otp, code);
     }
 
-    [[nodiscard]] std::string recovery(
-        std::string_view owner, std::string_view code) const
+    [[nodiscard]] std::string recovery(std::string_view owner, std::string_view code) const
     {
-        return KeyedHasher{std::string{owner}}
-            .hash_with_domain(HashDomain::RecoveryCode, code);
+        return KeyedHasher{std::string{owner}}.hash_with_domain(HashDomain::RecoveryCode, code);
     }
 };
 
@@ -81,18 +79,18 @@ public:
         const std::string digest = hasher.hash(std::to_string(step));
         const std::string tail = digest.substr(digest.size() - 8);
         const std::uint64_t value = parse_hex(tail);
-        return format_code(value % 1000000ULL);
+        return format_code(value % 1'000'000ULL);
     }
 
     /** @brief Current 30-second time step for a unix timestamp. */
-    [[nodiscard]] std::uint64_t current_step(
-        std::int64_t unix_seconds, std::uint64_t period_seconds = 30) const
+    [[nodiscard]] std::uint64_t
+    current_step(std::int64_t unix_seconds, std::uint64_t period_seconds = 30) const
     {
         if (period_seconds == 0) {
             return 0;
         }
-        const std::uint64_t stamp = unix_seconds < 0 ? 0ULL
-                                                     : static_cast<std::uint64_t>(unix_seconds);
+        const std::uint64_t stamp =
+            unix_seconds < 0 ? 0ULL : static_cast<std::uint64_t>(unix_seconds);
         return stamp / period_seconds;
     }
 
@@ -102,7 +100,8 @@ public:
         std::uint64_t step,
         std::string_view code,
         std::int64_t now_seconds = 0,
-        int window = 1)
+        int window = 1
+    )
     {
         if (code.size() != 6) {
             return false;
@@ -110,8 +109,8 @@ public:
         const int radius = window < 0 ? 0 : window;
         for (int delta{-radius}; delta <= radius; ++delta) {
             const std::uint64_t candidate_step = delta < 0
-                ? step - static_cast<std::uint64_t>(-delta)
-                : step + static_cast<std::uint64_t>(delta);
+                                                     ? step - static_cast<std::uint64_t>(-delta)
+                                                     : step + static_cast<std::uint64_t>(delta);
             if (generate(secret, candidate_step) != code) {
                 continue;
             }
@@ -132,7 +131,7 @@ private:
     [[nodiscard]] std::uint64_t parse_hex(std::string_view text) const
     {
         std::uint64_t value{0};
-        for (const char c : text) {
+        for (const char c: text) {
             value = (value << 4) | static_cast<std::uint64_t>(nibble(c));
         }
         return value;
@@ -175,8 +174,7 @@ public:
     }
 
     /** @brief Repository-backed generator for a named owner. */
-    RecoveryCodeGenerator(
-        std::uint64_t seed, std::string owner, IOneTimeStateStore& store) :
+    RecoveryCodeGenerator(std::uint64_t seed, std::string owner, IOneTimeStateStore& store) :
         m_seed{seed},
         m_owner{std::move(owner)},
         m_store{&store}
@@ -202,7 +200,7 @@ public:
         }
         std::vector<std::string> hashes{};
         hashes.reserve(codes.size());
-        for (const std::string& code : codes) {
+        for (const std::string& code: codes) {
             hashes.push_back(m_hasher.recovery(m_owner, code));
         }
         m_store->save_recovery_codes(m_owner, hashes);
@@ -210,8 +208,7 @@ public:
     }
 
     /** @brief Consumes a recovery code once; requires a state store. */
-    [[nodiscard]] bool verify(
-        std::string_view code, std::int64_t now_seconds = 0) const
+    [[nodiscard]] bool verify(std::string_view code, std::int64_t now_seconds = 0) const
     {
         if (m_store == nullptr || code.size() != 9 || code[4] != '-') {
             return false;
@@ -229,7 +226,8 @@ private:
     {
         constexpr std::string_view alphabet{"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
         const std::uint64_t mixed = static_cast<std::uint64_t>(std::hash<std::uint64_t>{}(
-            m_seed ^ (static_cast<std::uint64_t>(index) * 0x9E3779B97F4A7C15ULL)));
+            m_seed ^ (static_cast<std::uint64_t>(index) * 0x9E'37'79'B9'7F'4A'7C'15ULL)
+        ));
 
         std::uint64_t value{mixed};
         std::string out{};
@@ -259,46 +257,51 @@ namespace app::crypto::tests {
 using namespace boost::ut;
 
 namespace {
-class TestStateStore final : public IOneTimeStateStore
-{
-public:
-    bool consume_totp(std::string_view code_hash, std::int64_t) override
+    class TestStateStore final : public IOneTimeStateStore
     {
-        if (m_consumed.contains(std::string{code_hash})) {
-            return false;
+    public:
+        bool consume_totp(std::string_view code_hash, std::int64_t) override
+        {
+            if (m_consumed.contains(std::string{code_hash})) {
+                return false;
+            }
+            m_consumed.insert(std::string{code_hash});
+            return true;
         }
-        m_consumed.insert(std::string{code_hash});
-        return true;
-    }
 
-    void record_consumption(std::string_view, std::string_view, std::int64_t) override
-    {
-        ++m_events;
-    }
-
-    void save_recovery_codes(
-        std::string_view, const std::vector<std::string>& code_hashes) override
-    {
-        m_codes.insert(m_codes.end(), code_hashes.begin(), code_hashes.end());
-    }
-
-    bool consume_recovery_code(std::string_view, std::string_view code_hash) override
-    {
-        const auto it = std::find(m_codes.begin(), m_codes.end(), std::string{code_hash});
-        if (it == m_codes.end()) {
-            return false;
+        void record_consumption(std::string_view, std::string_view, std::int64_t) override
+        {
+            ++m_events;
         }
-        m_codes.erase(it);
-        return true;
-    }
 
-    [[nodiscard]] std::size_t events() const { return m_events; }
+        void save_recovery_codes(
+            std::string_view,
+            const std::vector<std::string>& code_hashes
+        ) override
+        {
+            m_codes.insert(m_codes.end(), code_hashes.begin(), code_hashes.end());
+        }
 
-private:
-    std::set<std::string> m_consumed{};
-    std::vector<std::string> m_codes{};
-    std::size_t m_events{0};
-};
+        bool consume_recovery_code(std::string_view, std::string_view code_hash) override
+        {
+            const auto it = std::find(m_codes.begin(), m_codes.end(), std::string{code_hash});
+            if (it == m_codes.end()) {
+                return false;
+            }
+            m_codes.erase(it);
+            return true;
+        }
+
+        [[nodiscard]] std::size_t events() const
+        {
+            return m_events;
+        }
+
+    private:
+        std::set<std::string> m_consumed{};
+        std::vector<std::string> m_codes{};
+        std::size_t m_events{0};
+    };
 } // namespace
 
 suite<"app_crypto_otp"> otp_suite = []
@@ -306,13 +309,13 @@ suite<"app_crypto_otp"> otp_suite = []
     "totp code is six decimal digits and deterministic"_test = []
     {
         TotpGenerator gen;
-        const std::string code = gen.generate("totp-secret", 123456789ULL);
+        const std::string code = gen.generate("totp-secret", 123'456'789ULL);
         expect(code.size() == 6);
-        for (const char c : code) {
+        for (const char c: code) {
             expect(c >= '0' && c <= '9');
         }
-        expect(code == gen.generate("totp-secret", 123456789ULL));
-        expect(code != gen.generate("other-secret", 123456789ULL));
+        expect(code == gen.generate("totp-secret", 123'456'789ULL));
+        expect(code != gen.generate("other-secret", 123'456'789ULL));
     };
 
     "recovery codes have stable count, shape and sequence"_test = []
@@ -320,7 +323,7 @@ suite<"app_crypto_otp"> otp_suite = []
         const RecoveryCodeGenerator gen{42};
         const std::vector<std::string> codes = gen.generate(3);
         expect(codes.size() == 3);
-        for (const std::string& code : codes) {
+        for (const std::string& code: codes) {
             expect(code.size() == 9);
             expect(code[4] == '-');
             expect(code[0] != '-');
@@ -334,12 +337,12 @@ suite<"app_crypto_otp"> otp_suite = []
     {
         TestStateStore store;
         TotpGenerator gen{store};
-        const std::uint64_t step = 123456789ULL;
+        const std::uint64_t step = 123'456'789ULL;
         const std::string code = gen.generate("totp-secret", step);
-        expect(gen.verify("totp-secret", step, code, 1234567890));
-        expect(!gen.verify("totp-secret", step, code, 1234567890));
+        expect(gen.verify("totp-secret", step, code, 1'234'567'890));
+        expect(!gen.verify("totp-secret", step, code, 1'234'567'890));
         expect(store.events() == 1);
-        expect(!gen.verify("totp-secret", step, "000000", 1234567890));
+        expect(!gen.verify("totp-secret", step, "000000", 1'234'567'890));
     };
 
     "recovery codes are stored hashed and consumed once"_test = []

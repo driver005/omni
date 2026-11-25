@@ -26,11 +26,13 @@ enum class ApiContext
 // Internal helpers — not part of the exported surface.
 namespace core::auth::ghost::detail {
 
-[[nodiscard]] inline bool in_set(std::string_view value,
-                                 std::initializer_list<std::string_view> set) noexcept
+[[nodiscard]] inline bool
+in_set(std::string_view value, std::initializer_list<std::string_view> set) noexcept
 {
-    for (const std::string_view entry : set) {
-        if (value == entry) return true;
+    for (const std::string_view entry: set) {
+        if (value == entry) {
+            return true;
+        }
     }
     return false;
 }
@@ -42,27 +44,49 @@ namespace core::auth::ghost::detail {
 
 [[nodiscard]] inline bool is_admin_resource(std::string_view resource) noexcept
 {
-    return in_set(resource, {
-        "users", "roles", "webhooks", "integrations", "db", "invites", "schedules",
-        "exports", "redirects", "authentication", "slack", "tinybird", "featurebase",
-        "upgrades", "actions"
-    });
+    return in_set(
+        resource,
+        {"users",
+         "roles",
+         "webhooks",
+         "integrations",
+         "db",
+         "invites",
+         "schedules",
+         "exports",
+         "redirects",
+         "authentication",
+         "slack",
+         "tinybird",
+         "featurebase",
+         "upgrades",
+         "actions"}
+    );
 }
 
 [[nodiscard]] inline bool is_settings_resource(std::string_view resource) noexcept
 {
-    return in_set(resource, {
-        "settings", "config", "site", "themes", "notifications", "images", "media",
-        "files"
-    });
+    return in_set(
+        resource,
+        {"settings", "config", "site", "themes", "notifications", "images", "media", "files"}
+    );
 }
 
 [[nodiscard]] inline bool is_member_resource(std::string_view resource) noexcept
 {
-    return in_set(resource, {
-        "members", "tiers", "offers", "subscriptions", "newsletters", "automations",
-        "emails", "automated_emails", "gift_links", "gifts"
-    });
+    return in_set(
+        resource,
+        {"members",
+         "tiers",
+         "offers",
+         "subscriptions",
+         "newsletters",
+         "automations",
+         "emails",
+         "automated_emails",
+         "gift_links",
+         "gifts"}
+    );
 }
 
 [[nodiscard]] inline bool is_billing_resource(std::string_view resource) noexcept
@@ -72,10 +96,19 @@ namespace core::auth::ghost::detail {
 
 [[nodiscard]] inline bool is_public_content(std::string_view resource) noexcept
 {
-    return in_set(resource, {
-        "posts", "pages", "tags", "authors", "comments", "snippets", "labels",
-        "slugs", "recommendations", "search_index"
-    });
+    return in_set(
+        resource,
+        {"posts",
+         "pages",
+         "tags",
+         "authors",
+         "comments",
+         "snippets",
+         "labels",
+         "slugs",
+         "recommendations",
+         "search_index"}
+    );
 }
 
 /** @brief Normalizes an HTTP verb or Ghost action name to a Ghost action word. */
@@ -107,66 +140,109 @@ namespace core::auth::ghost::detail {
 [[nodiscard]] inline Permission coarse_permission(std::string_view permission) noexcept
 {
     const std::size_t colon = permission.find(':');
-    const std::string_view resource = colon == std::string_view::npos ? permission
-                                                                      : permission.substr(0, colon);
-    const std::string_view action = colon == std::string_view::npos ? std::string_view{}
-                                                                    : permission.substr(colon + 1);
+    const std::string_view resource =
+        colon == std::string_view::npos ? permission : permission.substr(0, colon);
+    const std::string_view action =
+        colon == std::string_view::npos ? std::string_view{} : permission.substr(colon + 1);
 
-    if (is_admin_resource(resource)) return Permission::ADMIN;
-    if (is_settings_resource(resource)) return Permission::SETTINGS;
-    if (is_member_resource(resource)) return Permission::MEMBERS;
-    if (is_billing_resource(resource)) return Permission::BILLING;
+    if (is_admin_resource(resource)) {
+        return Permission::ADMIN;
+    }
+    if (is_settings_resource(resource)) {
+        return Permission::SETTINGS;
+    }
+    if (is_member_resource(resource)) {
+        return Permission::MEMBERS;
+    }
+    if (is_billing_resource(resource)) {
+        return Permission::BILLING;
+    }
 
-    if (action == "delete" || action == "destroy") return Permission::DELETE;
-    if (action.empty() || action == "browse" || action == "read") return Permission::READ;
+    if (action == "delete" || action == "destroy") {
+        return Permission::DELETE;
+    }
+    if (action.empty() || action == "browse" || action == "read") {
+        return Permission::READ;
+    }
     return Permission::WRITE;
 }
 
 /** @brief Coarse core_auth permission bit needed to service a (docName, method) pair. */
-[[nodiscard]] inline Permission needed_permission(std::string_view docName,
-                                                  std::string_view method) noexcept
+[[nodiscard]] inline Permission
+needed_permission(std::string_view docName, std::string_view method) noexcept
 {
-    if (is_admin_resource(docName)) return Permission::ADMIN;
-    if (is_settings_resource(docName)) return Permission::SETTINGS;
-    if (is_member_resource(docName)) return Permission::MEMBERS;
-    if (is_billing_resource(docName)) return Permission::BILLING;
+    if (is_admin_resource(docName)) {
+        return Permission::ADMIN;
+    }
+    if (is_settings_resource(docName)) {
+        return Permission::SETTINGS;
+    }
+    if (is_member_resource(docName)) {
+        return Permission::MEMBERS;
+    }
+    if (is_billing_resource(docName)) {
+        return Permission::BILLING;
+    }
 
     const std::string_view action = method_action(method);
-    if (action == "browse") return Permission::READ;
-    if (action == "destroy") return Permission::DELETE;
+    if (action == "browse") {
+        return Permission::READ;
+    }
+    if (action == "destroy") {
+        return Permission::DELETE;
+    }
     return Permission::WRITE;
 }
 
 /** @brief Wildcard-aware check of a Ghost scope set against (docName, action). */
-[[nodiscard]] inline bool has_scope(const std::set<std::string>& scopes,
-                                    std::string_view docName,
-                                    std::string_view action) noexcept
+[[nodiscard]] inline bool has_scope(
+    const std::set<std::string>& scopes,
+    std::string_view docName,
+    std::string_view action
+) noexcept
 {
-    if (scopes.contains("*") || scopes.contains("*:*")) return true;
+    if (scopes.contains("*") || scopes.contains("*:*")) {
+        return true;
+    }
     const std::string exact = std::string{docName} + ":" + std::string{action};
-    if (scopes.contains(exact)) return true;
+    if (scopes.contains(exact)) {
+        return true;
+    }
     const std::string wildcard = std::string{docName} + ":*";
     return scopes.contains(wildcard);
 }
 
 [[nodiscard]] inline bool is_unsafe_attr(std::string_view attr) noexcept
 {
-    return in_set(attr, {
-        "password", "token", "gift_link_token", "secret", "api_key", "role", "staff"
-    });
+    return in_set(
+        attr,
+        {"password", "token", "gift_link_token", "secret", "api_key", "role", "staff"}
+    );
 }
 
 [[nodiscard]] inline std::string quote(std::string_view text)
 {
     std::string out{"\""};
-    for (const char c : text) {
+    for (const char c: text) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
-            default: out += c; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
+            default:
+                out += c;
+                break;
         }
     }
     out += '"';
@@ -178,7 +254,8 @@ namespace core::auth::ghost::detail {
 {
     static thread_local std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> digit{0, 15};
-    const auto chunk = [&](const int count) {
+    const auto chunk = [&](const int count)
+    {
         std::string out;
         out.reserve(static_cast<std::size_t>(count));
         for (int i = 0; i < count; ++i) {
@@ -212,30 +289,34 @@ struct AuthResult
 };
 
 /** @brief Ghost human-readable message for a denied (docName, method) pair. */
-[[nodiscard]] inline std::string permission_message(std::string_view docName,
-                                                    std::string_view method)
+[[nodiscard]] inline std::string
+permission_message(std::string_view docName, std::string_view method)
 {
-    return std::format("You do not have permission to {} {}", detail::method_action(method),
-                       docName);
+    return std::format(
+        "You do not have permission to {} {}",
+        detail::method_action(method),
+        docName
+    );
 }
 
 /** @brief Ghost-shaped NoPermissionError envelope. */
-[[nodiscard]] inline std::string no_permission_error_json(std::string_view docName,
-                                                          std::string_view method)
+[[nodiscard]] inline std::string
+no_permission_error_json(std::string_view docName, std::string_view method)
 {
     return std::format(
         R"({{"errors":[{{"id":"{}","code":null,"context":null,"details":null,"ghostErrorCode":null,"help":null,"message":{},"property":null,"type":"NoPermissionError"}}]}})",
-        detail::make_id(), detail::quote(permission_message(docName, method))
+        detail::make_id(),
+        detail::quote(permission_message(docName, method))
     );
 }
 
 /** @brief Ghost-shaped UnauthorizedError envelope. */
-[[nodiscard]] inline std::string unauthorized_error_json(
-    std::string_view message = "Unauthorized")
+[[nodiscard]] inline std::string unauthorized_error_json(std::string_view message = "Unauthorized")
 {
     return std::format(
         R"({{"errors":[{{"id":"{}","code":null,"context":null,"details":null,"ghostErrorCode":null,"help":null,"message":{},"property":null,"type":"UnauthorizedError"}}]}})",
-        detail::make_id(), detail::quote(message)
+        detail::make_id(),
+        detail::quote(message)
     );
 }
 
@@ -250,18 +331,44 @@ public:
     {
         add_role("Administrator", {"*"}, true);
         add_role("Owner", {"*"}, true);
-        add_role("Editor", {
-            "posts:*", "pages:*", "tags:*", "authors:*", "comments:*", "snippets:*",
-            "labels:*", "notifications:*", "images:*", "media:*", "files:*", "slugs:*",
-            "settings:browse", "site:browse"
-        }, true);
-        add_role("Writer", {
-            "posts:browse", "posts:add", "posts:edit", "posts:delete", "pages:*",
-            "tags:browse", "tags:add", "authors:browse", "images:*", "media:*", "files:*"
-        }, true);
-        add_role("Contributor", {
-            "posts:browse", "posts:add", "posts:edit", "tags:browse", "authors:browse"
-        }, true);
+        add_role(
+            "Editor",
+            {"posts:*",
+             "pages:*",
+             "tags:*",
+             "authors:*",
+             "comments:*",
+             "snippets:*",
+             "labels:*",
+             "notifications:*",
+             "images:*",
+             "media:*",
+             "files:*",
+             "slugs:*",
+             "settings:browse",
+             "site:browse"},
+            true
+        );
+        add_role(
+            "Writer",
+            {"posts:browse",
+             "posts:add",
+             "posts:edit",
+             "posts:delete",
+             "pages:*",
+             "tags:browse",
+             "tags:add",
+             "authors:browse",
+             "images:*",
+             "media:*",
+             "files:*"},
+            true
+        );
+        add_role(
+            "Contributor",
+            {"posts:browse", "posts:add", "posts:edit", "tags:browse", "authors:browse"},
+            true
+        );
         add_role("Anonymous", {});
     }
 
@@ -270,7 +377,7 @@ public:
         std::set<Permission> bits;
         bool all = false;
 
-        for (const std::string& permission : permissions) {
+        for (const std::string& permission: permissions) {
             if (permission == "*" || permission == "*:*" || permission == "all") {
                 all = true;
                 continue;
@@ -304,23 +411,33 @@ public:
 
         Role role{name};
         if (all) {
-            for (const Permission bit : kAllBits) role.grant(bit);
+            for (const Permission bit: kAllBits) {
+                role.grant(bit);
+            }
         }
-        for (const Permission bit : bits) {
-            if (bit != Permission::NONE) role.grant(bit);
+        for (const Permission bit: bits) {
+            if (bit != Permission::NONE) {
+                role.grant(bit);
+            }
         }
         m_rbac.add(std::move(role));
         m_staff[std::string{name}] = staff;
         m_roles[std::string{name}] = std::move(permissions);
     }
 
-    [[nodiscard]] AuthResult authorize(const Principal& principal,
-                                       std::string_view docName,
-                                       std::string_view method,
-                                       std::string_view /* id */ = {}) const
+    [[nodiscard]] AuthResult authorize(
+        const Principal& principal,
+        std::string_view docName,
+        std::string_view method,
+        std::string_view /* id */ = {}
+    ) const
     {
-        if (detail::privileged(principal.context)) return permitted();
-        if (explicitly_allowed(principal, docName, method)) return permitted();
+        if (detail::privileged(principal.context)) {
+            return permitted();
+        }
+        if (explicitly_allowed(principal, docName, method)) {
+            return permitted();
+        }
 
         // The Ghost Content API serves published content to anonymous readers.
         if (principal.context == ApiContext::CONTENT_API && detail::is_read_action(method) &&
@@ -338,11 +455,13 @@ public:
     }
 
     /** @brief `permissions: true` / `false` / `{docName, method}` all route through authorize. */
-    [[nodiscard]] AuthResult authorize(const Principal& principal,
-                                       bool enabled,
-                                       std::string_view docName,
-                                       std::string_view method,
-                                       std::string_view id = {}) const
+    [[nodiscard]] AuthResult authorize(
+        const Principal& principal,
+        bool enabled,
+        std::string_view docName,
+        std::string_view method,
+        std::string_view id = {}
+    ) const
     {
         return enabled ? authorize(principal, docName, method, id) : permitted();
     }
@@ -355,21 +474,30 @@ public:
     }
 
     /** @brief Guards attributes that are unsafe for non-admin roles to set. */
-    [[nodiscard]] AuthResult unsafe_attrs(const Principal& principal,
-                                          std::string_view attr,
-                                          std::string_view /* value */) const
+    [[nodiscard]] AuthResult unsafe_attrs(
+        const Principal& principal,
+        std::string_view attr,
+        std::string_view /* value */
+    ) const
     {
         if (detail::privileged(principal.context) || !detail::is_unsafe_attr(attr)) {
             return permitted();
         }
-        if (is_admin(principal)) return permitted();
+        if (is_admin(principal)) {
+            return permitted();
+        }
         return denied(no_permission_error_json(attr, "edit"), 403);
     }
 
 private:
     static constexpr std::array<Permission, 7> kAllBits{
-        Permission::READ,    Permission::WRITE,    Permission::DELETE, Permission::ADMIN,
-        Permission::MEMBERS, Permission::SETTINGS, Permission::BILLING
+        Permission::READ,
+        Permission::WRITE,
+        Permission::DELETE,
+        Permission::ADMIN,
+        Permission::MEMBERS,
+        Permission::SETTINGS,
+        Permission::BILLING
     };
 
     [[nodiscard]] static AuthResult permitted()
@@ -388,14 +516,22 @@ private:
                m_rbac.allowed(principal.role, Permission::ADMIN);
     }
 
-    [[nodiscard]] bool explicitly_allowed(const Principal& principal,
-                                          std::string_view docName,
-                                          std::string_view method) const
+    [[nodiscard]] bool explicitly_allowed(
+        const Principal& principal,
+        std::string_view docName,
+        std::string_view method
+    ) const
     {
         const std::string_view action = detail::method_action(method);
-        if (detail::has_scope(principal.permissions, docName, action)) return true;
-        if (principal.role.empty()) return false;
-        if (m_rbac.allowed(principal.role, detail::needed_permission(docName, method))) return true;
+        if (detail::has_scope(principal.permissions, docName, action)) {
+            return true;
+        }
+        if (principal.role.empty()) {
+            return false;
+        }
+        if (m_rbac.allowed(principal.role, detail::needed_permission(docName, method))) {
+            return true;
+        }
 
         const auto it = m_roles.find(principal.role);
         return it != m_roles.end() && detail::has_scope(it->second, docName, action);
@@ -427,14 +563,15 @@ suite<"core_auth_ghost"> core_auth_ghost_suite = []
         expect(denied.status == 401);
         expect(denied.error_json.find("UnauthorizedError") != std::string::npos);
 
-        const Principal contributor{.context = ApiContext::ADMIN_API,
-                                    .role = "Contributor"};
+        const Principal contributor{.context = ApiContext::ADMIN_API, .role = "Contributor"};
         const auto forbidden = auth.authorize(contributor, "settings", "edit");
         expect(!forbidden.allowed);
         expect(forbidden.status == 403);
         expect(forbidden.error_json.find("NoPermissionError") != std::string::npos);
-        expect(forbidden.error_json.find("You do not have permission to edit settings") !=
-               std::string::npos);
+        expect(
+            forbidden.error_json.find("You do not have permission to edit settings") !=
+            std::string::npos
+        );
     };
 
     "content API public reads and permissions toggle"_test = []

@@ -214,7 +214,8 @@ private:
         return it->second;
     }
 
-    [[nodiscard]] std::shared_ptr<IConnector> apply_policy(std::shared_ptr<IConnector> base, std::string_view merchant_id) const
+    [[nodiscard]] std::shared_ptr<IConnector>
+    apply_policy(std::shared_ptr<IConnector> base, std::string_view merchant_id) const
     {
         if (!base) {
             return nullptr;

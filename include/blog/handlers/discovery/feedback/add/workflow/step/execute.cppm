@@ -15,17 +15,22 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"feedback_add_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         auto& ctx = *s_ctx;
 
         const auto parsed = core_serde::JsonCodec{}.decode<serde::Value>(
-            in.body_as_string().empty() ? "{}" : in.body_as_string());
-        if (!parsed) return invalid("Invalid feedback body", "body");
+            in.body_as_string().empty() ? "{}" : in.body_as_string()
+        );
+        if (!parsed) {
+            return invalid("Invalid feedback body", "body");
+        }
         const auto* root = std::get_if<serde::Value::Object>(&parsed->get());
-        if (root == nullptr) return invalid("Invalid feedback body", "body");
+        if (root == nullptr) {
+            return invalid("Invalid feedback body", "body");
+        }
 
         const auto* node = lookup(*root, "feedback");
         if (node == nullptr) {
@@ -35,28 +40,36 @@ public:
                 }
             }
         }
-        const auto* array = node != nullptr
-                                ? std::get_if<serde::Value::Array>(&node->get())
-                                : nullptr;
+        const auto* array =
+            node != nullptr ? std::get_if<serde::Value::Array>(&node->get()) : nullptr;
         if (array == nullptr || array->empty()) {
             return invalid("feedback[0] is required", "feedback");
         }
         const auto* item = std::get_if<serde::Value::Object>(&(*array)[0].get());
-        if (item == nullptr) return invalid("feedback[0] must be an object", "feedback");
+        if (item == nullptr) {
+            return invalid("feedback[0] must be an object", "feedback");
+        }
 
         const auto* post_node = lookup(*item, "post_id");
         const auto* score_node = lookup(*item, "score");
         if (post_node == nullptr || scalar(*post_node).empty()) {
             return invalid("A post_id is required", "post_id");
         }
-        if (score_node == nullptr) return invalid("A score is required", "score");
+        if (score_node == nullptr) {
+            return invalid("A score is required", "score");
+        }
         const auto score_text = scalar(*score_node);
         if (score_text != "0" && score_text != "1") {
             // Ghost: "Invalid feedback score. Only 1 or 0 is currently allowed."
-            return core::workflow::StepResponse<Output>{{{"status", "422"},
-                {"body", error("Invalid feedback score. Only 1 or 0 is currently allowed.",
-                               "Invalid feedback score. Only 1 or 0 is currently allowed.",
-                               "score")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "422"},
+                 {"body",
+                  error(
+                      "Invalid feedback score. Only 1 or 0 is currently allowed.",
+                      "Invalid feedback score. Only 1 or 0 is currently allowed.",
+                      "score"
+                  )}}
+            };
         }
         const std::string post_id = scalar(*post_node);
 
@@ -65,26 +78,32 @@ public:
         // members-facing handlers). Ghost throws InternalServerError when the
         // authenticated member is absent.
         std::string member_id{in.find_header(kMemberIdHeader)};
-        if (member_id.empty()) member_id = std::string{in.find_header("x-member-id")};
         if (member_id.empty()) {
-            return core::workflow::StepResponse<Output>{{{"status", "500"},
-                {"body", error("Member not found.", "Member not found.", "",
-                               "InternalServerError")}}};
+            member_id = std::string{in.find_header("x-member-id")};
+        }
+        if (member_id.empty()) {
+            return core::workflow::StepResponse<Output>{
+                {{"status", "500"},
+                 {"body",
+                  error("Member not found.", "Member not found.", "", "InternalServerError")}}
+            };
         }
 
         // Ghost: getPostById(postId) uses status:'all'; a missing post is 404.
         const auto post = ctx.store().find_by_resource("posts", post_id);
         if (!post) {
-            return core::workflow::StepResponse<Output>{{{"status", "404"},
-                {"body", error("Post not found.", "Post not found.", "", "NotFoundError")}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "404"},
+                 {"body", error("Post not found.", "Post not found.", "", "NotFoundError")}}
+            };
         }
         const auto canonical_post = text_field(*post, "id");
-        const std::string stored_post_id =
-            canonical_post.empty() ? post_id : canonical_post;
+        const std::string stored_post_id = canonical_post.empty() ? post_id : canonical_post;
 
         const auto existing = blog::api::parse_array(ctx.store().json_for(
-            kFeedBackResource, {{"filter[post_id]", stored_post_id},
-                                {"filter[member_id]", member_id}}));
+            kFeedBackResource,
+            {{"filter[post_id]", stored_post_id}, {"filter[member_id]", member_id}}
+        ));
 
         std::string record;
         if (!existing.empty()) {
@@ -92,8 +111,9 @@ public:
             // Ghost skips the save when the score is unchanged, preserving
             // updated_at, and still answers 201.
             if (text_field(record, "score") == score_text) {
-                return core::workflow::StepResponse<Output>{{{"status", "201"},
-                    {"body", wire(record)}}};
+                return core::workflow::StepResponse<Output>{
+                    {{"status", "201"}, {"body", wire(record)}}
+                };
             }
             auto edited = replace_field(record, "score", score_text);
             edited = replace_field(edited, "updated_at", quote(now()));
@@ -101,18 +121,15 @@ public:
             (void)ctx.store().edit(kFeedBackResource, id, edited);
             record = edited;
         } else {
-            record = "{\"id\":" + quote(make_object_id()) +
-                     ",\"score\":" + score_text +
+            record = "{\"id\":" + quote(make_object_id()) + ",\"score\":" + score_text +
                      ",\"member_id\":" + quote(member_id) +
-                     ",\"post_id\":" + quote(stored_post_id) +
-                     ",\"created_at\":" + quote(now()) +
+                     ",\"post_id\":" + quote(stored_post_id) + ",\"created_at\":" + quote(now()) +
                      ",\"updated_at\":" + quote(now()) + "}";
             (void)ctx.store().create(kFeedBackResource, record);
         }
 
         // Ghost's add op always answers 201, on create and on edit.
-        return core::workflow::StepResponse<Output>{{{"status", "201"},
-            {"body", wire(record)}}};
+        return core::workflow::StepResponse<Output>{{{"status", "201"}, {"body", wire(record)}}};
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
@@ -124,21 +141,28 @@ private:
 
     static const serde::Value* lookup(const Object& object, std::string_view key)
     {
-        for (const auto& [name, value] : object) if (name == key) return &value;
+        for (const auto& [name, value]: object) {
+            if (name == key) {
+                return &value;
+            }
+        }
         return nullptr;
     }
 
     static std::string scalar(const serde::Value& value)
     {
-        if (const auto* text = std::get_if<std::string>(&value.get())) return *text;
+        if (const auto* text = std::get_if<std::string>(&value.get())) {
+            return *text;
+        }
         return support::unquote(core_serde::JsonCodec{}.encode(value));
     }
 
-    static core::workflow::StepResponse<Output> invalid(std::string_view reason,
-                                                        std::string_view property)
+    static core::workflow::StepResponse<Output>
+    invalid(std::string_view reason, std::string_view property)
     {
-        return core::workflow::StepResponse<Output>{{{"status", "422"},
-            {"body", support::error("Validation error", reason, property)}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "422"}, {"body", support::error("Validation error", reason, property)}}
+        };
     }
 
     /** @brief Feedback model wire shape: {id, memberId, postId, score}. */
@@ -154,12 +178,14 @@ private:
                ",\"score\":" + (score.empty() ? std::string{"0"} : score) + "}";
     }
 
-    static std::string replace_field(std::string_view object, std::string_view key,
-                                     std::string_view raw_value)
+    static std::string
+    replace_field(std::string_view object, std::string_view key, std::string_view raw_value)
     {
         const auto pattern = std::string{"\""} + std::string{key} + "\":";
         const auto at = object.find(pattern);
-        if (at == std::string_view::npos) return std::string{object};
+        if (at == std::string_view::npos) {
+            return std::string{object};
+        }
         const auto value_start = at + pattern.size();
         const auto value_end = support::value_end(object, value_start);
         std::string out{object.substr(0, value_start)};
@@ -175,19 +201,22 @@ private:
         std::uniform_int_distribution<int> digit{0, 15};
         std::string out;
         out.reserve(24);
-        for (int i = 0; i < 24; ++i) out.push_back("0123456789abcdef"[digit(rng)]);
+        for (int i = 0; i < 24; ++i) {
+            out.push_back("0123456789abcdef"[digit(rng)]);
+        }
         return out;
     }
 
     static std::string now()
     {
         const auto tp = std::chrono::system_clock::now();
-        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            tp.time_since_epoch()).count();
-        const auto stamp = std::format("{:%Y-%m-%dT%H:%M:%S}",
-                                       std::chrono::floor<std::chrono::seconds>(tp));
-        return stamp + std::format(".{:03d}Z", ms % 1000);
+        const auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count();
+        const auto stamp =
+            std::format("{:%Y-%m-%dT%H:%M:%S}", std::chrono::floor<std::chrono::seconds>(tp));
+        return stamp + std::format(".{:03d}Z", ms % 1'000);
     }
 };
+
 blog::BlogContext* ExecuteStep::s_ctx{nullptr};
-}
+} // namespace blog::handlers::feedback::add::workflow

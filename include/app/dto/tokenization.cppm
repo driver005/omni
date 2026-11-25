@@ -27,40 +27,80 @@ export namespace app::dto::tokenization {
 class GlobalCustomerIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class GlobalPaymentMethodSessionIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class GlobalTokenIdValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class PrimitiveDateTimeValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
 class TokenizationFlagValue
 {
 public:
-    void set_value(std::string v) { value = std::move(v); }
-    [[nodiscard]] const std::string& get_value() const noexcept { return value; }
+    void set_value(std::string v)
+    {
+        value = std::move(v);
+    }
+
+    [[nodiscard]] const std::string& get_value() const noexcept
+    {
+        return value;
+    }
+
     std::string value{};
 };
 
@@ -68,10 +108,26 @@ class DeleteTokenDataRequest
 {
 public:
     // Upstream: customer_id/session_id are id newtypes -> plain strings on the wire.
-    void set_customer_id(std::string value) { customer_id = std::move(value); }
-    [[nodiscard]] const std::string& get_customer_id() const noexcept { return customer_id; }
-    void set_session_id(std::string value) { session_id = std::move(value); }
-    [[nodiscard]] const std::string& get_session_id() const noexcept { return session_id; }
+    void set_customer_id(std::string value)
+    {
+        customer_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_customer_id() const noexcept
+    {
+        return customer_id;
+    }
+
+    void set_session_id(std::string value)
+    {
+        session_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_session_id() const noexcept
+    {
+        return session_id;
+    }
+
     std::string customer_id{};
     std::string session_id{};
 };
@@ -79,19 +135,43 @@ public:
 class DeleteTokenDataResponse
 {
 public:
-    void set_id(std::string value) { id = std::move(value); }
-    [[nodiscard]] const std::string& get_id() const noexcept { return id; }
+    void set_id(std::string value)
+    {
+        id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_id() const noexcept
+    {
+        return id;
+    }
+
     std::string id{};
 };
 
 class GenericTokenizationRequest
 {
 public:
-    void set_customer_id(std::string value) { customer_id = std::move(value); }
-    [[nodiscard]] const std::string& get_customer_id() const noexcept { return customer_id; }
+    void set_customer_id(std::string value)
+    {
+        customer_id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_customer_id() const noexcept
+    {
+        return customer_id;
+    }
+
     // Secret<serde_json::Value> is transparent on the wire: opaque JSON text.
-    void set_token_request(std::string value) { token_request = std::move(value); }
-    [[nodiscard]] const std::string& get_token_request() const noexcept { return token_request; }
+    void set_token_request(std::string value)
+    {
+        token_request = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_token_request() const noexcept
+    {
+        return token_request;
+    }
+
     std::string customer_id{};
     std::string token_request{};
 };
@@ -99,28 +179,58 @@ public:
 class GenericTokenizationResponse
 {
 public:
-    void set_id(std::string value) { id = std::move(value); }
-    [[nodiscard]] const std::string& get_id() const noexcept { return id; }
-    void set_created_at(std::string value) { created_at = std::move(value); }
-    [[nodiscard]] const std::string& get_created_at() const noexcept { return created_at; }
-    void set_flag(std::string value) { flag = std::move(value); }
-    [[nodiscard]] const std::string& get_flag() const noexcept { return flag; }
+    void set_id(std::string value)
+    {
+        id = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_id() const noexcept
+    {
+        return id;
+    }
+
+    void set_created_at(std::string value)
+    {
+        created_at = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_created_at() const noexcept
+    {
+        return created_at;
+    }
+
+    void set_flag(std::string value)
+    {
+        flag = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_flag() const noexcept
+    {
+        return flag;
+    }
+
     std::string id{};
     std::string created_at{};
     std::string flag{};
 };
-}
+} // namespace app::dto::tokenization
 
 template<>
 struct serde::Serializable<app::dto::tokenization::GlobalTokenIdValue>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::tokenization::GlobalTokenIdValue::get_value, &app::dto::tokenization::GlobalTokenIdValue::set_value, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "value",
+            &app::dto::tokenization::GlobalTokenIdValue::get_value,
+            &app::dto::tokenization::GlobalTokenIdValue::set_value,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "global_token_id_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "global_token_id_value";
+    }
 };
 
 template<>
@@ -128,11 +238,17 @@ struct serde::Serializable<app::dto::tokenization::PrimitiveDateTimeValue>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::tokenization::PrimitiveDateTimeValue::get_value, &app::dto::tokenization::PrimitiveDateTimeValue::set_value, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "value",
+            &app::dto::tokenization::PrimitiveDateTimeValue::get_value,
+            &app::dto::tokenization::PrimitiveDateTimeValue::set_value,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "primitive_date_time_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "primitive_date_time_value";
+    }
 };
 
 template<>
@@ -140,11 +256,17 @@ struct serde::Serializable<app::dto::tokenization::TokenizationFlagValue>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::tokenization::TokenizationFlagValue::get_value, &app::dto::tokenization::TokenizationFlagValue::set_value, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "value",
+            &app::dto::tokenization::TokenizationFlagValue::get_value,
+            &app::dto::tokenization::TokenizationFlagValue::set_value,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "tokenization_flag_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "tokenization_flag_value";
+    }
 };
 
 template<>
@@ -152,11 +274,17 @@ struct serde::Serializable<app::dto::tokenization::GlobalCustomerIdValue>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::tokenization::GlobalCustomerIdValue::get_value, &app::dto::tokenization::GlobalCustomerIdValue::set_value, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "value",
+            &app::dto::tokenization::GlobalCustomerIdValue::get_value,
+            &app::dto::tokenization::GlobalCustomerIdValue::set_value,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "global_customer_id_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "global_customer_id_value";
+    }
 };
 
 template<>
@@ -164,11 +292,17 @@ struct serde::Serializable<app::dto::tokenization::GlobalPaymentMethodSessionIdV
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"value", &app::dto::tokenization::GlobalPaymentMethodSessionIdValue::get_value, &app::dto::tokenization::GlobalPaymentMethodSessionIdValue::set_value, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "value",
+            &app::dto::tokenization::GlobalPaymentMethodSessionIdValue::get_value,
+            &app::dto::tokenization::GlobalPaymentMethodSessionIdValue::set_value,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "global_payment_method_session_id_value"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "global_payment_method_session_id_value";
+    }
 };
 
 template<>
@@ -177,12 +311,28 @@ struct serde::Serializable<app::dto::tokenization::GenericTokenizationResponse>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"id", &app::dto::tokenization::GenericTokenizationResponse::get_id, &app::dto::tokenization::GenericTokenizationResponse::set_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"created_at", &app::dto::tokenization::GenericTokenizationResponse::get_created_at, &app::dto::tokenization::GenericTokenizationResponse::set_created_at, serde::FieldOptions{}>{},
-            serde::FieldDesc<"flag", &app::dto::tokenization::GenericTokenizationResponse::get_flag, &app::dto::tokenization::GenericTokenizationResponse::set_flag, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "id",
+                &app::dto::tokenization::GenericTokenizationResponse::get_id,
+                &app::dto::tokenization::GenericTokenizationResponse::set_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "created_at",
+                &app::dto::tokenization::GenericTokenizationResponse::get_created_at,
+                &app::dto::tokenization::GenericTokenizationResponse::set_created_at,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "flag",
+                &app::dto::tokenization::GenericTokenizationResponse::get_flag,
+                &app::dto::tokenization::GenericTokenizationResponse::set_flag,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "generic_tokenization_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "generic_tokenization_response";
+    }
 };
 
 template<>
@@ -191,11 +341,23 @@ struct serde::Serializable<app::dto::tokenization::GenericTokenizationRequest>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"customer_id", &app::dto::tokenization::GenericTokenizationRequest::get_customer_id, &app::dto::tokenization::GenericTokenizationRequest::set_customer_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"token_request", &app::dto::tokenization::GenericTokenizationRequest::get_token_request, &app::dto::tokenization::GenericTokenizationRequest::set_token_request, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "customer_id",
+                &app::dto::tokenization::GenericTokenizationRequest::get_customer_id,
+                &app::dto::tokenization::GenericTokenizationRequest::set_customer_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "token_request",
+                &app::dto::tokenization::GenericTokenizationRequest::get_token_request,
+                &app::dto::tokenization::GenericTokenizationRequest::set_token_request,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "generic_tokenization_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "generic_tokenization_request";
+    }
 };
 
 template<>
@@ -204,11 +366,23 @@ struct serde::Serializable<app::dto::tokenization::DeleteTokenDataRequest>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"customer_id", &app::dto::tokenization::DeleteTokenDataRequest::get_customer_id, &app::dto::tokenization::DeleteTokenDataRequest::set_customer_id, serde::FieldOptions{}>{},
-            serde::FieldDesc<"session_id", &app::dto::tokenization::DeleteTokenDataRequest::get_session_id, &app::dto::tokenization::DeleteTokenDataRequest::set_session_id, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "customer_id",
+                &app::dto::tokenization::DeleteTokenDataRequest::get_customer_id,
+                &app::dto::tokenization::DeleteTokenDataRequest::set_customer_id,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "session_id",
+                &app::dto::tokenization::DeleteTokenDataRequest::get_session_id,
+                &app::dto::tokenization::DeleteTokenDataRequest::set_session_id,
+                serde::FieldOptions{}>{}
         };
     }
-    static constexpr std::string_view table_name() { return "delete_token_data_request"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "delete_token_data_request";
+    }
 };
 
 template<>
@@ -216,22 +390,39 @@ struct serde::Serializable<app::dto::tokenization::DeleteTokenDataResponse>
 {
     static constexpr auto fields()
     {
-        return std::tuple{
-            serde::FieldDesc<"id", &app::dto::tokenization::DeleteTokenDataResponse::get_id, &app::dto::tokenization::DeleteTokenDataResponse::set_id, serde::FieldOptions{}>{}
-        };
+        return std::tuple{serde::FieldDesc<
+            "id",
+            &app::dto::tokenization::DeleteTokenDataResponse::get_id,
+            &app::dto::tokenization::DeleteTokenDataResponse::set_id,
+            serde::FieldOptions{}>{}};
     }
-    static constexpr std::string_view table_name() { return "delete_token_data_response"; }
+
+    static constexpr std::string_view table_name()
+    {
+        return "delete_token_data_response";
+    }
 };
 
 #ifdef CONGELADO_TEST
 namespace app::dto::tokenization::tests {
 using namespace boost::ut;
-suite<"app_dto_tokenization"> app_dto_tokenization_suite = [] {
-    "reflects converted types"_test = [] {
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::tokenization::GenericTokenizationResponse>::fields())> == 3);
-        expect(std::tuple_size_v<decltype(serde::Serializable<app::dto::tokenization::DeleteTokenDataResponse>::fields())> == 1);
+suite<"app_dto_tokenization"> app_dto_tokenization_suite = []
+{
+    "reflects converted types"_test = []
+    {
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<
+                         app::dto::tokenization::GenericTokenizationResponse>::fields())> == 3
+        );
+        expect(
+            std::tuple_size_v<
+                decltype(serde::Serializable<
+                         app::dto::tokenization::DeleteTokenDataResponse>::fields())> == 1
+        );
     };
-    "route DTOs are the transparent wire surface"_test = [] {
+    "route DTOs are the transparent wire surface"_test = []
+    {
         GenericTokenizationResponse response{};
         response.set_id("0a_tok_01926c58bc6e77c09e809964e72af8c8");
         response.set_created_at("2024-02-24 11:04:09.922000000");
@@ -242,5 +433,5 @@ suite<"app_dto_tokenization"> app_dto_tokenization_suite = [] {
         expect(json.find("value") == std::string::npos); // no {"value":...} wrapper
     };
 };
-}
+} // namespace app::dto::tokenization::tests
 #endif

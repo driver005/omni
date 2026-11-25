@@ -13,10 +13,7 @@ export namespace app::http {
 class HeaderReader
 {
 public:
-    [[nodiscard]] std::string get(
-        interfaces::io::IRequest& request,
-        std::string_view name
-    ) const
+    [[nodiscard]] std::string get(interfaces::io::IRequest& request, std::string_view name) const
     {
         return std::string{request.find_header(name)};
     }

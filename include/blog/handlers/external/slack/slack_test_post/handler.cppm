@@ -9,7 +9,8 @@ import :slack_slack_test_post_flow;
 
 export namespace blog::handlers::slack::slack_test_post {
 
-class SlackTestPostHandler {
+class SlackTestPostHandler
+{
 public:
     explicit SlackTestPostHandler(blog::BlogContext& ctx) noexcept
     {
@@ -18,8 +19,11 @@ public:
         m_workflow.register_workflow(workflow::MainFlow{}.build());
     }
 
-    void handle(interfaces::io::IRequest& req, interfaces::io::IResponse& res,
-                std::function<void()> send)
+    void handle(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
     {
         using blog::handlers::middleware::kGhostContextHeader;
         using blog::handlers::middleware::kGhostPermissionsHeader;
@@ -39,30 +43,46 @@ public:
         }
         bool allowed{false};
         blog::handlers::middleware::require_ghost_permission(
-            req, res,
-            [&allowed](interfaces::io::IRequest&, interfaces::io::IResponse&,
-                       std::function<void()>) noexcept { allowed = true; },
-            send, "slack", "add");
-        if (!allowed) return;
+            req,
+            res,
+            [&allowed](
+                interfaces::io::IRequest&,
+                interfaces::io::IResponse&,
+                std::function<void()>
+            ) noexcept
+            {
+                allowed = true;
+            },
+            send,
+            "slack",
+            "add"
+        );
+        if (!allowed) {
+            return;
+        }
 
         // sendTest consumes no options/data/body (slack.js:7-15). The workflow
         // step only emits the shared 'slack.test' event through the outbox.
         const auto execution = m_workflow.run("slack_slack_test_post", req);
         const auto* result = execution.result_of("slack_slack_test_post_execute");
-        const auto payload = result && result->typed_output.has_value()
-            ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
-            : std::map<std::string, std::string>{{"status", "200"}, {"body", "{}"}};
+        const auto payload =
+            result && result->typed_output.has_value()
+                ? std::any_cast<std::map<std::string, std::string>>(result->typed_output)
+                : std::map<std::string, std::string>{{"status", "200"}, {"body", "{}"}};
         const int status = payload.contains("status") ? std::stoi(payload.at("status")) : 200;
         const std::string body = payload.contains("body") ? payload.at("body") : std::string{"{}"};
 
         std::vector<std::byte> bytes;
-        for (const char c : body) bytes.push_back(static_cast<std::byte>(c));
+        for (const char c: body) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
 
         // Ghost admin app app-level cacheControl('private') (admin/app.js:24).
         // headers.cacheInvalidate:false (slack.js:8-10) => no X-Cache-Invalidate.
         res.set_header(
             "Cache-Control",
-            "no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
+            "no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0"
+        );
         res.set_status(static_cast<interfaces::io::types::Status>(status));
         res.set_body(std::move(bytes));
         send();

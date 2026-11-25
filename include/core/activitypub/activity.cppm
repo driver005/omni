@@ -76,9 +76,8 @@ suite<"core_activitypub_activity"> core_activitypub_activity_suite = []
 {
     "carries activity metadata"_test = []
     {
-        Activity activity{
-            "https://x/a/1", ActivityType::Create, "https://x/u/ada", "https://x/n/1"
-        };
+        Activity
+            activity{"https://x/a/1", ActivityType::Create, "https://x/u/ada", "https://x/n/1"};
         activity.add_to("https://x/u/ada/followers");
         expect(activity.valid());
         expect(activity.type() == ActivityType::Create);

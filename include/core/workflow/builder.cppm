@@ -19,14 +19,16 @@ class StepBinder
 {
 public:
     template<typename Provider>
-    requires std::invocable<Provider, WorkflowContext&>
+        requires std::invocable<Provider, WorkflowContext&>
     [[nodiscard]] StepDescriptor operator()(Provider provider, StepOptions options) const
     {
         StepDescriptor descriptor;
         descriptor.name = std::string{S::name};
         descriptor.options = options;
 
-        descriptor.invoke = [provider = std::move(provider)](WorkflowContext& ctx) mutable -> StepOutcome {
+        descriptor.invoke = [provider =
+                                 std::move(provider)](WorkflowContext& ctx) mutable -> StepOutcome
+        {
             S step{};
             auto response = step.invoke(provider(ctx), ctx);
             StepOutcome outcome;
@@ -38,7 +40,8 @@ public:
             return outcome;
         };
 
-        descriptor.compensate = [](const WorkflowValue& input, WorkflowContext& ctx) {
+        descriptor.compensate = [](const WorkflowValue& input, WorkflowContext& ctx)
+        {
             S step{};
             step.compensate(input, ctx);
         };
@@ -46,7 +49,6 @@ public:
         return descriptor;
     }
 };
-
 
 /**
  * @brief The only public entry point for defining a workflow. Records steps once
@@ -89,7 +91,7 @@ public:
 
     /** @brief Adds a step with an explicit typed input provider. */
     template<WorkflowStep S, typename Provider>
-    requires std::invocable<Provider, WorkflowContext&>
+        requires std::invocable<Provider, WorkflowContext&>
     WorkflowBuilder& step(Provider provider, StepOptions options = {})
     {
         return add<S>(std::move(provider), options);
@@ -176,14 +178,13 @@ suite<"core_workflow_builder"> core_workflow_builder_suite = []
 {
     "compiles typed steps, refs and hooks into a definition"_test = []
     {
-        const auto definition = WorkflowBuilder{}
-                                    .name("create-thing")
-                                    .step<FirstStep>()
-                                    .step<SecondStep>(
-                                        StepOutputOf<std::string>{"first"},
-                                        StepOptions{}.max_retries(2))
-                                    .hook("thingCreated")
-                                    .build();
+        const auto definition =
+            WorkflowBuilder{}
+                .name("create-thing")
+                .step<FirstStep>()
+                .step<SecondStep>(StepOutputOf<std::string>{"first"}, StepOptions{}.max_retries(2))
+                .hook("thingCreated")
+                .build();
         expect(definition.valid());
         expect(definition.steps.size() == 2);
         expect(definition.hooks.size() == 1);
@@ -193,7 +194,14 @@ suite<"core_workflow_builder"> core_workflow_builder_suite = []
     "rejects duplicate step names"_test = []
     {
         auto builder = WorkflowBuilder{}.name("dupe").step<FirstStep>().step<FirstStep>();
-        expect(throws<std::invalid_argument>([&] { (void)builder.build(); }));
+        expect(
+            throws<std::invalid_argument>(
+                [&]
+                {
+                    (void)builder.build();
+                }
+            )
+        );
     };
 };
 

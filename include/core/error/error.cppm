@@ -14,12 +14,40 @@ export namespace core::error {
 class AppError
 {
 public:
-    void set_kind(AppErrorKind value) { kind = std::move(value); }
-    [[nodiscard]] const AppErrorKind& get_kind() const noexcept { return kind; }
-    void set_kind_name(std::string value) { kind_name = std::move(value); }
-    [[nodiscard]] const std::string& get_kind_name() const noexcept { return kind_name; }
-    void set_message(std::string value) { message = std::move(value); }
-    [[nodiscard]] const std::string& get_message() const noexcept { return message; }
+    void set_kind(AppErrorKind value)
+    {
+        kind = std::move(value);
+    }
+
+    [[nodiscard]] const AppErrorKind& get_kind() const noexcept
+    {
+        return kind;
+    }
+
+    void set_kind_name(std::string value)
+    {
+        kind_name = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_kind_name() const noexcept
+    {
+        return kind_name;
+    }
+
+    void set_message(std::string value)
+    {
+        message = std::move(value);
+    }
+
+    [[nodiscard]] const std::string& get_message() const noexcept
+    {
+        return message;
+    }
+
+    [[nodiscard]] interfaces::io::types::Status get_status() const noexcept
+    {
+        return AppErrorStatus{}(kind);
+    }
 
     AppErrorKind kind{AppErrorKind::INTERNAL};
     std::string kind_name{};
@@ -48,12 +76,23 @@ struct serde::Serializable<core::error::AppError>
     static constexpr auto fields()
     {
         return std::tuple{
-            serde::FieldDesc<"error", &core::error::AppError::get_kind_name, &core::error::AppError::set_kind_name, serde::FieldOptions{}>{},
-            serde::FieldDesc<"message", &core::error::AppError::get_message, &core::error::AppError::set_message, serde::FieldOptions{}>{}
+            serde::FieldDesc<
+                "error",
+                &core::error::AppError::get_kind_name,
+                &core::error::AppError::set_kind_name,
+                serde::FieldOptions{}>{},
+            serde::FieldDesc<
+                "message",
+                &core::error::AppError::get_message,
+                &core::error::AppError::set_message,
+                serde::FieldOptions{}>{}
         };
     }
 
-    static constexpr std::string_view table_name() { return "app_error"; }
+    static constexpr std::string_view table_name()
+    {
+        return "app_error";
+    }
 };
 
 #ifdef CONGELADO_TEST

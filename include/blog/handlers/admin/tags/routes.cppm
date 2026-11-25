@@ -22,62 +22,79 @@ public:
         // the handlers now enforce the Ghost permission service (core::auth::ghost via
         // require_ghost_permission). See docs/parity/behavior/tags{,-public}.md.
         Router{router, "/tags"}
-            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_browse().handle(req, res, std::move(send));
-    })
+            .get(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.tags_browse().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost tags GET")
-            .post([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_create().handle(req, res, std::move(send));
-    })
+            .post(
+                [&handler](
+                    interfaces::io::IRequest& req,
+                    interfaces::io::IResponse& res,
+                    std::function<void()> send
+                )
+                {
+                    handler.tags_create().handle(req, res, std::move(send));
+                }
+            )
             .summary("Ghost tags POST")
             .add_route(
                 Route{"/:id"}
-                    .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_read_by_id().handle(req, res, std::move(send));
-    })
+                    .get(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.tags_read_by_id().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id GET")
-                    .put([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_edit().handle(req, res, std::move(send));
-    })
+                    .put(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.tags_edit().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id PUT")
-                    .delt([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_destroy().handle(req, res, std::move(send));
-    })
+                    .delt(
+                        [&handler](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handler.tags_destroy().handle(req, res, std::move(send));
+                        }
+                    )
                     .summary("Ghost :id DELETE")
             )
             .add_router(
-                Router{router, "/slug"}
-                    .add_route(
-                        Route{"/:slug"}
-                            .get([&handler](
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    ) {
-        handler.tags_read_by_slug().handle(req, res, std::move(send));
-    })
-                            .summary("Ghost :slug GET")
-                    )
+                Router{router, "/slug"}.add_route(
+                    Route{"/:slug"}
+                        .get(
+                            [&handler](
+                                interfaces::io::IRequest& req,
+                                interfaces::io::IResponse& res,
+                                std::function<void()> send
+                            )
+                            {
+                                handler.tags_read_by_slug().handle(req, res, std::move(send));
+                            }
+                        )
+                        .summary("Ghost :slug GET")
+                )
             );
     }
 };

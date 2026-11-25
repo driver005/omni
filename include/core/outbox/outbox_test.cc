@@ -125,7 +125,10 @@ int main()
 
         auto drained = box.drain();
         check.yes(drained.size() == 2, "nested commit yields both events");
-        check.yes(drained[0].type == "outer" && drained[1].type == "inner", "nested order preserved");
+        check.yes(
+            drained[0].type == "outer" && drained[1].type == "inner",
+            "nested order preserved"
+        );
     }
 
     // 5. Inner rollback discards only its own staged events.

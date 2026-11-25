@@ -58,7 +58,7 @@ public:
         static const Handler<8> empty_handlers{};
         static const Middleware<192> empty_middlewares{};
 
-        for (const auto& input : routes) {
+        for (const auto& input: routes) {
             RouteTreeNode* parent = m_root.get();
             if (input.parent_router != 0) {
                 auto found = m_by_number.find(input.parent_router);
@@ -70,8 +70,11 @@ public:
             }
 
             auto [node, created] = parent->child(input.segment);
-            if (created) ++m_index;
-            else ++m_merged;
+            if (created) {
+                ++m_index;
+            } else {
+                ++m_merged;
+            }
             node.merge(
                 input.handlers ? *input.handlers : empty_handlers,
                 input.middlewares ? *input.middlewares : empty_middlewares
@@ -96,22 +99,30 @@ public:
     std::vector<FlatRoute> flatten() const
     {
         std::vector<FlatRoute> out;
-        if (!m_root) return out;
+        if (!m_root) {
+            return out;
+        }
 
         std::vector<RouteTreeNode*> order;
         std::deque<RouteTreeNode*> pending;
-        for (const auto& [key, child]: m_root->children()) pending.push_back(child.get());
+        for (const auto& [key, child]: m_root->children()) {
+            pending.push_back(child.get());
+        }
         while (!pending.empty()) {
             auto* node = pending.front();
             pending.pop_front();
             order.push_back(node);
-            for (const auto& [key, child]: node->children()) pending.push_back(child.get());
+            for (const auto& [key, child]: node->children()) {
+                pending.push_back(child.get());
+            }
         }
 
         std::unordered_map<const RouteTreeNode*, std::size_t> indices;
         indices.reserve(order.size());
         // Flat index 0 is reserved for the root node; BFS nodes start at 1.
-        for (std::size_t i = 0; i < order.size(); ++i) indices[order[i]] = i + 1;
+        for (std::size_t i = 0; i < order.size(); ++i) {
+            indices[order[i]] = i + 1;
+        }
 
         out.reserve(order.size() + 1);
         FlatRoute root_entry;
@@ -139,8 +150,15 @@ public:
         return out;
     }
 
-    [[nodiscard]] std::size_t node_count() const noexcept { return m_index; }
-    [[nodiscard]] std::size_t merged_count() const noexcept { return m_merged; }
+    [[nodiscard]] std::size_t node_count() const noexcept
+    {
+        return m_index;
+    }
+
+    [[nodiscard]] std::size_t merged_count() const noexcept
+    {
+        return m_merged;
+    }
 
 private:
     std::unique_ptr<RouteTreeNode> m_root{};

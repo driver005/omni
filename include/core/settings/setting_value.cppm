@@ -17,7 +17,8 @@ public:
     [[nodiscard]] std::string operator()(const SettingValue& value) const
     {
         return std::visit(
-            [](const auto& v) -> std::string {
+            [](const auto& v) -> std::string
+            {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::same_as<T, std::monostate>) {
                     return "";

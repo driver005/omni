@@ -53,14 +53,26 @@ struct SessionState
 [[nodiscard]] inline std::string quote(std::string_view text)
 {
     std::string out{"\""};
-    for (const char c : text) {
+    for (const char c: text) {
         switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
-            default: out += c; break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
+            default:
+                out += c;
+                break;
         }
     }
     out += '"';
@@ -70,19 +82,21 @@ struct SessionState
 [[nodiscard]] inline long long now_ms() noexcept
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::system_clock::now().time_since_epoch())
+               std::chrono::system_clock::now().time_since_epoch()
+    )
         .count();
 }
 
 [[nodiscard]] inline std::string random_hex(std::size_t bytes)
 {
-    static std::atomic<unsigned long long> seed{0x9e3779b97f4a7c15ULL};
+    static std::atomic<unsigned long long> seed{0x9E'37'79'B9'7F'4A'7C'15ULL};
     std::mt19937_64 rng{static_cast<std::mt19937_64::result_type>(
-        std::random_device{}() ^ seed.fetch_add(1, std::memory_order_relaxed))};
+        std::random_device{}() ^ seed.fetch_add(1, std::memory_order_relaxed)
+    )};
     std::string out;
     out.reserve(bytes * 2);
     for (std::size_t i = 0; i < bytes; ++i) {
-        out += std::format("{:02x}", static_cast<unsigned char>(rng() & 0xffu));
+        out += std::format("{:02x}", static_cast<unsigned char>(rng() & 0xFFu));
     }
     return out;
 }
@@ -98,10 +112,12 @@ struct SessionState
     return std::format("{:032x}", error_counter().fetch_add(1, std::memory_order_relaxed) + 1);
 }
 
-[[nodiscard]] inline std::string envelope(std::string_view message,
-                                          std::string_view type,
-                                          std::string_view code,
-                                          std::string_view context)
+[[nodiscard]] inline std::string envelope(
+    std::string_view message,
+    std::string_view type,
+    std::string_view code,
+    std::string_view context
+)
 {
     return std::format(
         R"({{"errors":[{{"id":{},"code":{},"context":{},"details":null,"ghostErrorCode":null,"help":null,"message":{},"property":null,"type":{}}}]}})",
@@ -109,15 +125,15 @@ struct SessionState
         code.empty() ? std::string{"null"} : quote(code),
         context.empty() ? std::string{"null"} : quote(context),
         quote(message),
-        quote(type));
+        quote(type)
+    );
 }
 
 // ---------------------------------------------------------------------------
 // Request helpers
 // ---------------------------------------------------------------------------
 
-[[nodiscard]] inline std::string header(interfaces::io::IRequest& request,
-                                        std::string_view name)
+[[nodiscard]] inline std::string header(interfaces::io::IRequest& request, std::string_view name)
 {
     return std::string{request.find_header(name)};
 }
@@ -126,22 +142,31 @@ struct SessionState
 [[nodiscard]] inline std::string origin_of_request(interfaces::io::IRequest& request)
 {
     auto origin = header(request, "origin");
-    if (!origin.empty()) return origin;
+    if (!origin.empty()) {
+        return origin;
+    }
     auto referer = header(request, "referer");
-    if (referer.empty()) return {};
+    if (referer.empty()) {
+        return {};
+    }
     const auto scheme = referer.find("://");
-    if (scheme == std::string::npos) return referer;
+    if (scheme == std::string::npos) {
+        return referer;
+    }
     const auto slash = referer.find('/', scheme + 3);
     return slash == std::string::npos ? referer : referer.substr(0, slash);
 }
 
 /** Login CSRF guard (session-service.ts `cookieCsrfProtection`). */
-[[nodiscard]] inline bool csrf_ok(interfaces::io::IRequest& request,
-                                  std::string_view bound_origin)
+[[nodiscard]] inline bool csrf_ok(interfaces::io::IRequest& request, std::string_view bound_origin)
 {
     const auto origin = origin_of_request(request);
-    if (bound_origin.empty()) return true;  // new session: nothing to bind against
-    if (origin.empty()) return false;
+    if (bound_origin.empty()) {
+        return true; // new session: nothing to bind against
+    }
+    if (origin.empty()) {
+        return false;
+    }
     return origin == bound_origin;
 }
 
@@ -149,7 +174,9 @@ struct SessionState
 {
     constexpr std::string_view prefix{"ghost-admin-api-session="};
     const auto pos = cookie.find(prefix);
-    if (pos == std::string_view::npos) return {};
+    if (pos == std::string_view::npos) {
+        return {};
+    }
     auto value = cookie.substr(pos + prefix.size());
     if (const auto end = value.find(';'); end != std::string_view::npos) {
         value = value.substr(0, end);
@@ -172,10 +199,10 @@ struct SessionState
 // Configuration (best-effort: settings store, then Ghost defaults)
 // ---------------------------------------------------------------------------
 
-[[nodiscard]] inline std::optional<std::string> setting(blog::BlogContext& ctx,
-                                                        std::string_view key)
+[[nodiscard]] inline std::optional<std::string>
+setting(blog::BlogContext& ctx, std::string_view key)
 {
-    for (const auto& row : blog::api::parse_array(ctx.store().json_for("settings"))) {
+    for (const auto& row: blog::api::parse_array(ctx.store().json_for("settings"))) {
         const auto kit = row.find("key");
         const auto vit = row.find("value");
         if (kit != row.end() && kit->second == key && vit != row.end()) {
@@ -193,7 +220,9 @@ struct SessionState
 [[nodiscard]] inline bool staff_device_verification(blog::BlogContext& ctx)
 {
     auto value = setting(ctx, "staffDeviceVerification");
-    if (!value) value = setting(ctx, "security:staffDeviceVerification");
+    if (!value) {
+        value = setting(ctx, "security:staffDeviceVerification");
+    }
     return value.value_or("false") == "true";
 }
 
@@ -207,23 +236,24 @@ struct SessionState
     try {
         return std::stoll(setting(ctx, "admin_session_max_age_ms").value_or("604800000"));
     } catch (...) {
-        return 604800000;
+        return 604'800'000;
     }
 }
 
 /** express-session cookie flags (express-session.ts:24-31). */
-[[nodiscard]] inline std::string session_cookie(blog::BlogContext& ctx,
-                                                std::string_view sid,
-                                                interfaces::io::IRequest& request)
+[[nodiscard]] inline std::string
+session_cookie(blog::BlogContext& ctx, std::string_view sid, interfaces::io::IRequest& request)
 {
     const bool ssl = header(request, "x-forwarded-proto") == "https";
     const auto subdir = header(request, "x-blog-subdir");
-    return std::format("ghost-admin-api-session={}; Max-Age={}; Path={}/ghost; HttpOnly; SameSite={}{}",
-                       sid,
-                       session_max_age_ms(ctx) / 1000,
-                       subdir,
-                       ssl ? "None" : "Lax",
-                       ssl ? "; Secure" : "");
+    return std::format(
+        "ghost-admin-api-session={}; Max-Age={}; Path={}/ghost; HttpOnly; SameSite={}{}",
+        sid,
+        session_max_age_ms(ctx) / 1'000,
+        subdir,
+        ssl ? "None" : "Lax",
+        ssl ? "; Secure" : ""
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -232,7 +262,9 @@ struct SessionState
 
 [[nodiscard]] inline bool verify_password(std::string_view stored, std::string_view supplied)
 {
-    if (stored.empty() || supplied.empty()) return false;
+    if (stored.empty() || supplied.empty()) {
+        return false;
+    }
     if (stored.starts_with('$')) {
         // Real Ghost hashes are bcrypt PHC strings; libsodium verifies Argon2id
         // PHC strings.  A non-PHC hash can never be accepted as plaintext.
@@ -249,138 +281,174 @@ struct SessionState
 
 namespace detail {
 
-inline constexpr std::array<std::uint32_t, 64> kSha256K{
-    0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
-    0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
-    0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
-    0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
-    0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
-    0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
-    0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
-    0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+    inline constexpr std::array<std::uint32_t, 64> kSha256K{
+        0x42'8A'2F'98u, 0x71'37'44'91u, 0xB5'C0'FB'CFu, 0xE9'B5'DB'A5u, 0x39'56'C2'5Bu,
+        0x59'F1'11'F1u, 0x92'3F'82'A4u, 0xAB'1C'5E'D5u, 0xD8'07'AA'98u, 0x12'83'5B'01u,
+        0x24'31'85'BEu, 0x55'0C'7D'C3u, 0x72'BE'5D'74u, 0x80'DE'B1'FEu, 0x9B'DC'06'A7u,
+        0xC1'9B'F1'74u, 0xE4'9B'69'C1u, 0xEF'BE'47'86u, 0x0F'C1'9D'C6u, 0x24'0C'A1'CCu,
+        0x2D'E9'2C'6Fu, 0x4A'74'84'AAu, 0x5C'B0'A9'DCu, 0x76'F9'88'DAu, 0x98'3E'51'52u,
+        0xA8'31'C6'6Du, 0xB0'03'27'C8u, 0xBF'59'7F'C7u, 0xC6'E0'0B'F3u, 0xD5'A7'91'47u,
+        0x06'CA'63'51u, 0x14'29'29'67u, 0x27'B7'0A'85u, 0x2E'1B'21'38u, 0x4D'2C'6D'FCu,
+        0x53'38'0D'13u, 0x65'0A'73'54u, 0x76'6A'0A'BBu, 0x81'C2'C9'2Eu, 0x92'72'2C'85u,
+        0xA2'BF'E8'A1u, 0xA8'1A'66'4Bu, 0xC2'4B'8B'70u, 0xC7'6C'51'A3u, 0xD1'92'E8'19u,
+        0xD6'99'06'24u, 0xF4'0E'35'85u, 0x10'6A'A0'70u, 0x19'A4'C1'16u, 0x1E'37'6C'08u,
+        0x27'48'77'4Cu, 0x34'B0'BC'B5u, 0x39'1C'0C'B3u, 0x4E'D8'AA'4Au, 0x5B'9C'CA'4Fu,
+        0x68'2E'6F'F3u, 0x74'8F'82'EEu, 0x78'A5'63'6Fu, 0x84'C8'78'14u, 0x8C'C7'02'08u,
+        0x90'BE'FF'FAu, 0xA4'50'6C'EBu, 0xBE'F9'A3'F7u, 0xC6'71'78'F2u
+    };
 
-[[nodiscard]] inline std::uint32_t rotr(std::uint32_t x, unsigned n) noexcept
-{
-    return (x >> n) | (x << (32u - n));
-}
-
-[[nodiscard]] inline std::array<std::uint8_t, 32> sha256(std::string_view data)
-{
-    const std::uint64_t bit_length = static_cast<std::uint64_t>(data.size()) * 8u;
-    std::vector<std::uint8_t> message(data.begin(), data.end());
-    message.push_back(0x80u);
-    while (message.size() % 64u != 56u) message.push_back(0u);
-    for (int i = 7; i >= 0; --i) {
-        message.push_back(static_cast<std::uint8_t>(bit_length >> (i * 8)));
+    [[nodiscard]] inline std::uint32_t rotr(std::uint32_t x, unsigned n) noexcept
+    {
+        return (x >> n) | (x << (32u - n));
     }
-    std::uint32_t h[8]{0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
-                       0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
-    std::uint32_t w[64]{};
-    for (std::size_t offset = 0; offset < message.size(); offset += 64u) {
-        for (int i = 0; i < 16; ++i) {
-            w[i] = (static_cast<std::uint32_t>(message[offset + i * 4u]) << 24u) |
-                   (static_cast<std::uint32_t>(message[offset + i * 4u + 1u]) << 16u) |
-                   (static_cast<std::uint32_t>(message[offset + i * 4u + 2u]) << 8u) |
-                   static_cast<std::uint32_t>(message[offset + i * 4u + 3u]);
+
+    [[nodiscard]] inline std::array<std::uint8_t, 32> sha256(std::string_view data)
+    {
+        const std::uint64_t bit_length = static_cast<std::uint64_t>(data.size()) * 8u;
+        std::vector<std::uint8_t> message(data.begin(), data.end());
+        message.push_back(0x80u);
+        while (message.size() % 64u != 56u) {
+            message.push_back(0u);
         }
-        for (int i = 16; i < 64; ++i) {
-            const std::uint32_t s0 = rotr(w[i - 15], 7u) ^ rotr(w[i - 15], 18u) ^ (w[i - 15] >> 3u);
-            const std::uint32_t s1 = rotr(w[i - 2], 17u) ^ rotr(w[i - 2], 19u) ^ (w[i - 2] >> 10u);
-            w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+        for (int i = 7; i >= 0; --i) {
+            message.push_back(static_cast<std::uint8_t>(bit_length >> (i * 8)));
         }
-        std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
-        std::uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
-        for (int i = 0; i < 64; ++i) {
-            const std::uint32_t s1 = rotr(e, 6u) ^ rotr(e, 11u) ^ rotr(e, 25u);
-            const std::uint32_t ch = (e & f) ^ ((~e) & g);
-            const std::uint32_t t1 = hh + s1 + ch + kSha256K[static_cast<std::size_t>(i)] + w[i];
-            const std::uint32_t s0 = rotr(a, 2u) ^ rotr(a, 13u) ^ rotr(a, 22u);
-            const std::uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
-            const std::uint32_t t2 = s0 + maj;
-            hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+        std::uint32_t h[8]{
+            0x6A'09'E6'67u,
+            0xBB'67'AE'85u,
+            0x3C'6E'F3'72u,
+            0xA5'4F'F5'3Au,
+            0x51'0E'52'7Fu,
+            0x9B'05'68'8Cu,
+            0x1F'83'D9'ABu,
+            0x5B'E0'CD'19u
+        };
+        std::uint32_t w[64]{};
+        for (std::size_t offset = 0; offset < message.size(); offset += 64u) {
+            for (int i = 0; i < 16; ++i) {
+                w[i] = (static_cast<std::uint32_t>(message[offset + i * 4u]) << 24u) |
+                       (static_cast<std::uint32_t>(message[offset + i * 4u + 1u]) << 16u) |
+                       (static_cast<std::uint32_t>(message[offset + i * 4u + 2u]) << 8u) |
+                       static_cast<std::uint32_t>(message[offset + i * 4u + 3u]);
+            }
+            for (int i = 16; i < 64; ++i) {
+                const std::uint32_t s0 =
+                    rotr(w[i - 15], 7u) ^ rotr(w[i - 15], 18u) ^ (w[i - 15] >> 3u);
+                const std::uint32_t s1 =
+                    rotr(w[i - 2], 17u) ^ rotr(w[i - 2], 19u) ^ (w[i - 2] >> 10u);
+                w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+            }
+            std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
+            std::uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
+            for (int i = 0; i < 64; ++i) {
+                const std::uint32_t s1 = rotr(e, 6u) ^ rotr(e, 11u) ^ rotr(e, 25u);
+                const std::uint32_t ch = (e & f) ^ ((~e) & g);
+                const std::uint32_t t1 =
+                    hh + s1 + ch + kSha256K[static_cast<std::size_t>(i)] + w[i];
+                const std::uint32_t s0 = rotr(a, 2u) ^ rotr(a, 13u) ^ rotr(a, 22u);
+                const std::uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+                const std::uint32_t t2 = s0 + maj;
+                hh = g;
+                g = f;
+                f = e;
+                e = d + t1;
+                d = c;
+                c = b;
+                b = a;
+                a = t1 + t2;
+            }
+            h[0] += a;
+            h[1] += b;
+            h[2] += c;
+            h[3] += d;
+            h[4] += e;
+            h[5] += f;
+            h[6] += g;
+            h[7] += hh;
         }
-        h[0] += a; h[1] += b; h[2] += c; h[3] += d;
-        h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+        std::array<std::uint8_t, 32> digest{};
+        for (int i = 0; i < 8; ++i) {
+            digest[static_cast<std::size_t>(i) * 4u] = static_cast<std::uint8_t>(h[i] >> 24u);
+            digest[static_cast<std::size_t>(i) * 4u + 1u] = static_cast<std::uint8_t>(h[i] >> 16u);
+            digest[static_cast<std::size_t>(i) * 4u + 2u] = static_cast<std::uint8_t>(h[i] >> 8u);
+            digest[static_cast<std::size_t>(i) * 4u + 3u] = static_cast<std::uint8_t>(h[i]);
+        }
+        return digest;
     }
-    std::array<std::uint8_t, 32> digest{};
-    for (int i = 0; i < 8; ++i) {
-        digest[static_cast<std::size_t>(i) * 4u] = static_cast<std::uint8_t>(h[i] >> 24u);
-        digest[static_cast<std::size_t>(i) * 4u + 1u] = static_cast<std::uint8_t>(h[i] >> 16u);
-        digest[static_cast<std::size_t>(i) * 4u + 2u] = static_cast<std::uint8_t>(h[i] >> 8u);
-        digest[static_cast<std::size_t>(i) * 4u + 3u] = static_cast<std::uint8_t>(h[i]);
-    }
-    return digest;
-}
 
-[[nodiscard]] inline std::array<std::uint8_t, 32> hmac_sha256(std::string_view key,
-                                                              std::string_view message)
-{
-    std::array<std::uint8_t, 64> block{};
-    if (key.size() > block.size()) {
-        const auto shortened = sha256(key);
-        std::copy(shortened.begin(), shortened.end(), block.begin());
-    } else {
-        std::copy(key.begin(), key.end(), block.begin());
+    [[nodiscard]] inline std::array<std::uint8_t, 32>
+    hmac_sha256(std::string_view key, std::string_view message)
+    {
+        std::array<std::uint8_t, 64> block{};
+        if (key.size() > block.size()) {
+            const auto shortened = sha256(key);
+            std::copy(shortened.begin(), shortened.end(), block.begin());
+        } else {
+            std::copy(key.begin(), key.end(), block.begin());
+        }
+        std::string inner;
+        std::string outer;
+        inner.reserve(block.size() + message.size());
+        outer.reserve(block.size() + 32u);
+        for (const std::uint8_t byte: block) {
+            inner.push_back(static_cast<char>(byte ^ 0x36u));
+            outer.push_back(static_cast<char>(byte ^ 0x5Cu));
+        }
+        inner.append(message);
+        const auto inner_digest = sha256(inner);
+        outer.append(reinterpret_cast<const char*>(inner_digest.data()), inner_digest.size());
+        return sha256(outer);
     }
-    std::string inner;
-    std::string outer;
-    inner.reserve(block.size() + message.size());
-    outer.reserve(block.size() + 32u);
-    for (const std::uint8_t byte : block) {
-        inner.push_back(static_cast<char>(byte ^ 0x36u));
-        outer.push_back(static_cast<char>(byte ^ 0x5cu));
-    }
-    inner.append(message);
-    const auto inner_digest = sha256(inner);
-    outer.append(reinterpret_cast<const char*>(inner_digest.data()), inner_digest.size());
-    return sha256(outer);
-}
 
-[[nodiscard]] inline std::string totp_for_counter(std::string_view key, long long counter)
-{
-    std::array<char, 8> message{};
-    for (int i = 7; i >= 0; --i) {
-        message[static_cast<std::size_t>(i)] = static_cast<char>(counter & 0xffu);
-        counter >>= 8;
+    [[nodiscard]] inline std::string totp_for_counter(std::string_view key, long long counter)
+    {
+        std::array<char, 8> message{};
+        for (int i = 7; i >= 0; --i) {
+            message[static_cast<std::size_t>(i)] = static_cast<char>(counter & 0xFFu);
+            counter >>= 8;
+        }
+        const auto mac = hmac_sha256(key, std::string_view{message.data(), message.size()});
+        const unsigned offset = static_cast<unsigned>(mac.back()) & 0x0Fu;
+        const unsigned value = ((static_cast<unsigned>(mac[offset]) & 0x7Fu) << 24u) |
+                               (static_cast<unsigned>(mac[offset + 1u]) << 16u) |
+                               (static_cast<unsigned>(mac[offset + 2u]) << 8u) |
+                               static_cast<unsigned>(mac[offset + 3u]);
+        return std::format("{:06d}", value % 1'000'000u);
     }
-    const auto mac = hmac_sha256(key, std::string_view{message.data(), message.size()});
-    const unsigned offset = static_cast<unsigned>(mac.back()) & 0x0fu;
-    const unsigned value =
-        ((static_cast<unsigned>(mac[offset]) & 0x7fu) << 24u) |
-        (static_cast<unsigned>(mac[offset + 1u]) << 16u) |
-        (static_cast<unsigned>(mac[offset + 2u]) << 8u) |
-        static_cast<unsigned>(mac[offset + 3u]);
-    return std::format("{:06d}", value % 1000000u);
-}
 
 } // namespace detail
 
-[[nodiscard]] inline std::string totp_key(std::string_view user_id,
-                                          std::string_view secret,
-                                          std::string_view context)
+[[nodiscard]] inline std::string
+totp_key(std::string_view user_id, std::string_view secret, std::string_view context)
 {
     return std::string{secret} + std::string{user_id} + std::string{context};
 }
 
 /** otplib.totp.generate with step 60 and 6 digits. */
-[[nodiscard]] inline std::string totp_generate(std::string_view user_id,
-                                               std::string_view secret,
-                                               std::string_view context,
-                                               long long at_ms = 0)
+[[nodiscard]] inline std::string totp_generate(
+    std::string_view user_id,
+    std::string_view secret,
+    std::string_view context,
+    long long at_ms = 0
+)
 {
-    const long long step = at_ms == 0 ? now_ms() / 60000 : at_ms / 60000;
+    const long long step = at_ms == 0 ? now_ms() / 60'000 : at_ms / 60'000;
     return detail::totp_for_counter(totp_key(user_id, secret, context), step);
 }
 
 /** otplib.totp.check with window [10, 10]. */
-[[nodiscard]] inline bool totp_verify(std::string_view user_id,
-                                      std::string_view token,
-                                      std::string_view secret,
-                                      std::string_view context,
-                                      long long at_ms = 0)
+[[nodiscard]] inline bool totp_verify(
+    std::string_view user_id,
+    std::string_view token,
+    std::string_view secret,
+    std::string_view context,
+    long long at_ms = 0
+)
 {
-    if (token.size() != 6) return false;
-    const long long step = (at_ms == 0 ? now_ms() : at_ms) / 60000;
+    if (token.size() != 6) {
+        return false;
+    }
+    const long long step = (at_ms == 0 ? now_ms() : at_ms) / 60'000;
     for (long long delta = -10; delta <= 10; ++delta) {
         if (detail::totp_for_counter(totp_key(user_id, secret, context), step + delta) == token) {
             return true;
@@ -396,12 +464,17 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 [[nodiscard]] inline SessionState read_session(blog::BlogContext& ctx, std::string_view sid)
 {
     SessionState state;
-    if (sid.empty()) return state;
+    if (sid.empty()) {
+        return state;
+    }
     const auto record = ctx.store().resources().get("session", sid);
-    if (record.empty()) return state;
+    if (record.empty()) {
+        return state;
+    }
     const auto fields = blog::api::JsonBody{}.parse(record);
     state.id = sid;
-    const auto get = [&fields](std::string_view key) -> std::string {
+    const auto get = [&fields](std::string_view key) -> std::string
+    {
         const auto it = fields.find(std::string{key});
         return it == fields.end() ? std::string{} : it->second;
     };
@@ -424,21 +497,30 @@ inline constexpr std::array<std::uint32_t, 64> kSha256K{
 {
     return std::format(
         R"({{"id":{},"user_id":{},"origin":{},"user_agent":{},"ip":{},"verified":{},"verified_user_id":{},"auth_code_challenge":{},"auth_code_generated_at":{}}})",
-        quote(state.id), quote(state.user_id), quote(state.origin), quote(state.user_agent),
-        quote(state.ip), state.verified ? "true" : "false", quote(state.verified_user_id),
-        quote(state.auth_code_challenge), state.auth_code_generated_at);
+        quote(state.id),
+        quote(state.user_id),
+        quote(state.origin),
+        quote(state.user_agent),
+        quote(state.ip),
+        state.verified ? "true" : "false",
+        quote(state.verified_user_id),
+        quote(state.auth_code_challenge),
+        state.auth_code_generated_at
+    );
 }
 
 inline void write_session(blog::BlogContext& ctx, const SessionState& state)
 {
-    if (state.id.empty()) return;
+    if (state.id.empty()) {
+        return;
+    }
     ctx.store().resources().edit("session", state.id, session_json(state));
 }
 
 [[nodiscard]] inline bool has_valid_challenge(const SessionState& state)
 {
     return !state.auth_code_challenge.empty() && state.auth_code_generated_at > 0 &&
-           now_ms() - state.auth_code_generated_at <= 5 * 60 * 1000;
+           now_ms() - state.auth_code_generated_at <= 5 * 60 * 1'000;
 }
 
 inline void invalidate_challenge(SessionState& state)
@@ -455,31 +537,43 @@ inline void rotate_challenge(SessionState& state)
 
 [[nodiscard]] inline std::string user_email(blog::BlogContext& ctx, std::string_view user_id)
 {
-    if (user_id.empty()) return {};
+    if (user_id.empty()) {
+        return {};
+    }
     const auto record = ctx.store().find_by_resource("users", std::string{user_id});
-    if (!record) return {};
+    if (!record) {
+        return {};
+    }
     const auto fields = blog::api::JsonBody{}.parse(*record);
     const auto it = fields.find("email");
     return it == fields.end() ? std::string{} : it->second;
 }
 
 /** sendAuthCodeToUser: rotate challenge, generate TOTP and emit the sign-in mail. */
-[[nodiscard]] inline std::string send_auth_code(blog::BlogContext& ctx,
-                                                interfaces::io::IRequest& request,
-                                                SessionState& state)
+[[nodiscard]] inline std::string
+send_auth_code(blog::BlogContext& ctx, interfaces::io::IRequest& request, SessionState& state)
 {
-    if (state.user_id.empty()) return {};
+    if (state.user_id.empty()) {
+        return {};
+    }
     rotate_challenge(state);
-    const auto token = totp_generate(state.user_id, admin_session_secret(ctx),
-                                     state.auth_code_challenge);
+    const auto token =
+        totp_generate(state.user_id, admin_session_secret(ctx), state.auth_code_challenge);
     const auto email = user_email(ctx, state.user_id);
     const auto device = std::format("{}, {}", header(request, "user-agent"), state.ip);
-    blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-        .type = "mail.signin_code",
-        .payload = std::format(R"({{"to":{},"token":{},"device":{},"is_2fa_required":{}}})",
-                               quote(email), quote(token), quote(device),
-                               require_email_mfa(ctx) ? "true" : "false"),
-        .aggregate_id = state.user_id});
+    blog::handlers::outbox::global_outbox().emit(
+        blog::handlers::outbox::Event{
+            .type = "mail.signin_code",
+            .payload = std::format(
+                R"({{"to":{},"token":{},"device":{},"is_2fa_required":{}}})",
+                quote(email),
+                quote(token),
+                quote(device),
+                require_email_mfa(ctx) ? "true" : "false"
+            ),
+            .aggregate_id = state.user_id
+        }
+    );
     return token;
 }
 
@@ -489,10 +583,13 @@ inline void verify_session(blog::BlogContext& ctx, SessionState& state)
     state.verified = true;
     state.verified_user_id = state.user_id;
     invalidate_challenge(state);
-    blog::handlers::outbox::global_outbox().emit(blog::handlers::outbox::Event{
-        .type = "verification_email_limit.reset",
-        .payload = std::format(R"({{"user_id":{}}})", quote(state.user_id)),
-        .aggregate_id = state.user_id});
+    blog::handlers::outbox::global_outbox().emit(
+        blog::handlers::outbox::Event{
+            .type = "verification_email_limit.reset",
+            .payload = std::format(R"({{"user_id":{}}})", quote(state.user_id)),
+            .aggregate_id = state.user_id
+        }
+    );
     write_session(ctx, state);
 }
 
@@ -518,9 +615,12 @@ inline void verify_session(blog::BlogContext& ctx, SessionState& state)
 
 [[nodiscard]] inline std::string needs_2fa(bool required)
 {
-    return envelope("User must verify session to login.", "Needs2FAError",
-                    required ? "2FA_TOKEN_REQUIRED" : "2FA_NEW_DEVICE_DETECTED",
-                    "A 6-digit sign-in verification code has been sent to your email to keep your account safe.");
+    return envelope(
+        "User must verify session to login.",
+        "Needs2FAError",
+        required ? "2FA_TOKEN_REQUIRED" : "2FA_NEW_DEVICE_DETECTED",
+        "A 6-digit sign-in verification code has been sent to your email to keep your account safe."
+    );
 }
 
 [[nodiscard]] inline std::string bad_request(std::string_view message)
@@ -543,8 +643,8 @@ public:
     using Output = std::map<std::string, std::string>;
     static constexpr std::string_view name{"session_create_execute"};
 
-    [[nodiscard]] core::workflow::StepResponse<Output> invoke(
-        const Input& in, core::workflow::WorkflowContext&) const
+    [[nodiscard]] core::workflow::StepResponse<Output>
+    invoke(const Input& in, core::workflow::WorkflowContext&) const
     {
         using namespace support;
         auto& ctx = *s_ctx;
@@ -554,33 +654,52 @@ public:
         const auto username = fields.contains("username") ? fields.at("username") : std::string{};
         const auto password = fields.contains("password") ? fields.at("password") : std::string{};
         const auto token = fields.contains("token") ? fields.at("token") : std::string{};
-        if (username.empty() || password.empty()) return denied();
+        if (username.empty() || password.empty()) {
+            return denied();
+        }
 
         // models.User.getByEmail + models.User.check (session.ts:36-45).
         std::string user_id;
         bool has_logged_in = false;
-        for (const auto& row : blog::api::parse_array(store.json_for("users", {{"filter", "email:" + username}}))) {
+        for (const auto& row:
+             blog::api::parse_array(store.json_for("users", {{"filter", "email:" + username}}))) {
             const auto idit = row.find("id");
-            if (idit == row.end()) continue;
+            if (idit == row.end()) {
+                continue;
+            }
             const auto record = store.find_by_resource("users", idit->second);
-            if (!record) continue;
+            if (!record) {
+                continue;
+            }
             const auto user = blog::api::JsonBody{}.parse(*record);
             const auto email = user.contains("email") ? user.at("email") : std::string{};
             const auto stored = user.contains("password") ? user.at("password") : std::string{};
-            if (email != username || !verify_password(stored, password)) continue;
+            if (email != username || !verify_password(stored, password)) {
+                continue;
+            }
             user_id = idit->second;
             const auto seen = user.find("last_seen");
             has_logged_in = seen != user.end() && !seen->second.empty();
             break;
         }
-        if (user_id.empty()) return denied();
+        if (user_id.empty()) {
+            return denied();
+        }
 
         // User.check side effects: updateLastSeen + save(status:active).
-        (void)store.edit("users", user_id,
-                   std::format(R"({{"last_seen":{},"status":"active"}})",
-                               quote(std::format("{:%Y-%m-%dT%H:%M:%SZ}",
-                                                 std::chrono::floor<std::chrono::seconds>(
-                                                     std::chrono::system_clock::now())))));
+        (void)store.edit(
+            "users",
+            user_id,
+            std::format(
+                R"({{"last_seen":{},"status":"active"}})",
+                quote(
+                    std::format(
+                        "{:%Y-%m-%dT%H:%M:%SZ}",
+                        std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
+                    )
+                )
+            )
+        );
 
         // req.session.regenerate -> a fresh server session id, carrying the
         // prior session's verification (bound to this user) and auth challenge
@@ -624,20 +743,27 @@ public:
             // createSession -> sendAuthCodeToUser -> Needs2FAError (middleware.ts:20-31).
             (void)send_auth_code(ctx, in, state);
             write_session(ctx, state);
-            return core::workflow::StepResponse<Output>{{{"status", "403"},
-                {"body", needs_2fa(require_email_mfa(ctx))}, {"set_cookie", cookie}}};
+            return core::workflow::StepResponse<Output>{
+                {{"status", "403"},
+                 {"body", needs_2fa(require_email_mfa(ctx))},
+                 {"set_cookie", cookie}}
+            };
         }
-        return core::workflow::StepResponse<Output>{{{"status", "201"}, {"body", R"({})"},
-                                                       {"set_cookie", cookie}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "201"}, {"body", R"({})"}, {"set_cookie", cookie}}
+        };
     }
 
     void compensate(const core::workflow::WorkflowValue&, core::workflow::WorkflowContext&) const {}
+
     static blog::BlogContext* s_ctx;
 
 private:
     [[nodiscard]] static core::workflow::StepResponse<Output> denied()
     {
-        return core::workflow::StepResponse<Output>{{{"status", "401"}, {"body", support::access_denied()}}};
+        return core::workflow::StepResponse<Output>{
+            {{"status", "401"}, {"body", support::access_denied()}}
+        };
     }
 };
 

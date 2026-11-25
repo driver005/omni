@@ -40,11 +40,7 @@ public:
         if (m_encoded.empty()) {
             return false;
         }
-        return crypto_pwhash_str_verify(
-                   m_encoded.c_str(),
-                   password.data(),
-                   password.size()
-               ) == 0;
+        return crypto_pwhash_str_verify(m_encoded.c_str(), password.data(), password.size()) == 0;
     }
 
 private:

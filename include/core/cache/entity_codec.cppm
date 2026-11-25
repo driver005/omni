@@ -17,18 +17,19 @@ class EncodeField
 {
 public:
     [[nodiscard]] std::string operator()(const T& value) const
-{
-    using U = std::remove_cvref_t<T>;
-    if constexpr (std::same_as<U, bool>) {
-        return value ? "true" : "false";
-    } else if constexpr (std::is_arithmetic_v<U>) {
-        return std::format("{}", value);
-    } else if constexpr (std::same_as<U, std::string> ||
-                         std::convertible_to<U, std::string_view>) {
-        return std::string{std::string_view{value}};
-    } else {
-        return std::format("{}", value);
-    }
+    {
+        using U = std::remove_cvref_t<T>;
+        if constexpr (std::same_as<U, bool>) {
+            return value ? "true" : "false";
+        } else if constexpr (std::is_arithmetic_v<U>) {
+            return std::format("{}", value);
+        } else if constexpr (
+            std::same_as<U, std::string> || std::convertible_to<U, std::string_view>
+        ) {
+            return std::string{std::string_view{value}};
+        } else {
+            return std::format("{}", value);
+        }
     }
 };
 
@@ -37,32 +38,33 @@ class DecodeField
 {
 public:
     [[nodiscard]] std::optional<T> operator()(std::string_view text) const
-{
-    using U = std::remove_cvref_t<T>;
-    if constexpr (std::same_as<U, std::string>) {
-        return std::string{text};
-    } else if constexpr (std::same_as<U, bool>) {
-        return text == "true" || text == "1";
-    } else if constexpr (std::is_integral_v<U>) {
-        long long parsed = 0;
-        const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), parsed);
-        if (error != std::errc{} || end != text.data() + text.size()) {
+    {
+        using U = std::remove_cvref_t<T>;
+        if constexpr (std::same_as<U, std::string>) {
+            return std::string{text};
+        } else if constexpr (std::same_as<U, bool>) {
+            return text == "true" || text == "1";
+        } else if constexpr (std::is_integral_v<U>) {
+            long long parsed = 0;
+            const auto [end, error] =
+                std::from_chars(text.data(), text.data() + text.size(), parsed);
+            if (error != std::errc{} || end != text.data() + text.size()) {
+                return std::nullopt;
+            }
+            return static_cast<U>(parsed);
+        } else if constexpr (std::is_floating_point_v<U>) {
+            double parsed = 0.0;
+            const auto [end, error] =
+                std::from_chars(text.data(), text.data() + text.size(), parsed);
+            if (error != std::errc{} || end != text.data() + text.size()) {
+                return std::nullopt;
+            }
+            return static_cast<U>(parsed);
+        } else {
             return std::nullopt;
         }
-        return static_cast<U>(parsed);
-    } else if constexpr (std::is_floating_point_v<U>) {
-        double parsed = 0.0;
-        const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), parsed);
-        if (error != std::errc{} || end != text.data() + text.size()) {
-            return std::nullopt;
-        }
-        return static_cast<U>(parsed);
-    } else {
-        return std::nullopt;
-    }
     }
 };
-
 
 /** @brief Encodes/decodes reflected entities into backend-neutral cache entries. */
 class EntityCodec
@@ -81,11 +83,16 @@ public:
     {
         CacheEntry entry;
         entry.key = KeyBuilder{}.build<E>(entity);
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto append = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto append = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 const std::string name{std::string_view{F::name}};
-                const std::string encoded = EncodeField<std::remove_cvref_t<decltype(entity.*F::member)>>{}(entity.*F::member);
+                const std::string encoded =
+                    EncodeField<std::remove_cvref_t<decltype(entity.*F::member)>>{}(
+                        entity.*F::member
+                    );
                 entry.attributes.emplace(name, encoded);
                 if constexpr (F::is_tag) {
                     entry.tags.push_back(encoded);
@@ -102,8 +109,10 @@ public:
     {
         E entity{};
         bool complete = true;
-        [&]<std::size_t... I>(std::index_sequence<I...>) {
-            auto read = [&](auto descriptor) {
+        [&]<std::size_t... I>(std::index_sequence<I...>)
+        {
+            auto read = [&](auto descriptor)
+            {
                 using F = decltype(descriptor);
                 const auto it = entry.attributes.find(std::string{std::string_view{F::name}});
                 if (it == entry.attributes.end()) {
@@ -135,10 +144,14 @@ struct CodecSample
     std::string name{};
     bool active{};
 };
-CORE_CACHE_ENTITY(CodecSample, "users",
+
+CORE_CACHE_ENTITY(
+    CodecSample,
+    "users",
     CORE_CACHE_FIELD("id", &CodecSample::id, FieldRole::KEY),
     CORE_CACHE_FIELD("name", &CodecSample::name, FieldRole::TAG),
-    CORE_CACHE_FIELD("active", &CodecSample::active));
+    CORE_CACHE_FIELD("active", &CodecSample::active)
+);
 
 using namespace boost::ut;
 

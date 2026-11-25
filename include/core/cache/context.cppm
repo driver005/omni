@@ -67,7 +67,7 @@ public:
 private:
     std::unique_ptr<CacheStorageBackend> m_backend{};
     CacheEngine m_engine{CacheEngine::LOCAL};
-    std::size_t m_capacity{1024};
+    std::size_t m_capacity{1'024};
     EvictionPolicy m_policy{EvictionPolicy::LRU};
     std::map<std::string, std::string> m_options{};
 };

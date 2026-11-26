@@ -3,13 +3,9 @@ load("//bazel:build_defs.bzl", "congelado_cc_test", "congelado_module_library")
 congelado_module_library(
     name = "core_error",
     primary_interface = "base.cppm",
-    partitions = [
-        "kind.cppm",
-        "error.cppm",
-    ],
+    partitions = [],
     deps = [
         "//include/core/serde:core_serde",
-        "//include/interfaces:interfaces",
     ],
     visibility = ["//visibility:public"],
 )

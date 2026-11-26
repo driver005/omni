@@ -1,6 +1,8 @@
 module;
 export module app_dto:superposition_proxy;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::superposition_proxy {
 
-class AuditLogResponse
+class AuditLogResponse : public serde::Serializer<AuditLogResponse>
 {
 public:
     void set_id(std::string value)
@@ -102,7 +104,7 @@ public:
     std::string query{};
 };
 
-class ContextResponse
+class ContextResponse : public serde::Serializer<ContextResponse>
 {
 public:
     void set_id(std::string value)
@@ -228,7 +230,7 @@ public:
     std::string last_modified_by{};
 };
 
-class DefaultConfigResponse
+class DefaultConfigResponse : public serde::Serializer<DefaultConfigResponse>
 {
 public:
     void set_key(std::string value)
@@ -355,7 +357,7 @@ public:
     std::string last_modified_by{};
 };
 
-class DimensionResponse
+class DimensionResponse : public serde::Serializer<DimensionResponse>
 {
 public:
     void set_dimension(std::string value)
@@ -515,7 +517,7 @@ public:
     bool mandatory{};
 };
 
-class PaginatedListResponse
+class PaginatedListResponse : public serde::Serializer<PaginatedListResponse>
 {
 public:
     void set_total_pages(std::int32_t value)
@@ -553,7 +555,7 @@ public:
     std::vector<std::string> data{};
 };
 
-class ResolveExplanationEntry
+class ResolveExplanationEntry : public serde::Serializer<ResolveExplanationEntry>
 {
 public:
     void set_context_id(std::string value)
@@ -613,7 +615,7 @@ public:
     serde::Value value_after{};
 };
 
-class ResolvedConfigEntry
+class ResolvedConfigEntry : public serde::Serializer<ResolvedConfigEntry>
 {
 public:
     void set_description(std::string value)
@@ -651,7 +653,7 @@ public:
     serde::Value value{};
 };
 
-class ResolveConfigExplanationResponse
+class ResolveConfigExplanationResponse : public serde::Serializer<ResolveConfigExplanationResponse>
 {
 public:
     void set_key(std::string value)
@@ -678,7 +680,7 @@ public:
     std::vector<ResolveExplanationEntry> timeline{};
 };
 
-class ResolveConfigResponse
+class ResolveConfigResponse : public serde::Serializer<ResolveConfigResponse>
 {
 public:
     void set_value(std::unordered_map<std::string, ResolvedConfigEntry> value)

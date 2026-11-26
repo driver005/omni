@@ -1,6 +1,8 @@
 module;
 export module app_model:subscription;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -16,7 +18,7 @@ enum class AccountReceivablesHandling
     WriteOff
 };
 
-class AddressValue
+class AddressValue : public serde::Serializer<AddressValue>
 {
 public:
     void set_value(std::string value)
@@ -32,7 +34,7 @@ public:
     std::string value{};
 };
 
-class AuthenticationTypeValue
+class AuthenticationTypeValue : public serde::Serializer<AuthenticationTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -55,7 +57,7 @@ enum class CancelOption
     SpecificDate
 };
 
-class CaptureMethodValue
+class CaptureMethodValue : public serde::Serializer<CaptureMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -77,7 +79,7 @@ enum class ChargesHandling
     AddToUnbilledCharges
 };
 
-class ClientSecret
+class ClientSecret : public serde::Serializer<ClientSecret>
 {
 public:
     void set_value(std::string value)
@@ -100,7 +102,7 @@ enum class CreditOption
     Full
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -116,7 +118,7 @@ public:
     std::string value{};
 };
 
-class CustomerAcceptanceValue
+class CustomerAcceptanceValue : public serde::Serializer<CustomerAcceptanceValue>
 {
 public:
     void set_value(std::string value)
@@ -132,7 +134,7 @@ public:
     std::string value{};
 };
 
-class CustomerIdValue
+class CustomerIdValue : public serde::Serializer<CustomerIdValue>
 {
 public:
     void set_value(std::string value)
@@ -148,7 +150,7 @@ public:
     std::string value{};
 };
 
-class FutureUsageValue
+class FutureUsageValue : public serde::Serializer<FutureUsageValue>
 {
 public:
     void set_value(std::string value)
@@ -164,7 +166,7 @@ public:
     std::string value{};
 };
 
-class IntentStatusValue
+class IntentStatusValue : public serde::Serializer<IntentStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -180,7 +182,7 @@ public:
     std::string value{};
 };
 
-class InvoiceIdValue
+class InvoiceIdValue : public serde::Serializer<InvoiceIdValue>
 {
 public:
     void set_value(std::string value)
@@ -196,7 +198,7 @@ public:
     std::string value{};
 };
 
-class InvoiceStatusValue
+class InvoiceStatusValue : public serde::Serializer<InvoiceStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -212,7 +214,7 @@ public:
     std::string value{};
 };
 
-class ListSubscriptionQuery
+class ListSubscriptionQuery : public serde::Serializer<ListSubscriptionQuery>
 {
 public:
     void set_limit(std::optional<std::int64_t> value)
@@ -239,7 +241,7 @@ public:
     std::optional<std::int64_t> offset{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -255,7 +257,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string value)
@@ -271,7 +273,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -287,7 +289,7 @@ public:
     std::string value{};
 };
 
-class NextActionDataValue
+class NextActionDataValue : public serde::Serializer<NextActionDataValue>
 {
 public:
     void set_value(std::string value)
@@ -310,7 +312,7 @@ enum class PauseOption
     SpecificDate
 };
 
-class PaymentExperienceValue
+class PaymentExperienceValue : public serde::Serializer<PaymentExperienceValue>
 {
 public:
     void set_value(std::string value)
@@ -326,7 +328,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue
+class PaymentIdValue : public serde::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string value)
@@ -342,7 +344,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodDataRequestValue
+class PaymentMethodDataRequestValue : public serde::Serializer<PaymentMethodDataRequestValue>
 {
 public:
     void set_value(std::string value)
@@ -358,7 +360,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue
+class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -374,7 +376,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue
+class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -390,7 +392,7 @@ public:
     std::string value{};
 };
 
-class PaymentTypeValue
+class PaymentTypeValue : public serde::Serializer<PaymentTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -414,7 +416,7 @@ enum class PeriodUnit
     Year
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -430,7 +432,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -446,7 +448,7 @@ public:
     std::string value{};
 };
 
-class RecurringDetailsValue
+class RecurringDetailsValue : public serde::Serializer<RecurringDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -474,7 +476,7 @@ enum class ResumeOption
     SpecificDate
 };
 
-class SubscriptionIdValue
+class SubscriptionIdValue : public serde::Serializer<SubscriptionIdValue>
 {
 public:
     void set_value(std::string value)
@@ -496,7 +498,7 @@ enum class SubscriptionItemType
     Addon
 };
 
-class SubscriptionStatusValue
+class SubscriptionStatusValue : public serde::Serializer<SubscriptionStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -518,7 +520,7 @@ enum class UnpaidInvoicesHandling
     SchedulePaymentCollection
 };
 
-class UpdateSubscriptionRequest
+class UpdateSubscriptionRequest : public serde::Serializer<UpdateSubscriptionRequest>
 {
 public:
     void set_plan_id(std::string value)
@@ -545,7 +547,7 @@ public:
     std::string item_price_id{};
 };
 
-class UrlValue
+class UrlValue : public serde::Serializer<UrlValue>
 {
 public:
     void set_value(std::string value)
@@ -561,7 +563,7 @@ public:
     std::string value{};
 };
 
-class CancelSubscriptionResponse
+class CancelSubscriptionResponse : public serde::Serializer<CancelSubscriptionResponse>
 {
 public:
     void set_id(SubscriptionIdValue value)
@@ -643,7 +645,7 @@ public:
     std::optional<PrimitiveDateTimeValue> cancelled_at{};
 };
 
-class ConfirmPaymentsRequestData
+class ConfirmPaymentsRequestData : public serde::Serializer<ConfirmPaymentsRequestData>
 {
 public:
     void set_billing(std::optional<AddressValue> value)
@@ -750,7 +752,8 @@ public:
     std::optional<std::string> payment_token{};
 };
 
-class ConfirmSubscriptionPaymentDetails
+class ConfirmSubscriptionPaymentDetails :
+    public serde::Serializer<ConfirmSubscriptionPaymentDetails>
 {
 public:
     void set_shipping(std::optional<AddressValue> value)
@@ -846,7 +849,8 @@ public:
     std::optional<std::string> payment_token{};
 };
 
-class CreateAndConfirmPaymentsRequestData
+class CreateAndConfirmPaymentsRequestData :
+    public serde::Serializer<CreateAndConfirmPaymentsRequestData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -1053,7 +1057,7 @@ public:
     std::optional<bool> off_session{};
 };
 
-class CreateMitPaymentRequestData
+class CreateMitPaymentRequestData : public serde::Serializer<CreateMitPaymentRequestData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -1135,7 +1139,7 @@ public:
     std::optional<ProfileIdValue> profile_id{};
 };
 
-class CreatePaymentsRequestData
+class CreatePaymentsRequestData : public serde::Serializer<CreatePaymentsRequestData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -1251,7 +1255,7 @@ public:
     std::optional<AuthenticationTypeValue> authentication_type{};
 };
 
-class CreateSubscriptionPaymentDetails
+class CreateSubscriptionPaymentDetails : public serde::Serializer<CreateSubscriptionPaymentDetails>
 {
 public:
     void set_return_url(UrlValue value)
@@ -1312,7 +1316,7 @@ public:
     std::optional<PaymentTypeValue> payment_type{};
 };
 
-class EstimateSubscriptionQuery
+class EstimateSubscriptionQuery : public serde::Serializer<EstimateSubscriptionQuery>
 {
 public:
     void set_client_secret(std::optional<ClientSecret> value)
@@ -1361,7 +1365,7 @@ public:
     std::optional<std::string> coupon_code{};
 };
 
-class GetSubscriptionItemsQuery
+class GetSubscriptionItemsQuery : public serde::Serializer<GetSubscriptionItemsQuery>
 {
 public:
     void set_client_secret(std::optional<ClientSecret> value)
@@ -1410,7 +1414,7 @@ public:
     SubscriptionItemType item_type{};
 };
 
-class Invoice
+class Invoice : public serde::Serializer<Invoice>
 {
 public:
     void set_id(InvoiceIdValue value)
@@ -1548,7 +1552,7 @@ public:
     std::optional<std::string> billing_processor_invoice_id{};
 };
 
-class PauseSubscriptionRequest
+class PauseSubscriptionRequest : public serde::Serializer<PauseSubscriptionRequest>
 {
 public:
     void set_pause_option(std::optional<PauseOption> value)
@@ -1575,7 +1579,7 @@ public:
     std::optional<PrimitiveDateTimeValue> pause_at{};
 };
 
-class PauseSubscriptionResponse
+class PauseSubscriptionResponse : public serde::Serializer<PauseSubscriptionResponse>
 {
 public:
     void set_id(SubscriptionIdValue value)
@@ -1657,7 +1661,7 @@ public:
     std::optional<PrimitiveDateTimeValue> paused_at{};
 };
 
-class PaymentDetails
+class PaymentDetails : public serde::Serializer<PaymentDetails>
 {
 public:
     void set_payment_method(std::optional<PaymentMethodValue> value)
@@ -1776,7 +1780,7 @@ public:
     std::optional<std::string> payment_method_id{};
 };
 
-class PaymentResponseData
+class PaymentResponseData : public serde::Serializer<PaymentResponseData>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -1981,7 +1985,7 @@ public:
     std::optional<std::string> payment_token{};
 };
 
-class ResumeSubscriptionRequest
+class ResumeSubscriptionRequest : public serde::Serializer<ResumeSubscriptionRequest>
 {
 public:
     void set_resume_option(std::optional<ResumeOption> value)
@@ -2031,7 +2035,7 @@ public:
     std::optional<UnpaidInvoicesHandling> unpaid_invoices_handling{};
 };
 
-class ResumeSubscriptionResponse
+class ResumeSubscriptionResponse : public serde::Serializer<ResumeSubscriptionResponse>
 {
 public:
     void set_id(SubscriptionIdValue value)
@@ -2113,7 +2117,7 @@ public:
     std::optional<PrimitiveDateTimeValue> next_billing_at{};
 };
 
-class SubscriptionItemPrices
+class SubscriptionItemPrices : public serde::Serializer<SubscriptionItemPrices>
 {
 public:
     void set_price_id(std::string value)
@@ -2206,7 +2210,7 @@ public:
     std::optional<PeriodUnit> trial_period_unit{};
 };
 
-class SubscriptionLineItem
+class SubscriptionLineItem : public serde::Serializer<SubscriptionLineItem>
 {
 public:
     void set_item_id(std::string value)
@@ -2277,7 +2281,7 @@ public:
     std::int64_t quantity{};
 };
 
-class ConfirmSubscriptionRequest
+class ConfirmSubscriptionRequest : public serde::Serializer<ConfirmSubscriptionRequest>
 {
 public:
     void set_client_secret(std::optional<ClientSecret> value)
@@ -2304,7 +2308,7 @@ public:
     ConfirmSubscriptionPaymentDetails payment_details{};
 };
 
-class ConfirmSubscriptionResponse
+class ConfirmSubscriptionResponse : public serde::Serializer<ConfirmSubscriptionResponse>
 {
 public:
     void set_id(SubscriptionIdValue value)
@@ -2431,7 +2435,8 @@ public:
     std::optional<std::string> billing_processor_subscription_id{};
 };
 
-class CreateAndConfirmSubscriptionRequest
+class CreateAndConfirmSubscriptionRequest :
+    public serde::Serializer<CreateAndConfirmSubscriptionRequest>
 {
 public:
     void set_plan_id(std::optional<std::string> value)
@@ -2524,7 +2529,7 @@ public:
     std::optional<std::string> merchant_reference_id{};
 };
 
-class CreateSubscriptionRequest
+class CreateSubscriptionRequest : public serde::Serializer<CreateSubscriptionRequest>
 {
 public:
     void set_merchant_reference_id(std::optional<std::string> value)
@@ -2617,7 +2622,7 @@ public:
     std::optional<AddressValue> shipping{};
 };
 
-class EstimateSubscriptionResponse
+class EstimateSubscriptionResponse : public serde::Serializer<EstimateSubscriptionResponse>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -2699,7 +2704,7 @@ public:
     std::vector<SubscriptionLineItem> line_items{};
 };
 
-class GetSubscriptionItemsResponse
+class GetSubscriptionItemsResponse : public serde::Serializer<GetSubscriptionItemsResponse>
 {
 public:
     void set_item_id(std::string value)
@@ -2748,7 +2753,7 @@ public:
     std::vector<SubscriptionItemPrices> price_id{};
 };
 
-class SubscriptionResponse
+class SubscriptionResponse : public serde::Serializer<SubscriptionResponse>
 {
 public:
     void set_id(SubscriptionIdValue value)
@@ -2891,7 +2896,7 @@ enum class UnbilledChargesOption
     Delete
 };
 
-class CancelSubscriptionRequest
+class CancelSubscriptionRequest : public serde::Serializer<CancelSubscriptionRequest>
 {
 public:
     void set_cancel_option(std::optional<CancelOption> value)

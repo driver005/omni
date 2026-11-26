@@ -1,6 +1,8 @@
 module;
 export module app_dto:surcharge_decision_configs;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::surcharge_decision_configs {
 
-class MerchantSurchargeConfigs
+class MerchantSurchargeConfigs : public serde::Serializer<MerchantSurchargeConfigs>
 {
 public:
     void set_show_surcharge_breakup_screen(std::optional<bool> value)
@@ -25,7 +27,7 @@ public:
     std::optional<bool> show_surcharge_breakup_screen{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class PercentageValue
+class PercentageValue : public serde::Serializer<PercentageValue>
 {
 public:
     void set_value(std::string v)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class ProgramValue
+class ProgramValue : public serde::Serializer<ProgramValue>
 {
 public:
     void set_value(std::string v)
@@ -79,7 +81,7 @@ enum class SurchargeOutput
     Rate,
 };
 
-class SurchargeDecisionConfigReq
+class SurchargeDecisionConfigReq : public serde::Serializer<SurchargeDecisionConfigReq>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -117,7 +119,7 @@ public:
     std::optional<ProgramValue> algorithm{};
 };
 
-class SurchargeDecisionManagerRecord
+class SurchargeDecisionManagerRecord : public serde::Serializer<SurchargeDecisionManagerRecord>
 {
 public:
     void set_name(std::string value)
@@ -177,7 +179,7 @@ public:
     std::int64_t modified_at{};
 };
 
-class SurchargeDetailsOutput
+class SurchargeDetailsOutput : public serde::Serializer<SurchargeDetailsOutput>
 {
 public:
     void set_surcharge(SurchargeOutput value)
@@ -204,7 +206,7 @@ public:
     std::optional<PercentageValue> tax_on_surcharge{};
 };
 
-class SurchargeDecisionConfigs
+class SurchargeDecisionConfigs : public serde::Serializer<SurchargeDecisionConfigs>
 {
 public:
     void set_surcharge_details(std::optional<SurchargeDetailsOutput> value)

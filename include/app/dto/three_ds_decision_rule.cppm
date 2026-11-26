@@ -1,6 +1,8 @@
 module;
 export module app_dto:three_ds_decision_rule;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::three_ds_decision_rule {
 
-class CardDiscoveryValue
+class CardDiscoveryValue : public serde::Serializer<CardDiscoveryValue>
 {
 public:
     void set_value(std::string v)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CardNetworkValue
+class CardNetworkValue : public serde::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string v)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class CountryValue
+class CountryValue : public serde::Serializer<CountryValue>
 {
 public:
     void set_value(std::string v)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string v)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class CustomerDeviceDisplaySizeValue
+class CustomerDeviceDisplaySizeValue : public serde::Serializer<CustomerDeviceDisplaySizeValue>
 {
 public:
     void set_value(std::string v)
@@ -89,7 +91,7 @@ public:
     std::string value{};
 };
 
-class CustomerDevicePlatformValue
+class CustomerDevicePlatformValue : public serde::Serializer<CustomerDevicePlatformValue>
 {
 public:
     void set_value(std::string v)
@@ -105,7 +107,7 @@ public:
     std::string value{};
 };
 
-class CustomerDeviceTypeValue
+class CustomerDeviceTypeValue : public serde::Serializer<CustomerDeviceTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -121,7 +123,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -137,7 +139,7 @@ public:
     std::string value{};
 };
 
-class RoutingIdValue
+class RoutingIdValue : public serde::Serializer<RoutingIdValue>
 {
 public:
     void set_value(std::string v)
@@ -171,7 +173,7 @@ enum class ThreeDSDecision
     issuer_three_ds_exemption_requested,
 };
 
-class AcquirerData
+class AcquirerData : public serde::Serializer<AcquirerData>
 {
 public:
     void set_country(std::optional<CountryValue> value)
@@ -198,7 +200,7 @@ public:
     std::optional<double> fraud_rate{};
 };
 
-class CustomerDeviceData
+class CustomerDeviceData : public serde::Serializer<CustomerDeviceData>
 {
 public:
     void set_platform(std::optional<CustomerDevicePlatformValue> value)
@@ -237,7 +239,7 @@ public:
     std::optional<CustomerDeviceDisplaySizeValue> display_size{};
 };
 
-class IssuerData
+class IssuerData : public serde::Serializer<IssuerData>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -264,7 +266,7 @@ public:
     std::optional<CountryValue> country{};
 };
 
-class PaymentData
+class PaymentData : public serde::Serializer<PaymentData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -324,7 +326,7 @@ public:
     std::optional<CountryValue> business_country{};
 };
 
-class PaymentMethodMetaData
+class PaymentMethodMetaData : public serde::Serializer<PaymentMethodMetaData>
 {
 public:
     void set_card_network(std::optional<CardNetworkValue> value)
@@ -351,7 +353,8 @@ public:
     std::optional<CardDiscoveryValue> card_discovery{};
 };
 
-class ThreeDsDecisionRuleExecuteResponse
+class ThreeDsDecisionRuleExecuteResponse :
+    public serde::Serializer<ThreeDsDecisionRuleExecuteResponse>
 {
 public:
     void set_decision(ThreeDSDecision value)
@@ -367,7 +370,8 @@ public:
     ThreeDSDecision decision{ThreeDSDecision::no_three_ds};
 };
 
-class ThreeDsDecisionRuleExecuteRequest
+class ThreeDsDecisionRuleExecuteRequest :
+    public serde::Serializer<ThreeDsDecisionRuleExecuteRequest>
 {
 public:
     void set_routing_id(RoutingIdValue value)
@@ -683,7 +687,7 @@ namespace app::dto::three_ds_decision_rule {
  * verifiable without depending on an external serializer feature — the same pattern as
  * `app/dto/poll.cppm` `PollStatusWireName`.
  */
-class ThreeDSDecisionWireName
+class ThreeDSDecisionWireName : public serde::Serializer<ThreeDSDecisionWireName>
 {
 public:
     [[nodiscard]] constexpr const char* operator()(ThreeDSDecision decision) const noexcept

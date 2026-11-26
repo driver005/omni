@@ -1,6 +1,8 @@
 module;
 export module app_dto:webhooks;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -15,7 +17,7 @@ enum class AuthenticationIdType
     ConnectorAuthenticationId,
 };
 
-class ConnectorWebhookSecrets
+class ConnectorWebhookSecrets : public serde::Serializer<ConnectorWebhookSecrets>
 {
 public:
     void set_secret(std::vector<std::uint8_t> value)
@@ -42,7 +44,7 @@ public:
     std::optional<std::string> additional_secret{};
 };
 
-class EventTypeValue
+class EventTypeValue : public serde::Serializer<EventTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -121,7 +123,7 @@ enum class MandateIdType
     ConnectorMandateId,
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -165,7 +167,7 @@ enum class PayoutIdType
     ConnectorPayoutId,
 };
 
-class PayoutWebhookUpdate
+class PayoutWebhookUpdate : public serde::Serializer<PayoutWebhookUpdate>
 {
 public:
     void set_error_message(std::optional<std::string> value)
@@ -192,7 +194,7 @@ public:
     std::optional<std::string> error_code{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -265,7 +267,7 @@ enum class WebhookResponseKind : std::uint8_t
     JSON_WITH_HEADERS, // WebhookResponse::JsonWithHeaders((R, Vec<(String, Maskable<String>)>))
 };
 
-class WebhookResponse
+class WebhookResponse : public serde::Serializer<WebhookResponse>
 {
 public:
     using Header = std::pair<std::string, std::string>;
@@ -370,7 +372,7 @@ private:
     std::vector<Header> m_headers{};
 };
 
-class IncomingWebhookDetails
+class IncomingWebhookDetails : public serde::Serializer<IncomingWebhookDetails>
 {
 public:
     void set_object_reference_id(ObjectReferenceId value)
@@ -397,7 +399,7 @@ public:
     std::vector<std::uint8_t> resource_object{};
 };
 
-class OutgoingWebhook
+class OutgoingWebhook : public serde::Serializer<OutgoingWebhook>
 {
 public:
     void set_merchant_id(MerchantIdValue value)

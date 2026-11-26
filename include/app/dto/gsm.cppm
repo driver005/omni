@@ -1,6 +1,8 @@
 module;
 export module app_dto:gsm;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -13,7 +15,7 @@ import boost.ut;
 // (common_types/src/domain.rs:155-181 -> {"retry": { ... }}).
 export namespace app::dto::gsm {
 
-class RetryFeatureData
+class RetryFeatureData : public serde::Serializer<RetryFeatureData>
 {
 public:
     void set_step_up_possible(bool value)
@@ -62,7 +64,7 @@ public:
     std::string decision{"do_default"};
 };
 
-class GsmFeatureData
+class GsmFeatureData : public serde::Serializer<GsmFeatureData>
 {
 public:
     void set_retry(RetryFeatureData value)
@@ -78,7 +80,7 @@ public:
     RetryFeatureData retry{};
 };
 
-class GsmDeleteRequest
+class GsmDeleteRequest : public serde::Serializer<GsmDeleteRequest>
 {
 public:
     void set_connector(std::string value)
@@ -138,7 +140,7 @@ public:
     std::string message{};
 };
 
-class GsmDeleteResponse
+class GsmDeleteResponse : public serde::Serializer<GsmDeleteResponse>
 {
 public:
     void set_gsm_rule_delete(bool value)
@@ -198,7 +200,7 @@ public:
     std::string code{};
 };
 
-class GsmCreateRequest
+class GsmCreateRequest : public serde::Serializer<GsmCreateRequest>
 {
 public:
     void set_connector(std::string value)
@@ -401,7 +403,7 @@ public:
     std::optional<std::string> user_guidance_message{};
 };
 
-class GsmResponse
+class GsmResponse : public serde::Serializer<GsmResponse>
 {
 public:
     void set_connector(std::string value)
@@ -604,7 +606,7 @@ public:
     std::optional<std::string> user_guidance_message{};
 };
 
-class GsmRetrieveRequest
+class GsmRetrieveRequest : public serde::Serializer<GsmRetrieveRequest>
 {
 public:
     void set_connector(std::string value)
@@ -664,7 +666,7 @@ public:
     std::string message{};
 };
 
-class GsmUpdateRequest
+class GsmUpdateRequest : public serde::Serializer<GsmUpdateRequest>
 {
 public:
     void set_connector(std::string value)

@@ -1,6 +1,8 @@
 module;
 export module app_dto:connector_onboarding;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -14,7 +16,7 @@ enum class ActionUrlResponse
     PayPal,
 };
 
-class ConnectorValue
+class ConnectorValue : public serde::Serializer<ConnectorValue>
 {
 public:
     void set_value(std::string v)
@@ -30,7 +32,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -46,7 +48,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -67,7 +69,7 @@ enum class OnboardingStatus
     PayPal,
 };
 
-class PayPalActionUrlResponse
+class PayPalActionUrlResponse : public serde::Serializer<PayPalActionUrlResponse>
 {
 public:
     void set_action_url(std::string value)
@@ -83,7 +85,7 @@ public:
     std::string action_url{};
 };
 
-class PayPalIntegrationDone
+class PayPalIntegrationDone : public serde::Serializer<PayPalIntegrationDone>
 {
 public:
     void set_connector_id(std::string value)
@@ -110,7 +112,7 @@ enum class PayPalOnboardingStatus
     ConnectorIntegrated,
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -130,7 +132,7 @@ public:
 // plain strings on the wire (common_utils/src/id_type.rs:88-104,
 // common_enums/src/connector_enums.rs:29-32). Mirror that wire shape directly so
 // serde::Ser::deserialize parses the upstream JSON without a {"value": ...} wrapper.
-class ActionUrlRequest
+class ActionUrlRequest : public serde::Serializer<ActionUrlRequest>
 {
 public:
     void set_connector(std::string value)
@@ -168,7 +170,7 @@ public:
     std::string return_url{};
 };
 
-class OnboardingSyncRequest
+class OnboardingSyncRequest : public serde::Serializer<OnboardingSyncRequest>
 {
 public:
     void set_profile_id(std::string value)
@@ -206,7 +208,7 @@ public:
     std::string connector{};
 };
 
-class PayPalOnboardingDone
+class PayPalOnboardingDone : public serde::Serializer<PayPalOnboardingDone>
 {
 public:
     void set_payer_id(std::string value)
@@ -222,7 +224,7 @@ public:
     std::string payer_id{};
 };
 
-class ResetTrackingIdRequest
+class ResetTrackingIdRequest : public serde::Serializer<ResetTrackingIdRequest>
 {
 public:
     void set_connector_id(std::string value)

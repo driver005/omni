@@ -1,6 +1,8 @@
 module;
 export module app_dto:proxy;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::proxy {
 
-class Headers
+class Headers : public serde::Serializer<Headers>
 {
 public:
     void set_value(std::unordered_map<std::string, std::string> v)
@@ -25,7 +27,7 @@ public:
     std::unordered_map<std::string, std::string> value{};
 };
 
-class MethodValue
+class MethodValue : public serde::Serializer<MethodValue>
 {
 public:
     void set_value(std::string v)
@@ -47,7 +49,7 @@ enum class ProxyResponseBody
     Text,
 };
 
-class SafeOutboundUrlValue
+class SafeOutboundUrlValue : public serde::Serializer<SafeOutboundUrlValue>
 {
 public:
     void set_value(std::string v)
@@ -71,7 +73,7 @@ enum class TokenType
     PaymentMethodToken,
 };
 
-class ProxyRequest
+class ProxyRequest : public serde::Serializer<ProxyRequest>
 {
 public:
     void set_request_body(serde::Value value)
@@ -142,7 +144,7 @@ public:
     TokenType token_type{};
 };
 
-class ProxyResponse
+class ProxyResponse : public serde::Serializer<ProxyResponse>
 {
 public:
     void set_response(ProxyResponseBody value)

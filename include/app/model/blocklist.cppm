@@ -1,6 +1,8 @@
 module;
 export module app_model:blocklist;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::model::blocklist {
 
-class BatchBlocklistJobStatusValue
+class BatchBlocklistJobStatusValue : public serde::Serializer<BatchBlocklistJobStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class BatchBlocklistJobTypeValue
+class BatchBlocklistJobTypeValue : public serde::Serializer<BatchBlocklistJobTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class BlocklistDataKindValue
+class BlocklistDataKindValue : public serde::Serializer<BlocklistDataKindValue>
 {
 public:
     void set_value(std::string v)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class BlocklistLookupDataValue
+class BlocklistLookupDataValue : public serde::Serializer<BlocklistLookupDataValue>
 {
 public:
     void set_value(std::string v)
@@ -81,7 +83,7 @@ enum class BlocklistRequest
     GenericCardBin,
 };
 
-class BlocklistTransactionTypeValue
+class BlocklistTransactionTypeValue : public serde::Serializer<BlocklistTransactionTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -97,7 +99,7 @@ public:
     std::string value{};
 };
 
-class Card
+class Card : public serde::Serializer<Card>
 {
 public:
     void set_card_number(std::string value)
@@ -113,7 +115,7 @@ public:
     std::string card_number{};
 };
 
-class GenerateFingerprintRequest
+class GenerateFingerprintRequest : public serde::Serializer<GenerateFingerprintRequest>
 {
 public:
     void set_data(std::string value)
@@ -140,7 +142,8 @@ public:
     std::string key{};
 };
 
-class GenerateFingerprintResponsePayload
+class GenerateFingerprintResponsePayload :
+    public serde::Serializer<GenerateFingerprintResponsePayload>
 {
 public:
     void set_fingerprint_id(std::string value)
@@ -156,7 +159,7 @@ public:
     std::string fingerprint_id{};
 };
 
-class PageOffsetValue
+class PageOffsetValue : public serde::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string v)
@@ -172,7 +175,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue
+class PageSizeValue : public serde::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string v)
@@ -188,7 +191,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -204,7 +207,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -220,7 +223,7 @@ public:
     std::string value{};
 };
 
-class ToggleBlocklistQuery
+class ToggleBlocklistQuery : public serde::Serializer<ToggleBlocklistQuery>
 {
 public:
     void set_status(bool value)
@@ -236,7 +239,7 @@ public:
     bool status{};
 };
 
-class ToggleBlocklistResponse
+class ToggleBlocklistResponse : public serde::Serializer<ToggleBlocklistResponse>
 {
 public:
     void set_blocklist_guard_status(std::string value)
@@ -252,7 +255,7 @@ public:
     std::string blocklist_guard_status{};
 };
 
-class BatchBlocklistUploadQuery
+class BatchBlocklistUploadQuery : public serde::Serializer<BatchBlocklistUploadQuery>
 {
 public:
     void set_transaction_type(std::optional<BlocklistTransactionTypeValue> value)
@@ -269,7 +272,7 @@ public:
     std::optional<BlocklistTransactionTypeValue> transaction_type{};
 };
 
-class BatchBlocklistUploadResponse
+class BatchBlocklistUploadResponse : public serde::Serializer<BatchBlocklistUploadResponse>
 {
 public:
     void set_job_id(std::string value)
@@ -307,7 +310,7 @@ public:
     BatchBlocklistJobStatusValue status{};
 };
 
-class BlocklistCountQuery
+class BlocklistCountQuery : public serde::Serializer<BlocklistCountQuery>
 {
 public:
     void set_data_kind(BlocklistDataKindValue value)
@@ -335,7 +338,7 @@ public:
     std::optional<BlocklistTransactionTypeValue> transaction_type{};
 };
 
-class BlocklistCountResponse
+class BlocklistCountResponse : public serde::Serializer<BlocklistCountResponse>
 {
 public:
     void set_data_kind(BlocklistDataKindValue value)
@@ -375,7 +378,7 @@ public:
     std::optional<std::map<std::string, std::size_t>> counts_by_length{};
 };
 
-class BlocklistEntryRequest
+class BlocklistEntryRequest : public serde::Serializer<BlocklistEntryRequest>
 {
 public:
     void set_entry(BlocklistRequest value)
@@ -402,7 +405,7 @@ public:
     BlocklistTransactionTypeValue transaction_type{};
 };
 
-class BlocklistExportQuery
+class BlocklistExportQuery : public serde::Serializer<BlocklistExportQuery>
 {
 public:
     void set_transaction_type(std::optional<BlocklistTransactionTypeValue> value)
@@ -419,7 +422,7 @@ public:
     std::optional<BlocklistTransactionTypeValue> transaction_type{};
 };
 
-class BlocklistExportResponse
+class BlocklistExportResponse : public serde::Serializer<BlocklistExportResponse>
 {
 public:
     void set_export_id(std::string value)
@@ -457,7 +460,7 @@ public:
     std::string file_name{};
 };
 
-class BlocklistLookupQuery
+class BlocklistLookupQuery : public serde::Serializer<BlocklistLookupQuery>
 {
 public:
     void set_data(BlocklistLookupDataValue value)
@@ -485,7 +488,7 @@ public:
     std::optional<BlocklistTransactionTypeValue> transaction_type{};
 };
 
-class BlocklistLookupResponse
+class BlocklistLookupResponse : public serde::Serializer<BlocklistLookupResponse>
 {
 public:
     void set_data(std::string value)
@@ -524,7 +527,7 @@ public:
     std::vector<BlocklistTransactionTypeValue> transaction_types{};
 };
 
-class BlocklistResponse
+class BlocklistResponse : public serde::Serializer<BlocklistResponse>
 {
 public:
     void set_fingerprint_id(std::string value)
@@ -584,7 +587,7 @@ public:
     std::optional<ProfileIdValue> profile_id{};
 };
 
-class BlocklistRowError
+class BlocklistRowError : public serde::Serializer<BlocklistRowError>
 {
 public:
     void set_row_index(std::size_t value)
@@ -633,7 +636,7 @@ public:
     std::string reason{};
 };
 
-class CloneBlocklistEntriesRequest
+class CloneBlocklistEntriesRequest : public serde::Serializer<CloneBlocklistEntriesRequest>
 {
 public:
     void set_target_profile_ids(std::vector<ProfileIdValue> value)
@@ -661,7 +664,7 @@ public:
     std::optional<BlocklistTransactionTypeValue> transaction_type{};
 };
 
-class CloneBlocklistEntriesResponse
+class CloneBlocklistEntriesResponse : public serde::Serializer<CloneBlocklistEntriesResponse>
 {
 public:
     void set_source_profile_id(ProfileIdValue value)
@@ -710,7 +713,7 @@ public:
     std::vector<ProfileIdValue> target_profile_ids{};
 };
 
-class ListBatchBlocklistJobsQuery
+class ListBatchBlocklistJobsQuery : public serde::Serializer<ListBatchBlocklistJobsQuery>
 {
 public:
     void set_limit(PageSizeValue value)
@@ -748,7 +751,7 @@ public:
     std::optional<BatchBlocklistJobTypeValue> job_type{};
 };
 
-class ListBlocklistQuery
+class ListBlocklistQuery : public serde::Serializer<ListBlocklistQuery>
 {
 public:
     void set_data_kind(BlocklistDataKindValue value)
@@ -797,7 +800,7 @@ public:
     std::uint16_t offset{};
 };
 
-class ProfileCloneTargetMetadata
+class ProfileCloneTargetMetadata : public serde::Serializer<ProfileCloneTargetMetadata>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -846,7 +849,7 @@ public:
     std::optional<std::string> error_message{};
 };
 
-class ListBlocklistResponse
+class ListBlocklistResponse : public serde::Serializer<ListBlocklistResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -884,7 +887,7 @@ public:
     std::vector<BlocklistResponse> data{};
 };
 
-class ProfileCloneJobMetadata
+class ProfileCloneJobMetadata : public serde::Serializer<ProfileCloneJobMetadata>
 {
 public:
     void set_targets(std::vector<ProfileCloneTargetMetadata> value)
@@ -900,7 +903,7 @@ public:
     std::vector<ProfileCloneTargetMetadata> targets{};
 };
 
-class BatchBlocklistJobStatusResponse
+class BatchBlocklistJobStatusResponse : public serde::Serializer<BatchBlocklistJobStatusResponse>
 {
 public:
     void set_job_id(std::string value)
@@ -1093,7 +1096,7 @@ public:
     std::optional<PrimitiveDateTimeValue> download_url_expires_at{};
 };
 
-class ListBatchBlocklistJobsResponse
+class ListBatchBlocklistJobsResponse : public serde::Serializer<ListBatchBlocklistJobsResponse>
 {
 public:
     void set_count(std::size_t value)

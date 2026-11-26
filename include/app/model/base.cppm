@@ -1,5 +1,7 @@
 export module app_model;
 
+import core_serde;
+
 export import :blocklist;
 export import :cards_info;
 export import :customers;

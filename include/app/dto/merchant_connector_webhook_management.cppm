@@ -1,6 +1,8 @@
 module;
 export module app_dto:merchant_connector_webhook_management;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::merchant_connector_webhook_management {
 
-class ConnectorWebhookEventTypeValue
+class ConnectorWebhookEventTypeValue : public serde::Serializer<ConnectorWebhookEventTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -53,7 +55,7 @@ enum class ScopeType
     EventType,
 };
 
-class WebhookRegistrationError
+class WebhookRegistrationError : public serde::Serializer<WebhookRegistrationError>
 {
 public:
     void set_code(std::string value)
@@ -80,7 +82,7 @@ public:
     std::string message{};
 };
 
-class WebhookRegistrationStatusValue
+class WebhookRegistrationStatusValue : public serde::Serializer<WebhookRegistrationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -96,7 +98,7 @@ public:
     std::string value{};
 };
 
-class WebhookSecretErrorDetails
+class WebhookSecretErrorDetails : public serde::Serializer<WebhookSecretErrorDetails>
 {
 public:
     void set_code(std::optional<std::string> value)
@@ -123,7 +125,8 @@ public:
     std::optional<std::string> message{};
 };
 
-class WebhookSecretGenerationStatusValue
+class WebhookSecretGenerationStatusValue :
+    public serde::Serializer<WebhookSecretGenerationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -139,7 +142,7 @@ public:
     std::string value{};
 };
 
-class ConnectorWebhookRegisterRequest
+class ConnectorWebhookRegisterRequest : public serde::Serializer<ConnectorWebhookRegisterRequest>
 {
 public:
     void set_scope(std::optional<Scope> value)
@@ -167,7 +170,7 @@ public:
     std::optional<ConnectorWebhookEventTypeValue> event_type{};
 };
 
-class ConnectorWebhookResponse
+class ConnectorWebhookResponse : public serde::Serializer<ConnectorWebhookResponse>
 {
 public:
     void set_connector_webhook_id(std::string value)
@@ -206,7 +209,7 @@ public:
     std::optional<ConnectorWebhookScope> scope{};
 };
 
-class WebhookRegistrationResult
+class WebhookRegistrationResult : public serde::Serializer<WebhookRegistrationResult>
 {
 public:
     void set_identifier(ScopeIdentifier value)
@@ -255,7 +258,7 @@ public:
     std::optional<WebhookRegistrationError> error{};
 };
 
-class ConnectorWebhookListResponse
+class ConnectorWebhookListResponse : public serde::Serializer<ConnectorWebhookListResponse>
 {
 public:
     void set_connector(std::string value)
@@ -282,7 +285,7 @@ public:
     std::vector<ConnectorWebhookResponse> webhooks{};
 };
 
-class RegisterConnectorWebhookResponse
+class RegisterConnectorWebhookResponse : public serde::Serializer<RegisterConnectorWebhookResponse>
 {
 public:
     void set_event_type(std::optional<ConnectorWebhookEventTypeValue> value)

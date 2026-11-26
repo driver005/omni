@@ -1,6 +1,8 @@
 module;
 export module app_dto:profile_acquirer;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::profile_acquirer {
 
-class CardNetworkValue
+class CardNetworkValue : public serde::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string val)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CountryAlpha2Value
+class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
 {
 public:
     void set_value(std::string val)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class ProfileAcquirerIdValue
+class ProfileAcquirerIdValue : public serde::Serializer<ProfileAcquirerIdValue>
 {
 public:
     void set_value(std::string val)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string val)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class AcquirerBucketConfigResponse
+class AcquirerBucketConfigResponse : public serde::Serializer<AcquirerBucketConfigResponse>
 {
 public:
     void set_acquirer_assigned_merchant_id(std::optional<std::string> value)
@@ -156,7 +158,7 @@ public:
     std::optional<std::string> acquirer_country_code{};
 };
 
-class ProfileAcquirerCreate
+class ProfileAcquirerCreate : public serde::Serializer<ProfileAcquirerCreate>
 {
 public:
     void set_acquirer_assigned_merchant_id(std::string value)
@@ -261,7 +263,7 @@ public:
     std::optional<bool> is_default{};
 };
 
-class ProfileAcquirerResponse
+class ProfileAcquirerResponse : public serde::Serializer<ProfileAcquirerResponse>
 {
 public:
     void set_profile_acquirer_id(ProfileAcquirerIdValue value)
@@ -377,7 +379,7 @@ public:
     bool is_default{};
 };
 
-class ProfileAcquirerUpdate
+class ProfileAcquirerUpdate : public serde::Serializer<ProfileAcquirerUpdate>
 {
 public:
     void set_acquirer_assigned_merchant_id(std::optional<std::string> value)
@@ -472,7 +474,7 @@ public:
     std::optional<bool> is_default{};
 };
 
-class ProfileAcquirerConfigsResponse
+class ProfileAcquirerConfigsResponse : public serde::Serializer<ProfileAcquirerConfigsResponse>
 {
 public:
     void set_default_acquirer_config(std::optional<ProfileAcquirerIdValue> value)

@@ -3,6 +3,8 @@ module;
 #include <toml++/toml.hpp>
 export module app_dto:hierarchical_resources;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -17,7 +19,7 @@ export namespace app::dto::hierarchical_resources {
 // `FieldConverter` specializations below). These typed wrappers keep the
 // compile-time distinction while emitting the exact upstream wire shape.
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -33,7 +35,7 @@ public:
     std::string value{};
 };
 
-class ResourceIdValue
+class ResourceIdValue : public serde::Serializer<ResourceIdValue>
 {
 public:
     void set_value(std::string v)
@@ -49,7 +51,7 @@ public:
     std::string value{};
 };
 
-class ResourceRequestorTypeValue
+class ResourceRequestorTypeValue : public serde::Serializer<ResourceRequestorTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -65,7 +67,7 @@ public:
     std::string value{};
 };
 
-class ResourceTypeValue
+class ResourceTypeValue : public serde::Serializer<ResourceTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -81,7 +83,7 @@ public:
     std::string value{};
 };
 
-class UploadCertificateRequest
+class UploadCertificateRequest : public serde::Serializer<UploadCertificateRequest>
 {
 public:
     void set_certificate(std::string value)
@@ -97,7 +99,8 @@ public:
     std::string certificate{};
 };
 
-class GenerateHierarchicalResourceRequest
+class GenerateHierarchicalResourceRequest :
+    public serde::Serializer<GenerateHierarchicalResourceRequest>
 {
 public:
     void set_resource_type(ResourceTypeValue value)
@@ -118,7 +121,8 @@ public:
 // fields: they are carried as pre-rendered JSON fragments (serde::RawJson) so they
 // are emitted as embedded JSON objects, never as escaped strings.
 
-class GenerateHierarchicalResourceResponse
+class GenerateHierarchicalResourceResponse :
+    public serde::Serializer<GenerateHierarchicalResourceResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -145,7 +149,7 @@ public:
     serde::RawJson data{};
 };
 
-class HierarchicalResourceSummary
+class HierarchicalResourceSummary : public serde::Serializer<HierarchicalResourceSummary>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -205,7 +209,7 @@ public:
     bool is_linked{};
 };
 
-class LinkHierarchicalResourceRequest
+class LinkHierarchicalResourceRequest : public serde::Serializer<LinkHierarchicalResourceRequest>
 {
 public:
     void set_requestor_type(ResourceRequestorTypeValue value)
@@ -232,7 +236,7 @@ public:
     std::string requestor_id{};
 };
 
-class LinkHierarchicalResourceResponse
+class LinkHierarchicalResourceResponse : public serde::Serializer<LinkHierarchicalResourceResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -248,7 +252,7 @@ public:
     ResourceIdValue id{};
 };
 
-class ListHierarchicalResourcesRequest
+class ListHierarchicalResourcesRequest : public serde::Serializer<ListHierarchicalResourcesRequest>
 {
 public:
     void set_resource_type(ResourceTypeValue value)
@@ -286,7 +290,7 @@ public:
     std::optional<ResourceRequestorTypeValue> scope_type{};
 };
 
-class UploadCertificateResponse
+class UploadCertificateResponse : public serde::Serializer<UploadCertificateResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -313,7 +317,8 @@ public:
     PrimitiveDateTimeValue created_at{};
 };
 
-class ListHierarchicalResourcesResponse
+class ListHierarchicalResourcesResponse :
+    public serde::Serializer<ListHierarchicalResourcesResponse>
 {
 public:
     void set_resources(std::vector<HierarchicalResourceSummary> value)

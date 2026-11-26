@@ -7,7 +7,7 @@ congelado_cc_test(
     srcs = ["route_reachability_test.cc"],
     linkopts = ["-lcrypto", "-lssl", "-luring"],
     deps = [
-        "//include/app/handlers:app_handlers",
+        "//include/app:app_handlers",
         "//include/core/router:core_router",
         "//include/interfaces:interfaces",
         "//include/io/layer/http2:io_layer_http2",
@@ -20,7 +20,7 @@ congelado_cc_binary(
     srcs = ["app_api_server.cc"],
     linkopts = ["-lcrypto", "-lssl", "-luring", "-lpthread", "-ldl"],
     deps = [
-        "//include/app/handlers:app_handlers",
+        "//include/app:app_handlers",
         "//include/core/router:core_router",
         "//include/interfaces:interfaces",
         "//include/io/layer/http2:io_layer_http2",

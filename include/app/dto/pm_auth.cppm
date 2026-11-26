@@ -1,6 +1,8 @@
 module;
 export module app_dto:pm_auth;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::pm_auth {
 
-class ExchangeTokenCreateResponse
+class ExchangeTokenCreateResponse : public serde::Serializer<ExchangeTokenCreateResponse>
 {
 public:
     void set_access_token(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string access_token{};
 };
 
-class LinkTokenCreateResponse
+class LinkTokenCreateResponse : public serde::Serializer<LinkTokenCreateResponse>
 {
 public:
     void set_link_token(std::string value)
@@ -52,7 +54,7 @@ public:
     std::string connector{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -68,7 +70,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue
+class PaymentIdValue : public serde::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string v)
@@ -84,7 +86,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue
+class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -100,7 +102,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue
+class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -116,7 +118,7 @@ public:
     std::string value{};
 };
 
-class ExchangeTokenCreateRequest
+class ExchangeTokenCreateRequest : public serde::Serializer<ExchangeTokenCreateRequest>
 {
 public:
     void set_public_token(std::string value)
@@ -176,7 +178,7 @@ public:
     PaymentMethodTypeValue payment_method_type{};
 };
 
-class LinkTokenCreateRequest
+class LinkTokenCreateRequest : public serde::Serializer<LinkTokenCreateRequest>
 {
 public:
     void set_language(std::optional<std::string> value)
@@ -236,7 +238,7 @@ public:
     PaymentMethodTypeValue payment_method_type{};
 };
 
-class PaymentMethodAuthConnectorChoice
+class PaymentMethodAuthConnectorChoice : public serde::Serializer<PaymentMethodAuthConnectorChoice>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -285,7 +287,7 @@ public:
     MerchantConnectorAccountIdValue mca_id{};
 };
 
-class PaymentMethodAuthConfig
+class PaymentMethodAuthConfig : public serde::Serializer<PaymentMethodAuthConfig>
 {
 public:
     void set_enabled_payment_methods(std::vector<PaymentMethodAuthConnectorChoice> value)

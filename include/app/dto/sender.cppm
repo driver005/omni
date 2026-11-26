@@ -1,6 +1,8 @@
 module;
 export module app_dto:sender;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::sender {
 
-class AddressDetailsValue
+class AddressDetailsValue : public serde::Serializer<AddressDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class EmailValue
+class EmailValue : public serde::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class MaskedEmailValue
+class MaskedEmailValue : public serde::Serializer<MaskedEmailValue>
 {
 public:
     void set_value(std::string v)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class MaskedPhoneNumberValue
+class MaskedPhoneNumberValue : public serde::Serializer<MaskedPhoneNumberValue>
 {
 public:
     void set_value(std::string v)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class PhoneDetailsValue
+class PhoneDetailsValue : public serde::Serializer<PhoneDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -89,7 +91,7 @@ public:
     std::string value{};
 };
 
-class SecretDateValue
+class SecretDateValue : public serde::Serializer<SecretDateValue>
 {
 public:
     void set_value(std::string v)
@@ -105,7 +107,7 @@ public:
     std::string value{};
 };
 
-class SecretStringValue
+class SecretStringValue : public serde::Serializer<SecretStringValue>
 {
 public:
     void set_value(std::string v)
@@ -143,7 +145,7 @@ enum class SourceOfFunds
     Cash,
 };
 
-class CorporateSenderDetails
+class CorporateSenderDetails : public serde::Serializer<CorporateSenderDetails>
 {
 public:
     void set_company_name(SecretStringValue value)
@@ -214,7 +216,7 @@ public:
     std::optional<SourceOfFunds> source_of_funds{};
 };
 
-class IndividualSenderDetails
+class IndividualSenderDetails : public serde::Serializer<IndividualSenderDetails>
 {
 public:
     void set_first_name(std::optional<SecretStringValue> value)
@@ -307,7 +309,7 @@ public:
     std::optional<SourceOfFunds> source_of_funds{};
 };
 
-class MaskedSenderPhoneDetails
+class MaskedSenderPhoneDetails : public serde::Serializer<MaskedSenderPhoneDetails>
 {
 public:
     void set_number(std::optional<MaskedPhoneNumberValue> value)
@@ -334,7 +336,7 @@ public:
     std::optional<std::string> country_code{};
 };
 
-class CorporateSenderDetailsResponse
+class CorporateSenderDetailsResponse : public serde::Serializer<CorporateSenderDetailsResponse>
 {
 public:
     void set_company_name(SecretStringValue value)
@@ -383,7 +385,7 @@ public:
     std::optional<MaskedEmailValue> email{};
 };
 
-class IndividualSenderDetailsResponse
+class IndividualSenderDetailsResponse : public serde::Serializer<IndividualSenderDetailsResponse>
 {
 public:
     void set_first_name(std::optional<SecretStringValue> value)

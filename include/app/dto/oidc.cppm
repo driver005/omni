@@ -1,6 +1,8 @@
 module;
 export module app_dto:oidc;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -36,7 +38,7 @@ enum class KeyUse
     Sig,
 };
 
-class OidcTokenResponse
+class OidcTokenResponse : public serde::Serializer<OidcTokenResponse>
 {
 public:
     void set_access_token(std::string value)
@@ -117,7 +119,7 @@ enum class TokenAuthMethod
     ClientSecretBasic,
 };
 
-class Jwk
+class Jwk : public serde::Serializer<Jwk>
 {
 public:
     void set_kty(KeyType value)
@@ -188,7 +190,7 @@ public:
     std::string e{};
 };
 
-class OidcAuthorizeQuery
+class OidcAuthorizeQuery : public serde::Serializer<OidcAuthorizeQuery>
 {
 public:
     void set_response_type(ResponseType value)
@@ -259,7 +261,7 @@ public:
     std::string nonce{};
 };
 
-class OidcDiscoveryResponse
+class OidcDiscoveryResponse : public serde::Serializer<OidcDiscoveryResponse>
 {
 public:
     void set_issuer(std::string value)
@@ -431,7 +433,7 @@ public:
     bool request_uri_parameter_supported{};
 };
 
-class OidcTokenRequest
+class OidcTokenRequest : public serde::Serializer<OidcTokenRequest>
 {
 public:
     void set_grant_type(GrantType value)
@@ -469,7 +471,7 @@ public:
     std::string redirect_uri{};
 };
 
-class JwksResponse
+class JwksResponse : public serde::Serializer<JwksResponse>
 {
 public:
     void set_keys(std::vector<Jwk> value)

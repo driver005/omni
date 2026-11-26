@@ -56,7 +56,7 @@ congelado_cc_binary(
     linkopts = congelado_linkopts(),
     deps = [
         ":openapi_generator",
-        "//include/app/handlers:app_handlers",
+        "//include/app:app_handlers",
         "//include/core/router:core_router",
         "//include/core/serde:core_serde",
         "@nlohmann_json//:json",

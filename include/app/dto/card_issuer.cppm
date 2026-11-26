@@ -1,6 +1,8 @@
 module;
 export module app_dto:card_issuer;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::card_issuer {
 
-class CardIssuerIdValue
+class CardIssuerIdValue : public serde::Serializer<CardIssuerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CardIssuerNameValue
+class CardIssuerNameValue : public serde::Serializer<CardIssuerNameValue>
 {
 public:
     void set_value(std::string v)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class CardIssuerDeleteRequest
+class CardIssuerDeleteRequest : public serde::Serializer<CardIssuerDeleteRequest>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -57,7 +59,7 @@ public:
     CardIssuerIdValue id{};
 };
 
-class CardIssuerDeleteResponse
+class CardIssuerDeleteResponse : public serde::Serializer<CardIssuerDeleteResponse>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -84,7 +86,7 @@ public:
     bool deleted{};
 };
 
-class CardIssuerRequest
+class CardIssuerRequest : public serde::Serializer<CardIssuerRequest>
 {
 public:
     void set_issuer_name(CardIssuerNameValue value)
@@ -100,7 +102,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerResponse
+class CardIssuerResponse : public serde::Serializer<CardIssuerResponse>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -127,7 +129,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerUpdateRequest
+class CardIssuerUpdateRequest : public serde::Serializer<CardIssuerUpdateRequest>
 {
 public:
     void set_issuer_name(CardIssuerNameValue value)
@@ -143,7 +145,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerListResponse
+class CardIssuerListResponse : public serde::Serializer<CardIssuerListResponse>
 {
 public:
     void set_issuers(std::vector<CardIssuerResponse> value)

@@ -1,6 +1,8 @@
 module;
 export module app_model:routing;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -31,7 +33,7 @@ enum class ContractBasedTimeScale
     Month,
 };
 
-class CurrentBlockThreshold
+class CurrentBlockThreshold : public serde::Serializer<CurrentBlockThreshold>
 {
 public:
     void set_duration_in_mins(std::optional<std::uint64_t> value)
@@ -58,7 +60,8 @@ public:
     std::optional<std::uint64_t> max_total_count{};
 };
 
-class DecisionEngineEliminationDataValue
+class DecisionEngineEliminationDataValue :
+    public serde::Serializer<DecisionEngineEliminationDataValue>
 {
 public:
     void set_value(std::string value)
@@ -82,7 +85,8 @@ enum class DecisionEngineRoutingTarget
     Debit,
 };
 
-class DecisionEngineSuccessRateDataValue
+class DecisionEngineSuccessRateDataValue :
+    public serde::Serializer<DecisionEngineSuccessRateDataValue>
 {
 public:
     void set_value(std::string value)
@@ -98,7 +102,7 @@ public:
     std::string value{};
 };
 
-class DynamicAlgorithmWithTimestamp
+class DynamicAlgorithmWithTimestamp : public serde::Serializer<DynamicAlgorithmWithTimestamp>
 {
 public:
     void set_algorithm_id(std::optional<std::string> value)
@@ -156,7 +160,7 @@ enum class DynamicRoutingType
     ContractBasedRouting,
 };
 
-class DynamicRoutingVolumeSplitQuery
+class DynamicRoutingVolumeSplitQuery : public serde::Serializer<DynamicRoutingVolumeSplitQuery>
 {
 public:
     void set_split(std::uint8_t value)
@@ -172,7 +176,7 @@ public:
     std::uint8_t split{};
 };
 
-class EliminationAnalyserConfig
+class EliminationAnalyserConfig : public serde::Serializer<EliminationAnalyserConfig>
 {
 public:
     void set_bucket_size(std::optional<std::uint64_t> value)
@@ -200,7 +204,8 @@ public:
     std::optional<std::uint64_t> bucket_leak_interval_in_secs{};
 };
 
-class EliminationRoutingEventBucketConfig
+class EliminationRoutingEventBucketConfig :
+    public serde::Serializer<EliminationRoutingEventBucketConfig>
 {
 public:
     void set_bucket_size(std::optional<std::uint64_t> value)
@@ -228,7 +233,7 @@ public:
     std::optional<std::uint64_t> bucket_leak_interval_in_secs{};
 };
 
-class IfStatementValue
+class IfStatementValue : public serde::Serializer<IfStatementValue>
 {
 public:
     void set_value(std::string value)
@@ -244,7 +249,7 @@ public:
     std::string value{};
 };
 
-class LabelWithScoreEventResponse
+class LabelWithScoreEventResponse : public serde::Serializer<LabelWithScoreEventResponse>
 {
 public:
     void set_score(double value)
@@ -277,7 +282,7 @@ enum class LinkedRoutingConfigRetrieveResponse
     ProfileBased,
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -293,7 +298,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string value)
@@ -309,7 +314,7 @@ public:
     std::string value{};
 };
 
-class MetadataValue
+class MetadataValue : public serde::Serializer<MetadataValue>
 {
 public:
     void set_key(std::string value)
@@ -336,7 +341,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -364,7 +369,7 @@ enum class RoutableChoiceSerde
     FullStruct,
 };
 
-class RoutableConnectorsValue
+class RoutableConnectorsValue : public serde::Serializer<RoutableConnectorsValue>
 {
 public:
     void set_value(std::string value)
@@ -414,7 +419,7 @@ enum class RoutingApproach
     Default,
 };
 
-class RoutingConfigName
+class RoutingConfigName : public serde::Serializer<RoutingConfigName>
 {
 public:
     void set_value(std::string value)
@@ -430,7 +435,7 @@ public:
     std::string value{};
 };
 
-class RoutingEntryResponse
+class RoutingEntryResponse : public serde::Serializer<RoutingEntryResponse>
 {
 public:
     void set_is_cutover(bool value)
@@ -457,7 +462,7 @@ public:
     std::optional<std::string> redirect_url{};
 };
 
-class RoutingIdValue
+class RoutingIdValue : public serde::Serializer<RoutingIdValue>
 {
 public:
     void set_value(std::string value)
@@ -479,7 +484,7 @@ enum class RoutingKind
     RoutingAlgorithm,
 };
 
-class RoutingMigrationPageTotals
+class RoutingMigrationPageTotals : public serde::Serializer<RoutingMigrationPageTotals>
 {
 public:
     void set_profiles(std::size_t value)
@@ -583,7 +588,7 @@ enum class RoutingMigrationState
     Unknown,
 };
 
-class RoutingMigrationStatusQuery
+class RoutingMigrationStatusQuery : public serde::Serializer<RoutingMigrationStatusQuery>
 {
 public:
     void set_limit(std::optional<std::uint32_t> value)
@@ -622,7 +627,7 @@ enum class RoutingType
     Dynamic,
 };
 
-class RoutingVolumeSplitResponse
+class RoutingVolumeSplitResponse : public serde::Serializer<RoutingVolumeSplitResponse>
 {
 public:
     void set_split(std::uint8_t value)
@@ -638,7 +643,7 @@ public:
     std::uint8_t split{};
 };
 
-class RuleMigrationTotals
+class RuleMigrationTotals : public serde::Serializer<RuleMigrationTotals>
 {
 public:
     void set_profiles(std::size_t value)
@@ -744,7 +749,7 @@ enum class SuccessRateSpecificityLevel
     Global,
 };
 
-class ThreeDSDecisionRuleValue
+class ThreeDSDecisionRuleValue : public serde::Serializer<ThreeDSDecisionRuleValue>
 {
 public:
     void set_value(std::string value)
@@ -760,7 +765,7 @@ public:
     std::string value{};
 };
 
-class ThreeDSDecisionValue
+class ThreeDSDecisionValue : public serde::Serializer<ThreeDSDecisionValue>
 {
 public:
     void set_value(std::string value)
@@ -776,7 +781,7 @@ public:
     std::string value{};
 };
 
-class TransactionTypeValue
+class TransactionTypeValue : public serde::Serializer<TransactionTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -804,7 +809,7 @@ enum class ValueType
     NumberComparisonArray,
 };
 
-class CalSuccessRateConfigEventRequest
+class CalSuccessRateConfigEventRequest : public serde::Serializer<CalSuccessRateConfigEventRequest>
 {
 public:
     void set_min_aggregates_size(std::optional<std::uint32_t> value)
@@ -853,7 +858,7 @@ public:
     std::optional<double> exploration_percent{};
 };
 
-class CalSuccessRateEventResponse
+class CalSuccessRateEventResponse : public serde::Serializer<CalSuccessRateEventResponse>
 {
 public:
     void set_labels_with_score(std::vector<LabelWithScoreEventResponse> value)
@@ -881,7 +886,7 @@ public:
     RoutingApproach routing_approach{};
 };
 
-class ContractBasedRoutingConfigBody
+class ContractBasedRoutingConfigBody : public serde::Serializer<ContractBasedRoutingConfigBody>
 {
 public:
     void set_constants(std::optional<std::vector<double>> value)
@@ -908,7 +913,7 @@ public:
     std::optional<ContractBasedTimeScale> time_scale{};
 };
 
-class ContractRoutingAlgorithm
+class ContractRoutingAlgorithm : public serde::Serializer<ContractRoutingAlgorithm>
 {
 public:
     void set_algorithm_id_with_timestamp(DynamicAlgorithmWithTimestamp value)
@@ -936,7 +941,7 @@ public:
     DynamicRoutingFeatures enabled_feature{};
 };
 
-class CreateDynamicRoutingQuery
+class CreateDynamicRoutingQuery : public serde::Serializer<CreateDynamicRoutingQuery>
 {
 public:
     void set_enable(DynamicRoutingFeatures value)
@@ -952,7 +957,7 @@ public:
     DynamicRoutingFeatures enable{};
 };
 
-class CreateDynamicRoutingWrapper
+class CreateDynamicRoutingWrapper : public serde::Serializer<CreateDynamicRoutingWrapper>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -990,7 +995,7 @@ public:
     std::optional<DynamicRoutingPayload> payload{};
 };
 
-class DeRoutableConnectorChoice
+class DeRoutableConnectorChoice : public serde::Serializer<DeRoutableConnectorChoice>
 {
 public:
     void set_gateway_name(RoutableConnectorsValue value)
@@ -1018,7 +1023,7 @@ public:
     std::optional<MerchantConnectorAccountIdValue> gateway_id{};
 };
 
-class DynamicRoutingUpdateConfigQuery
+class DynamicRoutingUpdateConfigQuery : public serde::Serializer<DynamicRoutingUpdateConfigQuery>
 {
 public:
     void set_algorithm_id(RoutingIdValue value)
@@ -1045,7 +1050,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class EliminationRoutingAlgorithm
+class EliminationRoutingAlgorithm : public serde::Serializer<EliminationRoutingAlgorithm>
 {
 public:
     void set_algorithm_id_with_timestamp(DynamicAlgorithmWithTimestamp value)
@@ -1073,7 +1078,7 @@ public:
     DynamicRoutingFeatures enabled_feature{};
 };
 
-class EliminationRoutingConfig
+class EliminationRoutingConfig : public serde::Serializer<EliminationRoutingConfig>
 {
 public:
     void set_params(std::optional<std::vector<DynamicRoutingConfigParams>> value)
@@ -1114,7 +1119,7 @@ public:
     std::optional<DecisionEngineEliminationDataValue> decision_engine_configs{};
 };
 
-class EliminationRoutingEventRequest
+class EliminationRoutingEventRequest : public serde::Serializer<EliminationRoutingEventRequest>
 {
 public:
     void set_id(std::string value)
@@ -1164,7 +1169,7 @@ public:
     std::optional<EliminationRoutingEventBucketConfig> config{};
 };
 
-class LabelInformation
+class LabelInformation : public serde::Serializer<LabelInformation>
 {
 public:
     void set_label(std::string value)
@@ -1213,7 +1218,7 @@ public:
     MerchantConnectorAccountIdValue mca_id{};
 };
 
-class MerchantRoutingAlgorithm
+class MerchantRoutingAlgorithm : public serde::Serializer<MerchantRoutingAlgorithm>
 {
 public:
     void set_id(RoutingIdValue value)
@@ -1306,7 +1311,7 @@ public:
     TransactionTypeValue algorithm_for{};
 };
 
-class NumberComparison
+class NumberComparison : public serde::Serializer<NumberComparison>
 {
 public:
     void set_comparison_type(ComparisonType value)
@@ -1333,7 +1338,7 @@ public:
     std::uint64_t number{};
 };
 
-class ProgramThreeDsDecisionRule
+class ProgramThreeDsDecisionRule : public serde::Serializer<ProgramThreeDsDecisionRule>
 {
 public:
     void set_default_selection(ThreeDSDecisionRuleValue value)
@@ -1371,7 +1376,7 @@ public:
     std::unordered_map<std::string, serde::Value> metadata{};
 };
 
-class RoutableConnectorChoice
+class RoutableConnectorChoice : public serde::Serializer<RoutableConnectorChoice>
 {
 public:
     void set_choice_kind(RoutableChoiceKind value)
@@ -1410,7 +1415,7 @@ public:
     std::optional<MerchantConnectorAccountIdValue> merchant_connector_id{};
 };
 
-class RoutingActivatePayload
+class RoutingActivatePayload : public serde::Serializer<RoutingActivatePayload>
 {
 public:
     void set_transaction_type(std::optional<TransactionTypeValue> value)
@@ -1426,7 +1431,7 @@ public:
     std::optional<TransactionTypeValue> transaction_type{};
 };
 
-class RoutingAlgorithmId
+class RoutingAlgorithmId : public serde::Serializer<RoutingAlgorithmId>
 {
 public:
     void set_routing_algorithm_id(RoutingIdValue value)
@@ -1442,7 +1447,7 @@ public:
     RoutingIdValue routing_algorithm_id{};
 };
 
-class RoutingAlgorithmRef
+class RoutingAlgorithmRef : public serde::Serializer<RoutingAlgorithmRef>
 {
 public:
     void set_algorithm_id(std::optional<RoutingIdValue> value)
@@ -1491,7 +1496,7 @@ public:
     std::optional<std::string> surcharge_config_algo_id{};
 };
 
-class RoutingConfigRequest
+class RoutingConfigRequest : public serde::Serializer<RoutingConfigRequest>
 {
 public:
     void set_name(std::string value)
@@ -1540,7 +1545,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class RoutingDictionaryRecord
+class RoutingDictionaryRecord : public serde::Serializer<RoutingDictionaryRecord>
 {
 public:
     void set_id(RoutingIdValue value)
@@ -1644,7 +1649,7 @@ public:
     std::optional<std::string> decision_engine_routing_id{};
 };
 
-class RoutingEntryRequest
+class RoutingEntryRequest : public serde::Serializer<RoutingEntryRequest>
 {
 public:
     void set_target(std::optional<DecisionEngineRoutingTarget> value)
@@ -1660,7 +1665,7 @@ public:
     std::optional<DecisionEngineRoutingTarget> target{};
 };
 
-class RoutingMigrationProfileStatus
+class RoutingMigrationProfileStatus : public serde::Serializer<RoutingMigrationProfileStatus>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -1765,7 +1770,7 @@ public:
     RoutingMigrationState state{};
 };
 
-class RoutingRetrieveLinkQuery
+class RoutingRetrieveLinkQuery : public serde::Serializer<RoutingRetrieveLinkQuery>
 {
 public:
     void set_profile_id(std::optional<ProfileIdValue> value)
@@ -1792,7 +1797,7 @@ public:
     std::optional<TransactionTypeValue> transaction_type{};
 };
 
-class RoutingRetrieveQuery
+class RoutingRetrieveQuery : public serde::Serializer<RoutingRetrieveQuery>
 {
 public:
     void set_limit(std::optional<std::uint16_t> value)
@@ -1830,7 +1835,7 @@ public:
     std::optional<TransactionTypeValue> transaction_type{};
 };
 
-class RoutingVolumeSplit
+class RoutingVolumeSplit : public serde::Serializer<RoutingVolumeSplit>
 {
 public:
     void set_routing_type(RoutingType value)
@@ -1857,7 +1862,7 @@ public:
     std::uint8_t split{};
 };
 
-class RuleMigrationError
+class RuleMigrationError : public serde::Serializer<RuleMigrationError>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -1895,7 +1900,7 @@ public:
     std::string error{};
 };
 
-class RuleMigrationNotApplicable
+class RuleMigrationNotApplicable : public serde::Serializer<RuleMigrationNotApplicable>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -1944,7 +1949,7 @@ public:
     std::string reason{};
 };
 
-class RuleMigrationQuery
+class RuleMigrationQuery : public serde::Serializer<RuleMigrationQuery>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -1993,7 +1998,7 @@ public:
     std::optional<std::uint32_t> offset{};
 };
 
-class RuleMigrationRequest
+class RuleMigrationRequest : public serde::Serializer<RuleMigrationRequest>
 {
 public:
     void set_profile_ids(std::vector<ProfileIdValue> value)
@@ -2031,7 +2036,7 @@ public:
     std::optional<std::uint32_t> offset{};
 };
 
-class RuleMigrationResponse
+class RuleMigrationResponse : public serde::Serializer<RuleMigrationResponse>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2080,7 +2085,7 @@ public:
     bool is_active_rule{};
 };
 
-class RuleMigrationSkipped
+class RuleMigrationSkipped : public serde::Serializer<RuleMigrationSkipped>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2129,7 +2134,7 @@ public:
     bool linked_active_rule{};
 };
 
-class RuleThreeDsDecisionRule
+class RuleThreeDsDecisionRule : public serde::Serializer<RuleThreeDsDecisionRule>
 {
 public:
     void set_name(std::string value)
@@ -2167,7 +2172,7 @@ public:
     std::vector<std::string> statements{};
 };
 
-class SuccessBasedAlgorithm
+class SuccessBasedAlgorithm : public serde::Serializer<SuccessBasedAlgorithm>
 {
 public:
     void set_algorithm_id_with_timestamp(DynamicAlgorithmWithTimestamp value)
@@ -2195,7 +2200,7 @@ public:
     DynamicRoutingFeatures enabled_feature{};
 };
 
-class SuccessBasedRoutingConfigBody
+class SuccessBasedRoutingConfigBody : public serde::Serializer<SuccessBasedRoutingConfigBody>
 {
 public:
     void set_min_aggregates_size(std::optional<std::uint32_t> value)
@@ -2278,7 +2283,7 @@ public:
     std::optional<bool> shuffle_on_tie_during_exploitation{};
 };
 
-class ToggleDynamicRoutingPath
+class ToggleDynamicRoutingPath : public serde::Serializer<ToggleDynamicRoutingPath>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2294,7 +2299,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class ToggleDynamicRoutingQuery
+class ToggleDynamicRoutingQuery : public serde::Serializer<ToggleDynamicRoutingQuery>
 {
 public:
     void set_enable(DynamicRoutingFeatures value)
@@ -2310,7 +2315,7 @@ public:
     DynamicRoutingFeatures enable{};
 };
 
-class ToggleDynamicRoutingWrapper
+class ToggleDynamicRoutingWrapper : public serde::Serializer<ToggleDynamicRoutingWrapper>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2337,7 +2342,7 @@ public:
     DynamicRoutingFeatures feature_to_enable{};
 };
 
-class CalSuccessRateEventRequest
+class CalSuccessRateEventRequest : public serde::Serializer<CalSuccessRateEventRequest>
 {
 public:
     void set_id(std::string value)
@@ -2386,7 +2391,7 @@ public:
     std::optional<CalSuccessRateConfigEventRequest> config{};
 };
 
-class ConnectorVolumeSplit
+class ConnectorVolumeSplit : public serde::Serializer<ConnectorVolumeSplit>
 {
 public:
     void set_connector(RoutableConnectorChoice value)
@@ -2413,7 +2418,7 @@ public:
     std::uint8_t split{};
 };
 
-class ContractBasedRoutingConfig
+class ContractBasedRoutingConfig : public serde::Serializer<ContractBasedRoutingConfig>
 {
 public:
     void set_config(std::optional<ContractBasedRoutingConfigBody> value)
@@ -2448,7 +2453,7 @@ enum class DynamicRoutingAlgorithm
     ContractBasedAlgorithm,
 };
 
-class DynamicRoutingAlgorithmRef
+class DynamicRoutingAlgorithmRef : public serde::Serializer<DynamicRoutingAlgorithmRef>
 {
 public:
     void set_success_based_algorithm(std::optional<SuccessBasedAlgorithm> value)
@@ -2512,7 +2517,7 @@ public:
     bool is_merchant_created_in_decision_engine{};
 };
 
-class EliminationRoutingPayloadWrapper
+class EliminationRoutingPayloadWrapper : public serde::Serializer<EliminationRoutingPayloadWrapper>
 {
 public:
     void set_updated_config(EliminationRoutingConfig value)
@@ -2550,7 +2555,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class ProfileDefaultRoutingConfig
+class ProfileDefaultRoutingConfig : public serde::Serializer<ProfileDefaultRoutingConfig>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2577,7 +2582,8 @@ public:
     std::vector<RoutableConnectorChoice> connectors{};
 };
 
-class RoutableConnectorChoiceWithBucketName
+class RoutableConnectorChoiceWithBucketName :
+    public serde::Serializer<RoutableConnectorChoiceWithBucketName>
 {
 public:
     void set_routable_connector_choice(RoutableConnectorChoice value)
@@ -2604,7 +2610,8 @@ public:
     std::string bucket_name{};
 };
 
-class RoutableConnectorChoiceWithStatus
+class RoutableConnectorChoiceWithStatus :
+    public serde::Serializer<RoutableConnectorChoiceWithStatus>
 {
 public:
     void set_routable_connector_choice(RoutableConnectorChoice value)
@@ -2631,7 +2638,7 @@ public:
     bool status{};
 };
 
-class RoutingDictionary
+class RoutingDictionary : public serde::Serializer<RoutingDictionary>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2669,7 +2676,7 @@ public:
     std::vector<RoutingDictionaryRecord> records{};
 };
 
-class RoutingEvaluateRequest
+class RoutingEvaluateRequest : public serde::Serializer<RoutingEvaluateRequest>
 {
 public:
     void set_created_by(std::string value)
@@ -2730,7 +2737,7 @@ public:
     std::optional<TransactionTypeValue> algorithm_for{};
 };
 
-class RoutingEvaluateResponse
+class RoutingEvaluateResponse : public serde::Serializer<RoutingEvaluateResponse>
 {
 public:
     void set_status(std::string value)
@@ -2780,7 +2787,7 @@ public:
     std::vector<RoutableConnectorChoice> eligible_connectors{};
 };
 
-class RoutingLinkWrapper
+class RoutingLinkWrapper : public serde::Serializer<RoutingLinkWrapper>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2807,7 +2814,7 @@ public:
     RoutingAlgorithmId algorithm_id{};
 };
 
-class RoutingMigrationStatusResponse
+class RoutingMigrationStatusResponse : public serde::Serializer<RoutingMigrationStatusResponse>
 {
 public:
     void set_profiles(std::vector<RoutingMigrationProfileStatus> value)
@@ -2867,7 +2874,7 @@ public:
     RoutingMigrationPageTotals page_totals{};
 };
 
-class RoutingPayloadWrapper
+class RoutingPayloadWrapper : public serde::Serializer<RoutingPayloadWrapper>
 {
 public:
     void set_updated_config(std::vector<RoutableConnectorChoice> value)
@@ -2894,7 +2901,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class RoutingRetrieveLinkQueryWrapper
+class RoutingRetrieveLinkQueryWrapper : public serde::Serializer<RoutingRetrieveLinkQueryWrapper>
 {
 public:
     void set_routing_query(RoutingRetrieveQuery value)
@@ -2921,7 +2928,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class RoutingRetrieveResponse
+class RoutingRetrieveResponse : public serde::Serializer<RoutingRetrieveResponse>
 {
 public:
     void set_algorithm(std::optional<MerchantRoutingAlgorithm> value)
@@ -2937,7 +2944,7 @@ public:
     std::optional<MerchantRoutingAlgorithm> algorithm{};
 };
 
-class RoutingVolumeSplitWrapper
+class RoutingVolumeSplitWrapper : public serde::Serializer<RoutingVolumeSplitWrapper>
 {
 public:
     void set_routing_info(RoutingVolumeSplit value)
@@ -2964,7 +2971,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class RuleMigrationProfileResult
+class RuleMigrationProfileResult : public serde::Serializer<RuleMigrationProfileResult>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -3046,7 +3053,7 @@ public:
     std::optional<std::string> not_attempted{};
 };
 
-class SuccessBasedRoutingConfig
+class SuccessBasedRoutingConfig : public serde::Serializer<SuccessBasedRoutingConfig>
 {
 public:
     void set_params(std::optional<std::vector<DynamicRoutingConfigParams>> value)
@@ -3086,7 +3093,7 @@ public:
     std::optional<DecisionEngineSuccessRateDataValue> decision_engine_configs{};
 };
 
-class CalContractScoreEventRequest
+class CalContractScoreEventRequest : public serde::Serializer<CalContractScoreEventRequest>
 {
 public:
     void set_id(std::string value)
@@ -3135,7 +3142,8 @@ public:
     std::optional<ContractBasedRoutingConfig> config{};
 };
 
-class ContractBasedRoutingPayloadWrapper
+class ContractBasedRoutingPayloadWrapper :
+    public serde::Serializer<ContractBasedRoutingPayloadWrapper>
 {
 public:
     void set_updated_config(ContractBasedRoutingConfig value)
@@ -3173,7 +3181,8 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class ContractBasedRoutingSetupPayloadWrapper
+class ContractBasedRoutingSetupPayloadWrapper :
+    public serde::Serializer<ContractBasedRoutingSetupPayloadWrapper>
 {
 public:
     void set_config(std::optional<ContractBasedRoutingConfig> value)
@@ -3211,7 +3220,7 @@ public:
     DynamicRoutingFeatures features_to_enable{};
 };
 
-class RuleMigrationResult
+class RuleMigrationResult : public serde::Serializer<RuleMigrationResult>
 {
 public:
     void set_profiles(std::vector<RuleMigrationProfileResult> value)
@@ -3238,7 +3247,8 @@ public:
     RuleMigrationTotals totals{};
 };
 
-class SuccessBasedRoutingPayloadWrapper
+class SuccessBasedRoutingPayloadWrapper :
+    public serde::Serializer<SuccessBasedRoutingPayloadWrapper>
 {
 public:
     void set_updated_config(SuccessBasedRoutingConfig value)

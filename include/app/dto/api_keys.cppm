@@ -3,6 +3,8 @@ module;
 #include <toml++/toml.hpp>
 export module app_dto:api_keys;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -15,7 +17,7 @@ export namespace app::dto::api_keys {
  * @brief Untagged `ApiKeyExpiration` mirror of api_models/src/api_keys.rs:168-233.
  * Wire form is a plain JSON string: `"never"` or an ISO-8601 datetime.
  */
-class ApiKeyExpiration
+class ApiKeyExpiration : public serde::Serializer<ApiKeyExpiration>
 {
 public:
     ApiKeyExpiration() = default;
@@ -49,7 +51,7 @@ private:
     std::string m_value{"never"};
 };
 
-class ApiKeyIdValue
+class ApiKeyIdValue : public serde::Serializer<ApiKeyIdValue>
 {
 public:
     void set_value(std::string v)
@@ -65,7 +67,7 @@ public:
     std::string value{};
 };
 
-class ListApiKeyConstraints
+class ListApiKeyConstraints : public serde::Serializer<ListApiKeyConstraints>
 {
 public:
     void set_limit(std::optional<std::int64_t> value)
@@ -92,7 +94,7 @@ public:
     std::optional<std::int64_t> skip{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -108,7 +110,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -124,7 +126,7 @@ public:
     std::string value{};
 };
 
-class CreateApiKeyRequest
+class CreateApiKeyRequest : public serde::Serializer<CreateApiKeyRequest>
 {
 public:
     void set_name(std::string value)
@@ -162,7 +164,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class CreateApiKeyResponse
+class CreateApiKeyResponse : public serde::Serializer<CreateApiKeyResponse>
 {
 public:
     void set_key_id(ApiKeyIdValue value)
@@ -244,7 +246,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class RetrieveApiKeyResponse
+class RetrieveApiKeyResponse : public serde::Serializer<RetrieveApiKeyResponse>
 {
 public:
     void set_key_id(ApiKeyIdValue value)
@@ -326,7 +328,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class RevokeApiKeyResponse
+class RevokeApiKeyResponse : public serde::Serializer<RevokeApiKeyResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -364,7 +366,7 @@ public:
     bool revoked{};
 };
 
-class UpdateApiKeyRequest
+class UpdateApiKeyRequest : public serde::Serializer<UpdateApiKeyRequest>
 {
 public:
     void set_name(std::optional<std::string> value)

@@ -1,6 +1,8 @@
 module;
 export module app_dto:conditional_configs;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -15,7 +17,7 @@ enum class DecisionManager
     DecisionManagerv1
 };
 
-class ProgramValue
+class ProgramValue : public serde::Serializer<ProgramValue>
 {
 public:
     void set_value(std::string value)
@@ -31,7 +33,7 @@ public:
     std::string value{};
 };
 
-class ConditionalConfigReq
+class ConditionalConfigReq : public serde::Serializer<ConditionalConfigReq>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -58,7 +60,7 @@ public:
     std::optional<ProgramValue> algorithm{};
 };
 
-class DecisionManagerRecord
+class DecisionManagerRecord : public serde::Serializer<DecisionManagerRecord>
 {
 public:
     void set_name(std::string value)
@@ -107,7 +109,7 @@ public:
     std::int64_t modified_at{};
 };
 
-class DecisionManagerRequest
+class DecisionManagerRequest : public serde::Serializer<DecisionManagerRequest>
 {
 public:
     void set_name(std::optional<std::string> value)

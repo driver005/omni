@@ -1,6 +1,8 @@
 module;
 export module app_dto:offer_engine;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -17,7 +19,7 @@ export namespace app::dto::offer_engine {
  * api_models/offer_engine.rs:35-55), so `BrowseOffer::currency` and
  * `BrowseOffer::valid_till` now hold `std::optional<std::string>` directly.
  */
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string v)
@@ -40,7 +42,7 @@ enum class OfferEngineCredentialSource
     Merchant,
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -57,7 +59,7 @@ public:
 };
 
 /** @brief Upstream `api_models::offer_engine::BrowseOffer` (offer_engine.rs:33-55). */
-class BrowseOffer
+class BrowseOffer : public serde::Serializer<BrowseOffer>
 {
 public:
     void set_code(std::string value)
@@ -130,7 +132,7 @@ public:
     std::optional<std::string> valid_till{};
 };
 
-class OfferPaymentInfo
+class OfferPaymentInfo : public serde::Serializer<OfferPaymentInfo>
 {
 public:
     void set_currency(std::string value)
@@ -146,7 +148,7 @@ public:
     std::string currency{};
 };
 
-class BrowseOffersRequest
+class BrowseOffersRequest : public serde::Serializer<BrowseOffersRequest>
 {
 public:
     void set_offer_payment_info(std::optional<OfferPaymentInfo> value)
@@ -162,7 +164,7 @@ public:
     std::optional<OfferPaymentInfo> offer_payment_info{};
 };
 
-class BrowseOffersResponse
+class BrowseOffersResponse : public serde::Serializer<BrowseOffersResponse>
 {
 public:
     void set_offers(std::vector<BrowseOffer> value)

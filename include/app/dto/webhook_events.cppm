@@ -1,6 +1,8 @@
 module;
 export module app_dto:webhook_events;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::webhook_events {
 
-class EventClassValue
+class EventClassValue : public serde::Serializer<EventClassValue>
 {
 public:
     void set_value(std::string v)
@@ -32,7 +34,7 @@ enum class EventListConstraintsInternal
     EventIdFilter,
 };
 
-class EventRecipientValue
+class EventRecipientValue : public serde::Serializer<EventRecipientValue>
 {
 public:
     void set_value(std::string v)
@@ -48,7 +50,7 @@ public:
     std::string value{};
 };
 
-class EventTypeValue
+class EventTypeValue : public serde::Serializer<EventTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -64,7 +66,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -80,7 +82,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -96,7 +98,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -112,7 +114,7 @@ public:
     std::string value{};
 };
 
-class SecretStringValue
+class SecretStringValue : public serde::Serializer<SecretStringValue>
 {
 public:
     void set_value(std::string v)
@@ -128,7 +130,7 @@ public:
     std::string value{};
 };
 
-class WebhookDeliveryAttemptValue
+class WebhookDeliveryAttemptValue : public serde::Serializer<WebhookDeliveryAttemptValue>
 {
 public:
     void set_value(std::string v)
@@ -144,7 +146,7 @@ public:
     std::string value{};
 };
 
-class EventListConstraints
+class EventListConstraints : public serde::Serializer<EventListConstraints>
 {
 public:
     void set_created_after(std::optional<PrimitiveDateTimeValue> value)
@@ -271,7 +273,7 @@ public:
     std::optional<EventRecipientValue> recipient{};
 };
 
-class EventListItemResponse
+class EventListItemResponse : public serde::Serializer<EventListItemResponse>
 {
 public:
     void set_event_id(std::string value)
@@ -386,7 +388,7 @@ public:
     PrimitiveDateTimeValue created{};
 };
 
-class OutgoingWebhookRequestContent
+class OutgoingWebhookRequestContent : public serde::Serializer<OutgoingWebhookRequestContent>
 {
 public:
     void set_body(SecretStringValue value)
@@ -414,7 +416,7 @@ public:
     std::vector<std::pair<std::string, SecretStringValue>> headers{};
 };
 
-class OutgoingWebhookResponseContent
+class OutgoingWebhookResponseContent : public serde::Serializer<OutgoingWebhookResponseContent>
 {
 public:
     void set_body(std::optional<SecretStringValue> value)
@@ -464,7 +466,8 @@ public:
     std::optional<std::string> error_message{};
 };
 
-class WebhookDeliveryAttemptListRequestInternal
+class WebhookDeliveryAttemptListRequestInternal :
+    public serde::Serializer<WebhookDeliveryAttemptListRequestInternal>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -491,7 +494,8 @@ public:
     std::string initial_attempt_id{};
 };
 
-class WebhookDeliveryRetryRequestInternal
+class WebhookDeliveryRetryRequestInternal :
+    public serde::Serializer<WebhookDeliveryRetryRequestInternal>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -518,7 +522,7 @@ public:
     std::string event_id{};
 };
 
-class EventListRequestInternal
+class EventListRequestInternal : public serde::Serializer<EventListRequestInternal>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -545,7 +549,7 @@ public:
     EventListConstraints constraints{};
 };
 
-class EventRetrieveResponse
+class EventRetrieveResponse : public serde::Serializer<EventRetrieveResponse>
 {
 public:
     void set_event_information(EventListItemResponse value)
@@ -595,7 +599,7 @@ public:
     std::optional<WebhookDeliveryAttemptValue> delivery_attempt{};
 };
 
-class TotalEventsResponse
+class TotalEventsResponse : public serde::Serializer<TotalEventsResponse>
 {
 public:
     void set_events(std::vector<EventListItemResponse> value)
@@ -625,7 +629,7 @@ public:
 // Typed result of the upstream list_initial_delivery_attempts core function:
 // the page of typed EventListItemResponse rows and the separate COUNT. This is
 // the real return type used by the handler (no local ad-hoc placeholder).
-class EventListResult
+class EventListResult : public serde::Serializer<EventListResult>
 {
 public:
     void set_items(std::vector<EventListItemResponse> value)

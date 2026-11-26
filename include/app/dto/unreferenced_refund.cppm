@@ -1,6 +1,8 @@
 module;
 export module app_dto:unreferenced_refund;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::unreferenced_refund {
 
-class CardNumberValue
+class CardNumberValue : public serde::Serializer<CardNumberValue>
 {
 public:
     void set_value(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -94,7 +96,7 @@ enum class RecipientPaymentMethodData
     Card
 };
 
-class RelayErrorValue
+class RelayErrorValue : public serde::Serializer<RelayErrorValue>
 {
 public:
     void set_value(std::string value)
@@ -110,7 +112,7 @@ public:
     std::string value{};
 };
 
-class RelayIdValue
+class RelayIdValue : public serde::Serializer<RelayIdValue>
 {
 public:
     void set_value(std::string value)
@@ -126,7 +128,7 @@ public:
     std::string value{};
 };
 
-class RelayStatusValue
+class RelayStatusValue : public serde::Serializer<RelayStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -142,7 +144,7 @@ public:
     std::string value{};
 };
 
-class RecipientCardData
+class RecipientCardData : public serde::Serializer<RecipientCardData>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -191,7 +193,7 @@ public:
     std::optional<std::string> card_holder_name{};
 };
 
-class UnreferencedRefundRequest
+class UnreferencedRefundRequest : public serde::Serializer<UnreferencedRefundRequest>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -263,7 +265,7 @@ public:
     RecipientPaymentMethodData recipient_payment_method_data{};
 };
 
-class UnreferencedRefundResponse
+class UnreferencedRefundResponse : public serde::Serializer<UnreferencedRefundResponse>
 {
 public:
     void set_id(RelayIdValue value)

@@ -1,6 +1,8 @@
 module;
 export module app_dto:tokenization;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -24,7 +26,7 @@ export namespace app::dto::tokenization {
  * the route wire surface (their `value` field would emit a `{"value":...}` wrapper).
  */
 
-class GlobalCustomerIdValue
+class GlobalCustomerIdValue : public serde::Serializer<GlobalCustomerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -40,7 +42,8 @@ public:
     std::string value{};
 };
 
-class GlobalPaymentMethodSessionIdValue
+class GlobalPaymentMethodSessionIdValue :
+    public serde::Serializer<GlobalPaymentMethodSessionIdValue>
 {
 public:
     void set_value(std::string v)
@@ -56,7 +59,7 @@ public:
     std::string value{};
 };
 
-class GlobalTokenIdValue
+class GlobalTokenIdValue : public serde::Serializer<GlobalTokenIdValue>
 {
 public:
     void set_value(std::string v)
@@ -72,7 +75,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -88,7 +91,7 @@ public:
     std::string value{};
 };
 
-class TokenizationFlagValue
+class TokenizationFlagValue : public serde::Serializer<TokenizationFlagValue>
 {
 public:
     void set_value(std::string v)
@@ -104,7 +107,7 @@ public:
     std::string value{};
 };
 
-class DeleteTokenDataRequest
+class DeleteTokenDataRequest : public serde::Serializer<DeleteTokenDataRequest>
 {
 public:
     // Upstream: customer_id/session_id are id newtypes -> plain strings on the wire.
@@ -132,7 +135,7 @@ public:
     std::string session_id{};
 };
 
-class DeleteTokenDataResponse
+class DeleteTokenDataResponse : public serde::Serializer<DeleteTokenDataResponse>
 {
 public:
     void set_id(std::string value)
@@ -148,7 +151,7 @@ public:
     std::string id{};
 };
 
-class GenericTokenizationRequest
+class GenericTokenizationRequest : public serde::Serializer<GenericTokenizationRequest>
 {
 public:
     void set_customer_id(std::string value)
@@ -176,7 +179,7 @@ public:
     std::string token_request{};
 };
 
-class GenericTokenizationResponse
+class GenericTokenizationResponse : public serde::Serializer<GenericTokenizationResponse>
 {
 public:
     void set_id(std::string value)

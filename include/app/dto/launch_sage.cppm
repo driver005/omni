@@ -1,6 +1,8 @@
 module;
 export module app_dto:launch_sage;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::launch_sage {
 
-class LaunchSageResponse
+class LaunchSageResponse : public serde::Serializer<LaunchSageResponse>
 {
 public:
     void set_handoff_url(std::string value)
@@ -36,7 +38,7 @@ public:
     std::optional<std::string> expires_at{};
 };
 
-class ScopeEntry
+class ScopeEntry : public serde::Serializer<ScopeEntry>
 {
 public:
     void set_entity_type(std::string value)
@@ -86,7 +88,7 @@ public:
     std::unordered_map<std::string, serde::Value> constraints{};
 };
 
-class SageSessionRequest
+class SageSessionRequest : public serde::Serializer<SageSessionRequest>
 {
 public:
     void set_user_id(std::string value)

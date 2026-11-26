@@ -1,6 +1,8 @@
 module;
 export module app_dto:telephone_order;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::telephone_order {
 
-class TelephoneOrderCatalog
+class TelephoneOrderCatalog : public serde::Serializer<TelephoneOrderCatalog>
 {
 public:
     void set_name(std::string value)

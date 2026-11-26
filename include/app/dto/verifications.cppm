@@ -1,6 +1,8 @@
 module;
 export module app_dto:verifications;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::verifications {
 
-class ApplepayMerchantResponse
+class ApplepayMerchantResponse : public serde::Serializer<ApplepayMerchantResponse>
 {
 public:
     void set_status_message(std::string value)
@@ -25,7 +27,8 @@ public:
     std::string status_message{};
 };
 
-class ApplepayMerchantVerificationConfigs
+class ApplepayMerchantVerificationConfigs :
+    public serde::Serializer<ApplepayMerchantVerificationConfigs>
 {
 public:
     void set_domain_names(std::vector<std::string> value)
@@ -74,7 +77,7 @@ public:
     std::string partner_merchant_name{};
 };
 
-class ApplepayVerifiedDomainsResponse
+class ApplepayVerifiedDomainsResponse : public serde::Serializer<ApplepayVerifiedDomainsResponse>
 {
 public:
     void set_verified_domains(std::vector<std::string> value)
@@ -90,7 +93,7 @@ public:
     std::vector<std::string> verified_domains{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -106,7 +109,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -122,7 +125,7 @@ public:
     std::string value{};
 };
 
-class ApplepayGetVerifiedDomainsParam
+class ApplepayGetVerifiedDomainsParam : public serde::Serializer<ApplepayGetVerifiedDomainsParam>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -150,7 +153,8 @@ public:
     MerchantConnectorAccountIdValue merchant_connector_account_id{};
 };
 
-class ApplepayMerchantVerificationRequest
+class ApplepayMerchantVerificationRequest :
+    public serde::Serializer<ApplepayMerchantVerificationRequest>
 {
 public:
     void set_domain_names(std::vector<std::string> value)

@@ -1,6 +1,8 @@
 module;
 export module app_dto:apple_pay_certificates_migration;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -13,7 +15,8 @@ import boost.ut;
 // {"value": ...} wrapper used by many other converted DTOs. Mirror that exactly.
 export namespace app::dto::apple_pay_certificates_migration {
 
-class ApplePayCertificatesMigrationRequest
+class ApplePayCertificatesMigrationRequest :
+    public serde::Serializer<ApplePayCertificatesMigrationRequest>
 {
 public:
     void set_merchant_ids(std::vector<std::string> value)
@@ -29,7 +32,8 @@ public:
     std::vector<std::string> merchant_ids{};
 };
 
-class ApplePayCertificatesMigrationResponse
+class ApplePayCertificatesMigrationResponse :
+    public serde::Serializer<ApplePayCertificatesMigrationResponse>
 {
 public:
     void set_migration_successful(std::vector<std::string> value)

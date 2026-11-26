@@ -9,6 +9,9 @@ congelado_module_library(
         "converter.cppm",
         "cache.cppm",
         "jsonld.cppm",
+        "error_kind.cppm",
+        "error.cppm",
+        "serializer.cppm",
     ],
     deps = [
         "//include/interfaces:interfaces",

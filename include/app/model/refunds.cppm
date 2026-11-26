@@ -1,6 +1,8 @@
 module;
 export module app_model:refunds;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::model::refunds {
 
-class AmountFilterValue
+class AmountFilterValue : public serde::Serializer<AmountFilterValue>
 {
 public:
     void set_value(std::string new_value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string new_value)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class GlobalPaymentIdValue
+class GlobalPaymentIdValue : public serde::Serializer<GlobalPaymentIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -73,7 +75,8 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAuthDetailsValue
+class MerchantConnectorAuthDetailsValue :
+    public serde::Serializer<MerchantConnectorAuthDetailsValue>
 {
 public:
     void set_value(std::string new_value)
@@ -89,7 +92,8 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorDetailsWrapValue
+class MerchantConnectorDetailsWrapValue :
+    public serde::Serializer<MerchantConnectorDetailsWrapValue>
 {
 public:
     void set_value(std::string new_value)
@@ -105,7 +109,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorInfoValue
+class MerchantConnectorInfoValue : public serde::Serializer<MerchantConnectorInfoValue>
 {
 public:
     void set_value(std::string new_value)
@@ -121,7 +125,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -137,7 +141,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string new_value)
@@ -153,7 +157,7 @@ public:
     std::string value{};
 };
 
-class PageOffsetValue
+class PageOffsetValue : public serde::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string new_value)
@@ -169,7 +173,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue
+class PageSizeValue : public serde::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string new_value)
@@ -185,7 +189,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue
+class PaymentIdValue : public serde::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -201,7 +205,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodDataValue
+class PaymentMethodDataValue : public serde::Serializer<PaymentMethodDataValue>
 {
 public:
     void set_value(std::string new_value)
@@ -217,7 +221,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string new_value)
@@ -233,7 +237,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -249,7 +253,7 @@ public:
     std::string value{};
 };
 
-class RefundAggregateResponse
+class RefundAggregateResponse : public serde::Serializer<RefundAggregateResponse>
 {
 public:
     void set_status_with_count(std::unordered_map<std::string, std::int64_t> value)
@@ -266,7 +270,7 @@ public:
     std::unordered_map<std::string, std::int64_t> status_with_count{};
 };
 
-class RefundErrorDetails
+class RefundErrorDetails : public serde::Serializer<RefundErrorDetails>
 {
 public:
     void set_code(std::string value)
@@ -293,7 +297,7 @@ public:
     std::string message{};
 };
 
-class RefundFeatureMetadataValue
+class RefundFeatureMetadataValue : public serde::Serializer<RefundFeatureMetadataValue>
 {
 public:
     void set_value(std::string new_value)
@@ -309,7 +313,7 @@ public:
     std::string value{};
 };
 
-class RefundReferenceIdValue
+class RefundReferenceIdValue : public serde::Serializer<RefundReferenceIdValue>
 {
 public:
     void set_value(std::string new_value)
@@ -325,7 +329,7 @@ public:
     std::string value{};
 };
 
-class RefundReverseRequest
+class RefundReverseRequest : public serde::Serializer<RefundReverseRequest>
 {
 public:
     void set_refund_id(std::string value)
@@ -360,7 +364,7 @@ enum class RefundStatus
     Review,
 };
 
-class RefundStatusValue
+class RefundStatusValue : public serde::Serializer<RefundStatusValue>
 {
 public:
     void set_value(std::string new_value)
@@ -382,7 +386,7 @@ enum class RefundType
     Instant,
 };
 
-class RefundsRetrieveBody
+class RefundsRetrieveBody : public serde::Serializer<RefundsRetrieveBody>
 {
 public:
     void set_force_sync(std::optional<bool> value)
@@ -409,7 +413,7 @@ public:
     std::optional<bool> all_keys_required{};
 };
 
-class SecretSerdeValueValue
+class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string new_value)
@@ -425,7 +429,7 @@ public:
     std::string value{};
 };
 
-class SplitRefundValue
+class SplitRefundValue : public serde::Serializer<SplitRefundValue>
 {
 public:
     void set_value(std::string new_value)
@@ -441,7 +445,7 @@ public:
     std::string value{};
 };
 
-class TimeRangeValue
+class TimeRangeValue : public serde::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string new_value)
@@ -457,7 +461,7 @@ public:
     std::string value{};
 };
 
-class PlatformRefundListFilters
+class PlatformRefundListFilters : public serde::Serializer<PlatformRefundListFilters>
 {
 public:
     void set_connector(
@@ -498,7 +502,7 @@ public:
     std::vector<RefundStatusValue> refund_status{};
 };
 
-class PlatformRefundListItem
+class PlatformRefundListItem : public serde::Serializer<PlatformRefundListItem>
 {
 public:
     void set_refund_id(std::string value)
@@ -691,7 +695,7 @@ public:
     PrimitiveDateTimeValue modified_at{};
 };
 
-class PlatformRefundListRequest
+class PlatformRefundListRequest : public serde::Serializer<PlatformRefundListRequest>
 {
 public:
     void set_processor_merchant_id(std::optional<MerchantIdValue> value)
@@ -843,7 +847,7 @@ public:
     std::optional<std::vector<RefundStatusValue>> refund_status{};
 };
 
-class RefundListFilters
+class RefundListFilters : public serde::Serializer<RefundListFilters>
 {
 public:
     void set_connector(
@@ -884,7 +888,7 @@ public:
     std::vector<RefundStatusValue> refund_status{};
 };
 
-class RefundListMetaData
+class RefundListMetaData : public serde::Serializer<RefundListMetaData>
 {
 public:
     void set_connector(std::vector<std::string> value)
@@ -922,7 +926,7 @@ public:
     std::vector<RefundStatusValue> refund_status{};
 };
 
-class RefundListRequest
+class RefundListRequest : public serde::Serializer<RefundListRequest>
 {
 public:
     void set_payment_id(std::optional<PaymentIdValue> value)
@@ -1052,7 +1056,7 @@ public:
     std::optional<std::vector<RefundStatusValue>> refund_status{};
 };
 
-class RefundManualUpdateRequest
+class RefundManualUpdateRequest : public serde::Serializer<RefundManualUpdateRequest>
 {
 public:
     void set_refund_id(std::string value)
@@ -1123,7 +1127,7 @@ public:
     std::optional<std::string> error_message{};
 };
 
-class RefundMetadataUpdateRequest
+class RefundMetadataUpdateRequest : public serde::Serializer<RefundMetadataUpdateRequest>
 {
 public:
     void set_reason(std::optional<std::string> value)
@@ -1150,7 +1154,7 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class RefundRequest
+class RefundRequest : public serde::Serializer<RefundRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -1290,7 +1294,7 @@ public:
     std::optional<RefundFeatureMetadataValue> feature_metadata{};
 };
 
-class RefundResponse
+class RefundResponse : public serde::Serializer<RefundResponse>
 {
 public:
     void set_refund_id(std::string value)
@@ -1561,7 +1565,7 @@ public:
     std::optional<RefundFeatureMetadataValue> feature_metadata{};
 };
 
-class RefundUpdateRequest
+class RefundUpdateRequest : public serde::Serializer<RefundUpdateRequest>
 {
 public:
     void set_refund_id(std::string value)
@@ -1599,7 +1603,7 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class RefundsCreateRequest
+class RefundsCreateRequest : public serde::Serializer<RefundsCreateRequest>
 {
 public:
     void set_payment_id(GlobalPaymentIdValue value)
@@ -1716,7 +1720,7 @@ public:
     std::optional<RefundFeatureMetadataValue> feature_metadata{};
 };
 
-class RefundsRetrievePayload
+class RefundsRetrievePayload : public serde::Serializer<RefundsRetrievePayload>
 {
 public:
     void set_force_sync(std::optional<bool> value)
@@ -1755,7 +1759,7 @@ public:
     std::optional<bool> return_raw_connector_response{};
 };
 
-class RefundsRetrieveRequest
+class RefundsRetrieveRequest : public serde::Serializer<RefundsRetrieveRequest>
 {
 public:
     void set_refund_id(std::string value)
@@ -1805,7 +1809,7 @@ public:
     std::optional<bool> all_keys_required{};
 };
 
-class PlatformRefundListResponse
+class PlatformRefundListResponse : public serde::Serializer<PlatformRefundListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -1843,7 +1847,7 @@ public:
     std::vector<PlatformRefundListItem> data{};
 };
 
-class RefundListResponse
+class RefundListResponse : public serde::Serializer<RefundListResponse>
 {
 public:
     void set_count(std::size_t value)

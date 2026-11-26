@@ -1,6 +1,8 @@
 module;
 export module app_model:payouts;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::model::payouts {
 
-class AddressValue
+class AddressValue : public serde::Serializer<AddressValue>
 {
 public:
     void set_value(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class AmountValue
+class AmountValue : public serde::Serializer<AmountValue>
 {
 public:
     void set_value(std::string value)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class BankAdditionalDataValue
+class BankAdditionalDataValue : public serde::Serializer<BankAdditionalDataValue>
 {
 public:
     void set_value(std::string value)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class BankNamesValue
+class BankNamesValue : public serde::Serializer<BankNamesValue>
 {
 public:
     void set_value(std::string value)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class BankTypeValue
+class BankTypeValue : public serde::Serializer<BankTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -89,7 +91,7 @@ public:
     std::string value{};
 };
 
-class BrowserInformationValue
+class BrowserInformationValue : public serde::Serializer<BrowserInformationValue>
 {
 public:
     void set_value(std::string value)
@@ -105,7 +107,7 @@ public:
     std::string value{};
 };
 
-class CardNetworkValue
+class CardNetworkValue : public serde::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string value)
@@ -121,7 +123,7 @@ public:
     std::string value{};
 };
 
-class CardNumberValue
+class CardNumberValue : public serde::Serializer<CardNumberValue>
 {
 public:
     void set_value(std::string value)
@@ -137,7 +139,7 @@ public:
     std::string value{};
 };
 
-class CountryAlpha2Value
+class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
 {
 public:
     void set_value(std::string value)
@@ -153,7 +155,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -169,7 +171,7 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsResponseValue
+class CustomerDetailsResponseValue : public serde::Serializer<CustomerDetailsResponseValue>
 {
 public:
     void set_value(std::string value)
@@ -185,7 +187,7 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsValue
+class CustomerDetailsValue : public serde::Serializer<CustomerDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -201,7 +203,7 @@ public:
     std::string value{};
 };
 
-class CustomerIdValue
+class CustomerIdValue : public serde::Serializer<CustomerIdValue>
 {
 public:
     void set_value(std::string value)
@@ -217,7 +219,7 @@ public:
     std::string value{};
 };
 
-class EmailValue
+class EmailValue : public serde::Serializer<EmailValue>
 {
 public:
     void set_value(std::string value)
@@ -233,7 +235,7 @@ public:
     std::string value{};
 };
 
-class EnabledPaymentMethodValue
+class EnabledPaymentMethodValue : public serde::Serializer<EnabledPaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -249,7 +251,7 @@ public:
     std::string value{};
 };
 
-class FrmMessageValue
+class FrmMessageValue : public serde::Serializer<FrmMessageValue>
 {
 public:
     void set_value(std::string value)
@@ -265,7 +267,7 @@ public:
     std::string value{};
 };
 
-class GenericLinkUiConfigFormDataValue
+class GenericLinkUiConfigFormDataValue : public serde::Serializer<GenericLinkUiConfigFormDataValue>
 {
 public:
     void set_value(std::string value)
@@ -281,7 +283,7 @@ public:
     std::string value{};
 };
 
-class GenericLinkUiConfigValue
+class GenericLinkUiConfigValue : public serde::Serializer<GenericLinkUiConfigValue>
 {
 public:
     void set_value(std::string value)
@@ -297,7 +299,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -313,7 +315,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorInfoValue
+class MerchantConnectorInfoValue : public serde::Serializer<MerchantConnectorInfoValue>
 {
 public:
     void set_value(std::string value)
@@ -335,7 +337,7 @@ public:
  * `PayoutListFiltersV2.connector` so `GET /payouts/v2/{profile/}filter` emits the exact
  * upstream JSON shape: `{connector_label, merchant_connector_id, connector_type}`.
  */
-class MerchantConnectorInfo
+class MerchantConnectorInfo : public serde::Serializer<MerchantConnectorInfo>
 {
 public:
     void set_connector_label(std::string value)
@@ -373,7 +375,7 @@ public:
     std::string connector_type{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string value)
@@ -389,7 +391,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -405,7 +407,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableEmailValue
+class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string value)
@@ -421,7 +423,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableNameValue
+class OptionalEncryptableNameValue : public serde::Serializer<OptionalEncryptableNameValue>
 {
 public:
     void set_value(std::string value)
@@ -437,7 +439,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptablePhoneValue
+class OptionalEncryptablePhoneValue : public serde::Serializer<OptionalEncryptablePhoneValue>
 {
 public:
     void set_value(std::string value)
@@ -453,7 +455,7 @@ public:
     std::string value{};
 };
 
-class PageOffsetValue
+class PageOffsetValue : public serde::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string value)
@@ -469,7 +471,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue
+class PageSizeValue : public serde::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string value)
@@ -485,7 +487,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue
+class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -501,7 +503,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue
+class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -517,7 +519,7 @@ public:
     std::string value{};
 };
 
-class PayoutConnectorsValue
+class PayoutConnectorsValue : public serde::Serializer<PayoutConnectorsValue>
 {
 public:
     void set_value(std::string value)
@@ -533,7 +535,7 @@ public:
     std::string value{};
 };
 
-class PayoutEntityTypeValue
+class PayoutEntityTypeValue : public serde::Serializer<PayoutEntityTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -549,7 +551,7 @@ public:
     std::string value{};
 };
 
-class PayoutFundsTransferTypeValue
+class PayoutFundsTransferTypeValue : public serde::Serializer<PayoutFundsTransferTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -565,7 +567,7 @@ public:
     std::string value{};
 };
 
-class PayoutIdValue
+class PayoutIdValue : public serde::Serializer<PayoutIdValue>
 {
 public:
     void set_value(std::string value)
@@ -581,7 +583,7 @@ public:
     std::string value{};
 };
 
-class PayoutPurposeValue
+class PayoutPurposeValue : public serde::Serializer<PayoutPurposeValue>
 {
 public:
     void set_value(std::string value)
@@ -597,7 +599,7 @@ public:
     std::string value{};
 };
 
-class PayoutSendPriorityValue
+class PayoutSendPriorityValue : public serde::Serializer<PayoutSendPriorityValue>
 {
 public:
     void set_value(std::string value)
@@ -613,7 +615,7 @@ public:
     std::string value{};
 };
 
-class PayoutStatusValue
+class PayoutStatusValue : public serde::Serializer<PayoutStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -629,7 +631,7 @@ public:
     std::string value{};
 };
 
-class PayoutTypeValue
+class PayoutTypeValue : public serde::Serializer<PayoutTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -645,7 +647,7 @@ public:
     std::string value{};
 };
 
-class PayoutsAggregateResponse
+class PayoutsAggregateResponse : public serde::Serializer<PayoutsAggregateResponse>
 {
 public:
     void set_status_with_count(std::unordered_map<std::string, std::int64_t> value)
@@ -662,7 +664,7 @@ public:
     std::unordered_map<std::string, std::int64_t> status_with_count{};
 };
 
-class PayoutsBillingDescriptorValue
+class PayoutsBillingDescriptorValue : public serde::Serializer<PayoutsBillingDescriptorValue>
 {
 public:
     void set_value(std::string value)
@@ -678,7 +680,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -694,7 +696,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -710,7 +712,7 @@ public:
     std::string value{};
 };
 
-class RequiredFieldInfoValue
+class RequiredFieldInfoValue : public serde::Serializer<RequiredFieldInfoValue>
 {
 public:
     void set_value(std::string value)
@@ -726,7 +728,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue
+class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string value)
@@ -742,7 +744,7 @@ public:
     std::string value{};
 };
 
-class SecretValue
+class SecretValue : public serde::Serializer<SecretValue>
 {
 public:
     void set_value(std::string value)
@@ -758,7 +760,7 @@ public:
     std::string value{};
 };
 
-class SenderDetailsValue
+class SenderDetailsValue : public serde::Serializer<SenderDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -774,7 +776,7 @@ public:
     std::string value{};
 };
 
-class SourceOfFundsValue
+class SourceOfFundsValue : public serde::Serializer<SourceOfFundsValue>
 {
 public:
     void set_value(std::string value)
@@ -790,7 +792,7 @@ public:
     std::string value{};
 };
 
-class StringMajorUnitValue
+class StringMajorUnitValue : public serde::Serializer<StringMajorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -806,7 +808,7 @@ public:
     std::string value{};
 };
 
-class TimeRangeValue
+class TimeRangeValue : public serde::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string value)
@@ -822,7 +824,7 @@ public:
     std::string value{};
 };
 
-class UIWidgetFormLayoutValue
+class UIWidgetFormLayoutValue : public serde::Serializer<UIWidgetFormLayoutValue>
 {
 public:
     void set_value(std::string value)
@@ -838,7 +840,7 @@ public:
     std::string value{};
 };
 
-class UnifiedCodeValue
+class UnifiedCodeValue : public serde::Serializer<UnifiedCodeValue>
 {
 public:
     void set_value(std::string value)
@@ -854,7 +856,7 @@ public:
     std::string value{};
 };
 
-class UnifiedMessageValue
+class UnifiedMessageValue : public serde::Serializer<UnifiedMessageValue>
 {
 public:
     void set_value(std::string value)
@@ -870,7 +872,7 @@ public:
     std::string value{};
 };
 
-class UrlValue
+class UrlValue : public serde::Serializer<UrlValue>
 {
 public:
     void set_value(std::string value)
@@ -886,7 +888,7 @@ public:
     std::string value{};
 };
 
-class AchBankTransfer
+class AchBankTransfer : public serde::Serializer<AchBankTransfer>
 {
 public:
     void set_bank_name(std::optional<std::string> value)
@@ -957,7 +959,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class ApplePayDecrypt
+class ApplePayDecrypt : public serde::Serializer<ApplePayDecrypt>
 {
 public:
     void set_dpan(CardNumberValue value)
@@ -1017,7 +1019,7 @@ public:
     std::optional<CardNetworkValue> card_network{};
 };
 
-class BacsBankTransfer
+class BacsBankTransfer : public serde::Serializer<BacsBankTransfer>
 {
 public:
     void set_bank_name(std::optional<std::string> value)
@@ -1088,7 +1090,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class CardPayout
+class CardPayout : public serde::Serializer<CardPayout>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -1148,7 +1150,7 @@ public:
     std::optional<CardNetworkValue> card_network{};
 };
 
-class GooglePayDecrypt
+class GooglePayDecrypt : public serde::Serializer<GooglePayDecrypt>
 {
 public:
     void set_application_primary_account_number(CardNumberValue value)
@@ -1208,7 +1210,7 @@ public:
     std::optional<CardNetworkValue> card_network{};
 };
 
-class Interac
+class Interac : public serde::Serializer<Interac>
 {
 public:
     void set_email(EmailValue value)
@@ -1224,7 +1226,7 @@ public:
     EmailValue email{};
 };
 
-class Mifinity
+class Mifinity : public serde::Serializer<Mifinity>
 {
 public:
     void set_destination_account(SecretValue value)
@@ -1240,7 +1242,7 @@ public:
     SecretValue destination_account{};
 };
 
-class OpenBanking
+class OpenBanking : public serde::Serializer<OpenBanking>
 {
 public:
     void set_account_holder_name(SecretValue value)
@@ -1267,7 +1269,7 @@ public:
     SecretValue iban{};
 };
 
-class OpenBankingUk
+class OpenBankingUk : public serde::Serializer<OpenBankingUk>
 {
 public:
     void set_account_holder_name(SecretValue value)
@@ -1294,7 +1296,7 @@ public:
     SecretValue iban{};
 };
 
-class Passthrough
+class Passthrough : public serde::Serializer<Passthrough>
 {
 public:
     void set_psp_token(SecretValue value)
@@ -1332,7 +1334,7 @@ public:
     PaymentMethodTypeValue token_type{};
 };
 
-class PaymentMethodTypeInfo
+class PaymentMethodTypeInfo : public serde::Serializer<PaymentMethodTypeInfo>
 {
 public:
     void set_payment_method_type(PaymentMethodTypeValue value)
@@ -1362,7 +1364,7 @@ public:
     std::optional<std::unordered_map<std::string, RequiredFieldInfoValue>> required_fields{};
 };
 
-class PayoutActionRequest
+class PayoutActionRequest : public serde::Serializer<PayoutActionRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -1378,7 +1380,7 @@ public:
     PayoutIdValue payout_id{};
 };
 
-class PayoutAttemptResponse
+class PayoutAttemptResponse : public serde::Serializer<PayoutAttemptResponse>
 {
 public:
     void set_attempt_id(std::string value)
@@ -1527,7 +1529,7 @@ public:
     std::optional<UnifiedMessageValue> unified_message{};
 };
 
-class PayoutCreatePayoutLinkConfig
+class PayoutCreatePayoutLinkConfig : public serde::Serializer<PayoutCreatePayoutLinkConfig>
 {
 public:
     void set_payout_link_id(std::optional<std::string> value)
@@ -1588,7 +1590,7 @@ public:
     std::optional<bool> test_mode{};
 };
 
-class PayoutIndividualDetails
+class PayoutIndividualDetails : public serde::Serializer<PayoutIndividualDetails>
 {
 public:
     void set_tos_acceptance_date(std::optional<std::int64_t> value)
@@ -1748,7 +1750,7 @@ public:
     std::optional<SourceOfFundsValue> source_of_funds{};
 };
 
-class PayoutLinkInitiateRequest
+class PayoutLinkInitiateRequest : public serde::Serializer<PayoutLinkInitiateRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -1775,7 +1777,7 @@ public:
     PayoutIdValue payout_id{};
 };
 
-class PayoutLinkResponse
+class PayoutLinkResponse : public serde::Serializer<PayoutLinkResponse>
 {
 public:
     void set_payout_link_id(std::string value)
@@ -1802,7 +1804,7 @@ public:
     SecretValue link{};
 };
 
-class PayoutLinkStatusDetails
+class PayoutLinkStatusDetails : public serde::Serializer<PayoutLinkStatusDetails>
 {
 public:
     void set_payout_link_id(std::string value)
@@ -1917,7 +1919,7 @@ public:
     bool test_mode{};
 };
 
-class PayoutListConstraints
+class PayoutListConstraints : public serde::Serializer<PayoutListConstraints>
 {
 public:
     void set_customer_id(std::optional<CustomerIdValue> value)
@@ -1988,7 +1990,7 @@ public:
     std::optional<TimeRangeValue> time_range{};
 };
 
-class PayoutListFilterConstraints
+class PayoutListFilterConstraints : public serde::Serializer<PayoutListFilterConstraints>
 {
 public:
     void set_payout_id(std::optional<PayoutIdValue> value)
@@ -2127,7 +2129,7 @@ public:
     std::optional<PayoutEntityTypeValue> entity_type{};
 };
 
-class PayoutListFilters
+class PayoutListFilters : public serde::Serializer<PayoutListFilters>
 {
 public:
     void set_connector(std::vector<PayoutConnectorsValue> value)
@@ -2176,7 +2178,7 @@ public:
     std::vector<PayoutTypeValue> payout_method{};
 };
 
-class PayoutListFiltersV2
+class PayoutListFiltersV2 : public serde::Serializer<PayoutListFiltersV2>
 {
 public:
     void set_connector(std::unordered_map<std::string, std::vector<MerchantConnectorInfo>> value)
@@ -2226,7 +2228,7 @@ public:
     std::vector<PayoutTypeValue> payout_method{};
 };
 
-class PayoutRetrieveBody
+class PayoutRetrieveBody : public serde::Serializer<PayoutRetrieveBody>
 {
 public:
     void set_force_sync(std::optional<bool> value)
@@ -2264,7 +2266,7 @@ public:
     std::optional<bool> expand_attempts{};
 };
 
-class PayoutRetrieveRequest
+class PayoutRetrieveRequest : public serde::Serializer<PayoutRetrieveRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2313,7 +2315,7 @@ public:
     std::optional<bool> expand_attempts{};
 };
 
-class PayoutVendorDetails
+class PayoutVendorDetails : public serde::Serializer<PayoutVendorDetails>
 {
 public:
     void set_account_type(std::string value)
@@ -2539,7 +2541,7 @@ public:
     std::optional<SourceOfFundsValue> source_of_funds{};
 };
 
-class PayoutsManualUpdateRequest
+class PayoutsManualUpdateRequest : public serde::Serializer<PayoutsManualUpdateRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2621,7 +2623,7 @@ public:
     std::optional<std::string> connector_payout_id{};
 };
 
-class PayoutsManualUpdateResponse
+class PayoutsManualUpdateResponse : public serde::Serializer<PayoutsManualUpdateResponse>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2703,7 +2705,7 @@ public:
     std::optional<std::string> connector_payout_id{};
 };
 
-class Paypal
+class Paypal : public serde::Serializer<Paypal>
 {
 public:
     void set_email(std::optional<EmailValue> value)
@@ -2741,7 +2743,7 @@ public:
     std::optional<SecretValue> paypal_id{};
 };
 
-class PayshapBankTransfer
+class PayshapBankTransfer : public serde::Serializer<PayshapBankTransfer>
 {
 public:
     void set_bank_account_number(SecretValue value)
@@ -2779,7 +2781,7 @@ public:
     std::optional<BankNamesValue> bank_name{};
 };
 
-class PayshapProxyBankTransfer
+class PayshapProxyBankTransfer : public serde::Serializer<PayshapProxyBankTransfer>
 {
 public:
     void set_cellphone(std::optional<SecretValue> value)
@@ -2806,7 +2808,7 @@ public:
     std::optional<SecretValue> shap_id{};
 };
 
-class PixAccountBankTransfer
+class PixAccountBankTransfer : public serde::Serializer<PixAccountBankTransfer>
 {
 public:
     void set_bank_name(std::optional<std::string> value)
@@ -2899,7 +2901,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class PixBankTransfer
+class PixBankTransfer : public serde::Serializer<PixBankTransfer>
 {
 public:
     void set_bank_name(std::optional<std::string> value)
@@ -3014,7 +3016,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class PixEmvBankTransfer
+class PixEmvBankTransfer : public serde::Serializer<PixEmvBankTransfer>
 {
 public:
     void set_emv(SecretValue value)
@@ -3030,7 +3032,7 @@ public:
     SecretValue emv{};
 };
 
-class PixKeyBankTransfer
+class PixKeyBankTransfer : public serde::Serializer<PixKeyBankTransfer>
 {
 public:
     void set_pix_key(SecretValue value)
@@ -3046,7 +3048,7 @@ public:
     SecretValue pix_key{};
 };
 
-class RequiredFieldsOverrideRequest
+class RequiredFieldsOverrideRequest : public serde::Serializer<RequiredFieldsOverrideRequest>
 {
 public:
     void set_billing(std::optional<AddressValue> value)
@@ -3062,7 +3064,7 @@ public:
     std::optional<AddressValue> billing{};
 };
 
-class SepaBankTransfer
+class SepaBankTransfer : public serde::Serializer<SepaBankTransfer>
 {
 public:
     void set_bank_name(std::optional<std::string> value)
@@ -3133,7 +3135,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class TedBankTransfer
+class TedBankTransfer : public serde::Serializer<TedBankTransfer>
 {
 public:
     void set_bank_name(std::optional<BankNamesValue> value)
@@ -3226,7 +3228,7 @@ public:
     std::optional<SecretValue> account_holder_name{};
 };
 
-class TrustlyBankTransfer
+class TrustlyBankTransfer : public serde::Serializer<TrustlyBankTransfer>
 {
 public:
     void set_iban(std::optional<SecretValue> value)
@@ -3275,7 +3277,7 @@ public:
     std::optional<SecretValue> bank_number{};
 };
 
-class TrustlyBankTransferData
+class TrustlyBankTransferData : public serde::Serializer<TrustlyBankTransferData>
 {
 public:
     void set_iban(std::optional<SecretValue> value)
@@ -3324,7 +3326,7 @@ public:
     std::optional<SecretValue> bank_number{};
 };
 
-class Venmo
+class Venmo : public serde::Serializer<Venmo>
 {
 public:
     void set_telephone_number(std::optional<SecretValue> value)
@@ -3374,7 +3376,7 @@ enum class BankTransfer
     Ted,
 };
 
-class PayoutEnabledPaymentMethodsInfo
+class PayoutEnabledPaymentMethodsInfo : public serde::Serializer<PayoutEnabledPaymentMethodsInfo>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -3402,7 +3404,7 @@ public:
     std::vector<PaymentMethodTypeInfo> payment_method_types_info{};
 };
 
-class PayoutVendorAccountDetails
+class PayoutVendorAccountDetails : public serde::Serializer<PayoutVendorAccountDetails>
 {
 public:
     void set_vendor_details(PayoutVendorDetails value)
@@ -3438,7 +3440,7 @@ enum class Wallet
     Venmo,
 };
 
-class PayoutLinkDetails
+class PayoutLinkDetails : public serde::Serializer<PayoutLinkDetails>
 {
 public:
     void set_publishable_key(SecretValue value)
@@ -3631,7 +3633,7 @@ enum class PayoutMethodDataResponse
     Passthrough,
 };
 
-class PayoutCreateRequest
+class PayoutCreateRequest : public serde::Serializer<PayoutCreateRequest>
 {
 public:
     void set_payout_id(std::optional<PayoutIdValue> value)
@@ -4069,7 +4071,7 @@ public:
     std::optional<BrowserInformationValue> browser_info{};
 };
 
-class PayoutCreateResponse
+class PayoutCreateResponse : public serde::Serializer<PayoutCreateResponse>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -4565,7 +4567,7 @@ public:
     std::optional<std::string> payout_method_id{};
 };
 
-class PayoutListResponse
+class PayoutListResponse : public serde::Serializer<PayoutListResponse>
 {
 public:
     void set_size(std::size_t value)

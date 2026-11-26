@@ -1,6 +1,8 @@
 module;
 export module app_dto:currency;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -15,7 +17,7 @@ export namespace app::dto::currency {
  * directly from the query string as an integer; `from_string` performs that
  * parse and `get_amount_as_i64` is the exact upstream accessor.
  */
-class MinorUnit
+class MinorUnit : public serde::Serializer<MinorUnit>
 {
 public:
     MinorUnit() = default;
@@ -55,7 +57,7 @@ public:
     std::int64_t m_value{};
 };
 
-class CurrencyConversionResponse
+class CurrencyConversionResponse : public serde::Serializer<CurrencyConversionResponse>
 {
 public:
     void set_converted_amount(std::string value)
@@ -82,7 +84,7 @@ public:
     std::string currency{};
 };
 
-class CurrencyConversionParams
+class CurrencyConversionParams : public serde::Serializer<CurrencyConversionParams>
 {
 public:
     void set_amount(MinorUnit value)

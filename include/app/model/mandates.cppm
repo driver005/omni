@@ -1,6 +1,8 @@
 module;
 export module app_model:mandates;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::model::mandates {
 
-class CardNetworkValue
+class CardNetworkValue : public serde::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CardNumberValue
+class CardNumberValue : public serde::Serializer<CardNumberValue>
 {
 public:
     void set_value(std::string value)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class CardSegmentTypeValue
+class CardSegmentTypeValue : public serde::Serializer<CardSegmentTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class CustomerAcceptanceValue
+class CustomerAcceptanceValue : public serde::Serializer<CustomerAcceptanceValue>
 {
 public:
     void set_value(std::string value)
@@ -89,7 +91,7 @@ public:
     std::string value{};
 };
 
-class FundingSourceValue
+class FundingSourceValue : public serde::Serializer<FundingSourceValue>
 {
 public:
     void set_value(std::string value)
@@ -105,7 +107,7 @@ public:
     std::string value{};
 };
 
-class MandateId
+class MandateId : public serde::Serializer<MandateId>
 {
 public:
     void set_mandate_id(std::string value)
@@ -121,7 +123,7 @@ public:
     std::string mandate_id{};
 };
 
-class MandateStatusValue
+class MandateStatusValue : public serde::Serializer<MandateStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -137,7 +139,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -153,7 +155,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -169,7 +171,7 @@ public:
     std::string value{};
 };
 
-class NetworkTokenValue
+class NetworkTokenValue : public serde::Serializer<NetworkTokenValue>
 {
 public:
     void set_value(std::string value)
@@ -185,7 +187,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue
+class PaymentIdValue : public serde::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string value)
@@ -201,7 +203,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -217,7 +219,7 @@ public:
     std::string value{};
 };
 
-class ProcessorPaymentTokenDetails
+class ProcessorPaymentTokenDetails : public serde::Serializer<ProcessorPaymentTokenDetails>
 {
 public:
     void set_card_exp_month(std::optional<std::string> value)
@@ -266,7 +268,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -282,7 +284,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue
+class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string value)
@@ -298,7 +300,7 @@ public:
     std::string value{};
 };
 
-class CardWithLimitedData
+class CardWithLimitedData : public serde::Serializer<CardWithLimitedData>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -380,7 +382,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class MandateCardDetails
+class MandateCardDetails : public serde::Serializer<MandateCardDetails>
 {
 public:
     void set_last4_digits(std::optional<std::string> value)
@@ -528,7 +530,7 @@ public:
     std::optional<std::string> nick_name{};
 };
 
-class MandateListConstraints
+class MandateListConstraints : public serde::Serializer<MandateListConstraints>
 {
 public:
     void set_limit(std::optional<std::int64_t> value)
@@ -632,7 +634,7 @@ public:
     std::optional<PrimitiveDateTimeValue> created_time_gte{};
 };
 
-class MandateRevokedResponse
+class MandateRevokedResponse : public serde::Serializer<MandateRevokedResponse>
 {
 public:
     void set_mandate_id(std::string value)
@@ -722,7 +724,7 @@ public:
     }
 };
 
-class NetworkTokenDetails
+class NetworkTokenDetails : public serde::Serializer<NetworkTokenDetails>
 {
 public:
     void set_network_token(NetworkTokenValue value)
@@ -848,7 +850,8 @@ public:
     std::optional<std::string> eci{};
 };
 
-class NetworkTransactionIdAndCardDetails
+class NetworkTransactionIdAndCardDetails :
+    public serde::Serializer<NetworkTransactionIdAndCardDetails>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -1029,7 +1032,8 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class NetworkTransactionIdAndNetworkTokenDetails
+class NetworkTransactionIdAndNetworkTokenDetails :
+    public serde::Serializer<NetworkTransactionIdAndNetworkTokenDetails>
 {
 public:
     void set_network_token(NetworkTokenValue value)
@@ -1177,7 +1181,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class ProcessorPaymentToken
+class ProcessorPaymentToken : public serde::Serializer<ProcessorPaymentToken>
 {
 public:
     void set_processor_payment_token(std::string value)
@@ -1217,7 +1221,7 @@ public:
     std::optional<ProcessorPaymentTokenDetails> processor_payment_token_details{};
 };
 
-class VaultCardData
+class VaultCardData : public serde::Serializer<VaultCardData>
 {
 public:
     void set_card_number(std::string value)
@@ -1354,7 +1358,7 @@ public:
     std::optional<std::string> last_four{};
 };
 
-class MandateResponse
+class MandateResponse : public serde::Serializer<MandateResponse>
 {
 public:
     void set_mandate_id(std::string value)
@@ -1552,7 +1556,8 @@ public:
                                 "\"online\":{\"ip_address\":null,\"user_agent\":\"\"}}"};
 };
 
-class NetworkTokenWithVaultCardFallback
+class NetworkTokenWithVaultCardFallback :
+    public serde::Serializer<NetworkTokenWithVaultCardFallback>
 {
 public:
     void set_network_token(NetworkTokenDetails value)
@@ -1601,7 +1606,8 @@ public:
     VaultCardData vault_card_data{};
 };
 
-class NetworkTransactionIdAndVaultCardDetails
+class NetworkTransactionIdAndVaultCardDetails :
+    public serde::Serializer<NetworkTransactionIdAndVaultCardDetails>
 {
 public:
     void set_vault_card_data(VaultCardData value)

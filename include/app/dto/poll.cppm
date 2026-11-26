@@ -1,6 +1,8 @@
 module;
 export module app_dto:poll;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -21,7 +23,7 @@ enum class PollStatus
  * Upstream `web::Path<String>` (routes/poll.rs:31,34-36) is wrapped into this
  * single-field struct before it is handed to the core function.
  */
-class PollId
+class PollId : public serde::Serializer<PollId>
 {
 public:
     void set_poll_id(std::string value)
@@ -37,7 +39,7 @@ public:
     std::string poll_id{};
 };
 
-class PollResponse
+class PollResponse : public serde::Serializer<PollResponse>
 {
 public:
     void set_poll_id(std::string value)
@@ -75,7 +77,7 @@ public:
  * `api_models/poll.rs:5-11` and fixes the status spelling without depending on
  * an external serializer feature.
  */
-class PollResponseWire
+class PollResponseWire : public serde::Serializer<PollResponseWire>
 {
 public:
     void set_poll_id(std::string value)
@@ -103,7 +105,7 @@ public:
 };
 
 /** @brief snake_case status names from api_models/poll.rs:13-20 (strum/serde). */
-class PollStatusWireName
+class PollStatusWireName : public serde::Serializer<PollStatusWireName>
 {
 public:
     [[nodiscard]] const char* operator()(PollStatus status) const noexcept

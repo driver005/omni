@@ -1,6 +1,8 @@
 module;
 export module app_dto:authentication;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::authentication {
 
-class AcquirerDetails
+class AcquirerDetails : public serde::Serializer<AcquirerDetails>
 {
 public:
     void set_acquirer_bin(std::optional<std::string> value)
@@ -47,7 +49,7 @@ public:
     std::optional<std::string> merchant_country_code{};
 };
 
-class AddressValue
+class AddressValue : public serde::Serializer<AddressValue>
 {
 public:
     void set_value(std::string v)
@@ -63,7 +65,7 @@ public:
     std::string value{};
 };
 
-class AuthenticationConnectorsValue
+class AuthenticationConnectorsValue : public serde::Serializer<AuthenticationConnectorsValue>
 {
 public:
     void set_value(std::string v)
@@ -89,7 +91,7 @@ enum class AuthenticationEligibilityCheckResponseData
     ClickToPayEnrollmentStatus,
 };
 
-class AuthenticationIdValue
+class AuthenticationIdValue : public serde::Serializer<AuthenticationIdValue>
 {
 public:
     void set_value(std::string v)
@@ -129,7 +131,7 @@ enum class AuthenticationSessionToken
     NoSessionTokenReceived,
 };
 
-class AuthenticationStatusValue
+class AuthenticationStatusValue : public serde::Serializer<AuthenticationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -151,7 +153,7 @@ enum class AuthenticationVaultTokenData
     NetworkTokenData,
 };
 
-class BrowserInformationValue
+class BrowserInformationValue : public serde::Serializer<BrowserInformationValue>
 {
 public:
     void set_value(std::string v)
@@ -167,7 +169,8 @@ public:
     std::string value{};
 };
 
-class ClickToPayEligibilityCheckResponseData
+class ClickToPayEligibilityCheckResponseData :
+    public serde::Serializer<ClickToPayEligibilityCheckResponseData>
 {
 public:
     void set_visa(std::optional<bool> value)
@@ -199,7 +202,7 @@ enum class Cryptogram
     Cavv,
 };
 
-class CtpServiceProviderValue
+class CtpServiceProviderValue : public serde::Serializer<CtpServiceProviderValue>
 {
 public:
     void set_value(std::string v)
@@ -215,7 +218,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string v)
@@ -231,7 +234,7 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsValue
+class CustomerDetailsValue : public serde::Serializer<CustomerDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -247,7 +250,7 @@ public:
     std::string value{};
 };
 
-class DeviceChannelValue
+class DeviceChannelValue : public serde::Serializer<DeviceChannelValue>
 {
 public:
     void set_value(std::string v)
@@ -263,7 +266,7 @@ public:
     std::string value{};
 };
 
-class EmailValue
+class EmailValue : public serde::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -279,7 +282,7 @@ public:
     std::string value{};
 };
 
-class MasterCardEligibilityCheckData
+class MasterCardEligibilityCheckData : public serde::Serializer<MasterCardEligibilityCheckData>
 {
 public:
     void set_consumer_present(bool value)
@@ -317,7 +320,7 @@ public:
     std::optional<std::string> last_used_card_timestamp{};
 };
 
-class MerchantIdValue
+class MerchantIdValue : public serde::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -333,7 +336,7 @@ public:
     std::string value{};
 };
 
-class MethodValue
+class MethodValue : public serde::Serializer<MethodValue>
 {
 public:
     void set_value(std::string v)
@@ -349,7 +352,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -365,7 +368,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableEmailValue
+class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string v)
@@ -381,7 +384,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodDataValue
+class PaymentMethodDataValue : public serde::Serializer<PaymentMethodDataValue>
 {
 public:
     void set_value(std::string v)
@@ -397,7 +400,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue
+class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -413,7 +416,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue
+class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -429,7 +432,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue
+class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -445,7 +448,7 @@ public:
     std::string value{};
 };
 
-class ProfileAcquirerIdValue
+class ProfileAcquirerIdValue : public serde::Serializer<ProfileAcquirerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -461,7 +464,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -477,7 +480,7 @@ public:
     std::string value{};
 };
 
-class ScaExemptionTypeValue
+class ScaExemptionTypeValue : public serde::Serializer<ScaExemptionTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -493,7 +496,7 @@ public:
     std::string value{};
 };
 
-class SdkInformationValue
+class SdkInformationValue : public serde::Serializer<SdkInformationValue>
 {
 public:
     void set_value(std::string v)
@@ -509,7 +512,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue
+class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string v)
@@ -525,7 +528,7 @@ public:
     std::string value{};
 };
 
-class SemanticVersionValue
+class SemanticVersionValue : public serde::Serializer<SemanticVersionValue>
 {
 public:
     void set_value(std::string v)
@@ -541,7 +544,7 @@ public:
     std::string value{};
 };
 
-class ThreeDsCompletionIndicatorValue
+class ThreeDsCompletionIndicatorValue : public serde::Serializer<ThreeDsCompletionIndicatorValue>
 {
 public:
     void set_value(std::string v)
@@ -557,7 +560,7 @@ public:
     std::string value{};
 };
 
-class TransactionStatusValue
+class TransactionStatusValue : public serde::Serializer<TransactionStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -573,7 +576,7 @@ public:
     std::string value{};
 };
 
-class UrlValue
+class UrlValue : public serde::Serializer<UrlValue>
 {
 public:
     void set_value(std::string v)
@@ -589,7 +592,8 @@ public:
     std::string value{};
 };
 
-class AuthenticationAuthenticateRequest
+class AuthenticationAuthenticateRequest :
+    public serde::Serializer<AuthenticationAuthenticateRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -650,7 +654,8 @@ public:
     ThreeDsCompletionIndicatorValue threeds_method_comp_ind{};
 };
 
-class AuthenticationAuthenticateResponse
+class AuthenticationAuthenticateResponse :
+    public serde::Serializer<AuthenticationAuthenticateResponse>
 {
 public:
     void set_transaction_status(std::optional<TransactionStatusValue> value)
@@ -845,7 +850,7 @@ public:
     std::optional<AcquirerDetails> acquirer_details{};
 };
 
-class AuthenticationCreateRequest
+class AuthenticationCreateRequest : public serde::Serializer<AuthenticationCreateRequest>
 {
 public:
     void set_authentication_id(std::optional<AuthenticationIdValue> value)
@@ -974,7 +979,8 @@ public:
     std::optional<CustomerDetailsValue> customer_details{};
 };
 
-class AuthenticationEligibilityCheckRequest
+class AuthenticationEligibilityCheckRequest :
+    public serde::Serializer<AuthenticationEligibilityCheckRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1013,7 +1019,8 @@ public:
     AuthenticationEligibilityCheckData eligibility_check_data{};
 };
 
-class AuthenticationEligibilityCheckResponse
+class AuthenticationEligibilityCheckResponse :
+    public serde::Serializer<AuthenticationEligibilityCheckResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1040,7 +1047,7 @@ public:
     AuthenticationSdkNextAction sdk_next_action{};
 };
 
-class AuthenticationEligibilityRequest
+class AuthenticationEligibilityRequest : public serde::Serializer<AuthenticationEligibilityRequest>
 {
 public:
     void set_payment_method_data(PaymentMethodDataValue value)
@@ -1146,7 +1153,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class AuthenticationResponse
+class AuthenticationResponse : public serde::Serializer<AuthenticationResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1341,7 +1348,8 @@ public:
     std::optional<CustomerDetailsValue> customer_details{};
 };
 
-class AuthenticationRetrieveEligibilityCheckRequest
+class AuthenticationRetrieveEligibilityCheckRequest :
+    public serde::Serializer<AuthenticationRetrieveEligibilityCheckRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1357,7 +1365,8 @@ public:
     AuthenticationIdValue authentication_id{};
 };
 
-class AuthenticationRetrieveEligibilityCheckResponse
+class AuthenticationRetrieveEligibilityCheckResponse :
+    public serde::Serializer<AuthenticationRetrieveEligibilityCheckResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1385,7 +1394,7 @@ public:
     AuthenticationEligibilityCheckResponseData eligibility_check_data{};
 };
 
-class AuthenticationSessionResponse
+class AuthenticationSessionResponse : public serde::Serializer<AuthenticationSessionResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1412,7 +1421,8 @@ public:
     std::vector<AuthenticationSessionToken> session_token{};
 };
 
-class AuthenticationSessionTokenRequest
+class AuthenticationSessionTokenRequest :
+    public serde::Serializer<AuthenticationSessionTokenRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1439,7 +1449,8 @@ public:
     std::optional<std::string> client_secret{};
 };
 
-class AuthenticationSyncPostUpdateRequest
+class AuthenticationSyncPostUpdateRequest :
+    public serde::Serializer<AuthenticationSyncPostUpdateRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1455,7 +1466,7 @@ public:
     AuthenticationIdValue authentication_id{};
 };
 
-class ClickToPayDetails
+class ClickToPayDetails : public serde::Serializer<ClickToPayDetails>
 {
 public:
     void set_merchant_transaction_id(std::optional<std::string> value)
@@ -1515,7 +1526,7 @@ public:
     std::optional<std::string> encrypted_payload{};
 };
 
-class ExternalThreeDsData
+class ExternalThreeDsData : public serde::Serializer<ExternalThreeDsData>
 {
 public:
     void set_authentication_cryptogram(std::optional<Cryptogram> value)
@@ -1575,7 +1586,7 @@ public:
     TransactionStatusValue transaction_status{};
 };
 
-class NextAction
+class NextAction : public serde::Serializer<NextAction>
 {
 public:
     void set_url(UrlValue value)
@@ -1602,7 +1613,7 @@ public:
     MethodValue http_method{};
 };
 
-class ThreeDsData
+class ThreeDsData : public serde::Serializer<ThreeDsData>
 {
 public:
     void set_three_ds_server_transaction_id(std::optional<std::string> value)
@@ -1686,7 +1697,7 @@ public:
     std::optional<std::string> directory_server_id{};
 };
 
-class VisaEligibilityCheckData
+class VisaEligibilityCheckData : public serde::Serializer<VisaEligibilityCheckData>
 {
 public:
     void set_consumer_present(bool value)
@@ -1724,7 +1735,7 @@ public:
     std::optional<SecretSerdeValueValue> custom_data{};
 };
 
-class AuthenticationDetails
+class AuthenticationDetails : public serde::Serializer<AuthenticationDetails>
 {
 public:
     void set_three_ds_data(std::optional<ExternalThreeDsData> value)
@@ -1745,7 +1756,7 @@ enum class AuthenticationPaymentMethodData
     ClickToPayDetails,
 };
 
-class ClickToPayEligibilityCheckData
+class ClickToPayEligibilityCheckData : public serde::Serializer<ClickToPayEligibilityCheckData>
 {
 public:
     void set_visa(std::optional<VisaEligibilityCheckData> value)
@@ -1778,7 +1789,8 @@ enum class EligibilityResponseParams
     ThreeDsData,
 };
 
-class AuthenticationEligibilityResponse
+class AuthenticationEligibilityResponse :
+    public serde::Serializer<AuthenticationEligibilityResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1940,7 +1952,7 @@ public:
     std::optional<AcquirerDetails> acquirer_details{};
 };
 
-class AuthenticationSyncResponse
+class AuthenticationSyncResponse : public serde::Serializer<AuthenticationSyncResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -2395,7 +2407,8 @@ public:
     std::optional<ProfileAcquirerIdValue> profile_acquirer_id{};
 };
 
-class PostAuthenticationRequestPaymentMethodData
+class PostAuthenticationRequestPaymentMethodData :
+    public serde::Serializer<PostAuthenticationRequestPaymentMethodData>
 {
 public:
     void set_payment_method_type(AuthenticationPaymentMethodType value)
@@ -2422,7 +2435,7 @@ public:
     AuthenticationPaymentMethodData payment_method_data{};
 };
 
-class AuthenticationSyncRequest
+class AuthenticationSyncRequest : public serde::Serializer<AuthenticationSyncRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)

@@ -1,4 +1,3 @@
 export module core_error;
 
-export import :kind;
-export import :error;
+export import core_serde;

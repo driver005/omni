@@ -1,6 +1,8 @@
 module;
 export module app_model:cards_info;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::model::cards_info {
 
-class CardAuthenticationValue
+class CardAuthenticationValue : public serde::Serializer<CardAuthenticationValue>
 {
 public:
     void set_value(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CardCostValue
+class CardCostValue : public serde::Serializer<CardCostValue>
 {
 public:
     void set_value(std::string value)
@@ -47,7 +49,7 @@ enum class CardInfoMigrationStatus
     Failed,
 };
 
-class CardNetworkValue
+class CardNetworkValue : public serde::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string value)
@@ -63,7 +65,7 @@ public:
     std::string value{};
 };
 
-class CardsInfoRequest
+class CardsInfoRequest : public serde::Serializer<CardsInfoRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -90,7 +92,7 @@ public:
     std::string card_iin{};
 };
 
-class CardsInfoRequestParams
+class CardsInfoRequestParams : public serde::Serializer<CardsInfoRequestParams>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -106,7 +108,7 @@ public:
     std::optional<std::string> client_secret{};
 };
 
-class CoBadgedCardNetworkMetadataValue
+class CoBadgedCardNetworkMetadataValue : public serde::Serializer<CoBadgedCardNetworkMetadataValue>
 {
 public:
     void set_value(std::string value)
@@ -122,7 +124,7 @@ public:
     std::string value{};
 };
 
-class FundingSourceValue
+class FundingSourceValue : public serde::Serializer<FundingSourceValue>
 {
 public:
     void set_value(std::string value)
@@ -138,7 +140,7 @@ public:
     std::string value{};
 };
 
-class PanOrTokenValue
+class PanOrTokenValue : public serde::Serializer<PanOrTokenValue>
 {
 public:
     void set_value(std::string value)
@@ -154,7 +156,7 @@ public:
     std::string value{};
 };
 
-class CardInfoCreateRequest
+class CardInfoCreateRequest : public serde::Serializer<CardInfoCreateRequest>
 {
 public:
     void set_card_iin(std::string value)
@@ -579,7 +581,7 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoMigrateResponseRecord
+class CardInfoMigrateResponseRecord : public serde::Serializer<CardInfoMigrateResponseRecord>
 {
 public:
     void set_card_iin(std::optional<std::string> value)
@@ -971,7 +973,7 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoMigrationResponse
+class CardInfoMigrationResponse : public serde::Serializer<CardInfoMigrationResponse>
 {
 public:
     void set_line_number(std::optional<std::int64_t> value)
@@ -1396,7 +1398,7 @@ public:
     CardInfoMigrationStatus migration_status{};
 };
 
-class CardInfoResponse
+class CardInfoResponse : public serde::Serializer<CardInfoResponse>
 {
 public:
     void set_card_iin(std::string value)
@@ -1788,7 +1790,7 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoUpdateRequest
+class CardInfoUpdateRequest : public serde::Serializer<CardInfoUpdateRequest>
 {
 public:
     void set_card_iin(std::string value)

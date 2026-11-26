@@ -3,6 +3,8 @@ module;
 #include <toml++/toml.hpp>
 export module app_dto:external_service_auth;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -11,7 +13,7 @@ import boost.ut;
 
 export namespace app::dto::external_service_auth {
 
-class ExternalSignoutTokenRequest
+class ExternalSignoutTokenRequest : public serde::Serializer<ExternalSignoutTokenRequest>
 {
 public:
     void set_token(std::string value)
@@ -27,7 +29,7 @@ public:
     std::string token{};
 };
 
-class ExternalTokenResponse
+class ExternalTokenResponse : public serde::Serializer<ExternalTokenResponse>
 {
 public:
     void set_token(std::string value)
@@ -43,7 +45,7 @@ public:
     std::string token{};
 };
 
-class ExternalVerifyTokenRequest
+class ExternalVerifyTokenRequest : public serde::Serializer<ExternalVerifyTokenRequest>
 {
 public:
     void set_token(std::string value)
@@ -83,7 +85,7 @@ enum class ValidatingService
  * type of this domain's `validate_token` route. `token` is masked upstream because
  * it is a `Secret<String>` (api_models:43).
  */
-class ExternalVerifyTokenResponse
+class ExternalVerifyTokenResponse : public serde::Serializer<ExternalVerifyTokenResponse>
 {
 public:
     void set_merchant_id(std::string value)
@@ -140,7 +142,8 @@ public:
  * routes/hypersense.rs:57-79) and never by this domain's `validate_token`
  * (ValidatingService has only OfferEngine). Both arms are now real typed DTOs.
  */
-class ExternalVerifyTokenResponseHypersense
+class ExternalVerifyTokenResponseHypersense :
+    public serde::Serializer<ExternalVerifyTokenResponseHypersense>
 {
 public:
     void set_user_id(std::string value)
@@ -189,7 +192,7 @@ public:
     std::string email{};
 };
 
-class ValidateTokenRequest
+class ValidateTokenRequest : public serde::Serializer<ValidateTokenRequest>
 {
 public:
     void set_token(std::string value)

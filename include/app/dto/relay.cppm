@@ -1,6 +1,8 @@
 module;
 export module app_dto:relay;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -9,7 +11,7 @@ import boost.ut;
 
 export namespace app::dto::relay {
 
-class CaptureMethodValue
+class CaptureMethodValue : public serde::Serializer<CaptureMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -25,7 +27,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue
+class CurrencyValue : public serde::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -41,7 +43,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue
+class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string value)
@@ -57,7 +59,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue
+class MinorUnitValue : public serde::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -73,7 +75,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue
+class ProfileIdValue : public serde::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -89,7 +91,7 @@ public:
     std::string value{};
 };
 
-class RecipientPaymentMethodDataValue
+class RecipientPaymentMethodDataValue : public serde::Serializer<RecipientPaymentMethodDataValue>
 {
 public:
     void set_value(std::string value)
@@ -114,7 +116,7 @@ enum class RelayData
     UnreferencedRefund
 };
 
-class RelayError
+class RelayError : public serde::Serializer<RelayError>
 {
 public:
     void set_code(std::string value)
@@ -141,7 +143,7 @@ public:
     std::string message{};
 };
 
-class RelayIdValue
+class RelayIdValue : public serde::Serializer<RelayIdValue>
 {
 public:
     void set_value(std::string value)
@@ -157,7 +159,7 @@ public:
     std::string value{};
 };
 
-class RelayRetrieveBody
+class RelayRetrieveBody : public serde::Serializer<RelayRetrieveBody>
 {
 public:
     void set_force_sync(bool value)
@@ -173,7 +175,7 @@ public:
     bool force_sync{};
 };
 
-class RelayStatusValue
+class RelayStatusValue : public serde::Serializer<RelayStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -189,7 +191,7 @@ public:
     std::string value{};
 };
 
-class RelayTypeValue
+class RelayTypeValue : public serde::Serializer<RelayTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -205,7 +207,7 @@ public:
     std::string value{};
 };
 
-class RelayCaptureRequestData
+class RelayCaptureRequestData : public serde::Serializer<RelayCaptureRequestData>
 {
 public:
     void set_authorized_amount(MinorUnitValue value)
@@ -254,7 +256,8 @@ public:
     std::optional<CaptureMethodValue> capture_method{};
 };
 
-class RelayIncrementalAuthorizationRequestData
+class RelayIncrementalAuthorizationRequestData :
+    public serde::Serializer<RelayIncrementalAuthorizationRequestData>
 {
 public:
     void set_total_amount(MinorUnitValue value)
@@ -292,7 +295,7 @@ public:
     CurrencyValue currency{};
 };
 
-class RelayRefundRequestData
+class RelayRefundRequestData : public serde::Serializer<RelayRefundRequestData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -330,7 +333,7 @@ public:
     std::optional<std::string> reason{};
 };
 
-class RelayRequest
+class RelayRequest : public serde::Serializer<RelayRequest>
 {
 public:
     void set_connector_resource_id(std::string value)
@@ -379,7 +382,7 @@ public:
     std::optional<RelayData> data{};
 };
 
-class RelayRetrieveRequest
+class RelayRetrieveRequest : public serde::Serializer<RelayRetrieveRequest>
 {
 public:
     void set_force_sync(bool value)
@@ -406,7 +409,7 @@ public:
     RelayIdValue id{};
 };
 
-class RelayUnreferencedRefundData
+class RelayUnreferencedRefundData : public serde::Serializer<RelayUnreferencedRefundData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -456,7 +459,7 @@ public:
     std::optional<RecipientPaymentMethodDataValue> recipient_payment_method_data{};
 };
 
-class RelayVoidRequestData
+class RelayVoidRequestData : public serde::Serializer<RelayVoidRequestData>
 {
 public:
     void set_amount(std::optional<MinorUnitValue> value)
@@ -501,7 +504,7 @@ public:
  * variant payload and emits exactly that shape via `to_wire()`. An unset value
  * maps to upstream `Option::None` (JSON `null`).
  */
-class RelayResponseData
+class RelayResponseData : public serde::Serializer<RelayResponseData>
 {
 public:
     void clear() noexcept
@@ -634,7 +637,7 @@ private:
     serde::Value inner_{};
 };
 
-class RelayResponse
+class RelayResponse : public serde::Serializer<RelayResponse>
 {
 public:
     void set_id(RelayIdValue value)

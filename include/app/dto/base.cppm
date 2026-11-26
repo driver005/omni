@@ -1,5 +1,7 @@
 export module app_dto;
 
+import core_serde;
+
 export import :admin;
 export import :analytics;
 export import :api_keys;

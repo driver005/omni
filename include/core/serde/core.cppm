@@ -6,11 +6,14 @@ module;
 export module core_serde:core;
 
 import std;
+import interfaces;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace serde {
+
+inline constexpr std::string_view json_content_type{"application/json"};
 
 // ─── StringLiteral ────────────────────────────────────────────────────────────
 // Structural NTTP wrapper so string literals can be template parameters.

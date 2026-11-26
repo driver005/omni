@@ -1,6 +1,8 @@
 module;
 export module app_dto:platform;
 
+import core_serde;
+
 import std;
 import core_serde;
 #ifdef CONGELADO_TEST
@@ -15,7 +17,7 @@ enum class Initiator
     Connected,
 };
 
-class PlatformCatalog
+class PlatformCatalog : public serde::Serializer<PlatformCatalog>
 {
 public:
     void set_name(std::string value)

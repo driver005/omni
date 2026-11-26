@@ -5,7 +5,7 @@ import std;
 import core_serde;
 import core_error;
 import app_metrics;
-import app_store;
+import app_context_core;
 import :config;
 #ifdef CONGELADO_TEST
 import boost.ut;

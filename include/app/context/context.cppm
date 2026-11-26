@@ -5,7 +5,7 @@ import std;
 import core_cache;
 import core_database;
 import core_workflow;
-import app_auth;
+import app_context_core;
 import app_connector;
 import app_crypto;
 import app_db;
@@ -15,7 +15,6 @@ import app_keystore;
 import app_locking;
 import app_metrics;
 import app_services;
-import app_store;
 import app_workflow;
 import :serde;
 

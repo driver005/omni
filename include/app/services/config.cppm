@@ -3,7 +3,7 @@ export module app_services:config;
 
 import std;
 import core_serde;
-import app_store;
+import app_context_core;
 import app_metrics;
 #ifdef CONGELADO_TEST
 import boost.ut;

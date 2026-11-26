@@ -2,7 +2,7 @@ module;
 export module app_connector:selector;
 
 import std;
-import app_store;
+import app_context_core;
 import app_metrics;
 import :request;
 #ifdef CONGELADO_TEST

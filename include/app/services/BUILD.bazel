@@ -11,7 +11,7 @@ congelado_module_library(
         "//include/core/error:core_error",
         "//include/core/serde:core_serde",
         "//include/interfaces:interfaces",
-        "//include/app/store:app_store",
+        "//include/app/context_core:app_context_core",
         "//include/app/metrics:app_metrics",
     ],
     visibility = ["//visibility:public"],

@@ -1,8 +1,4 @@
 export module app_auth;
 
-export import :permission;
-export import :token;
-export import :route_auth;
-export import :registry;
-export import :context;
-export import :authorizer;
+export import app_context_core;
+export import :auth_handlers_base;

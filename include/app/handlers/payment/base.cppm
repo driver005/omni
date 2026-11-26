@@ -1,0 +1,24 @@
+export module app_payment;
+
+export import :telephone_order_base;
+export import :card_issuer_base;
+export import :cards_info_base;
+export import :disputes_base;
+export import :dummy_connector_base;
+export import :fraud_check_base;
+export import :mandates_base;
+export import :payment_link_base;
+export import :payment_methods_base;
+export import :payments_base;
+export import :payout_link_base;
+export import :payouts_base;
+export import :pm_auth_base;
+export import :poll_base;
+export import :refunds_base;
+export import :relay_base;
+export import :revenue_recovery_base;
+export import :revenue_recovery_data_backfill_base;
+export import :revenue_recovery_redis_base;
+export import :three_ds_decision_rule_base;
+export import :tokenization_base;
+export import :payment_handler;

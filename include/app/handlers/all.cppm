@@ -7,66 +7,12 @@ import core_error;
 import core_database;
 import core_workflow;
 import memory_backends;
-import app_handlers_admin;
-import app_handlers_api_keys;
-import app_handlers_app;
-import app_handlers_apple_pay_certificates_migration;
-import app_handlers_authentication;
-import app_handlers_blocklist;
-import app_handlers_cache;
-import app_handlers_card_issuer;
-import app_handlers_cards_info;
-import app_handlers_client_secret;
-import app_handlers_configs;
-import app_handlers_connector_onboarding;
-import app_handlers_currency;
-import app_handlers_customers;
-import app_handlers_disputes;
-import app_handlers_dummy_connector;
-import app_handlers_external_service_auth;
-import app_handlers_feature_matrix;
-import app_handlers_files;
-import app_handlers_fraud_check;
-import app_handlers_gsm;
-import app_handlers_health;
-import app_handlers_hierarchical_resources;
-import app_handlers_hypersense;
-import app_handlers_lock_utils;
-import app_handlers_mandates;
-import app_handlers_metrics;
-import app_handlers_offer_engine;
-import app_handlers_oidc;
-import app_handlers_payment_link;
-import app_handlers_payment_methods;
-import app_handlers_payments;
-import app_handlers_payout_link;
-import app_handlers_payouts;
-import app_handlers_pm_auth;
-import app_handlers_poll;
-import app_handlers_process_tracker;
-import app_handlers_profile_acquirer;
-import app_handlers_profiles;
-import app_handlers_proxy;
-import app_handlers_recovery_webhooks;
-import app_handlers_refunds;
-import app_handlers_relay;
-import app_handlers_revenue_recovery;
-import app_handlers_revenue_recovery_data_backfill;
-import app_handlers_revenue_recovery_redis;
-import app_handlers_routing;
-import app_handlers_subscription;
-import app_handlers_superposition_proxy;
-import app_handlers_superposition_sdk_config;
-import app_handlers_telephone_order;
-import app_handlers_three_ds_decision_rule;
-import app_handlers_tokenization;
-import app_handlers_unified_connector_service;
-import app_handlers_user;
-import app_handlers_user_role;
-import app_handlers_verification;
-import app_handlers_verify_connector;
-import app_handlers_webhook_events;
-import app_handlers_webhooks;
+import app_auth;
+import app_payment;
+import app_user;
+import app_store;
+import app_routing;
+import app_webhook;
 
 export namespace app::api {
 
@@ -75,327 +21,34 @@ class AppHandlers
 public:
     AppHandlers() = default;
 
-    [[nodiscard]] app::handlers::admin::AdminRouteHandlers& admin() noexcept
+    [[nodiscard]] app::api::AuthHandlers& auth() noexcept
     {
-        return m_admin;
+        return m_auth;
     }
 
-    [[nodiscard]] app::handlers::api_keys::ApiKeysRouteHandlers& api_keys() noexcept
+    [[nodiscard]] app::api::PaymentHandlers& payment() noexcept
     {
-        return m_api_keys;
+        return m_payment;
     }
 
-    [[nodiscard]] app::handlers::app::AppRouteHandlers& app() noexcept
-    {
-        return m_app;
-    }
-
-    [[nodiscard]] app::handlers::apple_pay_certificates_migration::
-        ApplePayCertificatesMigrationRouteHandlers&
-        apple_pay_certificates_migration() noexcept
-    {
-        return m_apple_pay_certificates_migration;
-    }
-
-    [[nodiscard]] app::handlers::authentication::AuthenticationRouteHandlers&
-    authentication() noexcept
-    {
-        return m_authentication;
-    }
-
-    [[nodiscard]] app::handlers::blocklist::BlocklistRouteHandlers& blocklist() noexcept
-    {
-        return m_blocklist;
-    }
-
-    [[nodiscard]] app::handlers::cache::CacheRouteHandlers& cache() noexcept
-    {
-        return m_cache;
-    }
-
-    [[nodiscard]] app::handlers::card_issuer::CardIssuerRouteHandlers& card_issuer() noexcept
-    {
-        return m_card_issuer;
-    }
-
-    [[nodiscard]] app::handlers::cards_info::CardsInfoRouteHandlers& cards_info() noexcept
-    {
-        return m_cards_info;
-    }
-
-    [[nodiscard]] app::handlers::client_secret::ClientSecretRouteHandlers& client_secret() noexcept
-    {
-        return m_client_secret;
-    }
-
-    [[nodiscard]] app::handlers::configs::ConfigsRouteHandlers& configs() noexcept
-    {
-        return m_configs;
-    }
-
-    [[nodiscard]] app::handlers::connector_onboarding::ConnectorOnboardingRouteHandlers&
-    connector_onboarding() noexcept
-    {
-        return m_connector_onboarding;
-    }
-
-    [[nodiscard]] app::handlers::currency::CurrencyRouteHandlers& currency() noexcept
-    {
-        return m_currency;
-    }
-
-    [[nodiscard]] app::handlers::customers::CustomersRouteHandlers& customers() noexcept
-    {
-        return m_customers;
-    }
-
-    [[nodiscard]] app::handlers::disputes::DisputesRouteHandlers& disputes() noexcept
-    {
-        return m_disputes;
-    }
-
-    [[nodiscard]] app::handlers::dummy_connector::DummyConnectorRouteHandlers&
-    dummy_connector() noexcept
-    {
-        return m_dummy_connector;
-    }
-
-    [[nodiscard]] app::handlers::external_service_auth::ExternalServiceAuthRouteHandlers&
-    external_service_auth() noexcept
-    {
-        return m_external_service_auth;
-    }
-
-    [[nodiscard]] app::handlers::feature_matrix::FeatureMatrixRouteHandlers&
-    feature_matrix() noexcept
-    {
-        return m_feature_matrix;
-    }
-
-    [[nodiscard]] app::handlers::files::FilesRouteHandlers& files() noexcept
-    {
-        return m_files;
-    }
-
-    [[nodiscard]] app::handlers::fraud_check::FraudCheckRouteHandlers& fraud_check() noexcept
-    {
-        return m_fraud_check;
-    }
-
-    [[nodiscard]] app::handlers::gsm::GsmRouteHandlers& gsm() noexcept
-    {
-        return m_gsm;
-    }
-
-    [[nodiscard]] app::handlers::health::HealthRouteHandlers& health() noexcept
-    {
-        return m_health;
-    }
-
-    [[nodiscard]] app::handlers::hierarchical_resources::HierarchicalResourcesRouteHandlers&
-    hierarchical_resources() noexcept
-    {
-        return m_hierarchical_resources;
-    }
-
-    [[nodiscard]] app::handlers::hypersense::HypersenseRouteHandlers& hypersense() noexcept
-    {
-        return m_hypersense;
-    }
-
-    [[nodiscard]] app::handlers::lock_utils::LockUtilsRouteHandlers& lock_utils() noexcept
-    {
-        return m_lock_utils;
-    }
-
-    [[nodiscard]] app::handlers::mandates::MandatesRouteHandlers& mandates() noexcept
-    {
-        return m_mandates;
-    }
-
-    [[nodiscard]] app::handlers::metrics::MetricsRouteHandlers& metrics() noexcept
-    {
-        return m_metrics;
-    }
-
-    [[nodiscard]] app::handlers::offer_engine::OfferEngineRouteHandlers& offer_engine() noexcept
-    {
-        return m_offer_engine;
-    }
-
-    [[nodiscard]] app::handlers::oidc::OidcRouteHandlers& oidc() noexcept
-    {
-        return m_oidc;
-    }
-
-    [[nodiscard]] app::handlers::payment_link::PaymentLinkRouteHandlers& payment_link() noexcept
-    {
-        return m_payment_link;
-    }
-
-    [[nodiscard]] app::handlers::payment_methods::PaymentMethodsRouteHandlers&
-    payment_methods() noexcept
-    {
-        return m_payment_methods;
-    }
-
-    [[nodiscard]] app::handlers::payments::PaymentsRouteHandlers& payments() noexcept
-    {
-        return m_payments;
-    }
-
-    [[nodiscard]] app::handlers::payout_link::PayoutLinkRouteHandlers& payout_link() noexcept
-    {
-        return m_payout_link;
-    }
-
-    [[nodiscard]] app::handlers::payouts::PayoutsRouteHandlers& payouts() noexcept
-    {
-        return m_payouts;
-    }
-
-    [[nodiscard]] app::handlers::pm_auth::PmAuthRouteHandlers& pm_auth() noexcept
-    {
-        return m_pm_auth;
-    }
-
-    [[nodiscard]] app::handlers::poll::PollRouteHandlers& poll() noexcept
-    {
-        return m_poll;
-    }
-
-    [[nodiscard]] app::handlers::process_tracker::ProcessTrackerRouteHandlers&
-    process_tracker() noexcept
-    {
-        return m_process_tracker;
-    }
-
-    [[nodiscard]] app::handlers::profile_acquirer::ProfileAcquirerRouteHandlers&
-    profile_acquirer() noexcept
-    {
-        return m_profile_acquirer;
-    }
-
-    [[nodiscard]] app::handlers::profiles::ProfilesRouteHandlers& profiles() noexcept
-    {
-        return m_profiles;
-    }
-
-    [[nodiscard]] app::handlers::proxy::ProxyRouteHandlers& proxy() noexcept
-    {
-        return m_proxy;
-    }
-
-    [[nodiscard]] app::handlers::recovery_webhooks::RecoveryWebhooksRouteHandlers&
-    recovery_webhooks() noexcept
-    {
-        return m_recovery_webhooks;
-    }
-
-    [[nodiscard]] app::handlers::refunds::RefundsRouteHandlers& refunds() noexcept
-    {
-        return m_refunds;
-    }
-
-    [[nodiscard]] app::handlers::relay::RelayRouteHandlers& relay() noexcept
-    {
-        return m_relay;
-    }
-
-    [[nodiscard]] app::handlers::revenue_recovery::RevenueRecoveryRouteHandlers&
-    revenue_recovery() noexcept
-    {
-        return m_revenue_recovery;
-    }
-
-    [[nodiscard]] app::handlers::revenue_recovery_data_backfill::
-        RevenueRecoveryDataBackfillRouteHandlers&
-        revenue_recovery_data_backfill() noexcept
-    {
-        return m_revenue_recovery_data_backfill;
-    }
-
-    [[nodiscard]] app::handlers::revenue_recovery_redis::RevenueRecoveryRedisRouteHandlers&
-    revenue_recovery_redis() noexcept
-    {
-        return m_revenue_recovery_redis;
-    }
-
-    [[nodiscard]] app::handlers::routing::RoutingRouteHandlers& routing() noexcept
-    {
-        return m_routing;
-    }
-
-    [[nodiscard]] app::handlers::subscription::SubscriptionRouteHandlers& subscription() noexcept
-    {
-        return m_subscription;
-    }
-
-    [[nodiscard]] app::handlers::superposition_proxy::SuperpositionProxyRouteHandlers&
-    superposition_proxy() noexcept
-    {
-        return m_superposition_proxy;
-    }
-
-    [[nodiscard]] app::handlers::superposition_sdk_config::SuperpositionSdkConfigRouteHandlers&
-    superposition_sdk_config() noexcept
-    {
-        return m_superposition_sdk_config;
-    }
-
-    [[nodiscard]] app::handlers::telephone_order::TelephoneOrderRouteHandlers&
-    telephone_order() noexcept
-    {
-        return m_telephone_order;
-    }
-
-    [[nodiscard]] app::handlers::three_ds_decision_rule::ThreeDsDecisionRuleRouteHandlers&
-    three_ds_decision_rule() noexcept
-    {
-        return m_three_ds_decision_rule;
-    }
-
-    [[nodiscard]] app::handlers::tokenization::TokenizationRouteHandlers& tokenization() noexcept
-    {
-        return m_tokenization;
-    }
-
-    [[nodiscard]] app::handlers::unified_connector_service::UnifiedConnectorServiceRouteHandlers&
-    unified_connector_service() noexcept
-    {
-        return m_unified_connector_service;
-    }
-
-    [[nodiscard]] app::handlers::user::UserRouteHandlers& user() noexcept
+    [[nodiscard]] app::api::UserHandlers& user() noexcept
     {
         return m_user;
     }
 
-    [[nodiscard]] app::handlers::user_role::UserRoleRouteHandlers& user_role() noexcept
+    [[nodiscard]] app::api::StoreHandlers& store() noexcept
     {
-        return m_user_role;
+        return m_store;
     }
 
-    [[nodiscard]] app::handlers::verification::VerificationRouteHandlers& verification() noexcept
+    [[nodiscard]] app::api::RoutingHandlers& routing() noexcept
     {
-        return m_verification;
+        return m_routing;
     }
 
-    [[nodiscard]] app::handlers::verify_connector::VerifyConnectorRouteHandlers&
-    verify_connector() noexcept
+    [[nodiscard]] app::api::WebhookHandlers& webhook() noexcept
     {
-        return m_verify_connector;
-    }
-
-    [[nodiscard]] app::handlers::webhook_events::WebhookEventsRouteHandlers&
-    webhook_events() noexcept
-    {
-        return m_webhook_events;
-    }
-
-    [[nodiscard]] app::handlers::webhooks::WebhooksRouteHandlers& webhooks() noexcept
-    {
-        return m_webhooks;
+        return m_webhook;
     }
 
 private:
@@ -421,79 +74,12 @@ private:
             )
             .build()
     };
-    app::handlers::admin::AdminRouteHandlers m_admin{m_context};
-    app::handlers::api_keys::ApiKeysRouteHandlers m_api_keys{m_context};
-    app::handlers::app::AppRouteHandlers m_app{m_context};
-    app::handlers::apple_pay_certificates_migration::ApplePayCertificatesMigrationRouteHandlers
-        m_apple_pay_certificates_migration{m_context};
-    app::handlers::authentication::AuthenticationRouteHandlers m_authentication{m_context};
-    app::handlers::blocklist::BlocklistRouteHandlers m_blocklist{m_context};
-    app::handlers::cache::CacheRouteHandlers m_cache{m_context};
-    app::handlers::card_issuer::CardIssuerRouteHandlers m_card_issuer{m_context};
-    app::handlers::cards_info::CardsInfoRouteHandlers m_cards_info{m_context};
-    app::handlers::client_secret::ClientSecretRouteHandlers m_client_secret{m_context};
-    app::handlers::configs::ConfigsRouteHandlers m_configs{m_context};
-    app::handlers::connector_onboarding::ConnectorOnboardingRouteHandlers m_connector_onboarding{
-        m_context
-    };
-    app::handlers::currency::CurrencyRouteHandlers m_currency{m_context};
-    app::handlers::customers::CustomersRouteHandlers m_customers{m_context};
-    app::handlers::disputes::DisputesRouteHandlers m_disputes{m_context};
-    app::handlers::dummy_connector::DummyConnectorRouteHandlers m_dummy_connector{m_context};
-    app::handlers::external_service_auth::ExternalServiceAuthRouteHandlers m_external_service_auth{
-        m_context
-    };
-    app::handlers::feature_matrix::FeatureMatrixRouteHandlers m_feature_matrix{m_context};
-    app::handlers::files::FilesRouteHandlers m_files{m_context};
-    app::handlers::fraud_check::FraudCheckRouteHandlers m_fraud_check{m_context};
-    app::handlers::gsm::GsmRouteHandlers m_gsm{m_context};
-    app::handlers::health::HealthRouteHandlers m_health{m_context};
-    app::handlers::hierarchical_resources::HierarchicalResourcesRouteHandlers
-        m_hierarchical_resources{m_context};
-    app::handlers::hypersense::HypersenseRouteHandlers m_hypersense{m_context};
-    app::handlers::lock_utils::LockUtilsRouteHandlers m_lock_utils{m_context};
-    app::handlers::mandates::MandatesRouteHandlers m_mandates{m_context};
-    app::handlers::metrics::MetricsRouteHandlers m_metrics{m_context};
-    app::handlers::offer_engine::OfferEngineRouteHandlers m_offer_engine{m_context};
-    app::handlers::oidc::OidcRouteHandlers m_oidc{m_context};
-    app::handlers::payment_link::PaymentLinkRouteHandlers m_payment_link{m_context};
-    app::handlers::payment_methods::PaymentMethodsRouteHandlers m_payment_methods{m_context};
-    app::handlers::payments::PaymentsRouteHandlers m_payments{m_context};
-    app::handlers::payout_link::PayoutLinkRouteHandlers m_payout_link{m_context};
-    app::handlers::payouts::PayoutsRouteHandlers m_payouts{m_context};
-    app::handlers::pm_auth::PmAuthRouteHandlers m_pm_auth{m_context};
-    app::handlers::poll::PollRouteHandlers m_poll{m_context};
-    app::handlers::process_tracker::ProcessTrackerRouteHandlers m_process_tracker{m_context};
-    app::handlers::profile_acquirer::ProfileAcquirerRouteHandlers m_profile_acquirer{m_context};
-    app::handlers::profiles::ProfilesRouteHandlers m_profiles{m_context};
-    app::handlers::proxy::ProxyRouteHandlers m_proxy{m_context};
-    app::handlers::recovery_webhooks::RecoveryWebhooksRouteHandlers m_recovery_webhooks{m_context};
-    app::handlers::refunds::RefundsRouteHandlers m_refunds{m_context};
-    app::handlers::relay::RelayRouteHandlers m_relay{m_context};
-    app::handlers::revenue_recovery::RevenueRecoveryRouteHandlers m_revenue_recovery{m_context};
-    app::handlers::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillRouteHandlers
-        m_revenue_recovery_data_backfill{m_context};
-    app::handlers::revenue_recovery_redis::RevenueRecoveryRedisRouteHandlers
-        m_revenue_recovery_redis{m_context};
-    app::handlers::routing::RoutingRouteHandlers m_routing{m_context};
-    app::handlers::subscription::SubscriptionRouteHandlers m_subscription{m_context};
-    app::handlers::superposition_proxy::SuperpositionProxyRouteHandlers m_superposition_proxy{
-        m_context
-    };
-    app::handlers::superposition_sdk_config::SuperpositionSdkConfigRouteHandlers
-        m_superposition_sdk_config{m_context};
-    app::handlers::telephone_order::TelephoneOrderRouteHandlers m_telephone_order{m_context};
-    app::handlers::three_ds_decision_rule::ThreeDsDecisionRuleRouteHandlers
-        m_three_ds_decision_rule{m_context};
-    app::handlers::tokenization::TokenizationRouteHandlers m_tokenization{m_context};
-    app::handlers::unified_connector_service::UnifiedConnectorServiceRouteHandlers
-        m_unified_connector_service{m_context};
-    app::handlers::user::UserRouteHandlers m_user{m_context};
-    app::handlers::user_role::UserRoleRouteHandlers m_user_role{m_context};
-    app::handlers::verification::VerificationRouteHandlers m_verification{m_context};
-    app::handlers::verify_connector::VerifyConnectorRouteHandlers m_verify_connector{m_context};
-    app::handlers::webhook_events::WebhookEventsRouteHandlers m_webhook_events{m_context};
-    app::handlers::webhooks::WebhooksRouteHandlers m_webhooks{m_context};
+    app::api::AuthHandlers m_auth{m_context};
+    app::api::PaymentHandlers m_payment{m_context};
+    app::api::UserHandlers m_user{m_context};
+    app::api::StoreHandlers m_store{m_context};
+    app::api::RoutingHandlers m_routing{m_context};
+    app::api::WebhookHandlers m_webhook{m_context};
 };
 
 } // namespace app::api

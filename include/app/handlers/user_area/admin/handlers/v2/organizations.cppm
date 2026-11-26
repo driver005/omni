@@ -1,0 +1,242 @@
+export module app_user:admin_handlers_v2_organizations;
+
+import std;
+import interfaces;
+import core_router;
+import core_serde;
+import utils_openapi;
+import app_model;
+import app_dto;
+import app_context;
+import core_error;
+import app_http;
+import :admin_input;
+import :admin_result;
+import :admin_runtime;
+
+export namespace app::handlers::admin {
+
+class AdminHandlersV2Organizations
+{
+public:
+    AdminHandlersV2Organizations(
+        ::app::context::AppContext& context,
+        AdminRuntime& runtime,
+        AdminInputSupport& input_support
+    ) noexcept :
+        m_context{context},
+        m_runtime{runtime},
+        m_input_support{input_support}
+    {
+    }
+
+    void handle_organization_create(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (const auto error = m_input_support.authorize(req, "organization_create")) {
+            res.set_status(error->get_status());
+            res.set_body(serde::Ser::serialize("application/json", *error));
+            send();
+            return;
+        }
+        const auto body = req.body_as_string();
+        if (body.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::EMPTY_REQUEST,
+                "empty request"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        auto parsed =
+            serde::Ser::deserialize<::app::model::organization::OrganizationCreateRequest>(
+                "application/json",
+                body
+            );
+        if (!parsed) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_JSON,
+                "invalid JSON"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        OrganizationCreateInput input{*parsed};
+        auto result = m_runtime.create_organization(input);
+        if (!result) {
+            const auto& error = result.error();
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        res.set_status(interfaces::io::types::Status::OK);
+        res.set_body(serde::Ser::serialize("application/json", *result));
+        send();
+    }
+
+    void handle_organization_retrieve(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (const auto error = m_input_support.authorize(req, "organization_retrieve")) {
+            res.set_status(error->get_status());
+            res.set_body(serde::Ser::serialize("application/json", *error));
+            send();
+            return;
+        }
+        const std::string organization_id{m_input_support.path_part(req, 1)};
+        if (organization_id.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "missing organization id"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        OrganizationRetrieveInput input{organization_id};
+        auto result = m_runtime.retrieve_organization(input);
+        if (!result) {
+            const auto& error = result.error();
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        res.set_status(interfaces::io::types::Status::OK);
+        res.set_body(serde::Ser::serialize("application/json", *result));
+        send();
+    }
+
+    void handle_organization_update(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        if (const auto error = m_input_support.authorize(req, "organization_update")) {
+            res.set_status(error->get_status());
+            res.set_body(serde::Ser::serialize("application/json", *error));
+            send();
+            return;
+        }
+        const std::string organization_id{m_input_support.path_part(req, 1)};
+        if (organization_id.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "missing organization id"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        const auto body = req.body_as_string();
+        if (body.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::EMPTY_REQUEST,
+                "empty request"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        auto parsed =
+            serde::Ser::deserialize<::app::model::organization::OrganizationUpdateRequest>(
+                "application/json",
+                body
+            );
+        if (!parsed) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_JSON,
+                "invalid JSON"
+            );
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        OrganizationUpdateInput input{organization_id, *parsed};
+        auto result = m_runtime.update_organization(input);
+        if (!result) {
+            const auto& error = result.error();
+            res.set_status(error.get_status());
+            res.set_body(serde::Ser::serialize("application/json", error));
+            send();
+            return;
+        }
+        res.set_status(interfaces::io::types::Status::OK);
+        res.set_body(serde::Ser::serialize("application/json", *result));
+        send();
+    }
+
+    void install(core::router::RouterContext<>& router)
+    {
+        using Route = utils::openapi::ApiRoute;
+        using Router = utils::openapi::ApiRouter;
+
+        // routes/app.rs:2133-2151 (Organization::server, v2).
+        Router{router, "v2/organizations"}
+            .add_route(
+                Route{""}
+                    .post(
+                        [this](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handle_organization_create(req, res, std::move(send));
+                        }
+                    )
+                    .summary("Hyperswitch organization_create")
+            )
+            .add_route(
+                Route{":id"}
+                    .get(
+                        [this](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handle_organization_retrieve(req, res, std::move(send));
+                        }
+                    )
+                    .summary("Hyperswitch organization_retrieve")
+            )
+            .add_route(
+                Route{":id"}
+                    .put(
+                        [this](
+                            interfaces::io::IRequest& req,
+                            interfaces::io::IResponse& res,
+                            std::function<void()> send
+                        )
+                        {
+                            handle_organization_update(req, res, std::move(send));
+                        }
+                    )
+                    .summary("Hyperswitch organization_update")
+            );
+    }
+
+private:
+    ::app::context::AppContext& m_context;
+    AdminRuntime& m_runtime;
+    AdminInputSupport& m_input_support;
+};
+
+} // namespace app::handlers::admin

@@ -1,0 +1,8 @@
+export module app_auth:apple_pay_certificates_migration_base;
+
+export import :apple_pay_certificates_migration_input;
+export import :apple_pay_certificates_migration_result;
+export import :apple_pay_certificates_migration_runtime;
+export import :apple_pay_certificates_migration_handlers_v1;
+export import :apple_pay_certificates_migration_handlers_v2;
+export import :apple_pay_certificates_migration_handler;

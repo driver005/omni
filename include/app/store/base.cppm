@@ -1,24 +1,4 @@
 export module app_store;
 
-export import :api_key_expiries;
-export import :api_keys;
-export import :connector_webhooks;
-export import :customers;
-export import :domain_records;
-export import :identity_records;
-export import :mandates;
-export import :merchant_accounts;
-export import :merchant_connectors;
-export import :ops_records;
-export import :organizations;
-export import :payment_records;
-export import :payments;
-export import :payouts;
-export import :refunds;
-export import :repository;
-export import :risk_records;
-export import :routing;
-export import :subscriptions;
-export import :users;
-export import :webhook_events;
-export import :webhook_records;
+export import app_context_core;
+export import :store_handlers_base;

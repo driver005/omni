@@ -1,0 +1,22 @@
+export module app_routing:superposition_proxy_base;
+
+export import :superposition_proxy_input;
+export import :superposition_proxy_result;
+export import :superposition_proxy_runtime_common;
+export import :superposition_proxy_runtime_list_contexts;
+export import :superposition_proxy_runtime_create_context;
+export import :superposition_proxy_runtime_list_default_configs;
+export import :superposition_proxy_runtime_get_default_config;
+export import :superposition_proxy_runtime_list_dimensions;
+export import :superposition_proxy_runtime_get_dimension;
+export import :superposition_proxy_runtime_resolve_detailed_config;
+export import :superposition_proxy_runtime_resolve_config_explanation;
+export import :superposition_proxy_runtime_list_audit_logs;
+export import :superposition_proxy_runtime;
+export import :superposition_proxy_handlers_v1_contexts;
+export import :superposition_proxy_handlers_v1_default_configs;
+export import :superposition_proxy_handlers_v1_dimensions;
+export import :superposition_proxy_handlers_v1_resolve;
+export import :superposition_proxy_handlers_v1_audit;
+export import :superposition_proxy_handlers_v1;
+export import :superposition_proxy_handler;

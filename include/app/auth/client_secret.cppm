@@ -2,6 +2,7 @@ export module app_auth:client_secret_handler;
 
 import std;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :client_secret_input;
@@ -16,7 +17,9 @@ class ClientSecretRouteHandlers
 public:
     explicit ClientSecretRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_v2{context, m_runtime}
+        m_policy{context},
+        m_request_support{m_policy},
+        m_v2{context, m_runtime, m_request_support}
     {
     }
 
@@ -27,6 +30,8 @@ public:
 
 private:
     ClientSecretRuntime m_runtime;
+    ClientSecretPolicy m_policy;
+    core::behavior::RequestSupport<ClientSecretPolicy> m_request_support;
     ClientSecretHandlersV2 m_v2;
 };
 

@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UserSignupResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     user_signup(const UserSignupInput& input) const
     {
         std::string set_cookie{};
@@ -137,7 +137,7 @@ public:
         response.set_token(token);
         response.set_token_type(purpose);
         auto document = ResponseDocument::from(response);
-        return UserSignupResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

@@ -39,7 +39,7 @@ public:
 
     // ───────────────────────── Core: retrieve eligibility-check ─────────────────────────
     // unified_authentication_service.rs:1737-1790 authentication_retrieve_eligibility_check_core.
-    [[nodiscard]] std::expected<AuthenticationRetrieveEligibilityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_eligibility_check(const AuthenticationRetrieveEligibilityCheckInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
@@ -74,15 +74,13 @@ public:
         const std::string mastercard = data->second.empty() ? "null" : data->second;
         const auto click_to_pay =
             JsonObject{}.raw("visa", visa).raw("mastercard", mastercard).done();
-        return AuthenticationRetrieveEligibilityCheckResult{
-            JsonObject{}
-                .str("authentication_id", std::string{input.authentication_id})
-                .val(
-                    "eligibility_check_data",
-                    JsonObject{}.val("click_to_pay_enrollment_status", click_to_pay).done()
-                )
-                .done()
-        };
+        return JsonObject{}
+            .str("authentication_id", std::string{input.authentication_id})
+            .val(
+                "eligibility_check_data",
+                JsonObject{}.val("click_to_pay_enrollment_status", click_to_pay).done()
+            )
+            .done();
     }
 
 private:

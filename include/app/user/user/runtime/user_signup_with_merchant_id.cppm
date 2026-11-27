@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UserSignupWithMerchantIdResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     user_signup_with_merchant_id(const UserSignupWithMerchantIdInput& input) const
     {
         std::string set_cookie{};
@@ -90,7 +90,7 @@ public:
         response.set_is_email_sent(false);
         response.set_user_id(user_id);
         auto document = ResponseDocument::from(response);
-        return UserSignupWithMerchantIdResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

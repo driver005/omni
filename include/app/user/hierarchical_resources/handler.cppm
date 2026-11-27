@@ -86,7 +86,7 @@ public:
             return;
         }
         const auto auth_error =
-            m_input_support.authorize_request(req, "generate_hierarchical_resource");
+            m_request_support.authorize(req, "generate_hierarchical_resource", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -122,7 +122,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kGenerateHierarchicalResourceResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -173,7 +178,7 @@ public:
             return;
         }
         const auto auth_error =
-            m_input_support.authorize_request(req, "upload_hierarchical_resource");
+            m_request_support.authorize(req, "upload_hierarchical_resource", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -201,7 +206,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kUploadCertificateResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -249,8 +259,7 @@ public:
             error.send(res, send);
             return;
         }
-        const auto auth_error =
-            m_input_support.authorize_request(req, "list_hierarchical_resources");
+        const auto auth_error = m_request_support.authorize(req, "list_hierarchical_resources", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -277,7 +286,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kListHierarchicalResourcesResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -336,8 +350,7 @@ public:
             error.send(res, send);
             return;
         }
-        const auto auth_error =
-            m_input_support.authorize_request(req, "link_hierarchical_resource");
+        const auto auth_error = m_request_support.authorize(req, "link_hierarchical_resource", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -365,7 +378,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kLinkHierarchicalResourceResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -441,6 +459,10 @@ public:
 private:
     HierarchicalResourcesRuntime m_runtime;
     HierarchicalResourcesInputSupport m_input_support;
+
+    HierarchicalResourcesPolicy m_policy{m_input_support};
+
+    HierarchicalResourcesRequestSupport m_request_support{m_policy};
 };
 
 } // namespace app::handlers::hierarchical_resources

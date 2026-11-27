@@ -2,7 +2,9 @@ export module app_auth:authentication_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
+import app_dto;
 
 import :authentication_input;
 import :authentication_result;
@@ -34,49 +36,53 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AuthenticationCreateResult, core::error::AppError>
-    create(const AuthenticationCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::authentication::AuthenticationResponse, core::error::AppError>
+        create(const AuthenticationCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationEligibilityResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     eligibility(const AuthenticationEligibilityInput& input) const
     {
         return m_eligibility.eligibility(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationAuthenticateResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::authentication::AuthenticationAuthenticateResponse,
+        core::error::AppError>
     authenticate(const AuthenticationAuthenticateInput& input) const
     {
         return m_authenticate.authenticate(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationEligibilityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     eligibility_check(const AuthenticationEligibilityCheckInput& input) const
     {
         return m_eligibility_check.eligibility_check(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationRetrieveEligibilityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_eligibility_check(const AuthenticationRetrieveEligibilityCheckInput& input) const
     {
         return m_retrieve_eligibility_check.retrieve_eligibility_check(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationSyncResult, core::error::AppError>
-    sync(const AuthenticationSyncInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::authentication::AuthenticationSyncResponse, core::error::AppError>
+        sync(const AuthenticationSyncInput& input) const
     {
         return m_sync.sync(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationSyncPostUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     sync_post_update(const AuthenticationSyncPostUpdateInput& input) const
     {
         return m_sync_post_update.sync_post_update(input);
     }
 
-    [[nodiscard]] std::expected<AuthenticationSessionTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     session_token(const AuthenticationSessionTokenInput& input) const
     {
         return m_session_token.session_token(input);

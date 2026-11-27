@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import app_model;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -18,9 +19,15 @@ export namespace app::handlers::blocklist {
 class BatchHandlers
 {
 public:
-    BatchHandlers(::app::context::AppContext& ctx, BlocklistRuntime& runtime) noexcept :
+    BatchHandlers(
+        ::app::context::AppContext& ctx,
+        BlocklistRuntime& runtime,
+        BlocklistInputSupport& input_support,
+        BlocklistRequestSupport& request_support
+    ) noexcept :
         m_context{ctx},
-        m_input_support{ctx},
+        m_input_support{input_support},
+        m_request_support{request_support},
         m_runtime{runtime}
     {
     }
@@ -85,8 +92,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "upload_batch_blocklist")) {
+        if (const auto denied = m_request_support.authorize(req, "upload_batch_blocklist", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -154,8 +160,14 @@ public:
             return;
         }
 
+        auto wire =
+            result->serialize(wire_fields<::app::model::blocklist::BatchBlocklistUploadResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -168,7 +180,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "get_batch_blocklist_job_status")) {
+                m_request_support.authorize(req, "get_batch_blocklist_job_status", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -216,8 +228,15 @@ public:
             return;
         }
 
+        auto wire = result->serialize(
+            wire_fields<::app::model::blocklist::BatchBlocklistJobStatusResponse>()
+        );
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -229,8 +248,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "list_batch_blocklist_jobs")) {
+        if (const auto denied = m_request_support.authorize(req, "list_batch_blocklist_jobs", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -268,14 +286,23 @@ public:
             return;
         }
 
+        auto wire = result->serialize(
+            wire_fields<::app::model::blocklist::ListBatchBlocklistJobsResponse>()
+        );
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
 private:
     ::app::context::AppContext& m_context;
-    BlocklistInputSupport m_input_support;
+    BlocklistInputSupport& m_input_support;
+
+    BlocklistRequestSupport& m_request_support;
     BlocklistRuntime& m_runtime;
 };
 

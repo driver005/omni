@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountToggleAllKvResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleAllKVResponse, core::error::AppError>
     toggle_all(const MerchantAccountToggleAllKvInput& input) const
     {
         if (const auto blocked = m_support.kv_soft_kill_guard()) {
@@ -69,7 +69,7 @@ public:
             "merchant_account.kv_toggled_all",
             serde::Ser::encode_json(response)
         );
-        return MerchantAccountToggleAllKvResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

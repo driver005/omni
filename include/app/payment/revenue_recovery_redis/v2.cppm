@@ -22,6 +22,13 @@ export namespace app::handlers::revenue_recovery_redis {
 class RevenueRecoveryRedisHandlersV2
 {
 public:
+    void bind_request_support(RevenueRecoveryRedisRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RevenueRecoveryRedisRequestSupport* m_request_support{nullptr};
+
     void handle_get_revenue_recovery_redis_data(
         interfaces::io::IRequest& req,
         interfaces::io::IResponse& res,
@@ -31,7 +38,11 @@ public:
         // Upstream route uses V2AdminApiAuth (revenue_recovery_redis.rs:30). The
         // declarative rule in RouteAuthRegistry is PLATFORM_ADMIN / ADMIN; use it
         // instead of building a rule inline so the permission stays in one place.
-        const auto auth = m_input_support.authorize(req);
+        const auto auth = m_request_support->authorize(
+            req,
+            "get_revenue_recovery_redis_data",
+            spec_for("get_revenue_recovery_redis_data")
+        );
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
@@ -68,7 +79,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

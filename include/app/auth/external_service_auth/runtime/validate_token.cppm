@@ -26,7 +26,9 @@ public:
 
     // routes/external_service_auth.rs:11-27 — validate_token.
     // core/external_service_auth.rs:111-196 validate_token_core.
-    [[nodiscard]] std::expected<ValidateTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::external_service_auth::ExternalVerifyTokenResponse,
+        core::error::AppError>
     validate_token(const ValidateTokenInput& input) const
     {
         // core/external_service_auth.rs:111 — req.token.expose().
@@ -87,7 +89,7 @@ public:
                         token_secret.masked_as(::app::crypto::SecretFieldKind::ClientSecret)
                     );
                     response.set_permissions(m_support.offer_engine_permissions(*role_info));
-                    return ValidateTokenResult{std::move(response)};
+                    return std::move(response);
                 }
         }
 

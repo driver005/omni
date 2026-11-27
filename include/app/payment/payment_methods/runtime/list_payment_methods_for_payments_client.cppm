@@ -37,10 +37,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListPaymentMethodsForPaymentsClientResult, core::error::AppError>
-    list_payment_methods_for_payments_client(
-        const ListPaymentMethodsForPaymentsClientInput& input
-    ) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsClientMethodsResponse, core::error::AppError>
+        list_payment_methods_for_payments_client(
+            const ListPaymentMethodsForPaymentsClientInput& input
+        ) const
     {
         m_context.metrics().record_flow("list_payment_methods_for_payments_client");
         m_context.metrics()
@@ -71,8 +72,21 @@ public:
             item.set_last_used_at(std::move(last_used));
             items.push_back(std::move(item));
         }
-        response.set_customer_payment_methods(std::move(items));
-        return ListPaymentMethodsForPaymentsClientResult{std::move(response)};
+        response.set_customer_payment_methods(items);
+        ::app::model::payments::PaymentsClientMethodsResponse client{};
+        client.set_count(items.size());
+        std::vector<::app::model::payments::PaymentsClientMethod> methods{};
+        methods.reserve(items.size());
+        for (const auto& item: items) {
+            ::app::model::payments::PaymentsClientMethod method{};
+            const auto& type = item.get_payment_method_type();
+            method.set_payment_method(type.get_value());
+            method.set_payment_method_type(type.get_value());
+            method.set_enabled(true);
+            methods.push_back(std::move(method));
+        }
+        client.set_data(std::move(methods));
+        return client;
     }
 
 private:

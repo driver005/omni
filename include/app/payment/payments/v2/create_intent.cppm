@@ -32,6 +32,13 @@ export namespace app::handlers::payments {
 class PaymentsV2CreateIntentHandlers
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsV2CreateIntentHandlers(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,
@@ -51,7 +58,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "payments_create_intent")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_create_intent",
+                spec_for("payments_create_intent")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -88,7 +99,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -98,8 +109,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "payments_create_and_confirm_intent")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_create_and_confirm_intent",
+                spec_for("payments_create_and_confirm_intent")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -136,7 +150,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -146,7 +160,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "payments_update_intent")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_update_intent",
+                spec_for("payments_update_intent")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -183,7 +201,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

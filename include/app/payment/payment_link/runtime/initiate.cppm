@@ -37,7 +37,7 @@ public:
 
     // initiate_payment_link (routes:66-98) -> initiate_payment_link_flow
     // (core:472-522). Renders either the payment form data or the status page.
-    [[nodiscard]] std::expected<PaymentLinkInitiateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     initiate(const PaymentLinkInitiateInput& input) const
     {
         m_context.metrics().record_flow("payment_link.initiate");
@@ -50,11 +50,11 @@ public:
 
         const std::string css = m_support.get_css_script(form->config);
         if (form->is_status) {
-            return PaymentLinkInitiateResult{
+            return serde::Value{
                 m_support.status_page_data_document(form->status, css, form->status_inner)
             };
         }
-        return PaymentLinkInitiateResult{
+        return serde::Value{
             m_support.payment_form_data_document(form->details, css, form->config.sdk_url)
         };
     }

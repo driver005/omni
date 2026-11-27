@@ -2,9 +2,11 @@ module;
 export module app_dto:apple_pay_certificates_migration;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -16,7 +18,7 @@ import boost.ut;
 export namespace app::dto::apple_pay_certificates_migration {
 
 class ApplePayCertificatesMigrationRequest :
-    public serde::Serializer<ApplePayCertificatesMigrationRequest>
+    public core::behavior::Serializer<ApplePayCertificatesMigrationRequest>
 {
 public:
     void set_merchant_ids(std::vector<std::string> value)
@@ -33,7 +35,7 @@ public:
 };
 
 class ApplePayCertificatesMigrationResponse :
-    public serde::Serializer<ApplePayCertificatesMigrationResponse>
+    public core::behavior::Serializer<ApplePayCertificatesMigrationResponse>
 {
 public:
     void set_migration_successful(std::vector<std::string> value)

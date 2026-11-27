@@ -23,8 +23,9 @@ public:
     }
 
     // core/card_issuer.rs:84-119 `list_card_issuers`.
-    [[nodiscard]] std::expected<CardIssuerListResult, core::error::AppError>
-    list(const CardIssuerListInput&) const
+    [[nodiscard]] std::
+        expected<::app::dto::card_issuer::CardIssuerListResponse, core::error::AppError>
+        list(const CardIssuerListInput&) const
     {
         const std::size_t limit = m_support.configured_list_limit();
 
@@ -65,7 +66,7 @@ public:
         m_context.metrics().record_flow("ListCardIssuers");
         m_context.metrics().counter("CARD_ISSUERS_LISTED").increment();
 
-        return CardIssuerListResult{std::move(response)};
+        return ::app::dto::card_issuer::CardIssuerListResponse{std::move(response)};
     }
 
 private:

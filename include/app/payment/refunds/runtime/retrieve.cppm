@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     retrieve(const RefundsRetrieveInput& input) const
     {
         m_context.metrics().record_flow(
@@ -35,7 +35,7 @@ public:
         if (!outcome) {
             return std::unexpected{outcome.error()};
         }
-        return RefundsRetrieveResult{m_support.to_refund_response(
+        return ::app::model::refunds::RefundResponse{m_support.to_refund_response(
             outcome->record,
             input.include_raw_requested || outcome->raw.has_value()
         )};

@@ -27,8 +27,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "dummy_connector_authorize_payment")) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "dummy_connector_authorize_payment",
+                spec_for("dummy_connector_authorize_payment")
+            )) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -48,7 +51,7 @@ public:
         }
         res.add_content_type("text/html");
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_html()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -61,8 +64,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "dummy_connector_complete_payment")) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "dummy_connector_complete_payment",
+                spec_for("dummy_connector_complete_payment")
+            )) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -97,8 +103,8 @@ public:
         }
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::FOUND);
-        res.set_header(interfaces::io::types::Token::LOCATION, result->get_location());
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_header(interfaces::io::types::Token::LOCATION, result->second);
+        res.set_body(serialize_wire(result->first));
         send();
     }
 
@@ -111,7 +117,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "dummy_connector_payment")) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "dummy_connector_payment",
+                spec_for("dummy_connector_payment")
+            )) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -148,7 +158,7 @@ public:
         }
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -161,8 +171,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "dummy_connector_payment_data")) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "dummy_connector_payment_data",
+                spec_for("dummy_connector_payment_data")
+            )) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -193,7 +206,7 @@ public:
         }
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -206,7 +219,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "dummy_connector_refund")) {
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "dummy_connector_refund", spec_for("dummy_connector_refund"))) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -263,7 +278,7 @@ public:
         }
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -276,7 +291,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "dummy_connector_refund_data")) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "dummy_connector_refund_data",
+                spec_for("dummy_connector_refund_data")
+            )) {
             const auto& error = *auth_error;
             res.set_status(error.get_status());
             res.add_content_type("application/json");
@@ -304,7 +323,7 @@ public:
         }
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -411,13 +430,17 @@ public:
 
     explicit DummyConnectorRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     DummyConnectorRuntime m_runtime;
     DummyConnectorInputSupport m_input_support;
+    DummyConnectorPolicy m_policy;
+    DummyConnectorRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::dummy_connector

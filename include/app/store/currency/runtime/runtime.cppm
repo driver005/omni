@@ -2,6 +2,8 @@ export module app_store:currency_runtime;
 
 import std;
 import core_error;
+import core_serde;
+import app_dto;
 import app_context;
 
 import :currency_input;
@@ -22,14 +24,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveForexResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_forex(const RetrieveForexInput& input) const
     {
         return m_retrieve_forex.retrieve_forex(input);
     }
 
-    [[nodiscard]] std::expected<ConvertForexResult, core::error::AppError>
-    convert_forex(const ConvertForexInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::currency::CurrencyConversionResponse, core::error::AppError>
+        convert_forex(const ConvertForexInput& input) const
     {
         return m_convert_forex.convert_forex(input);
     }

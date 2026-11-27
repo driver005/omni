@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SwitchMerchantForUserInOrgResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     switch_merchant_for_user_in_org(const SwitchMerchantForUserInOrgInput& input) const
     {
         std::string set_cookie{};
@@ -66,7 +66,7 @@ public:
         purpose.set_value("LOGIN");
         response.set_token(switched_token);
         response.set_token_type(purpose);
-        return SwitchMerchantForUserInOrgResult{ResponseDocument::from(response), set_cookie};
+        return std::pair{ResponseDocument::from(response), set_cookie};
     }
 
 private:

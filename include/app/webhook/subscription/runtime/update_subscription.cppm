@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -26,7 +25,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     update_subscription(const UpdateSubscriptionInput& input) const
     {
         if (const auto failure =
@@ -65,9 +64,8 @@ public:
 
         m_support.metrics_for("subscription.update");
         // core ends with get_subscription(...) -> to_subscription_response(None, None)
-        return UpdateSubscriptionResult{
-            m_support.build_subscription_response(*found, std::nullopt, std::nullopt, std::nullopt)
-        };
+        return m_support
+            .build_subscription_response(*found, std::nullopt, std::nullopt, std::nullopt);
     }
 
 private:

@@ -22,14 +22,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateProfileAcquirerResult, core::error::AppError>
-    create(const CreateProfileAcquirerInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
+        create(const CreateProfileAcquirerInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<ProfileAcquirerUpdateResult, core::error::AppError>
-    update(const ProfileAcquirerUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
+        update(const ProfileAcquirerUpdateInput& input) const
     {
         return m_update.update(input);
     }

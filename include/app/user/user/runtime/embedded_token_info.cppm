@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<EmbeddedTokenInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     embedded_token_info(const EmbeddedTokenInfoInput& input) const
     {
         std::string set_cookie{};
@@ -72,7 +72,7 @@ public:
         response.set_profile_id(pid);
         response.set_merchant_account_version(version);
         auto document = ResponseDocument::from(response);
-        return EmbeddedTokenInfoResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

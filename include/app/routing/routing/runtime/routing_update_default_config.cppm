@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingUpdateDefaultConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_update_default_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -45,10 +45,10 @@ public:
             response.set_profile_id(m_support.wrap<::app::model::routing::ProfileIdValue>(profile));
             response.set_connectors(*input.connectors);
             m_support.track("routing_update_default_config");
-            return RoutingUpdateDefaultConfigResult{ResponseDocument::from(response)};
+            return ResponseDocument::from(response);
         }
         m_support.track("routing_update_default_config");
-        return RoutingUpdateDefaultConfigResult{ResponseDocument::from(*input.connectors)};
+        return ResponseDocument::from(*input.connectors);
     }
 
 private:

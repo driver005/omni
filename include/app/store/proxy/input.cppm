@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -438,6 +439,49 @@ private:
     ValueTools m_values{};
     ProxyErrorBuilder m_proxy_errors{};
     ProxyErrorSupport m_errors{};
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Proxy auth (V2 API key with both connected and platform self-operation
+ * disabled) stays in ProxyInputSupport. The merchant-id scope is the header
+ * value when present, otherwise the authenticated identity's merchant id.
+ */
+class ProxyPolicy
+{
+public:
+    explicit ProxyPolicy(ProxyInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view,
+        const core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize(req).error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope result;
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        const std::string header = ::app::http::merchant_id_from_header{}(req);
+        result.merchant_id = header.empty() ? auth.merchant_id() : header;
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
+private:
+    ProxyInputSupport& m_support;
 };
 
 } // namespace app::handlers::proxy

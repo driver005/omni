@@ -79,7 +79,7 @@ public:
 
         // 3. Result -> response.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -108,7 +108,9 @@ public:
     explicit TelephoneOrderRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{&context},
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
@@ -139,6 +141,8 @@ private:
     ::app::context::AppContext* m_context{nullptr};
     TelephoneOrderRuntime m_runtime;
     TelephoneOrderInputSupport m_input_support;
+    TelephoneOrderPolicy m_policy;
+    TelephoneOrderRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::telephone_order

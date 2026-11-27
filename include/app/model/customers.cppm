@@ -2,16 +2,18 @@ module;
 export module app_model:customers;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::customers {
 
-class AddressDetailsValue : public serde::Serializer<AddressDetailsValue>
+class AddressDetailsValue : public core::behavior::Serializer<AddressDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -27,7 +29,7 @@ public:
     std::string value{};
 };
 
-class CustomerIdValue : public serde::Serializer<CustomerIdValue>
+class CustomerIdValue : public core::behavior::Serializer<CustomerIdValue>
 {
 public:
     void set_value(std::string value)
@@ -43,7 +45,7 @@ public:
     std::string value{};
 };
 
-class CustomerListLimitValue : public serde::Serializer<CustomerListLimitValue>
+class CustomerListLimitValue : public core::behavior::Serializer<CustomerListLimitValue>
 {
 public:
     void set_value(std::string value)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class DescriptionValue : public serde::Serializer<DescriptionValue>
+class DescriptionValue : public core::behavior::Serializer<DescriptionValue>
 {
 public:
     void set_value(std::string value)
@@ -75,7 +77,7 @@ public:
     std::string value{};
 };
 
-class DocumentKindValue : public serde::Serializer<DocumentKindValue>
+class DocumentKindValue : public core::behavior::Serializer<DocumentKindValue>
 {
 public:
     void set_value(std::string value)
@@ -91,7 +93,7 @@ public:
     std::string value{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string value)
@@ -107,7 +109,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string value)
@@ -123,7 +125,8 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
+class OptionalEncryptableEmailValue :
+    public core::behavior::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string value)
@@ -139,7 +142,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableNameValue : public serde::Serializer<OptionalEncryptableNameValue>
+class OptionalEncryptableNameValue : public core::behavior::Serializer<OptionalEncryptableNameValue>
 {
 public:
     void set_value(std::string value)
@@ -155,7 +158,8 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptablePhoneValue : public serde::Serializer<OptionalEncryptablePhoneValue>
+class OptionalEncryptablePhoneValue :
+    public core::behavior::Serializer<OptionalEncryptablePhoneValue>
 {
 public:
     void set_value(std::string value)
@@ -172,7 +176,7 @@ public:
 };
 
 class OptionalEncryptableSecretStringValue :
-    public serde::Serializer<OptionalEncryptableSecretStringValue>
+    public core::behavior::Serializer<OptionalEncryptableSecretStringValue>
 {
 public:
     void set_value(std::string value)
@@ -188,7 +192,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -204,7 +208,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string value)
@@ -220,7 +224,7 @@ public:
     std::string value{};
 };
 
-class TimeRangeValue : public serde::Serializer<TimeRangeValue>
+class TimeRangeValue : public core::behavior::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string value)
@@ -236,7 +240,7 @@ public:
     std::string value{};
 };
 
-class CustomerDeleteResponse : public serde::Serializer<CustomerDeleteResponse>
+class CustomerDeleteResponse : public core::behavior::Serializer<CustomerDeleteResponse>
 {
 public:
     void set_customer_id(CustomerIdValue value)
@@ -285,7 +289,7 @@ public:
     bool payment_methods_deleted{};
 };
 
-class CustomerDocumentDetails : public serde::Serializer<CustomerDocumentDetails>
+class CustomerDocumentDetails : public core::behavior::Serializer<CustomerDocumentDetails>
 {
 public:
     void set_document_type(DocumentKindValue value)
@@ -312,7 +316,7 @@ public:
     std::string document_number{};
 };
 
-class CustomerListRequest : public serde::Serializer<CustomerListRequest>
+class CustomerListRequest : public core::behavior::Serializer<CustomerListRequest>
 {
 public:
     void set_offset(std::optional<std::uint32_t> value)
@@ -351,7 +355,7 @@ public:
 };
 
 class CustomerListRequestWithConstraints :
-    public serde::Serializer<CustomerListRequestWithConstraints>
+    public core::behavior::Serializer<CustomerListRequestWithConstraints>
 {
 public:
     void set_offset(std::optional<std::uint32_t> value)
@@ -400,7 +404,7 @@ public:
     std::optional<TimeRangeValue> time_range{};
 };
 
-class CustomerRequest : public serde::Serializer<CustomerRequest>
+class CustomerRequest : public core::behavior::Serializer<CustomerRequest>
 {
 public:
     void set_customer_id(std::optional<CustomerIdValue> value)
@@ -527,7 +531,7 @@ public:
     std::optional<CustomerDocumentDetails> document_details{};
 };
 
-class CustomerResponse : public serde::Serializer<CustomerResponse>
+class CustomerResponse : public core::behavior::Serializer<CustomerResponse>
 {
 public:
     void set_customer_id(CustomerIdValue value)
@@ -666,7 +670,7 @@ public:
     std::optional<CustomerDocumentDetails> document_details{};
 };
 
-class CustomerUpdateRequest : public serde::Serializer<CustomerUpdateRequest>
+class CustomerUpdateRequest : public core::behavior::Serializer<CustomerUpdateRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -782,7 +786,7 @@ public:
     std::optional<CustomerDocumentDetails> document_details{};
 };
 
-class CustomerListResponse : public serde::Serializer<CustomerListResponse>
+class CustomerListResponse : public core::behavior::Serializer<CustomerListResponse>
 {
 public:
     void set_data(std::vector<CustomerResponse> value)
@@ -809,7 +813,8 @@ public:
     std::size_t total_count{};
 };
 
-class CustomerUpdateRequestInternal : public serde::Serializer<CustomerUpdateRequestInternal>
+class CustomerUpdateRequestInternal :
+    public core::behavior::Serializer<CustomerUpdateRequestInternal>
 {
 public:
     void set_customer_id(CustomerIdValue value)
@@ -846,7 +851,7 @@ public:
 // `serde::RawJson` is used for arbitrary JSON objects (metadata / connector ids).
 // ─────────────────────────────────────────────────────────────────────────────
 
-class CustomerDocumentDetailsWire : public serde::Serializer<CustomerDocumentDetailsWire>
+class CustomerDocumentDetailsWire : public core::behavior::Serializer<CustomerDocumentDetailsWire>
 {
 public:
     void set_document_type(std::string value)
@@ -874,7 +879,7 @@ public:
 };
 
 /** @brief Upstream `api_models::payments::AddressDetails` (payments.rs:6837-6879). */
-class CustomerAddressDetails : public serde::Serializer<CustomerAddressDetails>
+class CustomerAddressDetails : public core::behavior::Serializer<CustomerAddressDetails>
 {
 public:
     void set_city(std::optional<std::string> value)
@@ -991,7 +996,7 @@ public:
 
 /** @brief Upstream `common_utils::types::TimeRange` (types.rs:813-822); query keys are
  *  `start_time`/`end_time` with `startTime`/`endTime` aliases. */
-class CustomerTimeRange : public serde::Serializer<CustomerTimeRange>
+class CustomerTimeRange : public core::behavior::Serializer<CustomerTimeRange>
 {
 public:
     void set_start_time(std::string value)
@@ -1019,7 +1024,7 @@ public:
 };
 
 /** @brief Upstream `api_models::customers::CustomerRequest` (customers.rs:23-70 / 129-165). */
-class CustomerCreateRequestWire : public serde::Serializer<CustomerCreateRequestWire>
+class CustomerCreateRequestWire : public core::behavior::Serializer<CustomerCreateRequestWire>
 {
 public:
     void set_customer_id(std::optional<std::string> value)
@@ -1193,7 +1198,7 @@ public:
 };
 
 /** @brief Upstream `api_models::customers::CustomerUpdateRequest` (customers.rs:366-456). */
-class CustomerUpdateRequestWire : public serde::Serializer<CustomerUpdateRequestWire>
+class CustomerUpdateRequestWire : public core::behavior::Serializer<CustomerUpdateRequestWire>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -1345,7 +1350,7 @@ public:
 };
 
 /** @brief Upstream `customers::CustomerListRequest` (customers.rs:74-84). */
-class CustomerListRequestWire : public serde::Serializer<CustomerListRequestWire>
+class CustomerListRequestWire : public core::behavior::Serializer<CustomerListRequestWire>
 {
 public:
     void set_offset(std::optional<std::uint32_t> value)
@@ -1385,7 +1390,7 @@ public:
 
 /** @brief Upstream `customers::CustomerListRequestWithConstraints` (customers.rs:87-99). */
 class CustomerListConstraintsRequestWire :
-    public serde::Serializer<CustomerListConstraintsRequestWire>
+    public core::behavior::Serializer<CustomerListConstraintsRequestWire>
 {
 public:
     void set_offset(std::optional<std::uint32_t> value)
@@ -1435,7 +1440,7 @@ public:
 };
 
 /** @brief Upstream v1 `customers::CustomerResponse` (customers.rs:189-241). */
-class CustomerResponseV1Wire : public serde::Serializer<CustomerResponseV1Wire>
+class CustomerResponseV1Wire : public core::behavior::Serializer<CustomerResponseV1Wire>
 {
 public:
     void set_customer_id(std::string value)
@@ -1574,7 +1579,7 @@ public:
 };
 
 /** @brief Upstream v2 `customers::CustomerResponse` (customers.rs:252-306). */
-class CustomerResponseV2Wire : public serde::Serializer<CustomerResponseV2Wire>
+class CustomerResponseV2Wire : public core::behavior::Serializer<CustomerResponseV2Wire>
 {
 public:
     void set_id(std::string value)
@@ -1748,7 +1753,7 @@ public:
 };
 
 /** @brief Upstream v1 `CustomerDeleteResponse` (customers.rs:318-335). */
-class CustomerDeleteResponseV1Wire : public serde::Serializer<CustomerDeleteResponseV1Wire>
+class CustomerDeleteResponseV1Wire : public core::behavior::Serializer<CustomerDeleteResponseV1Wire>
 {
 public:
     void set_customer_id(std::string value)
@@ -1798,7 +1803,7 @@ public:
 };
 
 /** @brief Upstream v2 `CustomerDeleteResponse` (customers.rs:339-360). */
-class CustomerDeleteResponseV2Wire : public serde::Serializer<CustomerDeleteResponseV2Wire>
+class CustomerDeleteResponseV2Wire : public core::behavior::Serializer<CustomerDeleteResponseV2Wire>
 {
 public:
     void set_id(std::string value)
@@ -1858,7 +1863,7 @@ public:
     bool payment_methods_deleted{};
 };
 
-class CustomerListResponseV1Wire : public serde::Serializer<CustomerListResponseV1Wire>
+class CustomerListResponseV1Wire : public core::behavior::Serializer<CustomerListResponseV1Wire>
 {
 public:
     void set_data(std::vector<CustomerResponseV1Wire> value)
@@ -1885,7 +1890,7 @@ public:
     std::size_t total_count{};
 };
 
-class CustomerListResponseV2Wire : public serde::Serializer<CustomerListResponseV2Wire>
+class CustomerListResponseV2Wire : public core::behavior::Serializer<CustomerListResponseV2Wire>
 {
 public:
     void set_data(std::vector<CustomerResponseV2Wire> value)
@@ -1914,7 +1919,7 @@ public:
 
 /** @brief Upstream `api_models::customers::migrate` DTOs (migrate.rs:5-37). */
 class CustomerGlobalIdMigrationRowResult :
-    public serde::Serializer<CustomerGlobalIdMigrationRowResult>
+    public core::behavior::Serializer<CustomerGlobalIdMigrationRowResult>
 {
 public:
     void set_row_number(std::size_t value)
@@ -1997,7 +2002,7 @@ public:
 };
 
 class CustomerGlobalIdMigrationResponse :
-    public serde::Serializer<CustomerGlobalIdMigrationResponse>
+    public core::behavior::Serializer<CustomerGlobalIdMigrationResponse>
 {
 public:
     void set_total_rows(std::size_t value)

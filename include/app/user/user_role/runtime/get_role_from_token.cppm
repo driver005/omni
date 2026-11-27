@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
     get_role_from_token(const GetRoleFromTokenInput& input) const
     {
         const auto role = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -44,7 +44,7 @@ public:
         }
         auto groups = role->permission_groups();
         m_support.track_flow("get_role_from_token", "user_role.get_role_from_token");
-        return GetRoleFromTokenResult{std::move(groups)};
+        return std::move(groups);
     }
 
 private:

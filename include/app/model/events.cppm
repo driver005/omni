@@ -2,16 +2,18 @@ module;
 export module app_model:events;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::events {
 
-class EventsCatalog : public serde::Serializer<EventsCatalog>
+class EventsCatalog : public core::behavior::Serializer<EventsCatalog>
 {
 public:
     void set_name(std::string value)

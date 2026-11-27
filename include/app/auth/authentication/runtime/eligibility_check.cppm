@@ -37,7 +37,7 @@ public:
 
     // ───────────────────────── Core: eligibility-check ─────────────────────────
     // unified_authentication_service.rs:1685-1734 authentication_eligibility_check_core.
-    [[nodiscard]] std::expected<AuthenticationEligibilityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     eligibility_check(const AuthenticationEligibilityCheckInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
@@ -68,12 +68,10 @@ public:
         const char* action = should_store ? "await_merchant_callback" : "proceed";
         JsonObject sdk_next_action{};
         sdk_next_action.val(action, serde::Value{serde::Value::Object{}});
-        return AuthenticationEligibilityCheckResult{
-            JsonObject{}
-                .str("authentication_id", std::string{input.authentication_id})
-                .val("sdk_next_action", sdk_next_action.done())
-                .done()
-        };
+        return JsonObject{}
+            .str("authentication_id", std::string{input.authentication_id})
+            .val("sdk_next_action", sdk_next_action.done())
+            .done();
     }
 
 private:

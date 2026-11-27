@@ -4,9 +4,11 @@ module;
 export module app_dto:api_keys;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ export namespace app::dto::api_keys {
  * @brief Untagged `ApiKeyExpiration` mirror of api_models/src/api_keys.rs:168-233.
  * Wire form is a plain JSON string: `"never"` or an ISO-8601 datetime.
  */
-class ApiKeyExpiration : public serde::Serializer<ApiKeyExpiration>
+class ApiKeyExpiration : public core::behavior::Serializer<ApiKeyExpiration>
 {
 public:
     ApiKeyExpiration() = default;
@@ -51,7 +53,7 @@ private:
     std::string m_value{"never"};
 };
 
-class ApiKeyIdValue : public serde::Serializer<ApiKeyIdValue>
+class ApiKeyIdValue : public core::behavior::Serializer<ApiKeyIdValue>
 {
 public:
     void set_value(std::string v)
@@ -67,7 +69,7 @@ public:
     std::string value{};
 };
 
-class ListApiKeyConstraints : public serde::Serializer<ListApiKeyConstraints>
+class ListApiKeyConstraints : public core::behavior::Serializer<ListApiKeyConstraints>
 {
 public:
     void set_limit(std::optional<std::int64_t> value)
@@ -94,7 +96,7 @@ public:
     std::optional<std::int64_t> skip{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -110,7 +112,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -126,7 +128,7 @@ public:
     std::string value{};
 };
 
-class CreateApiKeyRequest : public serde::Serializer<CreateApiKeyRequest>
+class CreateApiKeyRequest : public core::behavior::Serializer<CreateApiKeyRequest>
 {
 public:
     void set_name(std::string value)
@@ -164,7 +166,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class CreateApiKeyResponse : public serde::Serializer<CreateApiKeyResponse>
+class CreateApiKeyResponse : public core::behavior::Serializer<CreateApiKeyResponse>
 {
 public:
     void set_key_id(ApiKeyIdValue value)
@@ -246,7 +248,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class RetrieveApiKeyResponse : public serde::Serializer<RetrieveApiKeyResponse>
+class RetrieveApiKeyResponse : public core::behavior::Serializer<RetrieveApiKeyResponse>
 {
 public:
     void set_key_id(ApiKeyIdValue value)
@@ -328,7 +330,7 @@ public:
     ApiKeyExpiration expiration{};
 };
 
-class RevokeApiKeyResponse : public serde::Serializer<RevokeApiKeyResponse>
+class RevokeApiKeyResponse : public core::behavior::Serializer<RevokeApiKeyResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -366,7 +368,7 @@ public:
     bool revoked{};
 };
 
-class UpdateApiKeyRequest : public serde::Serializer<UpdateApiKeyRequest>
+class UpdateApiKeyRequest : public core::behavior::Serializer<UpdateApiKeyRequest>
 {
 public:
     void set_name(std::optional<std::string> value)

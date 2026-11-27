@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<NetworkTokenStatusCheckApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse,
+        core::error::AppError>
     network_token_status_check_api(const NetworkTokenStatusCheckApiInput& input) const
     {
         const auto& record = input.record;
@@ -57,7 +59,9 @@ public:
         ::app::model::payment_methods::GlobalPaymentMethodIdValue id{};
         id.set_value(input.payment_method_id);
         response.set_payment_method_id(std::move(id));
-        return NetworkTokenStatusCheckApiResult{std::move(response)};
+        return ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse{
+            std::move(response)
+        };
     }
 
 private:

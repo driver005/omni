@@ -21,13 +21,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsFiltersProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
     filters_profile(const RefundsFiltersProfileInput& input) const
     {
         m_context.metrics().record_flow("refund_profile_filters");
         m_context.metrics().counter("refunds_profile_filters_total").increment();
 
-        return RefundsFiltersProfileResult{
+        return ::app::model::refunds::RefundListFilters{
             m_support.get_filters_for_refunds(input.facts, /*profile_scoped=*/true)
         };
     }

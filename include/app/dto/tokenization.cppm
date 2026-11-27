@@ -2,9 +2,11 @@ module;
 export module app_dto:tokenization;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -26,7 +28,7 @@ export namespace app::dto::tokenization {
  * the route wire surface (their `value` field would emit a `{"value":...}` wrapper).
  */
 
-class GlobalCustomerIdValue : public serde::Serializer<GlobalCustomerIdValue>
+class GlobalCustomerIdValue : public core::behavior::Serializer<GlobalCustomerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -43,7 +45,7 @@ public:
 };
 
 class GlobalPaymentMethodSessionIdValue :
-    public serde::Serializer<GlobalPaymentMethodSessionIdValue>
+    public core::behavior::Serializer<GlobalPaymentMethodSessionIdValue>
 {
 public:
     void set_value(std::string v)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class GlobalTokenIdValue : public serde::Serializer<GlobalTokenIdValue>
+class GlobalTokenIdValue : public core::behavior::Serializer<GlobalTokenIdValue>
 {
 public:
     void set_value(std::string v)
@@ -75,7 +77,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -91,7 +93,7 @@ public:
     std::string value{};
 };
 
-class TokenizationFlagValue : public serde::Serializer<TokenizationFlagValue>
+class TokenizationFlagValue : public core::behavior::Serializer<TokenizationFlagValue>
 {
 public:
     void set_value(std::string v)
@@ -107,7 +109,7 @@ public:
     std::string value{};
 };
 
-class DeleteTokenDataRequest : public serde::Serializer<DeleteTokenDataRequest>
+class DeleteTokenDataRequest : public core::behavior::Serializer<DeleteTokenDataRequest>
 {
 public:
     // Upstream: customer_id/session_id are id newtypes -> plain strings on the wire.
@@ -135,7 +137,7 @@ public:
     std::string session_id{};
 };
 
-class DeleteTokenDataResponse : public serde::Serializer<DeleteTokenDataResponse>
+class DeleteTokenDataResponse : public core::behavior::Serializer<DeleteTokenDataResponse>
 {
 public:
     void set_id(std::string value)
@@ -151,7 +153,7 @@ public:
     std::string id{};
 };
 
-class GenericTokenizationRequest : public serde::Serializer<GenericTokenizationRequest>
+class GenericTokenizationRequest : public core::behavior::Serializer<GenericTokenizationRequest>
 {
 public:
     void set_customer_id(std::string value)
@@ -179,7 +181,7 @@ public:
     std::string token_request{};
 };
 
-class GenericTokenizationResponse : public serde::Serializer<GenericTokenizationResponse>
+class GenericTokenizationResponse : public core::behavior::Serializer<GenericTokenizationResponse>
 {
 public:
     void set_id(std::string value)

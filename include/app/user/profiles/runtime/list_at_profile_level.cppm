@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfilesListAtProfileLevelResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ProfileWireResponse>, core::error::AppError>
     list(const ProfilesListAtProfileLevelInput& input) const
     {
         auto result = m_support.list_profile(input.merchant_id, input.profile_id_list);
@@ -33,7 +33,7 @@ public:
         m_context.metrics().record_flow("profiles.list_at_profile_level");
         m_context.metrics().record_flow("Flow::ProfileList");
         m_context.metrics().counter("profiles_list_at_profile_level").increment();
-        return ProfilesListAtProfileLevelResult{std::move(*result)};
+        return std::move(*result);
     }
 
 private:

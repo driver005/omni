@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GenerateRecoveryCodesResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     generate_recovery_codes(const GenerateRecoveryCodesInput& input) const
     {
         std::string set_cookie{};
@@ -75,7 +75,7 @@ public:
         Response response{};
         response.set_recovery_codes(recovery_codes);
         auto document = ResponseDocument::from(response);
-        return GenerateRecoveryCodesResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

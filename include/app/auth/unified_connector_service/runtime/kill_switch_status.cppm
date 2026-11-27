@@ -32,7 +32,7 @@ public:
 
     // Upstream kill_switch::trip_status (kill_switch.rs:580-671). Auth and scope
     // resolution stay in the handler; everything below is the old core block.
-    [[nodiscard]] std::expected<KillSwitchStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<KillSwitchStatusResponse, core::error::AppError>
     status(const KillSwitchStatusInput& input) const
     {
         const auto& resolved = input.scope;
@@ -96,7 +96,7 @@ public:
 
         // Upstream KillSwitchStatusResponse (kill_switch.rs:524-538): serde emits
         // Option<u64> thresholds as JSON null when absent. Field order matches.
-        KillSwitchStatusResult response{};
+        KillSwitchStatusResponse response{};
         response.set_rollout_scope(resolved.shadow ? resolved.listed_key : resolved.scope);
         response.set_counter(counter);
         response.set_threshold(threshold);

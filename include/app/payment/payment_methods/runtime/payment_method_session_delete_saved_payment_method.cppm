@@ -37,11 +37,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<PaymentMethodSessionDeleteSavedPaymentMethodResult, core::error::AppError>
-        payment_method_session_delete_saved_payment_method(
-            const PaymentMethodSessionDeleteSavedPaymentMethodInput& input
-        ) const
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodDeleteSessionResponse,
+        core::error::AppError>
+    payment_method_session_delete_saved_payment_method(
+        const PaymentMethodSessionDeleteSavedPaymentMethodInput& input
+    ) const
     {
         const auto& record = input.record;
         (void)m_support.call_connector(
@@ -62,7 +63,9 @@ public:
             .increment();
         ::app::model::payment_methods::PaymentMethodDeleteSessionResponse response{};
         response.set_payment_method_token(input.token);
-        return PaymentMethodSessionDeleteSavedPaymentMethodResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodDeleteSessionResponse{
+            std::move(response)
+        };
     }
 
 private:

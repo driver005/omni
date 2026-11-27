@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ToggleExtendedCardInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ExtendedCardInfoChoice, core::error::AppError>
     toggle(const ToggleExtendedCardInfoInput& input) const
     {
         // core/admin.rs:4906-4912 — key store by merchant id.
@@ -55,7 +55,7 @@ public:
         m_context.metrics().record_flow("profiles.toggle_extended_card_info");
         m_context.metrics().record_flow("Flow::ToggleExtendedCardInfo");
         m_context.metrics().counter("profiles_toggle_extended_card_info").increment();
-        return ToggleExtendedCardInfoResult{input.choice};
+        return input.choice;
     }
 
 private:

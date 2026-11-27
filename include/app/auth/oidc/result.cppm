@@ -9,25 +9,45 @@ import app_dto;
 export namespace app::handlers::oidc {
 
 /**
- * @brief Serializable shape of the discovery response. Derives from the exact DTO the old
- * handler built, so field names, order and wrapper types stay byte-identical.
+ * @brief Exact wire field lists captured from the retired Result classes' Serializable
+ * specializations. Each mirrors the corresponding DTO FieldDesc tuple in declaration order.
  */
-class OidcDiscoveryResult : public ::app::dto::oidc::OidcDiscoveryResponse
+[[nodiscard]] inline constexpr auto discovery_wire_fields()
 {
-public:
-    OidcDiscoveryResult() = default;
+    return std::array<std::string_view, 15>{
+        "issuer",
+        "authorization_endpoint",
+        "token_endpoint",
+        "jwks_uri",
+        "response_types_supported",
+        "response_modes_supported",
+        "subject_types_supported",
+        "id_token_signing_alg_values_supported",
+        "grant_types_supported",
+        "scopes_supported",
+        "token_endpoint_auth_methods_supported",
+        "claims_supported",
+        "claims_parameter_supported",
+        "request_parameter_supported",
+        "request_uri_parameter_supported"
+    };
+}
 
-    explicit OidcDiscoveryResult(::app::dto::oidc::OidcDiscoveryResponse value) noexcept :
-        OidcDiscoveryResponse{std::move(value)}
-    {
-    }
-};
+[[nodiscard]] inline constexpr auto jwks_wire_fields()
+{
+    return std::array<std::string_view, 1>{"keys"};
+}
+
+[[nodiscard]] inline constexpr auto token_wire_fields()
+{
+    return std::array<std::string_view, 4>{"access_token", "id_token", "token_type", "expires_in"};
+}
 
 // ── RFC 6749 error wire shapes from core/errors/oidc.rs ─────────────────────
 // Error bodies travel as core::error::AppError: kind_name carries the upstream code
 // (OI_01..OI_08, IR_51), message carries the human-readable text, and get_status()
-// supplies the HTTP status. The runtime still puts OidcErrorKind on the Result so the
-// handler can build the same AppError without touching raw JSON text.
+// supplies the HTTP status. The runtime turns an OidcErrorKind into the same AppError and
+// returns it as std::unexpected; the handler sends it unchanged.
 
 namespace oidc_wire {
 
@@ -131,139 +151,4 @@ namespace oidc_wire {
 
 } // namespace oidc_wire
 
-// JWKS is a flat {"keys":[...]} document. Derive from the DTO so the handler can serialize
-// the typed result directly; the runtime decodes the cached text back into that DTO.
-class JwksEndpointResult : public ::app::dto::oidc::JwksResponse
-{
-public:
-    JwksEndpointResult() = default;
-
-    explicit JwksEndpointResult(::app::dto::oidc::JwksResponse document) noexcept :
-        JwksResponse{std::move(document)}
-    {
-    }
-};
-
-// authorize has two wire outputs: an RFC 6749 error AppError (varying status) or the
-// ApplicationResponse::JsonForRedirection 302 body with a LOCATION header. The success body is
-// a typed serde::Value document (Object with two empty Arrays); m_is_error discriminates them.
-class OidcAuthorizeResult
-{
-public:
-    OidcAuthorizeResult() = default;
-
-    OidcAuthorizeResult(std::string location, serde::Value document) noexcept :
-        m_location{std::move(location)},
-        m_document{std::move(document)}
-    {
-    }
-
-    explicit OidcAuthorizeResult(oidc_wire::OidcErrorKind kind) noexcept :
-        m_error_kind{kind},
-        m_is_error{true}
-    {
-    }
-
-    [[nodiscard]] bool is_error() const noexcept
-    {
-        return m_is_error;
-    }
-
-    [[nodiscard]] oidc_wire::OidcErrorKind get_error_kind() const noexcept
-    {
-        return m_error_kind;
-    }
-
-    [[nodiscard]] const std::string& get_location() const noexcept
-    {
-        return m_location;
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-private:
-    std::string m_location{};
-    serde::Value m_document{};
-    oidc_wire::OidcErrorKind m_error_kind{oidc_wire::OidcErrorKind::InvalidRequest};
-    bool m_is_error{};
-};
-
-// token likewise has an RFC 6749 error branch and a success branch carrying the typed
-// OidcTokenResponse; m_is_error discriminates them.
-class OidcTokenResult : public ::app::dto::oidc::OidcTokenResponse
-{
-public:
-    OidcTokenResult() = default;
-
-    explicit OidcTokenResult(::app::dto::oidc::OidcTokenResponse response) noexcept :
-        OidcTokenResponse{std::move(response)}
-    {
-    }
-
-    explicit OidcTokenResult(oidc_wire::OidcErrorKind kind) noexcept :
-        m_error_kind{kind},
-        m_is_error{true}
-    {
-    }
-
-    [[nodiscard]] bool is_error() const noexcept
-    {
-        return m_is_error;
-    }
-
-    [[nodiscard]] oidc_wire::OidcErrorKind get_error_kind() const noexcept
-    {
-        return m_error_kind;
-    }
-
-private:
-    oidc_wire::OidcErrorKind m_error_kind{oidc_wire::OidcErrorKind::InvalidRequest};
-    bool m_is_error{};
-};
-
 } // namespace app::handlers::oidc
-
-template<>
-struct serde::Serializable<::app::handlers::oidc::OidcDiscoveryResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::oidc::OidcDiscoveryResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "oidc_discovery_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::oidc::JwksEndpointResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::oidc::JwksResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "jwks_endpoint_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::oidc::OidcTokenResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::oidc::OidcTokenResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "oidc_token_result";
-    }
-};

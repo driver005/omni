@@ -2,16 +2,18 @@ module;
 export module app_dto:errors;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::errors {
 
-class ErrorsCatalog : public serde::Serializer<ErrorsCatalog>
+class ErrorsCatalog : public core::behavior::Serializer<ErrorsCatalog>
 {
 public:
     void set_name(std::string value)

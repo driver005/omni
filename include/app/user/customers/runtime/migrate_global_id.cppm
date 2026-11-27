@@ -8,7 +8,6 @@ import app_store;
 import app_model;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -22,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MigrateGlobalIdResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     migrate_global_id(const CustomersMigrateRouteInput& input) const
     {
         auto repo = m_context.repository();
@@ -62,7 +61,7 @@ public:
         response["results"] = serde::Value{std::move(data)};
         m_context.metrics().record_flow("customers.migrate_global_id");
         m_context.metrics().counter("customers_migrate_global_id").increment();
-        return MigrateGlobalIdResult{serde::Value{std::move(response)}};
+        return serde::Value{std::move(response)};
     }
 
 private:

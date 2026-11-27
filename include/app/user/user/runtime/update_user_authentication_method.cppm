@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateUserAuthenticationMethodResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     update_user_authentication_method(const UpdateUserAuthenticationMethodInput& input) const
     {
         std::string set_cookie{};
@@ -97,7 +97,7 @@ public:
         m_context.metrics().counter("user.update_user_authentication_method").increment();
 
         // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
-        return UpdateUserAuthenticationMethodResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

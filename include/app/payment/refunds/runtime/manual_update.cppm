@@ -1,6 +1,7 @@
 export module app_payment:refunds_runtime_manual_update;
 
 import std;
+import core_serde;
 import interfaces;
 import core_error;
 import app_context;
@@ -21,7 +22,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsManualUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     manual_update(const RefundsManualUpdateInput& input) const
     {
         m_context.metrics().record_flow("refund_manual_update");
@@ -30,7 +31,7 @@ public:
         if (const auto failure = m_support.refund_manual_update(input.request)) {
             return std::unexpected{*failure};
         }
-        return RefundsManualUpdateResult{RefundsManualUpdateResult::empty()};
+        return empty_refunds_wire();
     }
 
 private:

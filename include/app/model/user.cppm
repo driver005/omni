@@ -4,16 +4,19 @@ module;
 export module app_model:user;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::user {
 
-class AcceptInviteFromEmailRequest : public serde::Serializer<AcceptInviteFromEmailRequest>
+class AcceptInviteFromEmailRequest : public core::behavior::Serializer<AcceptInviteFromEmailRequest>
 {
 public:
     void set_token(std::string value)
@@ -35,7 +38,7 @@ enum class AcceptInviteResponse
     Status,
 };
 
-class ApiVersionValue : public serde::Serializer<ApiVersionValue>
+class ApiVersionValue : public core::behavior::Serializer<ApiVersionValue>
 {
 public:
     void set_value(std::string v)
@@ -51,7 +54,7 @@ public:
     std::string value{};
 };
 
-class AuthIdAndThemeIdQueryParam : public serde::Serializer<AuthIdAndThemeIdQueryParam>
+class AuthIdAndThemeIdQueryParam : public core::behavior::Serializer<AuthIdAndThemeIdQueryParam>
 {
 public:
     void set_auth_id(std::optional<std::string> value)
@@ -78,7 +81,7 @@ public:
     std::optional<std::string> theme_id{};
 };
 
-class AuthSelectRequest : public serde::Serializer<AuthSelectRequest>
+class AuthSelectRequest : public core::behavior::Serializer<AuthSelectRequest>
 {
 public:
     void set_id(std::optional<std::string> value)
@@ -94,7 +97,7 @@ public:
     std::optional<std::string> id{};
 };
 
-class AuthorizeResponse : public serde::Serializer<AuthorizeResponse>
+class AuthorizeResponse : public core::behavior::Serializer<AuthorizeResponse>
 {
 public:
     void set_is_email_sent(bool value)
@@ -121,7 +124,7 @@ public:
     std::string user_id{};
 };
 
-class AuthorizeTokenRequest : public serde::Serializer<AuthorizeTokenRequest>
+class AuthorizeTokenRequest : public core::behavior::Serializer<AuthorizeTokenRequest>
 {
 public:
     void set_token(std::string value)
@@ -148,7 +151,7 @@ public:
     std::string permission{};
 };
 
-class ChangePasswordRequest : public serde::Serializer<ChangePasswordRequest>
+class ChangePasswordRequest : public core::behavior::Serializer<ChangePasswordRequest>
 {
 public:
     void set_new_password(std::string value)
@@ -175,7 +178,7 @@ public:
     std::string old_password{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -191,7 +194,7 @@ public:
     std::string value{};
 };
 
-class EntityTypeValue : public serde::Serializer<EntityTypeValue>
+class EntityTypeValue : public core::behavior::Serializer<EntityTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -207,7 +210,7 @@ public:
     std::string value{};
 };
 
-class GetSsoAuthUrlRequest : public serde::Serializer<GetSsoAuthUrlRequest>
+class GetSsoAuthUrlRequest : public core::behavior::Serializer<GetSsoAuthUrlRequest>
 {
 public:
     void set_id(std::string value)
@@ -224,7 +227,7 @@ public:
 };
 
 class GetUserAuthenticationMethodsRequest :
-    public serde::Serializer<GetUserAuthenticationMethodsRequest>
+    public core::behavior::Serializer<GetUserAuthenticationMethodsRequest>
 {
 public:
     void set_auth_id(std::optional<std::string> value)
@@ -257,7 +260,7 @@ enum class InvitationAcceptanceStatus
     SuccessfullyAccepted,
 };
 
-class IssueEmbeddedTokenResponse : public serde::Serializer<IssueEmbeddedTokenResponse>
+class IssueEmbeddedTokenResponse : public core::behavior::Serializer<IssueEmbeddedTokenResponse>
 {
 public:
     void set_token(std::string value)
@@ -273,7 +276,7 @@ public:
     std::string token{};
 };
 
-class ListUsersInternalRequest : public serde::Serializer<ListUsersInternalRequest>
+class ListUsersInternalRequest : public core::behavior::Serializer<ListUsersInternalRequest>
 {
 public:
     void set_user_ids(std::vector<std::string> value)
@@ -289,7 +292,8 @@ public:
     std::vector<std::string> user_ids{};
 };
 
-class MerchantAccountRequestTypeValue : public serde::Serializer<MerchantAccountRequestTypeValue>
+class MerchantAccountRequestTypeValue :
+    public core::behavior::Serializer<MerchantAccountRequestTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -305,7 +309,7 @@ public:
     std::string value{};
 };
 
-class MerchantAccountTypeValue : public serde::Serializer<MerchantAccountTypeValue>
+class MerchantAccountTypeValue : public core::behavior::Serializer<MerchantAccountTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -321,7 +325,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -337,7 +341,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantProductTypeValue : public core::behavior::Serializer<MerchantProductTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -353,23 +357,7 @@ public:
     std::string value{};
 };
 
-class MerchantProductTypeValue : public serde::Serializer<MerchantProductTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class NameIdUnit : public serde::Serializer<NameIdUnit>
+class NameIdUnit : public core::behavior::Serializer<NameIdUnit>
 {
 public:
     void set_name(std::string value)
@@ -396,7 +384,8 @@ public:
     std::string id{};
 };
 
-class OfferEngineCredentialSourceValue : public serde::Serializer<OfferEngineCredentialSourceValue>
+class OfferEngineCredentialSourceValue :
+    public core::behavior::Serializer<OfferEngineCredentialSourceValue>
 {
 public:
     void set_value(std::string v)
@@ -412,7 +401,7 @@ public:
     std::string value{};
 };
 
-class OpenIdConnectPrivateConfig : public serde::Serializer<OpenIdConnectPrivateConfig>
+class OpenIdConnectPrivateConfig : public core::behavior::Serializer<OpenIdConnectPrivateConfig>
 {
 public:
     void set_base_url(std::string value)
@@ -466,7 +455,7 @@ enum class OpenIdProvider
     Okta,
 };
 
-class OptionalEncryptableNameValue : public serde::Serializer<OptionalEncryptableNameValue>
+class OptionalEncryptableNameValue : public core::behavior::Serializer<OptionalEncryptableNameValue>
 {
 public:
     void set_value(std::string v)
@@ -482,7 +471,7 @@ public:
     std::string value{};
 };
 
-class OrganizationIdValue : public serde::Serializer<OrganizationIdValue>
+class OrganizationIdValue : public core::behavior::Serializer<OrganizationIdValue>
 {
 public:
     void set_value(std::string v)
@@ -498,7 +487,7 @@ public:
     std::string value{};
 };
 
-class OrganizationTypeValue : public serde::Serializer<OrganizationTypeValue>
+class OrganizationTypeValue : public core::behavior::Serializer<OrganizationTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -514,7 +503,7 @@ public:
     std::string value{};
 };
 
-class OwnerValue : public serde::Serializer<OwnerValue>
+class OwnerValue : public core::behavior::Serializer<OwnerValue>
 {
 public:
     void set_value(std::string v)
@@ -530,7 +519,7 @@ public:
     std::string value{};
 };
 
-class PlatformAccountCreateRequest : public serde::Serializer<PlatformAccountCreateRequest>
+class PlatformAccountCreateRequest : public core::behavior::Serializer<PlatformAccountCreateRequest>
 {
 public:
     void set_organization_name(std::string value)
@@ -546,23 +535,7 @@ public:
     std::string organization_name{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class RecoveryCodes : public serde::Serializer<RecoveryCodes>
+class RecoveryCodes : public core::behavior::Serializer<RecoveryCodes>
 {
 public:
     void set_recovery_codes(std::vector<std::string> value)
@@ -578,7 +551,7 @@ public:
     std::vector<std::string> recovery_codes{};
 };
 
-class ResetPasswordRequest : public serde::Serializer<ResetPasswordRequest>
+class ResetPasswordRequest : public core::behavior::Serializer<ResetPasswordRequest>
 {
 public:
     void set_token(std::string value)
@@ -605,7 +578,7 @@ public:
     std::string password{};
 };
 
-class RotatePasswordRequest : public serde::Serializer<RotatePasswordRequest>
+class RotatePasswordRequest : public core::behavior::Serializer<RotatePasswordRequest>
 {
 public:
     void set_password(std::string value)
@@ -621,7 +594,7 @@ public:
     std::string password{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string v)
@@ -637,7 +610,7 @@ public:
     std::string value{};
 };
 
-class SkipTwoFactorAuthQueryParam : public serde::Serializer<SkipTwoFactorAuthQueryParam>
+class SkipTwoFactorAuthQueryParam : public core::behavior::Serializer<SkipTwoFactorAuthQueryParam>
 {
 public:
     void set_skip_two_factor_auth(std::optional<bool> value)
@@ -653,7 +626,7 @@ public:
     std::optional<bool> skip_two_factor_auth{};
 };
 
-class SsoSignInRequest : public serde::Serializer<SsoSignInRequest>
+class SsoSignInRequest : public core::behavior::Serializer<SsoSignInRequest>
 {
 public:
     void set_state(std::string value)
@@ -680,7 +653,7 @@ public:
     std::string code{};
 };
 
-class TokenPurposeValue : public serde::Serializer<TokenPurposeValue>
+class TokenPurposeValue : public core::behavior::Serializer<TokenPurposeValue>
 {
 public:
     void set_value(std::string v)
@@ -696,7 +669,7 @@ public:
     std::string value{};
 };
 
-class TotpSecret : public serde::Serializer<TotpSecret>
+class TotpSecret : public core::behavior::Serializer<TotpSecret>
 {
 public:
     void set_secret(std::string value)
@@ -723,7 +696,7 @@ public:
     std::string totp_url{};
 };
 
-class TwoFactorAuthAttempts : public serde::Serializer<TwoFactorAuthAttempts>
+class TwoFactorAuthAttempts : public core::behavior::Serializer<TwoFactorAuthAttempts>
 {
 public:
     void set_is_completed(bool value)
@@ -750,7 +723,7 @@ public:
     std::uint8_t remaining_attempts{};
 };
 
-class TwoFactorAuthStatusResponse : public serde::Serializer<TwoFactorAuthStatusResponse>
+class TwoFactorAuthStatusResponse : public core::behavior::Serializer<TwoFactorAuthStatusResponse>
 {
 public:
     void set_totp(bool value)
@@ -777,7 +750,8 @@ public:
     bool recovery_code{};
 };
 
-class UpdateUserAccountDetailsRequest : public serde::Serializer<UpdateUserAccountDetailsRequest>
+class UpdateUserAccountDetailsRequest :
+    public core::behavior::Serializer<UpdateUserAccountDetailsRequest>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -799,7 +773,7 @@ enum class UpdateUserAuthenticationMethodRequest
     EmailDomain,
 };
 
-class UserAuthTypeValue : public serde::Serializer<UserAuthTypeValue>
+class UserAuthTypeValue : public core::behavior::Serializer<UserAuthTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -815,7 +789,7 @@ public:
     std::string value{};
 };
 
-class UserFromEmailRequest : public serde::Serializer<UserFromEmailRequest>
+class UserFromEmailRequest : public core::behavior::Serializer<UserFromEmailRequest>
 {
 public:
     void set_token(std::string value)
@@ -831,7 +805,7 @@ public:
     std::string token{};
 };
 
-class UserKeyTransferRequest : public serde::Serializer<UserKeyTransferRequest>
+class UserKeyTransferRequest : public core::behavior::Serializer<UserKeyTransferRequest>
 {
 public:
     void set_from(std::uint32_t value)
@@ -858,7 +832,7 @@ public:
     std::uint32_t limit{};
 };
 
-class UserStatusValue : public serde::Serializer<UserStatusValue>
+class UserStatusValue : public core::behavior::Serializer<UserStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -874,7 +848,7 @@ public:
     std::string value{};
 };
 
-class UserTransferKeyResponse : public serde::Serializer<UserTransferKeyResponse>
+class UserTransferKeyResponse : public core::behavior::Serializer<UserTransferKeyResponse>
 {
 public:
     void set_total_transferred(std::size_t value)
@@ -890,7 +864,7 @@ public:
     std::size_t total_transferred{};
 };
 
-class ValidateOnlyQueryParam : public serde::Serializer<ValidateOnlyQueryParam>
+class ValidateOnlyQueryParam : public core::behavior::Serializer<ValidateOnlyQueryParam>
 {
 public:
     void set_status_check(std::optional<bool> value)
@@ -906,7 +880,7 @@ public:
     std::optional<bool> status_check{};
 };
 
-class VerifyEmailRequest : public serde::Serializer<VerifyEmailRequest>
+class VerifyEmailRequest : public core::behavior::Serializer<VerifyEmailRequest>
 {
 public:
     void set_token(std::string value)
@@ -922,7 +896,7 @@ public:
     std::string token{};
 };
 
-class VerifyRecoveryCodeRequest : public serde::Serializer<VerifyRecoveryCodeRequest>
+class VerifyRecoveryCodeRequest : public core::behavior::Serializer<VerifyRecoveryCodeRequest>
 {
 public:
     void set_recovery_code(std::string value)
@@ -938,7 +912,7 @@ public:
     std::string recovery_code{};
 };
 
-class VerifyTotpRequest : public serde::Serializer<VerifyTotpRequest>
+class VerifyTotpRequest : public core::behavior::Serializer<VerifyTotpRequest>
 {
 public:
     void set_totp(std::string value)
@@ -954,7 +928,7 @@ public:
     std::string totp{};
 };
 
-class AuthMethodDetails : public serde::Serializer<AuthMethodDetails>
+class AuthMethodDetails : public core::behavior::Serializer<AuthMethodDetails>
 {
 public:
     void set_auth_type(UserAuthTypeValue value)
@@ -981,7 +955,7 @@ public:
     std::optional<OpenIdProvider> name{};
 };
 
-class BeginTotpResponse : public serde::Serializer<BeginTotpResponse>
+class BeginTotpResponse : public core::behavior::Serializer<BeginTotpResponse>
 {
 public:
     void set_secret(std::optional<TotpSecret> value)
@@ -997,45 +971,7 @@ public:
     std::optional<TotpSecret> secret{};
 };
 
-class CloneConnectorRequest : public serde::Serializer<CloneConnectorRequest>
-{
-public:
-    void set_source_mca_id(MerchantConnectorAccountIdValue value)
-    {
-        source_mca_id = std::move(value);
-    }
-
-    [[nodiscard]] const MerchantConnectorAccountIdValue& get_source_mca_id() const noexcept
-    {
-        return source_mca_id;
-    }
-
-    void set_destination_profile_id(ProfileIdValue value)
-    {
-        destination_profile_id = std::move(value);
-    }
-
-    [[nodiscard]] const ProfileIdValue& get_destination_profile_id() const noexcept
-    {
-        return destination_profile_id;
-    }
-
-    void set_connector_label(std::optional<std::string> value)
-    {
-        connector_label = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_connector_label() const noexcept
-    {
-        return connector_label;
-    }
-
-    MerchantConnectorAccountIdValue source_mca_id{};
-    ProfileIdValue destination_profile_id{};
-    std::optional<std::string> connector_label{};
-};
-
-class ConnectAccountRequest : public serde::Serializer<ConnectAccountRequest>
+class ConnectAccountRequest : public core::behavior::Serializer<ConnectAccountRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1051,7 +987,7 @@ public:
     EmailValue email{};
 };
 
-class CreateInternalUserRequest : public serde::Serializer<CreateInternalUserRequest>
+class CreateInternalUserRequest : public core::behavior::Serializer<CreateInternalUserRequest>
 {
 public:
     void set_name(std::string value)
@@ -1100,7 +1036,7 @@ public:
     std::string role_id{};
 };
 
-class CreateTenantUserRequest : public serde::Serializer<CreateTenantUserRequest>
+class CreateTenantUserRequest : public core::behavior::Serializer<CreateTenantUserRequest>
 {
 public:
     void set_name(std::string value)
@@ -1139,7 +1075,7 @@ public:
 };
 
 class CreateUserAuthenticationMethodResponse :
-    public serde::Serializer<CreateUserAuthenticationMethodResponse>
+    public core::behavior::Serializer<CreateUserAuthenticationMethodResponse>
 {
 public:
     void set_id(std::string value)
@@ -1221,7 +1157,7 @@ public:
     bool allow_signup{};
 };
 
-class EmbeddedTokenInfoResponse : public serde::Serializer<EmbeddedTokenInfoResponse>
+class EmbeddedTokenInfoResponse : public core::behavior::Serializer<EmbeddedTokenInfoResponse>
 {
 public:
     void set_org_id(OrganizationIdValue value)
@@ -1270,7 +1206,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class ForgotPasswordRequest : public serde::Serializer<ForgotPasswordRequest>
+class ForgotPasswordRequest : public core::behavior::Serializer<ForgotPasswordRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1286,7 +1222,7 @@ public:
     EmailValue email{};
 };
 
-class GetUserDetailsResponse : public serde::Serializer<GetUserDetailsResponse>
+class GetUserDetailsResponse : public core::behavior::Serializer<GetUserDetailsResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -1446,7 +1382,8 @@ public:
     OfferEngineCredentialSourceValue offer_engine_credential_source{};
 };
 
-class GetUserInternalDetailsResponse : public serde::Serializer<GetUserInternalDetailsResponse>
+class GetUserInternalDetailsResponse :
+    public core::behavior::Serializer<GetUserInternalDetailsResponse>
 {
 public:
     void set_user_id(std::string value)
@@ -1495,7 +1432,7 @@ public:
     bool is_active{};
 };
 
-class GetUserRoleDetailsRequest : public serde::Serializer<GetUserRoleDetailsRequest>
+class GetUserRoleDetailsRequest : public core::behavior::Serializer<GetUserRoleDetailsRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1511,7 +1448,7 @@ public:
     EmailValue email{};
 };
 
-class GetUserRoleDetailsResponseV2 : public serde::Serializer<GetUserRoleDetailsResponseV2>
+class GetUserRoleDetailsResponseV2 : public core::behavior::Serializer<GetUserRoleDetailsResponseV2>
 {
 public:
     void set_role_id(std::string value)
@@ -1593,7 +1530,7 @@ public:
     std::string role_name{};
 };
 
-class InviteMultipleUserResponse : public serde::Serializer<InviteMultipleUserResponse>
+class InviteMultipleUserResponse : public core::behavior::Serializer<InviteMultipleUserResponse>
 {
 public:
     void set_email(EmailValue value)
@@ -1642,7 +1579,7 @@ public:
     std::optional<std::string> error{};
 };
 
-class InviteUserRequest : public serde::Serializer<InviteUserRequest>
+class InviteUserRequest : public core::behavior::Serializer<InviteUserRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1680,7 +1617,7 @@ public:
     std::string role_id{};
 };
 
-class ListMembersQueryParam : public serde::Serializer<ListMembersQueryParam>
+class ListMembersQueryParam : public core::behavior::Serializer<ListMembersQueryParam>
 {
 public:
     void set_access_level(EntityTypeValue value)
@@ -1696,7 +1633,7 @@ public:
     EntityTypeValue access_level{};
 };
 
-class ListOrgsForUserResponse : public serde::Serializer<ListOrgsForUserResponse>
+class ListOrgsForUserResponse : public core::behavior::Serializer<ListOrgsForUserResponse>
 {
 public:
     void set_org_id(OrganizationIdValue value)
@@ -1735,7 +1672,7 @@ public:
 };
 
 class ListProfilesForUserInOrgAndMerchantAccountResponse :
-    public serde::Serializer<ListProfilesForUserInOrgAndMerchantAccountResponse>
+    public core::behavior::Serializer<ListProfilesForUserInOrgAndMerchantAccountResponse>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -1762,7 +1699,7 @@ public:
     std::string profile_name{};
 };
 
-class OpenIdConnect : public serde::Serializer<OpenIdConnect>
+class OpenIdConnect : public core::behavior::Serializer<OpenIdConnect>
 {
 public:
     void set_name(OpenIdProvider value)
@@ -1822,7 +1759,7 @@ public:
     std::optional<std::string> private_key{};
 };
 
-class OpenIdConnectPublicConfig : public serde::Serializer<OpenIdConnectPublicConfig>
+class OpenIdConnectPublicConfig : public core::behavior::Serializer<OpenIdConnectPublicConfig>
 {
 public:
     void set_name(OpenIdProvider value)
@@ -1838,7 +1775,8 @@ public:
     OpenIdProvider name{};
 };
 
-class PlatformAccountCreateResponse : public serde::Serializer<PlatformAccountCreateResponse>
+class PlatformAccountCreateResponse :
+    public core::behavior::Serializer<PlatformAccountCreateResponse>
 {
 public:
     void set_org_id(OrganizationIdValue value)
@@ -1898,7 +1836,7 @@ public:
     MerchantAccountTypeValue merchant_account_type{};
 };
 
-class ReInviteUserRequest : public serde::Serializer<ReInviteUserRequest>
+class ReInviteUserRequest : public core::behavior::Serializer<ReInviteUserRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1914,7 +1852,7 @@ public:
     EmailValue email{};
 };
 
-class SendVerifyEmailRequest : public serde::Serializer<SendVerifyEmailRequest>
+class SendVerifyEmailRequest : public core::behavior::Serializer<SendVerifyEmailRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1930,7 +1868,7 @@ public:
     EmailValue email{};
 };
 
-class SignUpRequest : public serde::Serializer<SignUpRequest>
+class SignUpRequest : public core::behavior::Serializer<SignUpRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -1957,7 +1895,7 @@ public:
     std::string password{};
 };
 
-class SignUpWithMerchantIdRequest : public serde::Serializer<SignUpWithMerchantIdRequest>
+class SignUpWithMerchantIdRequest : public core::behavior::Serializer<SignUpWithMerchantIdRequest>
 {
 public:
     void set_name(std::string value)
@@ -2017,7 +1955,7 @@ public:
     std::optional<OrganizationTypeValue> organization_type{};
 };
 
-class SwitchMerchantRequest : public serde::Serializer<SwitchMerchantRequest>
+class SwitchMerchantRequest : public core::behavior::Serializer<SwitchMerchantRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2033,7 +1971,7 @@ public:
     MerchantIdValue merchant_id{};
 };
 
-class SwitchOrganizationRequest : public serde::Serializer<SwitchOrganizationRequest>
+class SwitchOrganizationRequest : public core::behavior::Serializer<SwitchOrganizationRequest>
 {
 public:
     void set_org_id(OrganizationIdValue value)
@@ -2049,7 +1987,7 @@ public:
     OrganizationIdValue org_id{};
 };
 
-class SwitchProfileRequest : public serde::Serializer<SwitchProfileRequest>
+class SwitchProfileRequest : public core::behavior::Serializer<SwitchProfileRequest>
 {
 public:
     void set_profile_id(ProfileIdValue value)
@@ -2065,7 +2003,7 @@ public:
     ProfileIdValue profile_id{};
 };
 
-class TokenResponse : public serde::Serializer<TokenResponse>
+class TokenResponse : public core::behavior::Serializer<TokenResponse>
 {
 public:
     void set_token(std::string value)
@@ -2093,7 +2031,7 @@ public:
 };
 
 class TwoFactorAuthStatusResponseWithAttempts :
-    public serde::Serializer<TwoFactorAuthStatusResponseWithAttempts>
+    public core::behavior::Serializer<TwoFactorAuthStatusResponseWithAttempts>
 {
 public:
     void set_totp(TwoFactorAuthAttempts value)
@@ -2120,7 +2058,7 @@ public:
     TwoFactorAuthAttempts recovery_code{};
 };
 
-class UserMerchantAccountResponse : public serde::Serializer<UserMerchantAccountResponse>
+class UserMerchantAccountResponse : public core::behavior::Serializer<UserMerchantAccountResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2180,7 +2118,7 @@ public:
     ApiVersionValue version{};
 };
 
-class UserMerchantCreate : public serde::Serializer<UserMerchantCreate>
+class UserMerchantCreate : public core::behavior::Serializer<UserMerchantCreate>
 {
 public:
     void set_company_name(std::string value)
@@ -2219,7 +2157,7 @@ public:
     std::optional<MerchantAccountRequestTypeValue> merchant_account_type{};
 };
 
-class UserMerchantDetailsResponse : public serde::Serializer<UserMerchantDetailsResponse>
+class UserMerchantDetailsResponse : public core::behavior::Serializer<UserMerchantDetailsResponse>
 {
 public:
     void set_product_type(std::optional<MerchantProductTypeValue> value)
@@ -2246,7 +2184,7 @@ public:
     MerchantAccountTypeValue merchant_account_type{};
 };
 
-class UserOrgMerchantCreateRequest : public serde::Serializer<UserOrgMerchantCreateRequest>
+class UserOrgMerchantCreateRequest : public core::behavior::Serializer<UserOrgMerchantCreateRequest>
 {
 public:
     void set_organization_name(std::string value)
@@ -2303,7 +2241,7 @@ enum class AuthConfig
     Password,
 };
 
-class ListUsersInternalResponse : public serde::Serializer<ListUsersInternalResponse>
+class ListUsersInternalResponse : public core::behavior::Serializer<ListUsersInternalResponse>
 {
 public:
     void set_users(std::vector<GetUserInternalDetailsResponse> value)
@@ -2319,7 +2257,7 @@ public:
     std::vector<GetUserInternalDetailsResponse> users{};
 };
 
-class TwoFactorStatus : public serde::Serializer<TwoFactorStatus>
+class TwoFactorStatus : public core::behavior::Serializer<TwoFactorStatus>
 {
 public:
     void set_status(std::optional<TwoFactorAuthStatusResponseWithAttempts> value)
@@ -2347,7 +2285,8 @@ public:
     bool is_skippable{};
 };
 
-class UserAuthenticationMethodResponse : public serde::Serializer<UserAuthenticationMethodResponse>
+class UserAuthenticationMethodResponse :
+    public core::behavior::Serializer<UserAuthenticationMethodResponse>
 {
 public:
     void set_id(std::string value)
@@ -2397,7 +2336,7 @@ public:
 };
 
 class CreateUserAuthenticationMethodRequest :
-    public serde::Serializer<CreateUserAuthenticationMethodRequest>
+    public core::behavior::Serializer<CreateUserAuthenticationMethodRequest>
 {
 public:
     void set_owner_id(std::string value)
@@ -2505,7 +2444,6 @@ namespace serde {
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::EmailValue);
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::MerchantIdValue);
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::OrganizationIdValue);
-CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::ProfileIdValue);
 CONGELADO_SCALAR_WRAPPER_CONVERTER(app::model::user::TokenPurposeValue);
 #undef CONGELADO_SCALAR_WRAPPER_CONVERTER
 } // namespace serde
@@ -2874,36 +2812,6 @@ struct serde::Serializable<app::model::user::SwitchProfileRequest>
     static constexpr std::string_view table_name()
     {
         return "switch_profile_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::user::CloneConnectorRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "source_mca_id",
-                &app::model::user::CloneConnectorRequest::get_source_mca_id,
-                &app::model::user::CloneConnectorRequest::set_source_mca_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "destination_profile_id",
-                &app::model::user::CloneConnectorRequest::get_destination_profile_id,
-                &app::model::user::CloneConnectorRequest::set_destination_profile_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_label",
-                &app::model::user::CloneConnectorRequest::get_connector_label,
-                &app::model::user::CloneConnectorRequest::set_connector_label,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "clone_connector_request";
     }
 };
 
@@ -4279,76 +4187,8 @@ export namespace app::model::user {
 // (api_models/src/user.rs:32).
 using SignInRequest = SignUpRequest;
 
-/**
- * @brief Typed mirror of `api_models::payments::RedirectionResponse` (v1),
- * returned by `core/user.rs:3004-3054` (`get_sso_auth_url`) through
- * `ApplicationResponse::JsonForRedirection`. Upstream `params` is
- * `Vec<(String, Secret<String>)>` and `headers` is `Vec<(String, String)>`;
- * this route always builds both with `Vec::with_capacity(0)`, so a string
- * vector reproduces the exact `[]` wire value for this endpoint.
- */
-class RedirectionResponse : public serde::Serializer<RedirectionResponse>
-{
-public:
-    void set_return_url(std::string value)
-    {
-        return_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_return_url() const noexcept
-    {
-        return return_url;
-    }
-
-    void set_params(std::vector<std::string> value)
-    {
-        params = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_params() const noexcept
-    {
-        return params;
-    }
-
-    void set_return_url_with_query_params(std::string value)
-    {
-        return_url_with_query_params = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_return_url_with_query_params() const noexcept
-    {
-        return return_url_with_query_params;
-    }
-
-    void set_http_method(std::string value)
-    {
-        http_method = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_http_method() const noexcept
-    {
-        return http_method;
-    }
-
-    void set_headers(std::vector<std::string> value)
-    {
-        headers = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_headers() const noexcept
-    {
-        return headers;
-    }
-
-    std::string return_url{};
-    std::vector<std::string> params{};
-    std::string return_url_with_query_params{};
-    std::string http_method{};
-    std::vector<std::string> headers{};
-};
-
 /** @brief api_models::user::sample_data::SampleDataRequest wire shape. */
-class SampleDataRequest : public serde::Serializer<SampleDataRequest>
+class SampleDataRequest : public core::behavior::Serializer<SampleDataRequest>
 {
 public:
     void set_record(std::optional<std::size_t> value)
@@ -4546,45 +4386,6 @@ struct serde::Serializable<app::model::user::SampleDataRequest>
     }
 };
 
-template<>
-struct serde::Serializable<app::model::user::RedirectionResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "return_url",
-                &app::model::user::RedirectionResponse::get_return_url,
-                &app::model::user::RedirectionResponse::set_return_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "params",
-                &app::model::user::RedirectionResponse::get_params,
-                &app::model::user::RedirectionResponse::set_params,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "return_url_with_query_params",
-                &app::model::user::RedirectionResponse::get_return_url_with_query_params,
-                &app::model::user::RedirectionResponse::set_return_url_with_query_params,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "http_method",
-                &app::model::user::RedirectionResponse::get_http_method,
-                &app::model::user::RedirectionResponse::set_http_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "headers",
-                &app::model::user::RedirectionResponse::get_headers,
-                &app::model::user::RedirectionResponse::set_headers,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "redirection_response";
-    }
-};
 
 #ifdef CONGELADO_TEST
 namespace app::model::user::tests {

@@ -1,6 +1,7 @@
 export module app_payment:card_issuer_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -91,4 +92,56 @@ struct CardIssuerDeleteInput
 struct CardIssuerListInput
 {};
 
+/** @brief Request policy for the card_issuer domain: wraps the domain auth rules. */
+class CardIssuerPolicy
+{
+public:
+    CardIssuerPolicy(
+        ::app::context::AppContext& /*context*/,
+        CardIssuerInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return m_support.authorize(req, operation, operation == "list_card_issuers");
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    CardIssuerInputSupport& m_support;
+};
+
+using CardIssuerRequestSupport = core::behavior::RequestSupport<CardIssuerPolicy>;
+using CardIssuerPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] CardIssuerPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return CardIssuerPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::card_issuer

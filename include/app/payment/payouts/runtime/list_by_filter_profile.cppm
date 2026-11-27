@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: list_by_filter_profile ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsListByFilterProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
     list_by_filter_profile(const PayoutsListByFilterProfileInput& input) const
     {
         const auto filters = m_support.list_filters_from_dto(input.request, input.query);
@@ -54,7 +54,7 @@ public:
             input.profile_id,
             m_support.time_range_from_body(input.body)
         );
-        return PayoutsListByFilterProfileResult{response};
+        return ::app::model::payouts::PayoutListResponse{response};
     }
 
 private:

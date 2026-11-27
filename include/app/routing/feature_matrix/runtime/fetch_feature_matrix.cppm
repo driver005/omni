@@ -33,8 +33,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FeatureMatrixFetchResult, core::error::AppError>
-    fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::feature_matrix::FeatureMatrixListResponse, core::error::AppError>
+        fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
     {
         // `#[instrument(skip_all)]` + Flow::FeatureMatrix (routes/feature_matrix.rs:19,25) and
         // api::server_wrap(..., &auth::NoAuth, LockAction::NotApplicable) (:30-38). The NO_AUTH
@@ -106,7 +107,7 @@ public:
         response.set_connector_count(feature_matrix_response.size());
         response.set_connectors(std::move(feature_matrix_response));
 
-        return FeatureMatrixFetchResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

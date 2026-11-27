@@ -3,9 +3,11 @@ export module app_webhook:webhooks_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :webhooks_input;
+import :webhook_policy;
 import :webhooks_result;
 import :webhooks_runtime;
 import :webhooks_handlers_common;
@@ -22,12 +24,16 @@ export namespace app::handlers::webhooks {
 class WebhooksRouteHandlers
 {
 public:
+    using RequestSupport = ::core::behavior::RequestSupport<::app::webhook::policy::WebhooksPolicy>;
+
     explicit WebhooksRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support},
-        m_common{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support},
+        m_common{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -43,6 +49,8 @@ public:
 private:
     WebhooksRuntime m_runtime; // SINGLE runtime instance
     WebhooksInputSupport m_input_support;
+    ::app::webhook::policy::WebhooksPolicy m_policy;
+    RequestSupport m_request_support;
     WebhooksHandlersV1 m_v1;
     WebhooksHandlersV2 m_v2;
     WebhooksHandlersCommon m_common;

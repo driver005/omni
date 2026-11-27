@@ -7,418 +7,76 @@ import app_model;
 
 export namespace app::handlers::disputes {
 
-class RetrieveDisputeResult : public ::app::model::disputes::DisputeResponse
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    RetrieveDisputeResult() = default;
-
-    explicit RetrieveDisputeResult(::app::model::disputes::DisputeResponse value) noexcept :
-        DisputeResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-/** @brief Top-level JSON array: handler serializes the typed item vector directly. */
-class FetchDisputesResult
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    FetchDisputesResult() = default;
-
-    explicit FetchDisputesResult(
-        std::vector<::app::model::disputes::DisputeResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const std::vector<::app::model::disputes::DisputeResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::disputes::DisputeResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::disputes::DisputeResponse> m_items{};
-};
-
-/** @brief Top-level JSON array: handler serializes the typed item vector directly. */
-class RetrieveDisputesListResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    RetrieveDisputesListResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit RetrieveDisputesListResult(
-        std::vector<::app::model::disputes::DisputeResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::model::disputes::DisputeResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::disputes::DisputeResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::disputes::DisputeResponse> m_items{};
-};
-
-/** @brief Top-level JSON array: handler serializes the typed item vector directly. */
-class RetrieveDisputesListProfileResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
 {
-public:
-    RetrieveDisputesListProfileResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit RetrieveDisputesListProfileResult(
-        std::vector<::app::model::disputes::DisputeResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
+// Wire field list of the former DeleteDisputeEvidenceResult (single "status" key).
+inline constexpr std::array<std::string_view, 1> kDeleteDisputeEvidenceWireFields{"status"};
 
-    [[nodiscard]] const std::vector<::app::model::disputes::DisputeResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::disputes::DisputeResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::disputes::DisputeResponse> m_items{};
-};
-
-class RetrieveDisputesListForPlatformResult :
-    public ::app::model::disputes::PlatformDisputeListResponse
+[[nodiscard]] inline serde::Value make_status_wire(std::string status)
 {
-public:
-    RetrieveDisputesListForPlatformResult() = default;
-
-    explicit RetrieveDisputesListForPlatformResult(
-        ::app::model::disputes::PlatformDisputeListResponse value
-    ) noexcept :
-        PlatformDisputeListResponse{std::move(value)}
-    {
-    }
-};
-
-class GetDisputesFiltersResult : public ::app::model::disputes::DisputeListFilters
-{
-public:
-    GetDisputesFiltersResult() = default;
-
-    explicit GetDisputesFiltersResult(::app::model::disputes::DisputeListFilters value) noexcept :
-        DisputeListFilters{std::move(value)}
-    {
-    }
-};
-
-class GetDisputesFiltersProfileResult : public ::app::model::disputes::DisputeListFilters
-{
-public:
-    GetDisputesFiltersProfileResult() = default;
-
-    explicit GetDisputesFiltersProfileResult(
-        ::app::model::disputes::DisputeListFilters value
-    ) noexcept :
-        DisputeListFilters{std::move(value)}
-    {
-    }
-};
-
-class GetPlatformDisputesFiltersResult : public ::app::model::disputes::PlatformDisputeListFilters
-{
-public:
-    GetPlatformDisputesFiltersResult() = default;
-
-    explicit GetPlatformDisputesFiltersResult(
-        ::app::model::disputes::PlatformDisputeListFilters value
-    ) noexcept :
-        PlatformDisputeListFilters{std::move(value)}
-    {
-    }
-};
-
-class AcceptDisputeResult : public ::app::model::disputes::DisputeResponse
-{
-public:
-    AcceptDisputeResult() = default;
-
-    explicit AcceptDisputeResult(::app::model::disputes::DisputeResponse value) noexcept :
-        DisputeResponse{std::move(value)}
-    {
-    }
-};
-
-class SubmitDisputeEvidenceResult : public ::app::model::disputes::DisputeResponse
-{
-public:
-    SubmitDisputeEvidenceResult() = default;
-
-    explicit SubmitDisputeEvidenceResult(::app::model::disputes::DisputeResponse value) noexcept :
-        DisputeResponse{std::move(value)}
-    {
-    }
-};
-
-class AttachDisputeEvidenceResult : public ::app::dto::files::CreateFileResponse
-{
-public:
-    AttachDisputeEvidenceResult() = default;
-
-    explicit AttachDisputeEvidenceResult(::app::dto::files::CreateFileResponse value) noexcept :
-        CreateFileResponse{std::move(value)}
-    {
-    }
-};
-
-/** @brief Top-level JSON array: handler serializes the typed item vector directly. */
-class RetrieveDisputeEvidenceResult
-{
-public:
-    RetrieveDisputeEvidenceResult() = default;
-
-    explicit RetrieveDisputeEvidenceResult(
-        std::vector<::app::model::disputes::DisputeEvidenceBlock> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::model::disputes::DisputeEvidenceBlock>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::disputes::DisputeEvidenceBlock> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::disputes::DisputeEvidenceBlock> m_items{};
-};
-
-class DeleteDisputeEvidenceResult
-{
-public:
-    DeleteDisputeEvidenceResult() = default;
-
-    explicit DeleteDisputeEvidenceResult(std::string status) noexcept :
-        m_status{std::move(status)}
-    {
-    }
-
-    void set_status(std::string value)
-    {
-        m_status = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_status() const noexcept
-    {
-        return m_status;
-    }
-
-private:
-    std::string m_status{};
-};
-
-class GetDisputesAggregateResult : public ::app::model::disputes::DisputesAggregateResponse
-{
-public:
-    GetDisputesAggregateResult() = default;
-
-    explicit GetDisputesAggregateResult(
-        ::app::model::disputes::DisputesAggregateResponse value
-    ) noexcept :
-        DisputesAggregateResponse{std::move(value)}
-    {
-    }
-};
-
-class GetDisputesAggregateProfileResult : public ::app::model::disputes::DisputesAggregateResponse
-{
-public:
-    GetDisputesAggregateProfileResult() = default;
-
-    explicit GetDisputesAggregateProfileResult(
-        ::app::model::disputes::DisputesAggregateResponse value
-    ) noexcept :
-        DisputesAggregateResponse{std::move(value)}
-    {
-    }
-};
+    serde::Value::Object document{};
+    document["status"] = serde::Value{std::move(status)};
+    return serde::Value{std::move(document)};
+}
 
 } // namespace app::handlers::disputes
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::RetrieveDisputeResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputeResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "retrieve_dispute_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::RetrieveDisputesListForPlatformResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::PlatformDisputeListResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "retrieve_disputes_list_for_platform_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::GetDisputesFiltersResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputeListFilters>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_disputes_filters_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::GetDisputesFiltersProfileResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputeListFilters>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_disputes_filters_profile_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::GetPlatformDisputesFiltersResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::PlatformDisputeListFilters>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_platform_disputes_filters_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::AcceptDisputeResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputeResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "accept_dispute_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::SubmitDisputeEvidenceResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputeResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "submit_dispute_evidence_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::AttachDisputeEvidenceResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::files::CreateFileResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "attach_dispute_evidence_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::DeleteDisputeEvidenceResult>
-{
-    static constexpr auto fields()
-    {
-        using T = ::app::handlers::disputes::DeleteDisputeEvidenceResult;
-        return std::tuple{
-            serde::FieldDesc<"status", &T::get_status, &T::set_status, serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "status_ok_wire";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::GetDisputesAggregateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputesAggregateResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_disputes_aggregate_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::disputes::GetDisputesAggregateProfileResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::disputes::DisputesAggregateResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_disputes_aggregate_profile_result";
-    }
-};

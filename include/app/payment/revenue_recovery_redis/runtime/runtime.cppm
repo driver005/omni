@@ -20,7 +20,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetRevenueRecoveryRedisDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse,
+        core::error::AppError>
     get_revenue_recovery_redis_data(const GetRevenueRecoveryRedisDataInput& input) const
     {
         return m_get_revenue_recovery_redis_data.get_revenue_recovery_redis_data(input);

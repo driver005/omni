@@ -2,6 +2,7 @@ export module app_user:hierarchical_resources_input;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_router;
 import core_serde;
 import utils_openapi;
@@ -255,5 +256,62 @@ struct LinkHierarchicalResourceInput
     std::string merchant_id{};
     std::string organization_id{};
 };
+
+/**
+ * @brief Domain authorization policy for HierarchicalResources.
+ *
+ * The route operation string selects the registered auth rule; the scope is
+ * resolved from the request once, for every handler in the domain.
+ */
+class HierarchicalResourcesPolicy
+{
+public:
+    explicit HierarchicalResourcesPolicy(HierarchicalResourcesInputSupport& input) noexcept :
+        m_input{input}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_input.authorize_request(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ::core::behavior::Scope out{};
+        out.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+        if (out.merchant_id.empty()) {
+            out.merchant_id = auth.merchant_id();
+        }
+        out.org_id = std::string{::app::http::org_id_from_header{}(req)};
+        if (out.org_id.empty()) {
+            out.org_id = auth.org_id();
+        }
+        out.profile_id = auth.profile_id();
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value()) {
+            out.connected_merchant_id = std::string{*connected};
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    HierarchicalResourcesInputSupport& m_input;
+};
+
+using HierarchicalResourcesRequestSupport =
+    ::core::behavior::RequestSupport<HierarchicalResourcesPolicy>;
 
 } // namespace app::handlers::hierarchical_resources

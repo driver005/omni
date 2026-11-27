@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,24 +20,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CustomersDeleteResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_customer(const CustomersDeleteRouteInput& input) const
     {
         auto value = delete_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersDeleteResult{std::move(*value)};
+        return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<CustomersDeleteV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_customer_v2(const CustomersDeleteRouteInput& input) const
     {
         auto value = delete_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersDeleteV2Result{std::move(*value)};
+        return std::move(*value);
     }
 
 private:

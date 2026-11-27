@@ -37,7 +37,7 @@ public:
     }
 
     /** @brief core::api_keys::update_api_key (278-369). */
-    [[nodiscard]] std::expected<ApiKeyUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
     update(const ApiKeyUpdateInput& input) const
     {
         const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
@@ -80,7 +80,7 @@ public:
 
         m_context.metrics().record_flow("ApiKeyUpdate");
         m_context.metrics().counter("API_KEY_UPDATED").increment();
-        return ApiKeyUpdateResult{m_support.to_retrieve_response(record)};
+        return m_support.to_retrieve_response(record);
     }
 
 private:

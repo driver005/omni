@@ -1,6 +1,7 @@
 export module app_payment:three_ds_decision_rule_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -59,4 +60,62 @@ struct ExecuteDecisionRuleInput
     std::string processor_merchant_id{};
 };
 
+/** @brief Request policy for the three_ds_decision_rule domain: wraps the domain auth rules. */
+class ThreeDsDecisionRulePolicy
+{
+public:
+    ThreeDsDecisionRulePolicy(
+        ::app::context::AppContext& /*context*/,
+        ThreeDsDecisionRuleInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        m_last = m_support.authorize_execute_decision_rule(req);
+        return m_last->error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] const ExecuteDecisionRuleAuthorizedInput& last() const noexcept
+    {
+        return *m_last;
+    }
+
+private:
+    ThreeDsDecisionRuleInputSupport& m_support;
+    mutable std::optional<ExecuteDecisionRuleAuthorizedInput> m_last{};
+};
+
+using ThreeDsDecisionRuleRequestSupport = core::behavior::RequestSupport<ThreeDsDecisionRulePolicy>;
+using ThreeDsDecisionRulePolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] ThreeDsDecisionRulePolicySpec spec_for(std::string_view operation) noexcept
+{
+    return ThreeDsDecisionRulePolicySpec{.permission = operation};
+}
 } // namespace app::handlers::three_ds_decision_rule

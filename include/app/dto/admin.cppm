@@ -4,9 +4,11 @@ module;
 export module app_dto:admin;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -32,7 +34,7 @@ enum class AdditionalMerchantData
     OpenBankingRecipientData,
 };
 
-class AddressDetailsValue : public serde::Serializer<AddressDetailsValue>
+class AddressDetailsValue : public core::behavior::Serializer<AddressDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -48,7 +50,8 @@ public:
     std::string value{};
 };
 
-class AlwaysEnableOvercaptureBoolValue : public serde::Serializer<AlwaysEnableOvercaptureBoolValue>
+class AlwaysEnableOvercaptureBoolValue :
+    public core::behavior::Serializer<AlwaysEnableOvercaptureBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -65,7 +68,7 @@ public:
 };
 
 class AlwaysRequestExtendedAuthorizationValue :
-    public serde::Serializer<AlwaysRequestExtendedAuthorizationValue>
+    public core::behavior::Serializer<AlwaysRequestExtendedAuthorizationValue>
 {
 public:
     void set_value(std::string v)
@@ -82,7 +85,7 @@ public:
 };
 
 class AuthenticationConnectorAccountMapValue :
-    public serde::Serializer<AuthenticationConnectorAccountMapValue>
+    public core::behavior::Serializer<AuthenticationConnectorAccountMapValue>
 {
 public:
     void set_value(std::string v)
@@ -98,7 +101,8 @@ public:
     std::string value{};
 };
 
-class AuthenticationConnectorsValue : public serde::Serializer<AuthenticationConnectorsValue>
+class AuthenticationConnectorsValue :
+    public core::behavior::Serializer<AuthenticationConnectorsValue>
 {
 public:
     void set_value(std::string v)
@@ -114,7 +118,7 @@ public:
     std::string value{};
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+class CardNetworkValue : public core::behavior::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string v)
@@ -130,7 +134,7 @@ public:
     std::string value{};
 };
 
-class CardSegmentTypeValue : public serde::Serializer<CardSegmentTypeValue>
+class CardSegmentTypeValue : public core::behavior::Serializer<CardSegmentTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -152,7 +156,7 @@ enum class CardTestingGuardStatus
     Disabled,
 };
 
-class CardTypeValue : public serde::Serializer<CardTypeValue>
+class CardTypeValue : public core::behavior::Serializer<CardTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -168,7 +172,7 @@ public:
     std::string value{};
 };
 
-class ConnectorAgnosticMitChoice : public serde::Serializer<ConnectorAgnosticMitChoice>
+class ConnectorAgnosticMitChoice : public core::behavior::Serializer<ConnectorAgnosticMitChoice>
 {
 public:
     void set_enabled(bool value)
@@ -196,7 +200,7 @@ enum class ConnectorAuthType
     NoKey,
 };
 
-class ConnectorStatusValue : public serde::Serializer<ConnectorStatusValue>
+class ConnectorStatusValue : public core::behavior::Serializer<ConnectorStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -212,7 +216,7 @@ public:
     std::string value{};
 };
 
-class ConnectorTypeValue : public serde::Serializer<ConnectorTypeValue>
+class ConnectorTypeValue : public core::behavior::Serializer<ConnectorTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -228,7 +232,7 @@ public:
     std::string value{};
 };
 
-class ConnectorValue : public serde::Serializer<ConnectorValue>
+class ConnectorValue : public core::behavior::Serializer<ConnectorValue>
 {
 public:
     void set_value(std::string v)
@@ -244,7 +248,7 @@ public:
     std::string value{};
 };
 
-class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
+class CountryAlpha2Value : public core::behavior::Serializer<CountryAlpha2Value>
 {
 public:
     void set_value(std::string v)
@@ -261,7 +265,7 @@ public:
 };
 
 class DisputePollingIntervalInHoursValue :
-    public serde::Serializer<DisputePollingIntervalInHoursValue>
+    public core::behavior::Serializer<DisputePollingIntervalInHoursValue>
 {
 public:
     void set_value(std::string v)
@@ -277,7 +281,7 @@ public:
     std::string value{};
 };
 
-class DisputeStatusValue : public serde::Serializer<DisputeStatusValue>
+class DisputeStatusValue : public core::behavior::Serializer<DisputeStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -293,7 +297,7 @@ public:
     std::string value{};
 };
 
-class ElementPositionValue : public serde::Serializer<ElementPositionValue>
+class ElementPositionValue : public core::behavior::Serializer<ElementPositionValue>
 {
 public:
     void set_value(std::string v)
@@ -309,7 +313,7 @@ public:
     std::string value{};
 };
 
-class ElementSizeValue : public serde::Serializer<ElementSizeValue>
+class ElementSizeValue : public core::behavior::Serializer<ElementSizeValue>
 {
 public:
     void set_value(std::string v)
@@ -325,7 +329,7 @@ public:
     std::string value{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -341,7 +345,7 @@ public:
     std::string value{};
 };
 
-class EnabledPaymentMethodValue : public serde::Serializer<EnabledPaymentMethodValue>
+class EnabledPaymentMethodValue : public core::behavior::Serializer<EnabledPaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -357,7 +361,7 @@ public:
     std::string value{};
 };
 
-class ExtendedCardInfoChoice : public serde::Serializer<ExtendedCardInfoChoice>
+class ExtendedCardInfoChoice : public core::behavior::Serializer<ExtendedCardInfoChoice>
 {
 public:
     void set_enabled(bool value)
@@ -373,7 +377,7 @@ public:
     bool enabled{};
 };
 
-class ExternalVaultEnabledValue : public serde::Serializer<ExternalVaultEnabledValue>
+class ExternalVaultEnabledValue : public core::behavior::Serializer<ExternalVaultEnabledValue>
 {
 public:
     void set_value(std::string v)
@@ -389,7 +393,7 @@ public:
     std::string value{};
 };
 
-class FrmActionValue : public serde::Serializer<FrmActionValue>
+class FrmActionValue : public core::behavior::Serializer<FrmActionValue>
 {
 public:
     void set_value(std::string v)
@@ -405,7 +409,7 @@ public:
     std::string value{};
 };
 
-class FrmPreferredFlowTypesValue : public serde::Serializer<FrmPreferredFlowTypesValue>
+class FrmPreferredFlowTypesValue : public core::behavior::Serializer<FrmPreferredFlowTypesValue>
 {
 public:
     void set_value(std::string v)
@@ -421,7 +425,7 @@ public:
     std::string value{};
 };
 
-class FundingSourceValue : public serde::Serializer<FundingSourceValue>
+class FundingSourceValue : public core::behavior::Serializer<FundingSourceValue>
 {
 public:
     void set_value(std::string v)
@@ -437,7 +441,7 @@ public:
     std::string value{};
 };
 
-class GenericLinkUiConfigValue : public serde::Serializer<GenericLinkUiConfigValue>
+class GenericLinkUiConfigValue : public core::behavior::Serializer<GenericLinkUiConfigValue>
 {
 public:
     void set_value(std::string v)
@@ -453,7 +457,7 @@ public:
     std::string value{};
 };
 
-class IntentStatusValue : public serde::Serializer<IntentStatusValue>
+class IntentStatusValue : public core::behavior::Serializer<IntentStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -470,7 +474,7 @@ public:
 };
 
 class InternalNetworkTokenizationCredentials :
-    public serde::Serializer<InternalNetworkTokenizationCredentials>
+    public core::behavior::Serializer<InternalNetworkTokenizationCredentials>
 {
 public:
     void set_token_service_api_key(std::string value)
@@ -519,7 +523,7 @@ public:
     std::string key_id{};
 };
 
-class InvoiceStatusValue : public serde::Serializer<InvoiceStatusValue>
+class InvoiceStatusValue : public core::behavior::Serializer<InvoiceStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -535,7 +539,7 @@ public:
     std::string value{};
 };
 
-class MandateStatusValue : public serde::Serializer<MandateStatusValue>
+class MandateStatusValue : public core::behavior::Serializer<MandateStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -551,7 +555,7 @@ public:
     std::string value{};
 };
 
-class MaskedHeaders : public serde::Serializer<MaskedHeaders>
+class MaskedHeaders : public core::behavior::Serializer<MaskedHeaders>
 {
 public:
     void set_value(std::unordered_map<std::string, std::string> v)
@@ -579,7 +583,7 @@ enum class MerchantAccountData
     Plusgiro,
 };
 
-class MerchantAccountTypeValue : public serde::Serializer<MerchantAccountTypeValue>
+class MerchantAccountTypeValue : public core::behavior::Serializer<MerchantAccountTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -595,7 +599,7 @@ public:
     std::string value{};
 };
 
-class MerchantCategoryCodeValue : public serde::Serializer<MerchantCategoryCodeValue>
+class MerchantCategoryCodeValue : public core::behavior::Serializer<MerchantCategoryCodeValue>
 {
 public:
     void set_value(std::string v)
@@ -611,7 +615,8 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantConnectorAccountIdValue :
+    public core::behavior::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -627,7 +632,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorDetailsWrap : public serde::Serializer<MerchantConnectorDetailsWrap>
+class MerchantConnectorDetailsWrap : public core::behavior::Serializer<MerchantConnectorDetailsWrap>
 {
 public:
     void set_creds_identifier(std::string value)
@@ -654,7 +659,8 @@ public:
     std::optional<std::string> encoded_data{};
 };
 
-class MerchantConnectorWebhookDetails : public serde::Serializer<MerchantConnectorWebhookDetails>
+class MerchantConnectorWebhookDetails :
+    public core::behavior::Serializer<MerchantConnectorWebhookDetails>
 {
 public:
     void set_merchant_secret(std::string value)
@@ -681,7 +687,7 @@ public:
     std::optional<std::string> additional_secret{};
 };
 
-class MerchantCountryCodeValue : public serde::Serializer<MerchantCountryCodeValue>
+class MerchantCountryCodeValue : public core::behavior::Serializer<MerchantCountryCodeValue>
 {
 public:
     void set_value(std::string v)
@@ -697,7 +703,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -713,7 +719,7 @@ public:
     std::string value{};
 };
 
-class MerchantKeyTransferRequest : public serde::Serializer<MerchantKeyTransferRequest>
+class MerchantKeyTransferRequest : public core::behavior::Serializer<MerchantKeyTransferRequest>
 {
 public:
     void set_from(std::uint32_t value)
@@ -740,7 +746,7 @@ public:
     std::uint32_t limit{};
 };
 
-class MerchantProductTypeValue : public serde::Serializer<MerchantProductTypeValue>
+class MerchantProductTypeValue : public core::behavior::Serializer<MerchantProductTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -768,7 +774,7 @@ enum class NetworkTokeizationProviderCredentials
     InternalNetworkTokenService,
 };
 
-class OfferEngineMerchantConfig : public serde::Serializer<OfferEngineMerchantConfig>
+class OfferEngineMerchantConfig : public core::behavior::Serializer<OfferEngineMerchantConfig>
 {
 public:
     void set_api_key(std::string value)
@@ -795,7 +801,7 @@ public:
     std::string merchant_id{};
 };
 
-class OptionalEncryptableNameValue : public serde::Serializer<OptionalEncryptableNameValue>
+class OptionalEncryptableNameValue : public core::behavior::Serializer<OptionalEncryptableNameValue>
 {
 public:
     void set_value(std::string v)
@@ -811,7 +817,7 @@ public:
     std::string value{};
 };
 
-class OrderFulfillmentTime : public serde::Serializer<OrderFulfillmentTime>
+class OrderFulfillmentTime : public core::behavior::Serializer<OrderFulfillmentTime>
 {
 public:
     void set_value(std::int64_t v)
@@ -827,7 +833,7 @@ public:
     std::int64_t value{};
 };
 
-class OrganizationIdValue : public serde::Serializer<OrganizationIdValue>
+class OrganizationIdValue : public core::behavior::Serializer<OrganizationIdValue>
 {
 public:
     void set_value(std::string v)
@@ -843,7 +849,8 @@ public:
     std::string value{};
 };
 
-class PaymentLinkDetailsLayoutValue : public serde::Serializer<PaymentLinkDetailsLayoutValue>
+class PaymentLinkDetailsLayoutValue :
+    public core::behavior::Serializer<PaymentLinkDetailsLayoutValue>
 {
 public:
     void set_value(std::string v)
@@ -859,7 +866,7 @@ public:
     std::string value{};
 };
 
-class PaymentLinkSdkLabelTypeValue : public serde::Serializer<PaymentLinkSdkLabelTypeValue>
+class PaymentLinkSdkLabelTypeValue : public core::behavior::Serializer<PaymentLinkSdkLabelTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -875,7 +882,7 @@ public:
     std::string value{};
 };
 
-class PaymentLinkShowSdkTermsValue : public serde::Serializer<PaymentLinkShowSdkTermsValue>
+class PaymentLinkShowSdkTermsValue : public core::behavior::Serializer<PaymentLinkShowSdkTermsValue>
 {
 public:
     void set_value(std::string v)
@@ -891,7 +898,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -907,7 +914,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -923,7 +930,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodsConfigValue : public serde::Serializer<PaymentMethodsConfigValue>
+class PaymentMethodsConfigValue : public core::behavior::Serializer<PaymentMethodsConfigValue>
 {
 public:
     void set_value(std::string v)
@@ -939,7 +946,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodsEnabledValue : public serde::Serializer<PaymentMethodsEnabledValue>
+class PaymentMethodsEnabledValue : public core::behavior::Serializer<PaymentMethodsEnabledValue>
 {
 public:
     void set_value(std::string v)
@@ -955,7 +962,7 @@ public:
     std::string value{};
 };
 
-class PayoutStatusValue : public serde::Serializer<PayoutStatusValue>
+class PayoutStatusValue : public core::behavior::Serializer<PayoutStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -972,7 +979,7 @@ public:
 };
 
 class ProfileAcquirerConfigsResponseValue :
-    public serde::Serializer<ProfileAcquirerConfigsResponseValue>
+    public core::behavior::Serializer<ProfileAcquirerConfigsResponseValue>
 {
 public:
     void set_value(std::string v)
@@ -988,7 +995,7 @@ public:
     std::string value{};
 };
 
-class ProfileAcquirerResponseValue : public serde::Serializer<ProfileAcquirerResponseValue>
+class ProfileAcquirerResponseValue : public core::behavior::Serializer<ProfileAcquirerResponseValue>
 {
 public:
     void set_value(std::string v)
@@ -1004,7 +1011,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -1020,7 +1027,7 @@ public:
     std::string value{};
 };
 
-class ReconStatusValue : public serde::Serializer<ReconStatusValue>
+class ReconStatusValue : public core::behavior::Serializer<ReconStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -1036,7 +1043,7 @@ public:
     std::string value{};
 };
 
-class RefundStatusValue : public serde::Serializer<RefundStatusValue>
+class RefundStatusValue : public core::behavior::Serializer<RefundStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -1052,7 +1059,8 @@ public:
     std::string value{};
 };
 
-class RequestPaymentMethodTypesValue : public serde::Serializer<RequestPaymentMethodTypesValue>
+class RequestPaymentMethodTypesValue :
+    public core::behavior::Serializer<RequestPaymentMethodTypesValue>
 {
 public:
     void set_value(std::string v)
@@ -1068,7 +1076,7 @@ public:
     std::string value{};
 };
 
-class RevenueRecoveryConfig : public serde::Serializer<RevenueRecoveryConfig>
+class RevenueRecoveryConfig : public core::behavior::Serializer<RevenueRecoveryConfig>
 {
 public:
     void set_max_retry_count(std::uint16_t value)
@@ -1139,7 +1147,7 @@ public:
     std::uint16_t max_hard_decline_retries{};
 };
 
-class RevenueRecoveryMetadata : public serde::Serializer<RevenueRecoveryMetadata>
+class RevenueRecoveryMetadata : public core::behavior::Serializer<RevenueRecoveryMetadata>
 {
 public:
     void set_max_retry_count(std::uint16_t value)
@@ -1222,7 +1230,7 @@ public:
     std::unordered_map<std::string, std::string> billing_account_reference{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string v)
@@ -1238,7 +1246,7 @@ public:
     std::string value{};
 };
 
-class ToggleAllKVRequest : public serde::Serializer<ToggleAllKVRequest>
+class ToggleAllKVRequest : public core::behavior::Serializer<ToggleAllKVRequest>
 {
 public:
     void set_kv_enabled(bool value)
@@ -1254,7 +1262,7 @@ public:
     bool kv_enabled{};
 };
 
-class ToggleAllKVResponse : public serde::Serializer<ToggleAllKVResponse>
+class ToggleAllKVResponse : public core::behavior::Serializer<ToggleAllKVResponse>
 {
 public:
     void set_total_updated(std::size_t value)
@@ -1282,7 +1290,7 @@ public:
 };
 
 class TransactionDetailsUiConfiguration :
-    public serde::Serializer<TransactionDetailsUiConfiguration>
+    public core::behavior::Serializer<TransactionDetailsUiConfiguration>
 {
 public:
     void set_position(std::optional<std::int8_t> value)
@@ -1320,7 +1328,7 @@ public:
     std::optional<bool> is_value_bold{};
 };
 
-class TransferKeyResponse : public serde::Serializer<TransferKeyResponse>
+class TransferKeyResponse : public core::behavior::Serializer<TransferKeyResponse>
 {
 public:
     void set_total_transferred(std::size_t value)
@@ -1336,7 +1344,7 @@ public:
     std::size_t total_transferred{};
 };
 
-class TtlForExtendedCardInfo : public serde::Serializer<TtlForExtendedCardInfo>
+class TtlForExtendedCardInfo : public core::behavior::Serializer<TtlForExtendedCardInfo>
 {
 public:
     void set_value(std::uint16_t v)
@@ -1352,7 +1360,7 @@ public:
     std::uint16_t value{};
 };
 
-class UIWidgetFormLayoutValue : public serde::Serializer<UIWidgetFormLayoutValue>
+class UIWidgetFormLayoutValue : public core::behavior::Serializer<UIWidgetFormLayoutValue>
 {
 public:
     void set_value(std::string v)
@@ -1368,7 +1376,7 @@ public:
     std::string value{};
 };
 
-class UrlValue : public serde::Serializer<UrlValue>
+class UrlValue : public core::behavior::Serializer<UrlValue>
 {
 public:
     void set_value(std::string v)
@@ -1384,7 +1392,7 @@ public:
     std::string value{};
 };
 
-class VaultSdkValue : public serde::Serializer<VaultSdkValue>
+class VaultSdkValue : public core::behavior::Serializer<VaultSdkValue>
 {
 public:
     void set_value(std::string v)
@@ -1400,7 +1408,7 @@ public:
     std::string value{};
 };
 
-class VaultTokenTypeValue : public serde::Serializer<VaultTokenTypeValue>
+class VaultTokenTypeValue : public core::behavior::Serializer<VaultTokenTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -1416,7 +1424,8 @@ public:
     std::string value{};
 };
 
-class AuthenticationConnectorDetails : public serde::Serializer<AuthenticationConnectorDetails>
+class AuthenticationConnectorDetails :
+    public core::behavior::Serializer<AuthenticationConnectorDetails>
 {
 public:
     void set_authentication_connectors(std::vector<AuthenticationConnectorsValue> value)
@@ -1455,7 +1464,7 @@ public:
     std::optional<std::string> three_ds_requestor_app_url{};
 };
 
-class BusinessGenericLinkConfig : public serde::Serializer<BusinessGenericLinkConfig>
+class BusinessGenericLinkConfig : public core::behavior::Serializer<BusinessGenericLinkConfig>
 {
 public:
     void set_domain_name(std::optional<std::string> value)
@@ -1493,7 +1502,7 @@ public:
     GenericLinkUiConfigValue ui_config{};
 };
 
-class CardBlockingConfig : public serde::Serializer<CardBlockingConfig>
+class CardBlockingConfig : public core::behavior::Serializer<CardBlockingConfig>
 {
 public:
     void set_issuing_country(std::optional<std::vector<CountryAlpha2Value>> value)
@@ -1623,7 +1632,7 @@ public:
     std::optional<bool> gambling_blocked{};
 };
 
-class CardTestingGuardConfig : public serde::Serializer<CardTestingGuardConfig>
+class CardTestingGuardConfig : public core::behavior::Serializer<CardTestingGuardConfig>
 {
 public:
     void set_card_ip_blocking_status(CardTestingGuardStatus value)
@@ -1729,7 +1738,7 @@ public:
     std::optional<std::int32_t> guest_ip_blocking_threshold{};
 };
 
-class ConnectorWalletDetails : public serde::Serializer<ConnectorWalletDetails>
+class ConnectorWalletDetails : public core::behavior::Serializer<ConnectorWalletDetails>
 {
 public:
     void set_apple_pay_combined(std::optional<SecretSerdeValueValue> value)
@@ -1801,7 +1810,7 @@ public:
     std::optional<SecretSerdeValueValue> google_pay{};
 };
 
-class ExtendedCardInfoConfig : public serde::Serializer<ExtendedCardInfoConfig>
+class ExtendedCardInfoConfig : public core::behavior::Serializer<ExtendedCardInfoConfig>
 {
 public:
     void set_public_key(std::string value)
@@ -1828,7 +1837,7 @@ public:
     TtlForExtendedCardInfo ttl_in_secs{};
 };
 
-class FrmPaymentMethodType : public serde::Serializer<FrmPaymentMethodType>
+class FrmPaymentMethodType : public core::behavior::Serializer<FrmPaymentMethodType>
 {
 public:
     void set_payment_method_type(std::optional<PaymentMethodTypeValue> value)
@@ -1879,7 +1888,7 @@ public:
     FrmActionValue action{};
 };
 
-class MCACGraphData : public serde::Serializer<MCACGraphData>
+class MCACGraphData : public core::behavior::Serializer<MCACGraphData>
 {
 public:
     void set_connector_name(ConnectorValue value)
@@ -1907,7 +1916,8 @@ public:
     std::optional<std::vector<PaymentMethodsEnabledValue>> payment_methods_enabled{};
 };
 
-class MerchantAccountDeleteResponse : public serde::Serializer<MerchantAccountDeleteResponse>
+class MerchantAccountDeleteResponse :
+    public core::behavior::Serializer<MerchantAccountDeleteResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -1934,7 +1944,7 @@ public:
     bool deleted{};
 };
 
-class MerchantAccountListRequest : public serde::Serializer<MerchantAccountListRequest>
+class MerchantAccountListRequest : public core::behavior::Serializer<MerchantAccountListRequest>
 {
 public:
     void set_organization_id(OrganizationIdValue value)
@@ -1950,7 +1960,7 @@ public:
     OrganizationIdValue organization_id{};
 };
 
-class MerchantAccountMetadata : public serde::Serializer<MerchantAccountMetadata>
+class MerchantAccountMetadata : public core::behavior::Serializer<MerchantAccountMetadata>
 {
 public:
     void set_compatible_connector(std::optional<ConnectorValue> value)
@@ -1978,7 +1988,7 @@ public:
 };
 
 class MerchantConnectorAccountFeatureMetadata :
-    public serde::Serializer<MerchantConnectorAccountFeatureMetadata>
+    public core::behavior::Serializer<MerchantConnectorAccountFeatureMetadata>
 {
 public:
     void set_revenue_recovery(std::optional<RevenueRecoveryMetadata> value)
@@ -1995,7 +2005,8 @@ public:
     std::optional<RevenueRecoveryMetadata> revenue_recovery{};
 };
 
-class MerchantConnectorDeleteResponse : public serde::Serializer<MerchantConnectorDeleteResponse>
+class MerchantConnectorDeleteResponse :
+    public core::behavior::Serializer<MerchantConnectorDeleteResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2033,7 +2044,7 @@ public:
     bool deleted{};
 };
 
-class MerchantConnectorDetails : public serde::Serializer<MerchantConnectorDetails>
+class MerchantConnectorDetails : public core::behavior::Serializer<MerchantConnectorDetails>
 {
 public:
     void set_connector_account_details(SecretSerdeValueValue value)
@@ -2060,7 +2071,7 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class MerchantConnectorId : public serde::Serializer<MerchantConnectorId>
+class MerchantConnectorId : public core::behavior::Serializer<MerchantConnectorId>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2087,7 +2098,7 @@ public:
     MerchantConnectorAccountIdValue merchant_connector_id{};
 };
 
-class MerchantConnectorInfo : public serde::Serializer<MerchantConnectorInfo>
+class MerchantConnectorInfo : public core::behavior::Serializer<MerchantConnectorInfo>
 {
 public:
     void set_connector_label(std::string value)
@@ -2125,7 +2136,7 @@ public:
     ConnectorTypeValue connector_type{};
 };
 
-class MerchantDetails : public serde::Serializer<MerchantDetails>
+class MerchantDetails : public core::behavior::Serializer<MerchantDetails>
 {
 public:
     void set_primary_contact_person(std::optional<std::string> value)
@@ -2253,7 +2264,7 @@ public:
     std::optional<std::string> merchant_vat_registration_id{};
 };
 
-class MerchantId : public serde::Serializer<MerchantId>
+class MerchantId : public core::behavior::Serializer<MerchantId>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2269,7 +2280,8 @@ public:
     MerchantIdValue merchant_id{};
 };
 
-class PaymentLinkBackgroundImageConfig : public serde::Serializer<PaymentLinkBackgroundImageConfig>
+class PaymentLinkBackgroundImageConfig :
+    public core::behavior::Serializer<PaymentLinkBackgroundImageConfig>
 {
 public:
     void set_url(UrlValue value)
@@ -2307,7 +2319,8 @@ public:
     std::optional<ElementSizeValue> size{};
 };
 
-class PaymentLinkTransactionDetails : public serde::Serializer<PaymentLinkTransactionDetails>
+class PaymentLinkTransactionDetails :
+    public core::behavior::Serializer<PaymentLinkTransactionDetails>
 {
 public:
     void set_key(std::string value)
@@ -2346,7 +2359,7 @@ public:
     std::optional<TransactionDetailsUiConfiguration> ui_configuration{};
 };
 
-class PaymentMethodsEnabled : public serde::Serializer<PaymentMethodsEnabled>
+class PaymentMethodsEnabled : public core::behavior::Serializer<PaymentMethodsEnabled>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -2374,7 +2387,7 @@ public:
     std::optional<std::vector<RequestPaymentMethodTypesValue>> payment_method_types{};
 };
 
-class PrimaryBusinessDetails : public serde::Serializer<PrimaryBusinessDetails>
+class PrimaryBusinessDetails : public core::behavior::Serializer<PrimaryBusinessDetails>
 {
 public:
     void set_country(CountryAlpha2Value value)
@@ -2401,7 +2414,7 @@ public:
     std::string business{};
 };
 
-class SurchargeConnectorDetails : public serde::Serializer<SurchargeConnectorDetails>
+class SurchargeConnectorDetails : public core::behavior::Serializer<SurchargeConnectorDetails>
 {
 public:
     void set_surcharge_connector_id(std::optional<MerchantConnectorAccountIdValue> value)
@@ -2418,7 +2431,7 @@ public:
     std::optional<MerchantConnectorAccountIdValue> surcharge_connector_id{};
 };
 
-class ToggleKVRequest : public serde::Serializer<ToggleKVRequest>
+class ToggleKVRequest : public core::behavior::Serializer<ToggleKVRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2445,7 +2458,7 @@ public:
     bool kv_enabled{};
 };
 
-class ToggleKVResponse : public serde::Serializer<ToggleKVResponse>
+class ToggleKVResponse : public core::behavior::Serializer<ToggleKVResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -2472,7 +2485,7 @@ public:
     bool kv_enabled{};
 };
 
-class VaultTokenField : public serde::Serializer<VaultTokenField>
+class VaultTokenField : public core::behavior::Serializer<VaultTokenField>
 {
 public:
     void set_token_type(VaultTokenTypeValue value)
@@ -2488,7 +2501,7 @@ public:
     VaultTokenTypeValue token_type{};
 };
 
-class WebhookDetailsRequest : public serde::Serializer<WebhookDetailsRequest>
+class WebhookDetailsRequest : public core::behavior::Serializer<WebhookDetailsRequest>
 {
 public:
     void set_webhook_version(std::optional<std::string> value)
@@ -2642,7 +2655,7 @@ public:
     std::optional<std::vector<InvoiceStatusValue>> invoice_statuses_enabled{};
 };
 
-class WebhookDetailsResponse : public serde::Serializer<WebhookDetailsResponse>
+class WebhookDetailsResponse : public core::behavior::Serializer<WebhookDetailsResponse>
 {
 public:
     void set_webhook_version(std::optional<std::string> value)
@@ -2796,7 +2809,7 @@ public:
     std::optional<std::vector<InvoiceStatusValue>> invoice_statuses_enabled{};
 };
 
-class BusinessCollectLinkConfig : public serde::Serializer<BusinessCollectLinkConfig>
+class BusinessCollectLinkConfig : public core::behavior::Serializer<BusinessCollectLinkConfig>
 {
 public:
     void set_config(BusinessGenericLinkConfig value)
@@ -2824,7 +2837,7 @@ public:
     std::vector<EnabledPaymentMethodValue> enabled_payment_methods{};
 };
 
-class BusinessPayoutLinkConfig : public serde::Serializer<BusinessPayoutLinkConfig>
+class BusinessPayoutLinkConfig : public core::behavior::Serializer<BusinessPayoutLinkConfig>
 {
 public:
     void set_config(BusinessGenericLinkConfig value)
@@ -2862,7 +2875,8 @@ public:
     std::optional<bool> payout_test_mode{};
 };
 
-class ExternalVaultConnectorDetails : public serde::Serializer<ExternalVaultConnectorDetails>
+class ExternalVaultConnectorDetails :
+    public core::behavior::Serializer<ExternalVaultConnectorDetails>
 {
 public:
     void set_vault_connector_id(MerchantConnectorAccountIdValue value)
@@ -2901,7 +2915,7 @@ public:
     std::optional<std::vector<VaultTokenField>> vault_token_selector{};
 };
 
-class FrmPaymentMethod : public serde::Serializer<FrmPaymentMethod>
+class FrmPaymentMethod : public core::behavior::Serializer<FrmPaymentMethod>
 {
 public:
     void set_payment_method(std::optional<PaymentMethodValue> value)
@@ -2941,7 +2955,7 @@ public:
 };
 
 class MerchantAccountCreateWithoutOrgId :
-    public serde::Serializer<MerchantAccountCreateWithoutOrgId>
+    public core::behavior::Serializer<MerchantAccountCreateWithoutOrgId>
 {
 public:
     void set_merchant_name(std::string value)
@@ -2990,7 +3004,7 @@ public:
     std::optional<MerchantProductTypeValue> product_type{};
 };
 
-class PaymentLinkConfig : public serde::Serializer<PaymentLinkConfig>
+class PaymentLinkConfig : public core::behavior::Serializer<PaymentLinkConfig>
 {
 public:
     void set_theme(std::string value)
@@ -3357,7 +3371,7 @@ public:
     std::optional<std::uint32_t> redirect_delay_seconds{};
 };
 
-class PaymentLinkConfigRequest : public serde::Serializer<PaymentLinkConfigRequest>
+class PaymentLinkConfigRequest : public core::behavior::Serializer<PaymentLinkConfigRequest>
 {
 public:
     void set_theme(std::optional<std::string> value)
@@ -3701,7 +3715,7 @@ public:
     std::optional<std::uint32_t> redirect_delay_seconds{};
 };
 
-class WalletBlockingConfig : public serde::Serializer<WalletBlockingConfig>
+class WalletBlockingConfig : public core::behavior::Serializer<WalletBlockingConfig>
 {
 public:
     void set_card_types(std::optional<std::vector<CardTypeValue>> value)
@@ -3739,7 +3753,7 @@ public:
     std::optional<CardBlockingConfig> google_pay{};
 };
 
-class BusinessPaymentLinkConfig : public serde::Serializer<BusinessPaymentLinkConfig>
+class BusinessPaymentLinkConfig : public core::behavior::Serializer<BusinessPaymentLinkConfig>
 {
 public:
     void set_domain_name(std::optional<std::string> value)
@@ -3804,7 +3818,7 @@ public:
     std::optional<bool> branding_visibility{};
 };
 
-class FrmConfigs : public serde::Serializer<FrmConfigs>
+class FrmConfigs : public core::behavior::Serializer<FrmConfigs>
 {
 public:
     void set_gateway(std::optional<ConnectorValue> value)
@@ -3831,7 +3845,7 @@ public:
     std::vector<FrmPaymentMethod> payment_methods{};
 };
 
-class MerchantAccountCreate : public serde::Serializer<MerchantAccountCreate>
+class MerchantAccountCreate : public core::behavior::Serializer<MerchantAccountCreate>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -4085,7 +4099,7 @@ public:
     std::optional<NetworkTokeizationProviderCredentials> network_tokenization_credentials{};
 };
 
-class MerchantAccountResponse : public serde::Serializer<MerchantAccountResponse>
+class MerchantAccountResponse : public core::behavior::Serializer<MerchantAccountResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -4370,7 +4384,7 @@ public:
     std::optional<NetworkTokeizationProviderCredentials> network_tokenization_credentials{};
 };
 
-class MerchantAccountUpdate : public serde::Serializer<MerchantAccountUpdate>
+class MerchantAccountUpdate : public core::behavior::Serializer<MerchantAccountUpdate>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -4613,7 +4627,7 @@ public:
     std::optional<OfferEngineMerchantConfig> offer_engine_config{};
 };
 
-class PaymentMethodBlockingConfig : public serde::Serializer<PaymentMethodBlockingConfig>
+class PaymentMethodBlockingConfig : public core::behavior::Serializer<PaymentMethodBlockingConfig>
 {
 public:
     void set_card(std::optional<CardBlockingConfig> value)
@@ -4640,7 +4654,7 @@ public:
     std::optional<WalletBlockingConfig> wallet{};
 };
 
-class MerchantConnectorCreate : public serde::Serializer<MerchantConnectorCreate>
+class MerchantConnectorCreate : public core::behavior::Serializer<MerchantConnectorCreate>
 {
 public:
     void set_connector_type(ConnectorTypeValue value)
@@ -4816,7 +4830,8 @@ public:
     std::optional<MerchantConnectorAccountFeatureMetadata> feature_metadata{};
 };
 
-class MerchantConnectorListResponse : public serde::Serializer<MerchantConnectorListResponse>
+class MerchantConnectorListResponse :
+    public core::behavior::Serializer<MerchantConnectorListResponse>
 {
 public:
     void set_connector_type(ConnectorTypeValue value)
@@ -4988,7 +5003,7 @@ public:
     ConnectorStatusValue status{};
 };
 
-class MerchantConnectorResponse : public serde::Serializer<MerchantConnectorResponse>
+class MerchantConnectorResponse : public core::behavior::Serializer<MerchantConnectorResponse>
 {
 public:
     void set_connector_type(ConnectorTypeValue value)
@@ -5186,7 +5201,7 @@ public:
     std::optional<MerchantConnectorAccountFeatureMetadata> feature_metadata{};
 };
 
-class MerchantConnectorUpdate : public serde::Serializer<MerchantConnectorUpdate>
+class MerchantConnectorUpdate : public core::behavior::Serializer<MerchantConnectorUpdate>
 {
 public:
     void set_connector_type(ConnectorTypeValue value)
@@ -5339,7 +5354,7 @@ public:
     std::optional<ConnectorWalletDetails> connector_wallets_details{};
 };
 
-class ProfileCreate : public serde::Serializer<ProfileCreate>
+class ProfileCreate : public core::behavior::Serializer<ProfileCreate>
 {
 public:
     void set_profile_name(std::optional<std::string> value)
@@ -5939,7 +5954,7 @@ public:
     std::optional<PaymentMethodBlockingConfig> payment_method_blocking{};
 };
 
-class ProfileResponse : public serde::Serializer<ProfileResponse>
+class ProfileResponse : public core::behavior::Serializer<ProfileResponse>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -6592,7 +6607,7 @@ public:
     std::optional<PaymentMethodBlockingConfig> payment_method_blocking{};
 };
 
-class ProfileUpdate : public serde::Serializer<ProfileUpdate>
+class ProfileUpdate : public core::behavior::Serializer<ProfileUpdate>
 {
 public:
     void set_profile_name(std::optional<std::string> value)

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import core_error;
 import utils_openapi;
 import app_model;
@@ -20,6 +21,7 @@ import app_workflow;
 import app_keystore;
 
 import :webhook_events_input;
+import :webhook_policy;
 import :webhook_events_result;
 import :webhook_events_runtime;
 
@@ -39,15 +41,16 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized =
-            m_input_support.authorize(req, "list_initial_webhook_delivery_attempts_with_jwtauth");
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "list_initial_webhook_delivery_attempts_with_jwtauth", {})) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
 
-        const auto merchant_id = m_input_support.merchant_from_identity(authorized.context);
+        const auto scope = m_request_support.scope(req);
+        const auto merchant_id = scope.merchant_id;
         if (merchant_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -80,7 +83,7 @@ public:
 
         // Upstream validates constraints (foreign_try_from) before the profile lookup.
         if (const auto profile_error =
-                m_input_support.validate_profile(authorized.context.profile_id(), merchant_id)) {
+                m_input_support.validate_profile(scope.profile_id, merchant_id)) {
             const auto& error = *profile_error;
             error.send(res, send);
             return;
@@ -88,18 +91,23 @@ public:
 
         // UserFromToken anchoring (routes/webhook_events.rs:80-85): override body profile.
         ::app::dto::webhook_events::ProfileIdValue anchored;
-        anchored.set_value(authorized.context.profile_id());
+        anchored.set_value(scope.profile_id);
         parsed->set_profile_id(std::move(anchored));
 
-        ListInitialWithJwtAuthInput input{*parsed, merchant_id, authorized.context.profile_id()};
+        ListInitialWithJwtAuthInput input{*parsed, merchant_id, scope.profile_id};
         auto result = m_runtime.list_initial_with_jwtauth(input);
         if (!result) {
             const auto& error = result.error();
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(total_events_wire_fields());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
         send();
     }
 
@@ -122,16 +130,13 @@ public:
             return;
         }
 
-        const auto authorized = m_input_support.authorize_with_merchant(
-            req,
-            "list_initial_webhook_delivery_attempts",
-            ids.merchant_id
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        if (const auto auth_error =
+                m_request_support.authorize(req, "list_initial_webhook_delivery_attempts", {})) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
+        const auto scope = m_request_support.scope(req);
 
         const auto body = req.body_as_string();
         if (body.empty()) {
@@ -154,7 +159,7 @@ public:
             return;
         }
 
-        std::string profile_id = authorized.context.profile_id();
+        std::string profile_id = scope.profile_id;
         if (parsed->get_profile_id() && !parsed->get_profile_id()->get_value().empty()) {
             profile_id = parsed->get_profile_id()->get_value();
         }
@@ -173,8 +178,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(total_events_wire_fields());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
         send();
     }
 
@@ -196,26 +206,30 @@ public:
             return;
         }
 
-        const auto authorized = m_input_support.authorize_with_merchant(
-            req,
-            "list_webhook_delivery_attempts",
-            ids.merchant_id
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        if (const auto auth_error =
+                m_request_support.authorize(req, "list_webhook_delivery_attempts", {})) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
+        const auto scope = m_request_support.scope(req);
 
-        ListAttemptsInput input{ids.merchant_id, ids.event_id, authorized.context.profile_id()};
+        ListAttemptsInput input{ids.merchant_id, ids.event_id, scope.profile_id};
         auto result = m_runtime.list_attempts(input);
         if (!result) {
             const auto& error = result.error();
             error.send(res, send);
             return;
         }
+        auto wire =
+            serde::Serializer<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>::
+                serialize_values(*result, event_retrieve_wire_fields());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
         send();
     }
 
@@ -237,35 +251,35 @@ public:
             return;
         }
 
-        const auto authorized = m_input_support.authorize_with_merchant(
-            req,
-            "retry_webhook_delivery_attempt",
-            ids.merchant_id
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        if (const auto auth_error =
+                m_request_support.authorize(req, "retry_webhook_delivery_attempt", {})) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
+        const auto scope = m_request_support.scope(req);
 
-        if (const auto profile_error = m_input_support.validate_profile(
-                authorized.context.profile_id(),
-                ids.merchant_id
-            )) {
+        if (const auto profile_error =
+                m_input_support.validate_profile(scope.profile_id, ids.merchant_id)) {
             const auto& error = *profile_error;
             error.send(res, send);
             return;
         }
 
-        RetryInput input{ids.merchant_id, ids.event_id, authorized.context.profile_id()};
+        RetryInput input{ids.merchant_id, ids.event_id, scope.profile_id};
         auto result = m_runtime.retry(input);
         if (!result) {
             const auto& error = result.error();
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(event_retrieve_wire_fields());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_event()));
+        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
         send();
     }
 
@@ -358,15 +372,22 @@ public:
             );
     }
 
+    using RequestSupport =
+        ::core::behavior::RequestSupport<::app::webhook::policy::WebhookEventsPolicy>;
+
     explicit WebhookEventsRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     WebhookEventsRuntime m_runtime;
     WebhookEventsInputSupport m_input_support;
+    ::app::webhook::policy::WebhookEventsPolicy m_policy;
+    RequestSupport m_request_support;
 };
 
 } // namespace app::handlers::webhook_events

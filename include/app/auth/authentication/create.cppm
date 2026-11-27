@@ -3,6 +3,7 @@ export module app_auth:authentication_handlers_create;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -29,10 +30,16 @@ export namespace app::handlers::authentication {
 class CreateHandlers
 {
 public:
-    CreateHandlers(::app::context::AppContext& ctx, AuthenticationRuntime& runtime) noexcept :
+    CreateHandlers(
+        ::app::context::AppContext& ctx,
+        AuthenticationRuntime& runtime,
+        AuthenticationPolicy& policy,
+        core::behavior::RequestSupport<AuthenticationPolicy>& request_support
+    ) noexcept :
         m_context{ctx},
-        m_input_support{ctx},
-        m_runtime{runtime}
+        m_runtime{runtime},
+        m_policy{policy},
+        m_request_support{request_support}
     {
     }
 
@@ -63,23 +70,16 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize_api_key(
-            req,
-            "authentication_create",
-            ::app::auth::AppPermission::PAYMENT_WRITE
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "authentication_create", kAuthenticationCreateAuthSpec)) {
+            auth_error->send(res, send);
             return;
         }
-        const auto merchant_id = ::app::http::merchant_id_from_header{}(req);
-        if (merchant_id.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED,
-                "missing merchant id header"
-            );
-            error.send(res, send);
+        const auto authorized = m_policy.authorized();
+        const auto merchant_id = m_request_support.scope(req).merchant_id;
+        if (const auto scope_error = m_request_support.scope_error({merchant_id})) {
+            scope_error->send(res, send);
             return;
         }
         const auto body = req.body_as_string();
@@ -108,15 +108,21 @@ public:
             error.send(res, send);
             return;
         }
+        auto encoded = result->serialize(create_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
 private:
     ::app::context::AppContext& m_context;
-    AuthenticationInputSupport m_input_support;
     AuthenticationRuntime& m_runtime;
+    AuthenticationPolicy& m_policy;
+    core::behavior::RequestSupport<AuthenticationPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::authentication

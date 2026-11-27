@@ -3,10 +3,11 @@ export module app_webhook:subscription_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :subscription_input;
-import :subscription_result;
+import :webhook_policy;
 import :subscription_runtime;
 import :subscription_handlers_lifecycle;
 import :subscription_handlers_estimate_items;
@@ -20,13 +21,18 @@ export namespace app::handlers::subscription {
 class SubscriptionRouteHandlers
 {
 public:
+    using RequestSupport =
+        ::core::behavior::RequestSupport<::app::webhook::policy::SubscriptionPolicy>;
+
     explicit SubscriptionRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_lifecycle{context, m_runtime},
-        m_estimate_items{context, m_runtime},
-        m_list{context, m_runtime},
-        m_update{context, m_runtime}
+        m_policy{},
+        m_request_support{m_policy},
+        m_lifecycle{context, m_runtime, m_request_support},
+        m_estimate_items{context, m_runtime, m_request_support},
+        m_list{context, m_runtime, m_request_support},
+        m_update{context, m_runtime, m_request_support}
     {
     }
 
@@ -41,6 +47,8 @@ public:
 private:
     ::app::context::AppContext& m_context;
     SubscriptionRuntime m_runtime; // SINGLE runtime — shared state not duplicated
+    ::app::webhook::policy::SubscriptionPolicy m_policy;
+    RequestSupport m_request_support;
     LifecycleHandlers m_lifecycle; // holds AppContext& + SubscriptionRuntime&
     EstimateItemsHandlers m_estimate_items;
     ListHandlers m_list;

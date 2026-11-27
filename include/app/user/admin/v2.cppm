@@ -23,13 +23,14 @@ public:
     AdminHandlersV2(
         ::app::context::AppContext& context,
         AdminRuntime& runtime,
-        AdminInputSupport& input_support
+        AdminInputSupport& input_support,
+        AdminRequestSupport& request_support
     ) noexcept :
-        m_organizations{context, runtime, input_support},
-        m_merchant_accounts{context, runtime, input_support},
-        m_kv{context, runtime, input_support},
-        m_connector_accounts{context, runtime, input_support},
-        m_connectors{context, runtime, input_support}
+        m_organizations{context, runtime, input_support, request_support},
+        m_merchant_accounts{context, runtime, input_support, request_support},
+        m_kv{context, runtime, input_support, request_support},
+        m_connector_accounts{context, runtime, input_support, request_support},
+        m_connectors{context, runtime, input_support, request_support}
     {
     }
 

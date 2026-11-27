@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ModularMigratePaymentMethodsResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse,
+        core::error::AppError>
     modular_migrate_payment_methods(const ModularMigratePaymentMethodsInput& input) const
     {
         m_context.metrics().record_flow("modular_migrate_payment_methods");
@@ -120,7 +122,9 @@ public:
         response.set_successful_count(successful);
         response.set_failed_count(input.rows.size() - successful);
         response.set_results(std::move(results));
-        return ModularMigratePaymentMethodsResult{std::move(response)};
+        return ::app::model::payment_methods::ModularPaymentMethodMigrationResponse{
+            std::move(response)
+        };
     }
 
 private:

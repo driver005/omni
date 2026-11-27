@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<LaunchSageResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     launch_sage(const LaunchSageInput& input) const
     {
         std::string set_cookie{};
@@ -60,7 +60,7 @@ public:
         Response response{};
         response.set_handoff_url("/sage/session/" + session_id);
         auto document = ResponseDocument::from(response);
-        return LaunchSageResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

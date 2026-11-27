@@ -25,8 +25,9 @@ public:
 
     // ───────────────────────── Core: revoke_mandate ─────────────────────────
     // core/mandate.rs:60-165.
-    [[nodiscard]] std::expected<RevokeMandateResult, core::error::AppError>
-    revoke_mandate(const RevokeMandateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::mandates::MandateRevokedResponse, core::error::AppError>
+        revoke_mandate(const RevokeMandateInput& input) const
     {
         m_support.record_flow(
             "MandatesRevoke"
@@ -126,7 +127,7 @@ public:
 
         // MandateRevokedResponse (api_models/mandates.rs:15-33), encoded by the
         // handler via serde::Ser::serialize into the exact wire shape.
-        return RevokeMandateResult{
+        return ::app::model::mandates::MandateRevokedResponse{
             m_support.revoked_response(record.get_mandate_id(), record.get_status())
         };
     }

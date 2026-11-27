@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AcceptInviteFromEmailResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     accept_invite_from_email(const AcceptInviteFromEmailInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         response.set_token(input.request.get_token());
         response.set_token_type(purpose);
         auto document = ResponseDocument::from(response);
-        return AcceptInviteFromEmailResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

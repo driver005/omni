@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -30,7 +31,8 @@ public:
     )
     {
         // server_wrap auth_type(ApiKeyAuth, DashboardNoPermissionAuth) OR-path.
-        const auto auth = m_input_support.authorize_forex(req);
+        const auto auth_error = m_request_support.authorize(req, "retrieve_forex", {});
+        const ForexAuth auth{auth_error, ::app::auth::AuthContextBuilder{}(req)};
         if (auth.error) {
             const auto& error = *auth.error;
             error.send(res, send);
@@ -47,7 +49,7 @@ public:
 
         // ApplicationResponse::Json(FxExchangeRatesCacheEntry): typed document.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -58,7 +60,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth = m_input_support.authorize_forex(req);
+        const auto auth_error = m_request_support.authorize(req, "convert_forex", {});
+        const ForexAuth auth{auth_error, ::app::auth::AuthContextBuilder{}(req)};
         if (auth.error) {
             const auto& error = *auth.error;
             error.send(res, send);
@@ -82,8 +85,18 @@ public:
         }
 
         // ApplicationResponse::Json(CurrencyConversionResponse) (:34-36).
+        auto encoded = result->serialize(convert_forex_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        std::vector<std::byte> body_bytes{};
+        body_bytes.reserve(encoded->size());
+        for (const char ch: *encoded) {
+            body_bytes.push_back(static_cast<std::byte>(ch));
+        }
+        res.set_body(std::move(body_bytes));
         send();
     }
 
@@ -124,13 +137,17 @@ public:
 
     explicit CurrencyRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     CurrencyRuntime m_runtime;
     CurrencyInputSupport m_input_support;
+    CurrencyPolicy m_policy;
+    core::behavior::RequestSupport<CurrencyPolicy> m_request_support;
 };
 
 } // namespace app::handlers::currency

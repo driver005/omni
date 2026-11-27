@@ -33,6 +33,20 @@ export namespace app::handlers::tokenization {
 class TokenizationHandlersV2
 {
 public:
+    void bind_request_support(TokenizationRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    TokenizationRequestSupport* m_request_support{nullptr};
+
+    void bind_policy(TokenizationPolicy& p) noexcept
+    {
+        m_policy = &p;
+    }
+
+    TokenizationPolicy* m_policy{nullptr};
+
     TokenizationHandlersV2(
         ::app::context::AppContext& context,
         TokenizationRuntime& runtime
@@ -81,10 +95,10 @@ public:
 
         // api_or_client_auth(V2ApiKeyAuth{false,false},
         //   V2ClientAuth(ResourceId::Customer(customer_id))) — routes/tokenization.rs:56-65.
-        const auto authorized =
-            m_input_support.authorize_request(req, "create_token_vault_api", customer_id);
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        const auto auth_error =
+            m_request_support->authorize(req, "create_token_vault_api", spec_for(customer_id));
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -95,7 +109,7 @@ public:
 
         CreateTokenVaultInput input{
             *request,
-            m_input_support.resolve_merchant_id(req, authorized.context)
+            m_input_support.resolve_merchant_id(req, m_policy->last().context)
         };
         auto result = m_runtime.create_token_vault(input);
         if (!result) {
@@ -104,7 +118,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -153,13 +167,13 @@ public:
 
         // api_or_client_auth(V2ApiKeyAuth{false,false},
         //   V2ClientAuth(ResourceId::PaymentMethodSession(session_id))) — routes:92-101.
-        const auto authorized = m_input_support.authorize_request(
+        const auto auth_error = m_request_support->authorize(
             req,
             "delete_tokenized_data_api",
-            request->get_session_id()
+            spec_for(request->get_session_id())
         );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -176,7 +190,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

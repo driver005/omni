@@ -3,6 +3,7 @@ export module app_store:configs_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :configs_input;
@@ -37,8 +38,10 @@ public:
     explicit ConfigsRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_request_support},
+        m_v2{context, m_runtime, m_request_support}
     {
     }
 
@@ -55,7 +58,9 @@ public:
 private:
     ConfigsRuntime m_runtime;            // SINGLE runtime instance — shared mutable state.
     ConfigsInputSupport m_input_support; // SINGLE input helper.
-    ConfigsHandlersV1 m_v1; // holds AppContext&, ConfigsRuntime&, ConfigsInputSupport&.
+    ConfigsPolicy m_policy;              // SINGLE auth policy.
+    core::behavior::RequestSupport<ConfigsPolicy> m_request_support;
+    ConfigsHandlersV1 m_v1; // holds AppContext&, ConfigsRuntime&, RequestSupport<ConfigsPolicy>&.
     ConfigsHandlersV2 m_v2;
 };
 

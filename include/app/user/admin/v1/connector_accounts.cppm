@@ -22,11 +22,13 @@ public:
     AdminHandlersV1ConnectorAccounts(
         ::app::context::AppContext& context,
         AdminRuntime& runtime,
-        AdminInputSupport& input_support
+        AdminInputSupport& input_support,
+        AdminRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -36,7 +38,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_create")) {
+        if (const auto error = m_request_support.authorize(req, "connector_create", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
@@ -65,7 +67,7 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 2);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 2));
         }
         ConnectorCreateInput input{std::move(merchant_id), *parsed};
         auto result = m_runtime.create_connector(input);
@@ -75,7 +77,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kMerchantConnectorResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -85,13 +92,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_retrieve")) {
+        if (const auto error = m_request_support.authorize(req, "connector_retrieve", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string connector_id{m_input_support.path_part(req, 1)};
+        const std::string connector_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -102,7 +111,7 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 2);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 2));
         }
         ConnectorRetrieveInput input{std::move(merchant_id), connector_id};
         auto result = m_runtime.retrieve_connector(input);
@@ -112,7 +121,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kMerchantConnectorResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -122,13 +136,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_update")) {
+        if (const auto error = m_request_support.authorize(req, "connector_update", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string connector_id{m_input_support.path_part(req, 1)};
+        const std::string connector_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -166,7 +182,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kMerchantConnectorResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -176,13 +197,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_delete")) {
+        if (const auto error = m_request_support.authorize(req, "connector_delete", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string connector_id{m_input_support.path_part(req, 1)};
+        const std::string connector_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -193,7 +216,7 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 2);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 2));
         }
         ConnectorDeleteInput input{std::move(merchant_id), connector_id};
         auto result = m_runtime.delete_connector(input);
@@ -203,7 +226,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kMerchantConnectorDeleteResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -308,6 +336,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
+    AdminRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::admin

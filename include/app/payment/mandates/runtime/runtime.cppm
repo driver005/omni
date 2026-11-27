@@ -24,20 +24,22 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetMandateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::mandates::MandateResponse, core::error::AppError>
     get_mandate(const GetMandateInput& input) const
     {
         return m_get_mandate.get_mandate(input);
     }
 
-    [[nodiscard]] std::expected<RevokeMandateResult, core::error::AppError>
-    revoke_mandate(const RevokeMandateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::mandates::MandateRevokedResponse, core::error::AppError>
+        revoke_mandate(const RevokeMandateInput& input) const
     {
         return m_revoke_mandate.revoke_mandate(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveMandatesListResult, core::error::AppError>
-    retrieve_mandates_list(const RetrieveMandatesListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::model::mandates::MandateResponse>, core::error::AppError>
+        retrieve_mandates_list(const RetrieveMandatesListInput& input) const
     {
         return m_retrieve_mandates_list.retrieve_mandates_list(input);
     }

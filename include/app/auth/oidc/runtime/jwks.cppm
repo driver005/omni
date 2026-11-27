@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<JwksEndpointResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::oidc::JwksResponse, core::error::AppError>
     jwks(const JwksEndpointInput& /*input*/) const
     {
         m_context.metrics().record_flow("jwks_endpoint");
@@ -79,7 +79,7 @@ public:
                 core::cache::to_cache_value(serde::Ser::encode_json(document))
             );
         }
-        return JwksEndpointResult{std::move(document)};
+        return std::move(document);
     }
 
 private:

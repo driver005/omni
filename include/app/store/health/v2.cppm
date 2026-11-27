@@ -4,12 +4,12 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
 
 import :health_input;
-import :health_result;
 import :health_runtime;
 
 export namespace app::handlers::health {
@@ -27,11 +27,11 @@ public:
     HealthHandlersV2(
         ::app::context::AppContext& context,
         HealthRuntime& runtime,
-        HealthInputSupport& input_support
+        core::behavior::RequestSupport<HealthPolicy>& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_request_support{request_support}
     {
     }
 
@@ -44,7 +44,7 @@ public:
         // 1. request -> Input. Upstream routes::health::health() has no server_wrap
         // and no auth at all; the registry resolves "health" to NO_AUTH, so this
         // authorize_route call is an exact no-op (kept for the error path).
-        if (const auto auth_error = m_input_support.authorize(req, "health")) {
+        if (const auto auth_error = m_request_support.authorize(req, "health", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -64,7 +64,7 @@ public:
         // text/plain content type is kept on the response.
         res.set_status(interfaces::io::types::Status::OK);
         res.add_content_type("text/plain");
-        res.set_body(serde::Ser::serialize("application/json", result->get_value()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -76,7 +76,7 @@ public:
     {
         // 1. request -> Input. Upstream uses &auth::NoAuth via server_wrap
         // (routes/health.rs:38); "deep_health_check" resolves to NO_AUTH.
-        if (const auto auth_error = m_input_support.authorize(req, "deep_health_check")) {
+        if (const auto auth_error = m_request_support.authorize(req, "deep_health_check", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -98,7 +98,7 @@ public:
         // 3. Result -> response. The RouterHealthCheckResponse document omits
         // None Option fields and carries dynamic gRPC keys as typed values.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -141,7 +141,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
     HealthRuntime& m_runtime;
-    HealthInputSupport& m_input_support;
+    core::behavior::RequestSupport<HealthPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::health

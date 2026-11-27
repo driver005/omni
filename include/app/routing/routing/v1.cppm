@@ -28,15 +28,17 @@ public:
     RoutingHandlersV1(
         ::app::context::AppContext& context,
         RoutingRuntime& runtime,
-        RoutingInputSupport& input_support
+        RoutingInputSupport& input_support,
+        RoutingRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_config_crud{context, runtime, input_support},
-        m_decision{context, runtime, input_support},
-        m_surcharge{context, runtime, input_support},
-        m_migration{context, runtime, input_support}
+        m_request_support{request_support},
+        m_config_crud{context, runtime, input_support, request_support},
+        m_decision{context, runtime, input_support, request_support},
+        m_surcharge{context, runtime, input_support, request_support},
+        m_migration{context, runtime, input_support, request_support}
     {
     }
 
@@ -77,6 +79,7 @@ private:
     ::app::context::AppContext& m_context;
     RoutingRuntime& m_runtime;
     RoutingInputSupport& m_input_support;
+    RoutingRequestSupport& m_request_support;
     RoutingV1ConfigCrudHandlers m_config_crud;
     RoutingV1DecisionHandlers m_decision;
     RoutingV1SurchargeHandlers m_surcharge;

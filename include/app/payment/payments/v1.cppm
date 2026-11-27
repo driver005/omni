@@ -29,6 +29,26 @@ export namespace app::handlers::payments {
 class PaymentsHandlersV1
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+        m_create.bind_request_support(support);
+        m_list.bind_request_support(support);
+        m_status.bind_request_support(support);
+        m_confirm_capture.bind_request_support(support);
+        m_authorize.bind_request_support(support);
+        m_cancel.bind_request_support(support);
+        m_redirects.bind_request_support(support);
+        m_complete_redirect.bind_request_support(support);
+        m_authorize_3ds.bind_request_support(support);
+        m_sessions.bind_request_support(support);
+        m_filters.bind_request_support(support);
+        m_aggregates.bind_request_support(support);
+        m_misc.bind_request_support(support);
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsHandlersV1(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,

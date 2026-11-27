@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OrganizationCreateResult, core::error::AppError>
-    create(const OrganizationCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        create(const OrganizationCreateInput& input) const
     {
         for (const auto& existing: m_context.repository().list_organizations()) {
             if (existing.get_organization_name() == input.request.get_organization_name()) {
@@ -92,7 +93,7 @@ public:
         m_context.metrics().record_flow("organization_create");
         m_context.metrics().counter("admin.organization_create").increment();
         m_context.events().publish("organization.created", serde::Ser::encode_json(response));
-        return OrganizationCreateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

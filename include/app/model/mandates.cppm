@@ -2,16 +2,20 @@ module;
 export module app_model:mandates;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::mandates {
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+
+class CurrencyValue : public core::behavior::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -27,7 +31,7 @@ public:
     std::string value{};
 };
 
-class CardNumberValue : public serde::Serializer<CardNumberValue>
+class CustomerAcceptanceValue : public core::behavior::Serializer<CustomerAcceptanceValue>
 {
 public:
     void set_value(std::string value)
@@ -43,71 +47,7 @@ public:
     std::string value{};
 };
 
-class CardSegmentTypeValue : public serde::Serializer<CardSegmentTypeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CurrencyValue : public serde::Serializer<CurrencyValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CustomerAcceptanceValue : public serde::Serializer<CustomerAcceptanceValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class FundingSourceValue : public serde::Serializer<FundingSourceValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MandateId : public serde::Serializer<MandateId>
+class MandateId : public core::behavior::Serializer<MandateId>
 {
 public:
     void set_mandate_id(std::string value)
@@ -123,7 +63,7 @@ public:
     std::string mandate_id{};
 };
 
-class MandateStatusValue : public serde::Serializer<MandateStatusValue>
+class MandateStatusValue : public core::behavior::Serializer<MandateStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -139,7 +79,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MinorUnitValue : public core::behavior::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -155,7 +95,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
+class NetworkTokenValue : public core::behavior::Serializer<NetworkTokenValue>
 {
 public:
     void set_value(std::string value)
@@ -171,7 +111,7 @@ public:
     std::string value{};
 };
 
-class NetworkTokenValue : public serde::Serializer<NetworkTokenValue>
+class PaymentIdValue : public core::behavior::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string value)
@@ -187,7 +127,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue : public serde::Serializer<PaymentIdValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -203,23 +143,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class ProcessorPaymentTokenDetails : public serde::Serializer<ProcessorPaymentTokenDetails>
+class ProcessorPaymentTokenDetails : public core::behavior::Serializer<ProcessorPaymentTokenDetails>
 {
 public:
     void set_card_exp_month(std::optional<std::string> value)
@@ -268,7 +192,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -284,7 +208,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string value)
@@ -300,7 +224,7 @@ public:
     std::string value{};
 };
 
-class CardWithLimitedData : public serde::Serializer<CardWithLimitedData>
+class CardWithLimitedData : public core::behavior::Serializer<CardWithLimitedData>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -382,155 +306,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class MandateCardDetails : public serde::Serializer<MandateCardDetails>
-{
-public:
-    void set_last4_digits(std::optional<std::string> value)
-    {
-        last4_digits = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_last4_digits() const noexcept
-    {
-        return last4_digits;
-    }
-
-    void set_card_exp_month(std::optional<std::string> value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(std::optional<std::string> value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<std::string> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_token(std::optional<std::string> value)
-    {
-        card_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_token() const noexcept
-    {
-        return card_token;
-    }
-
-    void set_scheme(std::optional<std::string> value)
-    {
-        scheme = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_scheme() const noexcept
-    {
-        return scheme;
-    }
-
-    void set_issuer_country(std::optional<std::string> value)
-    {
-        issuer_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_issuer_country() const noexcept
-    {
-        return issuer_country;
-    }
-
-    void set_card_fingerprint(std::optional<std::string> value)
-    {
-        card_fingerprint = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_fingerprint() const noexcept
-    {
-        return card_fingerprint;
-    }
-
-    void set_card_isin(std::optional<std::string> value)
-    {
-        card_isin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_isin() const noexcept
-    {
-        return card_isin;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_nick_name(std::optional<std::string> value)
-    {
-        nick_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_nick_name() const noexcept
-    {
-        return nick_name;
-    }
-
-    std::optional<std::string> last4_digits{};
-    std::optional<std::string> card_exp_month{};
-    std::optional<std::string> card_exp_year{};
-    std::optional<std::string> card_holder_name{};
-    std::optional<std::string> card_token{};
-    std::optional<std::string> scheme{};
-    std::optional<std::string> issuer_country{};
-    std::optional<std::string> card_fingerprint{};
-    std::optional<std::string> card_isin{};
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> nick_name{};
-};
-
-class MandateListConstraints : public serde::Serializer<MandateListConstraints>
+class MandateListConstraints : public core::behavior::Serializer<MandateListConstraints>
 {
 public:
     void set_limit(std::optional<std::int64_t> value)
@@ -634,7 +410,7 @@ public:
     std::optional<PrimitiveDateTimeValue> created_time_gte{};
 };
 
-class MandateRevokedResponse : public serde::Serializer<MandateRevokedResponse>
+class MandateRevokedResponse : public core::behavior::Serializer<MandateRevokedResponse>
 {
 public:
     void set_mandate_id(std::string value)
@@ -724,7 +500,7 @@ public:
     }
 };
 
-class NetworkTokenDetails : public serde::Serializer<NetworkTokenDetails>
+class NetworkTokenDetails : public core::behavior::Serializer<NetworkTokenDetails>
 {
 public:
     void set_network_token(NetworkTokenValue value)
@@ -850,190 +626,8 @@ public:
     std::optional<std::string> eci{};
 };
 
-class NetworkTransactionIdAndCardDetails :
-    public serde::Serializer<NetworkTransactionIdAndCardDetails>
-{
-public:
-    void set_card_number(CardNumberValue value)
-    {
-        card_number = std::move(value);
-    }
-
-    [[nodiscard]] const CardNumberValue& get_card_number() const noexcept
-    {
-        return card_number;
-    }
-
-    void set_card_exp_month(std::string value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(std::string value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<std::string> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_subtype(std::optional<std::string> value)
-    {
-        card_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_subtype() const noexcept
-    {
-        return card_subtype;
-    }
-
-    void set_card_segment_type(std::optional<CardSegmentTypeValue> value)
-    {
-        card_segment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardSegmentTypeValue>& get_card_segment_type() const noexcept
-    {
-        return card_segment_type;
-    }
-
-    void set_funding_source(std::optional<FundingSourceValue> value)
-    {
-        funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FundingSourceValue>& get_funding_source() const noexcept
-    {
-        return funding_source;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_card_issuing_country_code(std::optional<std::string> value)
-    {
-        card_issuing_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country_code() const noexcept
-    {
-        return card_issuing_country_code;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_nick_name(std::optional<std::string> value)
-    {
-        nick_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_nick_name() const noexcept
-    {
-        return nick_name;
-    }
-
-    void set_network_transaction_id(std::string value)
-    {
-        network_transaction_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_network_transaction_id() const noexcept
-    {
-        return network_transaction_id;
-    }
-
-    void set_transaction_link_id(std::optional<std::string> value)
-    {
-        transaction_link_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_transaction_link_id() const noexcept
-    {
-        return transaction_link_id;
-    }
-
-    CardNumberValue card_number{};
-    std::string card_exp_month{};
-    std::string card_exp_year{};
-    std::optional<std::string> card_holder_name{};
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_subtype{};
-    std::optional<CardSegmentTypeValue> card_segment_type{};
-    std::optional<FundingSourceValue> funding_source{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> card_issuing_country_code{};
-    std::optional<std::string> bank_code{};
-    std::optional<std::string> nick_name{};
-    std::string network_transaction_id{};
-    std::optional<std::string> transaction_link_id{};
-};
-
 class NetworkTransactionIdAndNetworkTokenDetails :
-    public serde::Serializer<NetworkTransactionIdAndNetworkTokenDetails>
+    public core::behavior::Serializer<NetworkTransactionIdAndNetworkTokenDetails>
 {
 public:
     void set_network_token(NetworkTokenValue value)
@@ -1181,7 +775,7 @@ public:
     std::optional<std::string> transaction_link_id{};
 };
 
-class ProcessorPaymentToken : public serde::Serializer<ProcessorPaymentToken>
+class ProcessorPaymentToken : public core::behavior::Serializer<ProcessorPaymentToken>
 {
 public:
     void set_processor_payment_token(std::string value)
@@ -1221,144 +815,7 @@ public:
     std::optional<ProcessorPaymentTokenDetails> processor_payment_token_details{};
 };
 
-class VaultCardData : public serde::Serializer<VaultCardData>
-{
-public:
-    void set_card_number(std::string value)
-    {
-        card_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_number() const noexcept
-    {
-        return card_number;
-    }
-
-    void set_card_exp_month(std::string value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(std::string value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<std::string> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_nick_name(std::optional<std::string> value)
-    {
-        nick_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_nick_name() const noexcept
-    {
-        return nick_name;
-    }
-
-    void set_bin_number(std::optional<std::string> value)
-    {
-        bin_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bin_number() const noexcept
-    {
-        return bin_number;
-    }
-
-    void set_last_four(std::optional<std::string> value)
-    {
-        last_four = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_last_four() const noexcept
-    {
-        return last_four;
-    }
-
-    std::string card_number{};
-    std::string card_exp_month{};
-    std::string card_exp_year{};
-    std::optional<std::string> card_holder_name{};
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> bank_code{};
-    std::optional<std::string> nick_name{};
-    std::optional<std::string> bin_number{};
-    std::optional<std::string> last_four{};
-};
-
-class MandateResponse : public serde::Serializer<MandateResponse>
+class MandateResponse : public core::behavior::Serializer<MandateResponse>
 {
 public:
     void set_mandate_id(std::string value)
@@ -1557,7 +1014,7 @@ public:
 };
 
 class NetworkTokenWithVaultCardFallback :
-    public serde::Serializer<NetworkTokenWithVaultCardFallback>
+    public core::behavior::Serializer<NetworkTokenWithVaultCardFallback>
 {
 public:
     void set_network_token(NetworkTokenDetails value)
@@ -1606,44 +1063,6 @@ public:
     VaultCardData vault_card_data{};
 };
 
-class NetworkTransactionIdAndVaultCardDetails :
-    public serde::Serializer<NetworkTransactionIdAndVaultCardDetails>
-{
-public:
-    void set_vault_card_data(VaultCardData value)
-    {
-        vault_card_data = std::move(value);
-    }
-
-    [[nodiscard]] const VaultCardData& get_vault_card_data() const noexcept
-    {
-        return vault_card_data;
-    }
-
-    void set_network_transaction_id(std::string value)
-    {
-        network_transaction_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_network_transaction_id() const noexcept
-    {
-        return network_transaction_id;
-    }
-
-    void set_transaction_link_id(std::optional<std::string> value)
-    {
-        transaction_link_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_transaction_link_id() const noexcept
-    {
-        return transaction_link_id;
-    }
-
-    VaultCardData vault_card_data{};
-    std::string network_transaction_id{};
-    std::optional<std::string> transaction_link_id{};
-};
 
 enum class RecurringDetails
 {
@@ -1709,86 +1128,6 @@ struct serde::Serializable<app::model::mandates::MandateRevokedResponse>
     static constexpr std::string_view table_name()
     {
         return "mandate_revoked_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::mandates::MandateCardDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "last4_digits",
-                &app::model::mandates::MandateCardDetails::get_last4_digits,
-                &app::model::mandates::MandateCardDetails::set_last4_digits,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::mandates::MandateCardDetails::get_card_exp_month,
-                &app::model::mandates::MandateCardDetails::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::mandates::MandateCardDetails::get_card_exp_year,
-                &app::model::mandates::MandateCardDetails::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::mandates::MandateCardDetails::get_card_holder_name,
-                &app::model::mandates::MandateCardDetails::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_token",
-                &app::model::mandates::MandateCardDetails::get_card_token,
-                &app::model::mandates::MandateCardDetails::set_card_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "scheme",
-                &app::model::mandates::MandateCardDetails::get_scheme,
-                &app::model::mandates::MandateCardDetails::set_scheme,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "issuer_country",
-                &app::model::mandates::MandateCardDetails::get_issuer_country,
-                &app::model::mandates::MandateCardDetails::set_issuer_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_fingerprint",
-                &app::model::mandates::MandateCardDetails::get_card_fingerprint,
-                &app::model::mandates::MandateCardDetails::set_card_fingerprint,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_isin",
-                &app::model::mandates::MandateCardDetails::get_card_isin,
-                &app::model::mandates::MandateCardDetails::set_card_isin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::mandates::MandateCardDetails::get_card_issuer,
-                &app::model::mandates::MandateCardDetails::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::mandates::MandateCardDetails::get_card_network,
-                &app::model::mandates::MandateCardDetails::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::mandates::MandateCardDetails::get_card_type,
-                &app::model::mandates::MandateCardDetails::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "nick_name",
-                &app::model::mandates::MandateCardDetails::get_nick_name,
-                &app::model::mandates::MandateCardDetails::set_nick_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "mandate_card_details";
     }
 };
 
@@ -1989,105 +1328,6 @@ struct serde::Serializable<app::model::mandates::ProcessorPaymentToken>
     static constexpr std::string_view table_name()
     {
         return "processor_payment_token";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::mandates::NetworkTransactionIdAndCardDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_number",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_number,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_exp_month,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_exp_year,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_holder_name,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_issuer,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_network,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_type,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_subtype",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_subtype,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_segment_type",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_segment_type,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_segment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "funding_source",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_funding_source,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_funding_source,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_card_issuing_country,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country_code",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::
-                    get_card_issuing_country_code,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::
-                    set_card_issuing_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_bank_code,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "nick_name",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_nick_name,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_nick_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "network_transaction_id",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::
-                    get_network_transaction_id,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::
-                    set_network_transaction_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_link_id",
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::get_transaction_link_id,
-                &app::model::mandates::NetworkTransactionIdAndCardDetails::set_transaction_link_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "network_transaction_id_and_card_details";
     }
 };
 
@@ -2302,115 +1542,6 @@ struct serde::Serializable<app::model::mandates::NetworkTokenDetails>
     static constexpr std::string_view table_name()
     {
         return "network_token_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::mandates::VaultCardData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_number",
-                &app::model::mandates::VaultCardData::get_card_number,
-                &app::model::mandates::VaultCardData::set_card_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::mandates::VaultCardData::get_card_exp_month,
-                &app::model::mandates::VaultCardData::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::mandates::VaultCardData::get_card_exp_year,
-                &app::model::mandates::VaultCardData::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::mandates::VaultCardData::get_card_holder_name,
-                &app::model::mandates::VaultCardData::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::mandates::VaultCardData::get_card_issuer,
-                &app::model::mandates::VaultCardData::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::mandates::VaultCardData::get_card_network,
-                &app::model::mandates::VaultCardData::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::mandates::VaultCardData::get_card_type,
-                &app::model::mandates::VaultCardData::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::mandates::VaultCardData::get_card_issuing_country,
-                &app::model::mandates::VaultCardData::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::mandates::VaultCardData::get_bank_code,
-                &app::model::mandates::VaultCardData::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "nick_name",
-                &app::model::mandates::VaultCardData::get_nick_name,
-                &app::model::mandates::VaultCardData::set_nick_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bin_number",
-                &app::model::mandates::VaultCardData::get_bin_number,
-                &app::model::mandates::VaultCardData::set_bin_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "last_four",
-                &app::model::mandates::VaultCardData::get_last_four,
-                &app::model::mandates::VaultCardData::set_last_four,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "vault_card_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::mandates::NetworkTransactionIdAndVaultCardDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "vault_card_data",
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::get_vault_card_data,
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::set_vault_card_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "network_transaction_id",
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::
-                    get_network_transaction_id,
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::
-                    set_network_transaction_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_link_id",
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::
-                    get_transaction_link_id,
-                &app::model::mandates::NetworkTransactionIdAndVaultCardDetails::
-                    set_transaction_link_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "network_transaction_id_and_vault_card_details";
     }
 };
 

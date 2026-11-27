@@ -6,113 +6,66 @@ import app_model;
 
 export namespace app::handlers::cards_info {
 
-// The card-info responses reuse the exact DTO fields the old core encoded, so
-// field names, order and wrapper types stay byte-identical. The Serializable
-// specializations below reuse the DTO's FieldDesc tuple; those descriptors
-// apply to the derived result object just as they do to the base object.
-class CardIinInfoResult : public ::app::model::cards_info::CardInfoResponse
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    CardIinInfoResult() = default;
-
-    explicit CardIinInfoResult(::app::model::cards_info::CardInfoResponse value) noexcept :
-        CardInfoResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class CreateCardsInfoResult : public ::app::model::cards_info::CardInfoResponse
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    CreateCardsInfoResult() = default;
-
-    explicit CreateCardsInfoResult(::app::model::cards_info::CardInfoResponse value) noexcept :
-        CardInfoResponse{std::move(value)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class UpdateCardsInfoResult : public ::app::model::cards_info::CardInfoResponse
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    UpdateCardsInfoResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit UpdateCardsInfoResult(::app::model::cards_info::CardInfoResponse value) noexcept :
-        CardInfoResponse{std::move(value)}
-    {
-    }
-};
-
-// The migrate endpoint returns a top-level JSON array of migration records.
-// Carry the typed vector; the handler serializes get_items() so the wire stays
-// a bare array without any hand-built JSON text.
-class MigrateCardsInfoResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
 {
-public:
-    MigrateCardsInfoResult() = default;
-
-    explicit MigrateCardsInfoResult(
-        std::vector<::app::model::cards_info::CardInfoMigrationResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::model::cards_info::CardInfoMigrationResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::cards_info::CardInfoMigrationResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::cards_info::CardInfoMigrationResponse> m_items{};
-};
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::cards_info
-
-template<>
-struct serde::Serializable<::app::handlers::cards_info::CardIinInfoResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::cards_info::CardInfoResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_iin_info_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::cards_info::CreateCardsInfoResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::cards_info::CardInfoResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "create_cards_info_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::cards_info::UpdateCardsInfoResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::cards_info::CardInfoResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "update_cards_info_result";
-    }
-};

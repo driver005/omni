@@ -36,7 +36,9 @@ public:
     }
 
     /** @brief core:728-820 list_hierarchical_resources. */
-    [[nodiscard]] std::expected<ListHierarchicalResourcesResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse,
+        core::error::AppError>
     list(const ListHierarchicalResourcesInput& input) const
     {
         m_context.metrics().record_flow("HierarchicalResourcesList");
@@ -92,7 +94,7 @@ public:
         }
         ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse response;
         response.set_resources(std::move(summaries));
-        return ListHierarchicalResourcesResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

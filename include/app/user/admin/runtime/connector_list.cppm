@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorListResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
+        core::error::AppError>
     list(const ConnectorListInput& input) const
     {
         std::vector<::app::dto::admin::MerchantConnectorListResponse> response;
@@ -48,7 +50,7 @@ public:
 
         m_context.metrics().record_flow("connector_list");
         m_context.metrics().counter("admin.connector_list").increment();
-        return ConnectorListResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

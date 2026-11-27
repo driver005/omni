@@ -3,6 +3,7 @@ export module app_auth:authentication_handlers_eligibility_authenticate;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -31,11 +32,14 @@ class EligibilityAuthenticateHandlers
 public:
     EligibilityAuthenticateHandlers(
         ::app::context::AppContext& ctx,
-        AuthenticationRuntime& runtime
+        AuthenticationRuntime& runtime,
+        AuthenticationPolicy& policy,
+        core::behavior::RequestSupport<AuthenticationPolicy>& request_support
     ) noexcept :
         m_context{ctx},
-        m_input_support{ctx},
-        m_runtime{runtime}
+        m_runtime{runtime},
+        m_policy{policy},
+        m_request_support{request_support}
     {
     }
 
@@ -103,24 +107,24 @@ public:
             error.send(res, send);
             return;
         }
-        const auto authorized = m_input_support.authorize_sdk(
-            req,
-            "authentication_eligibility",
-            body,
-            parsed->get_client_secret()
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        m_policy.set_body_secret(parsed->get_client_secret());
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "authentication_eligibility", kAuthenticationSdkAuthSpec)) {
+            auth_error->send(res, send);
+            return;
+        }
+        const auto authorized = m_policy.authorized();
+        const auto id = m_request_support.path(req, 1);
+        if (id.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "authentication id missing in path"
+            );
             error.send(res, send);
             return;
         }
-        const auto id = m_input_support.auth_id_from_path(req, 1);
-        if (!id.has_value()) {
-            const auto& error = id.error();
-            error.send(res, send);
-            return;
-        }
-        AuthenticationEligibilityInput input{*parsed, *id, authorized, std::string{body}};
+        AuthenticationEligibilityInput input{*parsed, id, authorized, std::string{body}};
         auto result = m_runtime.eligibility(input);
         if (!result) {
             const auto& error = result.error();
@@ -128,7 +132,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -158,42 +162,48 @@ public:
             error.send(res, send);
             return;
         }
-        const auto authorized = m_input_support.authorize_sdk(
-            req,
-            "authentication_authenticate",
-            body,
-            parsed->get_client_secret()
-        );
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        m_policy.set_body_secret(parsed->get_client_secret());
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "authentication_authenticate", kAuthenticationSdkAuthSpec)) {
+            auth_error->send(res, send);
             return;
         }
-        const auto id = m_input_support.auth_id_from_path(req, 1);
-        if (!id.has_value()) {
-            const auto& error = id.error();
+        const auto authorized = m_policy.authorized();
+        const auto id = m_request_support.path(req, 1);
+        if (id.empty()) {
+            const auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::INVALID_REQUEST,
+                "authentication id missing in path"
+            );
             error.send(res, send);
             return;
         }
         auto authentication_id_value = ::app::dto::authentication::AuthenticationIdValue{};
-        authentication_id_value.set_value(*id);
+        authentication_id_value.set_value(id);
         parsed->set_authentication_id(authentication_id_value);
-        AuthenticationAuthenticateInput input{*parsed, *id, authorized};
+        AuthenticationAuthenticateInput input{*parsed, id, authorized};
         auto result = m_runtime.authenticate(input);
         if (!result) {
             const auto& error = result.error();
             error.send(res, send);
             return;
         }
+        auto encoded = result->serialize(authenticate_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
 private:
     ::app::context::AppContext& m_context;
-    AuthenticationInputSupport m_input_support;
     AuthenticationRuntime& m_runtime;
+    AuthenticationPolicy& m_policy;
+    core::behavior::RequestSupport<AuthenticationPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::authentication

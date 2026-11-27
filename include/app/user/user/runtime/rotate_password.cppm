@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RotatePasswordResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     rotate_password(const RotatePasswordInput& input) const
     {
         std::string set_cookie{};
@@ -73,7 +73,7 @@ public:
         m_context.metrics().record_flow("rotate_password");
         m_context.metrics().counter("user.rotate_password").increment();
 
-        return RotatePasswordResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

@@ -3,6 +3,7 @@ export module app_store:health_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 
@@ -31,6 +32,45 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Both health operations resolve to NO_AUTH in the shared registry; the
+ * authorize_route call (and its error path) is preserved verbatim.
+ */
+class HealthPolicy
+{
+public:
+    explicit HealthPolicy(HealthInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec; // health rules are registry-derived by operation.
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest&) const noexcept
+    {
+        return {};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
+private:
+    HealthInputSupport& m_support;
 };
 
 // Neither route reads a body, path or query, so the Input structs carry no

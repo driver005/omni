@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveConnectorWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
     fetch(const RetrieveConnectorWebhookInput& input) const
     {
         const auto found =
@@ -63,7 +63,7 @@ public:
 
         m_context.metrics().record_flow("retrieve_connector_webhook");
         m_context.metrics().counter("admin.retrieve_connector_webhook").increment();
-        return RetrieveConnectorWebhookResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

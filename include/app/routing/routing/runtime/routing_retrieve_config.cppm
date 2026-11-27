@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingRetrieveConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_retrieve_config(const RoutingInput& input) const
     {
         const auto existing = m_support.find_config_by_algorithm(input.algorithm_id);
@@ -56,7 +56,7 @@ public:
             m_support.transaction_type_of(existing->get_config_json())
         ));
         m_support.track("routing_retrieve_config");
-        return RoutingRetrieveConfigResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

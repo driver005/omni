@@ -39,7 +39,9 @@ public:
      * RedisTokenManager::unlock_connector_customer_status
      * (types/storage/revenue_recovery_redis_operation.rs:232-286).
      */
-    [[nodiscard]] std::expected<UnlockStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse,
+        core::error::AppError>
     unlock_status(const UnlockStatusInput& input) const
     {
         const auto& customer_id = input.parsed.get_connector_customer_id();
@@ -93,7 +95,9 @@ public:
         using Response = ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse;
         Response response;
         response.set_unlocked(true);
-        return UnlockStatusResult{std::move(response)};
+        return ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse{
+            std::move(response)
+        };
     }
 
 private:

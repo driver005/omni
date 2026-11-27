@@ -60,127 +60,139 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OrganizationCreateResult, core::error::AppError>
-    create_organization(const OrganizationCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        create_organization(const OrganizationCreateInput& input) const
     {
         return m_organization_create.create(input);
     }
 
-    [[nodiscard]] std::expected<OrganizationUpdateResult, core::error::AppError>
-    update_organization(const OrganizationUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        update_organization(const OrganizationUpdateInput& input) const
     {
         return m_organization_update.update(input);
     }
 
-    [[nodiscard]] std::expected<OrganizationRetrieveResult, core::error::AppError>
-    retrieve_organization(const OrganizationRetrieveInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        retrieve_organization(const OrganizationRetrieveInput& input) const
     {
         return m_organization_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<ConvertOrganizationToPlatformResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::organization::ConvertOrganizationToPlatformResponse,
+        core::error::AppError>
     convert_organization_to_platform(const ConvertOrganizationToPlatformInput& input) const
     {
         return m_convert_organization_to_platform.convert(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     create_merchant_account(const MerchantAccountCreateInput& input) const
     {
         return m_merchant_account_create.create(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveMerchantAccountResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     retrieve_merchant_account(const RetrieveMerchantAccountInput& input) const
     {
         return m_retrieve_merchant_account.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountListResult, core::error::AppError>
-    list_merchant_accounts(const MerchantAccountListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::dto::admin::MerchantAccountResponse>, core::error::AppError>
+        list_merchant_accounts(const MerchantAccountListInput& input) const
     {
         return m_merchant_account_list.list(input);
     }
 
-    [[nodiscard]] std::expected<UpdateMerchantAccountResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     update_merchant_account(const UpdateMerchantAccountInput& input) const
     {
         return m_update_merchant_account.update(input);
     }
 
-    [[nodiscard]] std::expected<DeleteMerchantAccountResult, core::error::AppError>
-    delete_merchant_account(const DeleteMerchantAccountInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::admin::MerchantAccountDeleteResponse, core::error::AppError>
+        delete_merchant_account(const DeleteMerchantAccountInput& input) const
     {
         return m_delete_merchant_account.remove(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     create_connector(const ConnectorCreateInput& input) const
     {
         return m_connector_create.create(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     retrieve_connector(const ConnectorRetrieveInput& input) const
     {
         return m_connector_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorListResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
+        core::error::AppError>
     list_connectors(const ConnectorListInput& input) const
     {
         return m_connector_list.list(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorListProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
+        core::error::AppError>
     list_connectors_profile(const ConnectorListProfileInput& input) const
     {
         return m_connector_list_profile.list(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     update_connector(const ConnectorUpdateInput& input) const
     {
         return m_connector_update.update(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorDeleteResult, core::error::AppError>
-    delete_connector(const ConnectorDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::admin::MerchantConnectorDeleteResponse, core::error::AppError>
+        delete_connector(const ConnectorDeleteInput& input) const
     {
         return m_connector_delete.remove(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountToggleKvResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
     toggle_kv(const MerchantAccountToggleKvInput& input) const
     {
         return m_merchant_account_toggle_kv.toggle(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountToggleAllKvResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleAllKVResponse, core::error::AppError>
     toggle_all_kv(const MerchantAccountToggleAllKvInput& input) const
     {
         return m_merchant_account_toggle_all_kv.toggle_all(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountKvStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
     kv_status(const MerchantAccountKvStatusInput& input) const
     {
         return m_merchant_account_kv_status.status(input);
     }
 
-    [[nodiscard]] std::expected<MerchantAccountTransferKeysResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::TransferKeyResponse, core::error::AppError>
     transfer_keys(const MerchantAccountTransferKeysInput& input) const
     {
         return m_merchant_account_transfer_keys.transfer(input);
     }
 
-    [[nodiscard]] std::expected<ConnectorWebhookRegisterResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
     register_webhook(const ConnectorWebhookRegisterInput& input) const
     {
         return m_connector_webhook_register.register_webhook(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveConnectorWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
     fetch_webhook(const RetrieveConnectorWebhookInput& input) const
     {
         return m_retrieve_connector_webhook.fetch(input);

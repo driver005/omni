@@ -21,6 +21,13 @@ export namespace app::handlers::refunds {
 class RefundsV1UpdateReverseManualUpdateHandlers
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsV1UpdateReverseManualUpdateHandlers(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,
@@ -39,7 +46,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::V1Update)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "V1Update", spec_for("V1Update"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -71,7 +79,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -82,7 +90,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::V1Reverse)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "V1Reverse", spec_for("V1Reverse"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -112,7 +121,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -123,7 +132,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::Admin)) {
+        if (const auto denied = m_request_support->authorize(req, "Admin", spec_for("Admin"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -154,7 +163,7 @@ public:
         }
         // core/refunds.rs:2277 — ApplicationResponse::StatusOk (200, empty body).
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

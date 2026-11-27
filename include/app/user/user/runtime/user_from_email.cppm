@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UserFromEmailResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     user_from_email(const UserFromEmailInput& input) const
     {
         std::string set_cookie{};
@@ -64,7 +64,7 @@ public:
         );
         response.set_is_active(true);
         auto document = ResponseDocument::from(response);
-        return UserFromEmailResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

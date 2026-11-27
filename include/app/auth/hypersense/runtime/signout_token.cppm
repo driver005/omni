@@ -37,7 +37,7 @@ public:
     }
 
     // routes/hypersense.rs:51 -> core/external_service_auth.rs:55-63. NoAuth.
-    [[nodiscard]] std::expected<SignoutTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<void, core::error::AppError>
     signout_token(const SignoutTokenInput& input) const
     {
         m_support.record_flow("HypersenseSignoutToken", LockActionNotApplicable{});
@@ -62,7 +62,7 @@ public:
         }
 
         // core/external_service_auth.rs:63 — ApplicationResponse::StatusOk (bodyless).
-        return SignoutTokenResult{};
+        return {};
     }
 
 private:

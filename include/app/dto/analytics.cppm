@@ -2,16 +2,18 @@ module;
 export module app_dto:analytics;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::analytics {
 
-class ActivePaymentsMetricsValue : public serde::Serializer<ActivePaymentsMetricsValue>
+class ActivePaymentsMetricsValue : public core::behavior::Serializer<ActivePaymentsMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -27,7 +29,7 @@ public:
     std::string value{};
 };
 
-class ApiEventDimensionsValue : public serde::Serializer<ApiEventDimensionsValue>
+class ApiEventDimensionsValue : public core::behavior::Serializer<ApiEventDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -43,7 +45,7 @@ public:
     std::string value{};
 };
 
-class ApiEventFiltersValue : public serde::Serializer<ApiEventFiltersValue>
+class ApiEventFiltersValue : public core::behavior::Serializer<ApiEventFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class ApiEventMetricsValue : public serde::Serializer<ApiEventMetricsValue>
+class ApiEventMetricsValue : public core::behavior::Serializer<ApiEventMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -75,7 +77,7 @@ public:
     std::string value{};
 };
 
-class AuthEventDimensionsValue : public serde::Serializer<AuthEventDimensionsValue>
+class AuthEventDimensionsValue : public core::behavior::Serializer<AuthEventDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -91,7 +93,7 @@ public:
     std::string value{};
 };
 
-class AuthEventFiltersValue : public serde::Serializer<AuthEventFiltersValue>
+class AuthEventFiltersValue : public core::behavior::Serializer<AuthEventFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -107,7 +109,7 @@ public:
     std::string value{};
 };
 
-class AuthEventMetricsValue : public serde::Serializer<AuthEventMetricsValue>
+class AuthEventMetricsValue : public core::behavior::Serializer<AuthEventMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -123,7 +125,7 @@ public:
     std::string value{};
 };
 
-class AuthEventsAnalyticsMetadata : public serde::Serializer<AuthEventsAnalyticsMetadata>
+class AuthEventsAnalyticsMetadata : public core::behavior::Serializer<AuthEventsAnalyticsMetadata>
 {
 public:
     void set_total_error_message_count(std::optional<std::uint64_t> value)
@@ -139,7 +141,7 @@ public:
     std::optional<std::uint64_t> total_error_message_count{};
 };
 
-class AuthInfoValue : public serde::Serializer<AuthInfoValue>
+class AuthInfoValue : public core::behavior::Serializer<AuthInfoValue>
 {
 public:
     void set_value(std::string v)
@@ -155,7 +157,7 @@ public:
     std::string value{};
 };
 
-class DisputeDimensionsValue : public serde::Serializer<DisputeDimensionsValue>
+class DisputeDimensionsValue : public core::behavior::Serializer<DisputeDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -171,7 +173,7 @@ public:
     std::string value{};
 };
 
-class DisputeFiltersValue : public serde::Serializer<DisputeFiltersValue>
+class DisputeFiltersValue : public core::behavior::Serializer<DisputeFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -187,7 +189,7 @@ public:
     std::string value{};
 };
 
-class DisputeMetricsValue : public serde::Serializer<DisputeMetricsValue>
+class DisputeMetricsValue : public core::behavior::Serializer<DisputeMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -203,7 +205,7 @@ public:
     std::string value{};
 };
 
-class DisputesAnalyticsMetadata : public serde::Serializer<DisputesAnalyticsMetadata>
+class DisputesAnalyticsMetadata : public core::behavior::Serializer<DisputesAnalyticsMetadata>
 {
 public:
     void set_total_disputed_amount(std::optional<std::uint64_t> value)
@@ -230,7 +232,7 @@ public:
     std::optional<std::uint64_t> total_dispute_lost_amount{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -246,7 +248,7 @@ public:
     std::string value{};
 };
 
-class FrmDimensionsValue : public serde::Serializer<FrmDimensionsValue>
+class FrmDimensionsValue : public core::behavior::Serializer<FrmDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -262,7 +264,7 @@ public:
     std::string value{};
 };
 
-class FrmFiltersValue : public serde::Serializer<FrmFiltersValue>
+class FrmFiltersValue : public core::behavior::Serializer<FrmFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -278,7 +280,7 @@ public:
     std::string value{};
 };
 
-class FrmMetricsValue : public serde::Serializer<FrmMetricsValue>
+class FrmMetricsValue : public core::behavior::Serializer<FrmMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -304,7 +306,7 @@ enum class Granularity
     OneDay,
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -320,7 +322,7 @@ public:
     std::string value{};
 };
 
-class NameDescription : public serde::Serializer<NameDescription>
+class NameDescription : public core::behavior::Serializer<NameDescription>
 {
 public:
     void set_name(std::string value)
@@ -347,7 +349,7 @@ public:
     std::string desc{};
 };
 
-class PaymentDimensionsValue : public serde::Serializer<PaymentDimensionsValue>
+class PaymentDimensionsValue : public core::behavior::Serializer<PaymentDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -363,7 +365,7 @@ public:
     std::string value{};
 };
 
-class PaymentDistributionsValue : public serde::Serializer<PaymentDistributionsValue>
+class PaymentDistributionsValue : public core::behavior::Serializer<PaymentDistributionsValue>
 {
 public:
     void set_value(std::string v)
@@ -379,7 +381,7 @@ public:
     std::string value{};
 };
 
-class PaymentFiltersValue : public serde::Serializer<PaymentFiltersValue>
+class PaymentFiltersValue : public core::behavior::Serializer<PaymentFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -395,7 +397,7 @@ public:
     std::string value{};
 };
 
-class PaymentIntentDimensionsValue : public serde::Serializer<PaymentIntentDimensionsValue>
+class PaymentIntentDimensionsValue : public core::behavior::Serializer<PaymentIntentDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -411,7 +413,7 @@ public:
     std::string value{};
 };
 
-class PaymentIntentFiltersValue : public serde::Serializer<PaymentIntentFiltersValue>
+class PaymentIntentFiltersValue : public core::behavior::Serializer<PaymentIntentFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -427,7 +429,7 @@ public:
     std::string value{};
 };
 
-class PaymentIntentMetricsValue : public serde::Serializer<PaymentIntentMetricsValue>
+class PaymentIntentMetricsValue : public core::behavior::Serializer<PaymentIntentMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -443,7 +445,8 @@ public:
     std::string value{};
 };
 
-class PaymentIntentsAnalyticsMetadata : public serde::Serializer<PaymentIntentsAnalyticsMetadata>
+class PaymentIntentsAnalyticsMetadata :
+    public core::behavior::Serializer<PaymentIntentsAnalyticsMetadata>
 {
 public:
     void set_total_success_rate(std::optional<double> value)
@@ -597,7 +600,7 @@ public:
     std::optional<std::uint64_t> total_payment_processed_count_without_smart_retries{};
 };
 
-class PaymentMetricsValue : public serde::Serializer<PaymentMetricsValue>
+class PaymentMetricsValue : public core::behavior::Serializer<PaymentMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -613,7 +616,7 @@ public:
     std::string value{};
 };
 
-class PaymentsAnalyticsMetadata : public serde::Serializer<PaymentsAnalyticsMetadata>
+class PaymentsAnalyticsMetadata : public core::behavior::Serializer<PaymentsAnalyticsMetadata>
 {
 public:
     void set_total_payment_processed_amount(std::optional<std::uint64_t> value)
@@ -724,7 +727,7 @@ enum class QueryLimit
     Top10,
 };
 
-class RefundDimensionsValue : public serde::Serializer<RefundDimensionsValue>
+class RefundDimensionsValue : public core::behavior::Serializer<RefundDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -740,7 +743,7 @@ public:
     std::string value{};
 };
 
-class RefundDistributionsValue : public serde::Serializer<RefundDistributionsValue>
+class RefundDistributionsValue : public core::behavior::Serializer<RefundDistributionsValue>
 {
 public:
     void set_value(std::string v)
@@ -756,7 +759,7 @@ public:
     std::string value{};
 };
 
-class RefundFiltersValue : public serde::Serializer<RefundFiltersValue>
+class RefundFiltersValue : public core::behavior::Serializer<RefundFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -772,7 +775,7 @@ public:
     std::string value{};
 };
 
-class RefundMetricsValue : public serde::Serializer<RefundMetricsValue>
+class RefundMetricsValue : public core::behavior::Serializer<RefundMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -788,7 +791,7 @@ public:
     std::string value{};
 };
 
-class RefundsAnalyticsMetadata : public serde::Serializer<RefundsAnalyticsMetadata>
+class RefundsAnalyticsMetadata : public core::behavior::Serializer<RefundsAnalyticsMetadata>
 {
 public:
     void set_total_refund_success_rate(std::optional<double> value)
@@ -874,7 +877,7 @@ enum class ReportType
     RevenueRecovery,
 };
 
-class SankeyResponse : public serde::Serializer<SankeyResponse>
+class SankeyResponse : public core::behavior::Serializer<SankeyResponse>
 {
 public:
     void set_count(std::int64_t value)
@@ -934,7 +937,7 @@ public:
     std::int64_t first_attempt{};
 };
 
-class SdkEventDimensionsValue : public serde::Serializer<SdkEventDimensionsValue>
+class SdkEventDimensionsValue : public core::behavior::Serializer<SdkEventDimensionsValue>
 {
 public:
     void set_value(std::string v)
@@ -950,7 +953,7 @@ public:
     std::string value{};
 };
 
-class SdkEventFiltersValue : public serde::Serializer<SdkEventFiltersValue>
+class SdkEventFiltersValue : public core::behavior::Serializer<SdkEventFiltersValue>
 {
 public:
     void set_value(std::string v)
@@ -966,7 +969,7 @@ public:
     std::string value{};
 };
 
-class SdkEventMetricsValue : public serde::Serializer<SdkEventMetricsValue>
+class SdkEventMetricsValue : public core::behavior::Serializer<SdkEventMetricsValue>
 {
 public:
     void set_value(std::string v)
@@ -982,7 +985,7 @@ public:
     std::string value{};
 };
 
-class TimeRangeValue : public serde::Serializer<TimeRangeValue>
+class TimeRangeValue : public core::behavior::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string v)
@@ -998,7 +1001,7 @@ public:
     std::string value{};
 };
 
-class UrlValue : public serde::Serializer<UrlValue>
+class UrlValue : public core::behavior::Serializer<UrlValue>
 {
 public:
     void set_value(std::string v)
@@ -1014,7 +1017,7 @@ public:
     std::string value{};
 };
 
-class AnalyticsMetadata : public serde::Serializer<AnalyticsMetadata>
+class AnalyticsMetadata : public core::behavior::Serializer<AnalyticsMetadata>
 {
 public:
     void set_current_time_range(TimeRangeValue value)
@@ -1030,7 +1033,7 @@ public:
     TimeRangeValue current_time_range{};
 };
 
-class ApiEventFilterValue : public serde::Serializer<ApiEventFilterValue>
+class ApiEventFilterValue : public core::behavior::Serializer<ApiEventFilterValue>
 {
 public:
     void set_dimension(ApiEventDimensionsValue value)
@@ -1057,7 +1060,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class AuthEventFilterValue : public serde::Serializer<AuthEventFilterValue>
+class AuthEventFilterValue : public core::behavior::Serializer<AuthEventFilterValue>
 {
 public:
     void set_dimension(AuthEventDimensionsValue value)
@@ -1084,7 +1087,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class AuthEventMetricsResponse : public serde::Serializer<AuthEventMetricsResponse>
+class AuthEventMetricsResponse : public core::behavior::Serializer<AuthEventMetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -1111,7 +1114,7 @@ public:
     std::array<AuthEventsAnalyticsMetadata, 1> meta_data{};
 };
 
-class DisputeFilterValue : public serde::Serializer<DisputeFilterValue>
+class DisputeFilterValue : public core::behavior::Serializer<DisputeFilterValue>
 {
 public:
     void set_dimension(DisputeDimensionsValue value)
@@ -1138,7 +1141,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class DisputesMetricsResponse : public serde::Serializer<DisputesMetricsResponse>
+class DisputesMetricsResponse : public core::behavior::Serializer<DisputesMetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -1165,7 +1168,7 @@ public:
     std::array<DisputesAnalyticsMetadata, 1> meta_data{};
 };
 
-class FilterValue : public serde::Serializer<FilterValue>
+class FilterValue : public core::behavior::Serializer<FilterValue>
 {
 public:
     void set_dimension(PaymentDimensionsValue value)
@@ -1192,7 +1195,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class FrmFilterValue : public serde::Serializer<FrmFilterValue>
+class FrmFilterValue : public core::behavior::Serializer<FrmFilterValue>
 {
 public:
     void set_dimension(FrmDimensionsValue value)
@@ -1219,7 +1222,8 @@ public:
     std::vector<std::string> values{};
 };
 
-class GetActivePaymentsMetricRequest : public serde::Serializer<GetActivePaymentsMetricRequest>
+class GetActivePaymentsMetricRequest :
+    public core::behavior::Serializer<GetActivePaymentsMetricRequest>
 {
 public:
     void set_metrics(std::vector<ActivePaymentsMetricsValue> value)
@@ -1246,7 +1250,7 @@ public:
     TimeRangeValue time_range{};
 };
 
-class GetApiEventFiltersRequest : public serde::Serializer<GetApiEventFiltersRequest>
+class GetApiEventFiltersRequest : public core::behavior::Serializer<GetApiEventFiltersRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1273,7 +1277,7 @@ public:
     std::vector<ApiEventDimensionsValue> group_by_names{};
 };
 
-class GetAuthEventFilterRequest : public serde::Serializer<GetAuthEventFilterRequest>
+class GetAuthEventFilterRequest : public core::behavior::Serializer<GetAuthEventFilterRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1300,7 +1304,7 @@ public:
     std::vector<AuthEventDimensionsValue> group_by_names{};
 };
 
-class GetDisputeFilterRequest : public serde::Serializer<GetDisputeFilterRequest>
+class GetDisputeFilterRequest : public core::behavior::Serializer<GetDisputeFilterRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1327,7 +1331,7 @@ public:
     std::vector<DisputeDimensionsValue> group_by_names{};
 };
 
-class GetFrmFilterRequest : public serde::Serializer<GetFrmFilterRequest>
+class GetFrmFilterRequest : public core::behavior::Serializer<GetFrmFilterRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1354,7 +1358,7 @@ public:
     std::vector<FrmDimensionsValue> group_by_names{};
 };
 
-class GetInfoResponse : public serde::Serializer<GetInfoResponse>
+class GetInfoResponse : public core::behavior::Serializer<GetInfoResponse>
 {
 public:
     void set_metrics(std::vector<NameDescription> value)
@@ -1393,7 +1397,7 @@ public:
     std::vector<NameDescription> dimensions{};
 };
 
-class GetPaymentFiltersRequest : public serde::Serializer<GetPaymentFiltersRequest>
+class GetPaymentFiltersRequest : public core::behavior::Serializer<GetPaymentFiltersRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1420,7 +1424,8 @@ public:
     std::vector<PaymentDimensionsValue> group_by_names{};
 };
 
-class GetPaymentIntentFiltersRequest : public serde::Serializer<GetPaymentIntentFiltersRequest>
+class GetPaymentIntentFiltersRequest :
+    public core::behavior::Serializer<GetPaymentIntentFiltersRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1448,7 +1453,7 @@ public:
     std::vector<PaymentIntentDimensionsValue> group_by_names{};
 };
 
-class GetRefundFilterRequest : public serde::Serializer<GetRefundFilterRequest>
+class GetRefundFilterRequest : public core::behavior::Serializer<GetRefundFilterRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1475,7 +1480,7 @@ public:
     std::vector<RefundDimensionsValue> group_by_names{};
 };
 
-class GetSdkEventFiltersRequest : public serde::Serializer<GetSdkEventFiltersRequest>
+class GetSdkEventFiltersRequest : public core::behavior::Serializer<GetSdkEventFiltersRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -1502,7 +1507,7 @@ public:
     std::vector<SdkEventDimensionsValue> group_by_names{};
 };
 
-class MerchantWebhookUrl : public serde::Serializer<MerchantWebhookUrl>
+class MerchantWebhookUrl : public core::behavior::Serializer<MerchantWebhookUrl>
 {
 public:
     void set_value(UrlValue v)
@@ -1518,7 +1523,7 @@ public:
     UrlValue value{};
 };
 
-class PaymentDistributionBody : public serde::Serializer<PaymentDistributionBody>
+class PaymentDistributionBody : public core::behavior::Serializer<PaymentDistributionBody>
 {
 public:
     void set_distribution_for(PaymentDistributionsValue value)
@@ -1545,7 +1550,7 @@ public:
     QueryLimit distribution_cardinality{};
 };
 
-class PaymentIntentFilterValue : public serde::Serializer<PaymentIntentFilterValue>
+class PaymentIntentFilterValue : public core::behavior::Serializer<PaymentIntentFilterValue>
 {
 public:
     void set_dimension(PaymentIntentDimensionsValue value)
@@ -1572,7 +1577,8 @@ public:
     std::vector<std::string> values{};
 };
 
-class PaymentIntentsMetricsResponse : public serde::Serializer<PaymentIntentsMetricsResponse>
+class PaymentIntentsMetricsResponse :
+    public core::behavior::Serializer<PaymentIntentsMetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -1600,7 +1606,7 @@ public:
     std::array<PaymentIntentsAnalyticsMetadata, 1> meta_data{};
 };
 
-class PaymentsMetricsResponse : public serde::Serializer<PaymentsMetricsResponse>
+class PaymentsMetricsResponse : public core::behavior::Serializer<PaymentsMetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -1627,7 +1633,7 @@ public:
     std::array<PaymentsAnalyticsMetadata, 1> meta_data{};
 };
 
-class RefundDistributionBody : public serde::Serializer<RefundDistributionBody>
+class RefundDistributionBody : public core::behavior::Serializer<RefundDistributionBody>
 {
 public:
     void set_distribution_for(RefundDistributionsValue value)
@@ -1654,7 +1660,7 @@ public:
     QueryLimit distribution_cardinality{};
 };
 
-class RefundFilterValue : public serde::Serializer<RefundFilterValue>
+class RefundFilterValue : public core::behavior::Serializer<RefundFilterValue>
 {
 public:
     void set_dimension(RefundDimensionsValue value)
@@ -1681,7 +1687,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class RefundsMetricsResponse : public serde::Serializer<RefundsMetricsResponse>
+class RefundsMetricsResponse : public core::behavior::Serializer<RefundsMetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -1708,7 +1714,7 @@ public:
     std::array<RefundsAnalyticsMetadata, 1> meta_data{};
 };
 
-class SdkEventFilterValue : public serde::Serializer<SdkEventFilterValue>
+class SdkEventFilterValue : public core::behavior::Serializer<SdkEventFilterValue>
 {
 public:
     void set_dimension(SdkEventDimensionsValue value)
@@ -1735,7 +1741,7 @@ public:
     std::vector<std::string> values{};
 };
 
-class TimeSeries : public serde::Serializer<TimeSeries>
+class TimeSeries : public core::behavior::Serializer<TimeSeries>
 {
 public:
     void set_granularity(Granularity value)
@@ -1751,7 +1757,7 @@ public:
     Granularity granularity{};
 };
 
-class ApiEventFiltersResponse : public serde::Serializer<ApiEventFiltersResponse>
+class ApiEventFiltersResponse : public core::behavior::Serializer<ApiEventFiltersResponse>
 {
 public:
     void set_query_data(std::vector<ApiEventFilterValue> value)
@@ -1767,7 +1773,7 @@ public:
     std::vector<ApiEventFilterValue> query_data{};
 };
 
-class AuthEventFiltersResponse : public serde::Serializer<AuthEventFiltersResponse>
+class AuthEventFiltersResponse : public core::behavior::Serializer<AuthEventFiltersResponse>
 {
 public:
     void set_query_data(std::vector<AuthEventFilterValue> value)
@@ -1783,7 +1789,7 @@ public:
     std::vector<AuthEventFilterValue> query_data{};
 };
 
-class DisputeFiltersResponse : public serde::Serializer<DisputeFiltersResponse>
+class DisputeFiltersResponse : public core::behavior::Serializer<DisputeFiltersResponse>
 {
 public:
     void set_query_data(std::vector<DisputeFilterValue> value)
@@ -1799,7 +1805,7 @@ public:
     std::vector<DisputeFilterValue> query_data{};
 };
 
-class FrmFiltersResponse : public serde::Serializer<FrmFiltersResponse>
+class FrmFiltersResponse : public core::behavior::Serializer<FrmFiltersResponse>
 {
 public:
     void set_query_data(std::vector<FrmFilterValue> value)
@@ -1815,7 +1821,7 @@ public:
     std::vector<FrmFilterValue> query_data{};
 };
 
-class GetApiEventMetricRequest : public serde::Serializer<GetApiEventMetricRequest>
+class GetApiEventMetricRequest : public core::behavior::Serializer<GetApiEventMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -1886,7 +1892,7 @@ public:
     bool delta{};
 };
 
-class GetAuthEventMetricRequest : public serde::Serializer<GetAuthEventMetricRequest>
+class GetAuthEventMetricRequest : public core::behavior::Serializer<GetAuthEventMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -1957,7 +1963,7 @@ public:
     bool delta{};
 };
 
-class GetDisputeMetricRequest : public serde::Serializer<GetDisputeMetricRequest>
+class GetDisputeMetricRequest : public core::behavior::Serializer<GetDisputeMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2028,7 +2034,7 @@ public:
     bool delta{};
 };
 
-class GetFrmMetricRequest : public serde::Serializer<GetFrmMetricRequest>
+class GetFrmMetricRequest : public core::behavior::Serializer<GetFrmMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2099,7 +2105,8 @@ public:
     bool delta{};
 };
 
-class GetPaymentIntentMetricRequest : public serde::Serializer<GetPaymentIntentMetricRequest>
+class GetPaymentIntentMetricRequest :
+    public core::behavior::Serializer<GetPaymentIntentMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2171,7 +2178,7 @@ public:
     bool delta{};
 };
 
-class GetPaymentMetricRequest : public serde::Serializer<GetPaymentMetricRequest>
+class GetPaymentMetricRequest : public core::behavior::Serializer<GetPaymentMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2253,7 +2260,7 @@ public:
     bool delta{};
 };
 
-class GetRefundMetricRequest : public serde::Serializer<GetRefundMetricRequest>
+class GetRefundMetricRequest : public core::behavior::Serializer<GetRefundMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2335,7 +2342,7 @@ public:
     bool delta{};
 };
 
-class GetSdkEventMetricRequest : public serde::Serializer<GetSdkEventMetricRequest>
+class GetSdkEventMetricRequest : public core::behavior::Serializer<GetSdkEventMetricRequest>
 {
 public:
     void set_time_series(std::optional<TimeSeries> value)
@@ -2406,7 +2413,7 @@ public:
     bool delta{};
 };
 
-class MetricsResponse : public serde::Serializer<MetricsResponse>
+class MetricsResponse : public core::behavior::Serializer<MetricsResponse>
 {
 public:
     void set_query_data(std::vector<std::string> value)
@@ -2433,7 +2440,7 @@ public:
     std::array<AnalyticsMetadata, 1> meta_data{};
 };
 
-class PaymentFiltersResponse : public serde::Serializer<PaymentFiltersResponse>
+class PaymentFiltersResponse : public core::behavior::Serializer<PaymentFiltersResponse>
 {
 public:
     void set_query_data(std::vector<FilterValue> value)
@@ -2449,7 +2456,7 @@ public:
     std::vector<FilterValue> query_data{};
 };
 
-class PaymentIntentFiltersResponse : public serde::Serializer<PaymentIntentFiltersResponse>
+class PaymentIntentFiltersResponse : public core::behavior::Serializer<PaymentIntentFiltersResponse>
 {
 public:
     void set_query_data(std::vector<PaymentIntentFilterValue> value)
@@ -2465,7 +2472,7 @@ public:
     std::vector<PaymentIntentFilterValue> query_data{};
 };
 
-class RefundFiltersResponse : public serde::Serializer<RefundFiltersResponse>
+class RefundFiltersResponse : public core::behavior::Serializer<RefundFiltersResponse>
 {
 public:
     void set_query_data(std::vector<RefundFilterValue> value)
@@ -2481,7 +2488,7 @@ public:
     std::vector<RefundFilterValue> query_data{};
 };
 
-class ReportRequest : public serde::Serializer<ReportRequest>
+class ReportRequest : public core::behavior::Serializer<ReportRequest>
 {
 public:
     void set_time_range(TimeRangeValue value)
@@ -2541,7 +2548,7 @@ public:
     std::optional<ReportColumns> columns{};
 };
 
-class SdkEventFiltersResponse : public serde::Serializer<SdkEventFiltersResponse>
+class SdkEventFiltersResponse : public core::behavior::Serializer<SdkEventFiltersResponse>
 {
 public:
     void set_query_data(std::vector<SdkEventFilterValue> value)
@@ -2557,7 +2564,7 @@ public:
     std::vector<SdkEventFilterValue> query_data{};
 };
 
-class AnalyticsRequest : public serde::Serializer<AnalyticsRequest>
+class AnalyticsRequest : public core::behavior::Serializer<AnalyticsRequest>
 {
 public:
     void set_payment_intent(std::optional<GetPaymentIntentMetricRequest> value)
@@ -2607,7 +2614,7 @@ public:
     std::optional<GetDisputeMetricRequest> dispute{};
 };
 
-class GenerateReportRequest : public serde::Serializer<GenerateReportRequest>
+class GenerateReportRequest : public core::behavior::Serializer<GenerateReportRequest>
 {
 public:
     void set_request(ReportRequest value)

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -90,20 +91,49 @@ public:
         return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    [[nodiscard]] bool is_v2(interfaces::io::IRequest& req) const
+private:
+    ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Config operations resolve their admin rule from the shared registry. The
+ * scoped key is a path segment: v1 is /configs/:key, v2 is /v2/configs/:key,
+ * so the handler picks the index from segment 0 and RequestSupport::path reads
+ * the value.
+ */
+class ConfigsPolicy
+{
+public:
+    explicit ConfigsPolicy(ConfigsInputSupport& support) noexcept :
+        m_support{support}
     {
-        return ::app::http::RequestPath{}(req).at(0).value_or("") == "v2";
     }
 
-    [[nodiscard]] std::string config_key_from_request(interfaces::io::IRequest& req) const
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
     {
-        const auto segments = ::app::http::RequestPath{}(req);
-        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
-        return std::string{segments.at(is_v2(req) ? 2U : 1U).value_or("")};
+        (void)spec; // admin rules are registry-driven, keyed by operation.
+        return m_support.authorize_operation(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest&) const noexcept
+    {
+        return {};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
     }
 
 private:
-    ::app::context::AppContext& m_context;
+    ConfigsInputSupport& m_support;
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

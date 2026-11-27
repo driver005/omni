@@ -5,7 +5,6 @@ import core_error;
 import app_context;
 
 import :cache_input;
-import :cache_result;
 import :cache_runtime_common;
 import :cache_runtime_invalidate;
 
@@ -20,7 +19,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CacheInvalidateResult, core::error::AppError>
+    [[nodiscard]] std::expected<void, core::error::AppError>
     invalidate(const CacheInvalidateInput& input) const
     {
         return m_invalidate.invalidate(input);

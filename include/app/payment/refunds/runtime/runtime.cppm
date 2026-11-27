@@ -1,6 +1,7 @@
 export module app_payment:refunds_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -52,103 +53,107 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     create(const RefundsCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<RefundsRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     retrieve(const RefundsRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<RefundsRetrieveGatewayResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     retrieve_gateway(const RefundsRetrieveGatewayInput& input) const
     {
         return m_retrieve_gateway.retrieve_gateway(input);
     }
 
-    [[nodiscard]] std::expected<RefundsRetrieveBodyResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     retrieve_body(const RefundsRetrieveBodyInput& input) const
     {
         return m_retrieve_body.retrieve_body(input);
     }
 
-    [[nodiscard]] std::expected<RefundsUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     update(const RefundsUpdateInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<RefundsReverseResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     reverse(const RefundsReverseInput& input) const
     {
         return m_reverse.reverse(input);
     }
 
-    [[nodiscard]] std::expected<RefundsMetadataUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     metadata_update(const RefundsMetadataUpdateInput& input) const
     {
         return m_metadata_update.metadata_update(input);
     }
 
-    [[nodiscard]] std::expected<RefundsListResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
     list(const RefundsListInput& input) const
     {
         return m_list.list(input);
     }
 
-    [[nodiscard]] std::expected<RefundsListPlatformResult, core::error::AppError>
-    list_platform(const RefundsListPlatformInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::PlatformRefundListResponse, core::error::AppError>
+        list_platform(const RefundsListPlatformInput& input) const
     {
         return m_list_platform.list_platform(input);
     }
 
-    [[nodiscard]] std::expected<RefundsFilterPlatformResult, core::error::AppError>
-    filter_platform(const RefundsFilterPlatformInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::PlatformRefundListFilters, core::error::AppError>
+        filter_platform(const RefundsFilterPlatformInput& input) const
     {
         return m_filter_platform.filter_platform(input);
     }
 
-    [[nodiscard]] std::expected<RefundsListProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
     list_profile(const RefundsListProfileInput& input) const
     {
         return m_list_profile.list_profile(input);
     }
 
-    [[nodiscard]] std::expected<RefundsFilterListResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListMetaData, core::error::AppError>
     filter_list(const RefundsFilterListInput& input) const
     {
         return m_filter_list.filter_list(input);
     }
 
-    [[nodiscard]] std::expected<RefundsFiltersResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
     filters(const RefundsFiltersInput& input) const
     {
         return m_filters.filters(input);
     }
 
-    [[nodiscard]] std::expected<RefundsFiltersProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
     filters_profile(const RefundsFiltersProfileInput& input) const
     {
         return m_filters_profile.filters_profile(input);
     }
 
-    [[nodiscard]] std::expected<RefundsAggregatesResult, core::error::AppError>
-    aggregates(const RefundsAggregatesInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
+        aggregates(const RefundsAggregatesInput& input) const
     {
         return m_aggregates.aggregates(input);
     }
 
-    [[nodiscard]] std::expected<RefundsAggregatesProfileResult, core::error::AppError>
-    aggregates_profile(const RefundsAggregatesProfileInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
+        aggregates_profile(const RefundsAggregatesProfileInput& input) const
     {
         return m_aggregates_profile.aggregates_profile(input);
     }
 
-    [[nodiscard]] std::expected<RefundsManualUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     manual_update(const RefundsManualUpdateInput& input) const
     {
         return m_manual_update.manual_update(input);

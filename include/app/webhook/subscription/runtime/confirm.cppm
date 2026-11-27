@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -26,7 +25,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConfirmSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     confirm(const ConfirmSubscriptionInput& input) const
     {
         if (const auto failure =
@@ -104,9 +103,7 @@ public:
         m_context.repository().update_subscription(m_support.to_store_record(*found));
 
         m_support.metrics_for("subscription.confirm");
-        return ConfirmSubscriptionResult{
-            m_support.build_confirm_response(*found, invoice, payment)
-        };
+        return m_support.build_confirm_response(*found, invoice, payment);
     }
 
 private:

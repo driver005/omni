@@ -4,13 +4,14 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
 import app_auth;
 
 import :subscription_input;
-import :subscription_result;
+import :webhook_policy;
 import :subscription_runtime;
 
 export namespace app::handlers::subscription {
@@ -18,9 +19,17 @@ export namespace app::handlers::subscription {
 class UpdateHandlers
 {
 public:
-    UpdateHandlers(::app::context::AppContext& ctx, SubscriptionRuntime& runtime) noexcept :
+    using RequestSupport =
+        ::core::behavior::RequestSupport<::app::webhook::policy::SubscriptionPolicy>;
+
+    UpdateHandlers(
+        ::app::context::AppContext& ctx,
+        SubscriptionRuntime& runtime,
+        RequestSupport& request_support
+    ) noexcept :
         m_context{ctx},
-        m_runtime{runtime}
+        m_runtime{runtime},
+        m_request_support{request_support}
     {
     }
 
@@ -54,7 +63,7 @@ public:
     )
     {
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto failure = m_input_support.authorize_api_key(req, auth)) {
+        if (const auto failure = m_request_support.authorize(req, "api_key", {})) {
             const auto& error = *failure;
             error.send(res, send);
             return;
@@ -96,7 +105,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -104,6 +113,7 @@ private:
     ::app::context::AppContext& m_context;
     SubscriptionRuntime& m_runtime;
     SubscriptionInputSupport m_input_support{};
+    RequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::subscription

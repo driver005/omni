@@ -26,18 +26,19 @@ public:
     UserHandlersV1(
         ::app::context::AppContext& ctx,
         UserRuntime& runtime,
-        UserInputSupport& input
+        UserInputSupport& input,
+        UserRequestSupport& request_support
     ) noexcept :
-        m_dashboard{ctx, runtime, input},
-        m_auth{ctx, runtime, input},
-        m_users{ctx, runtime, input},
-        m_org{ctx, runtime, input},
-        m_password{ctx, runtime, input},
-        m_invites{ctx, runtime, input},
-        m_two_factor{ctx, runtime, input},
-        m_auth_methods{ctx, runtime, input},
-        m_connector{ctx, runtime, input},
-        m_internal{ctx, runtime, input}
+        m_dashboard{ctx, runtime, input, request_support},
+        m_auth{ctx, runtime, input, request_support},
+        m_users{ctx, runtime, input, request_support},
+        m_org{ctx, runtime, input, request_support},
+        m_password{ctx, runtime, input, request_support},
+        m_invites{ctx, runtime, input, request_support},
+        m_two_factor{ctx, runtime, input, request_support},
+        m_auth_methods{ctx, runtime, input, request_support},
+        m_connector{ctx, runtime, input, request_support},
+        m_internal{ctx, runtime, input, request_support}
     {
     }
 

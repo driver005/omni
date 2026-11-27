@@ -6,23 +6,15 @@ import app_dto;
 
 export namespace app::handlers::profiles {
 
-/**
- * Profile-owned wire type for upstream `api_models::admin::ProfileResponse`
- * (`docs/hyperswitch/crates/api_models/src/admin.rs:2838-3062` (v1) /
- * `:3066-...` (v2)). The shared `::app::dto::admin::ProfileResponse` keeps its
- * ids as `*Value` wrapper objects, which rfl serializes as `{"value": "..."}`
- * instead of the plain id strings upstream puts on the wire. This module owns
- * its response wire shape, so it derives the shared field bag but overrides
- * the two id accessors with plain `std::string`. Every other field keeps its
- * shared nested type, so no shared DTO has to be edited. Upstream's
- * domain-only extended-card flag (`business_profile.is_extended_card_info_enabled`,
- * `core/admin.rs:4922-4929`) has no `ProfileResponse` field upstream either;
- * the upstream-exposed `extended_card_info_config` field is inherited below
- * and the toggle state stays in the profile's scoped config.
- */
-class ProfileWireResponse : public ::app::dto::admin::ProfileResponse
+class ProfileWireResponse :
+    public ::app::dto::admin::ProfileResponse,
+    public serde::Serializer<ProfileWireResponse>
 {
 public:
+    // ProfileResponse brings its own Serializer<ProfileResponse>::serialize; pin this
+    // type's overload so the profile wire fields win at every call site.
+    using serde::Serializer<ProfileWireResponse>::serialize;
+
     void set_merchant_id(std::string value)
     {
         m_merchant_id = std::move(value);
@@ -48,146 +40,77 @@ private:
     std::string m_profile_id{};
 };
 
-// ───────────────────────── Plain results ─────────────────────────
-// Typed results inherit the exact wire shape of the DTO the old core encoded.
-// The delete literal and the list arrays are carried as typed data (bool and
-// std::vector<ProfileWireResponse>); the handler serializes them with Ser so
-// no hand-built JSON text ever reaches the wire.
+// Wire field lists captured from the former Result Serializable specializations.
+// Each Result reused the full FieldDesc tuple of its underlying model, so these
+// lists hold the exact declared field names in Serializable<T>::fields() order.
 
-class ProfileCreateResult : public ProfileWireResponse
-{
-public:
-    ProfileCreateResult() = default;
-
-    explicit ProfileCreateResult(ProfileWireResponse value) noexcept :
-        ProfileWireResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 56> kProfileWireFields{
+    "merchant_id",
+    "profile_id",
+    "profile_name",
+    "return_url",
+    "enable_payment_response_hash",
+    "payment_response_hash_key",
+    "redirect_to_merchant_with_http_post",
+    "webhook_details",
+    "metadata",
+    "routing_algorithm",
+    "intent_fulfillment_time",
+    "frm_routing_algorithm",
+    "payout_routing_algorithm",
+    "applepay_verified_domains",
+    "session_expiry",
+    "payment_link_config",
+    "authentication_connector_details",
+    "use_billing_as_payment_method_billing",
+    "extended_card_info_config",
+    "collect_shipping_details_from_wallet_connector",
+    "collect_billing_details_from_wallet_connector",
+    "always_collect_shipping_details_from_wallet_connector",
+    "always_collect_billing_details_from_wallet_connector",
+    "is_connector_agnostic_mit_enabled",
+    "payout_link_config",
+    "outgoing_webhook_custom_http_headers",
+    "tax_connector_id",
+    "is_tax_connector_enabled",
+    "is_network_tokenization_enabled",
+    "is_auto_retries_enabled",
+    "max_auto_retries_enabled",
+    "always_request_extended_authorization",
+    "is_click_to_pay_enabled",
+    "authentication_product_ids",
+    "card_testing_guard_config",
+    "is_clear_pan_retries_enabled",
+    "force_3ds_challenge",
+    "is_debit_routing_enabled",
+    "merchant_business_country",
+    "is_pre_network_tokenization_enabled",
+    "acquirer_configs",
+    "acquirer_config_bucket",
+    "is_iframe_redirection_enabled",
+    "merchant_category_code",
+    "merchant_country_code",
+    "dispute_polling_interval",
+    "is_manual_retry_enabled",
+    "auto_fallback_capture_method",
+    "always_enable_overcapture",
+    "is_external_vault_enabled",
+    "external_vault_connector_details",
+    "billing_processor_id",
+    "surcharge_connector_details",
+    "is_l2_l3_enabled",
+    "network_tokenization_credentials",
+    "payment_method_blocking",
 };
 
-class ProfileRetrieveResult : public ProfileWireResponse
-{
-public:
-    ProfileRetrieveResult() = default;
-
-    explicit ProfileRetrieveResult(ProfileWireResponse value) noexcept :
-        ProfileWireResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 1> kConnectorAgnosticMitChoiceWireFields{
+    "enabled",
 };
 
-class ProfileUpdateResult : public ProfileWireResponse
-{
-public:
-    ProfileUpdateResult() = default;
-
-    explicit ProfileUpdateResult(ProfileWireResponse value) noexcept :
-        ProfileWireResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 1> kExtendedCardInfoChoiceWireFields{
+    "enabled",
 };
 
-// core/admin.rs:4195 — Json(bool): the store delete result is a bare `true`.
-// The handler serializes get_value() directly to keep the top-level literal.
-class ProfileDeleteResult
-{
-public:
-    ProfileDeleteResult() = default;
-
-    explicit ProfileDeleteResult(bool value) noexcept :
-        m_value{value}
-    {
-    }
-
-    [[nodiscard]] bool get_value() const noexcept
-    {
-        return m_value;
-    }
-
-    void set_value(bool value)
-    {
-        m_value = value;
-    }
-
-private:
-    bool m_value{true};
-};
-
-// Both list routes return a top-level JSON array. Carry the typed vector; the
-// handler serializes get_items() so the wire stays a bare array without any
-// hand-built JSON text.
-class ProfilesListResult
-{
-public:
-    ProfilesListResult() = default;
-
-    explicit ProfilesListResult(std::vector<ProfileWireResponse> items) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<ProfileWireResponse>& get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<ProfileWireResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<ProfileWireResponse> m_items{};
-};
-
-class ProfilesListAtProfileLevelResult
-{
-public:
-    ProfilesListAtProfileLevelResult() = default;
-
-    explicit ProfilesListAtProfileLevelResult(std::vector<ProfileWireResponse> items) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<ProfileWireResponse>& get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<ProfileWireResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<ProfileWireResponse> m_items{};
-};
-
-class ToggleConnectorAgnosticMitResult : public ::app::dto::admin::ConnectorAgnosticMitChoice
-{
-public:
-    ToggleConnectorAgnosticMitResult() = default;
-
-    explicit ToggleConnectorAgnosticMitResult(
-        ::app::dto::admin::ConnectorAgnosticMitChoice value
-    ) noexcept :
-        ConnectorAgnosticMitChoice{std::move(value)}
-    {
-    }
-};
-
-class ToggleExtendedCardInfoResult : public ::app::dto::admin::ExtendedCardInfoChoice
-{
-public:
-    ToggleExtendedCardInfoResult() = default;
-
-    explicit ToggleExtendedCardInfoResult(::app::dto::admin::ExtendedCardInfoChoice value) noexcept
-        :
-        ExtendedCardInfoChoice{std::move(value)}
-    {
-    }
-};
 
 } // namespace app::handlers::profiles
 
@@ -511,77 +434,5 @@ struct serde::Serializable<::app::handlers::profiles::ProfileWireResponse>
     static constexpr std::string_view table_name()
     {
         return "profile_response";
-    }
-};
-
-// Reuse the base DTO descriptors: field names, order and nested types stay
-// byte-identical to the DTOs the old core passed to encode_json.
-template<>
-struct serde::Serializable<::app::handlers::profiles::ProfileCreateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::handlers::profiles::ProfileWireResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "profile_create_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::profiles::ProfileRetrieveResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::handlers::profiles::ProfileWireResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "profile_retrieve_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::profiles::ProfileUpdateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::handlers::profiles::ProfileWireResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "profile_update_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::profiles::ToggleConnectorAgnosticMitResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::admin::ConnectorAgnosticMitChoice>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "toggle_connector_agnostic_mit_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::profiles::ToggleExtendedCardInfoResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::admin::ExtendedCardInfoChoice>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "toggle_extended_card_info_result";
     }
 };

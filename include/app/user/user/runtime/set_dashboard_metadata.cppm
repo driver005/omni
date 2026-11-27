@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SetDashboardMetadataResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     set_dashboard_metadata(const SetDashboardMetadataInput& input) const
     {
         std::string set_cookie{};
@@ -55,7 +55,7 @@ public:
         m_context.metrics().record_flow("set_dashboard_metadata");
         m_context.metrics().counter("user.set_dashboard_metadata").increment();
 
-        return SetDashboardMetadataResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

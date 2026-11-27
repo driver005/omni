@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentLinkRetrieveResult, core::error::AppError>
-    retrieve(const PaymentLinkRetrieveInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::RetrievePaymentLinkResponse, core::error::AppError>
+        retrieve(const PaymentLinkRetrieveInput& input) const
     {
         m_context.metrics().record_flow("payment_link.retrieve");
         m_context.metrics().counter("payment_link.retrieve").increment();
@@ -159,7 +160,7 @@ public:
                 : ::app::model::payments::PaymentLinkStatus::Active
         );
 
-        return PaymentLinkRetrieveResult{std::move(response)};
+        return ::app::model::payments::RetrievePaymentLinkResponse{std::move(response)};
     }
 
 private:

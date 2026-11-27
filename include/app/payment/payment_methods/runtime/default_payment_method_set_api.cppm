@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DefaultPaymentMethodSetApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse,
+        core::error::AppError>
     default_payment_method_set_api(const DefaultPaymentMethodSetApiInput& input) const
     {
         m_context.cache().put(
@@ -55,7 +57,9 @@ public:
             input.record.get_type().empty() ? std::string{"card"} : input.record.get_type()
         );
         response.set_payment_method(std::move(method));
-        return DefaultPaymentMethodSetApiResult{std::move(response)};
+        return ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse{
+            std::move(response)
+        };
     }
 
 private:

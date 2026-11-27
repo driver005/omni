@@ -26,25 +26,33 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RevenueRecoveryDataBackfillResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse,
+        core::error::AppError>
     backfill(const RevenueRecoveryDataBackfillInput& input) const
     {
         return m_backfill.backfill(input);
     }
 
-    [[nodiscard]] std::expected<RetryStatsMigrationResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse,
+        core::error::AppError>
     retry_stats_migration(const RetryStatsMigrationInput& input) const
     {
         return m_retry_stats_migration.retry_stats_migration(input);
     }
 
-    [[nodiscard]] std::expected<UpdateRedisDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse,
+        core::error::AppError>
     update_redis_data(const UpdateRedisDataInput& input) const
     {
         return m_update_redis_data.update_redis_data(input);
     }
 
-    [[nodiscard]] std::expected<UnlockStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse,
+        core::error::AppError>
     unlock_status(const UnlockStatusInput& input) const
     {
         return m_unlock_status.unlock_status(input);

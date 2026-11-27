@@ -3,6 +3,7 @@ export module app_auth:connector_onboarding_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_dto;
 import app_context_core;
@@ -11,45 +12,14 @@ import app_http;
 export namespace app::handlers::connector_onboarding {
 
 /**
- * @brief Parse/auth support for the connector_onboarding handlers.
+ * @brief Wire-level parsing helpers for the connector_onboarding handlers.
  *
- * Kept free of business logic: it only turns request data into the plain Input
- * structs consumed by the domain runtime.
+ * Auth and scope resolution live in @ref ConnectorOnboardingPolicy; this class
+ * only keeps validation and error-status translation used by the route layer.
  */
 class ConnectorOnboardingInputSupport
 {
 public:
-    explicit ConnectorOnboardingInputSupport(::app::context::AppContext& context) noexcept :
-        m_context{context}
-    {
-    }
-
-    struct AuthorizedRequest
-    {
-        std::optional<core::error::AppError> error{};
-        ::app::auth::AuthContext context{};
-    };
-
-    [[nodiscard]] AuthorizedRequest
-    authorize(interfaces::io::IRequest& req, std::string_view operation) const
-    {
-        const auto rule = m_context.auth_rules().rule_for(operation);
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        return AuthorizedRequest{m_context.authorizer().authorize_route(auth, rule), auth};
-    }
-
-    [[nodiscard]] std::string onboarding_merchant_id(
-        interfaces::io::IRequest& req,
-        const ::app::auth::AuthContext& auth
-    ) const
-    {
-        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
-        if (connected.has_value() && !connected->empty()) {
-            return std::string{*connected};
-        }
-        return ::app::http::merchant_id_from_header{}(req);
-    }
-
     // Upstream id_type::is_valid_id_character (common_utils/src/id_type.rs:74-77).
     [[nodiscard]] bool valid_id(std::string_view id) const
     {
@@ -80,6 +50,49 @@ public:
         if (kind_name == "PreconditionFailed") {
             return Status::BAD_REQUEST;
         }
+        return std::nullopt;
+    }
+};
+
+/**
+ * @brief Domain policy: declarative registry rule plus the connected-merchant
+ * identity the onboarding runtimes expect as `merchant_id`.
+ */
+class ConnectorOnboardingPolicy
+{
+public:
+    explicit ConnectorOnboardingPolicy(::app::context::AppContext& context) noexcept :
+        m_context{context}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        const auto rule = m_context.auth_rules().rule_for(operation);
+        return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope out{};
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value() && !connected->empty()) {
+            out.connected_merchant_id = *connected;
+        }
+        out.merchant_id = ::app::http::merchant_id_from_header{}(req);
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope& scope) const
+    {
+        (void)scope;
         return std::nullopt;
     }
 

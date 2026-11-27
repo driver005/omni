@@ -2,9 +2,11 @@ module;
 export module app_dto:webhooks;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ enum class AuthenticationIdType
     ConnectorAuthenticationId,
 };
 
-class ConnectorWebhookSecrets : public serde::Serializer<ConnectorWebhookSecrets>
+class ConnectorWebhookSecrets : public core::behavior::Serializer<ConnectorWebhookSecrets>
 {
 public:
     void set_secret(std::vector<std::uint8_t> value)
@@ -44,7 +46,7 @@ public:
     std::optional<std::string> additional_secret{};
 };
 
-class EventTypeValue : public serde::Serializer<EventTypeValue>
+class EventTypeValue : public core::behavior::Serializer<EventTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -123,7 +125,7 @@ enum class MandateIdType
     ConnectorMandateId,
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -167,7 +169,7 @@ enum class PayoutIdType
     ConnectorPayoutId,
 };
 
-class PayoutWebhookUpdate : public serde::Serializer<PayoutWebhookUpdate>
+class PayoutWebhookUpdate : public core::behavior::Serializer<PayoutWebhookUpdate>
 {
 public:
     void set_error_message(std::optional<std::string> value)
@@ -194,7 +196,7 @@ public:
     std::optional<std::string> error_code{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -267,7 +269,7 @@ enum class WebhookResponseKind : std::uint8_t
     JSON_WITH_HEADERS, // WebhookResponse::JsonWithHeaders((R, Vec<(String, Maskable<String>)>))
 };
 
-class WebhookResponse : public serde::Serializer<WebhookResponse>
+class WebhookResponse : public core::behavior::Serializer<WebhookResponse>
 {
 public:
     using Header = std::pair<std::string, std::string>;
@@ -372,7 +374,7 @@ private:
     std::vector<Header> m_headers{};
 };
 
-class IncomingWebhookDetails : public serde::Serializer<IncomingWebhookDetails>
+class IncomingWebhookDetails : public core::behavior::Serializer<IncomingWebhookDetails>
 {
 public:
     void set_object_reference_id(ObjectReferenceId value)
@@ -399,7 +401,7 @@ public:
     std::vector<std::uint8_t> resource_object{};
 };
 
-class OutgoingWebhook : public serde::Serializer<OutgoingWebhook>
+class OutgoingWebhook : public core::behavior::Serializer<OutgoingWebhook>
 {
 public:
     void set_merchant_id(MerchantIdValue value)

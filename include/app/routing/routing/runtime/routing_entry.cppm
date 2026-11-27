@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingEntryResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_entry(const RoutingInput& input) const
     {
         if (input.profile_id.empty()) {
@@ -78,7 +78,7 @@ public:
             );
         }
         m_support.track("routing_entry");
-        return RoutingEntryResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

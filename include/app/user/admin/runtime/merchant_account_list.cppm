@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountListResult, core::error::AppError>
-    list(const MerchantAccountListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::dto::admin::MerchantAccountResponse>, core::error::AppError>
+        list(const MerchantAccountListInput& input) const
     {
         std::vector<::app::dto::admin::MerchantAccountResponse> response;
         const auto accounts = m_context.repository().list_merchant_accounts();
@@ -71,7 +72,7 @@ public:
 
         m_context.metrics().record_flow("merchant_account_list");
         m_context.metrics().counter("admin.merchant_account_list").increment();
-        return MerchantAccountListResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

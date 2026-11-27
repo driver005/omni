@@ -27,7 +27,9 @@ public:
     explicit FeatureMatrixRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_v1{context, m_runtime}
+        m_policy{context},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_request_support}
     {
     }
 
@@ -39,7 +41,9 @@ public:
 private:
     ::app::context::AppContext& m_context;
     FeatureMatrixRuntime m_runtime; // SINGLE runtime — no duplicated mutable state.
-    FeatureMatrixHandlersV1 m_v1;   // Holds AppContext& + FeatureMatrixRuntime&.
+    FeatureMatrixPolicy m_policy;
+    FeatureMatrixRequestSupport m_request_support;
+    FeatureMatrixHandlersV1 m_v1; // Holds AppContext& + FeatureMatrixRuntime&.
 };
 
 } // namespace app::handlers::feature_matrix

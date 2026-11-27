@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingRetrieveLinkedConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_retrieve_linked_config(const RoutingInput& input) const
     {
         const auto merchant = input.merchant_id;
@@ -56,7 +56,7 @@ public:
             }
         }
         m_support.track("routing_retrieve_linked_config");
-        return RoutingRetrieveLinkedConfigResult{ResponseDocument::from(active)};
+        return ResponseDocument::from(active);
     }
 
 private:

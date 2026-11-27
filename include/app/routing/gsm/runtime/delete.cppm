@@ -26,7 +26,7 @@ public:
 
     // ── Core: delete ───────────────────────────────────────────────────────
     // delete_gsm_rule + to_not_found_response (core/gsm.rs:138-163).
-    [[nodiscard]] std::expected<DeleteGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmDeleteResponse, core::error::AppError>
     remove(const DeleteGsmRuleInput& input) const
     {
         const auto& in = input.request;
@@ -72,7 +72,7 @@ public:
         m_context.events().publish("gsm.rule.deleted", m_support.audit_payload("deleted", key));
         m_context.metrics().record_flow("GsmRuleDelete");
         m_context.metrics().counter("GSM_RULE_DELETED").increment();
-        return DeleteGsmRuleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

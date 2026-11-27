@@ -2,6 +2,7 @@ export module app_store:files_runtime_delete;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_metrics;
 import app_context_core;
@@ -22,7 +23,7 @@ public:
     }
 
     /** @brief Port of `files_delete_core` (`core/files.rs:92-109`). */
-    [[nodiscard]] std::expected<FilesDeleteResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_file(const FilesDeleteInput& input) const
     {
         // Upstream: files.rs:96-97 — server_wrap records the flow and route counter.
@@ -43,9 +44,12 @@ public:
         }
 
         // core/files.rs:108-109 — Json(ApplicationResponse::StatusOk { "success" }).
-        FilesDeleteResult result{};
-        result.set_status("success");
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{files_delete_wire_fields()[0]},
+            serde::Value{std::string{"success"}}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

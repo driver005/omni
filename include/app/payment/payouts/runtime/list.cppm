@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: list ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsListResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
     list(const PayoutsListInput& input) const
     {
         m_context.metrics().record_flow("payout_list");
@@ -47,7 +47,7 @@ public:
             "", // merchant scope passes None profile_id_list (payouts.rs:354)
             input.range
         );
-        return PayoutsListResult{response};
+        return ::app::model::payouts::PayoutListResponse{response};
     }
 
 private:

@@ -2,9 +2,11 @@ module;
 export module app_dto:connector_onboarding;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -16,7 +18,7 @@ enum class ActionUrlResponse
     PayPal,
 };
 
-class ConnectorValue : public serde::Serializer<ConnectorValue>
+class ConnectorValue : public core::behavior::Serializer<ConnectorValue>
 {
 public:
     void set_value(std::string v)
@@ -32,7 +34,8 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantConnectorAccountIdValue :
+    public core::behavior::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -48,7 +51,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -69,7 +72,7 @@ enum class OnboardingStatus
     PayPal,
 };
 
-class PayPalActionUrlResponse : public serde::Serializer<PayPalActionUrlResponse>
+class PayPalActionUrlResponse : public core::behavior::Serializer<PayPalActionUrlResponse>
 {
 public:
     void set_action_url(std::string value)
@@ -85,7 +88,7 @@ public:
     std::string action_url{};
 };
 
-class PayPalIntegrationDone : public serde::Serializer<PayPalIntegrationDone>
+class PayPalIntegrationDone : public core::behavior::Serializer<PayPalIntegrationDone>
 {
 public:
     void set_connector_id(std::string value)
@@ -112,7 +115,7 @@ enum class PayPalOnboardingStatus
     ConnectorIntegrated,
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -132,7 +135,7 @@ public:
 // plain strings on the wire (common_utils/src/id_type.rs:88-104,
 // common_enums/src/connector_enums.rs:29-32). Mirror that wire shape directly so
 // serde::Ser::deserialize parses the upstream JSON without a {"value": ...} wrapper.
-class ActionUrlRequest : public serde::Serializer<ActionUrlRequest>
+class ActionUrlRequest : public core::behavior::Serializer<ActionUrlRequest>
 {
 public:
     void set_connector(std::string value)
@@ -170,7 +173,7 @@ public:
     std::string return_url{};
 };
 
-class OnboardingSyncRequest : public serde::Serializer<OnboardingSyncRequest>
+class OnboardingSyncRequest : public core::behavior::Serializer<OnboardingSyncRequest>
 {
 public:
     void set_profile_id(std::string value)
@@ -208,7 +211,7 @@ public:
     std::string connector{};
 };
 
-class PayPalOnboardingDone : public serde::Serializer<PayPalOnboardingDone>
+class PayPalOnboardingDone : public core::behavior::Serializer<PayPalOnboardingDone>
 {
 public:
     void set_payer_id(std::string value)
@@ -224,7 +227,7 @@ public:
     std::string payer_id{};
 };
 
-class ResetTrackingIdRequest : public serde::Serializer<ResetTrackingIdRequest>
+class ResetTrackingIdRequest : public core::behavior::Serializer<ResetTrackingIdRequest>
 {
 public:
     void set_connector_id(std::string value)

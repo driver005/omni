@@ -2,6 +2,7 @@ export module app_user:user_role_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :user_role_input;
@@ -58,31 +59,31 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetAuthorizationInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<GroupInfoWire>, core::error::AppError>
     get_authorization_info(const GetAuthorizationInfoInput& input) const
     {
         return m_get_authorization_info.get_authorization_info(input);
     }
 
-    [[nodiscard]] std::expected<GetRoleInformationResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentInfoWire>, core::error::AppError>
     get_role_information(const GetRoleInformationInput& input) const
     {
         return m_get_role_information.get_role_information(input);
     }
 
-    [[nodiscard]] std::expected<GetParentGroupInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentGroupDescriptionWire>, core::error::AppError>
     get_parent_group_info(const GetParentGroupInfoInput& input) const
     {
         return m_get_parent_group_info.get_parent_group_info(input);
     }
 
-    [[nodiscard]] std::expected<GetRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
     get_role_from_token(const GetRoleFromTokenInput& input) const
     {
         return m_get_role_from_token.get_role_from_token(input);
     }
 
-    [[nodiscard]] std::expected<GetGroupsAndResourcesForRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<GroupsAndResourcesWire, core::error::AppError>
     get_groups_and_resources_for_role_from_token(
         const GetGroupsAndResourcesForRoleFromTokenInput& input
     ) const
@@ -91,7 +92,7 @@ public:
             .get_groups_and_resources_for_role_from_token(input);
     }
 
-    [[nodiscard]] std::expected<GetParentGroupsInfoForRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentGroupInfoWire>, core::error::AppError>
     get_parent_groups_info_for_role_from_token(
         const GetParentGroupsInfoForRoleFromTokenInput& input
     ) const
@@ -100,85 +101,86 @@ public:
             .get_parent_groups_info_for_role_from_token(input);
     }
 
-    [[nodiscard]] std::expected<CreateRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     create_role(const CreateRoleInput& input) const
     {
         return m_create_role.create_role(input);
     }
 
-    [[nodiscard]] std::expected<CreateRoleV2Result, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
     create_role_v2(const CreateRoleV2Input& input) const
     {
         return m_create_role_v2.create_role_v2(input);
     }
 
-    [[nodiscard]] std::expected<GetRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     get_role(const GetRoleInput& input) const
     {
         return m_get_role.get_role(input);
     }
 
-    [[nodiscard]] std::expected<GetParentInfoForRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
     get_parent_info_for_role(const GetParentInfoForRoleInput& input) const
     {
         return m_get_parent_info_for_role.get_parent_info_for_role(input);
     }
 
-    [[nodiscard]] std::expected<UpdateRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     update_role(const UpdateRoleInput& input) const
     {
         return m_update_role.update_role(input);
     }
 
-    [[nodiscard]] std::expected<UpdateUserRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
     update_user_role(const UpdateUserRoleInput& input) const
     {
         return m_update_user_role.update_user_role(input);
     }
 
-    [[nodiscard]] std::expected<AcceptInvitationsV2Result, core::error::AppError>
+    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
     accept_invitations_v2(const AcceptInvitationsV2Input& input) const
     {
         return m_accept_invitations_v2.accept_invitations_v2(input);
     }
 
-    [[nodiscard]] std::expected<AcceptInvitationsPreAuthResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<TokenResponseWire, std::string>, core::error::AppError>
     accept_invitations_pre_auth(const AcceptInvitationsPreAuthInput& input) const
     {
         return m_accept_invitations_pre_auth.accept_invitations_pre_auth(input);
     }
 
-    [[nodiscard]] std::expected<DeleteUserRoleResult, core::error::AppError>
-    delete_user_role(const DeleteUserRoleInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::user_role::DeleteUserRoleResponse, core::error::AppError>
+        delete_user_role(const DeleteUserRoleInput& input) const
     {
         return m_delete_user_role.delete_user_role(input);
     }
 
-    [[nodiscard]] std::expected<ListUsersInLineageResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ListUsersInEntityWire>, core::error::AppError>
     list_users_in_lineage(const ListUsersInLineageInput& input) const
     {
         return m_list_users_in_lineage.list_users_in_lineage(input);
     }
 
-    [[nodiscard]] std::expected<ListRolesWithInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_roles_with_info(const ListRolesWithInfoInput& input) const
     {
         return m_list_roles_with_info.list_roles_with_info(input);
     }
 
-    [[nodiscard]] std::expected<ListInvitableRolesAtEntityLevelResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
     list_invitable_roles_at_entity_level(const ListInvitableRolesAtEntityLevelInput& input) const
     {
         return m_list_invitable_roles_at_entity_level.list_invitable_roles_at_entity_level(input);
     }
 
-    [[nodiscard]] std::expected<ListUpdatableRolesAtEntityLevelResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
     list_updatable_roles_at_entity_level(const ListUpdatableRolesAtEntityLevelInput& input) const
     {
         return m_list_updatable_roles_at_entity_level.list_updatable_roles_at_entity_level(input);
     }
 
-    [[nodiscard]] std::expected<ListInvitationsForUserResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<InvitationWire>, core::error::AppError>
     list_invitations_for_user(const ListInvitationsForUserInput& input) const
     {
         return m_list_invitations_for_user.list_invitations_for_user(input);

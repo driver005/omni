@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
     create(const ProfileCreateInput& input) const
     {
         auto repository = m_context.repository();
@@ -76,7 +76,7 @@ public:
         m_context.metrics().record_flow("profiles.create");
         m_context.metrics().record_flow("Flow::ProfileCreate");
         m_context.metrics().counter("profiles_create").increment();
-        return ProfileCreateResult{std::move(*domain)};
+        return std::move(*domain);
     }
 
 private:

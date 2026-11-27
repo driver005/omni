@@ -37,7 +37,7 @@ public:
 
     // payment_link_status (routes:217-249) -> get_payment_link_status
     // (core:892-1073). Always renders an IntentStatus page with redirect=true.
-    [[nodiscard]] std::expected<PaymentLinkStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     status(const PaymentLinkStatusInput& input) const
     {
         m_context.metrics().record_flow("payment_link.status");
@@ -47,7 +47,7 @@ public:
         if (!page) {
             return std::unexpected{page.error()};
         }
-        return PaymentLinkStatusResult{m_support.status_page_data_document(
+        return serde::Value{m_support.status_page_data_document(
             std::get<0>(*page),
             std::get<1>(*page),
             std::get<2>(*page)

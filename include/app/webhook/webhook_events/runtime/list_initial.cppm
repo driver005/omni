@@ -37,8 +37,9 @@ public:
 
     // Upstream: POST /events/{merchant_id}
     // routes/webhook_events.rs:18-55 -> core list_initial_delivery_attempts.
-    [[nodiscard]] std::expected<ListInitialResult, core::error::AppError>
-    list_initial(const ListInitialInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
+        list_initial(const ListInitialInput& input) const
     {
         auto listed = m_support.list_initial_delivery_attempts(
             input.merchant_id,
@@ -51,7 +52,7 @@ public:
 
         m_context.metrics().record_flow("WebhookEventInitialDeliveryAttemptList");
         m_context.metrics().counter("WEBHOOK_EVENT_INITIAL_ATTEMPTS_LIST").increment();
-        return ListInitialResult{std::move(*listed)};
+        return m_support.to_total_events_response(std::move(*listed));
     }
 
 private:

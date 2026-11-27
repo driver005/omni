@@ -33,13 +33,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetAuthorizationInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<GroupInfoWire>, core::error::AppError>
     get_authorization_info(const GetAuthorizationInfoInput& input) const
     {
         (void)input;
         auto groups = m_support.group_authorization_info();
         m_support.track_flow("get_authorization_info", "user_role.get_authorization_info");
-        return GetAuthorizationInfoResult{std::move(groups)};
+        return std::move(groups);
     }
 
 private:

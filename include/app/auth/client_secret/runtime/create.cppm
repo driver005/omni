@@ -23,8 +23,9 @@ public:
 
     // ───────────────────────── Core: create ─────────────────────────
     // api::server_wrap(flow=ClientSecretCreate) + helpers.rs:4694-4758.
-    [[nodiscard]] std::expected<ClientSecretCreateResult, core::error::AppError>
-    create(const ClientSecretCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
+        create(const ClientSecretCreateInput& input) const
     {
         m_context.metrics().record_flow("ClientSecretCreate");
         m_context.metrics().counter("client_secret_create").increment();
@@ -38,7 +39,7 @@ public:
             )) {
             return std::unexpected{*err};
         }
-        return ClientSecretCreateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

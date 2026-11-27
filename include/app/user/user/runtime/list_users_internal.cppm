@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListUsersInternalResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_users_internal(const ListUsersInternalInput& input) const
     {
         std::string set_cookie{};
@@ -62,7 +62,7 @@ public:
         }
         response.set_users(std::move(users));
         auto document = ResponseDocument::from(response);
-        return ListUsersInternalResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

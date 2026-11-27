@@ -2,16 +2,18 @@ module;
 export module app_dto:consts;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::consts {
 
-class ConstsCatalog : public serde::Serializer<ConstsCatalog>
+class ConstsCatalog : public core::behavior::Serializer<ConstsCatalog>
 {
 public:
     void set_name(std::string value)

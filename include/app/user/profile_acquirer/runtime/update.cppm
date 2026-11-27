@@ -36,8 +36,9 @@ public:
     }
 
     // routes/profile_acquirer.rs:52-97 -> core/profile_acquirer.rs:105-215.
-    [[nodiscard]] std::expected<ProfileAcquirerUpdateResult, core::error::AppError>
-    update(const ProfileAcquirerUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
+        update(const ProfileAcquirerUpdateInput& input) const
     {
         // core:114-120 — find_business_profile_by_profile_id -> ProfileNotFound.
         if (!m_support.profile_exists(input.profile_id)) {
@@ -118,7 +119,7 @@ public:
         m_context.metrics().record_flow("ProfileAcquirerUpdate");
         m_context.metrics().counter("profile_acquirer_update").increment();
 
-        return ProfileAcquirerUpdateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

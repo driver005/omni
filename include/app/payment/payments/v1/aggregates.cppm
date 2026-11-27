@@ -32,6 +32,13 @@ export namespace app::handlers::payments {
 class PaymentsV1AggregatesHandlers
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsV1AggregatesHandlers(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,
@@ -51,7 +58,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_payments_aggregates")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "get_payments_aggregates",
+                spec_for("get_payments_aggregates")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -80,7 +91,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -90,8 +101,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "get_payments_aggregates_profile")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "get_payments_aggregates_profile",
+                spec_for("get_payments_aggregates_profile")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -120,7 +134,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -130,9 +144,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support
-                    .authorize_mapped(req, "payments_list", "get_payment_list_from_opensearch")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_list",
+                spec_for("get_payment_list_from_opensearch")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -150,7 +166,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -160,10 +176,10 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_mapped(
+        if (const auto auth_error = m_request_support->authorize(
                 req,
                 "profile_payments_list",
-                "get_profile_payment_list_from_opensearch"
+                spec_for("get_profile_payment_list_from_opensearch")
             )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
@@ -184,7 +200,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

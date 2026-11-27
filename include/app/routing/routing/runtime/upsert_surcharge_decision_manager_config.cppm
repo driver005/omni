@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpsertSurchargeDecisionManagerConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     upsert_surcharge_decision_manager_config(const RoutingInput& input) const
     {
         const auto& typed = *input.surcharge_request;
@@ -82,7 +82,7 @@ public:
         m_support.upsert_config(std::move(stored));
         m_support.set_active_algo_ref(profile, "surcharge_config_algo_id", key);
         m_support.track("upsert_surcharge_decision_manager_config");
-        return UpsertSurchargeDecisionManagerConfigResult{ResponseDocument::from(record)};
+        return ResponseDocument::from(record);
     }
 
 private:

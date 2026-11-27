@@ -30,11 +30,13 @@ public:
     GsmHandlersV1(
         ::app::context::AppContext& context,
         GsmRuntime& runtime,
-        GsmInputSupport& input_support
+        GsmInputSupport& input_support,
+        GsmRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -44,7 +46,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_request(req, "create_gsm_rule")) {
+        if (const auto auth_error = m_request_support.authorize(req, "create_gsm_rule", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -75,8 +77,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -86,7 +93,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_request(req, "get_gsm_rule")) {
+        if (const auto auth_error = m_request_support.authorize(req, "get_gsm_rule", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -117,8 +124,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -128,7 +140,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_request(req, "update_gsm_rule")) {
+        if (const auto auth_error = m_request_support.authorize(req, "update_gsm_rule", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -159,8 +171,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -170,7 +187,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_request(req, "delete_gsm_rule")) {
+        if (const auto auth_error = m_request_support.authorize(req, "delete_gsm_rule", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -201,8 +218,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmDeleteResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -273,6 +295,7 @@ private:
     ::app::context::AppContext& m_context;
     GsmRuntime& m_runtime;
     GsmInputSupport& m_input_support;
+    GsmRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::gsm

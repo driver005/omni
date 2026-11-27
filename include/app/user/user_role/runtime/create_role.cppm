@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     create_role(const CreateRoleInput& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -100,7 +100,7 @@ public:
         response.set_role_scope(input.request.get_role_scope());
         response.set_entity_type(saved->get_entity_type());
         m_support.track_flow("create_role", "user_role.create_role");
-        return CreateRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

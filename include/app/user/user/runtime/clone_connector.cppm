@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CloneConnectorResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     clone_connector(const CloneConnectorInput& input) const
     {
         std::string set_cookie{};
@@ -84,7 +84,7 @@ public:
         object["profile_id"] = serde::Value{cloned_profile};
         object["connector_account_details"] = ResponseDocument::empty();
         object["status"] = serde::Value{cloned_status};
-        return CloneConnectorResult{serde::Value{std::move(object)}, set_cookie};
+        return std::pair{serde::Value{std::move(object)}, set_cookie};
     }
 
 private:

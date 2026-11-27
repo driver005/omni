@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TotpUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     totp_update(const TotpUpdateInput& input) const
     {
         std::string set_cookie{};
@@ -98,7 +98,7 @@ public:
 
         // Upstream ApplicationResponse::StatusOk -> HttpResponse::Ok().finish()
         // (services/api.rs:499,730-732): bare empty 200 body.
-        return TotpUpdateResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

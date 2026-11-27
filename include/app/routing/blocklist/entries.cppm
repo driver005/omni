@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import app_model;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -18,9 +19,15 @@ export namespace app::handlers::blocklist {
 class EntriesHandlers
 {
 public:
-    EntriesHandlers(::app::context::AppContext& ctx, BlocklistRuntime& runtime) noexcept :
+    EntriesHandlers(
+        ::app::context::AppContext& ctx,
+        BlocklistRuntime& runtime,
+        BlocklistInputSupport& input_support,
+        BlocklistRequestSupport& request_support
+    ) noexcept :
         m_context{ctx},
-        m_input_support{ctx},
+        m_input_support{input_support},
+        m_request_support{request_support},
         m_runtime{runtime}
     {
     }
@@ -68,8 +75,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "add_entry_to_blocklist")) {
+        if (const auto denied = m_request_support.authorize(req, "add_entry_to_blocklist", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -114,8 +120,13 @@ public:
             return;
         }
 
+        auto wire = result->serialize(wire_fields<::app::model::blocklist::BlocklistResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -128,7 +139,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "remove_entry_from_blocklist")) {
+                m_request_support.authorize(req, "remove_entry_from_blocklist", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -173,14 +184,21 @@ public:
             return;
         }
 
+        auto wire = result->serialize(wire_fields<::app::model::blocklist::BlocklistResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
 private:
     ::app::context::AppContext& m_context;
-    BlocklistInputSupport m_input_support;
+    BlocklistInputSupport& m_input_support;
+
+    BlocklistRequestSupport& m_request_support;
     BlocklistRuntime& m_runtime;
 };
 

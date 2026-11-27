@@ -2,13 +2,13 @@ export module app_auth:verify_connector_runtime_payment_connector_verify;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_dto;
 import app_connector;
 import app_metrics;
 
 import :verify_connector_input;
-import :verify_connector_result;
 import :verify_connector_runtime_common;
 
 export namespace app::handlers::verify_connector {
@@ -27,7 +27,7 @@ public:
 
     // ───────────────────────── Core: payment_connector_verify ─────────────────────────
     // routes/verify_connector.rs:12-34 -> core/verify_connector.rs:22-66.
-    [[nodiscard]] std::expected<PaymentConnectorVerifyResult, Error>
+    [[nodiscard]] std::expected<serde::Value, Error>
     payment_connector_verify(const PaymentConnectorVerifyInput& input) const
     {
         // Upstream core/verify_connector.rs:24-30 — resolve connector from config, mapping a
@@ -84,7 +84,7 @@ public:
         // Upstream returns RouterResponse<()> / StatusOk with no payload
         // (core/verify_connector.rs:23,60). The empty serde::Value document is serialized by the
         // handler via Ser::serialize.
-        return PaymentConnectorVerifyResult{};
+        return serde::Value{serde::Value::Object{}};
     }
 
 private:

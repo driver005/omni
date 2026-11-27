@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AuthorizeTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     authorize_token(const AuthorizeTokenInput& input) const
     {
         std::string set_cookie{};
@@ -91,7 +91,7 @@ public:
         m_context.metrics().counter("user.authorize_token").increment();
 
         // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
-        return AuthorizeTokenResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

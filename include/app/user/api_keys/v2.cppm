@@ -33,11 +33,13 @@ public:
     ApiKeysHandlersV2(
         ::app::context::AppContext& context,
         ApiKeysRuntime& runtime,
-        ApiKeysInputSupport& input_support
+        ApiKeysInputSupport& input_support,
+        ApiKeysRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -47,11 +49,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(
-                req,
-                "api_key_create",
-                m_input_support.permission_for("api_key_create", req)
-            )) {
+        if (const auto auth_error = m_request_support.authorize(req, "api_key_create", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -95,7 +93,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kCreateApiKeyResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -105,11 +108,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(
-                req,
-                "api_key_retrieve",
-                m_input_support.permission_for("api_key_retrieve", req)
-            )) {
+        if (const auto auth_error = m_request_support.authorize(req, "api_key_retrieve", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -134,7 +133,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRetrieveApiKeyResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -144,11 +148,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(
-                req,
-                "api_key_update",
-                m_input_support.permission_for("api_key_update", req)
-            )) {
+        if (const auto auth_error = m_request_support.authorize(req, "api_key_update", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -193,7 +193,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRetrieveApiKeyResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -203,11 +208,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(
-                req,
-                "api_key_revoke",
-                m_input_support.permission_for("api_key_revoke", req)
-            )) {
+        if (const auto auth_error = m_request_support.authorize(req, "api_key_revoke", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -232,7 +233,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRevokeApiKeyResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -242,11 +248,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(
-                req,
-                "api_key_list",
-                m_input_support.permission_for("api_key_list", req)
-            )) {
+        if (const auto auth_error = m_request_support.authorize(req, "api_key_list", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -261,7 +263,14 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_keys()));
+        auto encoded =
+            serde::Serializer<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>>::
+                serialize_values(*result, kRetrieveApiKeyResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -350,6 +359,7 @@ private:
     ::app::context::AppContext& m_context;
     ApiKeysRuntime& m_runtime;
     ApiKeysInputSupport& m_input_support;
+    ApiKeysRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::api_keys

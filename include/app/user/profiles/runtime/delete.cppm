@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileDeleteResult, core::error::AppError>
+    [[nodiscard]] std::expected<bool, core::error::AppError>
     remove(const ProfileDeleteInput& input) const
     {
         if (!m_support
@@ -34,7 +34,7 @@ public:
         m_context.metrics().record_flow("profiles.delete");
         m_context.metrics().record_flow("Flow::ProfileDelete");
         m_context.metrics().counter("profiles_delete").increment();
-        return ProfileDeleteResult{true};
+        return true;
     }
 
 private:

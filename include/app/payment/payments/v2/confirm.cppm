@@ -32,6 +32,13 @@ export namespace app::handlers::payments {
 class PaymentsV2ConfirmHandlers
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsV2ConfirmHandlers(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,
@@ -51,7 +58,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "payment_confirm_intent")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payment_confirm_intent",
+                spec_for("payment_confirm_intent")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -88,7 +99,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -98,7 +109,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "proxy_confirm_intent")) {
+        if (const auto auth_error =
+                m_request_support
+                    ->authorize(req, "proxy_confirm_intent", spec_for("proxy_confirm_intent"))) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -135,7 +148,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -145,8 +158,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "confirm_intent_with_external_vault_proxy")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "confirm_intent_with_external_vault_proxy",
+                spec_for("confirm_intent_with_external_vault_proxy")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -185,7 +201,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

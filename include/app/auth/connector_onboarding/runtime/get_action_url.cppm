@@ -36,7 +36,7 @@ public:
     }
 
     // Upstream core::get_action_url (core/connector_onboarding.rs:20-58).
-    [[nodiscard]] std::expected<GetActionUrlResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_action_url(const GetActionUrlInput& input) const
     {
         if (const auto guard = m_support.check_if_connector_exists(
@@ -76,7 +76,7 @@ public:
 
         m_context.metrics().record_flow("GetActionUrl");
         m_context.metrics().counter("connector_onboarding.get_action_url").increment();
-        return GetActionUrlResult{serde::Value{std::move(envelope)}};
+        return serde::Value{std::move(envelope)};
     }
 
 private:

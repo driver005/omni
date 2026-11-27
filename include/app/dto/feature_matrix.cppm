@@ -2,9 +2,11 @@ module;
 export module app_dto:feature_matrix;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ import boost.ut;
 export namespace app::dto::feature_matrix {
 
 /** @brief api_models CardSpecificFeatures (feature_matrix.rs:13-24). */
-class CardSpecificFeatures : public serde::Serializer<CardSpecificFeatures>
+class CardSpecificFeatures : public core::behavior::Serializer<CardSpecificFeatures>
 {
 public:
     void set_three_ds(std::string value)
@@ -60,7 +62,7 @@ public:
 using PaymentMethodSpecificFeatures = CardSpecificFeatures;
 
 /** @brief api_models FeatureMatrixRequest (feature_matrix.rs:6-11). */
-class FeatureMatrixRequest : public serde::Serializer<FeatureMatrixRequest>
+class FeatureMatrixRequest : public core::behavior::Serializer<FeatureMatrixRequest>
 {
 public:
     void set_connectors(std::optional<std::vector<std::string>> value)
@@ -77,7 +79,7 @@ public:
 };
 
 /** @brief api_models SupportedPaymentMethod (feature_matrix.rs:33-61). */
-class SupportedPaymentMethod : public serde::Serializer<SupportedPaymentMethod>
+class SupportedPaymentMethod : public core::behavior::Serializer<SupportedPaymentMethod>
 {
 public:
     void set_payment_method(std::string value)
@@ -212,7 +214,8 @@ public:
 };
 
 /** @brief api_models ConnectorFeatureMatrixResponse (feature_matrix.rs:63-84). */
-class ConnectorFeatureMatrixResponse : public serde::Serializer<ConnectorFeatureMatrixResponse>
+class ConnectorFeatureMatrixResponse :
+    public core::behavior::Serializer<ConnectorFeatureMatrixResponse>
 {
 public:
     void set_name(std::string value)
@@ -308,7 +311,7 @@ public:
 };
 
 /** @brief api_models FeatureMatrixListResponse (feature_matrix.rs:86-92). */
-class FeatureMatrixListResponse : public serde::Serializer<FeatureMatrixListResponse>
+class FeatureMatrixListResponse : public core::behavior::Serializer<FeatureMatrixListResponse>
 {
 public:
     void set_connector_count(std::size_t value)

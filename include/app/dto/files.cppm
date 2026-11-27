@@ -2,16 +2,18 @@ module;
 export module app_dto:files;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::files {
 
-class CreateFileResponse : public serde::Serializer<CreateFileResponse>
+class CreateFileResponse : public core::behavior::Serializer<CreateFileResponse>
 {
 public:
     void set_file_id(std::string value)
@@ -27,7 +29,7 @@ public:
     std::string file_id{};
 };
 
-class FileMetadataResponse : public serde::Serializer<FileMetadataResponse>
+class FileMetadataResponse : public core::behavior::Serializer<FileMetadataResponse>
 {
 public:
     void set_file_id(std::string value)
@@ -87,7 +89,7 @@ public:
     bool available{};
 };
 
-class FileRetrieveQuery : public serde::Serializer<FileRetrieveQuery>
+class FileRetrieveQuery : public core::behavior::Serializer<FileRetrieveQuery>
 {
 public:
     void set_dispute_id(std::optional<std::string> value)

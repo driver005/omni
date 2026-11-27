@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AcceptInvitationsV2Result, core::error::AppError>
+    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
     accept_invitations_v2(const AcceptInvitationsV2Input& input) const
     {
         const auto lineages = m_support.lineages_for_accept(input.identity, input.request);
@@ -58,7 +58,7 @@ public:
         StatusOkWire response{};
         response.set_status("Ok");
         m_support.track_flow("accept_invitations_v2", "user_role.accept_invitations_v2");
-        return AcceptInvitationsV2Result{std::move(response)};
+        return std::move(response);
     }
 
 private:

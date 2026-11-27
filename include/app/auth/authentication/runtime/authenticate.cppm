@@ -37,7 +37,9 @@ public:
 
     // ───────────────────────── Core: authenticate ─────────────────────────
     // unified_authentication_service.rs:1354-1518 authentication_authenticate_core.
-    [[nodiscard]] std::expected<AuthenticationAuthenticateResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::authentication::AuthenticationAuthenticateResponse,
+        core::error::AppError>
     authenticate(const AuthenticationAuthenticateInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
@@ -58,9 +60,7 @@ public:
         // :1485-1506 CAVV/ECI are returned only for AuthFlow::Merchant on a Success trans_status.
         const bool include_cavv =
             input.auth.flow == AuthFlowKind::Merchant && outcome.trans_status == "Y";
-        return AuthenticationAuthenticateResult{
-            m_support.build_authenticate_response(*record, include_cavv, outcome)
-        };
+        return m_support.build_authenticate_response(*record, include_cavv, outcome);
     }
 
 private:

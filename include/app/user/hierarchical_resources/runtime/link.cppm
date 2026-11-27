@@ -36,7 +36,9 @@ public:
     }
 
     /** @brief core:822-878 link_hierarchical_resource. */
-    [[nodiscard]] std::expected<LinkHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse,
+        core::error::AppError>
     link(const LinkHierarchicalResourceInput& input) const
     {
         m_context.metrics().record_flow("HierarchicalResourcesLink");
@@ -135,7 +137,7 @@ public:
         );
         ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse response;
         response.set_id(m_support.resource_id_value(std::string{input.resource_id}));
-        return LinkHierarchicalResourceResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

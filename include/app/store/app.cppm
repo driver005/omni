@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -48,7 +49,9 @@ class AppRouteHandlers
 public:
     explicit AppRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy}
     {
     }
 
@@ -60,7 +63,7 @@ public:
     {
         // Upstream SessionState::payment_callback_config() is an internal OnceCell load
         // (app.rs:207-212) with no HTTP auth. The registry row is NO_AUTH.
-        const auto auth = m_input_support.authorize(req, "payment_callback_config");
+        const auto auth = m_request_support.authorize(req, "payment_callback_config", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
@@ -85,7 +88,7 @@ public:
     )
     {
         // Upstream create_email_client() is a free helper (app.rs:477-495), no HTTP auth.
-        const auto auth = m_input_support.authorize(req, "create_email_client");
+        const auto auth = m_request_support.authorize(req, "create_email_client", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
@@ -110,7 +113,7 @@ public:
             error.send(res, send);
             return;
         }
-        const auto proxy_url = m_input_support.query(req, "proxy_url");
+        const auto proxy_url = m_request_support.query(req, "proxy_url");
         CreateEmailClientInput input{*parsed, proxy_url};
         auto result = m_runtime.create_email_client(input);
         if (!result) {
@@ -130,15 +133,16 @@ public:
     )
     {
         // Upstream AppState::with_storage() is an async constructor (app.rs:497-643), no auth.
-        const auto auth = m_input_support.authorize(req, "with_storage");
+        const auto auth = m_request_support.authorize(req, "with_storage", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
             return;
         }
 
-        const auto storage_impl = m_input_support.query(req, "storage_impl").value_or("postgresql");
-        const auto service_name = m_input_support.query(req, "service_name").value_or("default");
+        const auto storage_impl =
+            m_request_support.query(req, "storage_impl").value_or("postgresql");
+        const auto service_name = m_request_support.query(req, "service_name").value_or("default");
         WithStorageInput input{storage_impl, service_name};
         auto result = m_runtime.with_storage(input);
         if (!result) {
@@ -158,21 +162,18 @@ public:
     )
     {
         // Upstream AppState::get_store_interface() is an async constructor (app.rs:648-727).
-        const auto auth = m_input_support.authorize(req, "get_store_interface");
+        const auto auth = m_request_support.authorize(req, "get_store_interface", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
             return;
         }
 
-        const auto storage_impl = m_input_support.query(req, "storage_impl").value_or("postgresql");
-        const auto event_handler = m_input_support.query(req, "event_handler").value_or("logs");
-        GetStoreInterfaceInput input{
-            storage_impl,
-            event_handler,
-            m_input_support.org_id(req),
-            m_input_support.merchant_id(req)
-        };
+        const auto storage_impl =
+            m_request_support.query(req, "storage_impl").value_or("postgresql");
+        const auto event_handler = m_request_support.query(req, "event_handler").value_or("logs");
+        const auto scope = m_request_support.scope(req);
+        GetStoreInterfaceInput input{storage_impl, event_handler, scope.org_id, scope.merchant_id};
         auto result = m_runtime.get_store_interface(input);
         if (!result) {
             const auto& error = result.error();
@@ -191,14 +192,14 @@ public:
     )
     {
         // Upstream AppState::new() delegates to with_storage(Postgresql) (app.rs:729-743).
-        const auto auth = m_input_support.authorize(req, "new");
+        const auto auth = m_request_support.authorize(req, "new", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
             return;
         }
 
-        const auto service_name = m_input_support.query(req, "service_name").value_or("default");
+        const auto service_name = m_request_support.query(req, "service_name").value_or("default");
         NewInput input{service_name};
         auto result = m_runtime.app_new(input);
         if (!result) {
@@ -224,6 +225,8 @@ public:
 private:
     AppRuntime m_runtime;
     AppInputSupport m_input_support;
+    AppPolicy m_policy;
+    core::behavior::RequestSupport<AppPolicy> m_request_support;
 };
 
 } // namespace app::handlers::app

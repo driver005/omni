@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<IssueEmbeddedTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     issue_embedded_token(const IssueEmbeddedTokenInput& input) const
     {
         std::string set_cookie{};
@@ -72,7 +72,7 @@ public:
         Response response{};
         response.set_token(embedded_token);
         auto document = ResponseDocument::from(response);
-        return IssueEmbeddedTokenResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

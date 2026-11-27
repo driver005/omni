@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputeResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     retrieve_dispute(const RetrieveDisputeInput& input) const
     {
         m_context.metrics().record_flow("dispute_retrieve");
@@ -87,7 +87,7 @@ public:
 
         // core/disputes.rs:166-177 — validation_result.is_err() -> is_already_refunded.
         response.set_is_already_refunded(m_support.is_already_refunded(db, *dispute));
-        return RetrieveDisputeResult{response};
+        return ::app::model::disputes::DisputeResponse{response};
     }
 
 private:

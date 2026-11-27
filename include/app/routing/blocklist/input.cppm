@@ -4,12 +4,15 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_model;
 import app_dto;
 import app_store;
 import app_auth;
 import app_http;
+
+import :policy;
 
 export namespace app::handlers::blocklist {
 
@@ -617,6 +620,44 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
+/**
+ * @brief Domain policy for blocklist routes. Auth is the registry rule for the
+ * operation name; scope is the request's merchant/profile identity.
+ */
+class BlocklistPolicy
+{
+public:
+    explicit BlocklistPolicy(BlocklistInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize_operation(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope& scope) const
+    {
+        return ::app::routing::policy::scope_error(scope);
+    }
+
+private:
+    BlocklistInputSupport& m_support;
+};
+
+using BlocklistRequestSupport = ::core::behavior::RequestSupport<BlocklistPolicy>;
 
 // ───────────────────────── Plain inputs ─────────────────────────
 // Each struct carries exactly what the old route logic handed to its core block.

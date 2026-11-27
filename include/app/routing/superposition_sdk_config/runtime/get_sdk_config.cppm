@@ -25,7 +25,9 @@ public:
 
     // ───────────────────────── Core: get_sdk_config ─────────────────────────
     // Upstream core::get_superposition_sdk_config (core:353-462).
-    [[nodiscard]] std::expected<GetSdkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
+        core::error::AppError>
     get_sdk_config(const GetSdkConfigInput& input) const
     {
         using Response = ::app::dto::superposition_sdk_config::SuperPositionConfigResponse;
@@ -101,7 +103,7 @@ public:
         m_context.metrics().record_flow("GetSuperpositionSdkConfig");
         m_context.metrics().counter("get_superposition_sdk_config").increment();
 
-        return GetSdkConfigResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

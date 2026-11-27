@@ -49,7 +49,8 @@ public:
     )
     {
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto denied = m_input_support.authorize(auth, "get_mandate")) {
+        if (const auto denied =
+                m_request_support.authorize(req, "get_mandate", spec_for("get_mandate"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -75,7 +76,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -87,7 +88,8 @@ public:
     )
     {
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto denied = m_input_support.authorize(auth, "revoke_mandate")) {
+        if (const auto denied =
+                m_request_support.authorize(req, "revoke_mandate", spec_for("revoke_mandate"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -113,7 +115,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -125,7 +127,9 @@ public:
     )
     {
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto denied = m_input_support.authorize(auth, "retrieve_mandates_list")) {
+        if (const auto denied =
+                m_request_support
+                    .authorize(req, "retrieve_mandates_list", spec_for("retrieve_mandates_list"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -153,7 +157,7 @@ public:
         // ApplicationResponse::Json(mandates_list) -> bare array; the typed vector
         // is serialized directly (same as the old send_json(..., true)).
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -210,13 +214,17 @@ public:
 
     explicit MandatesRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     MandatesRuntime m_runtime;
     MandatesInputSupport m_input_support;
+    MandatesPolicy m_policy;
+    MandatesRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::mandates

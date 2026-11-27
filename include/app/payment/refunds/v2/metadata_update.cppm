@@ -21,6 +21,13 @@ export namespace app::handlers::refunds {
 class RefundsV2MetadataUpdateHandlers
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsV2MetadataUpdateHandlers(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,
@@ -39,7 +46,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::V2Metadata)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "V2Metadata", spec_for("V2Metadata"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -73,7 +81,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

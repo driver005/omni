@@ -21,6 +21,8 @@ congelado_module_library(
         "user.cppm",
     ],
     deps = [
+        "//include/app/connector:app_connector",
+        "//include/core/behavior:core_behavior",
         "//include/core/database:core_database",
         "//include/core/serde:core_serde",
     ],

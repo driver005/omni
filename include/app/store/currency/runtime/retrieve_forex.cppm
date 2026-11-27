@@ -26,7 +26,7 @@ public:
     }
 
     // ── routes/currency.rs:11-33 / core/currency.rs:15-26 ───────────────────
-    [[nodiscard]] std::expected<RetrieveForexResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_forex(const RetrieveForexInput& input) const
     {
         (void)input;
@@ -40,9 +40,9 @@ public:
         }
 
         // ApplicationResponse::Json(FxExchangeRatesCacheEntry): typed document.
-        auto result = RetrieveForexResult{m_support.forex_entry_document(*entry)};
+        auto document = m_support.forex_entry_document(*entry);
         m_context.metrics().counter("FOREX_RATES_RETRIEVED").increment();
-        return result;
+        return document;
     }
 
 private:

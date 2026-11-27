@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetPmNtEligibilityApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse,
+        core::error::AppError>
     get_pm_nt_eligibility_api(const GetPmNtEligibilityApiInput& input) const
     {
         // Upstream core/payment_methods.rs:1777-1781 — NotSupported when network
@@ -73,7 +75,9 @@ public:
         }
         ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse response{};
         response.set_eligible_for_network_tokenization(eligible);
-        return GetPmNtEligibilityApiResult{std::move(response)};
+        return ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse{
+            std::move(response)
+        };
     }
 
 private:

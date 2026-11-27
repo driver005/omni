@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ResendInviteResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     resend_invite(const ResendInviteInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         m_context.metrics().record_flow("resend_invite");
         m_context.metrics().counter("user.resend_invite").increment();
 
-        return ResendInviteResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

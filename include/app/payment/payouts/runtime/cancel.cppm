@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: cancel ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsCancelResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     cancel(const PayoutsCancelInput& input) const
     {
         PayoutLockGuard lock{
@@ -121,7 +121,7 @@ public:
         auto response = m_support.response_from_record(record);
         m_support.enrich_response(response, record, false);
         response.set_error_message(std::string{"Cancelled by user"});
-        return PayoutsCancelResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

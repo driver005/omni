@@ -2,10 +2,10 @@ export module app_store:proxy_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :proxy_input;
-import :proxy_result;
 import :proxy_runtime_common;
 import :proxy_runtime_proxy;
 
@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProxyResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     proxy(const ProxyInput& input) const
     {
         return m_forward.proxy(input);

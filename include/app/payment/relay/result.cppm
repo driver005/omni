@@ -6,105 +6,72 @@ import app_dto;
 
 export namespace app::handlers::relay {
 
-// The two DTO-shaped responses inherit their wire fields from the exact DTO the
-// old core built and encoded, so field names, order and wrapper types stay
-// byte-identical. The Serializable specialization reuses the DTO's FieldDesc
-// tuple; those descriptors apply to the derived object just as they do to the
-// base object (including RelayResponseData's externally-tagged FieldConverter).
-class RelayResult : public ::app::dto::relay::RelayResponse
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    RelayResult() = default;
-
-    explicit RelayResult(::app::dto::relay::RelayResponse value) noexcept :
-        RelayResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class RelayRetrieveResult : public ::app::dto::relay::RelayResponse
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    RelayRetrieveResult() = default;
-
-    explicit RelayRetrieveResult(::app::dto::relay::RelayResponse value) noexcept :
-        RelayResponse{std::move(value)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class UnreferencedRefundResult : public ::app::dto::unreferenced_refund::UnreferencedRefundResponse
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    UnreferencedRefundResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit UnreferencedRefundResult(
-        ::app::dto::unreferenced_refund::UnreferencedRefundResponse value
-    ) noexcept :
-        UnreferencedRefundResponse{std::move(value)}
-    {
-    }
-};
-
-// Upstream WebhookResponse::StatusOk is HTTP 200; the typed result is empty and
-// serializes to an empty JSON object.
-struct RelayWebhookResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
 {
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
+    return serde::Ser::serialize("application/json", value);
+}
 
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{serde::Value::Object{}};
-};
+// Former RelayWebhookResult was an empty serde::Value document.
+[[nodiscard]] inline serde::Value empty_webhook_wire() noexcept
+{
+    return serde::Value{serde::Value::Object{}};
+}
 
 } // namespace app::handlers::relay
-
-template<>
-struct serde::Serializable<::app::handlers::relay::RelayResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::relay::RelayResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "relay_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::relay::RelayRetrieveResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::relay::RelayResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "relay_retrieve_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::relay::UnreferencedRefundResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::unreferenced_refund::UnreferencedRefundResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "unreferenced_refund_result";
-    }
-};

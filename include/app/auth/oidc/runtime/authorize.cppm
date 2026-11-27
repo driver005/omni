@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OidcAuthorizeResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     authorize(const OidcAuthorizeInput& input) const
     {
         m_context.metrics().record_flow("oidc_authorize");
@@ -46,29 +46,31 @@ public:
         const auto& scopes = payload.get_scope();
         if (std::find(scopes.begin(), scopes.end(), ::app::dto::oidc::Scope::Openid) ==
             scopes.end()) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::InvalidScope};
+            return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidScope)};
         }
 
         const auto client_id = payload.get_client_id();
         const auto registered_client = m_support.configured_oidc_client(client_id);
         if (!registered_client) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::UnauthorizedClient};
+            return std::unexpected{
+                oidc_wire::oidc_error(oidc_wire::OidcErrorKind::UnauthorizedClient)
+            };
         }
         if (!oidc_support::validate_redirect_uri_match(
                 registered_client->redirect_uri,
                 payload.get_redirect_uri()
             )) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::InvalidRequest};
+            return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidRequest)};
         }
 
         // Upstream: Option<UserFromToken>; missing session means AccessDenied.
         const auto& user_id = input.user_id;
         if (user_id.empty()) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::AccessDenied};
+            return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::AccessDenied)};
         }
         const auto user = m_context.repository().find_user_by_string(user_id);
         if (!user) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::ServerError};
+            return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::ServerError)};
         }
 
         // Upstream: generate_cryptographically_secure_random_string(32).
@@ -97,7 +99,7 @@ public:
             payload.get_state()
         );
         if (!redirect_url) {
-            return OidcAuthorizeResult{oidc_wire::OidcErrorKind::InvalidRequest};
+            return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidRequest)};
         }
 
         // ApplicationResponse::JsonForRedirection wire shape (api_models::payments v1),
@@ -111,7 +113,7 @@ public:
         );
         body.insert(std::string{"http_method"}, serde::Value{std::string{}});
         body.insert(std::string{"headers"}, serde::Value{serde::Value::Array{}});
-        return OidcAuthorizeResult{*redirect_url, serde::Value{std::move(body)}};
+        return std::pair{serde::Value{std::move(body)}, std::string{*redirect_url}};
     }
 
 private:

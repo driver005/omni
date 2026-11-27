@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: update ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     update(const PayoutsUpdateInput& input) const
     {
         PayoutLockGuard lock{
@@ -173,7 +173,7 @@ public:
             response.set_description(*input.request.description);
         }
 
-        return PayoutsUpdateResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

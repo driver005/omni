@@ -24,8 +24,8 @@ public:
     explicit UserRoleRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -60,6 +60,10 @@ public:
 private:
     UserRoleRuntime m_runtime;
     UserRoleInputSupport m_input_support;
+
+    UserRolePolicy m_policy{m_input_support};
+
+    UserRoleRequestSupport m_request_support{m_policy};
     UserRoleHandlersV1 m_v1;
     UserRoleHandlersV2 m_v2;
 };

@@ -38,7 +38,7 @@ public:
 
     // Upstream core::reset_tracking_id (core/connector_onboarding.rs:122-138):
     // no is_enabled gate and no connector-type match; just upsert the tracking id.
-    [[nodiscard]] std::expected<ResetTrackingIdResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     reset_tracking_id(const ResetTrackingIdInput& input) const
     {
         if (const auto guard = m_support.check_if_connector_exists(
@@ -58,7 +58,7 @@ public:
         m_context.metrics().record_flow("ResetTrackingId");
         m_context.metrics().counter("connector_onboarding.reset_tracking_id").increment();
         // Upstream returns ApplicationResponse::StatusOk (no body).
-        return ResetTrackingIdResult{ResponseDocument::empty()};
+        return ResponseDocument::empty();
     }
 
 private:

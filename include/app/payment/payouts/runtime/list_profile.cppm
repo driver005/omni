@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: list_profile ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsListProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
     list_profile(const PayoutsListProfileInput& input) const
     {
         m_context.metrics().record_flow("payout_list_profile");
@@ -47,7 +47,7 @@ public:
             input.profile_id,
             input.range
         );
-        return PayoutsListProfileResult{response};
+        return ::app::model::payouts::PayoutListResponse{response};
     }
 
 private:

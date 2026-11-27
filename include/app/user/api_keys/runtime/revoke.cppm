@@ -37,7 +37,7 @@ public:
     }
 
     /** @brief core::api_keys::revoke_api_key (436-497). */
-    [[nodiscard]] std::expected<ApiKeyRevokeResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RevokeApiKeyResponse, core::error::AppError>
     revoke(const ApiKeyRevokeInput& input) const
     {
         const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
@@ -64,7 +64,7 @@ public:
 
         m_context.metrics().record_flow("ApiKeyRevoke");
         m_context.metrics().counter("API_KEY_REVOKED").increment();
-        return ApiKeyRevokeResult{m_support.build_revoke_response(record)};
+        return m_support.build_revoke_response(record);
     }
 
 private:

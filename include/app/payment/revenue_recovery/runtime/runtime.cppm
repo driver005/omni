@@ -19,8 +19,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RevenueRecoveryCancelResult, core::error::AppError>
-    cancel(const RevenueRecoveryCancelInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::RecoveryPaymentsResponse, core::error::AppError>
+        cancel(const RevenueRecoveryCancelInput& input) const
     {
         return m_cancel.cancel(input);
     }

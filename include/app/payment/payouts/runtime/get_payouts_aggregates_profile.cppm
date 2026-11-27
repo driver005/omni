@@ -37,8 +37,9 @@ public:
     }
 
     // ───────────────────────── Core: get_payouts_aggregates_profile ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsAggregatesProfileResult, core::error::AppError>
-    get_payouts_aggregates_profile(const PayoutsAggregatesProfileInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
+        get_payouts_aggregates_profile(const PayoutsAggregatesProfileInput& input) const
     {
         m_context.metrics().record_flow("get_payouts_aggregates_profile");
         m_context.metrics().counter("payouts_aggregates_profile_total").increment();
@@ -48,7 +49,7 @@ public:
 
         auto response =
             m_support.aggregate_response(m_support.scoped_records(input.profile_id, input.range));
-        return PayoutsAggregatesProfileResult{response};
+        return ::app::model::payouts::PayoutsAggregateResponse{response};
     }
 
 private:

@@ -22,11 +22,13 @@ public:
     AdminHandlersV1Webhooks(
         ::app::context::AppContext& context,
         AdminRuntime& runtime,
-        AdminInputSupport& input_support
+        AdminInputSupport& input_support,
+        AdminRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -36,13 +38,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_webhook_register")) {
+        if (const auto error = m_request_support.authorize(req, "connector_webhook_register", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string connector_id{m_input_support.path_part(req, 1)};
+        const std::string connector_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -53,7 +57,7 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 4);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 4));
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
@@ -84,7 +88,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kWebhookDetailsResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -94,13 +103,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "retrieve_connector_webhook")) {
+        if (const auto error = m_request_support.authorize(req, "retrieve_connector_webhook", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string connector_id{m_input_support.path_part(req, 1)};
+        const std::string connector_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -111,7 +122,7 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 4);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 4));
         }
         RetrieveConnectorWebhookInput input{std::move(merchant_id), connector_id};
         auto result = m_runtime.fetch_webhook(input);
@@ -121,7 +132,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kWebhookDetailsResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -186,6 +202,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
+    AdminRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::admin

@@ -23,9 +23,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<RoutingRetrieveDefaultConfigForProfilesResult, core::error::AppError>
-        routing_retrieve_default_config_for_profiles(const RoutingInput& input) const
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
+    routing_retrieve_default_config_for_profiles(const RoutingInput& input) const
     {
         std::vector<::app::model::routing::ProfileDefaultRoutingConfig> response;
         const auto merchant = input.merchant_id;
@@ -47,7 +46,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track("routing_retrieve_default_config_for_profiles");
-        return RoutingRetrieveDefaultConfigForProfilesResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_routing:routing_runtime_delete_decision_manager_config;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -19,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteDecisionManagerConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_decision_manager_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -27,7 +28,7 @@ public:
         m_support.remove_config(key);
         m_support.set_active_algo_ref(profile, "config_algo_id", std::string{});
         m_support.track("delete_decision_manager_config");
-        return DeleteDecisionManagerConfigResult{ResponseDocument::empty()}; // StatusOk document
+        return ResponseDocument::empty(); // StatusOk document
     }
 
 private:

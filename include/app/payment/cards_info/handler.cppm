@@ -34,14 +34,16 @@ public:
         // (SDK authorization header or api_key/publishable-key) before server_wrap.
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
-                m_input_support.authorize_operation(auth_context, "card_iin_info", true)) {
+                m_request_support.authorize(req, "card_iin_info", spec_for("card_iin_info"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
 
         // Upstream GET /cards/{bin}: IIN is a path segment, client_secret a query param.
-        const auto bin = m_input_support.bin_from_path(req);
+        const auto bin_value = m_request_support.path(req, 1);
+        const std::optional<std::string> bin =
+            bin_value.empty() ? std::nullopt : std::optional<std::string>{bin_value};
         if (!bin) {
             m_input_support.record_flow("CardsInfo");
             auto error = core::error::AppErrorBuilder{}(
@@ -71,7 +73,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -83,7 +85,8 @@ public:
     {
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
-                m_input_support.authorize_operation(auth_context, "create_cards_info")) {
+                m_request_support
+                    .authorize(req, "create_cards_info", spec_for("create_cards_info"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -121,7 +124,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -133,7 +136,8 @@ public:
     {
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
-                m_input_support.authorize_operation(auth_context, "update_cards_info")) {
+                m_request_support
+                    .authorize(req, "update_cards_info", spec_for("update_cards_info"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -171,7 +175,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -183,7 +187,8 @@ public:
     {
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
-                m_input_support.authorize_operation(auth_context, "migrate_cards_info")) {
+                m_request_support
+                    .authorize(req, "migrate_cards_info", spec_for("migrate_cards_info"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -256,7 +261,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -325,13 +330,17 @@ public:
 
     explicit CardsInfoRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     CardsInfoRuntime m_runtime;
     CardsInfoInputSupport m_input_support;
+    CardsInfoPolicy m_policy;
+    CardsInfoRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::cards_info

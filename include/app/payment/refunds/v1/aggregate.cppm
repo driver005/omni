@@ -21,6 +21,13 @@ export namespace app::handlers::refunds {
 class RefundsV1AggregateHandlers
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsV1AggregateHandlers(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,
@@ -39,7 +46,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::Aggregates)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "Aggregates", spec_for("Aggregates"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -58,7 +66,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -69,7 +77,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::AggregatesProfile)) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "AggregatesProfile", spec_for("AggregatesProfile"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -88,7 +98,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

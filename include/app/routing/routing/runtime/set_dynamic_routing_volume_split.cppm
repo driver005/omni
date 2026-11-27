@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SetDynamicRoutingVolumeSplitResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     set_dynamic_routing_volume_split(const RoutingInput& input) const
     {
         const auto split = input.split;
@@ -49,7 +49,7 @@ public:
         response.set_routing_type(::app::model::routing::RoutingType::Dynamic);
         response.set_split(*split);
         m_support.track("set_dynamic_routing_volume_split");
-        return SetDynamicRoutingVolumeSplitResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

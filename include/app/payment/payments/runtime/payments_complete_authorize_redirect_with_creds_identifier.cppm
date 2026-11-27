@@ -32,7 +32,7 @@ public:
     }
 
     [[nodiscard]] std::
-        expected<PaymentsCompleteAuthorizeRedirectWithCredsIdentifierResult, core::error::AppError>
+        expected<::app::model::payments::PaymentsRedirectionResponse, core::error::AppError>
         payments_complete_authorize_redirect_with_creds_identifier(
             const PaymentsCompleteAuthorizeRedirectWithCredsIdentifierInput& input
         ) const
@@ -54,7 +54,7 @@ public:
         }
         ::app::model::payments::PaymentsRedirectionResponse response{};
         response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
-        return PaymentsCompleteAuthorizeRedirectWithCredsIdentifierResult{response};
+        return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 
 private:

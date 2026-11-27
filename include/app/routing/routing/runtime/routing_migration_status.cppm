@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingMigrationStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_migration_status(const RoutingInput& input) const
     {
         const auto limit = input.migration_limit;
@@ -129,7 +129,7 @@ public:
         response.set_profiles(std::move(profiles));
         response.set_page_totals(totals);
         m_support.track("routing_migration_status");
-        return RoutingMigrationStatusResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

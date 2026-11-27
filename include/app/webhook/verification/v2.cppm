@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -19,6 +20,7 @@ import app_keystore;
 import app_services;
 
 import :verification_input;
+import :webhook_policy;
 import :verification_result;
 import :verification_runtime;
 
@@ -27,13 +29,18 @@ export namespace app::handlers::verification {
 class VerificationHandlersV2
 {
 public:
+    using RequestSupport =
+        ::core::behavior::RequestSupport<::app::webhook::policy::VerificationPolicy>;
+
     VerificationHandlersV2(
         ::app::context::AppContext& ctx,
         VerificationRuntime& runtime,
-        VerificationInputSupport& input_support
+        VerificationInputSupport& input_support,
+        RequestSupport& request_support
     ) noexcept :
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -47,9 +54,11 @@ public:
     {
         // 1. request -> Input
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error =
-                m_input_support
-                    .authorize_verification(auth, "apple_pay_merchant_registration", true)) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "apple_pay_merchant_registration",
+                ::app::webhook::policy::kVerificationV2
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -102,7 +111,7 @@ public:
             std::string{auth.profile_id()}
         };
 
-        // 2. Input -> Result
+        // 2. Input -> DTO response
         auto result = m_runtime.apple_pay_merchant_registration(input);
         if (!result) {
             const auto& error = result.error();
@@ -110,9 +119,14 @@ public:
             return;
         }
 
-        // 3. Result -> response (typed upstream DTO, same wire fields).
+        // 3. DTO -> response (same wire fields through Serializer).
+        auto encoded = result->serialize(apple_pay_merchant_registration_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -126,9 +140,11 @@ public:
     {
         // 1. request -> Input
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error =
-                m_input_support
-                    .authorize_verification(auth, "retrieve_apple_pay_verified_domains", true)) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "retrieve_apple_pay_verified_domains",
+                ::app::webhook::policy::kVerificationV2
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -157,7 +173,7 @@ public:
             query->second
         };
 
-        // 2. Input -> Result
+        // 2. Input -> DTO response
         auto result = m_runtime.retrieve_apple_pay_verified_domains(input);
         if (!result) {
             const auto& error = result.error();
@@ -165,9 +181,14 @@ public:
             return;
         }
 
-        // 3. Result -> response (typed upstream DTO, same wire fields).
+        // 3. DTO -> response (same wire fields through Serializer).
+        auto encoded = result->serialize(retrieve_apple_pay_verified_domains_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -214,6 +235,7 @@ public:
 private:
     VerificationRuntime& m_runtime;
     VerificationInputSupport& m_input_support;
+    RequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::verification

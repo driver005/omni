@@ -23,8 +23,9 @@ public:
     }
 
     // core/card_issuer.rs:63-82 `delete_card_issuer`.
-    [[nodiscard]] std::expected<CardIssuerDeleteResult, core::error::AppError>
-    remove(const CardIssuerDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::card_issuer::CardIssuerDeleteResponse, core::error::AppError>
+        remove(const CardIssuerDeleteInput& input) const
     {
         const std::string& id = input.id;
 
@@ -66,7 +67,7 @@ public:
         m_context.metrics().record_flow("DeleteCardIssuer");
         m_context.metrics().counter("CARD_ISSUER_DELETED").increment();
 
-        return CardIssuerDeleteResult{std::move(response)};
+        return ::app::dto::card_issuer::CardIssuerDeleteResponse{std::move(response)};
     }
 
 private:

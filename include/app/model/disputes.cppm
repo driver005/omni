@@ -2,16 +2,19 @@ module;
 export module app_model:disputes;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::disputes {
 
-class AdditionalDetailsValue : public serde::Serializer<AdditionalDetailsValue>
+class AdditionalDetailsValue : public core::behavior::Serializer<AdditionalDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -27,7 +30,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue : public serde::Serializer<CurrencyValue>
+class CurrencyValue : public core::behavior::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string v)
@@ -48,7 +51,7 @@ public:
  * @note Upstream parses the timestamps as `YYYY-MM-DDTHH:MM:SS`; the handler
  * validates them with `parse_fetch_window` before the connector step.
  */
-class DisputeFetchQueryData : public serde::Serializer<DisputeFetchQueryData>
+class DisputeFetchQueryData : public core::behavior::Serializer<DisputeFetchQueryData>
 {
 public:
     void set_fetch_from(std::string value)
@@ -79,7 +82,7 @@ public:
  * @brief Upstream `common_utils::types::TimeRange` used by dispute aggregates
  * and flattened into `DisputeListGetConstraints` (api_models/disputes.rs:174-176).
  */
-class TimeRange : public serde::Serializer<TimeRange>
+class TimeRange : public core::behavior::Serializer<TimeRange>
 {
 public:
     void set_start_time(std::optional<std::string> value)
@@ -106,7 +109,7 @@ public:
     std::optional<std::string> end_time{};
 };
 
-class DisputeRetrieveBody : public serde::Serializer<DisputeRetrieveBody>
+class DisputeRetrieveBody : public core::behavior::Serializer<DisputeRetrieveBody>
 {
 public:
     void set_force_sync(std::optional<bool> value)
@@ -123,7 +126,7 @@ public:
 };
 
 /** @brief Upstream `types::api::disputes::DisputeId` path payload. */
-class DisputeId : public serde::Serializer<DisputeId>
+class DisputeId : public core::behavior::Serializer<DisputeId>
 {
 public:
     void set_dispute_id(std::string value)
@@ -139,7 +142,7 @@ public:
     std::string dispute_id{};
 };
 
-class DisputeRetrieveRequest : public serde::Serializer<DisputeRetrieveRequest>
+class DisputeRetrieveRequest : public core::behavior::Serializer<DisputeRetrieveRequest>
 {
 public:
     void set_dispute_id(std::string value)
@@ -166,7 +169,7 @@ public:
     std::optional<bool> force_sync{};
 };
 
-class DisputeStageValue : public serde::Serializer<DisputeStageValue>
+class DisputeStageValue : public core::behavior::Serializer<DisputeStageValue>
 {
 public:
     void set_value(std::string v)
@@ -182,7 +185,7 @@ public:
     std::string value{};
 };
 
-class DisputeStatusValue : public serde::Serializer<DisputeStatusValue>
+class DisputeStatusValue : public core::behavior::Serializer<DisputeStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -198,7 +201,7 @@ public:
     std::string value{};
 };
 
-class DisputesAggregateResponse : public serde::Serializer<DisputesAggregateResponse>
+class DisputesAggregateResponse : public core::behavior::Serializer<DisputesAggregateResponse>
 {
 public:
     void set_status_with_count(std::unordered_map<std::string, std::int64_t> value)
@@ -229,73 +232,7 @@ enum class EvidenceType
     UncategorizedFile,
 };
 
-/**
- * @brief Upstream `api_models::files::FileMetadataResponse` wire shape
- * (api_models/files.rs:10-16): file_id, file_name, file_size, file_type,
- * available. Formerly a single opaque string, which did not match upstream
- * `DisputeEvidenceBlock.file_metadata_response`.
- */
-class FileMetadataResponseValue : public serde::Serializer<FileMetadataResponseValue>
-{
-public:
-    void set_file_id(std::string value)
-    {
-        file_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_file_id() const noexcept
-    {
-        return file_id;
-    }
-
-    void set_file_name(std::optional<std::string> value)
-    {
-        file_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_file_name() const noexcept
-    {
-        return file_name;
-    }
-
-    void set_file_size(std::int32_t value)
-    {
-        file_size = std::move(value);
-    }
-
-    [[nodiscard]] const std::int32_t& get_file_size() const noexcept
-    {
-        return file_size;
-    }
-
-    void set_file_type(std::string value)
-    {
-        file_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_file_type() const noexcept
-    {
-        return file_type;
-    }
-
-    void set_available(bool value)
-    {
-        available = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_available() const noexcept
-    {
-        return available;
-    }
-
-    std::string file_id{};
-    std::optional<std::string> file_name{};
-    std::int32_t file_size{};
-    std::string file_type{};
-    bool available{};
-};
-
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -311,7 +248,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorInfoValue : public serde::Serializer<MerchantConnectorInfoValue>
+class PageOffsetValue : public core::behavior::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string v)
@@ -327,7 +264,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class PageSizeValue : public core::behavior::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string v)
@@ -343,7 +280,7 @@ public:
     std::string value{};
 };
 
-class PageOffsetValue : public serde::Serializer<PageOffsetValue>
+class PaymentIdValue : public core::behavior::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string v)
@@ -359,7 +296,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue : public serde::Serializer<PageSizeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -375,7 +312,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue : public serde::Serializer<PaymentIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -391,7 +328,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class StringMinorUnitValue : public core::behavior::Serializer<StringMinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -407,39 +344,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class StringMinorUnitValue : public serde::Serializer<StringMinorUnitValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class SubmitEvidenceRequest : public serde::Serializer<SubmitEvidenceRequest>
+class SubmitEvidenceRequest : public core::behavior::Serializer<SubmitEvidenceRequest>
 {
 public:
     void set_dispute_id(std::string value)
@@ -744,7 +649,7 @@ public:
     std::optional<std::string> uncategorized_text{};
 };
 
-class TimeRangeValue : public serde::Serializer<TimeRangeValue>
+class TimeRangeValue : public core::behavior::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string v)
@@ -760,7 +665,7 @@ public:
     std::string value{};
 };
 
-class DeleteEvidenceRequest : public serde::Serializer<DeleteEvidenceRequest>
+class DeleteEvidenceRequest : public core::behavior::Serializer<DeleteEvidenceRequest>
 {
 public:
     void set_dispute_id(std::string value)
@@ -787,7 +692,7 @@ public:
     EvidenceType evidence_type{};
 };
 
-class DisputeEvidenceBlock : public serde::Serializer<DisputeEvidenceBlock>
+class DisputeEvidenceBlock : public core::behavior::Serializer<DisputeEvidenceBlock>
 {
 public:
     void set_evidence_type(EvidenceType value)
@@ -814,7 +719,7 @@ public:
     FileMetadataResponseValue file_metadata_response{};
 };
 
-class DisputeListFilters : public serde::Serializer<DisputeListFilters>
+class DisputeListFilters : public core::behavior::Serializer<DisputeListFilters>
 {
 public:
     void set_connector(
@@ -866,7 +771,7 @@ public:
     std::vector<DisputeStageValue> dispute_stage{};
 };
 
-class DisputeListGetConstraints : public serde::Serializer<DisputeListGetConstraints>
+class DisputeListGetConstraints : public core::behavior::Serializer<DisputeListGetConstraints>
 {
 public:
     void set_dispute_id(std::optional<std::string> value)
@@ -1006,7 +911,7 @@ public:
     std::optional<TimeRangeValue> time_range{};
 };
 
-class DisputeResponse : public serde::Serializer<DisputeResponse>
+class DisputeResponse : public core::behavior::Serializer<DisputeResponse>
 {
 public:
     void set_dispute_id(std::string value)
@@ -1236,7 +1141,8 @@ public:
     std::optional<AdditionalDetailsValue> additional_details{};
 };
 
-class DisputeResponsePaymentsRetrieve : public serde::Serializer<DisputeResponsePaymentsRetrieve>
+class DisputeResponsePaymentsRetrieve :
+    public core::behavior::Serializer<DisputeResponsePaymentsRetrieve>
 {
 public:
     void set_dispute_id(std::string value)
@@ -1388,7 +1294,8 @@ public:
     std::optional<AdditionalDetailsValue> additional_details{};
 };
 
-class PlatformDisputeListConstraints : public serde::Serializer<PlatformDisputeListConstraints>
+class PlatformDisputeListConstraints :
+    public core::behavior::Serializer<PlatformDisputeListConstraints>
 {
 public:
     void set_dispute_id(std::optional<std::string> value)
@@ -1539,7 +1446,7 @@ public:
     std::optional<TimeRangeValue> time_range{};
 };
 
-class PlatformDisputeListFilters : public serde::Serializer<PlatformDisputeListFilters>
+class PlatformDisputeListFilters : public core::behavior::Serializer<PlatformDisputeListFilters>
 {
 public:
     void set_connector(
@@ -1591,7 +1498,7 @@ public:
     std::vector<DisputeStageValue> dispute_stage{};
 };
 
-class PlatformDisputeListItem : public serde::Serializer<PlatformDisputeListItem>
+class PlatformDisputeListItem : public core::behavior::Serializer<PlatformDisputeListItem>
 {
 public:
     void set_dispute_id(std::string value)
@@ -1820,7 +1727,7 @@ public:
     std::optional<MerchantConnectorAccountIdValue> merchant_connector_id{};
 };
 
-class PlatformDisputeListResponse : public serde::Serializer<PlatformDisputeListResponse>
+class PlatformDisputeListResponse : public core::behavior::Serializer<PlatformDisputeListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -2051,46 +1958,6 @@ struct serde::Serializable<app::model::disputes::DisputeResponsePaymentsRetrieve
     static constexpr std::string_view table_name()
     {
         return "dispute_response_payments_retrieve";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::disputes::FileMetadataResponseValue>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "file_id",
-                &app::model::disputes::FileMetadataResponseValue::get_file_id,
-                &app::model::disputes::FileMetadataResponseValue::set_file_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "file_name",
-                &app::model::disputes::FileMetadataResponseValue::get_file_name,
-                &app::model::disputes::FileMetadataResponseValue::set_file_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "file_size",
-                &app::model::disputes::FileMetadataResponseValue::get_file_size,
-                &app::model::disputes::FileMetadataResponseValue::set_file_size,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "file_type",
-                &app::model::disputes::FileMetadataResponseValue::get_file_type,
-                &app::model::disputes::FileMetadataResponseValue::set_file_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "available",
-                &app::model::disputes::FileMetadataResponseValue::get_available,
-                &app::model::disputes::FileMetadataResponseValue::set_available,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "file_metadata_response_value";
     }
 };
 

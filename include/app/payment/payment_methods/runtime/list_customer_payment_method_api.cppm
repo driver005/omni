@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListCustomerPaymentMethodApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::CustomerPaymentMethodsListResponse,
+        core::error::AppError>
     list_customer_payment_method_api(const ListCustomerPaymentMethodApiInput& input) const
     {
         m_context.metrics().record_flow("list_customer_payment_method_api");
@@ -72,7 +74,9 @@ public:
             items.push_back(std::move(item));
         }
         response.set_customer_payment_methods(std::move(items));
-        return ListCustomerPaymentMethodApiResult{std::move(response)};
+        return ::app::model::payment_methods::CustomerPaymentMethodsListResponse{
+            std::move(response)
+        };
     }
 
 private:

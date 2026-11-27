@@ -36,7 +36,7 @@ public:
     }
 
     // Upstream AppState::new() delegates to with_storage(Postgresql) (app.rs:729-743).
-    [[nodiscard]] std::expected<NewResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     app_new(const NewInput& input) const
     {
         const auto service_name = input.service_name;
@@ -55,15 +55,15 @@ public:
         m_context.metrics().record_flow("AppStateNew");
         m_context.metrics().counter("APP_STATE_NEW").increment();
 
-        NewResult result{};
-        result.set_partition("app");
-        result.set_op("new");
-        result.set_session_id(session_id);
-        result.set_storage_impl(storage_impl);
-        result.set_service_name(service_name);
-        result.set_storage_ok(storage_ok);
-        result.set_process_tracker_id(process_tracker_id);
-        return result;
+        serde::Value::Object document{};
+        document.insert(std::string{new_wire_fields()[0]}, serde::Value{std::string{"app"}});
+        document.insert(std::string{new_wire_fields()[1]}, serde::Value{std::string{"new"}});
+        document.insert(std::string{new_wire_fields()[2]}, serde::Value{session_id});
+        document.insert(std::string{new_wire_fields()[3]}, serde::Value{storage_impl});
+        document.insert(std::string{new_wire_fields()[4]}, serde::Value{service_name});
+        document.insert(std::string{new_wire_fields()[5]}, serde::Value{storage_ok});
+        document.insert(std::string{new_wire_fields()[6]}, serde::Value{process_tracker_id});
+        return serde::Value{std::move(document)};
     }
 
 private:

@@ -21,8 +21,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsFilterPlatformResult, core::error::AppError>
-    filter_platform(const RefundsFilterPlatformInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::PlatformRefundListFilters, core::error::AppError>
+        filter_platform(const RefundsFilterPlatformInput& input) const
     {
         m_context.metrics().record_flow("refund_platform_filter");
         m_context.metrics().counter("refunds_platform_filter_total").increment();
@@ -31,7 +32,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsFilterPlatformResult{*result};
+        return ::app::model::refunds::PlatformRefundListFilters{*result};
     }
 
 private:

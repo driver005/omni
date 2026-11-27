@@ -23,8 +23,9 @@ public:
 
     // ───────────────────────── Core: delete ─────────────────────────
     // api::server_wrap(flow=ClientSecretDelete) + helpers.rs:4761-4782.
-    [[nodiscard]] std::expected<ClientSecretDeleteResult, core::error::AppError>
-    delete_client_secret(const ClientSecretDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
+        delete_client_secret(const ClientSecretDeleteInput& input) const
     {
         m_context.metrics().record_flow("ClientSecretDelete");
         m_context.metrics().counter("client_secret_delete").increment();
@@ -33,7 +34,7 @@ public:
         if (auto err = m_support.delete_client_secret(input.client_secret_id, response)) {
             return std::unexpected{*err};
         }
-        return ClientSecretDeleteResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

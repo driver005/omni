@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -11,7 +12,6 @@ import app_context_core;
 import app_http;
 
 import :proxy_input;
-import :proxy_result;
 import :proxy_runtime;
 
 export namespace app::handlers::proxy {
@@ -30,11 +30,13 @@ public:
     ProxyHandlersV1(
         ::app::context::AppContext& context,
         ProxyRuntime& runtime,
-        ProxyInputSupport& input_support
+        ProxyInputSupport& input_support,
+        core::behavior::RequestSupport<ProxyPolicy>& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -44,17 +46,16 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize(req);
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        const auto auth_error = m_request_support.authorize(req, "proxy", {});
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
 
         // Bind the forward to the authenticated identity, never to the request body.
-        const auto header_merchant_id = ::app::http::merchant_id_from_header{}(req);
-        const auto merchant_id =
-            header_merchant_id.empty() ? authorized.context.merchant_id() : header_merchant_id;
+        const auto merchant_id = m_request_support.scope(req).merchant_id;
 
         const auto body = req.body_as_string();
         auto parsed = m_input_support.parse_request(body);
@@ -63,7 +64,7 @@ public:
             error.send(res, send);
             return;
         }
-        ProxyInput input{*parsed, std::string{merchant_id}, authorized.context};
+        ProxyInput input{*parsed, std::string{merchant_id}, auth};
 
         auto result = m_runtime.proxy(input);
         if (!result) {
@@ -73,7 +74,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -102,6 +103,7 @@ private:
     ::app::context::AppContext& m_context;
     ProxyRuntime& m_runtime;
     ProxyInputSupport& m_input_support;
+    core::behavior::RequestSupport<ProxyPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::proxy

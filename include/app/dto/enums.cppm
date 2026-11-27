@@ -2,9 +2,11 @@ module;
 export module app_dto:enums;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -189,7 +191,7 @@ enum class TokenStatus
     Deleted,
 };
 
-class UnresolvedResponseReason : public serde::Serializer<UnresolvedResponseReason>
+class UnresolvedResponseReason : public core::behavior::Serializer<UnresolvedResponseReason>
 {
 public:
     void set_code(std::string value)

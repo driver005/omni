@@ -37,7 +37,9 @@ public:
 
     // Upstream: GET /events/{merchant_id}/{initial_attempt_id}/attempts
     // routes/webhook_events.rs:105-140 -> core list_delivery_attempts.
-    [[nodiscard]] std::expected<ListAttemptsResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::webhook_events::EventRetrieveResponse>,
+        core::error::AppError>
     list_attempts(const ListAttemptsInput& input) const
     {
         // list_events_by_initiator_merchant_id_initial_attempt_id scopes by the
@@ -82,7 +84,7 @@ public:
 
         m_context.metrics().record_flow("WebhookEventDeliveryAttemptList");
         m_context.metrics().counter("WEBHOOK_EVENT_DELIVERY_ATTEMPTS_LIST").increment();
-        return ListAttemptsResult{std::move(events)};
+        return std::move(events);
     }
 
 private:

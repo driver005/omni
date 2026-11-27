@@ -26,7 +26,7 @@ public:
 
     // ── Core: update ───────────────────────────────────────────────────────
     // find_gsm_rule + to_not_found_response (core/gsm.rs:60-71).
-    [[nodiscard]] std::expected<UpdateGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     update(const UpdateGsmRuleInput& input) const
     {
         const auto& in = input.request;
@@ -77,7 +77,7 @@ public:
         m_context.events().publish("gsm.rule.updated", m_support.audit_payload("updated", key));
         m_context.metrics().record_flow("GsmRuleUpdate");
         m_context.metrics().counter("GSM_RULE_UPDATED").increment();
-        return UpdateGsmRuleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

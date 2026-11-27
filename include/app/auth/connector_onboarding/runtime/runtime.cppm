@@ -2,6 +2,7 @@ export module app_auth:connector_onboarding_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :connector_onboarding_input;
@@ -24,19 +25,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetActionUrlResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_action_url(const GetActionUrlInput& input) const
     {
         return m_get_action_url.get_action_url(input);
     }
 
-    [[nodiscard]] std::expected<SyncOnboardingStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     sync_onboarding_status(const SyncOnboardingStatusInput& input) const
     {
         return m_sync_onboarding_status.sync_onboarding_status(input);
     }
 
-    [[nodiscard]] std::expected<ResetTrackingIdResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     reset_tracking_id(const ResetTrackingIdInput& input) const
     {
         return m_reset_tracking_id.reset_tracking_id(input);

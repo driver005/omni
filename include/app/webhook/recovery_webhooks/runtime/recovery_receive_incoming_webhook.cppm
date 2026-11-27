@@ -261,7 +261,7 @@ struct BillingConnectorInvoiceDetails
 /**
  * Runtime behind recovery_receive_incoming_webhook.
  * All business logic from the original domain core, with no HTTP types and no
- * response/send calls: errors become std::unexpected, success becomes a Result.
+ * response/send calls: errors become std::unexpected, success is the WebhookResponse envelope.
  */
 class RecoveryReceiveIncomingWebhookRuntime
 {
@@ -272,7 +272,7 @@ public:
     }
 
     // routes/recovery_webhooks.rs:11-49 -> incoming_v2.rs:52-426.
-    [[nodiscard]] std::expected<RecoveryReceiveIncomingWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookResponse, core::error::AppError>
     receive_incoming_webhook(const RecoveryReceiveIncomingWebhookInput& input) const
     {
         // Request-scoped state: local equivalent of upstream `server_wrap` state.
@@ -292,7 +292,7 @@ public:
 
         // Metadata mirrors ApplicationResponse::IncomingWebhookEvent (api.rs:24-27).
         record_event_metadata(scope, wrapped.metadata);
-        return RecoveryReceiveIncomingWebhookResult{wrapped.response};
+        return wrapped.response;
     }
 
 private:

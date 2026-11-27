@@ -36,8 +36,9 @@ public:
     }
 
     // utils.rs:192-269 get_blocklist_count.
-    [[nodiscard]] std::expected<GetBlocklistCountResult, core::error::AppError>
-    get_blocklist_count(const GetBlocklistCountInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistCountResponse, core::error::AppError>
+        get_blocklist_count(const GetBlocklistCountInput& input) const
     {
         std::size_t total{0};
         std::map<std::string, std::size_t> by_length;
@@ -69,7 +70,7 @@ public:
         }
         m_support.emit("blocklist.count", response);
         m_support.track("get_blocklist_count");
-        return GetBlocklistCountResult{response};
+        return response;
     }
 
 private:

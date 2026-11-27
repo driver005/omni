@@ -9,36 +9,6 @@ import app_model;
 
 export namespace app::handlers::payment_link {
 
-// The two typed responses inherit their wire fields from the exact models the
-// old handlers built and encoded, so field names, order and wrapper types stay
-// byte-identical. The Serializable specialization reuses the model's FieldDesc
-// tuple; those descriptors apply to the derived object just as they do to the
-// base object.
-
-class PaymentLinkRetrieveResult : public ::app::model::payments::RetrievePaymentLinkResponse
-{
-public:
-    PaymentLinkRetrieveResult() = default;
-
-    explicit PaymentLinkRetrieveResult(
-        ::app::model::payments::RetrievePaymentLinkResponse value
-    ) noexcept :
-        RetrievePaymentLinkResponse{std::move(value)}
-    {
-    }
-};
-
-class PaymentLinkListResult : public ::app::model::payments::PaymentLinkListResponse
-{
-public:
-    PaymentLinkListResult() = default;
-
-    explicit PaymentLinkListResult(::app::model::payments::PaymentLinkListResponse value) noexcept :
-        PaymentLinkListResponse{std::move(value)}
-    {
-    }
-};
-
 /** @brief Converts reflected DTOs into typed wire documents (no JSON text). */
 class PaymentLinkDocument
 {
@@ -50,109 +20,66 @@ public:
     }
 };
 
-// Hand-built payment-link wire shapes (form data, status page data, GenericLinks
-// wrapper) are carried as typed serde::Value documents built from reflected DTOs
-// and typed field assignments. The handler writes each document with
-// serde::Ser::serialize; no pre-encoded JSON text crosses the boundary.
-
-class PaymentLinkInitiateResult
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    PaymentLinkInitiateResult() = default;
-
-    explicit PaymentLinkInitiateResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-class PaymentLinkInitiateSecureResult
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    PaymentLinkInitiateSecureResult() = default;
-
-    explicit PaymentLinkInitiateSecureResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-class PaymentLinkStatusResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    PaymentLinkStatusResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit PaymentLinkStatusResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::payment_link
-
-template<>
-struct serde::Serializable<::app::handlers::payment_link::PaymentLinkRetrieveResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::payments::RetrievePaymentLinkResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_link_retrieve_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::payment_link::PaymentLinkListResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::payments::PaymentLinkListResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_link_list_result";
-    }
-};

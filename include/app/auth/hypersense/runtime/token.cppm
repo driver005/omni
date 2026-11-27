@@ -38,8 +38,9 @@ public:
 
     // routes/hypersense.rs:28-31 -> core/external_service_auth.rs:22-26
     // generate_external_token(state, user, ExternalServiceType::Hypersense).
-    [[nodiscard]] std::expected<GetTokenResult, core::error::AppError>
-    get_token(const GetTokenInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::external_service_auth::ExternalTokenResponse, core::error::AppError>
+        get_token(const GetTokenInput& input) const
     {
         m_support.record_flow("HypersenseTokenRequest", LockActionNotApplicable{});
         m_context.metrics().counter("hypersense.token_request").increment();
@@ -64,7 +65,7 @@ public:
         using Response = ::app::dto::external_service_auth::ExternalTokenResponse;
         Response response{};
         response.set_token(*token);
-        return GetTokenResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

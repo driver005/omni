@@ -3,6 +3,7 @@ export module app_auth:external_service_auth_runtime;
 import std;
 import core_error;
 import app_context;
+import app_dto;
 
 import :external_service_auth_input;
 import :external_service_auth_result;
@@ -20,7 +21,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ValidateTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::external_service_auth::ExternalVerifyTokenResponse,
+        core::error::AppError>
     validate_token(const ValidateTokenInput& input) const
     {
         return m_validate_token.validate_token(input);

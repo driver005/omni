@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,9 +20,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<CustomersRetrieveByMerchantReferenceIdResult, ::core::error::AppError>
-        retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
+    retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
     {
         auto repo = m_context.repository();
         const auto aggregate =
@@ -37,7 +35,7 @@ public:
             m_support.customer_document(*aggregate, std::nullopt, std::nullopt, ApiVersion::V2);
         m_context.metrics().record_flow("customers.retrieve_by_merchant_reference_id");
         m_context.metrics().counter("customers_retrieve_by_merchant_reference_id").increment();
-        return CustomersRetrieveByMerchantReferenceIdResult{std::move(document)};
+        return std::move(document);
     }
 
 private:

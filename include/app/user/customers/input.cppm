@@ -2,6 +2,7 @@ export module app_user:customers_input;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -453,18 +454,6 @@ public:
         return ::app::http::merchant_id_from_header{}(req);
     }
 
-    [[nodiscard]] std::string
-    path_segment(interfaces::io::IRequest& req, std::size_t from_end = 0) const
-    {
-        const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
-        const std::size_t count{segments.count()};
-        if (from_end >= count) {
-            return {};
-        }
-        const auto value = segments.at(count - 1 - from_end);
-        return value ? std::string{*value} : std::string{};
-    }
-
     [[nodiscard]] std::optional<std::uint32_t> parse_uint32(std::string_view text) const
     {
         std::uint32_t out{};
@@ -790,5 +779,118 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
+/**
+ * @brief Domain authorization policy for customers.
+ *
+ * Owns the extractor selection for the v1/v2 customer surfaces. The permission
+ * and scope flags come from the caller's AuthSpec; the operation string picks
+ * which extractors (JWT / SDK / client / API key) are consulted, exactly as
+ * the original route declarations did.
+ */
+class CustomersPolicy
+{
+public:
+    explicit CustomersPolicy(CustomersInputSupport& input) noexcept :
+        m_input{input}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec& spec
+    ) const
+    {
+        bool jwt_detect{true};
+        bool v2_api_key{false};
+        bool sdk{false};
+        bool client{false};
+        bool header_api_key{false};
+        if (operation == "customers_create" || operation == "customers_retrieve" ||
+            operation == "customers_update" || operation == "customers_delete" ||
+            operation == "get_customer_mandates") {
+            header_api_key = true;
+        } else if (
+            operation == "customers_create_v2" || operation == "customers_retrieve_v2" ||
+            operation == "customers_retrieve_by_merchant_reference_id" ||
+            operation == "customers_list_v2" || operation == "customers_list_with_count_v2" ||
+            operation == "customers_update_v2" || operation == "customers_delete_v2"
+        ) {
+            v2_api_key = true;
+            if (operation == "customers_retrieve_v2") {
+                sdk = true;
+                client = true;
+            }
+            if (operation == "customers_retrieve_by_merchant_reference_id") {
+                jwt_detect = false;
+            }
+        }
+        const bool jwt = jwt_detect && m_input.is_jwt_auth(req);
+        return m_input.authorize(
+            req,
+            permission(spec.permission),
+            jwt,
+            v2_api_key,
+            sdk,
+            client,
+            header_api_key,
+            spec.allow_connected,
+            spec.allow_platform
+        );
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ::core::behavior::Scope out{};
+        out.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+        if (out.merchant_id.empty()) {
+            out.merchant_id = auth.merchant_id();
+        }
+        out.org_id = std::string{::app::http::org_id_from_header{}(req)};
+        if (out.org_id.empty()) {
+            out.org_id = auth.org_id();
+        }
+        out.profile_id = auth.profile_id();
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value()) {
+            out.connected_merchant_id = std::string{*connected};
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    /** @brief From-end segment index, matching the legacy path_segment helper. */
+    [[nodiscard]] static std::size_t path_index(interfaces::io::IRequest& req, std::size_t from_end)
+    {
+        const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
+        if (from_end >= segments.count()) {
+            return std::numeric_limits<std::size_t>::max();
+        }
+        return segments.count() - 1 - from_end;
+    }
+
+private:
+    [[nodiscard]] static ::app::auth::AppPermission permission(std::string_view name) noexcept
+    {
+        if (name == "USER_WRITE") {
+            return ::app::auth::AppPermission::USER_WRITE;
+        }
+        if (name == "MANDATE_READ") {
+            return ::app::auth::AppPermission::MANDATE_READ;
+        }
+        return ::app::auth::AppPermission::USER_READ;
+    }
+
+    CustomersInputSupport& m_input;
+};
+
+using CustomersRequestSupport = ::core::behavior::RequestSupport<CustomersPolicy>;
 
 } // namespace app::handlers::customers

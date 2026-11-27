@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateRoleV2Result, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
     create_role_v2(const CreateRoleV2Input& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -108,7 +108,7 @@ public:
             m_support.parent_group_descriptions_from_groups(*groups, role_entity)
         );
         m_support.track_flow("create_role_v2", "user_role.create_role_v2");
-        return CreateRoleV2Result{std::move(response)};
+        return std::move(response);
     }
 
 private:

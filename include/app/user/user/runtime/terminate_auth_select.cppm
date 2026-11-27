@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TerminateAuthSelectResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     terminate_auth_select(const TerminateAuthSelectInput& input) const
     {
         std::string set_cookie{};
@@ -76,7 +76,7 @@ public:
         response.set_token(token);
         response.set_token_type(purpose);
         auto document = ResponseDocument::from(response);
-        return TerminateAuthSelectResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

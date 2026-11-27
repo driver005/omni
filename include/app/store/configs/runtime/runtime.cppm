@@ -2,6 +2,7 @@ export module app_store:configs_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :configs_input;
@@ -26,25 +27,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConfigKeyCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create(const ConfigKeyCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<ConfigKeyRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const ConfigKeyRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<ConfigKeyUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     update(const ConfigKeyUpdateInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<ConfigKeyDeleteResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     remove(const ConfigKeyDeleteInput& input) const
     {
         return m_delete.remove(input);

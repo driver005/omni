@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     create(const ConnectorCreateInput& input) const
     {
         const std::string connector_name{input.request.get_connector_name().get_value()};
@@ -117,7 +117,7 @@ public:
         m_context.metrics().record_flow("connector_create");
         m_context.metrics().counter("admin.connector_create").increment();
         m_context.events().publish("merchant_connector.created", serde::Ser::encode_json(response));
-        return ConnectorCreateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

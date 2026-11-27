@@ -31,11 +31,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsConnectorSessionResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
     payments_connector_session(const PaymentsConnectorSessionInput& input) const
     {
         m_support.issue_session_token(input.data);
-        return PaymentsConnectorSessionResult{m_support.payment_response_view(input.data)};
+        return ::app::model::payments::PaymentsResponse{
+            m_support.payment_response_view(input.data)
+        };
     }
 
 private:

@@ -29,6 +29,13 @@ export namespace app::handlers::payment_methods {
 class OlapSupportHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     OlapSupportHandlers(::app::context::AppContext& ctx, PaymentMethodsRuntime& runtime) noexcept :
         m_context{ctx},
         m_input_support{ctx},
@@ -114,7 +121,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "initiate_pm_collect_link_flow");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "initiate_pm_collect_link_flow",
+            spec_for("initiate_pm_collect_link_flow")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -160,7 +171,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -170,7 +181,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "render_pm_collect_link");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "render_pm_collect_link",
+            spec_for("render_pm_collect_link")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -211,7 +226,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -221,7 +236,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "payment_method_retrieve_olap_api");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_method_retrieve_olap_api",
+            spec_for("payment_method_retrieve_olap_api")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -253,7 +272,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

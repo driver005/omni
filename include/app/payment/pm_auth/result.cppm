@@ -25,58 +25,66 @@ public:
     }
 };
 
-// Link token response inherits its wire fields from the exact DTO the old route
-// built and encoded, so field names, order and wrapper types stay byte-identical.
-class LinkTokenCreateResult : public ::app::dto::pm_auth::LinkTokenCreateResponse
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    LinkTokenCreateResult() = default;
-
-    explicit LinkTokenCreateResult(::app::dto::pm_auth::LinkTokenCreateResponse value) noexcept :
-        LinkTokenCreateResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-// Upstream exchange_token_core returns ApplicationResponse::StatusOk: HTTP 200
-// with an empty body. That empty body is carried as a typed empty serde::Value
-// document, serialized by the handler with Ser::serialize.
-class ExchangeTokenResult
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    ExchangeTokenResult() = default;
-
-    explicit ExchangeTokenResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{serde::Value::Object{}};
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::pm_auth
-
-template<>
-struct serde::Serializable<::app::handlers::pm_auth::LinkTokenCreateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::pm_auth::LinkTokenCreateResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "link_token_create_result";
-    }
-};

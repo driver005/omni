@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListUpdatableRolesAtEntityLevelResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
     list_updatable_roles_at_entity_level(const ListUpdatableRolesAtEntityLevelInput& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -84,7 +84,7 @@ public:
             "list_updatable_roles_at_entity_level",
             "user_role.list_updatable_roles_at_entity_level"
         );
-        return ListUpdatableRolesAtEntityLevelResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

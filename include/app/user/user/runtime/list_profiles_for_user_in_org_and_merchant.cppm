@@ -39,7 +39,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListProfilesForUserInOrgAndMerchantResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_profiles_for_user_in_org_and_merchant(
         const ListProfilesForUserInOrgAndMerchantInput& input
     ) const
@@ -80,7 +80,7 @@ public:
             response.push_back(std::move(item));
         }
         auto document = ResponseDocument::from(response);
-        return ListProfilesForUserInOrgAndMerchantResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

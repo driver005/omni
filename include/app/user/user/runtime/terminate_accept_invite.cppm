@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TerminateAcceptInviteResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     terminate_accept_invite(const TerminateAcceptInviteInput& input) const
     {
         std::string set_cookie{};
@@ -62,7 +62,7 @@ public:
         m_context.metrics().counter("user.terminate_accept_invite").increment();
 
         auto document = ResponseDocument::from(input.generic);
-        return TerminateAcceptInviteResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

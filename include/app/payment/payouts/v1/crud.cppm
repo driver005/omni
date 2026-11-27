@@ -30,6 +30,13 @@ export namespace app::handlers::payouts {
 class PayoutsCrudHandlersV1
 {
 public:
+    void bind_request_support(PayoutsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PayoutsRequestSupport* m_request_support{nullptr};
+
     explicit PayoutsCrudHandlersV1(
         PayoutsRuntime& runtime,
         PayoutsInputSupport& input_support
@@ -45,7 +52,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_create")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_create", spec_for("payouts_create"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -92,7 +100,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -102,7 +110,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_retrieve")) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "payouts_retrieve", spec_for("payouts_retrieve"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -144,7 +154,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -154,7 +164,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_update")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_update", spec_for("payouts_update"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -209,7 +220,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -219,7 +230,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_confirm")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_confirm", spec_for("payouts_confirm"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -259,7 +271,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -269,7 +281,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_cancel")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_cancel", spec_for("payouts_cancel"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -293,7 +306,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -303,7 +316,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_fulfill")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_fulfill", spec_for("payouts_fulfill"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -327,7 +341,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

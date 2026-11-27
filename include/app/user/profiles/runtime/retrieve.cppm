@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
     retrieve(const ProfileRetrieveInput& input) const
     {
         const auto profile = m_support.find_business_profile_by_merchant_id_profile_id(
@@ -40,7 +40,7 @@ public:
         m_context.metrics().record_flow("profiles.retrieve");
         m_context.metrics().record_flow("Flow::ProfileRetrieve");
         m_context.metrics().counter("profiles_retrieve").increment();
-        return ProfileRetrieveResult{std::move(*profile)};
+        return std::move(*profile);
     }
 
 private:

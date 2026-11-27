@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<VerifyRecoveryCodeResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     verify_recovery_code(const VerifyRecoveryCodeInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         m_context.metrics().record_flow("verify_recovery_code");
         m_context.metrics().counter("user.verify_recovery_code").increment();
 
-        return VerifyRecoveryCodeResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

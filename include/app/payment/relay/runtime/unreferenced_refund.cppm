@@ -38,8 +38,9 @@ public:
     }
 
     // Upstream: process_relay_unreferenced_refund (core/relay.rs:46-95).
-    [[nodiscard]] std::expected<UnreferencedRefundResult, core::error::AppError>
-    unreferenced_refund(const RelayUnreferencedRefundInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::unreferenced_refund::UnreferencedRefundResponse, core::error::AppError>
+        unreferenced_refund(const RelayUnreferencedRefundInput& input) const
     {
         const auto amount = m_support.parse_amount(input.request.get_amount().get_value());
         if (!amount.has_value() || *amount <= 0) {
@@ -246,7 +247,7 @@ public:
         if (!connector_response.get_raw_json().empty()) {
             response.set_raw_connector_response(connector_response.get_raw_json());
         }
-        return UnreferencedRefundResult{std::move(response)};
+        return ::app::dto::unreferenced_refund::UnreferencedRefundResponse{std::move(response)};
     }
 
 private:

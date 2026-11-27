@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<serde::Value, Error>
     delete_dispute_evidence(const DeleteDisputeEvidenceInput& input) const
     {
         m_context.metrics().record_flow("dispute_delete_evidence");
@@ -71,7 +71,7 @@ public:
         m_context.repository().update_dispute(*dispute);
         m_support.notify_dispute(*dispute, "dispute.evidence_deleted");
         m_context.locks().release(lock_key);
-        return DeleteDisputeEvidenceResult{"success"};
+        return make_status_wire("success");
     }
 
 private:

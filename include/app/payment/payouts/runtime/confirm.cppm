@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: confirm ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsConfirmResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     confirm(const PayoutsConfirmInput& input) const
     {
         PayoutLockGuard lock{
@@ -135,7 +135,7 @@ public:
                 response.set_description(*input.request->description);
             }
         }
-        return PayoutsConfirmResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

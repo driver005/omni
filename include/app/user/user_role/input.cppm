@@ -2,6 +2,7 @@ export module app_user:user_role_input;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_router;
 import core_serde;
 import utils_openapi;
@@ -407,7 +408,7 @@ public:
     std::vector<MinimalRoleInfoWire> roles{};
 };
 
-class RoleInfoWithGroupsWire
+class RoleInfoWithGroupsWire : public serde::Serializer<RoleInfoWithGroupsWire>
 {
 public:
     void set_role_id(std::string v)
@@ -467,7 +468,7 @@ public:
     std::string entity_type{};
 };
 
-class RoleInfoWithParentsWire
+class RoleInfoWithParentsWire : public serde::Serializer<RoleInfoWithParentsWire>
 {
 public:
     void set_role_id(std::string v)
@@ -636,7 +637,7 @@ public:
     std::string role_scope{};
 };
 
-class GroupsAndResourcesWire
+class GroupsAndResourcesWire : public serde::Serializer<GroupsAndResourcesWire>
 {
 public:
     void set_groups(std::vector<std::string> v)
@@ -663,7 +664,7 @@ public:
     std::vector<std::string> resources{};
 };
 
-class StatusOkWire
+class StatusOkWire : public serde::Serializer<StatusOkWire>
 {
 public:
     void set_status(std::string v)
@@ -679,7 +680,7 @@ public:
     std::string status{};
 };
 
-class TokenResponseWire
+class TokenResponseWire : public serde::Serializer<TokenResponseWire>
 {
 public:
     void set_token(std::string v)
@@ -1385,12 +1386,6 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::string query_value(interfaces::io::IRequest& req, std::string_view key) const
-    {
-        const auto query = ::app::http::RequestQuery{}(req);
-        return query.get(key).value_or("");
-    }
-
     [[nodiscard]] std::optional<std::string> role_id_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -1528,5 +1523,61 @@ struct ListInvitationsForUserInput
 {
     RequestIdentity identity{};
 };
+
+/**
+ * @brief Domain authorization policy for UserRole.
+ *
+ * The route operation string selects the registered auth rule; the scope is
+ * resolved from the request once, for every handler in the domain.
+ */
+class UserRolePolicy
+{
+public:
+    explicit UserRolePolicy(UserRoleInputSupport& input) noexcept :
+        m_input{input}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_input.authorize(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ::core::behavior::Scope out{};
+        out.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+        if (out.merchant_id.empty()) {
+            out.merchant_id = auth.merchant_id();
+        }
+        out.org_id = std::string{::app::http::org_id_from_header{}(req)};
+        if (out.org_id.empty()) {
+            out.org_id = auth.org_id();
+        }
+        out.profile_id = auth.profile_id();
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value()) {
+            out.connected_merchant_id = std::string{*connected};
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    UserRoleInputSupport& m_input;
+};
+
+using UserRoleRequestSupport = ::core::behavior::RequestSupport<UserRolePolicy>;
 
 } // namespace app::handlers::user_role

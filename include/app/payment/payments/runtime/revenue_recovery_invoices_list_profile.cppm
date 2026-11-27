@@ -31,10 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RevenueRecoveryInvoicesListProfileResult, core::error::AppError>
-    revenue_recovery_invoices_list_profile(
-        const RevenueRecoveryInvoicesListProfileInput& input
-    ) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentListResponseV2, core::error::AppError>
+        revenue_recovery_invoices_list_profile(
+            const RevenueRecoveryInvoicesListProfileInput& input
+        ) const
     {
         auto records = m_support.list_payments_scoped(input.data);
         if (const auto status_filter = m_support.query(input.data, "status");
@@ -50,7 +51,9 @@ public:
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return RevenueRecoveryInvoicesListProfileResult{m_support.payment_list_response(records)};
+        return ::app::model::payments::PaymentListResponseV2{
+            m_support.payment_list_response(records)
+        };
     }
 
 private:

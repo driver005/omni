@@ -39,8 +39,9 @@ public:
 
     // Upstream: POST /events/profile/list
     // routes/webhook_events.rs:57-103 -> core list_initial_delivery_attempts.
-    [[nodiscard]] std::expected<ListInitialWithJwtAuthResult, core::error::AppError>
-    list_initial_with_jwtauth(const ListInitialWithJwtAuthInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
+        list_initial_with_jwtauth(const ListInitialWithJwtAuthInput& input) const
     {
         auto listed = m_support.list_initial_delivery_attempts(
             input.merchant_id,
@@ -53,7 +54,7 @@ public:
 
         m_context.metrics().record_flow("WebhookEventInitialDeliveryAttemptList");
         m_context.metrics().counter("WEBHOOK_EVENT_INITIAL_ATTEMPTS_LIST").increment();
-        return ListInitialWithJwtAuthResult{std::move(*listed)};
+        return m_support.to_total_events_response(std::move(*listed));
     }
 
 private:

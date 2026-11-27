@@ -31,16 +31,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<PaymentsManualStatusUpdateEligibleStatusesResult, core::error::AppError>
-        payments_manual_status_update_eligible_statuses(
-            const PaymentsManualStatusUpdateEligibleStatusesInput& input
-        ) const
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
+    payments_manual_status_update_eligible_statuses(
+        const PaymentsManualStatusUpdateEligibleStatusesInput& input
+    ) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return PaymentsManualStatusUpdateEligibleStatusesResult{
+        return ::app::model::payments::PaymentsResponse{
             m_support.payment_response_view(input.data)
         };
     }

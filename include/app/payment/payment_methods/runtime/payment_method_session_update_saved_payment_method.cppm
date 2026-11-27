@@ -38,7 +38,7 @@ public:
     }
 
     [[nodiscard]] std::
-        expected<PaymentMethodSessionUpdateSavedPaymentMethodResult, core::error::AppError>
+        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
         payment_method_session_update_saved_payment_method(
             const PaymentMethodSessionUpdateSavedPaymentMethodInput& input
         ) const
@@ -62,7 +62,7 @@ public:
         m_context.metrics()
             .counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_UPDATE_SAVED_PAYMENT_METHOD")
             .increment();
-        return PaymentMethodSessionUpdateSavedPaymentMethodResult{
+        return ::app::model::payment_methods::PaymentMethodResponse{
             m_support.response_from_record(record)
         };
     }

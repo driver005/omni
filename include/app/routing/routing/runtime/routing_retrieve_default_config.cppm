@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingRetrieveDefaultConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_retrieve_default_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -35,7 +35,7 @@ public:
         }
         const auto connectors = m_support.default_config(profile);
         m_support.track("routing_retrieve_default_config");
-        return RoutingRetrieveDefaultConfigResult{ResponseDocument::from(connectors)};
+        return ResponseDocument::from(connectors);
     }
 
 private:

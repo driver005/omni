@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorWebhookRegisterResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
     register_webhook(const ConnectorWebhookRegisterInput& input) const
     {
         // The connector-hosted webhook registration API is external; the local
@@ -107,7 +107,7 @@ public:
 
         m_context.metrics().record_flow("connector_webhook_register");
         m_context.metrics().counter("admin.connector_webhook_register").increment();
-        return ConnectorWebhookRegisterResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

@@ -29,6 +29,13 @@ export namespace app::handlers::payment_methods {
 class MigrateHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     MigrateHandlers(::app::context::AppContext& ctx, PaymentMethodsRuntime& runtime) noexcept :
         m_context{ctx},
         m_input_support{ctx},
@@ -124,7 +131,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "migrate_payment_method_api");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "migrate_payment_method_api",
+            spec_for("migrate_payment_method_api")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -165,7 +176,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -175,7 +186,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "migrate_payment_methods");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "migrate_payment_methods",
+            spec_for("migrate_payment_methods")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -221,7 +236,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -231,7 +246,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "update_payment_methods");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "update_payment_methods",
+            spec_for("update_payment_methods")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -277,7 +296,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -287,7 +306,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "modular_migrate_payment_methods");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "modular_migrate_payment_methods",
+            spec_for("modular_migrate_payment_methods")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -333,7 +356,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

@@ -31,7 +31,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConfirmIntentWithExternalVaultProxyResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
     confirm_intent_with_external_vault_proxy(
         const ConfirmIntentWithExternalVaultProxyInput& input
     ) const
@@ -57,7 +57,7 @@ public:
                 "routing decision rejected"
             )};
         }
-        return ConfirmIntentWithExternalVaultProxyResult{m_support.payment_response(pipeline)};
+        return ::app::model::payments::PaymentsResponse{m_support.payment_response(pipeline)};
     }
 
 private:

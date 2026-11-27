@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetParentInfoForRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
     get_parent_info_for_role(const GetParentInfoForRoleInput& input) const
     {
         if (input.role_id.empty()) {
@@ -55,7 +55,7 @@ public:
         response.set_role_name(role->role_name);
         response.set_role_scope(role->scope);
         m_support.track_flow("get_parent_info_for_role", "user_role.get_parent_info_for_role");
-        return GetParentInfoForRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

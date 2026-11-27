@@ -32,11 +32,13 @@ public:
     UserRoleV1ListInfoHandlers(
         ::app::context::AppContext& context,
         UserRoleRuntime& runtime,
-        UserRoleInputSupport& input_support
+        UserRoleInputSupport& input_support,
+        UserRoleRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -47,7 +49,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_authorization_info")) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "get_authorization_info", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -60,7 +63,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<GroupInfoWire>>::serialize_values(
+            *result,
+            kGroupInfoWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -71,7 +82,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_role_from_token")) {
+        if (const auto auth_error = m_request_support.authorize(req, "get_role_from_token", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -84,7 +95,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -95,7 +106,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_role_information")) {
+        if (const auto auth_error = m_request_support.authorize(req, "get_role_information", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -108,7 +119,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ParentInfoWire>>::serialize_values(
+            *result,
+            kParentInfoWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -119,15 +138,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_parent_group_info")) {
+        if (const auto auth_error = m_request_support.authorize(req, "get_parent_group_info", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         GetParentGroupInfoInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type"),
-            m_input_support.query_value(req, "product_type")
+            m_request_support.query(req, "entity_type").value_or(""),
+            m_request_support.query(req, "product_type").value_or("")
         };
         auto result = m_runtime.get_parent_group_info(input);
         if (!result) {
@@ -136,7 +155,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ParentGroupDescriptionWire>>::serialize_values(
+            *result,
+            kParentGroupDescriptionWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -147,14 +174,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "list_users_in_lineage")) {
+        if (const auto auth_error = m_request_support.authorize(req, "list_users_in_lineage", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         ListUsersInLineageInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type")
+            m_request_support.query(req, "entity_type").value_or("")
         };
         auto result = m_runtime.list_users_in_lineage(input);
         if (!result) {
@@ -163,7 +190,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ListUsersInEntityWire>>::serialize_values(
+            *result,
+            kListUsersInEntityWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -174,15 +209,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "list_roles_with_info")) {
+        if (const auto auth_error = m_request_support.authorize(req, "list_roles_with_info", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         ListRolesWithInfoInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type"),
-            m_input_support.query_value(req, "groups") == "true"
+            m_request_support.query(req, "entity_type").value_or(""),
+            m_request_support.query(req, "groups").value_or("") == "true"
         };
         auto result = m_runtime.list_roles_with_info(input);
         if (!result) {
@@ -191,7 +226,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -203,14 +238,14 @@ public:
     )
     {
         if (const auto auth_error =
-                m_input_support.authorize(req, "list_updatable_roles_at_entity_level")) {
+                m_request_support.authorize(req, "list_updatable_roles_at_entity_level", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         ListUpdatableRolesAtEntityLevelInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type")
+            m_request_support.query(req, "entity_type").value_or("")
         };
         auto result = m_runtime.list_updatable_roles_at_entity_level(input);
         if (!result) {
@@ -219,7 +254,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<MinimalRoleInfoWire>>::serialize_values(
+            *result,
+            kMinimalRoleInfoWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -401,6 +444,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
+    UserRoleRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::user_role

@@ -30,6 +30,13 @@ export namespace app::handlers::payouts {
 class PayoutsManualUpdateHandlersV1
 {
 public:
+    void bind_request_support(PayoutsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PayoutsRequestSupport* m_request_support{nullptr};
+
     explicit PayoutsManualUpdateHandlersV1(
         PayoutsRuntime& runtime,
         PayoutsInputSupport& input_support
@@ -45,7 +52,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_manual_update")) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "payouts_manual_update", spec_for("payouts_manual_update"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -89,7 +98,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

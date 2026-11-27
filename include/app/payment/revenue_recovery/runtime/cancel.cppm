@@ -41,8 +41,9 @@ public:
     // Upstream cancel_revenue_recovery_core (core/revenue_recovery/api.rs:581-624):
     // PaymentNotFound (:590-598), cancel_invoice_workflows (:600-613, refusal ->
     // PreconditionFailed), then RecoveryPaymentsResponse from the cancelled intent (:615-619).
-    [[nodiscard]] std::expected<RevenueRecoveryCancelResult, core::error::AppError>
-    cancel(const RevenueRecoveryCancelInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::RecoveryPaymentsResponse, core::error::AppError>
+        cancel(const RevenueRecoveryCancelInput& input) const
     {
         // find_payment_intent_by_merchant_reference_id_profile_id
         // (&merchant_reference_id, profile.get_id(), ...) -> PaymentNotFound (api.rs:590-598).
@@ -85,7 +86,7 @@ public:
         ::app::model::payments::PaymentReferenceIdValue reference;
         reference.set_value(outcome->get_merchant_reference_id());
         response.set_merchant_reference_id(reference);
-        return RevenueRecoveryCancelResult{std::move(response)};
+        return ::app::model::payments::RecoveryPaymentsResponse{std::move(response)};
     }
 
 private:

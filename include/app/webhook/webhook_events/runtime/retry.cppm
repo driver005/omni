@@ -37,8 +37,9 @@ public:
 
     // Upstream: POST /events/{merchant_id}/{event_id}/retry (v1 only)
     // routes/webhook_events.rs:142-178 -> core retry_delivery_attempt.
-    [[nodiscard]] std::expected<RetryResult, core::error::AppError>
-    retry(const RetryInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::EventRetrieveResponse, core::error::AppError>
+        retry(const RetryInput& input) const
     {
         const std::string lock_key = "webhook_retry:" + input.merchant_id + ":" + input.event_id;
         const auto lock = m_context.locks().acquire(lock_key, std::int64_t{30}, "webhook_events");
@@ -104,7 +105,7 @@ public:
                 if (!item) {
                     return std::unexpected{std::move(item.error())};
                 }
-                return RetryResult{m_support.to_retrieve(*item, candidate, payload, sensitive)};
+                return m_support.to_retrieve(*item, candidate, payload, sensitive);
             }
         }
 
@@ -167,7 +168,7 @@ public:
         }
         m_context.metrics().record_flow("WebhookEventDeliveryRetry");
         m_context.metrics().counter("WEBHOOK_EVENT_DELIVERY_RETRY").increment();
-        return RetryResult{m_support.to_retrieve(*item, *stored, stored_payload, sensitive)};
+        return m_support.to_retrieve(*item, *stored, stored_payload, sensitive);
     }
 
 private:

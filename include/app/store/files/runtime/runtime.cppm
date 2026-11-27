@@ -2,6 +2,8 @@ export module app_store:files_runtime;
 
 import std;
 import core_error;
+import core_serde;
+import app_dto;
 import app_context;
 
 import :files_input;
@@ -24,19 +26,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FilesCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, core::error::AppError>
     create(const FilesCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<FilesDeleteResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_file(const FilesDeleteInput& input) const
     {
         return m_delete.delete_file(input);
     }
 
-    [[nodiscard]] std::expected<FilesRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const FilesRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);

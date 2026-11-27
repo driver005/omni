@@ -2,9 +2,11 @@ module;
 export module app_dto:client_secret;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -19,7 +21,7 @@ export namespace app::dto::client_secret {
  * The single reflected field is the variant name, so the shared serde layer emits and
  * consumes exactly that shape (no raw-text scanning in the handler).
  */
-class ResourceId : public serde::Serializer<ResourceId>
+class ResourceId : public core::behavior::Serializer<ResourceId>
 {
 public:
     void set_customer_id(std::string v)
@@ -41,7 +43,7 @@ public:
 };
 
 /** @brief `ClientSecretCreateRequest`: `{"resource_id":{"Customer":"cus_..."}}`. */
-class ClientSecretCreateRequest : public serde::Serializer<ClientSecretCreateRequest>
+class ClientSecretCreateRequest : public core::behavior::Serializer<ClientSecretCreateRequest>
 {
 public:
     void set_resource_id(ResourceId value)
@@ -63,7 +65,7 @@ public:
  * `id`/`secret` are plain strings (upstream `ClientSecretId`/`Secret<String>`);
  * `created_at`/`expires` carry the exact `time::PrimitiveDateTime` wire string.
  */
-class ClientSecretResponse : public serde::Serializer<ClientSecretResponse>
+class ClientSecretResponse : public core::behavior::Serializer<ClientSecretResponse>
 {
 public:
     void set_id(std::string value)
@@ -127,7 +129,7 @@ public:
  * @brief Local stand-in for the Redis hash record `ClientSecretType`
  * (diesel_models/src/client_secret.rs:12-21). Field order is the upstream struct order.
  */
-class ClientSecretType : public serde::Serializer<ClientSecretType>
+class ClientSecretType : public core::behavior::Serializer<ClientSecretType>
 {
 public:
     void set_id(std::string value)

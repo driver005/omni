@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -21,6 +22,7 @@ import app_workflow;
 import app_keystore;
 
 import :recovery_webhooks_input;
+import :webhook_policy;
 import :recovery_webhooks_result;
 import :recovery_webhooks_runtime;
 
@@ -29,13 +31,19 @@ export namespace app::handlers::recovery_webhooks {
 class RecoveryWebhooksHandlersV2
 {
 public:
+    using RequestSupport =
+        ::core::behavior::RequestSupport<::app::webhook::policy::RecoveryWebhooksPolicy>;
+
     RecoveryWebhooksHandlersV2(
         ::app::context::AppContext& context,
-        RecoveryWebhooksRuntime& runtime
+        RecoveryWebhooksRuntime& runtime,
+        RecoveryWebhooksInputSupport& input_support,
+        RequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{m_context}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -62,7 +70,8 @@ public:
         }
 
         // MerchantIdAndProfileIdAuth (recovery_webhooks.rs:42-45): bind URL ids.
-        if (const auto auth = m_input_support.authorize(req, ids)) {
+        if (const auto auth =
+                m_request_support.authorize(req, "recovery_receive_incoming_webhook", {})) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -86,7 +95,7 @@ public:
         input.network_verification =
             !::app::http::HeaderReader{}.get(req, "x-webhook-signature").empty();
 
-        // 2. Input -> Result.
+        // 2. Input -> WebhookResponse envelope.
         auto result = m_runtime.recovery_receive_incoming_webhook(input);
         if (!result) {
             const auto& error = result.error();
@@ -94,21 +103,18 @@ public:
             return;
         }
 
-        // 3. Result -> response. Typed WebhookResponse value encoded through Ser;
+        // 3. Envelope -> response. Typed WebhookResponse value encoded through Ser;
         // no pre-built JSON/text string crosses this boundary.
-        switch (result->response.get_kind()) {
+        const auto& response = *result;
+        switch (response.get_kind()) {
             case WebhookResponse::Kind::Json:
                 res.set_status(interfaces::io::types::Status::OK);
-                res.set_body(
-                    serde::Ser::serialize("application/json", result->response.get_value())
-                );
+                res.set_body(serde::Ser::serialize("application/json", response.get_value()));
                 send();
                 return;
             case WebhookResponse::Kind::TextPlain:
                 res.set_status(interfaces::io::types::Status::OK);
-                res.set_body(
-                    serde::Ser::serialize("application/json", result->response.get_value())
-                );
+                res.set_body(serde::Ser::serialize("application/json", response.get_value()));
                 break;
             case WebhookResponse::Kind::StatusOk:
             default:
@@ -157,7 +163,8 @@ public:
 private:
     ::app::context::AppContext& m_context;
     RecoveryWebhooksRuntime& m_runtime;
-    RecoveryWebhooksInputSupport m_input_support;
+    RecoveryWebhooksInputSupport& m_input_support;
+    RequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::recovery_webhooks

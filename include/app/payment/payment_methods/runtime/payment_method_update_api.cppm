@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodUpdateApiResult, core::error::AppError>
-    payment_method_update_api(const PaymentMethodUpdateApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodUpdateResponse, core::error::AppError>
+        payment_method_update_api(const PaymentMethodUpdateApiInput& input) const
     {
         auto record = input.record;
         if (input.request.get_card()) {
@@ -72,7 +73,7 @@ public:
         response.set_status(std::move(status));
         response.set_update_status(::app::model::payment_methods::UpdateStatus::Success);
         response.set_updated_payment_method_data(true);
-        return PaymentMethodUpdateApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodUpdateResponse{std::move(response)};
     }
 
 private:

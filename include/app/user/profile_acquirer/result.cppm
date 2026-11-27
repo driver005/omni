@@ -6,63 +6,21 @@ import app_dto;
 
 export namespace app::handlers::profile_acquirer {
 
-// Both routes return ProfileAcquirerResponse from the old core. The result classes
-// inherit the DTO's wire fields and their Serializable specialization reuses the
-// DTO's FieldDesc tuple, so field names, order and wrapper types stay byte-identical
-// to the old serde::Ser::encode_json(response) body.
+// Wire field lists captured from the former Result Serializable specializations.
+// Each Result reused the full FieldDesc tuple of its underlying model, so these
+// lists hold the exact declared field names in Serializable<T>::fields() order.
 
-class CreateProfileAcquirerResult : public ::app::dto::profile_acquirer::ProfileAcquirerResponse
-{
-public:
-    CreateProfileAcquirerResult() = default;
-
-    explicit CreateProfileAcquirerResult(
-        ::app::dto::profile_acquirer::ProfileAcquirerResponse value
-    ) noexcept :
-        ProfileAcquirerResponse{std::move(value)}
-    {
-    }
-};
-
-class ProfileAcquirerUpdateResult : public ::app::dto::profile_acquirer::ProfileAcquirerResponse
-{
-public:
-    ProfileAcquirerUpdateResult() = default;
-
-    explicit ProfileAcquirerUpdateResult(
-        ::app::dto::profile_acquirer::ProfileAcquirerResponse value
-    ) noexcept :
-        ProfileAcquirerResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 10> kProfileAcquirerResponseWireFields{
+    "profile_acquirer_id",
+    "acquirer_assigned_merchant_id",
+    "merchant_name",
+    "network",
+    "acquirer_bin",
+    "acquirer_ica",
+    "acquirer_fraud_rate",
+    "acquirer_country_code",
+    "profile_id",
+    "is_default",
 };
 
 } // namespace app::handlers::profile_acquirer
-
-template<>
-struct serde::Serializable<::app::handlers::profile_acquirer::CreateProfileAcquirerResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::profile_acquirer::ProfileAcquirerResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "create_profile_acquirer_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::profile_acquirer::ProfileAcquirerUpdateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::profile_acquirer::ProfileAcquirerResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "profile_acquirer_update_result";
-    }
-};

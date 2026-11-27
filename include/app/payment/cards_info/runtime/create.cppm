@@ -27,7 +27,7 @@ public:
     // core/cards_info.rs:56-67 create_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfoCreate, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<CreateCardsInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     create(const CreateCardsInfoInput& input) const
     {
         auto repository = m_context.repository();
@@ -43,7 +43,7 @@ public:
 
         m_context.metrics().record_flow("CardsInfoCreate");
         m_context.metrics().counter("CARDS_INFO_CREATED").increment();
-        return CreateCardsInfoResult{
+        return ::app::model::cards_info::CardInfoResponse{
             m_support.response_from_store_enriched(*created, std::move(response))
         };
     }

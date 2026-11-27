@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -556,4 +557,67 @@ struct ModularMigratePaymentMethodsInput
     std::vector<::app::model::payment_methods::PaymentMethodMigrate> rows{};
 };
 
+/** @brief Request policy for the payment_methods domain: wraps the domain auth rules. */
+class PaymentMethodsPolicy
+{
+public:
+    PaymentMethodsPolicy(
+        ::app::context::AppContext& /*context*/,
+        PaymentMethodsInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        if (spec.allow_connected_scope_operation) {
+            return m_support.authorize_client_facing(req, operation);
+        }
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    PaymentMethodsInputSupport& m_support;
+};
+
+using PaymentMethodsRequestSupport = core::behavior::RequestSupport<PaymentMethodsPolicy>;
+using PaymentMethodsPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PaymentMethodsPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PaymentMethodsPolicySpec{.permission = operation};
+}
+
+[[nodiscard]] PaymentMethodsPolicySpec client_facing_spec_for(std::string_view operation) noexcept
+{
+    return PaymentMethodsPolicySpec{
+        .permission = operation,
+        .allow_connected_scope_operation = true,
+    };
+}
 } // namespace app::handlers::payment_methods

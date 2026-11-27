@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListInvitationsForUserResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<InvitationWire>, core::error::AppError>
     list_invitations_for_user(const ListInvitationsForUserInput& input) const
     {
         std::vector<InvitationWire> response{};
@@ -65,7 +65,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track_flow("list_invitations_for_user", "user_role.list_invitations_for_user");
-        return ListInvitationsForUserResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

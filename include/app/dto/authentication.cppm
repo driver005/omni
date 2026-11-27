@@ -2,16 +2,18 @@ module;
 export module app_dto:authentication;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::authentication {
 
-class AcquirerDetails : public serde::Serializer<AcquirerDetails>
+class AcquirerDetails : public core::behavior::Serializer<AcquirerDetails>
 {
 public:
     void set_acquirer_bin(std::optional<std::string> value)
@@ -49,7 +51,7 @@ public:
     std::optional<std::string> merchant_country_code{};
 };
 
-class AddressValue : public serde::Serializer<AddressValue>
+class AddressValue : public core::behavior::Serializer<AddressValue>
 {
 public:
     void set_value(std::string v)
@@ -65,7 +67,8 @@ public:
     std::string value{};
 };
 
-class AuthenticationConnectorsValue : public serde::Serializer<AuthenticationConnectorsValue>
+class AuthenticationConnectorsValue :
+    public core::behavior::Serializer<AuthenticationConnectorsValue>
 {
 public:
     void set_value(std::string v)
@@ -91,7 +94,7 @@ enum class AuthenticationEligibilityCheckResponseData
     ClickToPayEnrollmentStatus,
 };
 
-class AuthenticationIdValue : public serde::Serializer<AuthenticationIdValue>
+class AuthenticationIdValue : public core::behavior::Serializer<AuthenticationIdValue>
 {
 public:
     void set_value(std::string v)
@@ -131,7 +134,7 @@ enum class AuthenticationSessionToken
     NoSessionTokenReceived,
 };
 
-class AuthenticationStatusValue : public serde::Serializer<AuthenticationStatusValue>
+class AuthenticationStatusValue : public core::behavior::Serializer<AuthenticationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -153,7 +156,7 @@ enum class AuthenticationVaultTokenData
     NetworkTokenData,
 };
 
-class BrowserInformationValue : public serde::Serializer<BrowserInformationValue>
+class BrowserInformationValue : public core::behavior::Serializer<BrowserInformationValue>
 {
 public:
     void set_value(std::string v)
@@ -170,7 +173,7 @@ public:
 };
 
 class ClickToPayEligibilityCheckResponseData :
-    public serde::Serializer<ClickToPayEligibilityCheckResponseData>
+    public core::behavior::Serializer<ClickToPayEligibilityCheckResponseData>
 {
 public:
     void set_visa(std::optional<bool> value)
@@ -202,7 +205,7 @@ enum class Cryptogram
     Cavv,
 };
 
-class CtpServiceProviderValue : public serde::Serializer<CtpServiceProviderValue>
+class CtpServiceProviderValue : public core::behavior::Serializer<CtpServiceProviderValue>
 {
 public:
     void set_value(std::string v)
@@ -218,7 +221,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue : public serde::Serializer<CurrencyValue>
+class CurrencyValue : public core::behavior::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string v)
@@ -234,7 +237,7 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsValue : public serde::Serializer<CustomerDetailsValue>
+class CustomerDetailsValue : public core::behavior::Serializer<CustomerDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -250,7 +253,7 @@ public:
     std::string value{};
 };
 
-class DeviceChannelValue : public serde::Serializer<DeviceChannelValue>
+class DeviceChannelValue : public core::behavior::Serializer<DeviceChannelValue>
 {
 public:
     void set_value(std::string v)
@@ -266,7 +269,7 @@ public:
     std::string value{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -282,7 +285,8 @@ public:
     std::string value{};
 };
 
-class MasterCardEligibilityCheckData : public serde::Serializer<MasterCardEligibilityCheckData>
+class MasterCardEligibilityCheckData :
+    public core::behavior::Serializer<MasterCardEligibilityCheckData>
 {
 public:
     void set_consumer_present(bool value)
@@ -320,7 +324,7 @@ public:
     std::optional<std::string> last_used_card_timestamp{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -336,7 +340,7 @@ public:
     std::string value{};
 };
 
-class MethodValue : public serde::Serializer<MethodValue>
+class MethodValue : public core::behavior::Serializer<MethodValue>
 {
 public:
     void set_value(std::string v)
@@ -352,7 +356,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
+class MinorUnitValue : public core::behavior::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -368,7 +372,8 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
+class OptionalEncryptableEmailValue :
+    public core::behavior::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string v)
@@ -384,7 +389,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodDataValue : public serde::Serializer<PaymentMethodDataValue>
+class PaymentMethodDataValue : public core::behavior::Serializer<PaymentMethodDataValue>
 {
 public:
     void set_value(std::string v)
@@ -400,7 +405,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -416,7 +421,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -432,7 +437,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -448,7 +453,7 @@ public:
     std::string value{};
 };
 
-class ProfileAcquirerIdValue : public serde::Serializer<ProfileAcquirerIdValue>
+class ProfileAcquirerIdValue : public core::behavior::Serializer<ProfileAcquirerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -464,7 +469,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string v)
@@ -480,7 +485,7 @@ public:
     std::string value{};
 };
 
-class ScaExemptionTypeValue : public serde::Serializer<ScaExemptionTypeValue>
+class ScaExemptionTypeValue : public core::behavior::Serializer<ScaExemptionTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -496,7 +501,7 @@ public:
     std::string value{};
 };
 
-class SdkInformationValue : public serde::Serializer<SdkInformationValue>
+class SdkInformationValue : public core::behavior::Serializer<SdkInformationValue>
 {
 public:
     void set_value(std::string v)
@@ -512,7 +517,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string v)
@@ -528,7 +533,7 @@ public:
     std::string value{};
 };
 
-class SemanticVersionValue : public serde::Serializer<SemanticVersionValue>
+class SemanticVersionValue : public core::behavior::Serializer<SemanticVersionValue>
 {
 public:
     void set_value(std::string v)
@@ -544,7 +549,8 @@ public:
     std::string value{};
 };
 
-class ThreeDsCompletionIndicatorValue : public serde::Serializer<ThreeDsCompletionIndicatorValue>
+class ThreeDsCompletionIndicatorValue :
+    public core::behavior::Serializer<ThreeDsCompletionIndicatorValue>
 {
 public:
     void set_value(std::string v)
@@ -560,7 +566,7 @@ public:
     std::string value{};
 };
 
-class TransactionStatusValue : public serde::Serializer<TransactionStatusValue>
+class TransactionStatusValue : public core::behavior::Serializer<TransactionStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -576,7 +582,7 @@ public:
     std::string value{};
 };
 
-class UrlValue : public serde::Serializer<UrlValue>
+class UrlValue : public core::behavior::Serializer<UrlValue>
 {
 public:
     void set_value(std::string v)
@@ -593,7 +599,7 @@ public:
 };
 
 class AuthenticationAuthenticateRequest :
-    public serde::Serializer<AuthenticationAuthenticateRequest>
+    public core::behavior::Serializer<AuthenticationAuthenticateRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -655,7 +661,7 @@ public:
 };
 
 class AuthenticationAuthenticateResponse :
-    public serde::Serializer<AuthenticationAuthenticateResponse>
+    public core::behavior::Serializer<AuthenticationAuthenticateResponse>
 {
 public:
     void set_transaction_status(std::optional<TransactionStatusValue> value)
@@ -850,7 +856,7 @@ public:
     std::optional<AcquirerDetails> acquirer_details{};
 };
 
-class AuthenticationCreateRequest : public serde::Serializer<AuthenticationCreateRequest>
+class AuthenticationCreateRequest : public core::behavior::Serializer<AuthenticationCreateRequest>
 {
 public:
     void set_authentication_id(std::optional<AuthenticationIdValue> value)
@@ -980,7 +986,7 @@ public:
 };
 
 class AuthenticationEligibilityCheckRequest :
-    public serde::Serializer<AuthenticationEligibilityCheckRequest>
+    public core::behavior::Serializer<AuthenticationEligibilityCheckRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1020,7 +1026,7 @@ public:
 };
 
 class AuthenticationEligibilityCheckResponse :
-    public serde::Serializer<AuthenticationEligibilityCheckResponse>
+    public core::behavior::Serializer<AuthenticationEligibilityCheckResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1047,7 +1053,8 @@ public:
     AuthenticationSdkNextAction sdk_next_action{};
 };
 
-class AuthenticationEligibilityRequest : public serde::Serializer<AuthenticationEligibilityRequest>
+class AuthenticationEligibilityRequest :
+    public core::behavior::Serializer<AuthenticationEligibilityRequest>
 {
 public:
     void set_payment_method_data(PaymentMethodDataValue value)
@@ -1153,7 +1160,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class AuthenticationResponse : public serde::Serializer<AuthenticationResponse>
+class AuthenticationResponse : public core::behavior::Serializer<AuthenticationResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1349,7 +1356,7 @@ public:
 };
 
 class AuthenticationRetrieveEligibilityCheckRequest :
-    public serde::Serializer<AuthenticationRetrieveEligibilityCheckRequest>
+    public core::behavior::Serializer<AuthenticationRetrieveEligibilityCheckRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1366,7 +1373,7 @@ public:
 };
 
 class AuthenticationRetrieveEligibilityCheckResponse :
-    public serde::Serializer<AuthenticationRetrieveEligibilityCheckResponse>
+    public core::behavior::Serializer<AuthenticationRetrieveEligibilityCheckResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1394,7 +1401,8 @@ public:
     AuthenticationEligibilityCheckResponseData eligibility_check_data{};
 };
 
-class AuthenticationSessionResponse : public serde::Serializer<AuthenticationSessionResponse>
+class AuthenticationSessionResponse :
+    public core::behavior::Serializer<AuthenticationSessionResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1422,7 +1430,7 @@ public:
 };
 
 class AuthenticationSessionTokenRequest :
-    public serde::Serializer<AuthenticationSessionTokenRequest>
+    public core::behavior::Serializer<AuthenticationSessionTokenRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1450,7 +1458,7 @@ public:
 };
 
 class AuthenticationSyncPostUpdateRequest :
-    public serde::Serializer<AuthenticationSyncPostUpdateRequest>
+    public core::behavior::Serializer<AuthenticationSyncPostUpdateRequest>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1466,7 +1474,7 @@ public:
     AuthenticationIdValue authentication_id{};
 };
 
-class ClickToPayDetails : public serde::Serializer<ClickToPayDetails>
+class ClickToPayDetails : public core::behavior::Serializer<ClickToPayDetails>
 {
 public:
     void set_merchant_transaction_id(std::optional<std::string> value)
@@ -1526,7 +1534,7 @@ public:
     std::optional<std::string> encrypted_payload{};
 };
 
-class ExternalThreeDsData : public serde::Serializer<ExternalThreeDsData>
+class ExternalThreeDsData : public core::behavior::Serializer<ExternalThreeDsData>
 {
 public:
     void set_authentication_cryptogram(std::optional<Cryptogram> value)
@@ -1586,7 +1594,7 @@ public:
     TransactionStatusValue transaction_status{};
 };
 
-class NextAction : public serde::Serializer<NextAction>
+class NextAction : public core::behavior::Serializer<NextAction>
 {
 public:
     void set_url(UrlValue value)
@@ -1613,7 +1621,7 @@ public:
     MethodValue http_method{};
 };
 
-class ThreeDsData : public serde::Serializer<ThreeDsData>
+class ThreeDsData : public core::behavior::Serializer<ThreeDsData>
 {
 public:
     void set_three_ds_server_transaction_id(std::optional<std::string> value)
@@ -1697,7 +1705,7 @@ public:
     std::optional<std::string> directory_server_id{};
 };
 
-class VisaEligibilityCheckData : public serde::Serializer<VisaEligibilityCheckData>
+class VisaEligibilityCheckData : public core::behavior::Serializer<VisaEligibilityCheckData>
 {
 public:
     void set_consumer_present(bool value)
@@ -1735,7 +1743,7 @@ public:
     std::optional<SecretSerdeValueValue> custom_data{};
 };
 
-class AuthenticationDetails : public serde::Serializer<AuthenticationDetails>
+class AuthenticationDetails : public core::behavior::Serializer<AuthenticationDetails>
 {
 public:
     void set_three_ds_data(std::optional<ExternalThreeDsData> value)
@@ -1756,7 +1764,8 @@ enum class AuthenticationPaymentMethodData
     ClickToPayDetails,
 };
 
-class ClickToPayEligibilityCheckData : public serde::Serializer<ClickToPayEligibilityCheckData>
+class ClickToPayEligibilityCheckData :
+    public core::behavior::Serializer<ClickToPayEligibilityCheckData>
 {
 public:
     void set_visa(std::optional<VisaEligibilityCheckData> value)
@@ -1790,7 +1799,7 @@ enum class EligibilityResponseParams
 };
 
 class AuthenticationEligibilityResponse :
-    public serde::Serializer<AuthenticationEligibilityResponse>
+    public core::behavior::Serializer<AuthenticationEligibilityResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -1952,7 +1961,7 @@ public:
     std::optional<AcquirerDetails> acquirer_details{};
 };
 
-class AuthenticationSyncResponse : public serde::Serializer<AuthenticationSyncResponse>
+class AuthenticationSyncResponse : public core::behavior::Serializer<AuthenticationSyncResponse>
 {
 public:
     void set_authentication_id(AuthenticationIdValue value)
@@ -2408,7 +2417,7 @@ public:
 };
 
 class PostAuthenticationRequestPaymentMethodData :
-    public serde::Serializer<PostAuthenticationRequestPaymentMethodData>
+    public core::behavior::Serializer<PostAuthenticationRequestPaymentMethodData>
 {
 public:
     void set_payment_method_type(AuthenticationPaymentMethodType value)
@@ -2435,7 +2444,7 @@ public:
     AuthenticationPaymentMethodData payment_method_data{};
 };
 
-class AuthenticationSyncRequest : public serde::Serializer<AuthenticationSyncRequest>
+class AuthenticationSyncRequest : public core::behavior::Serializer<AuthenticationSyncRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)

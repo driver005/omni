@@ -34,11 +34,13 @@ public:
     SuperpositionSdkConfigHandlersV1(
         ::app::context::AppContext& ctx,
         SuperpositionSdkConfigRuntime& runtime,
-        SuperpositionSdkConfigInputSupport& input_support
+        SuperpositionSdkConfigInputSupport& input_support,
+        SuperpositionSdkConfigRequestSupport& request_support
     ) noexcept :
         m_context{ctx},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -69,15 +71,8 @@ public:
         // Upstream step 2 (routes:68-77): check_sdk_auth_and_get_auth with
         // ApiKeyAuth{allow_connected_scope_operation, allow_platform_self_operation}. The local
         // registry row for "get_sdk_config" is the canonical rule (registry.cppm:174).
-        auto auth_ctx = m_input_support.authorize_request(
-            req,
-            "get_sdk_config",
-            client_secret,
-            sdk_auth,
-            !auth_header.empty()
-        );
-        if (!auth_ctx) {
-            const auto& error = auth_ctx.error();
+        if (const auto denied = m_request_support.authorize(req, "get_sdk_config", {})) {
+            const auto& error = *denied;
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
             res.set_status(status_override.value_or(error.get_status()));
             res.set_body(serde::Ser::serialize("application/json", error));
@@ -85,12 +80,16 @@ public:
             return;
         }
 
+        // The policy ran the same auth check; rebuild the authenticated context for the
+        // runtime input without invoking the authorizer a second time.
+        const auto auth_ctx = m_input_support.build_context(req, client_secret, sdk_auth);
+
         std::string sdk_profile_id{};
         if (sdk_auth && sdk_auth->decoded) {
             sdk_profile_id = sdk_auth->profile_id;
         }
         GetSdkConfigInput
-            input{payment_id, sdk_profile_id, m_input_support.provider_merchant_id(req), *auth_ctx};
+            input{payment_id, sdk_profile_id, m_input_support.provider_merchant_id(req), auth_ctx};
 
         auto result = m_runtime.get_sdk_config(input);
         if (!result) {
@@ -102,8 +101,15 @@ public:
             return;
         }
 
+        auto wire = result->serialize(
+            wire_fields<::app::dto::superposition_sdk_config::SuperPositionConfigResponse>()
+        );
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -116,17 +122,15 @@ public:
     {
         // Upstream HeaderAuth(PublishableKeyAuth{...}) (routes:119-122). Registry row:
         // registry.cppm:165.
-        auto auth_ctx =
-            m_input_support
-                .authorize_request(req, "get_profile_sdk_config", {}, std::nullopt, false);
-        if (!auth_ctx) {
-            const auto& error = auth_ctx.error();
+        if (const auto denied = m_request_support.authorize(req, "get_profile_sdk_config", {})) {
+            const auto& error = *denied;
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
             res.set_status(status_override.value_or(error.get_status()));
             res.set_body(serde::Ser::serialize("application/json", error));
             send();
             return;
         }
+        const auto auth_ctx = m_input_support.build_context(req, {}, std::nullopt);
 
         // Upstream path.into_inner() (routes:105); the payload is ignored.
         const std::string profile_id = m_input_support.profile_id_from_path(req);
@@ -142,7 +146,7 @@ public:
         GetProfileSdkConfigInput input{
             profile_id,
             m_input_support.provider_merchant_id(req),
-            *auth_ctx
+            auth_ctx
         };
 
         auto result = m_runtime.get_profile_sdk_config(input);
@@ -155,8 +159,15 @@ public:
             return;
         }
 
+        auto wire = result->serialize(
+            wire_fields<::app::dto::superposition_sdk_config::SuperPositionConfigResponse>()
+        );
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -222,6 +233,7 @@ private:
     ::app::context::AppContext& m_context;
     SuperpositionSdkConfigRuntime& m_runtime;
     SuperpositionSdkConfigInputSupport& m_input_support;
+    SuperpositionSdkConfigRequestSupport& m_request_support;
     SdkConfigErrorSupport m_errors{};
 };
 

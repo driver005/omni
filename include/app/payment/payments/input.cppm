@@ -1,6 +1,7 @@
 export module app_payment:payments_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import core_serde;
@@ -1248,4 +1249,65 @@ struct ListPaymentMethodsForPaymentsClientInput
     PaymentsRequestData data{};
 };
 
+/** @brief Request policy for the payments domain: wraps the domain auth rules. */
+class PaymentsPolicy
+{
+public:
+    PaymentsPolicy(::app::context::AppContext& /*context*/, PaymentsInputSupport& support) noexcept
+        :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        if (spec.allow_platform_self_operation) {
+            return m_support.authorize_extractor_only(req, operation);
+        }
+        if (!spec.permission.empty() && spec.permission != operation) {
+            return m_support.authorize_mapped(req, operation, spec.permission);
+        }
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    PaymentsInputSupport& m_support;
+};
+
+using PaymentsRequestSupport = core::behavior::RequestSupport<PaymentsPolicy>;
+using PaymentsPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PaymentsPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PaymentsPolicySpec{.permission = operation};
+}
+
+[[nodiscard]] PaymentsPolicySpec extractor_only_spec_for(std::string_view operation) noexcept
+{
+    return PaymentsPolicySpec{.permission = operation, .allow_platform_self_operation = true};
+}
 } // namespace app::handlers::payments

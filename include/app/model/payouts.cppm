@@ -2,16 +2,19 @@ module;
 export module app_model:payouts;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::payouts {
 
-class AddressValue : public serde::Serializer<AddressValue>
+class AddressValue : public core::behavior::Serializer<AddressValue>
 {
 public:
     void set_value(std::string value)
@@ -27,7 +30,7 @@ public:
     std::string value{};
 };
 
-class AmountValue : public serde::Serializer<AmountValue>
+class AmountValue : public core::behavior::Serializer<AmountValue>
 {
 public:
     void set_value(std::string value)
@@ -43,7 +46,7 @@ public:
     std::string value{};
 };
 
-class BankAdditionalDataValue : public serde::Serializer<BankAdditionalDataValue>
+class BankAdditionalDataValue : public core::behavior::Serializer<BankAdditionalDataValue>
 {
 public:
     void set_value(std::string value)
@@ -59,7 +62,7 @@ public:
     std::string value{};
 };
 
-class BankNamesValue : public serde::Serializer<BankNamesValue>
+class BrowserInformationValue : public core::behavior::Serializer<BrowserInformationValue>
 {
 public:
     void set_value(std::string value)
@@ -75,7 +78,7 @@ public:
     std::string value{};
 };
 
-class BankTypeValue : public serde::Serializer<BankTypeValue>
+class CurrencyValue : public core::behavior::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -91,7 +94,7 @@ public:
     std::string value{};
 };
 
-class BrowserInformationValue : public serde::Serializer<BrowserInformationValue>
+class CustomerDetailsResponseValue : public core::behavior::Serializer<CustomerDetailsResponseValue>
 {
 public:
     void set_value(std::string value)
@@ -107,7 +110,7 @@ public:
     std::string value{};
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+class CustomerDetailsValue : public core::behavior::Serializer<CustomerDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -123,7 +126,7 @@ public:
     std::string value{};
 };
 
-class CardNumberValue : public serde::Serializer<CardNumberValue>
+class CustomerIdValue : public core::behavior::Serializer<CustomerIdValue>
 {
 public:
     void set_value(std::string value)
@@ -139,7 +142,7 @@ public:
     std::string value{};
 };
 
-class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
+class EnabledPaymentMethodValue : public core::behavior::Serializer<EnabledPaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -155,7 +158,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue : public serde::Serializer<CurrencyValue>
+class FrmMessageValue : public core::behavior::Serializer<FrmMessageValue>
 {
 public:
     void set_value(std::string value)
@@ -171,7 +174,8 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsResponseValue : public serde::Serializer<CustomerDetailsResponseValue>
+class GenericLinkUiConfigFormDataValue :
+    public core::behavior::Serializer<GenericLinkUiConfigFormDataValue>
 {
 public:
     void set_value(std::string value)
@@ -187,7 +191,7 @@ public:
     std::string value{};
 };
 
-class CustomerDetailsValue : public serde::Serializer<CustomerDetailsValue>
+class GenericLinkUiConfigValue : public core::behavior::Serializer<GenericLinkUiConfigValue>
 {
 public:
     void set_value(std::string value)
@@ -203,7 +207,7 @@ public:
     std::string value{};
 };
 
-class CustomerIdValue : public serde::Serializer<CustomerIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string value)
@@ -219,7 +223,7 @@ public:
     std::string value{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class MinorUnitValue : public core::behavior::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -235,7 +239,8 @@ public:
     std::string value{};
 };
 
-class EnabledPaymentMethodValue : public serde::Serializer<EnabledPaymentMethodValue>
+class OptionalEncryptableEmailValue :
+    public core::behavior::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string value)
@@ -251,7 +256,7 @@ public:
     std::string value{};
 };
 
-class FrmMessageValue : public serde::Serializer<FrmMessageValue>
+class OptionalEncryptableNameValue : public core::behavior::Serializer<OptionalEncryptableNameValue>
 {
 public:
     void set_value(std::string value)
@@ -267,7 +272,8 @@ public:
     std::string value{};
 };
 
-class GenericLinkUiConfigFormDataValue : public serde::Serializer<GenericLinkUiConfigFormDataValue>
+class OptionalEncryptablePhoneValue :
+    public core::behavior::Serializer<OptionalEncryptablePhoneValue>
 {
 public:
     void set_value(std::string value)
@@ -283,7 +289,7 @@ public:
     std::string value{};
 };
 
-class GenericLinkUiConfigValue : public serde::Serializer<GenericLinkUiConfigValue>
+class PageOffsetValue : public core::behavior::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string value)
@@ -299,7 +305,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class PageSizeValue : public core::behavior::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string value)
@@ -315,7 +321,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorInfoValue : public serde::Serializer<MerchantConnectorInfoValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -331,51 +337,7 @@ public:
     std::string value{};
 };
 
-/**
- * @brief Wire mirror of upstream `admin::MerchantConnectorInfo`
- * (`api_models/src/admin.rs:1626-1633`). Used as the value type of
- * `PayoutListFiltersV2.connector` so `GET /payouts/v2/{profile/}filter` emits the exact
- * upstream JSON shape: `{connector_label, merchant_connector_id, connector_type}`.
- */
-class MerchantConnectorInfo : public serde::Serializer<MerchantConnectorInfo>
-{
-public:
-    void set_connector_label(std::string value)
-    {
-        connector_label = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector_label() const noexcept
-    {
-        return connector_label;
-    }
-
-    void set_merchant_connector_id(std::string value)
-    {
-        merchant_connector_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_connector_id() const noexcept
-    {
-        return merchant_connector_id;
-    }
-
-    void set_connector_type(std::string value)
-    {
-        connector_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector_type() const noexcept
-    {
-        return connector_type;
-    }
-
-    std::string connector_label{};
-    std::string merchant_connector_id{};
-    std::string connector_type{};
-};
-
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -391,7 +353,7 @@ public:
     std::string value{};
 };
 
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
+class PayoutEntityTypeValue : public core::behavior::Serializer<PayoutEntityTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -407,7 +369,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
+class PayoutFundsTransferTypeValue : public core::behavior::Serializer<PayoutFundsTransferTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -423,7 +385,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptableNameValue : public serde::Serializer<OptionalEncryptableNameValue>
+class PayoutIdValue : public core::behavior::Serializer<PayoutIdValue>
 {
 public:
     void set_value(std::string value)
@@ -439,7 +401,7 @@ public:
     std::string value{};
 };
 
-class OptionalEncryptablePhoneValue : public serde::Serializer<OptionalEncryptablePhoneValue>
+class PayoutPurposeValue : public core::behavior::Serializer<PayoutPurposeValue>
 {
 public:
     void set_value(std::string value)
@@ -455,7 +417,7 @@ public:
     std::string value{};
 };
 
-class PageOffsetValue : public serde::Serializer<PageOffsetValue>
+class PayoutSendPriorityValue : public core::behavior::Serializer<PayoutSendPriorityValue>
 {
 public:
     void set_value(std::string value)
@@ -471,7 +433,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue : public serde::Serializer<PageSizeValue>
+class PayoutStatusValue : public core::behavior::Serializer<PayoutStatusValue>
 {
 public:
     void set_value(std::string value)
@@ -487,7 +449,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PayoutTypeValue : public core::behavior::Serializer<PayoutTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -503,151 +465,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutConnectorsValue : public serde::Serializer<PayoutConnectorsValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutEntityTypeValue : public serde::Serializer<PayoutEntityTypeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutFundsTransferTypeValue : public serde::Serializer<PayoutFundsTransferTypeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutIdValue : public serde::Serializer<PayoutIdValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutPurposeValue : public serde::Serializer<PayoutPurposeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutSendPriorityValue : public serde::Serializer<PayoutSendPriorityValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutStatusValue : public serde::Serializer<PayoutStatusValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutTypeValue : public serde::Serializer<PayoutTypeValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PayoutsAggregateResponse : public serde::Serializer<PayoutsAggregateResponse>
+class PayoutsAggregateResponse : public core::behavior::Serializer<PayoutsAggregateResponse>
 {
 public:
     void set_status_with_count(std::unordered_map<std::string, std::int64_t> value)
@@ -664,7 +482,8 @@ public:
     std::unordered_map<std::string, std::int64_t> status_with_count{};
 };
 
-class PayoutsBillingDescriptorValue : public serde::Serializer<PayoutsBillingDescriptorValue>
+class PayoutsBillingDescriptorValue :
+    public core::behavior::Serializer<PayoutsBillingDescriptorValue>
 {
 public:
     void set_value(std::string value)
@@ -680,7 +499,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string value)
@@ -696,7 +515,7 @@ public:
     std::string value{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -712,7 +531,7 @@ public:
     std::string value{};
 };
 
-class RequiredFieldInfoValue : public serde::Serializer<RequiredFieldInfoValue>
+class RequiredFieldInfoValue : public core::behavior::Serializer<RequiredFieldInfoValue>
 {
 public:
     void set_value(std::string value)
@@ -728,7 +547,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string value)
@@ -744,7 +563,7 @@ public:
     std::string value{};
 };
 
-class SecretValue : public serde::Serializer<SecretValue>
+class SenderDetailsValue : public core::behavior::Serializer<SenderDetailsValue>
 {
 public:
     void set_value(std::string value)
@@ -760,7 +579,7 @@ public:
     std::string value{};
 };
 
-class SenderDetailsValue : public serde::Serializer<SenderDetailsValue>
+class SourceOfFundsValue : public core::behavior::Serializer<SourceOfFundsValue>
 {
 public:
     void set_value(std::string value)
@@ -776,7 +595,7 @@ public:
     std::string value{};
 };
 
-class SourceOfFundsValue : public serde::Serializer<SourceOfFundsValue>
+class StringMajorUnitValue : public core::behavior::Serializer<StringMajorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -792,7 +611,7 @@ public:
     std::string value{};
 };
 
-class StringMajorUnitValue : public serde::Serializer<StringMajorUnitValue>
+class TimeRangeValue : public core::behavior::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string value)
@@ -808,7 +627,7 @@ public:
     std::string value{};
 };
 
-class TimeRangeValue : public serde::Serializer<TimeRangeValue>
+class UIWidgetFormLayoutValue : public core::behavior::Serializer<UIWidgetFormLayoutValue>
 {
 public:
     void set_value(std::string value)
@@ -824,7 +643,7 @@ public:
     std::string value{};
 };
 
-class UIWidgetFormLayoutValue : public serde::Serializer<UIWidgetFormLayoutValue>
+class UnifiedCodeValue : public core::behavior::Serializer<UnifiedCodeValue>
 {
 public:
     void set_value(std::string value)
@@ -840,7 +659,7 @@ public:
     std::string value{};
 };
 
-class UnifiedCodeValue : public serde::Serializer<UnifiedCodeValue>
+class UnifiedMessageValue : public core::behavior::Serializer<UnifiedMessageValue>
 {
 public:
     void set_value(std::string value)
@@ -856,7 +675,7 @@ public:
     std::string value{};
 };
 
-class UnifiedMessageValue : public serde::Serializer<UnifiedMessageValue>
+class UrlValue : public core::behavior::Serializer<UrlValue>
 {
 public:
     void set_value(std::string value)
@@ -872,225 +691,7 @@ public:
     std::string value{};
 };
 
-class UrlValue : public serde::Serializer<UrlValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class AchBankTransfer : public serde::Serializer<AchBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<std::string> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_country_code(std::optional<CountryAlpha2Value> value)
-    {
-        bank_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>& get_bank_country_code() const noexcept
-    {
-        return bank_country_code;
-    }
-
-    void set_bank_city(std::optional<std::string> value)
-    {
-        bank_city = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_city() const noexcept
-    {
-        return bank_city;
-    }
-
-    void set_bank_account_number(SecretValue value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_bank_routing_number(SecretValue value)
-    {
-        bank_routing_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_routing_number() const noexcept
-    {
-        return bank_routing_number;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<std::string> bank_name{};
-    std::optional<CountryAlpha2Value> bank_country_code{};
-    std::optional<std::string> bank_city{};
-    SecretValue bank_account_number{};
-    SecretValue bank_routing_number{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class ApplePayDecrypt : public serde::Serializer<ApplePayDecrypt>
-{
-public:
-    void set_dpan(CardNumberValue value)
-    {
-        dpan = std::move(value);
-    }
-
-    [[nodiscard]] const CardNumberValue& get_dpan() const noexcept
-    {
-        return dpan;
-    }
-
-    void set_expiry_month(SecretValue value)
-    {
-        expiry_month = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_expiry_month() const noexcept
-    {
-        return expiry_month;
-    }
-
-    void set_expiry_year(SecretValue value)
-    {
-        expiry_year = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_expiry_year() const noexcept
-    {
-        return expiry_year;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    CardNumberValue dpan{};
-    SecretValue expiry_month{};
-    SecretValue expiry_year{};
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<CardNetworkValue> card_network{};
-};
-
-class BacsBankTransfer : public serde::Serializer<BacsBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<std::string> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_country_code(std::optional<CountryAlpha2Value> value)
-    {
-        bank_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>& get_bank_country_code() const noexcept
-    {
-        return bank_country_code;
-    }
-
-    void set_bank_city(std::optional<std::string> value)
-    {
-        bank_city = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_city() const noexcept
-    {
-        return bank_city;
-    }
-
-    void set_bank_account_number(SecretValue value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_bank_sort_code(SecretValue value)
-    {
-        bank_sort_code = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_sort_code() const noexcept
-    {
-        return bank_sort_code;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<std::string> bank_name{};
-    std::optional<CountryAlpha2Value> bank_country_code{};
-    std::optional<std::string> bank_city{};
-    SecretValue bank_account_number{};
-    SecretValue bank_sort_code{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class CardPayout : public serde::Serializer<CardPayout>
+class CardPayout : public core::behavior::Serializer<CardPayout>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -1150,83 +751,7 @@ public:
     std::optional<CardNetworkValue> card_network{};
 };
 
-class GooglePayDecrypt : public serde::Serializer<GooglePayDecrypt>
-{
-public:
-    void set_application_primary_account_number(CardNumberValue value)
-    {
-        application_primary_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const CardNumberValue& get_application_primary_account_number() const noexcept
-    {
-        return application_primary_account_number;
-    }
-
-    void set_expiry_month(SecretValue value)
-    {
-        expiry_month = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_expiry_month() const noexcept
-    {
-        return expiry_month;
-    }
-
-    void set_expiry_year(SecretValue value)
-    {
-        expiry_year = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_expiry_year() const noexcept
-    {
-        return expiry_year;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    CardNumberValue application_primary_account_number{};
-    SecretValue expiry_month{};
-    SecretValue expiry_year{};
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<CardNetworkValue> card_network{};
-};
-
-class Interac : public serde::Serializer<Interac>
-{
-public:
-    void set_email(EmailValue value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const EmailValue& get_email() const noexcept
-    {
-        return email;
-    }
-
-    EmailValue email{};
-};
-
-class Mifinity : public serde::Serializer<Mifinity>
+class Mifinity : public core::behavior::Serializer<Mifinity>
 {
 public:
     void set_destination_account(SecretValue value)
@@ -1242,61 +767,7 @@ public:
     SecretValue destination_account{};
 };
 
-class OpenBanking : public serde::Serializer<OpenBanking>
-{
-public:
-    void set_account_holder_name(SecretValue value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    void set_iban(SecretValue value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    SecretValue account_holder_name{};
-    SecretValue iban{};
-};
-
-class OpenBankingUk : public serde::Serializer<OpenBankingUk>
-{
-public:
-    void set_account_holder_name(SecretValue value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    void set_iban(SecretValue value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    SecretValue account_holder_name{};
-    SecretValue iban{};
-};
-
-class Passthrough : public serde::Serializer<Passthrough>
+class Passthrough : public core::behavior::Serializer<Passthrough>
 {
 public:
     void set_psp_token(SecretValue value)
@@ -1334,7 +805,7 @@ public:
     PaymentMethodTypeValue token_type{};
 };
 
-class PaymentMethodTypeInfo : public serde::Serializer<PaymentMethodTypeInfo>
+class PaymentMethodTypeInfo : public core::behavior::Serializer<PaymentMethodTypeInfo>
 {
 public:
     void set_payment_method_type(PaymentMethodTypeValue value)
@@ -1364,7 +835,7 @@ public:
     std::optional<std::unordered_map<std::string, RequiredFieldInfoValue>> required_fields{};
 };
 
-class PayoutActionRequest : public serde::Serializer<PayoutActionRequest>
+class PayoutActionRequest : public core::behavior::Serializer<PayoutActionRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -1380,7 +851,7 @@ public:
     PayoutIdValue payout_id{};
 };
 
-class PayoutAttemptResponse : public serde::Serializer<PayoutAttemptResponse>
+class PayoutAttemptResponse : public core::behavior::Serializer<PayoutAttemptResponse>
 {
 public:
     void set_attempt_id(std::string value)
@@ -1529,7 +1000,7 @@ public:
     std::optional<UnifiedMessageValue> unified_message{};
 };
 
-class PayoutCreatePayoutLinkConfig : public serde::Serializer<PayoutCreatePayoutLinkConfig>
+class PayoutCreatePayoutLinkConfig : public core::behavior::Serializer<PayoutCreatePayoutLinkConfig>
 {
 public:
     void set_payout_link_id(std::optional<std::string> value)
@@ -1590,7 +1061,7 @@ public:
     std::optional<bool> test_mode{};
 };
 
-class PayoutIndividualDetails : public serde::Serializer<PayoutIndividualDetails>
+class PayoutIndividualDetails : public core::behavior::Serializer<PayoutIndividualDetails>
 {
 public:
     void set_tos_acceptance_date(std::optional<std::int64_t> value)
@@ -1750,7 +1221,7 @@ public:
     std::optional<SourceOfFundsValue> source_of_funds{};
 };
 
-class PayoutLinkInitiateRequest : public serde::Serializer<PayoutLinkInitiateRequest>
+class PayoutLinkInitiateRequest : public core::behavior::Serializer<PayoutLinkInitiateRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -1777,7 +1248,7 @@ public:
     PayoutIdValue payout_id{};
 };
 
-class PayoutLinkResponse : public serde::Serializer<PayoutLinkResponse>
+class PayoutLinkResponse : public core::behavior::Serializer<PayoutLinkResponse>
 {
 public:
     void set_payout_link_id(std::string value)
@@ -1804,7 +1275,7 @@ public:
     SecretValue link{};
 };
 
-class PayoutLinkStatusDetails : public serde::Serializer<PayoutLinkStatusDetails>
+class PayoutLinkStatusDetails : public core::behavior::Serializer<PayoutLinkStatusDetails>
 {
 public:
     void set_payout_link_id(std::string value)
@@ -1919,7 +1390,7 @@ public:
     bool test_mode{};
 };
 
-class PayoutListConstraints : public serde::Serializer<PayoutListConstraints>
+class PayoutListConstraints : public core::behavior::Serializer<PayoutListConstraints>
 {
 public:
     void set_customer_id(std::optional<CustomerIdValue> value)
@@ -1990,7 +1461,7 @@ public:
     std::optional<TimeRangeValue> time_range{};
 };
 
-class PayoutListFilterConstraints : public serde::Serializer<PayoutListFilterConstraints>
+class PayoutListFilterConstraints : public core::behavior::Serializer<PayoutListFilterConstraints>
 {
 public:
     void set_payout_id(std::optional<PayoutIdValue> value)
@@ -2129,7 +1600,7 @@ public:
     std::optional<PayoutEntityTypeValue> entity_type{};
 };
 
-class PayoutListFilters : public serde::Serializer<PayoutListFilters>
+class PayoutListFilters : public core::behavior::Serializer<PayoutListFilters>
 {
 public:
     void set_connector(std::vector<PayoutConnectorsValue> value)
@@ -2178,7 +1649,7 @@ public:
     std::vector<PayoutTypeValue> payout_method{};
 };
 
-class PayoutListFiltersV2 : public serde::Serializer<PayoutListFiltersV2>
+class PayoutListFiltersV2 : public core::behavior::Serializer<PayoutListFiltersV2>
 {
 public:
     void set_connector(std::unordered_map<std::string, std::vector<MerchantConnectorInfo>> value)
@@ -2228,7 +1699,7 @@ public:
     std::vector<PayoutTypeValue> payout_method{};
 };
 
-class PayoutRetrieveBody : public serde::Serializer<PayoutRetrieveBody>
+class PayoutRetrieveBody : public core::behavior::Serializer<PayoutRetrieveBody>
 {
 public:
     void set_force_sync(std::optional<bool> value)
@@ -2266,7 +1737,7 @@ public:
     std::optional<bool> expand_attempts{};
 };
 
-class PayoutRetrieveRequest : public serde::Serializer<PayoutRetrieveRequest>
+class PayoutRetrieveRequest : public core::behavior::Serializer<PayoutRetrieveRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2315,7 +1786,7 @@ public:
     std::optional<bool> expand_attempts{};
 };
 
-class PayoutVendorDetails : public serde::Serializer<PayoutVendorDetails>
+class PayoutVendorDetails : public core::behavior::Serializer<PayoutVendorDetails>
 {
 public:
     void set_account_type(std::string value)
@@ -2541,7 +2012,7 @@ public:
     std::optional<SourceOfFundsValue> source_of_funds{};
 };
 
-class PayoutsManualUpdateRequest : public serde::Serializer<PayoutsManualUpdateRequest>
+class PayoutsManualUpdateRequest : public core::behavior::Serializer<PayoutsManualUpdateRequest>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2623,7 +2094,7 @@ public:
     std::optional<std::string> connector_payout_id{};
 };
 
-class PayoutsManualUpdateResponse : public serde::Serializer<PayoutsManualUpdateResponse>
+class PayoutsManualUpdateResponse : public core::behavior::Serializer<PayoutsManualUpdateResponse>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -2705,350 +2176,8 @@ public:
     std::optional<std::string> connector_payout_id{};
 };
 
-class Paypal : public serde::Serializer<Paypal>
-{
-public:
-    void set_email(std::optional<EmailValue> value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email() const noexcept
-    {
-        return email;
-    }
-
-    void set_telephone_number(std::optional<SecretValue> value)
-    {
-        telephone_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_telephone_number() const noexcept
-    {
-        return telephone_number;
-    }
-
-    void set_paypal_id(std::optional<SecretValue> value)
-    {
-        paypal_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_paypal_id() const noexcept
-    {
-        return paypal_id;
-    }
-
-    std::optional<EmailValue> email{};
-    std::optional<SecretValue> telephone_number{};
-    std::optional<SecretValue> paypal_id{};
-};
-
-class PayshapBankTransfer : public serde::Serializer<PayshapBankTransfer>
-{
-public:
-    void set_bank_account_number(SecretValue value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    void set_bank_name(std::optional<BankNamesValue> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankNamesValue>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    SecretValue bank_account_number{};
-    std::optional<SecretValue> account_holder_name{};
-    std::optional<BankNamesValue> bank_name{};
-};
-
-class PayshapProxyBankTransfer : public serde::Serializer<PayshapProxyBankTransfer>
-{
-public:
-    void set_cellphone(std::optional<SecretValue> value)
-    {
-        cellphone = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_cellphone() const noexcept
-    {
-        return cellphone;
-    }
-
-    void set_shap_id(std::optional<SecretValue> value)
-    {
-        shap_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_shap_id() const noexcept
-    {
-        return shap_id;
-    }
-
-    std::optional<SecretValue> cellphone{};
-    std::optional<SecretValue> shap_id{};
-};
-
-class PixAccountBankTransfer : public serde::Serializer<PixAccountBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<std::string> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_branch(std::optional<std::string> value)
-    {
-        bank_branch = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_branch() const noexcept
-    {
-        return bank_branch;
-    }
-
-    void set_bank_account_number(SecretValue value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_tax_id(std::optional<SecretValue> value)
-    {
-        tax_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_tax_id() const noexcept
-    {
-        return tax_id;
-    }
-
-    void set_ispb(std::optional<std::string> value)
-    {
-        ispb = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_ispb() const noexcept
-    {
-        return ispb;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_bank_account_type(std::optional<BankTypeValue> value)
-    {
-        bank_account_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankTypeValue>& get_bank_account_type() const noexcept
-    {
-        return bank_account_type;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<std::string> bank_name{};
-    std::optional<std::string> bank_branch{};
-    SecretValue bank_account_number{};
-    std::optional<SecretValue> tax_id{};
-    std::optional<std::string> ispb{};
-    std::optional<std::string> bank_code{};
-    std::optional<BankTypeValue> bank_account_type{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class PixBankTransfer : public serde::Serializer<PixBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<std::string> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_branch(std::optional<std::string> value)
-    {
-        bank_branch = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_branch() const noexcept
-    {
-        return bank_branch;
-    }
-
-    void set_bank_account_number(std::optional<SecretValue> value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_pix_key(std::optional<SecretValue> value)
-    {
-        pix_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_pix_key() const noexcept
-    {
-        return pix_key;
-    }
-
-    void set_tax_id(std::optional<SecretValue> value)
-    {
-        tax_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_tax_id() const noexcept
-    {
-        return tax_id;
-    }
-
-    void set_emv(std::optional<SecretValue> value)
-    {
-        emv = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_emv() const noexcept
-    {
-        return emv;
-    }
-
-    void set_ispb(std::optional<std::string> value)
-    {
-        ispb = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_ispb() const noexcept
-    {
-        return ispb;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_bank_account_type(std::optional<BankTypeValue> value)
-    {
-        bank_account_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankTypeValue>& get_bank_account_type() const noexcept
-    {
-        return bank_account_type;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<std::string> bank_name{};
-    std::optional<std::string> bank_branch{};
-    std::optional<SecretValue> bank_account_number{};
-    std::optional<SecretValue> pix_key{};
-    std::optional<SecretValue> tax_id{};
-    std::optional<SecretValue> emv{};
-    std::optional<std::string> ispb{};
-    std::optional<std::string> bank_code{};
-    std::optional<BankTypeValue> bank_account_type{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class PixEmvBankTransfer : public serde::Serializer<PixEmvBankTransfer>
-{
-public:
-    void set_emv(SecretValue value)
-    {
-        emv = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_emv() const noexcept
-    {
-        return emv;
-    }
-
-    SecretValue emv{};
-};
-
-class PixKeyBankTransfer : public serde::Serializer<PixKeyBankTransfer>
-{
-public:
-    void set_pix_key(SecretValue value)
-    {
-        pix_key = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_pix_key() const noexcept
-    {
-        return pix_key;
-    }
-
-    SecretValue pix_key{};
-};
-
-class RequiredFieldsOverrideRequest : public serde::Serializer<RequiredFieldsOverrideRequest>
+class RequiredFieldsOverrideRequest :
+    public core::behavior::Serializer<RequiredFieldsOverrideRequest>
 {
 public:
     void set_billing(std::optional<AddressValue> value)
@@ -3064,269 +2193,7 @@ public:
     std::optional<AddressValue> billing{};
 };
 
-class SepaBankTransfer : public serde::Serializer<SepaBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<std::string> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_country_code(std::optional<CountryAlpha2Value> value)
-    {
-        bank_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>& get_bank_country_code() const noexcept
-    {
-        return bank_country_code;
-    }
-
-    void set_bank_city(std::optional<std::string> value)
-    {
-        bank_city = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_city() const noexcept
-    {
-        return bank_city;
-    }
-
-    void set_iban(SecretValue value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    void set_bic(std::optional<SecretValue> value)
-    {
-        bic = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bic() const noexcept
-    {
-        return bic;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<std::string> bank_name{};
-    std::optional<CountryAlpha2Value> bank_country_code{};
-    std::optional<std::string> bank_city{};
-    SecretValue iban{};
-    std::optional<SecretValue> bic{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class TedBankTransfer : public serde::Serializer<TedBankTransfer>
-{
-public:
-    void set_bank_name(std::optional<BankNamesValue> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankNamesValue>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_ispb(std::optional<std::string> value)
-    {
-        ispb = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_ispb() const noexcept
-    {
-        return ispb;
-    }
-
-    void set_bank_branch(std::optional<std::string> value)
-    {
-        bank_branch = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_branch() const noexcept
-    {
-        return bank_branch;
-    }
-
-    void set_bank_account_number(SecretValue value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_bank_account_type(std::optional<BankTypeValue> value)
-    {
-        bank_account_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankTypeValue>& get_bank_account_type() const noexcept
-    {
-        return bank_account_type;
-    }
-
-    void set_tax_id(std::optional<SecretValue> value)
-    {
-        tax_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_tax_id() const noexcept
-    {
-        return tax_id;
-    }
-
-    void set_account_holder_name(std::optional<SecretValue> value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    std::optional<BankNamesValue> bank_name{};
-    std::optional<std::string> bank_code{};
-    std::optional<std::string> ispb{};
-    std::optional<std::string> bank_branch{};
-    SecretValue bank_account_number{};
-    std::optional<BankTypeValue> bank_account_type{};
-    std::optional<SecretValue> tax_id{};
-    std::optional<SecretValue> account_holder_name{};
-};
-
-class TrustlyBankTransfer : public serde::Serializer<TrustlyBankTransfer>
-{
-public:
-    void set_iban(std::optional<SecretValue> value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    void set_country_code(CountryAlpha2Value value)
-    {
-        country_code = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_country_code() const noexcept
-    {
-        return country_code;
-    }
-
-    void set_account_number(std::optional<SecretValue> value)
-    {
-        account_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_number() const noexcept
-    {
-        return account_number;
-    }
-
-    void set_bank_number(std::optional<SecretValue> value)
-    {
-        bank_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bank_number() const noexcept
-    {
-        return bank_number;
-    }
-
-    std::optional<SecretValue> iban{};
-    CountryAlpha2Value country_code{};
-    std::optional<SecretValue> account_number{};
-    std::optional<SecretValue> bank_number{};
-};
-
-class TrustlyBankTransferData : public serde::Serializer<TrustlyBankTransferData>
-{
-public:
-    void set_iban(std::optional<SecretValue> value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    void set_bank_country_code(CountryAlpha2Value value)
-    {
-        bank_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_bank_country_code() const noexcept
-    {
-        return bank_country_code;
-    }
-
-    void set_bank_account_number(std::optional<SecretValue> value)
-    {
-        bank_account_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bank_account_number() const noexcept
-    {
-        return bank_account_number;
-    }
-
-    void set_bank_number(std::optional<SecretValue> value)
-    {
-        bank_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bank_number() const noexcept
-    {
-        return bank_number;
-    }
-
-    std::optional<SecretValue> iban{};
-    CountryAlpha2Value bank_country_code{};
-    std::optional<SecretValue> bank_account_number{};
-    std::optional<SecretValue> bank_number{};
-};
-
-class Venmo : public serde::Serializer<Venmo>
+class Venmo : public core::behavior::Serializer<Venmo>
 {
 public:
     void set_telephone_number(std::optional<SecretValue> value)
@@ -3355,28 +2222,8 @@ enum class Bank
     Ted,
 };
 
-enum class BankRedirect
-{
-    Interac,
-    OpenBankingUk,
-};
-
-enum class BankTransfer
-{
-    Ach,
-    Bacs,
-    Sepa,
-    Pix,
-    PixKey,
-    PixEmv,
-    Trustly,
-    OpenBanking,
-    Payshap,
-    PayshapProxy,
-    Ted,
-};
-
-class PayoutEnabledPaymentMethodsInfo : public serde::Serializer<PayoutEnabledPaymentMethodsInfo>
+class PayoutEnabledPaymentMethodsInfo :
+    public core::behavior::Serializer<PayoutEnabledPaymentMethodsInfo>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -3404,7 +2251,7 @@ public:
     std::vector<PaymentMethodTypeInfo> payment_method_types_info{};
 };
 
-class PayoutVendorAccountDetails : public serde::Serializer<PayoutVendorAccountDetails>
+class PayoutVendorAccountDetails : public core::behavior::Serializer<PayoutVendorAccountDetails>
 {
 public:
     void set_vendor_details(PayoutVendorDetails value)
@@ -3440,7 +2287,7 @@ enum class Wallet
     Venmo,
 };
 
-class PayoutLinkDetails : public serde::Serializer<PayoutLinkDetails>
+class PayoutLinkDetails : public core::behavior::Serializer<PayoutLinkDetails>
 {
 public:
     void set_publishable_key(SecretValue value)
@@ -3633,7 +2480,7 @@ enum class PayoutMethodDataResponse
     Passthrough,
 };
 
-class PayoutCreateRequest : public serde::Serializer<PayoutCreateRequest>
+class PayoutCreateRequest : public core::behavior::Serializer<PayoutCreateRequest>
 {
 public:
     void set_payout_id(std::optional<PayoutIdValue> value)
@@ -4071,7 +2918,7 @@ public:
     std::optional<BrowserInformationValue> browser_info{};
 };
 
-class PayoutCreateResponse : public serde::Serializer<PayoutCreateResponse>
+class PayoutCreateResponse : public core::behavior::Serializer<PayoutCreateResponse>
 {
 public:
     void set_payout_id(PayoutIdValue value)
@@ -4567,7 +3414,7 @@ public:
     std::optional<std::string> payout_method_id{};
 };
 
-class PayoutListResponse : public serde::Serializer<PayoutListResponse>
+class PayoutListResponse : public core::behavior::Serializer<PayoutListResponse>
 {
 public:
     void set_size(std::size_t value)
@@ -4694,407 +3541,6 @@ struct serde::Serializable<app::model::payouts::CardPayout>
 };
 
 template<>
-struct serde::Serializable<app::model::payouts::AchBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::AchBankTransfer::get_bank_name,
-                &app::model::payouts::AchBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_country_code",
-                &app::model::payouts::AchBankTransfer::get_bank_country_code,
-                &app::model::payouts::AchBankTransfer::set_bank_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_city",
-                &app::model::payouts::AchBankTransfer::get_bank_city,
-                &app::model::payouts::AchBankTransfer::set_bank_city,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::AchBankTransfer::get_bank_account_number,
-                &app::model::payouts::AchBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_routing_number",
-                &app::model::payouts::AchBankTransfer::get_bank_routing_number,
-                &app::model::payouts::AchBankTransfer::set_bank_routing_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::AchBankTransfer::get_account_holder_name,
-                &app::model::payouts::AchBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "ach_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::BacsBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::BacsBankTransfer::get_bank_name,
-                &app::model::payouts::BacsBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_country_code",
-                &app::model::payouts::BacsBankTransfer::get_bank_country_code,
-                &app::model::payouts::BacsBankTransfer::set_bank_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_city",
-                &app::model::payouts::BacsBankTransfer::get_bank_city,
-                &app::model::payouts::BacsBankTransfer::set_bank_city,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::BacsBankTransfer::get_bank_account_number,
-                &app::model::payouts::BacsBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_sort_code",
-                &app::model::payouts::BacsBankTransfer::get_bank_sort_code,
-                &app::model::payouts::BacsBankTransfer::set_bank_sort_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::BacsBankTransfer::get_account_holder_name,
-                &app::model::payouts::BacsBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bacs_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::SepaBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::SepaBankTransfer::get_bank_name,
-                &app::model::payouts::SepaBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_country_code",
-                &app::model::payouts::SepaBankTransfer::get_bank_country_code,
-                &app::model::payouts::SepaBankTransfer::set_bank_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_city",
-                &app::model::payouts::SepaBankTransfer::get_bank_city,
-                &app::model::payouts::SepaBankTransfer::set_bank_city,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "iban",
-                &app::model::payouts::SepaBankTransfer::get_iban,
-                &app::model::payouts::SepaBankTransfer::set_iban,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bic",
-                &app::model::payouts::SepaBankTransfer::get_bic,
-                &app::model::payouts::SepaBankTransfer::set_bic,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::SepaBankTransfer::get_account_holder_name,
-                &app::model::payouts::SepaBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "sepa_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PixBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::PixBankTransfer::get_bank_name,
-                &app::model::payouts::PixBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_branch",
-                &app::model::payouts::PixBankTransfer::get_bank_branch,
-                &app::model::payouts::PixBankTransfer::set_bank_branch,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::PixBankTransfer::get_bank_account_number,
-                &app::model::payouts::PixBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "pix_key",
-                &app::model::payouts::PixBankTransfer::get_pix_key,
-                &app::model::payouts::PixBankTransfer::set_pix_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tax_id",
-                &app::model::payouts::PixBankTransfer::get_tax_id,
-                &app::model::payouts::PixBankTransfer::set_tax_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "emv",
-                &app::model::payouts::PixBankTransfer::get_emv,
-                &app::model::payouts::PixBankTransfer::set_emv,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "ispb",
-                &app::model::payouts::PixBankTransfer::get_ispb,
-                &app::model::payouts::PixBankTransfer::set_ispb,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payouts::PixBankTransfer::get_bank_code,
-                &app::model::payouts::PixBankTransfer::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_type",
-                &app::model::payouts::PixBankTransfer::get_bank_account_type,
-                &app::model::payouts::PixBankTransfer::set_bank_account_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::PixBankTransfer::get_account_holder_name,
-                &app::model::payouts::PixBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pix_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PixAccountBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::PixAccountBankTransfer::get_bank_name,
-                &app::model::payouts::PixAccountBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_branch",
-                &app::model::payouts::PixAccountBankTransfer::get_bank_branch,
-                &app::model::payouts::PixAccountBankTransfer::set_bank_branch,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::PixAccountBankTransfer::get_bank_account_number,
-                &app::model::payouts::PixAccountBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tax_id",
-                &app::model::payouts::PixAccountBankTransfer::get_tax_id,
-                &app::model::payouts::PixAccountBankTransfer::set_tax_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "ispb",
-                &app::model::payouts::PixAccountBankTransfer::get_ispb,
-                &app::model::payouts::PixAccountBankTransfer::set_ispb,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payouts::PixAccountBankTransfer::get_bank_code,
-                &app::model::payouts::PixAccountBankTransfer::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_type",
-                &app::model::payouts::PixAccountBankTransfer::get_bank_account_type,
-                &app::model::payouts::PixAccountBankTransfer::set_bank_account_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::PixAccountBankTransfer::get_account_holder_name,
-                &app::model::payouts::PixAccountBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pix_account_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PixKeyBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "pix_key",
-            &app::model::payouts::PixKeyBankTransfer::get_pix_key,
-            &app::model::payouts::PixKeyBankTransfer::set_pix_key,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pix_key_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PixEmvBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "emv",
-            &app::model::payouts::PixEmvBankTransfer::get_emv,
-            &app::model::payouts::PixEmvBankTransfer::set_emv,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pix_emv_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PayshapBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::PayshapBankTransfer::get_bank_account_number,
-                &app::model::payouts::PayshapBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::PayshapBankTransfer::get_account_holder_name,
-                &app::model::payouts::PayshapBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::PayshapBankTransfer::get_bank_name,
-                &app::model::payouts::PayshapBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payshap_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::PayshapProxyBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "cellphone",
-                &app::model::payouts::PayshapProxyBankTransfer::get_cellphone,
-                &app::model::payouts::PayshapProxyBankTransfer::set_cellphone,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shap_id",
-                &app::model::payouts::PayshapProxyBankTransfer::get_shap_id,
-                &app::model::payouts::PayshapProxyBankTransfer::set_shap_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payshap_proxy_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::TedBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payouts::TedBankTransfer::get_bank_name,
-                &app::model::payouts::TedBankTransfer::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payouts::TedBankTransfer::get_bank_code,
-                &app::model::payouts::TedBankTransfer::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "ispb",
-                &app::model::payouts::TedBankTransfer::get_ispb,
-                &app::model::payouts::TedBankTransfer::set_ispb,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_branch",
-                &app::model::payouts::TedBankTransfer::get_bank_branch,
-                &app::model::payouts::TedBankTransfer::set_bank_branch,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::TedBankTransfer::get_bank_account_number,
-                &app::model::payouts::TedBankTransfer::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_type",
-                &app::model::payouts::TedBankTransfer::get_bank_account_type,
-                &app::model::payouts::TedBankTransfer::set_bank_account_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tax_id",
-                &app::model::payouts::TedBankTransfer::get_tax_id,
-                &app::model::payouts::TedBankTransfer::set_tax_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::TedBankTransfer::get_account_holder_name,
-                &app::model::payouts::TedBankTransfer::set_account_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "ted_bank_transfer";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payouts::Mifinity>
 {
     static constexpr auto fields()
@@ -5109,144 +3555,6 @@ struct serde::Serializable<app::model::payouts::Mifinity>
     static constexpr std::string_view table_name()
     {
         return "mifinity";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::Interac>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "email",
-            &app::model::payouts::Interac::get_email,
-            &app::model::payouts::Interac::set_email,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "interac";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::OpenBankingUk>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::OpenBankingUk::get_account_holder_name,
-                &app::model::payouts::OpenBankingUk::set_account_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "iban",
-                &app::model::payouts::OpenBankingUk::get_iban,
-                &app::model::payouts::OpenBankingUk::set_iban,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "open_banking_uk";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::OpenBanking>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payouts::OpenBanking::get_account_holder_name,
-                &app::model::payouts::OpenBanking::set_account_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "iban",
-                &app::model::payouts::OpenBanking::get_iban,
-                &app::model::payouts::OpenBanking::set_iban,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "open_banking";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::TrustlyBankTransfer>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "iban",
-                &app::model::payouts::TrustlyBankTransfer::get_iban,
-                &app::model::payouts::TrustlyBankTransfer::set_iban,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "country_code",
-                &app::model::payouts::TrustlyBankTransfer::get_country_code,
-                &app::model::payouts::TrustlyBankTransfer::set_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_number",
-                &app::model::payouts::TrustlyBankTransfer::get_account_number,
-                &app::model::payouts::TrustlyBankTransfer::set_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_number",
-                &app::model::payouts::TrustlyBankTransfer::get_bank_number,
-                &app::model::payouts::TrustlyBankTransfer::set_bank_number,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "trustly_bank_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::TrustlyBankTransferData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "iban",
-                &app::model::payouts::TrustlyBankTransferData::get_iban,
-                &app::model::payouts::TrustlyBankTransferData::set_iban,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_country_code",
-                &app::model::payouts::TrustlyBankTransferData::get_bank_country_code,
-                &app::model::payouts::TrustlyBankTransferData::set_bank_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_account_number",
-                &app::model::payouts::TrustlyBankTransferData::get_bank_account_number,
-                &app::model::payouts::TrustlyBankTransferData::set_bank_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_number",
-                &app::model::payouts::TrustlyBankTransferData::get_bank_number,
-                &app::model::payouts::TrustlyBankTransferData::set_bank_number,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "trustly_bank_transfer_data";
     }
 };
 
@@ -5281,36 +3589,6 @@ struct serde::Serializable<app::model::payouts::Passthrough>
 };
 
 template<>
-struct serde::Serializable<app::model::payouts::Paypal>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "email",
-                &app::model::payouts::Paypal::get_email,
-                &app::model::payouts::Paypal::set_email,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "telephone_number",
-                &app::model::payouts::Paypal::get_telephone_number,
-                &app::model::payouts::Paypal::set_telephone_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "paypal_id",
-                &app::model::payouts::Paypal::get_paypal_id,
-                &app::model::payouts::Paypal::set_paypal_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payouts::Venmo>
 {
     static constexpr auto fields()
@@ -5325,86 +3603,6 @@ struct serde::Serializable<app::model::payouts::Venmo>
     static constexpr std::string_view table_name()
     {
         return "venmo";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::ApplePayDecrypt>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "dpan",
-                &app::model::payouts::ApplePayDecrypt::get_dpan,
-                &app::model::payouts::ApplePayDecrypt::set_dpan,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "expiry_month",
-                &app::model::payouts::ApplePayDecrypt::get_expiry_month,
-                &app::model::payouts::ApplePayDecrypt::set_expiry_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "expiry_year",
-                &app::model::payouts::ApplePayDecrypt::get_expiry_year,
-                &app::model::payouts::ApplePayDecrypt::set_expiry_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payouts::ApplePayDecrypt::get_card_holder_name,
-                &app::model::payouts::ApplePayDecrypt::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payouts::ApplePayDecrypt::get_card_network,
-                &app::model::payouts::ApplePayDecrypt::set_card_network,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_decrypt";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::GooglePayDecrypt>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "application_primary_account_number",
-                &app::model::payouts::GooglePayDecrypt::get_application_primary_account_number,
-                &app::model::payouts::GooglePayDecrypt::set_application_primary_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "expiry_month",
-                &app::model::payouts::GooglePayDecrypt::get_expiry_month,
-                &app::model::payouts::GooglePayDecrypt::set_expiry_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "expiry_year",
-                &app::model::payouts::GooglePayDecrypt::get_expiry_year,
-                &app::model::payouts::GooglePayDecrypt::set_expiry_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payouts::GooglePayDecrypt::get_card_holder_name,
-                &app::model::payouts::GooglePayDecrypt::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payouts::GooglePayDecrypt::get_card_network,
-                &app::model::payouts::GooglePayDecrypt::set_card_network,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_decrypt";
     }
 };
 
@@ -6684,36 +4882,6 @@ struct serde::Serializable<app::model::payouts::PayoutListFilters>
     static constexpr std::string_view table_name()
     {
         return "payout_list_filters";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payouts::MerchantConnectorInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "connector_label",
-                &app::model::payouts::MerchantConnectorInfo::get_connector_label,
-                &app::model::payouts::MerchantConnectorInfo::set_connector_label,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_connector_id",
-                &app::model::payouts::MerchantConnectorInfo::get_merchant_connector_id,
-                &app::model::payouts::MerchantConnectorInfo::set_merchant_connector_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_type",
-                &app::model::payouts::MerchantConnectorInfo::get_connector_type,
-                &app::model::payouts::MerchantConnectorInfo::set_connector_type,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "merchant_connector_info";
     }
 };
 

@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingCreateConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_create_config(const RoutingInput& input) const
     {
         const auto& typed = *input.config_request;
@@ -84,7 +84,7 @@ public:
             txn
         );
         m_support.track("routing_create_config");
-        return RoutingCreateConfigResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

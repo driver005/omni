@@ -37,7 +37,9 @@ public:
      * Upstream: routes/revenue_recovery_data_backfill.rs:106-128 ->
      * core/revenue_recovery_data_backfill.rs:157-261.
      */
-    [[nodiscard]] std::expected<UpdateRedisDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse,
+        core::error::AppError>
     update_redis_data(const UpdateRedisDataInput& input) const
     {
         // Secret<String, PhoneNumberStrategy> Debug is masked; local SecretString::masked()
@@ -132,7 +134,9 @@ public:
             "Successfully updated token '" + secret.masked() + "' for connector customer '" +
             connector_customer_id + "'. Updated fields: " + updated_fields_str
         );
-        return UpdateRedisDataResult{std::move(response)};
+        return ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse{
+            std::move(response)
+        };
     }
 
 private:

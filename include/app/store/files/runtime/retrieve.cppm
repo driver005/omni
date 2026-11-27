@@ -2,6 +2,7 @@ export module app_store:files_runtime_retrieve;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_metrics;
 import app_context_core;
@@ -22,7 +23,7 @@ public:
     }
 
     /** @brief Port of `files_retrieve_core` (`core/files.rs:111-146`). */
-    [[nodiscard]] std::expected<FilesRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const FilesRetrieveInput& input) const
     {
         // Upstream: files.rs:151-152 — server_wrap records the flow and route counter.
@@ -62,10 +63,16 @@ public:
             return std::unexpected{Builder{}(Kind::NOT_FOUND, "File not available")};
         }
 
-        FilesRetrieveResult result{};
-        result.set_file_data(*info->file_data);
-        result.set_content_type(metadata->get_file_type());
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{files_retrieve_wire_fields()[0]},
+            serde::Value{*info->file_data}
+        );
+        document.insert(
+            std::string{files_retrieve_wire_fields()[1]},
+            serde::Value{metadata->get_file_type()}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

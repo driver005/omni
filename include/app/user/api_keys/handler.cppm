@@ -20,8 +20,8 @@ public:
         m_context{context},
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -35,6 +35,10 @@ private:
     ::app::context::AppContext& m_context;
     ApiKeysRuntime m_runtime;            // SINGLE runtime instance — shared by every family.
     ApiKeysInputSupport m_input_support; // SINGLE input helper — shared by every family.
+
+    ApiKeysPolicy m_policy{m_input_support};
+
+    ApiKeysRequestSupport m_request_support{m_policy};
     ApiKeysHandlersV1 m_v1;
     ApiKeysHandlersV2 m_v2;
 };

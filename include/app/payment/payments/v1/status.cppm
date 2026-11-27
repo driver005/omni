@@ -32,6 +32,13 @@ export namespace app::handlers::payments {
 class PaymentsV1StatusHandlers
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsV1StatusHandlers(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,
@@ -51,7 +58,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "payments_retrieve")) {
+        if (const auto auth_error =
+                m_request_support
+                    ->authorize(req, "payments_retrieve", spec_for("payments_retrieve"))) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -89,7 +98,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -99,8 +108,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "payments_retrieve_with_gateway_creds")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_retrieve_with_gateway_creds",
+                spec_for("payments_retrieve_with_gateway_creds")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -137,7 +149,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -147,7 +159,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "retrieve_extended_card_info")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "retrieve_extended_card_info",
+                spec_for("retrieve_extended_card_info")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -185,7 +201,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -195,8 +211,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "payments_manual_status_update")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_manual_status_update",
+                spec_for("payments_manual_status_update")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -233,7 +252,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -243,8 +262,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "payments_manual_status_update_eligible_statuses")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_manual_status_update_eligible_statuses",
+                spec_for("payments_manual_status_update_eligible_statuses")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -284,7 +306,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

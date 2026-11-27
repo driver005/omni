@@ -3,6 +3,7 @@ export module app_auth:connector_onboarding_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -36,10 +37,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize(req, "get_action_url");
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        if (const auto auth_error = m_request_support.authorize(req, "get_action_url", {})) {
+            auth_error->send(res, send);
             return;
         }
 
@@ -72,7 +71,9 @@ public:
             error.send(res, send);
             return;
         }
-        const auto merchant_id = m_input_support.onboarding_merchant_id(req, authorized.context);
+        const auto scope = m_request_support.scope(req);
+        const auto merchant_id =
+            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
         GetActionUrlInput input{*parsed, merchant_id};
 
         auto result = m_runtime.get_action_url(input);
@@ -86,7 +87,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -96,10 +97,9 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize(req, "sync_onboarding_status");
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        if (const auto auth_error =
+                m_request_support.authorize(req, "sync_onboarding_status", {})) {
+            auth_error->send(res, send);
             return;
         }
 
@@ -134,7 +134,9 @@ public:
             error.send(res, send);
             return;
         }
-        const auto merchant_id = m_input_support.onboarding_merchant_id(req, authorized.context);
+        const auto scope = m_request_support.scope(req);
+        const auto merchant_id =
+            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
         SyncOnboardingStatusInput input{*parsed, merchant_id};
 
         auto result = m_runtime.sync_onboarding_status(input);
@@ -148,7 +150,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -158,10 +160,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize(req, "reset_tracking_id");
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        if (const auto auth_error = m_request_support.authorize(req, "reset_tracking_id", {})) {
+            auth_error->send(res, send);
             return;
         }
 
@@ -195,7 +195,9 @@ public:
             error.send(res, send);
             return;
         }
-        const auto merchant_id = m_input_support.onboarding_merchant_id(req, authorized.context);
+        const auto scope = m_request_support.scope(req);
+        const auto merchant_id =
+            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
         ResetTrackingIdInput input{*parsed, merchant_id};
 
         auto result = m_runtime.reset_tracking_id(input);
@@ -209,7 +211,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -264,12 +266,16 @@ public:
 
     explicit ConnectorOnboardingRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_policy{context},
+        m_request_support{m_policy},
+        m_input_support{}
     {
     }
 
 private:
     ConnectorOnboardingRuntime m_runtime;
+    ConnectorOnboardingPolicy m_policy;
+    core::behavior::RequestSupport<ConnectorOnboardingPolicy> m_request_support;
     ConnectorOnboardingInputSupport m_input_support;
 };
 

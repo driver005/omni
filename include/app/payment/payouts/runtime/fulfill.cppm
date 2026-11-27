@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: fulfill ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsFulfillResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     fulfill(const PayoutsFulfillInput& input) const
     {
         PayoutLockGuard lock{
@@ -104,7 +104,7 @@ public:
 
         auto response = m_support.response_from_record(record);
         m_support.enrich_response(response, record, false);
-        return PayoutsFulfillResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

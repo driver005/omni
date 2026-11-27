@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -27,7 +26,7 @@ public:
     }
 
     // core::create_subscription (core.rs:31-123)
-    [[nodiscard]] std::expected<CreateSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create(const CreateSubscriptionInput& input) const
     {
         const auto merchant = input.merchant_id;
@@ -96,9 +95,7 @@ public:
         m_context.repository().update_subscription(m_support.to_store_record(record));
 
         m_support.metrics_for("subscription.create");
-        return CreateSubscriptionResult{
-            m_support.build_subscription_response(record, std::nullopt, payment, invoice)
-        };
+        return m_support.build_subscription_response(record, std::nullopt, payment, invoice);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_payment:payment_link_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -213,4 +214,65 @@ struct PaymentLinkStatusInput
     std::string payment_id{};
 };
 
+/** @brief Request policy for the payment_link domain: wraps the domain auth rules. */
+class PaymentLinkPolicy
+{
+public:
+    PaymentLinkPolicy(
+        ::app::context::AppContext& /*context*/,
+        PaymentLinkInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        if (operation == "initiate_payment_link" || operation == "initiate_secure_payment_link" ||
+            operation == "payment_link_status") {
+            const auto ids = m_support.path_merchant_payment(req);
+            std::string merchant_id = ids.first;
+            if (merchant_id.empty()) {
+                merchant_id = m_support.merchant_id_from_header(req);
+            }
+            return m_support.authorize_operation(req, operation, merchant_id);
+        }
+        return m_support.authorize_operation(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    PaymentLinkInputSupport& m_support;
+};
+
+using PaymentLinkRequestSupport = core::behavior::RequestSupport<PaymentLinkPolicy>;
+using PaymentLinkPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PaymentLinkPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PaymentLinkPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::payment_link

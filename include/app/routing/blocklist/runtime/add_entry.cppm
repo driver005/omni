@@ -36,7 +36,7 @@ public:
     }
 
     // utils.rs:377-430 (fingerprint) and :448-504 (BIN duplicate check).
-    [[nodiscard]] std::expected<AddEntryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
     add_entry(const AddEntryInput& input) const
     {
         if (m_support.find_by_identity(
@@ -86,7 +86,7 @@ public:
         }
         m_support.emit("blocklist.entry.added", response);
         m_support.track("add_entry_to_blocklist");
-        return AddEntryResult{response};
+        return response;
     }
 
 private:

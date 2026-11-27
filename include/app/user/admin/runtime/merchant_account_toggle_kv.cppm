@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountToggleKvResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
     toggle(const MerchantAccountToggleKvInput& input) const
     {
         const auto found =
@@ -73,7 +73,7 @@ public:
             "merchant_account.kv_toggled",
             serde::Ser::encode_json(response)
         );
-        return MerchantAccountToggleKvResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

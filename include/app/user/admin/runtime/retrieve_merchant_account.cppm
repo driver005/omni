@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveMerchantAccountResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     retrieve(const RetrieveMerchantAccountInput& input) const
     {
         const auto found =
@@ -63,7 +63,7 @@ public:
 
         m_context.metrics().record_flow("retrieve_merchant_account");
         m_context.metrics().counter("admin.retrieve_merchant_account").increment();
-        return RetrieveMerchantAccountResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

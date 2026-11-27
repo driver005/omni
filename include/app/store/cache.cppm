@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -11,7 +12,6 @@ import app_context_core;
 import app_http;
 
 import :cache_input;
-import :cache_result;
 import :cache_runtime;
 import :cache_runtime_common;
 
@@ -27,8 +27,20 @@ public:
     )
     {
         // 1. request -> Input (auth/path; no body is read on this route).
-        const auto auth_error = m_input_support.authorize(req);
-        const auto key = m_input_support.cache_key_from_request(req);
+        const auto auth_error = m_request_support.authorize(req, "invalidate", {});
+        // Upstream takes the key from web::Path<String> (/cache/invalidate/:key).
+        auto key = m_request_support.path(req, 2U);
+        if (key.empty()) {
+            // Longer mount prefixes: fall back to the last segment, matching the
+            // old RequestPath-based helper.
+            for (std::size_t index{0};; ++index) {
+                const auto segment = m_request_support.path(req, index);
+                if (segment.empty()) {
+                    break;
+                }
+                key = segment;
+            }
+        }
         CacheInvalidateInput input{auth_error, key};
 
         // 2. Input -> Result.
@@ -70,7 +82,9 @@ public:
 
     explicit CacheRouteHandlers(::app::context::AppContext& context) :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy}
     {
         // Upstream's process-wide subscriber invalidates the shared Caches for
         // every CacheKind (app.rs:566; pub_sub.rs:34-69,92-133). Register this
@@ -94,6 +108,8 @@ public:
 private:
     CacheRuntime m_runtime;
     CacheInputSupport m_input_support;
+    CachePolicy m_policy;
+    core::behavior::RequestSupport<CachePolicy> m_request_support;
     std::size_t m_subscription{0};
 };
 

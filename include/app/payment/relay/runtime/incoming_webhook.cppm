@@ -53,7 +53,7 @@ public:
      * external infra, replaced by deterministic local equivalents using the
      * connector registry and the relay record store.
      */
-    [[nodiscard]] std::expected<RelayWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     incoming_webhook(const RelayIncomingWebhookInput& input) const
     {
         // Upstream consumes `web::Bytes` verbatim; there is no JSON requirement
@@ -102,13 +102,13 @@ public:
         if (decoded.setup) {
             // incoming.rs:363-372: setup webhooks are acked with StatusOk/NoEffect.
             m_support.publish_relay_webhook_event(ids, decoded, "NoEffect", "", source, {});
-            return RelayWebhookResult{};
+            return empty_webhook_wire();
         }
         if (decoded.event == RelayWebhookEvent::Unsupported) {
             // incoming.rs:1810-1822: only the Refund flow is supported for relay;
             // incoming.rs:616-635: unsupported events are still acknowledged.
             m_support.publish_relay_webhook_event(ids, decoded, "NoEffect", "", source, {});
-            return RelayWebhookResult{};
+            return empty_webhook_wire();
         }
         if (decoded.object_reference_id.empty()) {
             return std::unexpected{m_support.make_error(
@@ -162,7 +162,7 @@ public:
             source,
             relay->get_relay_id()
         );
-        return RelayWebhookResult{};
+        return empty_webhook_wire();
     }
 
 private:

@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CheckTwoFactorAuthStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     check_two_factor_auth_status(const CheckTwoFactorAuthStatusInput& input) const
     {
         std::string set_cookie{};
@@ -63,7 +63,7 @@ public:
         response.set_totp(totp_active);
         response.set_recovery_code(recovery_enabled);
         auto document = ResponseDocument::from(response);
-        return CheckTwoFactorAuthStatusResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

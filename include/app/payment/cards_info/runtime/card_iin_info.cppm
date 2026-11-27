@@ -27,7 +27,7 @@ public:
     // core/cards_info.rs:32-53 retrieve_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfo, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<CardIinInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     card_iin_info(const CardIinInfoInput& input) const
     {
         // core/cards_info.rs:32-53 retrieve_card_info.
@@ -54,7 +54,7 @@ public:
         // api::server_wrap records the flow before mapping the outcome to the wire.
         m_context.metrics().record_flow("CardsInfo");
         m_context.metrics().counter("CARDS_INFO_RETRIEVED").increment();
-        return CardIinInfoResult{std::move(response)};
+        return ::app::model::cards_info::CardInfoResponse{std::move(response)};
     }
 
 private:

@@ -27,8 +27,20 @@ public:
         m_retrieve{context, m_runtime, m_input_support},
         m_submit_accept{context, m_runtime, m_input_support},
         m_misc{context, m_runtime, m_input_support},
-        m_evidence{context, m_runtime, m_input_support}
+        m_evidence{context, m_runtime, m_input_support},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_fetch_list.bind_request_support(m_request_support);
+        m_fetch_list.bind_policy(m_policy);
+        m_retrieve.bind_request_support(m_request_support);
+        m_retrieve.bind_policy(m_policy);
+        m_submit_accept.bind_request_support(m_request_support);
+        m_submit_accept.bind_policy(m_policy);
+        m_misc.bind_request_support(m_request_support);
+        m_misc.bind_policy(m_policy);
+        m_evidence.bind_request_support(m_request_support);
+        m_evidence.bind_policy(m_policy);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -54,6 +66,8 @@ private:
     DisputesHandlersSubmitAccept m_submit_accept;
     DisputesHandlersMisc m_misc;
     DisputesHandlersEvidence m_evidence;
+    DisputesPolicy m_policy;
+    DisputesRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::disputes

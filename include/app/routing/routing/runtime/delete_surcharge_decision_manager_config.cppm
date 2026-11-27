@@ -1,6 +1,7 @@
 export module app_routing:routing_runtime_delete_surcharge_decision_manager_config;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -21,7 +22,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteSurchargeDecisionManagerConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_surcharge_decision_manager_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -29,9 +30,7 @@ public:
         m_support.remove_config(key);
         m_support.set_active_algo_ref(profile, "surcharge_config_algo_id", std::string{});
         m_support.track("delete_surcharge_decision_manager_config");
-        return DeleteSurchargeDecisionManagerConfigResult{
-            ResponseDocument::empty()
-        }; // StatusOk document
+        return ResponseDocument::empty(); // StatusOk document
     }
 
 private:

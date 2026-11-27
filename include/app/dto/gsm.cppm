@@ -2,9 +2,11 @@ module;
 export module app_dto:gsm;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -15,7 +17,7 @@ import boost.ut;
 // (common_types/src/domain.rs:155-181 -> {"retry": { ... }}).
 export namespace app::dto::gsm {
 
-class RetryFeatureData : public serde::Serializer<RetryFeatureData>
+class RetryFeatureData : public core::behavior::Serializer<RetryFeatureData>
 {
 public:
     void set_step_up_possible(bool value)
@@ -64,7 +66,7 @@ public:
     std::string decision{"do_default"};
 };
 
-class GsmFeatureData : public serde::Serializer<GsmFeatureData>
+class GsmFeatureData : public core::behavior::Serializer<GsmFeatureData>
 {
 public:
     void set_retry(RetryFeatureData value)
@@ -80,7 +82,7 @@ public:
     RetryFeatureData retry{};
 };
 
-class GsmDeleteRequest : public serde::Serializer<GsmDeleteRequest>
+class GsmDeleteRequest : public core::behavior::Serializer<GsmDeleteRequest>
 {
 public:
     void set_connector(std::string value)
@@ -140,7 +142,7 @@ public:
     std::string message{};
 };
 
-class GsmDeleteResponse : public serde::Serializer<GsmDeleteResponse>
+class GsmDeleteResponse : public core::behavior::Serializer<GsmDeleteResponse>
 {
 public:
     void set_gsm_rule_delete(bool value)
@@ -200,7 +202,7 @@ public:
     std::string code{};
 };
 
-class GsmCreateRequest : public serde::Serializer<GsmCreateRequest>
+class GsmCreateRequest : public core::behavior::Serializer<GsmCreateRequest>
 {
 public:
     void set_connector(std::string value)
@@ -403,7 +405,7 @@ public:
     std::optional<std::string> user_guidance_message{};
 };
 
-class GsmResponse : public serde::Serializer<GsmResponse>
+class GsmResponse : public core::behavior::Serializer<GsmResponse>
 {
 public:
     void set_connector(std::string value)
@@ -606,7 +608,7 @@ public:
     std::optional<std::string> user_guidance_message{};
 };
 
-class GsmRetrieveRequest : public serde::Serializer<GsmRetrieveRequest>
+class GsmRetrieveRequest : public core::behavior::Serializer<GsmRetrieveRequest>
 {
 public:
     void set_connector(std::string value)
@@ -666,7 +668,7 @@ public:
     std::string message{};
 };
 
-class GsmUpdateRequest : public serde::Serializer<GsmUpdateRequest>
+class GsmUpdateRequest : public core::behavior::Serializer<GsmUpdateRequest>
 {
 public:
     void set_connector(std::string value)

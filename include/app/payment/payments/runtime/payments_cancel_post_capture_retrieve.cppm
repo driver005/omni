@@ -31,7 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsCancelPostCaptureRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payments::PaymentListResponseV2,
+        core::error::AppError>
     payments_cancel_post_capture_retrieve(const PaymentsCancelPostCaptureRetrieveInput& input) const
     {
         auto records = m_support.list_payments_scoped(input.data);
@@ -48,7 +50,9 @@ public:
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return PaymentsCancelPostCaptureRetrieveResult{m_support.payment_list_response(records)};
+        return ::app::model::payments::PaymentListResponseV2{
+            m_support.payment_list_response(records)
+        };
     }
 
 private:

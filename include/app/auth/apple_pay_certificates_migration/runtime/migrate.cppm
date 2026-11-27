@@ -26,7 +26,9 @@ public:
 
     // ───────────────────────── Core: migration ─────────────────────────
     // core/apple_pay_certificates_migration.rs:27-113.
-    [[nodiscard]] std::expected<ApplePayCertificatesMigrationResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse,
+        core::error::AppError>
     migrate(const ApplePayCertificatesMigrationInput& input) const
     {
         const auto& merchant_id_list = input.request.get_merchant_ids();
@@ -122,7 +124,7 @@ public:
             response{};
         response.set_migration_successful(std::move(migration_successful_merchant_ids));
         response.set_migration_failed(std::move(migration_failed_merchant_ids));
-        return ApplePayCertificatesMigrationResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

@@ -32,7 +32,7 @@ public:
     }
 
     /** @brief Port of `check_offer_engine_connectivity(state)` (connectivity.rs:26-72). */
-    [[nodiscard]] std::expected<ConnectivityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<ConnectivityCheckResponse, core::error::AppError>
     connectivity_check(const ConnectivityCheckInput& input) const
     {
         (void)input;
@@ -59,7 +59,7 @@ public:
                 break;
         }
 
-        ConnectivityCheckResult response{};
+        ConnectivityCheckResponse response{};
         response.set_reachable(std::nullopt);
         response.set_status_code(std::nullopt);
 

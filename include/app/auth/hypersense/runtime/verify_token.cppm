@@ -38,7 +38,7 @@ public:
 
     // routes/hypersense.rs:75 -> core/external_service_auth.rs:73-102.
     // NoAuth: the payload token is the only credential.
-    [[nodiscard]] std::expected<VerifyTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<HypersenseVerifyResponse, core::error::AppError>
     verify_token(const VerifyTokenInput& input) const
     {
         m_support.record_flow("HypersenseVerifyToken", LockActionNotApplicable{});
@@ -87,7 +87,7 @@ public:
         response.set_merchant_id(claims->merchant_id);
         response.set_name(user->get_name());
         response.set_email(user->get_email());
-        return VerifyTokenResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

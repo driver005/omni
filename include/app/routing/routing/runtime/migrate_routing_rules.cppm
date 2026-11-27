@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MigrateRoutingRulesResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     migrate_routing_rules(const RoutingInput& input) const
     {
         const auto& typed = *input.migration_request;
@@ -84,7 +84,7 @@ public:
         response.set_profiles(std::move(profiles));
         response.set_totals(totals);
         m_support.track("migrate_routing_rules");
-        return MigrateRoutingRulesResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

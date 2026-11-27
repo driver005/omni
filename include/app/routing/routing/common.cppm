@@ -26,13 +26,15 @@ public:
     RoutingHandlersCommon(
         ::app::context::AppContext& context,
         RoutingRuntime& runtime,
-        RoutingInputSupport& input_support
+        RoutingInputSupport& input_support,
+        RoutingRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_dynamic_routing{context, runtime, input_support},
-        m_volume_split{context, runtime, input_support}
+        m_request_support{request_support},
+        m_dynamic_routing{context, runtime, input_support, request_support},
+        m_volume_split{context, runtime, input_support, request_support}
     {
     }
 
@@ -49,6 +51,7 @@ private:
     ::app::context::AppContext& m_context;
     RoutingRuntime& m_runtime;
     RoutingInputSupport& m_input_support;
+    RoutingRequestSupport& m_request_support;
     RoutingDynamicRoutingHandlers m_dynamic_routing;
     RoutingVolumeSplitHandlers m_volume_split;
 };

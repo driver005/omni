@@ -33,13 +33,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetRoleInformationResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentInfoWire>, core::error::AppError>
     get_role_information(const GetRoleInformationInput& input) const
     {
         (void)input;
         auto parents = m_support.parent_authorization_info();
         m_support.track_flow("get_role_information", "user_role.get_role_information");
-        return GetRoleInformationResult{std::move(parents)};
+        return std::move(parents);
     }
 
 private:

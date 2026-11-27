@@ -33,11 +33,13 @@ public:
     UserRoleV1RolesCrudHandlers(
         ::app::context::AppContext& context,
         UserRoleRuntime& runtime,
-        UserRoleInputSupport& input_support
+        UserRoleInputSupport& input_support,
+        UserRoleRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -48,7 +50,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "create_role")) {
+        if (const auto auth_error = m_request_support.authorize(req, "create_role", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -76,7 +78,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRoleInfoWithGroupsWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -87,7 +94,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "get_role")) {
+        if (const auto auth_error = m_request_support.authorize(req, "get_role", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -108,7 +115,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRoleInfoWithGroupsWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -119,7 +131,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "update_role")) {
+        if (const auto auth_error = m_request_support.authorize(req, "update_role", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -154,7 +166,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kRoleInfoWithGroupsWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -165,7 +182,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "update_user_role")) {
+        if (const auto auth_error = m_request_support.authorize(req, "update_user_role", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -196,7 +213,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kStatusOkWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -207,7 +229,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "delete_user_role")) {
+        if (const auto auth_error = m_request_support.authorize(req, "delete_user_role", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -238,7 +260,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kDeleteUserRoleResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -368,6 +395,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
+    UserRoleRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::user_role

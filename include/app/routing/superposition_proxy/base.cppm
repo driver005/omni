@@ -1,7 +1,6 @@
 export module app_routing:superposition_proxy_base;
 
 export import :superposition_proxy_input;
-export import :superposition_proxy_result;
 export import :superposition_proxy_runtime_common;
 export import :superposition_proxy_runtime_list_contexts;
 export import :superposition_proxy_runtime_create_context;

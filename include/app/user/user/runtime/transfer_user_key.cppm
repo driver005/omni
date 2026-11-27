@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TransferUserKeyResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     transfer_user_key(const TransferUserKeyInput& input) const
     {
         std::string set_cookie{};
@@ -68,7 +68,7 @@ public:
         Response response{};
         response.set_total_transferred(transferred);
         auto document = ResponseDocument::from(response);
-        return TransferUserKeyResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

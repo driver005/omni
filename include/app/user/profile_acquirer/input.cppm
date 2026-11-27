@@ -2,6 +2,7 @@ export module app_user:profile_acquirer_input;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -296,5 +297,66 @@ struct ProfileAcquirerUpdateInput
     std::string profile_id{};
     std::string profile_acquirer_id{};
 };
+
+/**
+ * @brief Domain authorization policy for profile acquirers.
+ *
+ * Upstream's dual extractor binds the caller to the profile id taken from the
+ * route (or from the create body). The handler binds that id before the check.
+ */
+class ProfileAcquirerPolicy
+{
+public:
+    explicit ProfileAcquirerPolicy(ProfileAcquirerInputSupport& input) noexcept :
+        m_input{input}
+    {
+    }
+
+    void bind_profile_id(std::string_view profile_id)
+    {
+        m_route_profile_id = std::string{profile_id};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_input.authorize(req, operation, m_route_profile_id);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ::core::behavior::Scope out{};
+        out.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+        if (out.merchant_id.empty()) {
+            out.merchant_id = auth.merchant_id();
+        }
+        out.org_id = std::string{::app::http::org_id_from_header{}(req)};
+        if (out.org_id.empty()) {
+            out.org_id = auth.org_id();
+        }
+        out.profile_id = auth.profile_id();
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value()) {
+            out.connected_merchant_id = std::string{*connected};
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+private:
+    ProfileAcquirerInputSupport& m_input;
+    std::string m_route_profile_id{};
+};
+
+using ProfileAcquirerRequestSupport = ::core::behavior::RequestSupport<ProfileAcquirerPolicy>;
 
 } // namespace app::handlers::profile_acquirer

@@ -1,236 +1,108 @@
 export module app_auth:authentication_result;
 
 import std;
-import core_serde;
-import app_dto;
 
 export namespace app::handlers::authentication {
 
-// The three DTO-shaped responses inherit their wire fields from the exact DTO
-// the old core built and encoded, so field names, order and wrapper types stay
-// byte-identical. The Serializable specialization reuses the DTO's FieldDesc
-// tuple; those descriptors apply to the derived object just as they do to the
-// base object.
-
-class AuthenticationCreateResult : public ::app::dto::authentication::AuthenticationResponse
+/**
+ * @brief Exact wire field lists captured from the retired Result classes' Serializable
+ * specializations. Each one mirrors the corresponding DTO's FieldDesc tuple in declaration
+ * order, so Serializer<T>::serialize(fields) emits the same bytes the old core did.
+ */
+[[nodiscard]] inline constexpr auto create_wire_fields()
 {
-public:
-    AuthenticationCreateResult() = default;
+    return std::array<std::string_view, 17>{
+        "authentication_id",
+        "merchant_id",
+        "status",
+        "client_secret",
+        "amount",
+        "currency",
+        "authentication_connector",
+        "force_3ds_challenge",
+        "return_url",
+        "created_at",
+        "error_code",
+        "error_message",
+        "profile_id",
+        "psd2_sca_exemption_type",
+        "acquirer_details",
+        "profile_acquirer_id",
+        "customer_details"
+    };
+}
 
-    explicit AuthenticationCreateResult(
-        ::app::dto::authentication::AuthenticationResponse value
-    ) noexcept :
-        AuthenticationResponse{std::move(value)}
-    {
-    }
-};
-
-class AuthenticationAuthenticateResult :
-    public ::app::dto::authentication::AuthenticationAuthenticateResponse
+[[nodiscard]] inline constexpr auto authenticate_wire_fields()
 {
-public:
-    AuthenticationAuthenticateResult() = default;
+    return std::array<std::string_view, 17>{
+        "trans_status",
+        "acs_url",
+        "challenge_request",
+        "acs_reference_number",
+        "acs_trans_id",
+        "three_ds_server_transaction_id",
+        "acs_signed_content",
+        "three_ds_requestor_url",
+        "three_ds_requestor_app_url",
+        "error_message",
+        "error_code",
+        "authentication_value",
+        "status",
+        "authentication_connector",
+        "authentication_id",
+        "eci",
+        "acquirer_details"
+    };
+}
 
-    explicit AuthenticationAuthenticateResult(
-        ::app::dto::authentication::AuthenticationAuthenticateResponse value
-    ) noexcept :
-        AuthenticationAuthenticateResponse{std::move(value)}
-    {
-    }
-};
-
-class AuthenticationSyncResult : public ::app::dto::authentication::AuthenticationSyncResponse
+[[nodiscard]] inline constexpr auto sync_wire_fields()
 {
-public:
-    AuthenticationSyncResult() = default;
+    return std::array<std::string_view, 40>{
+        "authentication_id",
+        "merchant_id",
+        "status",
+        "client_secret",
+        "amount",
+        "currency",
+        "authentication_connector",
+        "force_3ds_challenge",
+        "return_url",
+        "created_at",
+        "profile_id",
+        "psd2_sca_exemption_type",
+        "acquirer_details",
+        "threeds_server_transaction_id",
+        "maximum_supported_3ds_version",
+        "connector_authentication_id",
+        "three_ds_method_data",
+        "three_ds_method_url",
+        "message_version",
+        "connector_metadata",
+        "directory_server_id",
+        "payment_method_data",
+        "vault_token_data",
+        "authentication_details",
+        "billing",
+        "shipping",
+        "browser_information",
+        "email",
+        "trans_status",
+        "acs_url",
+        "challenge_request",
+        "acs_reference_number",
+        "acs_trans_id",
+        "acs_signed_content",
+        "three_ds_requestor_url",
+        "three_ds_requestor_app_url",
+        "eci",
+        "error_message",
+        "error_code",
+        "profile_acquirer_id"
+    };
+}
 
-    explicit AuthenticationSyncResult(
-        ::app::dto::authentication::AuthenticationSyncResponse value
-    ) noexcept :
-        AuthenticationSyncResponse{std::move(value)}
-    {
-    }
-};
-
-// Externally-tagged / hand-built wire shapes cannot be expressed by the flat
-// DTO enums. These results carry a typed serde::Value document (built from
-// typed field assignments in the runtime); the handler encodes it with
-// serde::Ser::serialize. No hand-written JSON text crosses this boundary.
-class AuthenticationEligibilityResult
-{
-public:
-    AuthenticationEligibilityResult() = default;
-
-    explicit AuthenticationEligibilityResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-class AuthenticationEligibilityCheckResult
-{
-public:
-    AuthenticationEligibilityCheckResult() = default;
-
-    explicit AuthenticationEligibilityCheckResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-class AuthenticationRetrieveEligibilityCheckResult
-{
-public:
-    AuthenticationRetrieveEligibilityCheckResult() = default;
-
-    explicit AuthenticationRetrieveEligibilityCheckResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-class AuthenticationSessionTokenResult
-{
-public:
-    AuthenticationSessionTokenResult() = default;
-
-    explicit AuthenticationSessionTokenResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
-
-// 302 RedirectionResponse: body is a typed wire document, location is the query URL.
-class AuthenticationSyncPostUpdateResult
-{
-public:
-    AuthenticationSyncPostUpdateResult() = default;
-
-    AuthenticationSyncPostUpdateResult(serde::Value document, std::string location) noexcept :
-        m_document{std::move(document)},
-        m_location{std::move(location)}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_location() const noexcept
-    {
-        return m_location;
-    }
-
-    void set_location(std::string value)
-    {
-        m_location = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-    std::string m_location{};
-};
+// Eligibility, eligibility-check, retrieve-eligibility-check, session-token and post-sync
+// responses are externally-tagged / hand-built wire documents. They travel as serde::Value
+// built in the runtime and are encoded with Ser::serialize; no Result wrapper is involved.
 
 } // namespace app::handlers::authentication
-
-template<>
-struct serde::Serializable<::app::handlers::authentication::AuthenticationCreateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::authentication::AuthenticationResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "authentication_create_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::authentication::AuthenticationAuthenticateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::authentication::AuthenticationAuthenticateResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "authentication_authenticate_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::authentication::AuthenticationSyncResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::authentication::AuthenticationSyncResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "authentication_sync_result";
-    }
-};

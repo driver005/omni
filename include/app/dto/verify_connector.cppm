@@ -2,9 +2,11 @@ module;
 export module app_dto:verify_connector;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -192,7 +194,7 @@ enum class Connector
 };
 
 /** @brief Wire-name table mirroring upstream `#[serde(rename_all = "snake_case")]`. */
-struct ConnectorName : public serde::Serializer<ConnectorName>
+struct ConnectorName : public core::behavior::Serializer<ConnectorName>
 {
     std::string_view wire{};
     Connector value{Connector::stripe};
@@ -390,7 +392,7 @@ inline constexpr std::array<ConnectorName, 161> kConnectorNames{{
  * (admin.rs:1583 `#[serde(tag = "auth_type")]`). All secret fields are plain strings at the
  * DTO boundary; the handler wraps them in app::crypto::SecretString for the domain value.
  */
-class ConnectorAuthTypeValue : public serde::Serializer<ConnectorAuthTypeValue>
+class ConnectorAuthTypeValue : public core::behavior::Serializer<ConnectorAuthTypeValue>
 {
 public:
     void set_auth_type(std::string value)
@@ -484,7 +486,7 @@ public:
 };
 
 /** @brief Kept for source compatibility with the previous generated wrapper. */
-class ConnectorValue : public serde::Serializer<ConnectorValue>
+class ConnectorValue : public core::behavior::Serializer<ConnectorValue>
 {
 public:
     void set_value(std::string v)
@@ -501,7 +503,7 @@ public:
 };
 
 /** @brief Upstream `VerifyConnectorRequest` (api_models/src/verify_connector.rs:5-9). */
-class VerifyConnectorRequest : public serde::Serializer<VerifyConnectorRequest>
+class VerifyConnectorRequest : public core::behavior::Serializer<VerifyConnectorRequest>
 {
 public:
     void set_connector_name(std::string value)

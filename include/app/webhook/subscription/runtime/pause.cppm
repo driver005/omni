@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -27,7 +26,7 @@ public:
     }
 
     // pause_subscription_on_connector (billing_processor_handler.rs:354-383)
-    [[nodiscard]] std::expected<PauseSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     pause(const PauseSubscriptionInput& input) const
     {
         if (const auto failure =
@@ -64,7 +63,7 @@ public:
             }
         }
         m_support.metrics_for("subscription.pause");
-        return PauseSubscriptionResult{m_support.build_pause_response(*found, paused_at)};
+        return m_support.build_pause_response(*found, paused_at);
     }
 
 private:

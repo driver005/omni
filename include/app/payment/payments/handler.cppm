@@ -28,8 +28,12 @@ public:
         m_input_support{context, m_scope},
         m_runtime{context, m_scope},
         m_v2{context, m_scope, m_input_support, m_runtime},
-        m_v1{context, m_scope, m_input_support, m_runtime}
+        m_v1{context, m_scope, m_input_support, m_runtime},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v2.bind_request_support(m_request_support);
+        m_v1.bind_request_support(m_request_support);
     }
 
 private:
@@ -39,6 +43,8 @@ private:
     PaymentsRuntime m_runtime;
     PaymentsHandlersV2 m_v2;
     PaymentsHandlersV1 m_v1;
+    PaymentsPolicy m_policy;
+    PaymentsRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::payments

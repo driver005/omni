@@ -35,7 +35,7 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
     // core/payout_link.rs:39-329 — initiate_payout_link
     // ─────────────────────────────────────────────────────────────────────────
-    [[nodiscard]] std::expected<PayoutLinkRenderResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     render(const PayoutLinkRenderInput& input) const
     {
         // routes/payout_link.rs:37-38 flow/counter (previously recorded by the
@@ -123,7 +123,7 @@ public:
                                              .str("message", "This payout link has expired.")
                                              .str("theme", ui.theme)
                                              .done();
-            return PayoutLinkRenderResult{m_support.generic_links(*allowed, expired, locale)};
+            return serde::Value{m_support.generic_links(*allowed, expired, locale)};
         }
 
         // core:134-275 (_, Initiated) -> PayoutLinkDetails + GenericLinkFormData
@@ -132,7 +132,7 @@ public:
             if (!result.has_value()) {
                 return std::unexpected(result.error());
             }
-            return PayoutLinkRenderResult{std::move(*result)};
+            return serde::Value{std::move(*result)};
         }
 
         // core:278-327 (_, Submitted) -> PayoutLinkStatusDetails + GenericLinkStatusData
@@ -142,7 +142,7 @@ public:
             if (!result.has_value()) {
                 return std::unexpected(result.error());
             }
-            return PayoutLinkRenderResult{std::move(*result)};
+            return serde::Value{std::move(*result)};
         }
 
         return std::unexpected(

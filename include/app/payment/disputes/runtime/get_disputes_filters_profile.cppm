@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetDisputesFiltersProfileResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
     get_disputes_filters_profile(const GetDisputesFiltersProfileInput& input) const
     {
         m_context.metrics().record_flow("dispute_profile_filters");
@@ -45,7 +45,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return GetDisputesFiltersProfileResult{*result};
+        return ::app::model::disputes::DisputeListFilters{*result};
     }
 
 private:

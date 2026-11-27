@@ -26,25 +26,27 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CardIinInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     card_iin_info(const CardIinInfoInput& input) const
     {
         return m_card_iin_info.card_iin_info(input);
     }
 
-    [[nodiscard]] std::expected<CreateCardsInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     create(const CreateCardsInfoInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<UpdateCardsInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     update(const UpdateCardsInfoInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<MigrateCardsInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::model::cards_info::CardInfoMigrationResponse>,
+        core::error::AppError>
     migrate(const MigrateCardsInfoInput& input) const
     {
         return m_migrate.migrate(input);

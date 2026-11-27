@@ -3,6 +3,7 @@ export module app_auth:verify_connector_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -17,7 +18,6 @@ import app_metrics;
 import app_connector;
 
 import :verify_connector_input;
-import :verify_connector_result;
 import :verify_connector_runtime;
 
 export namespace app::handlers::verify_connector {
@@ -35,14 +35,14 @@ public:
     )
     {
         // JWTAuth { permission: MerchantConnectorWrite, allow_connected: true,
-        // allow_platform: false }. The auth decision and merchant identity are resolved by
-        // the input support; auth failures are written here with no runtime call.
-        const auto authorized = m_input_support.authorize(req);
-        if (authorized.error) {
-            const auto& error = *authorized.error;
-            error.send(res, send);
+        // allow_platform: false }. The auth decision comes from the registry rule;
+        // auth failures are written here with no runtime call.
+        if (const auto auth_error =
+                m_request_support.authorize(req, "payment_connector_verify", {})) {
+            auth_error->send(res, send);
             return;
         }
+        const auto merchant_id = m_request_support.scope(req).merchant_id;
 
         const auto body = req.body_as_string();
         if (body.empty()) {
@@ -75,8 +75,7 @@ public:
             ::app::dto::verify_connector::connector_to_wire(*connector)
         };
 
-        PaymentConnectorVerifyInput
-            input{*parsed, *connector, connector_name, authorized.merchant_id};
+        PaymentConnectorVerifyInput input{*parsed, *connector, connector_name, merchant_id};
         auto result = m_runtime.payment_connector_verify(input);
         if (!result) {
             const auto& error = result.error();
@@ -85,10 +84,10 @@ public:
         }
 
         // StatusOk with no payload. The old send_json(res, send, {}, true) wrote an empty raw
-        // body; the typed result now carries that as an empty serde::Value document and the
-        // handler writes it through Ser::serialize.
+        // body; the runtime now returns that as an empty serde::Value document and the handler
+        // writes it through Ser::serialize.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -118,12 +117,16 @@ public:
 
     explicit VerifyConnectorRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_policy{context},
+        m_request_support{m_policy},
+        m_input_support{}
     {
     }
 
 private:
     VerifyConnectorRuntime m_runtime;
+    VerifyConnectorPolicy m_policy;
+    core::behavior::RequestSupport<VerifyConnectorPolicy> m_request_support;
     VerifyConnectorInputSupport m_input_support;
 };
 

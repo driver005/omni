@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingLinkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_link_config(const RoutingInput& input) const
     {
         std::string algorithm = input.algorithm_id;
@@ -89,9 +89,7 @@ public:
 
         m_support.set_active_id(profile, txn, algorithm);
         m_support.track("routing_link_config");
-        return RoutingLinkConfigResult{
-            ResponseDocument::from(m_support.dictionary_record(*existing))
-        };
+        return ResponseDocument::from(m_support.dictionary_record(*existing));
     }
 
 private:

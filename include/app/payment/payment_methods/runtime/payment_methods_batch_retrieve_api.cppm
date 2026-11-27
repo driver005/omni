@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodsBatchRetrieveApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>,
+        core::error::AppError>
     payment_methods_batch_retrieve_api(const PaymentMethodsBatchRetrieveApiInput& input) const
     {
         m_context.metrics().record_flow("payment_methods_batch_retrieve_api");
@@ -60,7 +62,9 @@ public:
             }
             responses.push_back(std::move(response));
         }
-        return PaymentMethodsBatchRetrieveApiResult{std::move(responses)};
+        return std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>{
+            std::move(responses)
+        };
     }
 
 private:

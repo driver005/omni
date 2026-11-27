@@ -38,7 +38,7 @@ public:
     }
 
     // ───────────────────────── Core: list_available_filters_for_profile ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsListAvailableFiltersForProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
     list_available_filters_for_profile(
         const PayoutsListAvailableFiltersForProfileInput& input
     ) const
@@ -53,7 +53,7 @@ public:
 
         const auto filters =
             m_support.available_filters(m_support.scoped_records(input.profile_id, range));
-        return PayoutsListAvailableFiltersForProfileResult{filters};
+        return ::app::model::payouts::PayoutListFilters{filters};
     }
 
 private:

@@ -36,7 +36,9 @@ public:
     }
 
     /** @brief core:578-603 generate_hierarchical_resource. */
-    [[nodiscard]] std::expected<GenerateHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse,
+        core::error::AppError>
     generate(const GenerateHierarchicalResourceInput& input) const
     {
         m_context.metrics().record_flow("HierarchicalResourcesGenerate");
@@ -81,7 +83,7 @@ public:
         ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse response;
         response.set_id(m_support.resource_id_value(resource_id));
         response.set_data(serde::RawJson{response_data});
-        return GenerateHierarchicalResourceResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -26,7 +25,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_subscription(const GetSubscriptionInput& input) const
     {
         if (const auto failure =
@@ -41,9 +40,8 @@ public:
         }
         m_support.metrics_for("subscription.get");
         // to_subscription_response(subscription, None, None) — no payment/invoice on this route.
-        return GetSubscriptionResult{
-            m_support.build_subscription_response(*found, std::nullopt, std::nullopt, std::nullopt)
-        };
+        return m_support
+            .build_subscription_response(*found, std::nullopt, std::nullopt, std::nullopt);
     }
 
 private:

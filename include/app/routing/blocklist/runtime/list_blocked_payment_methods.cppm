@@ -36,8 +36,9 @@ public:
     }
 
     // utils.rs:120-162 list_blocklist_entries_for_merchant.
-    [[nodiscard]] std::expected<ListBlockedPaymentMethodsResult, core::error::AppError>
-    list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ListBlocklistResponse, core::error::AppError>
+        list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
     {
         std::vector<EntryRecord> selected;
         for (const auto& record: m_support.list_entries()) {
@@ -68,7 +69,7 @@ public:
         response.set_data(std::move(data));
         m_support.emit("blocklist.list", response);
         m_support.track("list_blocked_payment_methods");
-        return ListBlockedPaymentMethodsResult{response};
+        return response;
     }
 
 private:

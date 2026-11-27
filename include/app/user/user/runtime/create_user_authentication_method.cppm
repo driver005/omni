@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateUserAuthenticationMethodResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     create_user_authentication_method(const CreateUserAuthenticationMethodInput& input) const
     {
         std::string set_cookie{};
@@ -79,7 +79,7 @@ public:
         response.set_email_domain(input.request.get_email_domain());
         response.set_allow_signup(input.request.get_allow_signup());
         auto document = ResponseDocument::from(response);
-        return CreateUserAuthenticationMethodResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

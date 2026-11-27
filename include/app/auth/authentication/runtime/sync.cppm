@@ -37,8 +37,9 @@ public:
 
     // ───────────────────────── Core: sync ─────────────────────────
     // unified_authentication_service.rs:2070-2383 authentication_sync_core.
-    [[nodiscard]] std::expected<AuthenticationSyncResult, core::error::AppError>
-    sync(const AuthenticationSyncInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::authentication::AuthenticationSyncResponse, core::error::AppError>
+        sync(const AuthenticationSyncInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
         if (!record.has_value()) {
@@ -62,9 +63,7 @@ public:
         m_context.metrics().record_flow("AuthenticationSync");
 
         // :2331-2379 AuthenticationSyncResponse built entirely from the updated record.
-        return AuthenticationSyncResult{
-            m_support.build_sync_response(*record, input.merchant_id, input.auth.flow, outcome)
-        };
+        return m_support.build_sync_response(*record, input.merchant_id, input.auth.flow, outcome);
     }
 
 private:

@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UserMerchantAccountCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     user_merchant_account_create(const UserMerchantAccountCreateInput& input) const
     {
         std::string set_cookie{};
@@ -79,7 +79,7 @@ public:
         response.set_merchant_account_type(merchant_account_type);
         response.set_version(version);
         auto document = ResponseDocument::from(response);
-        return UserMerchantAccountCreateResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

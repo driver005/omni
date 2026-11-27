@@ -21,6 +21,13 @@ export namespace app::handlers::refunds {
 class RefundsV1CreateRetrieveHandlers
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsV1CreateRetrieveHandlers(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,
@@ -40,9 +47,10 @@ public:
     )
     {
         const bool v2 = m_input_support.is_v2(req);
-        if (const auto denied = m_input_support.authorize_op(
+        if (const auto denied = m_request_support->authorize(
                 req,
-                v2 ? AuthProfile::V2Create : AuthProfile::V1Create
+                v2 ? "V2Create" : "V1Create",
+                spec_for(v2 ? "V2Create" : "V1Create")
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -88,7 +96,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -99,7 +107,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::V1Sync)) {
+        if (const auto denied = m_request_support->authorize(req, "V1Sync", spec_for("V1Sync"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -136,7 +144,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -147,9 +155,10 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(
+        if (const auto denied = m_request_support->authorize(
                 req,
-                m_input_support.is_v2(req) ? AuthProfile::V2Retrieve : AuthProfile::V1Retrieve
+                m_input_support.is_v2(req) ? "V2Retrieve" : "V1Retrieve",
+                spec_for(m_input_support.is_v2(req) ? "V2Retrieve" : "V1Retrieve")
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -181,7 +190,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

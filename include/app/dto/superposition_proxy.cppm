@@ -2,16 +2,18 @@ module;
 export module app_dto:superposition_proxy;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::superposition_proxy {
 
-class AuditLogResponse : public serde::Serializer<AuditLogResponse>
+class AuditLogResponse : public core::behavior::Serializer<AuditLogResponse>
 {
 public:
     void set_id(std::string value)
@@ -104,7 +106,7 @@ public:
     std::string query{};
 };
 
-class ContextResponse : public serde::Serializer<ContextResponse>
+class ContextResponse : public core::behavior::Serializer<ContextResponse>
 {
 public:
     void set_id(std::string value)
@@ -230,7 +232,7 @@ public:
     std::string last_modified_by{};
 };
 
-class DefaultConfigResponse : public serde::Serializer<DefaultConfigResponse>
+class DefaultConfigResponse : public core::behavior::Serializer<DefaultConfigResponse>
 {
 public:
     void set_key(std::string value)
@@ -357,7 +359,7 @@ public:
     std::string last_modified_by{};
 };
 
-class DimensionResponse : public serde::Serializer<DimensionResponse>
+class DimensionResponse : public core::behavior::Serializer<DimensionResponse>
 {
 public:
     void set_dimension(std::string value)
@@ -517,7 +519,7 @@ public:
     bool mandatory{};
 };
 
-class PaginatedListResponse : public serde::Serializer<PaginatedListResponse>
+class PaginatedListResponse : public core::behavior::Serializer<PaginatedListResponse>
 {
 public:
     void set_total_pages(std::int32_t value)
@@ -555,7 +557,7 @@ public:
     std::vector<std::string> data{};
 };
 
-class ResolveExplanationEntry : public serde::Serializer<ResolveExplanationEntry>
+class ResolveExplanationEntry : public core::behavior::Serializer<ResolveExplanationEntry>
 {
 public:
     void set_context_id(std::string value)
@@ -615,7 +617,7 @@ public:
     serde::Value value_after{};
 };
 
-class ResolvedConfigEntry : public serde::Serializer<ResolvedConfigEntry>
+class ResolvedConfigEntry : public core::behavior::Serializer<ResolvedConfigEntry>
 {
 public:
     void set_description(std::string value)
@@ -653,7 +655,8 @@ public:
     serde::Value value{};
 };
 
-class ResolveConfigExplanationResponse : public serde::Serializer<ResolveConfigExplanationResponse>
+class ResolveConfigExplanationResponse :
+    public core::behavior::Serializer<ResolveConfigExplanationResponse>
 {
 public:
     void set_key(std::string value)
@@ -680,7 +683,7 @@ public:
     std::vector<ResolveExplanationEntry> timeline{};
 };
 
-class ResolveConfigResponse : public serde::Serializer<ResolveConfigResponse>
+class ResolveConfigResponse : public core::behavior::Serializer<ResolveConfigResponse>
 {
 public:
     void set_value(std::unordered_map<std::string, ResolvedConfigEntry> value)

@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     create(const RefundsCreateInput& input) const
     {
         // routes/refunds.rs:16-32,146 — serialize creation against the same payment.
@@ -60,7 +60,7 @@ public:
     }
 
 private:
-    std::expected<RefundsCreateResult, core::error::AppError> create_v1(
+    std::expected<::app::model::refunds::RefundResponse, core::error::AppError> create_v1(
         const ::app::model::refunds::RefundRequest& payload,
         const RefundRequestFacts& facts
     ) const
@@ -146,10 +146,10 @@ private:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsCreateResult{m_support.to_refund_response(*result)};
+        return ::app::model::refunds::RefundResponse{m_support.to_refund_response(*result)};
     }
 
-    std::expected<RefundsCreateResult, core::error::AppError> create_v2(
+    std::expected<::app::model::refunds::RefundResponse, core::error::AppError> create_v2(
         const ::app::model::refunds::RefundsCreateRequest& payload,
         const RefundRequestFacts& facts
     ) const
@@ -221,7 +221,7 @@ private:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsCreateResult{m_support.to_refund_response(*result)};
+        return ::app::model::refunds::RefundResponse{m_support.to_refund_response(*result)};
     }
 
     ::app::context::AppContext& m_context;

@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<LinkTokenCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::pm_auth::LinkTokenCreateResponse, core::error::AppError>
     link_token_create(const LinkTokenCreateInput& input) const
     {
         const auto& request = input.request;
@@ -183,7 +183,7 @@ public:
         ::app::dto::pm_auth::LinkTokenCreateResponse response{};
         response.set_link_token(token_secret.value());
         response.set_connector(std::move(connector_name));
-        return LinkTokenCreateResult{std::move(response)};
+        return ::app::dto::pm_auth::LinkTokenCreateResponse{std::move(response)};
     }
 
 private:

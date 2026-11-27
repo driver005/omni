@@ -1,6 +1,7 @@
 export module app_payment:payout_link_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -20,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PayoutLinkRenderResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     render_payout_link(const PayoutLinkRenderInput& input) const
     {
         return m_render.render(input);

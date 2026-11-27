@@ -32,11 +32,13 @@ public:
     UserRoleV2ListInfoHandlers(
         ::app::context::AppContext& context,
         UserRoleRuntime& runtime,
-        UserRoleInputSupport& input_support
+        UserRoleInputSupport& input_support,
+        UserRoleRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -48,7 +50,8 @@ public:
     )
     {
         if (const auto auth_error =
-                m_input_support.authorize(req, "get_groups_and_resources_for_role_from_token")) {
+                m_request_support
+                    .authorize(req, "get_groups_and_resources_for_role_from_token", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -61,7 +64,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kGroupsAndResourcesWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -73,7 +81,8 @@ public:
     )
     {
         if (const auto auth_error =
-                m_input_support.authorize(req, "get_parent_groups_info_for_role_from_token")) {
+                m_request_support
+                    .authorize(req, "get_parent_groups_info_for_role_from_token", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -86,7 +95,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ParentGroupInfoWire>>::serialize_values(
+            *result,
+            kParentGroupInfoWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -154,6 +171,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
+    UserRoleRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::user_role

@@ -38,10 +38,14 @@ export namespace app::handlers::feature_matrix {
 class FeatureMatrixHandlersV1
 {
 public:
-    FeatureMatrixHandlersV1(::app::context::AppContext& ctx, FeatureMatrixRuntime& runtime) noexcept
-        :
+    FeatureMatrixHandlersV1(
+        ::app::context::AppContext& ctx,
+        FeatureMatrixRuntime& runtime,
+        FeatureMatrixRequestSupport& request_support
+    ) noexcept :
         m_context{ctx},
-        m_runtime{runtime}
+        m_runtime{runtime},
+        m_request_support{request_support}
     {
     }
 
@@ -54,9 +58,7 @@ public:
         // `#[instrument(skip_all)]` + Flow::FeatureMatrix (routes/feature_matrix.rs:19,25) and
         // api::server_wrap(..., &auth::NoAuth, LockAction::NotApplicable) (:30-38). The NO_AUTH
         // rule is a pass-through; no lock is acquired because the request is a read-only GET.
-        const auto rule = m_context.auth_rules().rule_for("fetch_feature_matrix");
-        const auto auth =
-            m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
+        const auto auth = m_request_support.authorize(req, "fetch_feature_matrix", {});
         if (auth) {
             const auto& error = *auth;
             error.send(res, send);
@@ -71,8 +73,14 @@ public:
             return;
         }
 
+        auto wire =
+            result->serialize(wire_fields<::app::dto::feature_matrix::FeatureMatrixListResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -114,6 +122,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
     FeatureMatrixRuntime& m_runtime;
+    FeatureMatrixRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::feature_matrix

@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsReverseResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     reverse(const RefundsReverseInput& input) const
     {
         m_context.metrics().record_flow("refund_reverse");
@@ -31,7 +31,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsReverseResult{m_support.to_refund_response(*result)};
+        return ::app::model::refunds::RefundResponse{m_support.to_refund_response(*result)};
     }
 
 private:

@@ -22,11 +22,13 @@ public:
     AdminHandlersV1Organizations(
         ::app::context::AppContext& context,
         AdminRuntime& runtime,
-        AdminInputSupport& input_support
+        AdminInputSupport& input_support,
+        AdminRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -36,7 +38,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "organization_create")) {
+        if (const auto error = m_request_support.authorize(req, "organization_create", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
@@ -72,7 +74,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kOrganizationResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -82,13 +89,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "organization_retrieve")) {
+        if (const auto error = m_request_support.authorize(req, "organization_retrieve", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string organization_id{m_input_support.path_part(req, 1)};
+        const std::string organization_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -105,7 +114,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kOrganizationResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -115,13 +129,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "organization_update")) {
+        if (const auto error = m_request_support.authorize(req, "organization_update", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string organization_id{m_input_support.path_part(req, 1)};
+        const std::string organization_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+        };
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -160,7 +176,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kOrganizationResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -170,13 +191,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "convert_organization_to_platform")) {
+        if (const auto error =
+                m_request_support.authorize(req, "convert_organization_to_platform", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
             return;
         }
-        const std::string organization_id{m_input_support.path_part(req, 2)};
+        const std::string organization_id{
+            m_request_support.path(req, AdminPolicy::path_index(req, 2))
+        };
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -215,7 +239,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kConvertOrganizationToPlatformResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -290,6 +319,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
+    AdminRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::admin

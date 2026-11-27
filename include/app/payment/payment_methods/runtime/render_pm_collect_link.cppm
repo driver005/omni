@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RenderPmCollectLinkResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest,
+        core::error::AppError>
     render_pm_collect_link(const RenderPmCollectLinkInput& input) const
     {
         m_context.metrics().record_flow("render_pm_collect_link");
@@ -45,7 +47,9 @@ public:
         response_merchant.set_value(input.merchant_id);
         response.set_merchant_id(std::move(response_merchant));
         response.set_pm_collect_link_id(input.collect_id);
-        return RenderPmCollectLinkResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest{
+            std::move(response)
+        };
     }
 
 private:

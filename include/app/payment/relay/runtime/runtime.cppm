@@ -1,6 +1,7 @@
 export module app_payment:relay_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -26,25 +27,26 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UnreferencedRefundResult, core::error::AppError>
-    unreferenced_refund(const RelayUnreferencedRefundInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::unreferenced_refund::UnreferencedRefundResponse, core::error::AppError>
+        unreferenced_refund(const RelayUnreferencedRefundInput& input) const
     {
         return m_unreferenced_refund.unreferenced_refund(input);
     }
 
-    [[nodiscard]] std::expected<RelayResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
     relay(const RelayCreateInput& input) const
     {
         return m_relay.relay(input);
     }
 
-    [[nodiscard]] std::expected<RelayRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
     retrieve(const RelayRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<RelayWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     incoming_webhook(const RelayIncomingWebhookInput& input) const
     {
         return m_incoming_webhook.incoming_webhook(input);

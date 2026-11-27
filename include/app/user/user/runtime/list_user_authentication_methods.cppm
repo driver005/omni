@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListUserAuthenticationMethodsResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_user_authentication_methods(const ListUserAuthenticationMethodsInput& input) const
     {
         std::string set_cookie{};
@@ -80,7 +80,7 @@ public:
             response.push_back(std::move(item));
         }
         auto document = ResponseDocument::from(response);
-        return ListUserAuthenticationMethodsResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     update_role(const UpdateRoleInput& input) const
     {
         if (input.role_id.empty()) {
@@ -119,7 +119,7 @@ public:
         response.set_entity_type(role->entity_type);
         m_support.blacklist("role", role->role_id);
         m_support.track_flow("update_role", "user_role.update_role");
-        return UpdateRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

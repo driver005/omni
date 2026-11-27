@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsFinishRedirectionResult, core::error::AppError>
-    payments_finish_redirection(const PaymentsFinishRedirectionInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsRedirectionResponse, core::error::AppError>
+        payments_finish_redirection(const PaymentsFinishRedirectionInput& input) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
@@ -40,7 +41,7 @@ public:
         std::string service_status{"pending"};
         ::app::model::payments::PaymentsRedirectionResponse response{};
         response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
-        return PaymentsFinishRedirectionResult{response};
+        return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 
 private:

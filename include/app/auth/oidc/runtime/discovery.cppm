@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OidcDiscoveryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::oidc::OidcDiscoveryResponse, core::error::AppError>
     discovery(const OidcDiscoveryInput& /*input*/) const
     {
         m_context.metrics().record_flow("oidc_discovery");
@@ -44,7 +44,7 @@ public:
         // user_utils::get_base_url(&state)). Config store supplies both values.
         const auto base = m_support.tenant_base_url();
         const auto control = m_support.control_center_url();
-        OidcDiscoveryResult document{};
+        ::app::dto::oidc::OidcDiscoveryResponse document{};
         document.set_issuer(base);
         document.set_authorization_endpoint(control + "/oauth2/authorize");
         document.set_token_endpoint(base + "/oauth2/token");

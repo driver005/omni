@@ -32,6 +32,13 @@ export namespace app::handlers::payments {
 class PaymentsV1CompleteRedirectHandlers
 {
 public:
+    void bind_request_support(PaymentsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentsRequestSupport* m_request_support{nullptr};
+
     PaymentsV1CompleteRedirectHandlers(
         ::app::context::AppContext& ctx,
         PaymentsScopeState& scope,
@@ -51,8 +58,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "payments_complete_authorize_redirect")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "payments_complete_authorize_redirect",
+                spec_for("payments_complete_authorize_redirect")
+            )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -90,7 +100,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -100,9 +110,10 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(
+        if (const auto auth_error = m_request_support->authorize(
                 req,
-                "payments_complete_authorize_redirect_with_creds_identifier"
+                "payments_complete_authorize_redirect_with_creds_identifier",
+                spec_for("payments_complete_authorize_redirect_with_creds_identifier")
             )) {
             res.set_status(auth_error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
@@ -147,7 +158,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

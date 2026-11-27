@@ -36,8 +36,9 @@ public:
     }
 
     // clone.rs:68-109, 114-225 clone_blocklist_entries.
-    [[nodiscard]] std::expected<CloneBlocklistEntriesResult, core::error::AppError>
-    clone_blocklist_entries(const CloneBlocklistEntriesInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::CloneBlocklistEntriesResponse, core::error::AppError>
+        clone_blocklist_entries(const CloneBlocklistEntriesInput& input) const
     {
         const auto job_id = m_context.ids().payment_id("blkclone");
         const auto stamp = m_support.now_iso8601();
@@ -144,7 +145,7 @@ public:
         response.set_target_profile_ids(input.targets);
         m_support.emit("blocklist.clone", response);
         m_support.track("clone_blocklist_entries");
-        return CloneBlocklistEntriesResult{response};
+        return response;
     }
 
 private:

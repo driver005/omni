@@ -1,6 +1,7 @@
 export module app_payment:poll_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -119,4 +120,59 @@ struct RetrievePollStatusInput
     std::string processor_merchant_id{};
 };
 
+/** @brief Request policy for the poll domain: wraps the domain auth rules. */
+class PollPolicy
+{
+public:
+    PollPolicy(::app::context::AppContext& /*context*/, PollInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        m_last = m_support.authorize_retrieve_poll_status(req);
+        return m_last->error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] const PollAuthorizedRequest& last() const noexcept
+    {
+        return *m_last;
+    }
+
+private:
+    PollInputSupport& m_support;
+    mutable std::optional<PollAuthorizedRequest> m_last{};
+};
+
+using PollRequestSupport = core::behavior::RequestSupport<PollPolicy>;
+using PollPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PollPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PollPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::poll

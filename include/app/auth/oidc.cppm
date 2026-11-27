@@ -3,6 +3,7 @@ export module app_auth:oidc_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -33,7 +34,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(req, "oidc_discovery")) {
+        if (const auto auth_error = m_request_support.authorize(req, "oidc_discovery", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -47,8 +48,13 @@ public:
             return;
         }
 
+        auto encoded = result->serialize(discovery_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -58,7 +64,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(req, "jwks_endpoint")) {
+        if (const auto auth_error = m_request_support.authorize(req, "jwks_endpoint", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -72,8 +78,13 @@ public:
             return;
         }
 
+        auto encoded = result->serialize(jwks_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -83,7 +94,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_operation(req, "oidc_authorize")) {
+        if (const auto auth_error = m_request_support.authorize(req, "oidc_authorize", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -107,15 +118,9 @@ public:
             error.send(res, send);
             return;
         }
-        if (result->is_error()) {
-            const auto error = oidc_wire::oidc_error(result->get_error_kind());
-            error.send(res, send);
-            return;
-        }
-
         res.set_status(interfaces::io::types::Status::FOUND);
-        res.set_header(interfaces::io::types::Token::LOCATION, result->get_location());
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_header(interfaces::io::types::Token::LOCATION, result->second);
+        res.set_body(serde::Ser::serialize("application/json", result->first));
         send();
     }
 
@@ -148,14 +153,13 @@ public:
             error.send(res, send);
             return;
         }
-        if (result->is_error()) {
-            const auto error = oidc_wire::oidc_error(result->get_error_kind());
-            error.send(res, send);
+        auto encoded = result->serialize(token_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
             return;
         }
-
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -226,12 +230,16 @@ public:
 
     explicit OidcRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
+        m_policy{context},
+        m_request_support{m_policy},
         m_input_support{context}
     {
     }
 
 private:
     OidcRuntime m_runtime;
+    OidcPolicy m_policy;
+    core::behavior::RequestSupport<OidcPolicy> m_request_support;
     OidcInputSupport m_input_support;
 };
 

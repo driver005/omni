@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TokenizeCardBatchApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::model::payment_methods::TokenizedCardValue1>,
+        core::error::AppError>
     tokenize_card_batch_api(const TokenizeCardBatchApiInput& input) const
     {
         std::vector<::app::model::payment_methods::TokenizedCardValue1> results{};
@@ -62,7 +64,7 @@ public:
         }
         m_context.metrics().record_flow("tokenize_card_batch_api");
         m_context.metrics().counter("PAYMENT_METHOD_TOKENIZE_CARD_BATCH_API").increment();
-        return TokenizeCardBatchApiResult{std::move(results)};
+        return std::vector<::app::model::payment_methods::TokenizedCardValue1>{std::move(results)};
     }
 
 private:

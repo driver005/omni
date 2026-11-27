@@ -21,7 +21,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetRevenueRecoveryRedisDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse,
+        core::error::AppError>
     get_revenue_recovery_redis_data(const GetRevenueRecoveryRedisDataInput& input) const
     {
         // Upstream key construction (revenue_recovery_redis_operation.rs:139-145,
@@ -61,7 +63,7 @@ public:
         response.set_exists(raw.exists);
         response.set_ttl_seconds(raw.ttl_seconds);
         response.set_data(raw.data);
-        return GetRevenueRecoveryRedisDataResult{std::move(response)};
+        return ::app::dto::revenue_recovery_data_backfill::RedisDataResponse{std::move(response)};
     }
 
 private:

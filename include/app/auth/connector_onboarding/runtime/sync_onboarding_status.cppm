@@ -38,7 +38,7 @@ public:
     }
 
     // Upstream core::sync_onboarding_status (core/connector_onboarding.rs:60-120).
-    [[nodiscard]] std::expected<SyncOnboardingStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     sync_onboarding_status(const SyncOnboardingStatusInput& input) const
     {
         // The profile used for the ownership check is the request body's profile_id
@@ -99,7 +99,7 @@ public:
 
         m_context.metrics().record_flow("SyncOnboardingStatus");
         m_context.metrics().counter("connector_onboarding.sync_onboarding_status").increment();
-        return SyncOnboardingStatusResult{std::move(document)};
+        return std::move(document);
     }
 
 private:

@@ -18,6 +18,17 @@ export namespace app::handlers::payouts {
 class PayoutsHandlersV1
 {
 public:
+    void bind_request_support(PayoutsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+        m_crud.bind_request_support(support);
+        m_list_filter.bind_request_support(support);
+        m_aggregates.bind_request_support(support);
+        m_manual_update.bind_request_support(support);
+    }
+
+    PayoutsRequestSupport* m_request_support{nullptr};
+
     explicit PayoutsHandlersV1(PayoutsRuntime& runtime, PayoutsInputSupport& input_support) noexcept
         :
         m_crud{runtime, input_support},

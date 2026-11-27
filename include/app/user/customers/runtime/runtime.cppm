@@ -2,10 +2,10 @@ export module app_user:customers_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 import :customers_runtime_create;
 import :customers_runtime_retrieve;
@@ -36,92 +36,91 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CustomersCreateResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create(const CustomersCreateRouteInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<CustomersRetrieveResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const CustomersRetrieveRouteInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<CustomersListResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list(const CustomersListRouteInput& input) const
     {
         return m_list.list(input);
     }
 
-    [[nodiscard]] std::expected<CustomersListWithCountResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_with_count(const CustomersListWithCountRouteInput& input) const
     {
         return m_list_with_count.list_with_count(input);
     }
 
-    [[nodiscard]] std::expected<CustomersUpdateResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     update(const CustomersUpdateRouteInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<CustomersDeleteResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_customer(const CustomersDeleteRouteInput& input) const
     {
         return m_delete.delete_customer(input);
     }
 
-    [[nodiscard]] std::expected<GetCustomerMandatesResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_customer_mandates(const CustomersMandatesRouteInput& input) const
     {
         return m_mandates.get_customer_mandates(input);
     }
 
-    [[nodiscard]] std::expected<CustomersCreateV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_v2(const CustomersCreateRouteInput& input) const
     {
         return m_create.create_v2(input);
     }
 
-    [[nodiscard]] std::expected<CustomersRetrieveV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_v2(const CustomersRetrieveRouteInput& input) const
     {
         return m_retrieve.retrieve_v2(input);
     }
 
-    [[nodiscard]] std::
-        expected<CustomersRetrieveByMerchantReferenceIdResult, ::core::error::AppError>
-        retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
+    retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
     {
         return m_retrieve_by_reference.retrieve_by_merchant_reference_id(input);
     }
 
-    [[nodiscard]] std::expected<CustomersListV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_v2(const CustomersListRouteInput& input) const
     {
         return m_list.list_v2(input);
     }
 
-    [[nodiscard]] std::expected<CustomersListWithCountV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_with_count_v2(const CustomersListWithCountRouteInput& input) const
     {
         return m_list_with_count.list_with_count_v2(input);
     }
 
-    [[nodiscard]] std::expected<CustomersUpdateV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     update_v2(const CustomersUpdateRouteInput& input) const
     {
         return m_update.update_v2(input);
     }
 
-    [[nodiscard]] std::expected<CustomersDeleteV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     delete_customer_v2(const CustomersDeleteRouteInput& input) const
     {
         return m_delete.delete_customer_v2(input);
     }
 
-    [[nodiscard]] std::expected<MigrateGlobalIdResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     migrate_global_id(const CustomersMigrateRouteInput& input) const
     {
         return m_migrate.migrate_global_id(input);

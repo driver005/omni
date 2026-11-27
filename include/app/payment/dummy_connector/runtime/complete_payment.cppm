@@ -1,6 +1,7 @@
 export module app_payment:dummy_connector_runtime_complete_payment;
 
 import std;
+import core_serde;
 import interfaces;
 import core_error;
 import core_cache;
@@ -23,7 +24,7 @@ public:
     }
 
     // routes/dummy_connector.rs:40-62 -> core.rs:88-153 (payment_complete).
-    [[nodiscard]] std::expected<DummyConnectorCompletePaymentResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     complete_payment(const CompletePaymentInput& input) const
     {
         // core.rs:98 - get_payment_data_by_attempt_id (result kept for the branch).
@@ -52,7 +53,7 @@ public:
         // core.rs:127-152 - JsonForRedirection(RedirectionResponse): 302 + Location.
         m_context.metrics().record_flow("DummyPaymentComplete");
         m_context.metrics().counter("DUMMY_CONNECTOR_COMPLETE").increment();
-        return DummyConnectorCompletePaymentResult{
+        return std::pair<serde::Value, std::string>{
             m_support.redirect_response(return_url),
             return_url
         };

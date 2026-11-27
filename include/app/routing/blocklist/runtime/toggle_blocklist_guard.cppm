@@ -36,8 +36,9 @@ public:
     }
 
     // utils.rs:76-118. Merchant-wide, no profile.
-    [[nodiscard]] std::expected<ToggleBlocklistGuardResult, core::error::AppError>
-    toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ToggleBlocklistResponse, core::error::AppError>
+        toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
     {
         // common_utils/id_type/merchant.rs:126-128: guard_blocklist_for_{merchant}.
         const auto key = "guard_blocklist_for_" + input.merchant;
@@ -47,7 +48,7 @@ public:
         response.set_blocklist_guard_status(input.status ? "enabled" : "disabled");
         m_support.emit("blocklist.guard.toggled", response);
         m_support.track("toggle_blocklist_guard");
-        return ToggleBlocklistGuardResult{response};
+        return response;
     }
 
 private:

@@ -2,6 +2,7 @@ export module app_user:admin_input;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_error;
 import app_context;
 import app_auth;
@@ -34,16 +35,6 @@ public:
         const auto context = ::app::auth::AuthContextBuilder{}(req);
         const auto rule = m_context.auth_rules().rule_for(operation);
         return m_context.authorizer().authorize_route(context, rule);
-    }
-
-    [[nodiscard]] std::string path_part(interfaces::io::IRequest& req, std::size_t from_end) const
-    {
-        const auto segments = ::app::http::RequestPath{}(req);
-        if (from_end == 0 || from_end > segments.count()) {
-            return {};
-        }
-        const auto part = segments.at(segments.count() - from_end);
-        return part.has_value() ? std::string{*part} : std::string{};
     }
 
     [[nodiscard]] bool path_has(interfaces::io::IRequest& req, std::string_view expected) const
@@ -199,5 +190,70 @@ struct RetrieveConnectorWebhookInput
     std::string merchant_id{};
     std::string connector_id{};
 };
+
+/**
+ * @brief Domain authorization policy for Admin.
+ *
+ * The route operation string selects the registered auth rule; the scope is
+ * resolved from the request once, for every handler in the domain.
+ */
+class AdminPolicy
+{
+public:
+    explicit AdminPolicy(AdminInputSupport& input) noexcept :
+        m_input{input}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_input.authorize(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ::core::behavior::Scope out{};
+        out.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+        if (out.merchant_id.empty()) {
+            out.merchant_id = auth.merchant_id();
+        }
+        out.org_id = std::string{::app::http::org_id_from_header{}(req)};
+        if (out.org_id.empty()) {
+            out.org_id = auth.org_id();
+        }
+        out.profile_id = auth.profile_id();
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        if (connected.has_value()) {
+            out.connected_merchant_id = std::string{*connected};
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    /** @brief From-end segment index, matching the legacy path_part helper. */
+    [[nodiscard]] static std::size_t path_index(interfaces::io::IRequest& req, std::size_t from_end)
+    {
+        const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
+        if (from_end == 0 || from_end > segments.count()) {
+            return std::numeric_limits<std::size_t>::max();
+        }
+        return segments.count() - from_end;
+    }
+
+private:
+    AdminInputSupport& m_input;
+};
+
+using AdminRequestSupport = ::core::behavior::RequestSupport<AdminPolicy>;
 
 } // namespace app::handlers::admin

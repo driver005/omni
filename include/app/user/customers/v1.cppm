@@ -2,6 +2,7 @@ export module app_user:customers_handlers_v1;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_router;
 import core_serde;
 import utils_openapi;
@@ -16,7 +17,6 @@ import app_http;
 import app_metrics;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime;
 import :customers_handlers_v1_mandates;
 
@@ -28,12 +28,14 @@ public:
     CustomersHandlersV1(
         ::app::context::AppContext& context,
         CustomersRuntime& runtime,
-        CustomersInputSupport& input_support
+        CustomersInputSupport& input_support,
+        CustomersRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_mandates{context, runtime, input_support}
+        m_request_support{request_support},
+        m_mandates{context, runtime, input_support, request_support}
     {
     }
 
@@ -43,17 +45,14 @@ public:
         std::function<void()> send
     )
     {
-        const bool jwt = m_input_support.is_jwt_auth(req);
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_WRITE,
-                jwt,
-                false,
-                false,
-                false,
-                true,
-                true,
-                true
+                "customers_create",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_WRITE",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -103,7 +102,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -113,17 +112,14 @@ public:
         std::function<void()> send
     )
     {
-        const bool jwt = m_input_support.is_jwt_auth(req);
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_READ,
-                jwt,
-                false,
-                false,
-                false,
-                true,
-                true,
-                true
+                "customers_retrieve",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_READ",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -134,7 +130,7 @@ public:
             error.send(res, send);
             return;
         }
-        const std::string id = m_input_support.path_segment(req);
+        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
@@ -153,7 +149,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -163,16 +159,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_READ,
-                m_input_support.is_jwt_auth(req),
-                false,
-                false,
-                false,
-                false,
-                true,
-                true
+                "customers_list",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_READ",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -205,7 +199,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -215,16 +209,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_READ,
-                m_input_support.is_jwt_auth(req),
-                false,
-                false,
-                false,
-                false,
-                true,
-                true
+                "customers_list_with_count",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_READ",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -274,7 +266,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -284,17 +276,14 @@ public:
         std::function<void()> send
     )
     {
-        const bool jwt = m_input_support.is_jwt_auth(req);
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_WRITE,
-                jwt,
-                false,
-                false,
-                false,
-                true,
-                true,
-                true
+                "customers_update",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_WRITE",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -305,7 +294,7 @@ public:
             error.send(res, send);
             return;
         }
-        const std::string id = m_input_support.path_segment(req);
+        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
@@ -348,7 +337,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -358,17 +347,14 @@ public:
         std::function<void()> send
     )
     {
-        const bool jwt = m_input_support.is_jwt_auth(req);
-        if (const auto denied = m_input_support.authorize(
+        if (const auto denied = m_request_support.authorize(
                 req,
-                ::app::auth::AppPermission::USER_WRITE,
-                jwt,
-                false,
-                false,
-                false,
-                true,
-                true,
-                true
+                "customers_delete",
+                ::core::behavior::AuthSpec{
+                    .permission = "USER_WRITE",
+                    .allow_connected = true,
+                    .allow_platform = true
+                }
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -379,7 +365,7 @@ public:
             error.send(res, send);
             return;
         }
-        const std::string id = m_input_support.path_segment(req);
+        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
@@ -398,7 +384,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -475,6 +461,7 @@ private:
     ::app::context::AppContext& m_context;
     CustomersRuntime& m_runtime;
     CustomersInputSupport& m_input_support;
+    CustomersRequestSupport& m_request_support;
     CustomersHandlersV1Mandates m_mandates;
 };
 

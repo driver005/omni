@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     retrieve(const ConnectorRetrieveInput& input) const
     {
         const auto found =
@@ -77,7 +77,7 @@ public:
 
         m_context.metrics().record_flow("connector_retrieve");
         m_context.metrics().counter("admin.connector_retrieve").increment();
-        return ConnectorRetrieveResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

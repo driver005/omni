@@ -1,6 +1,7 @@
 export module app_payment:dummy_connector_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -719,4 +720,56 @@ private:
     ::app::context::AppContext& m_context;
 };
 
+/** @brief Request policy for the dummy_connector domain: wraps the domain auth rules. */
+class DummyConnectorPolicy
+{
+public:
+    DummyConnectorPolicy(
+        ::app::context::AppContext& /*context*/,
+        DummyConnectorInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    DummyConnectorInputSupport& m_support;
+};
+
+using DummyConnectorRequestSupport = core::behavior::RequestSupport<DummyConnectorPolicy>;
+using DummyConnectorPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] DummyConnectorPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return DummyConnectorPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::dummy_connector

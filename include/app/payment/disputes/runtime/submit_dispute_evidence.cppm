@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SubmitDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     submit_dispute_evidence(const SubmitDisputeEvidenceInput& input) const
     {
         m_context.metrics().record_flow("dispute_submit_evidence");
@@ -99,7 +99,7 @@ public:
         m_context.repository().update_dispute(*dispute);
         m_support.notify_dispute(*dispute, "dispute.evidence_submitted");
         m_context.locks().release(lock_key);
-        return SubmitDisputeEvidenceResult{m_support.to_response(*dispute)};
+        return ::app::model::disputes::DisputeResponse{m_support.to_response(*dispute)};
     }
 
 private:

@@ -26,8 +26,9 @@ public:
     }
 
     // ── routes/currency.rs:36-72 / core/currency.rs:28-54 ───────────────────
-    [[nodiscard]] std::expected<ConvertForexResult, core::error::AppError>
-    convert_forex(const ConvertForexInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::currency::CurrencyConversionResponse, core::error::AppError>
+        convert_forex(const ConvertForexInput& input) const
     {
         m_support.record_forex_flow();
 
@@ -43,7 +44,7 @@ public:
 
         // ApplicationResponse::Json(CurrencyConversionResponse) (:34-36).
         m_context.metrics().counter("FOREX_CONVERTED").increment();
-        return ConvertForexResult{*response};
+        return *response;
     }
 
 private:

@@ -38,7 +38,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputesListProfileResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
     retrieve_disputes_list_profile(const RetrieveDisputesListProfileInput& input) const
     {
         m_context.metrics().record_flow("dispute_profile_list");
@@ -47,7 +47,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RetrieveDisputesListProfileResult{std::move(*result)};
+        return std::vector<::app::model::disputes::DisputeResponse>{std::move(*result)};
     }
 
 private:

@@ -36,8 +36,9 @@ public:
     }
 
     // batch.rs:657-697 list_batch_blocklist_jobs.
-    [[nodiscard]] std::expected<ListBatchBlocklistJobsResult, core::error::AppError>
-    list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ListBatchBlocklistJobsResponse, core::error::AppError>
+        list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
     {
         std::vector<JobRecord> selected;
         for (auto& record: m_support.list_jobs("blocklist.job:")) {
@@ -71,7 +72,7 @@ public:
         response.set_data(std::move(data));
         m_support.emit("blocklist.jobs.list", response);
         m_support.track("list_batch_blocklist_jobs");
-        return ListBatchBlocklistJobsResult{response};
+        return response;
     }
 
 private:

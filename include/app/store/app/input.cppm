@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -31,12 +32,6 @@ public:
         return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    [[nodiscard]] std::optional<std::string>
-    query(interfaces::io::IRequest& req, std::string_view name) const
-    {
-        return ::app::http::RequestQuery{}(req).get(name);
-    }
-
     [[nodiscard]] std::string org_id(interfaces::io::IRequest& req) const
     {
         return ::app::http::org_id_from_header{}(req);
@@ -49,6 +44,49 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Owns only the app domain's auth rule resolution and request scope. Auth still
+ * resolves through the shared registry by operation; generic path/query/header
+ * extraction lives in RequestSupport.
+ */
+class AppPolicy
+{
+public:
+    explicit AppPolicy(AppInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec; // app helpers resolve their rule from the registry by operation.
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope result;
+        result.org_id = m_support.org_id(req);
+        result.merchant_id = m_support.merchant_id(req);
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
+private:
+    AppInputSupport& m_support;
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

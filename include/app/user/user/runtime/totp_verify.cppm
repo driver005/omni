@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TotpVerifyResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     totp_verify(const TotpVerifyInput& input) const
     {
         std::string set_cookie{};
@@ -81,7 +81,7 @@ public:
         m_context.metrics().record_flow("totp_verify");
         m_context.metrics().counter("user.totp_verify").increment();
 
-        return TotpVerifyResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

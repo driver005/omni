@@ -38,7 +38,7 @@ public:
     }
 
     // ───────────────────────── Core: list_available_filters_for_merchant ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsListAvailableFiltersForMerchantResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
     list_available_filters_for_merchant(
         const PayoutsListAvailableFiltersForMerchantInput& input
     ) const
@@ -52,7 +52,7 @@ public:
         m_context.metrics().counter("payouts_available_filters_merchant_total").increment();
 
         const auto filters = m_support.available_filters(m_support.scoped_records("", range));
-        return PayoutsListAvailableFiltersForMerchantResult{filters};
+        return ::app::model::payouts::PayoutListFilters{filters};
     }
 
 private:

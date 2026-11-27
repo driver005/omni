@@ -1,6 +1,7 @@
 export module app_payment:telephone_order_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -281,6 +282,58 @@ private:
     [[maybe_unused]] ::app::context::AppContext& m_context;
 };
 
+/** @brief Request policy for the telephone_order domain: wraps the domain auth rules. */
+class TelephoneOrderPolicy
+{
+public:
+    TelephoneOrderPolicy(
+        ::app::context::AppContext& /*context*/,
+        TelephoneOrderInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return std::nullopt;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    TelephoneOrderInputSupport& m_support;
+};
+
+using TelephoneOrderRequestSupport = core::behavior::RequestSupport<TelephoneOrderPolicy>;
+using TelephoneOrderPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] TelephoneOrderPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return TelephoneOrderPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::telephone_order
 
 // serde reflection for the provider request wire shape.

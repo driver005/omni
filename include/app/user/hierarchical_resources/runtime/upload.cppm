@@ -36,7 +36,9 @@ public:
     }
 
     /** @brief core:630-668 + ApplePayCertificateResource::upload (:305-367). */
-    [[nodiscard]] std::expected<UploadHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::UploadCertificateResponse,
+        core::error::AppError>
     upload(const UploadHierarchicalResourceInput& input) const
     {
         m_context.metrics().record_flow("HierarchicalResourcesUpload");
@@ -111,7 +113,7 @@ public:
         ::app::dto::hierarchical_resources::UploadCertificateResponse response;
         response.set_id(m_support.resource_id_value(std::string{input.resource_id}));
         response.set_created_at(m_support.datetime_value(updated.get_created_at()));
-        return UploadHierarchicalResourceResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

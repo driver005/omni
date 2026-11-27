@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,24 +20,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CustomersRetrieveResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const CustomersRetrieveRouteInput& input) const
     {
         auto value = retrieve_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersRetrieveResult{std::move(*value)};
+        return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<CustomersRetrieveV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_v2(const CustomersRetrieveRouteInput& input) const
     {
         auto value = retrieve_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersRetrieveV2Result{std::move(*value)};
+        return std::move(*value);
     }
 
 private:

@@ -30,8 +30,18 @@ public:
         m_tokenize{context, m_runtime},
         m_network{context, m_runtime},
         m_client_list{context, m_runtime},
-        m_olap_support{context, m_runtime}
+        m_olap_support{context, m_runtime},
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_crud.bind_request_support(m_request_support);
+        m_migrate.bind_request_support(m_request_support);
+        m_sessions.bind_request_support(m_request_support);
+        m_tokenize.bind_request_support(m_request_support);
+        m_network.bind_request_support(m_request_support);
+        m_client_list.bind_request_support(m_request_support);
+        m_olap_support.bind_request_support(m_request_support);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -55,6 +65,9 @@ private:
     NetworkTokenHandlers m_network;
     ClientListHandlers m_client_list;
     OlapSupportHandlers m_olap_support;
+    PaymentMethodsInputSupport m_input_support;
+    PaymentMethodsPolicy m_policy;
+    PaymentMethodsRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::payment_methods

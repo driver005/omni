@@ -29,6 +29,13 @@ export namespace app::handlers::payment_methods {
 class PaymentMethodSessionSavedHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     PaymentMethodSessionSavedHandlers(
         ::app::context::AppContext& ctx,
         PaymentMethodsRuntime& runtime
@@ -226,8 +233,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error =
-            m_input_support.authorize(req, "payment_method_session_delete_saved_payment_method");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_method_session_delete_saved_payment_method",
+            spec_for("payment_method_session_delete_saved_payment_method")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -286,7 +296,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -296,8 +306,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error =
-            m_input_support.authorize(req, "payment_method_session_list_payment_methods");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_method_session_list_payment_methods",
+            spec_for("payment_method_session_list_payment_methods")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -331,7 +344,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -341,8 +354,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error =
-            m_input_support.authorize(req, "payment_method_session_update_saved_payment_method");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_method_session_update_saved_payment_method",
+            spec_for("payment_method_session_update_saved_payment_method")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -419,7 +435,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

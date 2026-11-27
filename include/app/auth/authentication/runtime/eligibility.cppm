@@ -37,7 +37,7 @@ public:
 
     // ───────────────────────── Core: eligibility ─────────────────────────
     // unified_authentication_service.rs:1032-1351 authentication_eligibility_core.
-    [[nodiscard]] std::expected<AuthenticationEligibilityResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     eligibility(const AuthenticationEligibilityInput& input) const
     {
         // :1048-1059 find_authentication... -> AuthenticationNotFound.
@@ -78,13 +78,13 @@ public:
 
         // :1333-1346 foreign_try_from with req.get_next_action_api(base_url, auth_id).
         // :1342-1345 echoes the request's billing / shipping / browser / email back verbatim.
-        return AuthenticationEligibilityResult{m_support.build_eligibility_response(
+        return m_support.build_eligibility_response(
             *record,
             input.authentication_id,
             input.request,
             notification_url,
             input.body
-        )};
+        );
     }
 
 private:

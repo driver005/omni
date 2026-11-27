@@ -3,10 +3,10 @@ export module app_store:proxy_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :proxy_input;
-import :proxy_result;
 import :proxy_runtime;
 import :proxy_handlers_v1;
 import :proxy_handlers_v2;
@@ -25,9 +25,11 @@ public:
     explicit ProxyRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support},
-        m_prefix{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support},
+        m_prefix{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -45,7 +47,10 @@ public:
 private:
     ProxyRuntime m_runtime;            // SINGLE runtime instance — shared by every family.
     ProxyInputSupport m_input_support; // SINGLE input helper — shared by every family.
-    ProxyHandlersV1 m_v1;              // holds AppContext&, ProxyRuntime&, ProxyInputSupport&.
+    ProxyPolicy m_policy;              // SINGLE auth/scope policy.
+    core::behavior::RequestSupport<ProxyPolicy> m_request_support;
+    ProxyHandlersV1
+        m_v1; // holds AppContext&, ProxyRuntime&, ProxyInputSupport&, RequestSupport<ProxyPolicy>&.
     ProxyHandlersV2 m_v2;
     ProxyHandlersPrefix m_prefix;
 };

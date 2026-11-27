@@ -32,7 +32,7 @@ public:
     }
 
     [[nodiscard]] std::
-        expected<PaymentsRedirectResponseWithCredsIdentifierResult, core::error::AppError>
+        expected<::app::model::payments::PaymentsRedirectionResponse, core::error::AppError>
         payments_redirect_response_with_creds_identifier(
             const PaymentsRedirectResponseWithCredsIdentifierInput& input
         ) const
@@ -43,7 +43,7 @@ public:
         std::string service_status{"pending"};
         ::app::model::payments::PaymentsRedirectionResponse response{};
         response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
-        return PaymentsRedirectResponseWithCredsIdentifierResult{response};
+        return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 
 private:

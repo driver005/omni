@@ -3,10 +3,10 @@ export module app_store:health_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :health_input;
-import :health_result;
 import :health_runtime;
 import :health_handlers_v1;
 import :health_handlers_v2;
@@ -32,8 +32,10 @@ public:
     explicit HealthRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_request_support},
+        m_v2{context, m_runtime, m_request_support}
     {
     }
 
@@ -50,7 +52,9 @@ public:
 private:
     HealthRuntime m_runtime;            // SINGLE runtime instance — shared mutable state.
     HealthInputSupport m_input_support; // SINGLE input helper.
-    HealthHandlersV1 m_v1;              // holds AppContext&, HealthRuntime&, HealthInputSupport&.
+    HealthPolicy m_policy;              // SINGLE auth policy.
+    core::behavior::RequestSupport<HealthPolicy> m_request_support;
+    HealthHandlersV1 m_v1; // holds AppContext&, HealthRuntime&, RequestSupport<HealthPolicy>&.
     HealthHandlersV2 m_v2;
 };
 

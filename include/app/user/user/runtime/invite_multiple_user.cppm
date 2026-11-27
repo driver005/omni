@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<InviteMultipleUserResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     invite_multiple_user(const InviteMultipleUserInput& input) const
     {
         std::string set_cookie{};
@@ -93,7 +93,7 @@ public:
             responses.push_back(std::move(item));
         }
         auto document = ResponseDocument::from(responses);
-        return InviteMultipleUserResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

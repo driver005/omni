@@ -23,7 +23,7 @@ public:
     }
 
     // core/card_issuer.rs:41-61 `update_card_issuer`.
-    [[nodiscard]] std::expected<CardIssuerUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
     update(const CardIssuerUpdateInput& input) const
     {
         const std::string& id = input.id;
@@ -65,7 +65,7 @@ public:
         m_context.metrics().record_flow("UpdateCardIssuer");
         m_context.metrics().counter("CARD_ISSUER_UPDATED").increment();
 
-        return CardIssuerUpdateResult{std::move(response)};
+        return ::app::dto::card_issuer::CardIssuerResponse{std::move(response)};
     }
 
 private:

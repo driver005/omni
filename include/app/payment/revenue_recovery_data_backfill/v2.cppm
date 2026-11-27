@@ -27,6 +27,13 @@ export namespace app::handlers::revenue_recovery_data_backfill {
 class RevenueRecoveryDataBackfillHandlersV2
 {
 public:
+    void bind_request_support(RevenueRecoveryDataBackfillRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RevenueRecoveryDataBackfillRequestSupport* m_request_support{nullptr};
+
     /**
      * Upstream: routes/revenue_recovery_data_backfill.rs:19-73 ->
      * core/revenue_recovery_data_backfill.rs:23-64.
@@ -94,8 +101,11 @@ public:
 
         // server_wrap / V2AdminApiAuth is applied after route-level parsing (routes:57-71)
         // but before the core function mutates any token.
-        if (const auto auth_error =
-                m_input_support.authorize(req, "revenue_recovery_data_backfill")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "revenue_recovery_data_backfill",
+                spec_for("revenue_recovery_data_backfill")
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -109,7 +119,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -166,8 +176,11 @@ public:
             }
         }
 
-        if (const auto auth_error =
-                m_input_support.authorize(req, "revenue_recovery_retry_stats_migration")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "revenue_recovery_retry_stats_migration",
+                spec_for("revenue_recovery_retry_stats_migration")
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -181,7 +194,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -195,8 +208,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "update_revenue_recovery_additional_redis_data")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "update_revenue_recovery_additional_redis_data",
+                spec_for("update_revenue_recovery_additional_redis_data")
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -258,7 +274,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -274,8 +290,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize(req, "revenue_recovery_data_backfill_status")) {
+        if (const auto auth_error = m_request_support->authorize(
+                req,
+                "revenue_recovery_data_backfill_status",
+                spec_for("revenue_recovery_data_backfill_status")
+            )) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -296,7 +315,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

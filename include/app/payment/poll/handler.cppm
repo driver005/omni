@@ -22,8 +22,13 @@ class PollRouteHandlers
 public:
     explicit PollRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_v1{context, m_runtime}
+        m_v1{context, m_runtime},
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v1.bind_request_support(m_request_support);
+        m_v1.bind_policy(m_policy);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -34,6 +39,9 @@ public:
 private:
     PollRuntime m_runtime;
     PollHandlersV1 m_v1;
+    PollInputSupport m_input_support;
+    PollPolicy m_policy;
+    PollRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::poll

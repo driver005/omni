@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodsSessionRetrieveResult, core::error::AppError>
-    payment_methods_session_retrieve(const PaymentMethodsSessionRetrieveInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
+        payment_methods_session_retrieve(const PaymentMethodsSessionRetrieveInput& input) const
     {
         const auto& record = input.record;
         m_context.metrics().record_flow("payment_methods_session_retrieve");
@@ -57,7 +58,7 @@ public:
                                : std::string{"payment_methods"}
         );
         response.set_storage_type(std::move(storage));
-        return PaymentMethodsSessionRetrieveResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodSessionResponse{std::move(response)};
     }
 
 private:

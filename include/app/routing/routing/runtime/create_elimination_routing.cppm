@@ -1,6 +1,7 @@
 export module app_routing:routing_runtime_create_elimination_routing;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -19,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateEliminationRoutingResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_elimination_routing(const RoutingInput& input) const
     {
         auto result = m_support.dynamic_create(
@@ -36,7 +37,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return CreateEliminationRoutingResult{std::move(*result)};
+        return std::move(*result);
     }
 
 private:

@@ -31,7 +31,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FrmFulfillmentResult, core::error::AppError>
+    [[nodiscard]] std::expected<FulfillmentResponseWire, core::error::AppError>
     frm_fulfillment(const FrmFulfillmentInput& input) const
     {
         // ───────────────── core/fraud_check.rs:1175-1241 frm_fulfillment_core ─────────────────
@@ -171,7 +171,7 @@ public:
         );
 
         // 1304 ApplicationResponse::Json(fulfillment_response).
-        return FrmFulfillmentResult{
+        return FulfillmentResponseWire{
             m_support.build_fulfillment_response(connector_response, input.request)
         };
     }

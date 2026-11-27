@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodRetrieveOlapApiResult, core::error::AppError>
-    payment_method_retrieve_olap_api(const PaymentMethodRetrieveOlapApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodDetailsResponse, core::error::AppError>
+        payment_method_retrieve_olap_api(const PaymentMethodRetrieveOlapApiInput& input) const
     {
         const auto& record = input.record;
         m_context.metrics().record_flow("payment_method_retrieve_olap_api");
@@ -59,7 +60,7 @@ public:
         ::app::model::payment_methods::StorageTypeValue storage{};
         storage.set_value("payment_methods");
         response.set_storage_type(std::move(storage));
-        return PaymentMethodRetrieveOlapApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodDetailsResponse{std::move(response)};
     }
 
 private:

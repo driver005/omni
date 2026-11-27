@@ -37,7 +37,9 @@ public:
      * Upstream: routes/revenue_recovery_data_backfill.rs:19-73 ->
      * core/revenue_recovery_data_backfill.rs:23-64.
      */
-    [[nodiscard]] std::expected<RevenueRecoveryDataBackfillResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse,
+        core::error::AppError>
     backfill(const RevenueRecoveryDataBackfillInput& input) const
     {
         std::size_t processed_records{0};
@@ -65,7 +67,9 @@ public:
         Response response;
         response.set_processed_records(processed_records);
         response.set_failed_records(failed_records);
-        return RevenueRecoveryDataBackfillResult{std::move(response)};
+        return ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse{
+            std::move(response)
+        };
     }
 
 private:

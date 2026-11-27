@@ -3,6 +3,7 @@ export module app_auth:apple_pay_certificates_migration_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -36,8 +37,9 @@ public:
         ::app::context::AppContext& context
     ) noexcept :
         m_runtime{context},
-        m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
+        m_policy{context},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_request_support},
         m_v2{}
     {
     }
@@ -50,7 +52,8 @@ public:
 
 private:
     ApplePayCertificatesMigrationRuntime m_runtime;
-    ApplePayCertificatesMigrationInputSupport m_input_support;
+    ApplePayCertificatesMigrationPolicy m_policy;
+    core::behavior::RequestSupport<ApplePayCertificatesMigrationPolicy> m_request_support;
     ApplePayCertificatesMigrationHandlersV1 m_v1;
     ApplePayCertificatesMigrationHandlersV2 m_v2;
 };

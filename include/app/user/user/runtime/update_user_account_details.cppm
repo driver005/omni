@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateUserAccountDetailsResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     update_user_account_details(const UpdateUserAccountDetailsInput& input) const
     {
         std::string set_cookie{};
@@ -62,7 +62,7 @@ public:
         m_context.metrics().record_flow("update_user_account_details");
         m_context.metrics().counter("user.update_user_account_details").increment();
 
-        return UpdateUserAccountDetailsResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

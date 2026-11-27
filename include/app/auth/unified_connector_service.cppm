@@ -3,6 +3,7 @@ export module app_auth:unified_connector_service_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -38,7 +39,7 @@ public:
     )
     {
         // 1. request -> Input (body-less: admin auth + final path segment only).
-        if (const auto auth = m_input_support.authorize_admin(req, "kill_switch_status")) {
+        if (const auto auth = m_request_support.authorize(req, "kill_switch_status", {})) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -62,9 +63,14 @@ public:
             return;
         }
 
-        // 3. Result -> response (direct writes).
+        // 3. Model -> response (direct writes).
+        auto encoded = result->serialize(KillSwitchStatusResponse::wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -76,7 +82,7 @@ public:
     )
     {
         // 1. request -> Input (body-less: admin auth + final path segment only).
-        if (const auto auth = m_input_support.authorize_admin(req, "reset_kill_switch")) {
+        if (const auto auth = m_request_support.authorize(req, "reset_kill_switch", {})) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -100,10 +106,10 @@ public:
             return;
         }
 
-        // 3. Result -> response (direct writes). Upstream StatusOk is bodyless;
+        // 3. Document -> response (direct writes). Upstream StatusOk is bodyless;
         // the typed empty-object document serializes as "{}".
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -153,12 +159,16 @@ public:
 
     explicit UnifiedConnectorServiceRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
+        m_policy{context},
+        m_request_support{m_policy},
         m_input_support{context}
     {
     }
 
 private:
     UnifiedConnectorServiceRuntime m_runtime;
+    UnifiedConnectorServicePolicy m_policy;
+    core::behavior::RequestSupport<UnifiedConnectorServicePolicy> m_request_support;
     UnifiedConnectorServiceInputSupport m_input_support;
 };
 

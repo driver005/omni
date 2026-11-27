@@ -6,90 +6,66 @@ import app_model;
 
 export namespace app::handlers::mandates {
 
-// The typed responses inherit the wire fields of the exact DTO the old core built
-// and encoded, so field names, order and wrapper types stay byte-identical. The
-// Serializable specialization reuses the DTO's FieldDesc tuple; those descriptors
-// (including the bare-scalar / RawJson wire accessors) apply to the derived object
-// just as they do to the base object.
-
-class GetMandateResult : public ::app::model::mandates::MandateResponse
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    GetMandateResult() = default;
-
-    explicit GetMandateResult(::app::model::mandates::MandateResponse value) noexcept :
-        MandateResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class RevokeMandateResult : public ::app::model::mandates::MandateRevokedResponse
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    RevokeMandateResult() = default;
-
-    explicit RevokeMandateResult(::app::model::mandates::MandateRevokedResponse value) noexcept :
-        MandateRevokedResponse{std::move(value)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-// The list route returns a top-level JSON array. Carry the typed vector; the
-// handler serializes get_items() so the wire stays a bare array without any
-// hand-built JSON text.
-class RetrieveMandatesListResult
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    RetrieveMandatesListResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit RetrieveMandatesListResult(
-        std::vector<::app::model::mandates::MandateResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::model::mandates::MandateResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::model::mandates::MandateResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::model::mandates::MandateResponse> m_items{};
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::mandates
-
-template<>
-struct serde::Serializable<::app::handlers::mandates::GetMandateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::mandates::MandateResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_mandate_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::mandates::RevokeMandateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::model::mandates::MandateRevokedResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "revoke_mandate_result";
-    }
-};

@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetParentGroupInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentGroupDescriptionWire>, core::error::AppError>
     get_parent_group_info(const GetParentGroupInfoInput& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -67,7 +67,7 @@ public:
         }
         auto descriptions = role_tables::descriptions_for_groups(effective_entity, groups);
         m_support.track_flow("get_parent_group_info", "user_role.get_parent_group_info");
-        return GetParentGroupInfoResult{std::move(descriptions)};
+        return std::move(descriptions);
     }
 
 private:

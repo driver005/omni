@@ -37,7 +37,7 @@ public:
     }
 
     /** @brief core::api_keys::create_api_key (112-189). */
-    [[nodiscard]] std::expected<ApiKeyCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::CreateApiKeyResponse, core::error::AppError>
     create(const ApiKeyCreateInput& input) const
     {
         auto hash_key = m_support.get_hash_key();
@@ -93,7 +93,7 @@ public:
             }
         }
 
-        return ApiKeyCreateResult{m_support.build_create_response(saved, plaintext, input.request)};
+        return m_support.build_create_response(saved, plaintext, input.request);
     }
 
 private:

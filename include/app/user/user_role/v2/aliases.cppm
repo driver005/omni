@@ -33,11 +33,13 @@ public:
     UserRoleV2AliasesHandlers(
         ::app::context::AppContext& context,
         UserRoleRuntime& runtime,
-        UserRoleInputSupport& input_support
+        UserRoleInputSupport& input_support,
+        UserRoleRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -48,7 +50,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "accept_invitations_v2")) {
+        if (const auto auth_error = m_request_support.authorize(req, "accept_invitations_v2", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -79,7 +81,12 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kStatusOkWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -90,7 +97,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "accept_invitations_pre_auth")) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "accept_invitations_pre_auth", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -120,9 +128,14 @@ public:
             error.send(res, send);
             return;
         }
-        res.set_header(std::string_view{"set-cookie"}, result->get_cookie());
+        res.set_header(std::string_view{"set-cookie"}, result->second);
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->first.serialize(kTokenResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -133,14 +146,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "list_users_in_lineage")) {
+        if (const auto auth_error = m_request_support.authorize(req, "list_users_in_lineage", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         ListUsersInLineageInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type")
+            m_request_support.query(req, "entity_type").value_or("")
         };
         auto result = m_runtime.list_users_in_lineage(input);
         if (!result) {
@@ -149,7 +162,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ListUsersInEntityWire>>::serialize_values(
+            *result,
+            kListUsersInEntityWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -160,15 +181,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "list_roles_with_info")) {
+        if (const auto auth_error = m_request_support.authorize(req, "list_roles_with_info", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
         ListRolesWithInfoInput input{
             m_input_support.identity_from(req),
-            m_input_support.query_value(req, "entity_type"),
-            m_input_support.query_value(req, "groups") == "true"
+            m_request_support.query(req, "entity_type").value_or(""),
+            m_request_support.query(req, "groups").value_or("") == "true"
         };
         auto result = m_runtime.list_roles_with_info(input);
         if (!result) {
@@ -177,7 +198,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -303,6 +324,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
+    UserRoleRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::user_role

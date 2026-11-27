@@ -2,16 +2,18 @@ module;
 export module app_dto:process_tracker;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::process_tracker {
 
-class ProcessTrackerCatalog : public serde::Serializer<ProcessTrackerCatalog>
+class ProcessTrackerCatalog : public core::behavior::Serializer<ProcessTrackerCatalog>
 {
 public:
     void set_name(std::string value)

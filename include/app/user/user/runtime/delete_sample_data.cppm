@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteSampleDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     delete_sample_data(const DeleteSampleDataInput& input) const
     {
         std::string set_cookie{};
@@ -63,7 +63,7 @@ public:
         m_context.metrics().record_flow("delete_sample_data");
         m_context.metrics().counter("user.delete_sample_data").increment();
 
-        return DeleteSampleDataResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

@@ -2,9 +2,11 @@ module;
 export module app_dto:health_check;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -23,7 +25,7 @@ enum class HealthState
     NotApplicable,
 };
 
-class RouterHealthCheckResponse : public serde::Serializer<RouterHealthCheckResponse>
+class RouterHealthCheckResponse : public core::behavior::Serializer<RouterHealthCheckResponse>
 {
 public:
     void set_database(bool value)
@@ -128,7 +130,7 @@ public:
     std::optional<bool> unified_connector_service{};
 };
 
-class SchedulerHealthCheckResponse : public serde::Serializer<SchedulerHealthCheckResponse>
+class SchedulerHealthCheckResponse : public core::behavior::Serializer<SchedulerHealthCheckResponse>
 {
 public:
     void set_database(bool value)

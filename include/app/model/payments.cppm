@@ -2,134 +2,18 @@ module;
 export module app_model:payments;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::payments {
 
-enum class AccountType
-{
-    Current,
-    Savings,
-    Payment,
-};
-
-class AirwallexData : public serde::Serializer<AirwallexData>
-{
-public:
-    void set_payload(std::optional<std::string> value)
-    {
-        payload = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_payload() const noexcept
-    {
-        return payload;
-    }
-
-    std::optional<std::string> payload{};
-};
-
-class AliPayHkRedirection : public serde::Serializer<AliPayHkRedirection>
-{
-public:
-};
-
-class AliPayQr : public serde::Serializer<AliPayQr>
-{
-public:
-};
-
-class AliPayRedirection : public serde::Serializer<AliPayRedirection>
-{
-public:
-};
-
-class AmazonPayMerchantCredentials : public serde::Serializer<AmazonPayMerchantCredentials>
-{
-public:
-    void set_merchant_id(std::string value)
-    {
-        merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept
-    {
-        return merchant_id;
-    }
-
-    void set_store_id(std::string value)
-    {
-        store_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_store_id() const noexcept
-    {
-        return store_id;
-    }
-
-    std::string merchant_id{};
-    std::string store_id{};
-};
-
-enum class AmazonPayPaymentIntent
-{
-    Confirm,
-    Authorize,
-    AuthorizeWithCapture,
-};
-
-class AmazonPayRedirectData : public serde::Serializer<AmazonPayRedirectData>
-{
-public:
-};
-
-class AmazonPayShippingMethod : public serde::Serializer<AmazonPayShippingMethod>
-{
-public:
-    void set_shipping_method_name(std::string value)
-    {
-        shipping_method_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_shipping_method_name() const noexcept
-    {
-        return shipping_method_name;
-    }
-
-    void set_shipping_method_code(std::string value)
-    {
-        shipping_method_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_shipping_method_code() const noexcept
-    {
-        return shipping_method_code;
-    }
-
-    std::string shipping_method_name{};
-    std::string shipping_method_code{};
-};
-
-class AmazonPayWalletData : public serde::Serializer<AmazonPayWalletData>
-{
-public:
-    void set_checkout_session_id(std::string value)
-    {
-        checkout_session_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_checkout_session_id() const noexcept
-    {
-        return checkout_session_id;
-    }
-
-    std::string checkout_session_id{};
-};
 
 enum class Amount
 {
@@ -137,7 +21,7 @@ enum class Amount
     Zero,
 };
 
-class AmountFilter : public serde::Serializer<AmountFilter>
+class AmountFilter : public core::behavior::Serializer<AmountFilter>
 {
 public:
     void set_start_amount(std::optional<std::int64_t> value)
@@ -164,58 +48,7 @@ public:
     std::optional<std::int64_t> end_amount{};
 };
 
-class ApiConnectorErrorDetails : public serde::Serializer<ApiConnectorErrorDetails>
-{
-public:
-    void set_code(std::optional<std::string> value)
-    {
-        code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_code() const noexcept
-    {
-        return code;
-    }
-
-    void set_message(std::optional<std::string> value)
-    {
-        message = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_message() const noexcept
-    {
-        return message;
-    }
-
-    void set_reason(std::optional<std::string> value)
-    {
-        reason = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_reason() const noexcept
-    {
-        return reason;
-    }
-
-    std::optional<std::string> code{};
-    std::optional<std::string> message{};
-    std::optional<std::string> reason{};
-};
-
-enum class ApplePayAddressParameters
-{
-    PostalAddress,
-    Phone,
-    Email,
-};
-
-enum class ApplePayCombinedMetadata
-{
-    Simplified,
-    Manual,
-};
-
-class ApplePayPaymentDataValue : public serde::Serializer<ApplePayPaymentDataValue>
+class AttemptStatusValue : public core::behavior::Serializer<AttemptStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -231,113 +64,7 @@ public:
     std::string value{};
 };
 
-enum class ApplePayPaymentTiming
-{
-    Immediate,
-    Recurring,
-};
-
-class ApplePayRedirectData : public serde::Serializer<ApplePayRedirectData>
-{
-public:
-};
-
-enum class ApplePaySessionResponse
-{
-    ThirdPartySdk,
-    NoThirdPartySdk,
-    NoSessionResponse,
-};
-
-class ApplepayErrorResponse : public serde::Serializer<ApplepayErrorResponse>
-{
-public:
-    void set_status_code(std::string value)
-    {
-        status_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_status_code() const noexcept
-    {
-        return status_code;
-    }
-
-    void set_status_message(std::string value)
-    {
-        status_message = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_status_message() const noexcept
-    {
-        return status_message;
-    }
-
-    std::string status_code{};
-    std::string status_message{};
-};
-
-enum class ApplepayInitiative
-{
-    Web,
-    Ios,
-};
-
-class ApplepaySessionRequest : public serde::Serializer<ApplepaySessionRequest>
-{
-public:
-    void set_merchant_identifier(std::string value)
-    {
-        merchant_identifier = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_identifier() const noexcept
-    {
-        return merchant_identifier;
-    }
-
-    void set_display_name(std::string value)
-    {
-        display_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_display_name() const noexcept
-    {
-        return display_name;
-    }
-
-    void set_initiative(std::string value)
-    {
-        initiative = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_initiative() const noexcept
-    {
-        return initiative;
-    }
-
-    void set_initiative_context(std::string value)
-    {
-        initiative_context = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_initiative_context() const noexcept
-    {
-        return initiative_context;
-    }
-
-    std::string merchant_identifier{};
-    std::string display_name{};
-    std::string initiative{};
-    std::string initiative_context{};
-};
-
-enum class ApplepaySessionTokenMetadata
-{
-    ApplePayCombined,
-    ApplePay,
-};
-
-class AttemptStatusValue : public serde::Serializer<AttemptStatusValue>
+class AuthenticationStatusValue : public core::behavior::Serializer<AuthenticationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -353,7 +80,7 @@ public:
     std::string value{};
 };
 
-class AuthenticationStatusValue : public serde::Serializer<AuthenticationStatusValue>
+class AuthenticationTypeValue : public core::behavior::Serializer<AuthenticationTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -369,7 +96,7 @@ public:
     std::string value{};
 };
 
-class AuthenticationTypeValue : public serde::Serializer<AuthenticationTypeValue>
+class AuthorizationStatusValue : public core::behavior::Serializer<AuthorizationStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -385,7 +112,7 @@ public:
     std::string value{};
 };
 
-class AuthorizationStatusValue : public serde::Serializer<AuthorizationStatusValue>
+class BillingDescriptorValue : public core::behavior::Serializer<BillingDescriptorValue>
 {
 public:
     void set_value(std::string v)
@@ -401,12 +128,7 @@ public:
     std::string value{};
 };
 
-enum class BalanceCheckPaymentMethodData
-{
-    GiftCard,
-};
-
-class BankDebitAdditionalDataValue : public serde::Serializer<BankDebitAdditionalDataValue>
+class BillingFrequencyValue : public core::behavior::Serializer<BillingFrequencyValue>
 {
 public:
     void set_value(std::string v)
@@ -422,216 +144,6 @@ public:
     std::string value{};
 };
 
-enum class BankDebitData
-{
-    AchBankDebit,
-    SepaBankDebit,
-    SepaGuarenteedBankDebit,
-    BecsBankDebit,
-    BacsBankDebit,
-    EftDebitOrder,
-};
-
-class BankNamesValue : public serde::Serializer<BankNamesValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class BankRedirectData
-{
-    BancontactCard,
-    Bizum,
-    Blik,
-    Eps,
-    Giropay,
-    Ideal,
-    Interac,
-    OnlineBankingCzechRepublic,
-    OnlineBankingFinland,
-    OnlineBankingPoland,
-    OnlineBankingSlovakia,
-    OpenBankingUk,
-    Przelewy24,
-    Sofort,
-    Trustly,
-    OnlineBankingFpx,
-    OnlineBankingThailand,
-    LocalBankRedirect,
-    Eft,
-    OpenBanking,
-};
-
-class BankRedirectDetailsValue : public serde::Serializer<BankRedirectDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class BankTransferAdditionalDataValue : public serde::Serializer<BankTransferAdditionalDataValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class BankTransferData
-{
-    AchBankTransfer,
-    SepaBankTransfer,
-    BacsBankTransfer,
-    MultibancoBankTransfer,
-    PermataBankTransfer,
-    BcaBankTransfer,
-    BniVaBankTransfer,
-    BriVaBankTransfer,
-    CimbVaBankTransfer,
-    DanamonVaBankTransfer,
-    MandiriVaBankTransfer,
-    Pix,
-    PixEmv,
-    PixQr,
-    PixAutomaticoQr,
-    PixAutomaticoPush,
-    Pse,
-    LocalBankTransfer,
-    InstantBankTransfer,
-    InstantBankTransferFinland,
-    InstantBankTransferPoland,
-    IndonesianBankTransfer,
-};
-
-class BillingConnectorPaymentDetails : public serde::Serializer<BillingConnectorPaymentDetails>
-{
-public:
-    void set_payment_processor_token(std::string value)
-    {
-        payment_processor_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_processor_token() const noexcept
-    {
-        return payment_processor_token;
-    }
-
-    void set_connector_customer_id(std::string value)
-    {
-        connector_customer_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector_customer_id() const noexcept
-    {
-        return connector_customer_id;
-    }
-
-    std::string payment_processor_token{};
-    std::string connector_customer_id{};
-};
-
-class BillingDescriptorValue : public serde::Serializer<BillingDescriptorValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class BillingFrequencyValue : public serde::Serializer<BillingFrequencyValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class BluecodeQrRedirect : public serde::Serializer<BluecodeQrRedirect>
-{
-public:
-};
-
-class BoletoDocumentKindValue : public serde::Serializer<BoletoDocumentKindValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class BoletoPaymentTypeConstraints
-{
-    FixedAmount,
-    FlexibleAmount,
-    Installment,
-};
-
-class BoletoPaymentTypeValue : public serde::Serializer<BoletoPaymentTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
 
 enum class CalculationType
 {
@@ -639,7 +151,7 @@ enum class CalculationType
     FlatAmount,
 };
 
-class CaptureFeatureMetadataValue : public serde::Serializer<CaptureFeatureMetadataValue>
+class CaptureMethodValue : public core::behavior::Serializer<CaptureMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -655,7 +167,7 @@ public:
     std::string value{};
 };
 
-class CaptureMethodValue : public serde::Serializer<CaptureMethodValue>
+class CaptureStatusValue : public core::behavior::Serializer<CaptureStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -671,7 +183,7 @@ public:
     std::string value{};
 };
 
-class CaptureStatusValue : public serde::Serializer<CaptureStatusValue>
+class CardBinValue : public core::behavior::Serializer<CardBinValue>
 {
 public:
     void set_value(std::string v)
@@ -687,7 +199,7 @@ public:
     std::string value{};
 };
 
-class CardBinValue : public serde::Serializer<CardBinValue>
+class CardDiscoveryValue : public core::behavior::Serializer<CardDiscoveryValue>
 {
 public:
     void set_value(std::string v)
@@ -703,7 +215,7 @@ public:
     std::string value{};
 };
 
-class CardDiscoveryValue : public serde::Serializer<CardDiscoveryValue>
+class CavvAlgorithmValue : public core::behavior::Serializer<CavvAlgorithmValue>
 {
 public:
     void set_value(std::string v)
@@ -719,230 +231,7 @@ public:
     std::string value{};
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CardNumberValue : public serde::Serializer<CardNumberValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class CardRedirectData
-{
-    Knet,
-    Benefit,
-    MomoAtm,
-    CardRedirect,
-};
-
-class CardSegmentTypeValue : public serde::Serializer<CardSegmentTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CardTokenAdditionalDataValue : public serde::Serializer<CardTokenAdditionalDataValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CardTypeValue : public serde::Serializer<CardTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CashappQr : public serde::Serializer<CashappQr>
-{
-public:
-};
-
-class CavvAlgorithmValue : public serde::Serializer<CavvAlgorithmValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CheckoutData : public serde::Serializer<CheckoutData>
-{
-public:
-    void set_purpose_of_payment(std::optional<std::string> value)
-    {
-        purpose_of_payment = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_purpose_of_payment() const noexcept
-    {
-        return purpose_of_payment;
-    }
-
-    std::optional<std::string> purpose_of_payment{};
-};
-
-class ConnectorChargeResponseDataValue : public serde::Serializer<ConnectorChargeResponseDataValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class ConnectorMetadataResponse
-{
-    Santander,
-    Revolv3,
-};
-
-class ConnectorTokenDetails : public serde::Serializer<ConnectorTokenDetails>
-{
-public:
-    void set_token(std::string value)
-    {
-        token = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_token() const noexcept
-    {
-        return token;
-    }
-
-    void set_connector_token_request_reference_id(std::optional<std::string> value)
-    {
-        connector_token_request_reference_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>&
-    get_connector_token_request_reference_id() const noexcept
-    {
-        return connector_token_request_reference_id;
-    }
-
-    std::string token{};
-    std::optional<std::string> connector_token_request_reference_id{};
-};
-
-class ConnectorTransactionIdValue : public serde::Serializer<ConnectorTransactionIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class ConnectorValue : public serde::Serializer<ConnectorValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CryptoData : public serde::Serializer<CryptoData>
+class CryptoData : public core::behavior::Serializer<CryptoData>
 {
 public:
     void set_pay_currency(std::optional<std::string> value)
@@ -974,7 +263,7 @@ enum class Cryptogram
     Cavv,
 };
 
-class CtpServiceProviderValue : public serde::Serializer<CtpServiceProviderValue>
+class CtpServiceProviderValue : public core::behavior::Serializer<CtpServiceProviderValue>
 {
 public:
     void set_value(std::string v)
@@ -990,7 +279,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue : public serde::Serializer<CurrencyValue>
+class CustomerAcceptanceValue : public core::behavior::Serializer<CustomerAcceptanceValue>
 {
 public:
     void set_value(std::string v)
@@ -1006,39 +295,7 @@ public:
     std::string value{};
 };
 
-class CustomerAcceptanceValue : public serde::Serializer<CustomerAcceptanceValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CustomerDocumentDetailsValue : public serde::Serializer<CustomerDocumentDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CustomerIdValue : public serde::Serializer<CustomerIdValue>
+class CustomerDocumentDetailsValue : public core::behavior::Serializer<CustomerDocumentDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -1055,7 +312,7 @@ public:
 };
 
 class CustomerPaymentMethodResponseItemValue :
-    public serde::Serializer<CustomerPaymentMethodResponseItemValue>
+    public core::behavior::Serializer<CustomerPaymentMethodResponseItemValue>
 {
 public:
     void set_value(std::string v)
@@ -1071,7 +328,8 @@ public:
     std::string value{};
 };
 
-class DecoupledAuthenticationTypeValue : public serde::Serializer<DecoupledAuthenticationTypeValue>
+class DecoupledAuthenticationTypeValue :
+    public core::behavior::Serializer<DecoupledAuthenticationTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -1087,7 +345,7 @@ public:
     std::string value{};
 };
 
-class DescriptionValue : public serde::Serializer<DescriptionValue>
+class DescriptionValue : public core::behavior::Serializer<DescriptionValue>
 {
 public:
     void set_value(std::string v)
@@ -1109,7 +367,7 @@ enum class DeviceChannel
     Browser,
 };
 
-class DeviceDetails : public serde::Serializer<DeviceDetails>
+class DeviceDetails : public core::behavior::Serializer<DeviceDetails>
 {
 public:
     void set_device_type(std::optional<std::string> value)
@@ -1158,7 +416,7 @@ public:
     std::optional<std::string> device_display{};
 };
 
-class DiscountPercentageValue : public serde::Serializer<DiscountPercentageValue>
+class DiscountPercentageValue : public core::behavior::Serializer<DiscountPercentageValue>
 {
 public:
     void set_value(std::string v)
@@ -1172,18 +430,10 @@ public:
     }
 
     std::string value{};
-};
-
-enum class DiscountType
-{
-    Standard,
-    FixedDate,
-    DailyCalendar,
-    DailyBusiness,
 };
 
 class DisputeResponsePaymentsRetrieveValue :
-    public serde::Serializer<DisputeResponsePaymentsRetrieveValue>
+    public core::behavior::Serializer<DisputeResponsePaymentsRetrieveValue>
 {
 public:
     void set_value(std::string v)
@@ -1199,39 +449,7 @@ public:
     std::string value{};
 };
 
-class DocumentKindValue : public serde::Serializer<DocumentKindValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class EmailValue : public serde::Serializer<EmailValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class EnableOvercaptureBoolValue : public serde::Serializer<EnableOvercaptureBoolValue>
+class EnableOvercaptureBoolValue : public core::behavior::Serializer<EnableOvercaptureBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -1248,7 +466,7 @@ public:
 };
 
 class EnablePartialAuthorizationBoolValue :
-    public serde::Serializer<EnablePartialAuthorizationBoolValue>
+    public core::behavior::Serializer<EnablePartialAuthorizationBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -1264,7 +482,7 @@ public:
     std::string value{};
 };
 
-class ErrorDetails : public serde::Serializer<ErrorDetails>
+class ErrorDetails : public core::behavior::Serializer<ErrorDetails>
 {
 public:
     void set_code(std::string value)
@@ -1357,7 +575,7 @@ public:
     std::optional<std::string> network_error_message{};
 };
 
-class ExemptionIndicatorValue : public serde::Serializer<ExemptionIndicatorValue>
+class ExemptionIndicatorValue : public core::behavior::Serializer<ExemptionIndicatorValue>
 {
 public:
     void set_value(std::string v)
@@ -1374,7 +592,7 @@ public:
 };
 
 class ExtendedAuthorizationAppliedBoolValue :
-    public serde::Serializer<ExtendedAuthorizationAppliedBoolValue>
+    public core::behavior::Serializer<ExtendedAuthorizationAppliedBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -1390,7 +608,7 @@ public:
     std::string value{};
 };
 
-class ExtendedCardInfoResponse : public serde::Serializer<ExtendedCardInfoResponse>
+class ExtendedCardInfoResponse : public core::behavior::Serializer<ExtendedCardInfoResponse>
 {
 public:
     void set_payload(std::string value)
@@ -1406,7 +624,7 @@ public:
     std::string payload{};
 };
 
-class ExternalTriggerStateValue : public serde::Serializer<ExternalTriggerStateValue>
+class FingerprintTypeValue : public core::behavior::Serializer<FingerprintTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -1422,39 +640,7 @@ public:
     std::string value{};
 };
 
-class FingerprintTypeValue : public serde::Serializer<FingerprintTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class FinixAdditionalDetails : public serde::Serializer<FinixAdditionalDetails>
-{
-public:
-    void set_fraud_session_id(std::optional<std::string> value)
-    {
-        fraud_session_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_fraud_session_id() const noexcept
-    {
-        return fraud_session_id;
-    }
-
-    std::optional<std::string> fraud_session_id{};
-};
-
-class FrmMessage : public serde::Serializer<FrmMessage>
+class FrmMessage : public core::behavior::Serializer<FrmMessage>
 {
 public:
     void set_frm_name(std::string value)
@@ -1536,7 +722,7 @@ public:
     std::optional<std::string> frm_error{};
 };
 
-class FundingSourceValue : public serde::Serializer<FundingSourceValue>
+class GlobalAttemptIdValue : public core::behavior::Serializer<GlobalAttemptIdValue>
 {
 public:
     void set_value(std::string v)
@@ -1552,7 +738,7 @@ public:
     std::string value{};
 };
 
-class FutureUsageValue : public serde::Serializer<FutureUsageValue>
+class GlobalCustomerIdValue : public core::behavior::Serializer<GlobalCustomerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -1568,12 +754,7 @@ public:
     std::string value{};
 };
 
-class GcashRedirection : public serde::Serializer<GcashRedirection>
-{
-public:
-};
-
-class GiftCardAdditionalDataValue : public serde::Serializer<GiftCardAdditionalDataValue>
+class GlobalPaymentMethodIdValue : public core::behavior::Serializer<GlobalPaymentMethodIdValue>
 {
 public:
     void set_value(std::string v)
@@ -1589,175 +770,6 @@ public:
     std::string value{};
 };
 
-enum class GiftCardData
-{
-    Givex,
-    PaySafeCard,
-    BhnCardNetwork,
-};
-
-class GlobalAttemptIdValue : public serde::Serializer<GlobalAttemptIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class GlobalCustomerIdValue : public serde::Serializer<GlobalCustomerIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class GlobalPaymentIdValue : public serde::Serializer<GlobalPaymentIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class GlobalPaymentMethodIdValue : public serde::Serializer<GlobalPaymentMethodIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class GoPayRedirection : public serde::Serializer<GoPayRedirection>
-{
-public:
-};
-
-class GooglePayAssuranceDetails : public serde::Serializer<GooglePayAssuranceDetails>
-{
-public:
-    void set_card_holder_authenticated(bool value)
-    {
-        card_holder_authenticated = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_card_holder_authenticated() const noexcept
-    {
-        return card_holder_authenticated;
-    }
-
-    void set_account_verified(bool value)
-    {
-        account_verified = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_account_verified() const noexcept
-    {
-        return account_verified;
-    }
-
-    bool card_holder_authenticated{};
-    bool account_verified{};
-};
-
-class GooglePayCardFundingSourceValue : public serde::Serializer<GooglePayCardFundingSourceValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class GooglePayRedirectData : public serde::Serializer<GooglePayRedirectData>
-{
-public:
-};
-
-enum class GooglePayTokenizationSpecificationType
-{
-    PaymentGateway,
-    Direct,
-};
-
-enum class GooglePayTokenizationType
-{
-    PaymentGateway,
-    Direct,
-    InternalGateway,
-};
-
-enum class GpayBillingAddressFormat
-{
-    FULL,
-    MIN,
-};
-
-class GpayMerchantInfo : public serde::Serializer<GpayMerchantInfo>
-{
-public:
-    void set_merchant_id(std::optional<std::string> value)
-    {
-        merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_merchant_id() const noexcept
-    {
-        return merchant_id;
-    }
-
-    void set_merchant_name(std::string value)
-    {
-        merchant_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_name() const noexcept
-    {
-        return merchant_name;
-    }
-
-    std::optional<std::string> merchant_id{};
-    std::string merchant_name{};
-};
 
 enum class GpaySessionTokenResponse
 {
@@ -1765,55 +777,7 @@ enum class GpaySessionTokenResponse
     GooglePaySession,
 };
 
-class GpayShippingAddressParameters : public serde::Serializer<GpayShippingAddressParameters>
-{
-public:
-    void set_phone_number_required(bool value)
-    {
-        phone_number_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_phone_number_required() const noexcept
-    {
-        return phone_number_required;
-    }
-
-    bool phone_number_required{};
-};
-
-class GpayTokenizationDataValue : public serde::Serializer<GpayTokenizationDataValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class HashedStringValue : public serde::Serializer<HashedStringValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class HyperswitchVaultData : public serde::Serializer<HyperswitchVaultData>
+class HyperswitchVaultData : public core::behavior::Serializer<HyperswitchVaultData>
 {
 public:
     void set_sdk_authorization(std::string value)
@@ -1834,7 +798,7 @@ enum class IframeData
     ThreedsInvokeAndCompleteAutorize,
 };
 
-class InitiatorValue : public serde::Serializer<InitiatorValue>
+class InitiatorValue : public core::behavior::Serializer<InitiatorValue>
 {
 public:
     void set_value(std::string v)
@@ -1850,7 +814,7 @@ public:
     std::string value{};
 };
 
-class InstallmentDataValue : public serde::Serializer<InstallmentDataValue>
+class InstallmentDataValue : public core::behavior::Serializer<InstallmentDataValue>
 {
 public:
     void set_value(std::string v)
@@ -1866,7 +830,7 @@ public:
     std::string value{};
 };
 
-class InstallmentOptionValue : public serde::Serializer<InstallmentOptionValue>
+class InstallmentOptionValue : public core::behavior::Serializer<InstallmentOptionValue>
 {
 public:
     void set_value(std::string v)
@@ -1888,39 +852,7 @@ enum class IntegrationType
     Server,
 };
 
-class IntentStatusValue : public serde::Serializer<IntentStatusValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class InteracCustomerInfoDetailsValue : public serde::Serializer<InteracCustomerInfoDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class InternalVaultSessionDetails : public serde::Serializer<InternalVaultSessionDetails>
+class InternalVaultSessionDetails : public core::behavior::Serializer<InternalVaultSessionDetails>
 {
 public:
     void set_sdk_authorization(std::string value)
@@ -1936,7 +868,7 @@ public:
     std::string sdk_authorization{};
 };
 
-class IpAddrValue : public serde::Serializer<IpAddrValue>
+class IpAddrValue : public core::behavior::Serializer<IpAddrValue>
 {
 public:
     void set_value(std::string v)
@@ -1952,12 +884,7 @@ public:
     std::string value{};
 };
 
-class KakaoPayRedirection : public serde::Serializer<KakaoPayRedirection>
-{
-public:
-};
-
-class KlarnaSdkPaymentMethod : public serde::Serializer<KlarnaSdkPaymentMethod>
+class KlarnaSdkPaymentMethod : public core::behavior::Serializer<KlarnaSdkPaymentMethod>
 {
 public:
     void set_payment_type(std::optional<std::string> value)
@@ -1973,7 +900,8 @@ public:
     std::optional<std::string> payment_type{};
 };
 
-class KlarnaSdkPaymentMethodResponse : public serde::Serializer<KlarnaSdkPaymentMethodResponse>
+class KlarnaSdkPaymentMethodResponse :
+    public core::behavior::Serializer<KlarnaSdkPaymentMethodResponse>
 {
 public:
     void set_payment_type(std::optional<std::string> value)
@@ -1989,7 +917,7 @@ public:
     std::optional<std::string> payment_type{};
 };
 
-class KlarnaSessionTokenResponse : public serde::Serializer<KlarnaSessionTokenResponse>
+class KlarnaSessionTokenResponse : public core::behavior::Serializer<KlarnaSessionTokenResponse>
 {
 public:
     void set_session_token(std::string value)
@@ -2022,7 +950,8 @@ enum class MandateType
     MultiUse,
 };
 
-class ManualUpdateIntentStatusValue : public serde::Serializer<ManualUpdateIntentStatusValue>
+class ManualUpdateIntentStatusValue :
+    public core::behavior::Serializer<ManualUpdateIntentStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -2038,7 +967,7 @@ public:
     std::string value{};
 };
 
-class MaskedRecipientDetailsValue : public serde::Serializer<MaskedRecipientDetailsValue>
+class MaskedRecipientDetailsValue : public core::behavior::Serializer<MaskedRecipientDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -2054,7 +983,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MitCategoryValue : public core::behavior::Serializer<MitCategoryValue>
 {
 public:
     void set_value(std::string v)
@@ -2070,8 +999,7 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorAuthDetailsValue :
-    public serde::Serializer<MerchantConnectorAuthDetailsValue>
+class MitExemptionRequestValue : public core::behavior::Serializer<MitExemptionRequestValue>
 {
 public:
     void set_value(std::string v)
@@ -2087,107 +1015,6 @@ public:
     std::string value{};
 };
 
-class MerchantConnectorDetailsWrapValue :
-    public serde::Serializer<MerchantConnectorDetailsWrapValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MerchantConnectorInfoValue : public serde::Serializer<MerchantConnectorInfoValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MitCategoryValue : public serde::Serializer<MitCategoryValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MitExemptionRequestValue : public serde::Serializer<MitExemptionRequestValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class MobilePayRedirection : public serde::Serializer<MobilePayRedirection>
-{
-public:
-};
 
 enum class MobilePaymentConsent
 {
@@ -2201,17 +1028,12 @@ enum class MobilePaymentData
     DirectCarrierBilling,
 };
 
-class MomoRedirection : public serde::Serializer<MomoRedirection>
+class NetellerData : public core::behavior::Serializer<NetellerData>
 {
 public:
 };
 
-class NetellerData : public serde::Serializer<NetellerData>
-{
-public:
-};
-
-class NetworkDetails : public serde::Serializer<NetworkDetails>
+class NetworkDetails : public core::behavior::Serializer<NetworkDetails>
 {
 public:
     void set_network_advice_code(std::optional<std::string> value)
@@ -2227,7 +1049,7 @@ public:
     std::optional<std::string> network_advice_code{};
 };
 
-class NetworkTokenValue : public serde::Serializer<NetworkTokenValue>
+class NetworkTokenValue : public core::behavior::Serializer<NetworkTokenValue>
 {
 public:
     void set_value(std::string v)
@@ -2243,16 +1065,6 @@ public:
     std::string value{};
 };
 
-enum class NextActionCall
-{
-    PostSessionTokens,
-    Confirm,
-    Sync,
-    CompleteAuthorize,
-    AwaitMerchantCallback,
-    Deny,
-    EligibilityCheck,
-};
 
 enum class NextActionType
 {
@@ -2268,7 +1080,7 @@ enum class NextActionType
     InvokeUpiQrFlow,
 };
 
-class NonZeroU8Value : public serde::Serializer<NonZeroU8Value>
+class NonZeroU8Value : public core::behavior::Serializer<NonZeroU8Value>
 {
 public:
     void set_value(std::string v)
@@ -2284,28 +1096,12 @@ public:
     std::string value{};
 };
 
-class NoonData : public serde::Serializer<NoonData>
-{
-public:
-    void set_order_category(std::optional<std::string> value)
-    {
-        order_category = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_order_category() const noexcept
-    {
-        return order_category;
-    }
-
-    std::optional<std::string> order_category{};
-};
-
-class NullObject : public serde::Serializer<NullObject>
+class NullObject : public core::behavior::Serializer<NullObject>
 {
 public:
 };
 
-class OfferSelection : public serde::Serializer<OfferSelection>
+class OfferSelection : public core::behavior::Serializer<OfferSelection>
 {
 public:
     void set_offer_quote_ids(std::vector<std::string> value)
@@ -2326,7 +1122,7 @@ enum class OpenBankingData
     OpenBankingPIS,
 };
 
-class OpenBankingSessionToken : public serde::Serializer<OpenBankingSessionToken>
+class OpenBankingSessionToken : public core::behavior::Serializer<OpenBankingSessionToken>
 {
 public:
     void set_open_banking_session_token(std::string value)
@@ -2342,7 +1138,8 @@ public:
     std::string open_banking_session_token{};
 };
 
-class OptionalEncryptableEmailValue : public serde::Serializer<OptionalEncryptableEmailValue>
+class OptionalEncryptableEmailValue :
+    public core::behavior::Serializer<OptionalEncryptableEmailValue>
 {
 public:
     void set_value(std::string v)
@@ -2359,7 +1156,7 @@ public:
 };
 
 class OptionalEncryptableSecretStringValue :
-    public serde::Serializer<OptionalEncryptableSecretStringValue>
+    public core::behavior::Serializer<OptionalEncryptableSecretStringValue>
 {
 public:
     void set_value(std::string v)
@@ -2375,7 +1172,7 @@ public:
     std::string value{};
 };
 
-class OvercaptureEnabledBoolValue : public serde::Serializer<OvercaptureEnabledBoolValue>
+class OvercaptureEnabledBoolValue : public core::behavior::Serializer<OvercaptureEnabledBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -2391,13 +1188,8 @@ public:
     std::string value{};
 };
 
-enum class PMBalanceCheckEligibilityResponse
-{
-    Success,
-    Failure,
-};
-
-class PMBalanceCheckFailureResponse : public serde::Serializer<PMBalanceCheckFailureResponse>
+class PMBalanceCheckFailureResponse :
+    public core::behavior::Serializer<PMBalanceCheckFailureResponse>
 {
 public:
     void set_error(std::string value)
@@ -2413,7 +1205,7 @@ public:
     std::string error{};
 };
 
-class PageOffsetValue : public serde::Serializer<PageOffsetValue>
+class PageOffsetValue : public core::behavior::Serializer<PageOffsetValue>
 {
 public:
     void set_value(std::string v)
@@ -2429,7 +1221,7 @@ public:
     std::string value{};
 };
 
-class PageSizeValue : public serde::Serializer<PageSizeValue>
+class PageSizeValue : public core::behavior::Serializer<PageSizeValue>
 {
 public:
     void set_value(std::string v)
@@ -2446,7 +1238,7 @@ public:
 };
 
 class PartnerMerchantIdentifierDetailsValue :
-    public serde::Serializer<PartnerMerchantIdentifierDetailsValue>
+    public core::behavior::Serializer<PartnerMerchantIdentifierDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -2477,21 +1269,6 @@ enum class PayLaterData
     PayjustnowRedirect,
 };
 
-class PayPalWalletData : public serde::Serializer<PayPalWalletData>
-{
-public:
-    void set_token(std::string value)
-    {
-        token = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_token() const noexcept
-    {
-        return token;
-    }
-
-    std::string token{};
-};
 
 enum class PaymentAllowanceType
 {
@@ -2500,7 +1277,7 @@ enum class PaymentAllowanceType
     Flexible,
 };
 
-class PaymentChannelValue : public serde::Serializer<PaymentChannelValue>
+class PaymentChannelValue : public core::behavior::Serializer<PaymentChannelValue>
 {
 public:
     void set_value(std::string v)
@@ -2516,52 +1293,7 @@ public:
     std::string value{};
 };
 
-class PaymentConnectorInvokeDDCMetadata :
-    public serde::Serializer<PaymentConnectorInvokeDDCMetadata>
-{
-public:
-    void set_iframe_url(std::string value)
-    {
-        iframe_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_iframe_url() const noexcept
-    {
-        return iframe_url;
-    }
-
-    void set_timeout_ms(std::optional<std::int32_t> value)
-    {
-        timeout_ms = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int32_t>& get_timeout_ms() const noexcept
-    {
-        return timeout_ms;
-    }
-
-    std::string iframe_url{};
-    std::optional<std::int32_t> timeout_ms{};
-};
-
-class PaymentConnectorTransmissionValue :
-    public serde::Serializer<PaymentConnectorTransmissionValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PaymentExperienceValue : public serde::Serializer<PaymentExperienceValue>
+class PaymentExperienceValue : public core::behavior::Serializer<PaymentExperienceValue>
 {
 public:
     void set_value(std::string v)
@@ -2584,40 +1316,8 @@ enum class PaymentIdType
     PaymentAttemptId,
 };
 
-class PaymentIdValue : public serde::Serializer<PaymentIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PaymentIntentStateMetadataValue : public serde::Serializer<PaymentIntentStateMetadataValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
 class PaymentLinkBackgroundImageConfigValue :
-    public serde::Serializer<PaymentLinkBackgroundImageConfigValue>
+    public core::behavior::Serializer<PaymentLinkBackgroundImageConfigValue>
 {
 public:
     void set_value(std::string v)
@@ -2633,7 +1333,8 @@ public:
     std::string value{};
 };
 
-class PaymentLinkConfigRequestValue : public serde::Serializer<PaymentLinkConfigRequestValue>
+class PaymentLinkConfigRequestValue :
+    public core::behavior::Serializer<PaymentLinkConfigRequestValue>
 {
 public:
     void set_value(std::string v)
@@ -2649,7 +1350,8 @@ public:
     std::string value{};
 };
 
-class PaymentLinkDetailsLayoutValue : public serde::Serializer<PaymentLinkDetailsLayoutValue>
+class PaymentLinkDetailsLayoutValue :
+    public core::behavior::Serializer<PaymentLinkDetailsLayoutValue>
 {
 public:
     void set_value(std::string v)
@@ -2665,7 +1367,7 @@ public:
     std::string value{};
 };
 
-class PaymentLinkResponse : public serde::Serializer<PaymentLinkResponse>
+class PaymentLinkResponse : public core::behavior::Serializer<PaymentLinkResponse>
 {
 public:
     void set_link(std::string value)
@@ -2703,7 +1405,7 @@ public:
     std::string payment_link_id{};
 };
 
-class PaymentLinkSdkLabelTypeValue : public serde::Serializer<PaymentLinkSdkLabelTypeValue>
+class PaymentLinkSdkLabelTypeValue : public core::behavior::Serializer<PaymentLinkSdkLabelTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -2719,7 +1421,7 @@ public:
     std::string value{};
 };
 
-class PaymentLinkShowSdkTermsValue : public serde::Serializer<PaymentLinkShowSdkTermsValue>
+class PaymentLinkShowSdkTermsValue : public core::behavior::Serializer<PaymentLinkShowSdkTermsValue>
 {
 public:
     void set_value(std::string v)
@@ -2742,7 +1444,7 @@ enum class PaymentLinkStatus
 };
 
 class PaymentLinkTransactionDetailsValue :
-    public serde::Serializer<PaymentLinkTransactionDetailsValue>
+    public core::behavior::Serializer<PaymentLinkTransactionDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -2758,7 +1460,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodListResultValue : public serde::Serializer<PaymentMethodListResultValue>
+class PaymentMethodListResultValue : public core::behavior::Serializer<PaymentMethodListResultValue>
 {
 public:
     void set_value(std::string v)
@@ -2774,7 +1476,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodStatusValue : public serde::Serializer<PaymentMethodStatusValue>
+class PaymentMethodStatusValue : public core::behavior::Serializer<PaymentMethodStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -2791,7 +1493,7 @@ public:
 };
 
 class PaymentMethodSubtypeSpecificDataValue :
-    public serde::Serializer<PaymentMethodSubtypeSpecificDataValue>
+    public core::behavior::Serializer<PaymentMethodSubtypeSpecificDataValue>
 {
 public:
     void set_value(std::string v)
@@ -2807,39 +1509,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PaymentMethodsConfigValue : public serde::Serializer<PaymentMethodsConfigValue>
+class PaymentMethodsConfigValue : public core::behavior::Serializer<PaymentMethodsConfigValue>
 {
 public:
     void set_value(std::string v)
@@ -2862,19 +1532,7 @@ enum class PaymentOp
     Confirm,
 };
 
-enum class PaymentProcessingDetailInputType
-{
-    Raw,
-    LinkHierarchicalResource,
-};
-
-enum class PaymentProcessingDetailsAt
-{
-    Hyperswitch,
-    Connector,
-};
-
-class PaymentReferenceIdValue : public serde::Serializer<PaymentReferenceIdValue>
+class PaymentReferenceIdValue : public core::behavior::Serializer<PaymentReferenceIdValue>
 {
 public:
     void set_value(std::string v)
@@ -2890,45 +1548,7 @@ public:
     std::string value{};
 };
 
-class PaymentRequestMetadata : public serde::Serializer<PaymentRequestMetadata>
-{
-public:
-    void set_supported_networks(std::vector<std::string> value)
-    {
-        supported_networks = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_supported_networks() const noexcept
-    {
-        return supported_networks;
-    }
-
-    void set_merchant_capabilities(std::vector<std::string> value)
-    {
-        merchant_capabilities = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_merchant_capabilities() const noexcept
-    {
-        return merchant_capabilities;
-    }
-
-    void set_label(std::string value)
-    {
-        label = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_label() const noexcept
-    {
-        return label;
-    }
-
-    std::vector<std::string> supported_networks{};
-    std::vector<std::string> merchant_capabilities{};
-    std::string label{};
-};
-
-class PaymentsAggregateResponse : public serde::Serializer<PaymentsAggregateResponse>
+class PaymentsAggregateResponse : public core::behavior::Serializer<PaymentsAggregateResponse>
 {
 public:
     void set_status_with_count(std::unordered_map<std::string, std::int64_t> value)
@@ -2945,84 +1565,7 @@ public:
     std::unordered_map<std::string, std::int64_t> status_with_count{};
 };
 
-class PaymentsConnectorThreeDsInvokeData :
-    public serde::Serializer<PaymentsConnectorThreeDsInvokeData>
-{
-public:
-    void set_directory_server_id(std::string value)
-    {
-        directory_server_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_directory_server_id() const noexcept
-    {
-        return directory_server_id;
-    }
-
-    void set_three_ds_method_url(std::string value)
-    {
-        three_ds_method_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_three_ds_method_url() const noexcept
-    {
-        return three_ds_method_url;
-    }
-
-    void set_three_ds_method_data(std::string value)
-    {
-        three_ds_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_three_ds_method_data() const noexcept
-    {
-        return three_ds_method_data;
-    }
-
-    void set_message_version(std::optional<std::string> value)
-    {
-        message_version = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_message_version() const noexcept
-    {
-        return message_version;
-    }
-
-    void set_three_ds_method_data_submission(bool value)
-    {
-        three_ds_method_data_submission = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_three_ds_method_data_submission() const noexcept
-    {
-        return three_ds_method_data_submission;
-    }
-
-    std::string directory_server_id{};
-    std::string three_ds_method_url{};
-    std::string three_ds_method_data{};
-    std::optional<std::string> message_version{};
-    bool three_ds_method_data_submission{};
-};
-
-class PaymentsRedirectionResponse : public serde::Serializer<PaymentsRedirectionResponse>
-{
-public:
-    void set_redirect_url(std::string value)
-    {
-        redirect_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_redirect_url() const noexcept
-    {
-        return redirect_url;
-    }
-
-    std::string redirect_url{};
-};
-
-class PaymentsStatusRequest : public serde::Serializer<PaymentsStatusRequest>
+class PaymentsStatusRequest : public core::behavior::Serializer<PaymentsStatusRequest>
 {
 public:
     void set_force_sync(bool value)
@@ -3071,130 +1614,12 @@ public:
     std::optional<bool> return_raw_connector_response{};
 };
 
-enum class PaypalCaptureMethod
-{
-    Capture,
-    Authorize,
-};
-
-enum class PaypalFlow
-{
-    Checkout,
-};
-
-class PaypalSdkMetaData : public serde::Serializer<PaypalSdkMetaData>
-{
-public:
-    void set_client_id(std::string value)
-    {
-        client_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_id() const noexcept
-    {
-        return client_id;
-    }
-
-    std::string client_id{};
-};
-
-class PayseraData : public serde::Serializer<PayseraData>
+class PayseraData : public core::behavior::Serializer<PayseraData>
 {
 public:
 };
 
-class PazeMetadata : public serde::Serializer<PazeMetadata>
-{
-public:
-    void set_client_id(std::string value)
-    {
-        client_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_id() const noexcept
-    {
-        return client_id;
-    }
-
-    void set_client_name(std::string value)
-    {
-        client_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_name() const noexcept
-    {
-        return client_name;
-    }
-
-    void set_client_profile_id(std::string value)
-    {
-        client_profile_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_profile_id() const noexcept
-    {
-        return client_profile_id;
-    }
-
-    std::string client_id{};
-    std::string client_name{};
-    std::string client_profile_id{};
-};
-
-enum class PeachpaymentsCardOnFileTransactionType
-{
-    OneOff,
-    CustomerInitiatedTransaction,
-    MerchantInitiatedMandate,
-    MerchantInitiatedTransaction,
-};
-
-class PhoneDetailsValue : public serde::Serializer<PhoneDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class PixAdditionalDetails
-{
-    Immediate,
-    Scheduled,
-};
-
-enum class PixAutomaticoAdditionalDetails
-{
-    PixAutomaticoPush,
-    PixAutomaticoQr,
-    PixAutomaticoMit,
-};
-
-class PixKeyValue : public serde::Serializer<PixKeyValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class PollConfig : public serde::Serializer<PollConfig>
+class PollConfig : public core::behavior::Serializer<PollConfig>
 {
 public:
     void set_delay_in_secs(std::uint16_t value)
@@ -3221,7 +1646,7 @@ public:
     std::uint16_t frequency{};
 };
 
-class PollConfigResponse : public serde::Serializer<PollConfigResponse>
+class PollConfigResponse : public core::behavior::Serializer<PollConfigResponse>
 {
 public:
     void set_poll_id(std::string value)
@@ -3259,8 +1684,7 @@ public:
     std::int8_t frequency{};
 };
 
-class PresenceOfCustomerDuringPaymentValue :
-    public serde::Serializer<PresenceOfCustomerDuringPaymentValue>
+class ProcessorPaymentTokenValue : public core::behavior::Serializer<ProcessorPaymentTokenValue>
 {
 public:
     void set_value(std::string v)
@@ -3276,7 +1700,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class ProductTypeValue : public core::behavior::Serializer<ProductTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -3292,69 +1716,6 @@ public:
     std::string value{};
 };
 
-class ProcessorPaymentTokenValue : public serde::Serializer<ProcessorPaymentTokenValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class ProductTypeValue : public serde::Serializer<ProductTypeValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-enum class ProtestType
-{
-    Disabled,
-    CalendarDays,
-    BusinessDays,
-    ContractDefault,
-};
-
-enum class QrCodeInformation
-{
-    QrCodeUrl,
-    QrDataUrl,
-    QrCodeImageUrl,
-    QrColorDataUrl,
-};
 
 enum class RealTimePaymentData
 {
@@ -3365,45 +1726,7 @@ enum class RealTimePaymentData
     Qris,
 };
 
-class ReceiverDetails : public serde::Serializer<ReceiverDetails>
-{
-public:
-    void set_amount_received(std::int64_t value)
-    {
-        amount_received = std::move(value);
-    }
-
-    [[nodiscard]] const std::int64_t& get_amount_received() const noexcept
-    {
-        return amount_received;
-    }
-
-    void set_amount_charged(std::optional<std::int64_t> value)
-    {
-        amount_charged = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int64_t>& get_amount_charged() const noexcept
-    {
-        return amount_charged;
-    }
-
-    void set_amount_remaining(std::optional<std::int64_t> value)
-    {
-        amount_remaining = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int64_t>& get_amount_remaining() const noexcept
-    {
-        return amount_remaining;
-    }
-
-    std::int64_t amount_received{};
-    std::optional<std::int64_t> amount_charged{};
-    std::optional<std::int64_t> amount_remaining{};
-};
-
-class RecommendedActionValue : public serde::Serializer<RecommendedActionValue>
+class RecommendedActionValue : public core::behavior::Serializer<RecommendedActionValue>
 {
 public:
     void set_value(std::string v)
@@ -3419,7 +1742,7 @@ public:
     std::string value{};
 };
 
-class RecordAttemptErrorDetails : public serde::Serializer<RecordAttemptErrorDetails>
+class RecordAttemptErrorDetails : public core::behavior::Serializer<RecordAttemptErrorDetails>
 {
 public:
     void set_code(std::string value)
@@ -3479,39 +1802,7 @@ public:
     std::optional<std::string> network_error_message{};
 };
 
-class RecoveryConnectorDetailsValue : public serde::Serializer<RecoveryConnectorDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class RecoveryConnectorValue : public serde::Serializer<RecoveryConnectorValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class RecoveryNextRetryValue : public serde::Serializer<RecoveryNextRetryValue>
+class RecoveryNextRetryValue : public core::behavior::Serializer<RecoveryNextRetryValue>
 {
 public:
     void set_value(std::string v)
@@ -3533,7 +1824,7 @@ enum class RecoveryPaymentsCreateResponse
     Accepted,
 };
 
-class RecoveryStatusValue : public serde::Serializer<RecoveryStatusValue>
+class RecoveryStatusValue : public core::behavior::Serializer<RecoveryStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -3549,7 +1840,8 @@ public:
     std::string value{};
 };
 
-class RecoveryTransactionStatusValue : public serde::Serializer<RecoveryTransactionStatusValue>
+class RecoveryTransactionStatusValue :
+    public core::behavior::Serializer<RecoveryTransactionStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -3565,7 +1857,7 @@ public:
     std::string value{};
 };
 
-class RecurringDetailsValue : public serde::Serializer<RecurringDetailsValue>
+class RecurringDetailsValue : public core::behavior::Serializer<RecurringDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -3581,16 +1873,7 @@ public:
     std::string value{};
 };
 
-enum class RecurringPaymentIntervalUnit
-{
-    Year,
-    Month,
-    Day,
-    Hour,
-    Minute,
-};
-
-class RefundResponseValue : public serde::Serializer<RefundResponseValue>
+class RefundResponseValue : public core::behavior::Serializer<RefundResponseValue>
 {
 public:
     void set_value(std::string v)
@@ -3607,7 +1890,7 @@ public:
 };
 
 class RequestExtendedAuthorizationBoolValue :
-    public serde::Serializer<RequestExtendedAuthorizationBoolValue>
+    public core::behavior::Serializer<RequestExtendedAuthorizationBoolValue>
 {
 public:
     void set_value(std::string v)
@@ -3623,7 +1906,7 @@ public:
     std::string value{};
 };
 
-class RequiredFieldInfoValue : public serde::Serializer<RequiredFieldInfoValue>
+class RequiredFieldInfoValue : public core::behavior::Serializer<RequiredFieldInfoValue>
 {
 public:
     void set_value(std::string v)
@@ -3639,7 +1922,7 @@ public:
     std::string value{};
 };
 
-class RetrievePaymentLinkRequest : public serde::Serializer<RetrievePaymentLinkRequest>
+class RetrievePaymentLinkRequest : public core::behavior::Serializer<RetrievePaymentLinkRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -3655,28 +1938,12 @@ public:
     std::optional<std::string> client_secret{};
 };
 
-class RevenueRecoveryABAlgorithmValue : public serde::Serializer<RevenueRecoveryABAlgorithmValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class RevolutPayData : public serde::Serializer<RevolutPayData>
+class RevolutPayData : public core::behavior::Serializer<RevolutPayData>
 {
 public:
 };
 
-class Revolv3Data : public serde::Serializer<Revolv3Data>
+class Revolv3Data : public core::behavior::Serializer<Revolv3Data>
 {
 public:
     void set_processor(std::optional<std::string> value)
@@ -3692,7 +1959,7 @@ public:
     std::optional<std::string> processor{};
 };
 
-class RoutingApproachValue : public serde::Serializer<RoutingApproachValue>
+class RoutingApproachValue : public core::behavior::Serializer<RoutingApproachValue>
 {
 public:
     void set_value(std::string v)
@@ -3708,7 +1975,7 @@ public:
     std::string value{};
 };
 
-class RoutingIdValue : public serde::Serializer<RoutingIdValue>
+class RoutingIdValue : public core::behavior::Serializer<RoutingIdValue>
 {
 public:
     void set_value(std::string v)
@@ -3724,55 +1991,6 @@ public:
     std::string value{};
 };
 
-enum class SamsungPayAmountFormat
-{
-    FormatTotalPriceOnly,
-    FormatTotalEstimatedAmount,
-};
-
-enum class SamsungPayCardBrand
-{
-    Visa,
-    MasterCard,
-    Amex,
-    Discover,
-    Unknown,
-};
-
-enum class SamsungPayCombinedMetadata
-{
-    ApplicationCredentials,
-    MerchantCredentials,
-};
-
-enum class SamsungPayProtocolType
-{
-    Protocol3ds,
-};
-
-enum class SamsungPayWalletCredentials
-{
-    SamsungPayWalletDataForWeb,
-    SamsungPayWalletDataForApp,
-};
-
-enum class SantanderJourneyName
-{
-    Journey1,
-    Journey2,
-    Journey3,
-    Journey4,
-    AwaitingDefinition,
-};
-
-enum class SantanderMandatePeriodicity
-{
-    Weekly,
-    Monthly,
-    Quarterly,
-    Semiannually,
-    Annually,
-};
 
 enum class SdkType
 {
@@ -3783,7 +2001,7 @@ enum class SdkType
     ShellSdk,
 };
 
-class SdkUpiUriInformation : public serde::Serializer<SdkUpiUriInformation>
+class SdkUpiUriInformation : public core::behavior::Serializer<SdkUpiUriInformation>
 {
 public:
     void set_sdk_uri(std::string value)
@@ -3799,39 +2017,7 @@ public:
     std::string sdk_uri{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class SecretValue : public serde::Serializer<SecretValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class SemanticVersionValue : public serde::Serializer<SemanticVersionValue>
+class SemanticVersionValue : public core::behavior::Serializer<SemanticVersionValue>
 {
 public:
     void set_value(std::string v)
@@ -3867,12 +2053,12 @@ enum class SessionTokensResult
     Failed,
 };
 
-class SkrillData : public serde::Serializer<SkrillData>
+class SkrillData : public core::behavior::Serializer<SkrillData>
 {
 public:
 };
 
-class SofortBilling : public serde::Serializer<SofortBilling>
+class SofortBilling : public core::behavior::Serializer<SofortBilling>
 {
 public:
     void set_billing_country(std::string value)
@@ -3894,7 +2080,7 @@ enum class SortBy
     Desc,
 };
 
-class StandardisedCodeValue : public serde::Serializer<StandardisedCodeValue>
+class StatementDescriptorValue : public core::behavior::Serializer<StatementDescriptorValue>
 {
 public:
     void set_value(std::string v)
@@ -3908,58 +2094,10 @@ public:
     }
 
     std::string value{};
-};
-
-class StatementDescriptorValue : public serde::Serializer<StatementDescriptorValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class StringMajorUnitValue : public serde::Serializer<StringMajorUnitValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class StripeConnectorMetadata : public serde::Serializer<StripeConnectorMetadata>
-{
-public:
-    void set_error_on_requires_action(std::optional<bool> value)
-    {
-        error_on_requires_action = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_error_on_requires_action() const noexcept
-    {
-        return error_on_requires_action;
-    }
-
-    std::optional<bool> error_on_requires_action{};
 };
 
 class SurchargeCalculationOverrideValue :
-    public serde::Serializer<SurchargeCalculationOverrideValue>
+    public core::behavior::Serializer<SurchargeCalculationOverrideValue>
 {
 public:
     void set_value(std::string v)
@@ -3975,7 +2113,7 @@ public:
     std::string value{};
 };
 
-class SurchargeDetailsResponseValue : public serde::Serializer<SurchargeDetailsResponseValue>
+class SurchargeErrorDetailsValue : public core::behavior::Serializer<SurchargeErrorDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -3991,28 +2129,12 @@ public:
     std::string value{};
 };
 
-class SurchargeErrorDetailsValue : public serde::Serializer<SurchargeErrorDetailsValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class SwishQrData : public serde::Serializer<SwishQrData>
+class SwishQrData : public core::behavior::Serializer<SwishQrData>
 {
 public:
 };
 
-class TaxCalculationOverrideValue : public serde::Serializer<TaxCalculationOverrideValue>
+class TaxCalculationOverrideValue : public core::behavior::Serializer<TaxCalculationOverrideValue>
 {
 public:
     void set_value(std::string v)
@@ -4040,7 +2162,7 @@ enum class ThreeDsMethodData
     AcsThreeDsMethodData,
 };
 
-class TimeRangeValue : public serde::Serializer<TimeRangeValue>
+class TimeRangeValue : public core::behavior::Serializer<TimeRangeValue>
 {
 public:
     void set_value(std::string v)
@@ -4056,7 +2178,7 @@ public:
     std::string value{};
 };
 
-class TokenizationValue : public serde::Serializer<TokenizationValue>
+class TokenizationValue : public core::behavior::Serializer<TokenizationValue>
 {
 public:
     void set_value(std::string v)
@@ -4072,12 +2194,7 @@ public:
     std::string value{};
 };
 
-class TouchNGoRedirection : public serde::Serializer<TouchNGoRedirection>
-{
-public:
-};
-
-class TransactionStatusValue : public serde::Serializer<TransactionStatusValue>
+class TransactionStatusValue : public core::behavior::Serializer<TransactionStatusValue>
 {
 public:
     void set_value(std::string v)
@@ -4093,23 +2210,7 @@ public:
     std::string value{};
 };
 
-class TriggeredByValue : public serde::Serializer<TriggeredByValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class UpiAdditionalDataValue : public serde::Serializer<UpiAdditionalDataValue>
+class UpiAdditionalDataValue : public core::behavior::Serializer<UpiAdditionalDataValue>
 {
 public:
     void set_value(std::string v)
@@ -4142,7 +2243,7 @@ enum class UpiSource
     UpiVoucher,
 };
 
-class UrlDetails : public serde::Serializer<UrlDetails>
+class UrlDetails : public core::behavior::Serializer<UrlDetails>
 {
 public:
     void set_url(std::string value)
@@ -4169,21 +2270,6 @@ public:
     std::string method{};
 };
 
-class UrlValue : public serde::Serializer<UrlValue>
-{
-public:
-    void set_value(std::string v)
-    {
-        value = std::move(v);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
 
 enum class VaultDetailsResponse
 {
@@ -4223,71 +2309,12 @@ enum class WalletResponseData
     Paypal,
 };
 
-class WeChatPay : public serde::Serializer<WeChatPay>
+class WeChatPay : public core::behavior::Serializer<WeChatPay>
 {
 public:
 };
 
-class WeChatPayQr : public serde::Serializer<WeChatPayQr>
-{
-public:
-};
-
-class WeChatPayRedirection : public serde::Serializer<WeChatPayRedirection>
-{
-public:
-};
-
-enum class WorldpayxmlFundingTransactionType
-{
-    CreditCardBillRepayment,
-    GiftCardPurchase,
-    GiftCardPurchaseForAnother,
-    NonReloadablePrepaidCard,
-    ReloadablePrepaidCardOrAccount,
-    GamingChipsPurchase,
-    GamingStoredValueWallet,
-    GamingStagedDigitalWallet,
-    LiquidAndCryptoAssetsPurchase,
-    LiquidAndCryptoStoredValueWalletLoad,
-    StoredValueDigitalWalletLoad,
-    StoredValueDigitalWalletLoadNonSecurities,
-    SecuritiesStoredValueDigitalWalletLoad,
-    SecuritiesStagedDigitalWalletLoad,
-    SingleMerchantWalletLoad,
-    DebitCardLoad,
-    TransferToOwnDebitAccount,
-    FundsTransferMeToMe,
-    AccountToAccount,
-    BackToBackP2pWithoutWallet,
-    BackToBackP2pWithWallet,
-    AgentCashOut,
-    StagedDigitalWalletLoad,
-    StagedDigitalWalletPurchase,
-    BackToBackCardPurchase,
-    PayrollDisbursementFunding,
-    BusinessToConsumerDisbursement,
-    BusinessToBusinessInvoicePayment,
-};
-
-enum class WorldpayxmlPaymentPurpose
-{
-    FamilySupport,
-    RegularLabourTransfers,
-    TravelAndTourism,
-    Education,
-    HospitalisationAndMedicalTreatment,
-    EmergencyNeed,
-    Savings,
-    Gifts,
-    Other,
-    Salary,
-    CrowdLending,
-    CryptoCurrency,
-    HighRiskSecurities,
-};
-
-class AchBillingDetails : public serde::Serializer<AchBillingDetails>
+class AchBillingDetails : public core::behavior::Serializer<AchBillingDetails>
 {
 public:
     void set_email(std::optional<EmailValue> value)
@@ -4303,7 +2330,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class AchTransfer : public serde::Serializer<AchTransfer>
+class AchTransfer : public core::behavior::Serializer<AchTransfer>
 {
 public:
     void set_account_number(SecretValue value)
@@ -4352,232 +2379,7 @@ public:
     SecretValue swift_code{};
 };
 
-class AdditionalCardInfo : public serde::Serializer<AdditionalCardInfo>
-{
-public:
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_subtype(std::optional<std::string> value)
-    {
-        card_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_subtype() const noexcept
-    {
-        return card_subtype;
-    }
-
-    void set_card_segment_type(std::optional<CardSegmentTypeValue> value)
-    {
-        card_segment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardSegmentTypeValue>& get_card_segment_type() const noexcept
-    {
-        return card_segment_type;
-    }
-
-    void set_funding_source(std::optional<FundingSourceValue> value)
-    {
-        funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FundingSourceValue>& get_funding_source() const noexcept
-    {
-        return funding_source;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_card_issuing_country_code(std::optional<std::string> value)
-    {
-        card_issuing_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country_code() const noexcept
-    {
-        return card_issuing_country_code;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_last4(std::optional<std::string> value)
-    {
-        last4 = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_last4() const noexcept
-    {
-        return last4;
-    }
-
-    void set_card_isin(std::optional<std::string> value)
-    {
-        card_isin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_isin() const noexcept
-    {
-        return card_isin;
-    }
-
-    void set_card_extended_bin(std::optional<std::string> value)
-    {
-        card_extended_bin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_extended_bin() const noexcept
-    {
-        return card_extended_bin;
-    }
-
-    void set_card_exp_month(std::optional<SecretValue> value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(std::optional<SecretValue> value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_payment_checks(std::optional<serde::Value> value)
-    {
-        payment_checks = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<serde::Value>& get_payment_checks() const noexcept
-    {
-        return payment_checks;
-    }
-
-    void set_authentication_data(std::optional<serde::Value> value)
-    {
-        authentication_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<serde::Value>& get_authentication_data() const noexcept
-    {
-        return authentication_data;
-    }
-
-    void set_is_regulated(std::optional<bool> value)
-    {
-        is_regulated = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_is_regulated() const noexcept
-    {
-        return is_regulated;
-    }
-
-    void set_signature_network(std::optional<CardNetworkValue> value)
-    {
-        signature_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_signature_network() const noexcept
-    {
-        return signature_network;
-    }
-
-    void set_auth_code(std::optional<std::string> value)
-    {
-        auth_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_auth_code() const noexcept
-    {
-        return auth_code;
-    }
-
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_subtype{};
-    std::optional<CardSegmentTypeValue> card_segment_type{};
-    std::optional<FundingSourceValue> funding_source{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> card_issuing_country_code{};
-    std::optional<std::string> bank_code{};
-    std::optional<std::string> last4{};
-    std::optional<std::string> card_isin{};
-    std::optional<std::string> card_extended_bin{};
-    std::optional<SecretValue> card_exp_month{};
-    std::optional<SecretValue> card_exp_year{};
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<serde::Value> payment_checks{};
-    std::optional<serde::Value> authentication_data{};
-    std::optional<bool> is_regulated{};
-    std::optional<CardNetworkValue> signature_network{};
-    std::optional<std::string> auth_code{};
-};
-
-class AdditionalNetworkTokenInfo : public serde::Serializer<AdditionalNetworkTokenInfo>
+class AdditionalNetworkTokenInfo : public core::behavior::Serializer<AdditionalNetworkTokenInfo>
 {
 public:
     void set_card_issuer(std::optional<std::string> value)
@@ -4703,138 +2505,7 @@ public:
     std::optional<SecretValue> par{};
 };
 
-class AddressDetails : public serde::Serializer<AddressDetails>
-{
-public:
-    void set_city(std::optional<std::string> value)
-    {
-        city = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_city() const noexcept
-    {
-        return city;
-    }
-
-    void set_country(std::optional<CountryAlpha2Value> value)
-    {
-        country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>& get_country() const noexcept
-    {
-        return country;
-    }
-
-    void set_line1(std::optional<SecretValue> value)
-    {
-        line1 = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_line1() const noexcept
-    {
-        return line1;
-    }
-
-    void set_line2(std::optional<SecretValue> value)
-    {
-        line2 = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_line2() const noexcept
-    {
-        return line2;
-    }
-
-    void set_line3(std::optional<SecretValue> value)
-    {
-        line3 = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_line3() const noexcept
-    {
-        return line3;
-    }
-
-    void set_zip(std::optional<SecretValue> value)
-    {
-        zip = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_zip() const noexcept
-    {
-        return zip;
-    }
-
-    void set_state(std::optional<SecretValue> value)
-    {
-        state = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_state() const noexcept
-    {
-        return state;
-    }
-
-    void set_first_name(std::optional<SecretValue> value)
-    {
-        first_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_first_name() const noexcept
-    {
-        return first_name;
-    }
-
-    void set_last_name(std::optional<SecretValue> value)
-    {
-        last_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_last_name() const noexcept
-    {
-        return last_name;
-    }
-
-    void set_origin_zip(std::optional<SecretValue> value)
-    {
-        origin_zip = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_origin_zip() const noexcept
-    {
-        return origin_zip;
-    }
-
-    std::optional<std::string> city{};
-    std::optional<CountryAlpha2Value> country{};
-    std::optional<SecretValue> line1{};
-    std::optional<SecretValue> line2{};
-    std::optional<SecretValue> line3{};
-    std::optional<SecretValue> zip{};
-    std::optional<SecretValue> state{};
-    std::optional<SecretValue> first_name{};
-    std::optional<SecretValue> last_name{};
-    std::optional<SecretValue> origin_zip{};
-};
-
-class AdyenTestingData : public serde::Serializer<AdyenTestingData>
-{
-public:
-    void set_holder_name(std::optional<SecretValue> value)
-    {
-        holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_holder_name() const noexcept
-    {
-        return holder_name;
-    }
-
-    std::optional<SecretValue> holder_name{};
-};
-
-class AlfamartVoucherData : public serde::Serializer<AlfamartVoucherData>
+class AlfamartVoucherData : public core::behavior::Serializer<AlfamartVoucherData>
 {
 public:
     void set_first_name(std::optional<SecretValue> value)
@@ -4872,61 +2543,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class AmazonPayDeliveryPrice : public serde::Serializer<AmazonPayDeliveryPrice>
-{
-public:
-    void set_amount(MinorUnitValue value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const MinorUnitValue& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    void set_display_amount(StringMajorUnitValue value)
-    {
-        display_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_display_amount() const noexcept
-    {
-        return display_amount;
-    }
-
-    void set_currency_code(CurrencyValue value)
-    {
-        currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency_code() const noexcept
-    {
-        return currency_code;
-    }
-
-    MinorUnitValue amount{};
-    StringMajorUnitValue display_amount{};
-    CurrencyValue currency_code{};
-};
-
-class AmazonPaySessionTokenData : public serde::Serializer<AmazonPaySessionTokenData>
-{
-public:
-    void set_data(AmazonPayMerchantCredentials value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const AmazonPayMerchantCredentials& get_data() const noexcept
-    {
-        return data;
-    }
-
-    AmazonPayMerchantCredentials data{};
-};
-
-class AmountDetails : public serde::Serializer<AmountDetails>
+class AmountDetails : public core::behavior::Serializer<AmountDetails>
 {
 public:
     void set_order_amount(Amount value)
@@ -5021,7 +2638,7 @@ public:
     std::optional<MinorUnitValue> tax_on_surcharge{};
 };
 
-class AmountDetailsResponse : public serde::Serializer<AmountDetailsResponse>
+class AmountDetailsResponse : public core::behavior::Serializer<AmountDetailsResponse>
 {
 public:
     void set_order_amount(MinorUnitValue value)
@@ -5126,7 +2743,7 @@ public:
     std::optional<MinorUnitValue> amount_captured{};
 };
 
-class AmountDetailsSetter : public serde::Serializer<AmountDetailsSetter>
+class AmountDetailsSetter : public core::behavior::Serializer<AmountDetailsSetter>
 {
 public:
     void set_order_amount(Amount value)
@@ -5221,7 +2838,7 @@ public:
     std::optional<MinorUnitValue> tax_on_surcharge{};
 };
 
-class AmountDetailsUpdate : public serde::Serializer<AmountDetailsUpdate>
+class AmountDetailsUpdate : public core::behavior::Serializer<AmountDetailsUpdate>
 {
 public:
     void set_order_amount(std::optional<Amount> value)
@@ -5316,45 +2933,7 @@ public:
     std::optional<MinorUnitValue> tax_on_surcharge{};
 };
 
-class AmountInfo : public serde::Serializer<AmountInfo>
-{
-public:
-    void set_label(std::string value)
-    {
-        label = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_label() const noexcept
-    {
-        return label;
-    }
-
-    void set_total_type(std::optional<std::string> value)
-    {
-        total_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_total_type() const noexcept
-    {
-        return total_type;
-    }
-
-    void set_amount(StringMajorUnitValue value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    std::string label{};
-    std::optional<std::string> total_type{};
-    StringMajorUnitValue amount{};
-};
-
-class ApiNetworkErrorDetails : public serde::Serializer<ApiNetworkErrorDetails>
+class ApiNetworkErrorDetails : public core::behavior::Serializer<ApiNetworkErrorDetails>
 {
 public:
     void set_name(std::optional<CardNetworkValue> value)
@@ -5392,7 +2971,7 @@ public:
     std::optional<std::string> advice_message{};
 };
 
-class ApiUnifiedErrorDetails : public serde::Serializer<ApiUnifiedErrorDetails>
+class ApiUnifiedErrorDetails : public core::behavior::Serializer<ApiUnifiedErrorDetails>
 {
 public:
     void set_category(std::optional<std::string> value)
@@ -5464,402 +3043,7 @@ public:
     std::optional<RecommendedActionValue> recommended_action{};
 };
 
-class ApplePayBillingContactFields : public serde::Serializer<ApplePayBillingContactFields>
-{
-public:
-    void set_value(std::vector<ApplePayAddressParameters> value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<ApplePayAddressParameters>& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::vector<ApplePayAddressParameters> value{};
-};
-
-class ApplePayCombinedWrapper : public serde::Serializer<ApplePayCombinedWrapper>
-{
-public:
-    void set_data(std::optional<ApplePayCombinedMetadata> value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayCombinedMetadata>& get_data() const noexcept
-    {
-        return data;
-    }
-
-    void set_support_predecrypted_token(std::optional<bool> value)
-    {
-        support_predecrypted_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_support_predecrypted_token() const noexcept
-    {
-        return support_predecrypted_token;
-    }
-
-    std::optional<ApplePayCombinedMetadata> data{};
-    std::optional<bool> support_predecrypted_token{};
-};
-
-class ApplePayRegularBillingDetails : public serde::Serializer<ApplePayRegularBillingDetails>
-{
-public:
-    void set_label(std::string value)
-    {
-        label = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_label() const noexcept
-    {
-        return label;
-    }
-
-    void set_recurring_payment_start_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        recurring_payment_start_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_recurring_payment_start_date() const noexcept
-    {
-        return recurring_payment_start_date;
-    }
-
-    void set_recurring_payment_end_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        recurring_payment_end_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_recurring_payment_end_date() const noexcept
-    {
-        return recurring_payment_end_date;
-    }
-
-    void set_recurring_payment_interval_unit(std::optional<RecurringPaymentIntervalUnit> value)
-    {
-        recurring_payment_interval_unit = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<RecurringPaymentIntervalUnit>&
-    get_recurring_payment_interval_unit() const noexcept
-    {
-        return recurring_payment_interval_unit;
-    }
-
-    void set_recurring_payment_interval_count(std::optional<std::int32_t> value)
-    {
-        recurring_payment_interval_count = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int32_t>&
-    get_recurring_payment_interval_count() const noexcept
-    {
-        return recurring_payment_interval_count;
-    }
-
-    std::string label{};
-    std::optional<PrimitiveDateTimeValue> recurring_payment_start_date{};
-    std::optional<PrimitiveDateTimeValue> recurring_payment_end_date{};
-    std::optional<RecurringPaymentIntervalUnit> recurring_payment_interval_unit{};
-    std::optional<std::int32_t> recurring_payment_interval_count{};
-};
-
-class ApplePayRegularBillingRequest : public serde::Serializer<ApplePayRegularBillingRequest>
-{
-public:
-    void set_amount(StringMajorUnitValue value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    void set_label(std::string value)
-    {
-        label = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_label() const noexcept
-    {
-        return label;
-    }
-
-    void set_payment_timing(ApplePayPaymentTiming value)
-    {
-        payment_timing = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayPaymentTiming& get_payment_timing() const noexcept
-    {
-        return payment_timing;
-    }
-
-    void set_recurring_payment_start_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        recurring_payment_start_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_recurring_payment_start_date() const noexcept
-    {
-        return recurring_payment_start_date;
-    }
-
-    void set_recurring_payment_end_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        recurring_payment_end_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_recurring_payment_end_date() const noexcept
-    {
-        return recurring_payment_end_date;
-    }
-
-    void set_recurring_payment_interval_unit(std::optional<RecurringPaymentIntervalUnit> value)
-    {
-        recurring_payment_interval_unit = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<RecurringPaymentIntervalUnit>&
-    get_recurring_payment_interval_unit() const noexcept
-    {
-        return recurring_payment_interval_unit;
-    }
-
-    void set_recurring_payment_interval_count(std::optional<std::int32_t> value)
-    {
-        recurring_payment_interval_count = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int32_t>&
-    get_recurring_payment_interval_count() const noexcept
-    {
-        return recurring_payment_interval_count;
-    }
-
-    StringMajorUnitValue amount{};
-    std::string label{};
-    ApplePayPaymentTiming payment_timing{};
-    std::optional<PrimitiveDateTimeValue> recurring_payment_start_date{};
-    std::optional<PrimitiveDateTimeValue> recurring_payment_end_date{};
-    std::optional<RecurringPaymentIntervalUnit> recurring_payment_interval_unit{};
-    std::optional<std::int32_t> recurring_payment_interval_count{};
-};
-
-class ApplePayShippingContactFields : public serde::Serializer<ApplePayShippingContactFields>
-{
-public:
-    void set_value(std::vector<ApplePayAddressParameters> value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<ApplePayAddressParameters>& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::vector<ApplePayAddressParameters> value{};
-};
-
-class ApplePayThirdPartySdkData : public serde::Serializer<ApplePayThirdPartySdkData>
-{
-public:
-    void set_token(std::optional<SecretValue> value)
-    {
-        token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_token() const noexcept
-    {
-        return token;
-    }
-
-    std::optional<SecretValue> token{};
-};
-
-class ApplepayPaymentMethod : public serde::Serializer<ApplepayPaymentMethod>
-{
-public:
-    void set_display_name(std::string value)
-    {
-        display_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_display_name() const noexcept
-    {
-        return display_name;
-    }
-
-    void set_network(std::string value)
-    {
-        network = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_network() const noexcept
-    {
-        return network;
-    }
-
-    void set_pm_type(std::string value)
-    {
-        pm_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_pm_type() const noexcept
-    {
-        return pm_type;
-    }
-
-    void set_card_exp_month(std::optional<SecretValue> value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(std::optional<SecretValue> value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_device_pan_bin(std::optional<std::string> value)
-    {
-        device_pan_bin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_device_pan_bin() const noexcept
-    {
-        return device_pan_bin;
-    }
-
-    void set_card_bin(std::optional<std::string> value)
-    {
-        card_bin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_bin() const noexcept
-    {
-        return card_bin;
-    }
-
-    void set_card_type(std::optional<CardTypeValue> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardTypeValue>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_auth_code(std::optional<std::string> value)
-    {
-        auth_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_auth_code() const noexcept
-    {
-        return auth_code;
-    }
-
-    void set_card_subtype(std::optional<std::string> value)
-    {
-        card_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_subtype() const noexcept
-    {
-        return card_subtype;
-    }
-
-    void set_card_segment_type(std::optional<CardSegmentTypeValue> value)
-    {
-        card_segment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardSegmentTypeValue>& get_card_segment_type() const noexcept
-    {
-        return card_segment_type;
-    }
-
-    void set_funding_source(std::optional<FundingSourceValue> value)
-    {
-        funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FundingSourceValue>& get_funding_source() const noexcept
-    {
-        return funding_source;
-    }
-
-    void set_issuer_name(std::optional<std::string> value)
-    {
-        issuer_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_issuer_name() const noexcept
-    {
-        return issuer_name;
-    }
-
-    void set_issuer_country(std::optional<CountryAlpha2Value> value)
-    {
-        issuer_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>& get_issuer_country() const noexcept
-    {
-        return issuer_country;
-    }
-
-    void set_payment_checks(std::optional<serde::Value> value)
-    {
-        payment_checks = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<serde::Value>& get_payment_checks() const noexcept
-    {
-        return payment_checks;
-    }
-
-    std::string display_name{};
-    std::string network{};
-    std::string pm_type{};
-    std::optional<SecretValue> card_exp_month{};
-    std::optional<SecretValue> card_exp_year{};
-    std::optional<std::string> device_pan_bin{};
-    std::optional<std::string> card_bin{};
-    std::optional<CardTypeValue> card_type{};
-    std::optional<std::string> auth_code{};
-    std::optional<std::string> card_subtype{};
-    std::optional<CardSegmentTypeValue> card_segment_type{};
-    std::optional<FundingSourceValue> funding_source{};
-    std::optional<std::string> issuer_name{};
-    std::optional<CountryAlpha2Value> issuer_country{};
-    std::optional<serde::Value> payment_checks{};
-};
-
-class AppliedOffer : public serde::Serializer<AppliedOffer>
+class AppliedOffer : public core::behavior::Serializer<AppliedOffer>
 {
 public:
     void set_offer_engine_merchant_id(std::string value)
@@ -5919,64 +3103,8 @@ public:
     CurrencyValue currency{};
 };
 
-class ApplyPaymentMethodDataRequest : public serde::Serializer<ApplyPaymentMethodDataRequest>
-{
-public:
-    void set_payment_methods(std::vector<BalanceCheckPaymentMethodData> value)
-    {
-        payment_methods = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<BalanceCheckPaymentMethodData>&
-    get_payment_methods() const noexcept
-    {
-        return payment_methods;
-    }
-
-    std::vector<BalanceCheckPaymentMethodData> payment_methods{};
-};
-
-class ApplyPaymentMethodDataSurchargeResponseItem :
-    public serde::Serializer<ApplyPaymentMethodDataSurchargeResponseItem>
-{
-public:
-    void set_payment_method_type(PaymentMethodValue value)
-    {
-        payment_method_type = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodValue& get_payment_method_type() const noexcept
-    {
-        return payment_method_type;
-    }
-
-    void set_payment_method_subtype(PaymentMethodTypeValue value)
-    {
-        payment_method_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodTypeValue& get_payment_method_subtype() const noexcept
-    {
-        return payment_method_subtype;
-    }
-
-    void set_surcharge_details(std::optional<SurchargeDetailsResponseValue> value)
-    {
-        surcharge_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SurchargeDetailsResponseValue>&
-    get_surcharge_details() const noexcept
-    {
-        return surcharge_details;
-    }
-
-    PaymentMethodValue payment_method_type{};
-    PaymentMethodTypeValue payment_method_subtype{};
-    std::optional<SurchargeDetailsResponseValue> surcharge_details{};
-};
-
-class AuthenticationForStartResponse : public serde::Serializer<AuthenticationForStartResponse>
+class AuthenticationForStartResponse :
+    public core::behavior::Serializer<AuthenticationForStartResponse>
 {
 public:
     void set_authentication(UrlDetails value)
@@ -5992,410 +3120,7 @@ public:
     UrlDetails authentication{};
 };
 
-class BHNGiftCardDetails : public serde::Serializer<BHNGiftCardDetails>
-{
-public:
-    void set_account_number(SecretValue value)
-    {
-        account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_number() const noexcept
-    {
-        return account_number;
-    }
-
-    void set_pin(std::optional<SecretValue> value)
-    {
-        pin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_pin() const noexcept
-    {
-        return pin;
-    }
-
-    void set_cvv2(std::optional<SecretValue> value)
-    {
-        cvv2 = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_cvv2() const noexcept
-    {
-        return cvv2;
-    }
-
-    void set_expiration_date(std::optional<std::string> value)
-    {
-        expiration_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_expiration_date() const noexcept
-    {
-        return expiration_date;
-    }
-
-    SecretValue account_number{};
-    std::optional<SecretValue> pin{};
-    std::optional<SecretValue> cvv2{};
-    std::optional<std::string> expiration_date{};
-};
-
-class BacsBankTransferInstructions : public serde::Serializer<BacsBankTransferInstructions>
-{
-public:
-    void set_account_holder_name(SecretValue value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    void set_account_number(SecretValue value)
-    {
-        account_number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_number() const noexcept
-    {
-        return account_number;
-    }
-
-    void set_sort_code(SecretValue value)
-    {
-        sort_code = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_sort_code() const noexcept
-    {
-        return sort_code;
-    }
-
-    SecretValue account_holder_name{};
-    SecretValue account_number{};
-    SecretValue sort_code{};
-};
-
-class BankCodeResponse : public serde::Serializer<BankCodeResponse>
-{
-public:
-    void set_bank_name(std::vector<BankNamesValue> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<BankNamesValue>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_eligible_connectors(std::vector<std::string> value)
-    {
-        eligible_connectors = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_eligible_connectors() const noexcept
-    {
-        return eligible_connectors;
-    }
-
-    std::vector<BankNamesValue> bank_name{};
-    std::vector<std::string> eligible_connectors{};
-};
-
-class BankDebitResponse : public serde::Serializer<BankDebitResponse>
-{
-public:
-    void set_details(std::optional<BankDebitAdditionalDataValue> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankDebitAdditionalDataValue>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    std::optional<BankDebitAdditionalDataValue> details{};
-};
-
-class BankRedirectBilling : public serde::Serializer<BankRedirectBilling>
-{
-public:
-    void set_billing_name(std::optional<SecretValue> value)
-    {
-        billing_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_billing_name() const noexcept
-    {
-        return billing_name;
-    }
-
-    void set_email(std::optional<EmailValue> value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email() const noexcept
-    {
-        return email;
-    }
-
-    std::optional<SecretValue> billing_name{};
-    std::optional<EmailValue> email{};
-};
-
-class BankTransferResponse : public serde::Serializer<BankTransferResponse>
-{
-public:
-    void set_details(std::optional<BankTransferAdditionalDataValue> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankTransferAdditionalDataValue>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    std::optional<BankTransferAdditionalDataValue> details{};
-};
-
-class BeneficiaryDetails : public serde::Serializer<BeneficiaryDetails>
-{
-public:
-    void set_name(std::optional<std::string> value)
-    {
-        name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_name() const noexcept
-    {
-        return name;
-    }
-
-    void set_document_number(std::optional<std::string> value)
-    {
-        document_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_document_number() const noexcept
-    {
-        return document_number;
-    }
-
-    void set_document_type(std::optional<DocumentKindValue> value)
-    {
-        document_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<DocumentKindValue>& get_document_type() const noexcept
-    {
-        return document_type;
-    }
-
-    std::optional<std::string> name{};
-    std::optional<std::string> document_number{};
-    std::optional<DocumentKindValue> document_type{};
-};
-
-class BillingConnectorAdditionalCardInfo :
-    public serde::Serializer<BillingConnectorAdditionalCardInfo>
-{
-public:
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_card_isin(std::optional<std::string> value)
-    {
-        card_isin = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_isin() const noexcept
-    {
-        return card_isin;
-    }
-
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_issuer{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> card_isin{};
-};
-
-class BoletoVoucherData : public serde::Serializer<BoletoVoucherData>
-{
-public:
-    void set_social_security_number(std::optional<SecretValue> value)
-    {
-        social_security_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_social_security_number() const noexcept
-    {
-        return social_security_number;
-    }
-
-    void set_bank_number(std::optional<SecretValue> value)
-    {
-        bank_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_bank_number() const noexcept
-    {
-        return bank_number;
-    }
-
-    void set_document_type(std::optional<DocumentKindValue> value)
-    {
-        document_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<DocumentKindValue>& get_document_type() const noexcept
-    {
-        return document_type;
-    }
-
-    void set_fine_percentage(std::optional<std::string> value)
-    {
-        fine_percentage = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_fine_percentage() const noexcept
-    {
-        return fine_percentage;
-    }
-
-    void set_fine_quantity_days(std::optional<std::string> value)
-    {
-        fine_quantity_days = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_fine_quantity_days() const noexcept
-    {
-        return fine_quantity_days;
-    }
-
-    void set_interest_percentage(std::optional<std::string> value)
-    {
-        interest_percentage = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_interest_percentage() const noexcept
-    {
-        return interest_percentage;
-    }
-
-    void set_write_off_quantity_days(std::optional<std::string> value)
-    {
-        write_off_quantity_days = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_write_off_quantity_days() const noexcept
-    {
-        return write_off_quantity_days;
-    }
-
-    void set_messages(std::optional<std::vector<std::string>> value)
-    {
-        messages = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::vector<std::string>>& get_messages() const noexcept
-    {
-        return messages;
-    }
-
-    void set_due_date(std::optional<std::string> value)
-    {
-        due_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_due_date() const noexcept
-    {
-        return due_date;
-    }
-
-    std::optional<SecretValue> social_security_number{};
-    std::optional<SecretValue> bank_number{};
-    std::optional<DocumentKindValue> document_type{};
-    std::optional<std::string> fine_percentage{};
-    std::optional<std::string> fine_quantity_days{};
-    std::optional<std::string> interest_percentage{};
-    std::optional<std::string> write_off_quantity_days{};
-    std::optional<std::vector<std::string>> messages{};
-    std::optional<std::string> due_date{};
-};
-
-class BraintreeData : public serde::Serializer<BraintreeData>
-{
-public:
-    void set_merchant_account_id(std::optional<SecretValue> value)
-    {
-        merchant_account_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_merchant_account_id() const noexcept
-    {
-        return merchant_account_id;
-    }
-
-    void set_merchant_config_currency(std::optional<CurrencyValue> value)
-    {
-        merchant_config_currency = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CurrencyValue>& get_merchant_config_currency() const noexcept
-    {
-        return merchant_config_currency;
-    }
-
-    std::optional<SecretValue> merchant_account_id{};
-    std::optional<CurrencyValue> merchant_config_currency{};
-};
-
-class BrowserInformation : public serde::Serializer<BrowserInformation>
+class BrowserInformation : public core::behavior::Serializer<BrowserInformation>
 {
 public:
     void set_color_depth(std::optional<std::uint8_t> value)
@@ -6565,7 +3290,7 @@ public:
     std::optional<std::string> referer{};
 };
 
-class CaptureResponse : public serde::Serializer<CaptureResponse>
+class CaptureResponse : public core::behavior::Serializer<CaptureResponse>
 {
 public:
     void set_capture_id(std::string value)
@@ -6702,193 +3427,7 @@ public:
     std::optional<std::string> reference_id{};
 };
 
-class Card : public serde::Serializer<Card>
-{
-public:
-    void set_card_number(CardNumberValue value)
-    {
-        card_number = std::move(value);
-    }
-
-    [[nodiscard]] const CardNumberValue& get_card_number() const noexcept
-    {
-        return card_number;
-    }
-
-    void set_card_exp_month(SecretValue value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(SecretValue value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_cvc(SecretValue value)
-    {
-        card_cvc = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_cvc() const noexcept
-    {
-        return card_cvc;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_subtype(std::optional<std::string> value)
-    {
-        card_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_subtype() const noexcept
-    {
-        return card_subtype;
-    }
-
-    void set_card_segment_type(std::optional<CardSegmentTypeValue> value)
-    {
-        card_segment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardSegmentTypeValue>& get_card_segment_type() const noexcept
-    {
-        return card_segment_type;
-    }
-
-    void set_funding_source(std::optional<FundingSourceValue> value)
-    {
-        funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FundingSourceValue>& get_funding_source() const noexcept
-    {
-        return funding_source;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_card_issuing_country_code(std::optional<std::string> value)
-    {
-        card_issuing_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country_code() const noexcept
-    {
-        return card_issuing_country_code;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_nick_name(std::optional<SecretValue> value)
-    {
-        nick_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_nick_name() const noexcept
-    {
-        return nick_name;
-    }
-
-    CardNumberValue card_number{};
-    SecretValue card_exp_month{};
-    SecretValue card_exp_year{};
-    std::optional<SecretValue> card_holder_name{};
-    SecretValue card_cvc{};
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_subtype{};
-    std::optional<CardSegmentTypeValue> card_segment_type{};
-    std::optional<FundingSourceValue> funding_source{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> card_issuing_country_code{};
-    std::optional<std::string> bank_code{};
-    std::optional<SecretValue> nick_name{};
-};
-
-class CardRedirectResponse : public serde::Serializer<CardRedirectResponse>
-{
-public:
-    void set_details(std::optional<CardRedirectData> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardRedirectData>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    std::optional<CardRedirectData> details{};
-};
-
-class CardResponse : public serde::Serializer<CardResponse>
+class CardResponse : public core::behavior::Serializer<CardResponse>
 {
 public:
     void set_last4(std::optional<std::string> value)
@@ -7069,220 +3608,7 @@ public:
     std::optional<std::string> auth_code{};
 };
 
-class CardToken : public serde::Serializer<CardToken>
-{
-public:
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_cvc(std::optional<SecretValue> value)
-    {
-        card_cvc = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_cvc() const noexcept
-    {
-        return card_cvc;
-    }
-
-    void set_card_cvc_token(std::optional<SecretValue> value)
-    {
-        card_cvc_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_cvc_token() const noexcept
-    {
-        return card_cvc_token;
-    }
-
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<SecretValue> card_cvc{};
-    std::optional<SecretValue> card_cvc_token{};
-};
-
-class CardTokenResponse : public serde::Serializer<CardTokenResponse>
-{
-public:
-    void set_details(std::optional<CardTokenAdditionalDataValue> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardTokenAdditionalDataValue>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    std::optional<CardTokenAdditionalDataValue> details{};
-};
-
-class CardWithNoCVC : public serde::Serializer<CardWithNoCVC>
-{
-public:
-    void set_card_number(CardNumberValue value)
-    {
-        card_number = std::move(value);
-    }
-
-    [[nodiscard]] const CardNumberValue& get_card_number() const noexcept
-    {
-        return card_number;
-    }
-
-    void set_card_exp_month(SecretValue value)
-    {
-        card_exp_month = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_exp_month() const noexcept
-    {
-        return card_exp_month;
-    }
-
-    void set_card_exp_year(SecretValue value)
-    {
-        card_exp_year = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_exp_year() const noexcept
-    {
-        return card_exp_year;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_issuer(std::optional<std::string> value)
-    {
-        card_issuer = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuer() const noexcept
-    {
-        return card_issuer;
-    }
-
-    void set_card_network(std::optional<CardNetworkValue> value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardNetworkValue>& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_type(std::optional<std::string> value)
-    {
-        card_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_type() const noexcept
-    {
-        return card_type;
-    }
-
-    void set_card_subtype(std::optional<std::string> value)
-    {
-        card_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_subtype() const noexcept
-    {
-        return card_subtype;
-    }
-
-    void set_card_segment_type(std::optional<CardSegmentTypeValue> value)
-    {
-        card_segment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CardSegmentTypeValue>& get_card_segment_type() const noexcept
-    {
-        return card_segment_type;
-    }
-
-    void set_funding_source(std::optional<FundingSourceValue> value)
-    {
-        funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FundingSourceValue>& get_funding_source() const noexcept
-    {
-        return funding_source;
-    }
-
-    void set_card_issuing_country(std::optional<std::string> value)
-    {
-        card_issuing_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country() const noexcept
-    {
-        return card_issuing_country;
-    }
-
-    void set_card_issuing_country_code(std::optional<std::string> value)
-    {
-        card_issuing_country_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_card_issuing_country_code() const noexcept
-    {
-        return card_issuing_country_code;
-    }
-
-    void set_bank_code(std::optional<std::string> value)
-    {
-        bank_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_bank_code() const noexcept
-    {
-        return bank_code;
-    }
-
-    void set_nick_name(std::optional<SecretValue> value)
-    {
-        nick_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_nick_name() const noexcept
-    {
-        return nick_name;
-    }
-
-    CardNumberValue card_number{};
-    SecretValue card_exp_month{};
-    SecretValue card_exp_year{};
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<std::string> card_issuer{};
-    std::optional<CardNetworkValue> card_network{};
-    std::optional<std::string> card_type{};
-    std::optional<std::string> card_subtype{};
-    std::optional<CardSegmentTypeValue> card_segment_type{};
-    std::optional<FundingSourceValue> funding_source{};
-    std::optional<std::string> card_issuing_country{};
-    std::optional<std::string> card_issuing_country_code{};
-    std::optional<std::string> bank_code{};
-    std::optional<SecretValue> nick_name{};
-};
-
-class CartesBancairesParams : public serde::Serializer<CartesBancairesParams>
+class CartesBancairesParams : public core::behavior::Serializer<CartesBancairesParams>
 {
 public:
     void set_cavv_algorithm(CavvAlgorithmValue value)
@@ -7320,7 +3646,7 @@ public:
     std::int32_t cb_score{};
 };
 
-class ClickToPaySessionResponse : public serde::Serializer<ClickToPaySessionResponse>
+class ClickToPaySessionResponse : public core::behavior::Serializer<ClickToPaySessionResponse>
 {
 public:
     void set_dpa_id(std::string value)
@@ -7490,34 +3816,7 @@ public:
     std::optional<std::string> dpa_client_id{};
 };
 
-class ConnectorCode : public serde::Serializer<ConnectorCode>
-{
-public:
-    void set_connector(ConnectorValue value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_code(std::string value)
-    {
-        code = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_code() const noexcept
-    {
-        return code;
-    }
-
-    ConnectorValue connector{};
-    std::string code{};
-};
-
-class CryptoResponse : public serde::Serializer<CryptoResponse>
+class CryptoResponse : public core::behavior::Serializer<CryptoResponse>
 {
 public:
     void set_details(std::optional<CryptoData> value)
@@ -7533,7 +3832,7 @@ public:
     std::optional<CryptoData> details{};
 };
 
-class CtpServiceDetails : public serde::Serializer<CtpServiceDetails>
+class CtpServiceDetails : public core::behavior::Serializer<CtpServiceDetails>
 {
 public:
     void set_merchant_transaction_id(std::optional<std::string> value)
@@ -7593,7 +3892,7 @@ public:
     std::optional<SecretValue> encrypted_payload{};
 };
 
-class CustomerDetails : public serde::Serializer<CustomerDetails>
+class CustomerDetails : public core::behavior::Serializer<CustomerDetails>
 {
 public:
     void set_id(std::optional<CustomerIdValue> value)
@@ -7687,7 +3986,7 @@ public:
     std::optional<SecretValue> date_of_birth{};
 };
 
-class CustomerDetailsResponse : public serde::Serializer<CustomerDetailsResponse>
+class CustomerDetailsResponse : public core::behavior::Serializer<CustomerDetailsResponse>
 {
 public:
     void set_id(std::optional<CustomerIdValue> value)
@@ -7759,7 +4058,7 @@ public:
     std::optional<CustomerDocumentDetailsValue> customer_document_details{};
 };
 
-class DDCData : public serde::Serializer<DDCData>
+class DDCData : public core::behavior::Serializer<DDCData>
 {
 public:
     void set_iframe_url(UrlValue value)
@@ -7786,34 +4085,7 @@ public:
     std::optional<std::int32_t> timeout_ms{};
 };
 
-class DiscountTier : public serde::Serializer<DiscountTier>
-{
-public:
-    void set_amount(std::optional<StringMajorUnitValue> value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StringMajorUnitValue>& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    void set_end_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        end_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_end_date() const noexcept
-    {
-        return end_date;
-    }
-
-    std::optional<StringMajorUnitValue> amount{};
-    std::optional<PrimitiveDateTimeValue> end_date{};
-};
-
-class DisplayAmountOnSdk : public serde::Serializer<DisplayAmountOnSdk>
+class DisplayAmountOnSdk : public core::behavior::Serializer<DisplayAmountOnSdk>
 {
 public:
     void set_net_amount(StringMajorUnitValue value)
@@ -7851,7 +4123,7 @@ public:
     std::optional<StringMajorUnitValue> shipping_cost{};
 };
 
-class DocumentDetails : public serde::Serializer<DocumentDetails>
+class DocumentDetails : public core::behavior::Serializer<DocumentDetails>
 {
 public:
     void set_document_type(DocumentKindValue value)
@@ -7878,45 +4150,7 @@ public:
     SecretValue document_number{};
 };
 
-class DokuBankTransferInstructions : public serde::Serializer<DokuBankTransferInstructions>
-{
-public:
-    void set_expires_at(std::optional<std::int64_t> value)
-    {
-        expires_at = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int64_t>& get_expires_at() const noexcept
-    {
-        return expires_at;
-    }
-
-    void set_reference(SecretValue value)
-    {
-        reference = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_reference() const noexcept
-    {
-        return reference;
-    }
-
-    void set_instructions_url(std::optional<UrlValue> value)
-    {
-        instructions_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<UrlValue>& get_instructions_url() const noexcept
-    {
-        return instructions_url;
-    }
-
-    std::optional<std::int64_t> expires_at{};
-    SecretValue reference{};
-    std::optional<UrlValue> instructions_url{};
-};
-
-class DokuBillingDetails : public serde::Serializer<DokuBillingDetails>
+class DokuBillingDetails : public core::behavior::Serializer<DokuBillingDetails>
 {
 public:
     void set_first_name(std::optional<SecretValue> value)
@@ -7954,7 +4188,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class EligibilityAmountDetails : public serde::Serializer<EligibilityAmountDetails>
+class EligibilityAmountDetails : public core::behavior::Serializer<EligibilityAmountDetails>
 {
 public:
     void set_total_amount(MinorUnitValue value)
@@ -7992,35 +4226,7 @@ public:
     CurrencyValue currency{};
 };
 
-class EligibilityBalanceCheckResponseItem :
-    public serde::Serializer<EligibilityBalanceCheckResponseItem>
-{
-public:
-    void set_payment_method_data(BalanceCheckPaymentMethodData value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const BalanceCheckPaymentMethodData& get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_eligibility(PMBalanceCheckEligibilityResponse value)
-    {
-        eligibility = std::move(value);
-    }
-
-    [[nodiscard]] const PMBalanceCheckEligibilityResponse& get_eligibility() const noexcept
-    {
-        return eligibility;
-    }
-
-    BalanceCheckPaymentMethodData payment_method_data{};
-    PMBalanceCheckEligibilityResponse eligibility{};
-};
-
-class EligibilityCard : public serde::Serializer<EligibilityCard>
+class EligibilityCard : public core::behavior::Serializer<EligibilityCard>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -8157,7 +4363,7 @@ public:
     std::optional<SecretValue> nick_name{};
 };
 
-class EligibilityCardBin : public serde::Serializer<EligibilityCardBin>
+class EligibilityCardBin : public core::behavior::Serializer<EligibilityCardBin>
 {
 public:
     void set_card_bin(CardBinValue value)
@@ -8173,7 +4379,7 @@ public:
     CardBinValue card_bin{};
 };
 
-class EligibleOffer : public serde::Serializer<EligibleOffer>
+class EligibleOffer : public core::behavior::Serializer<EligibleOffer>
 {
 public:
     void set_offer_quote_id(std::string value)
@@ -8244,7 +4450,7 @@ public:
     std::optional<std::string> description{};
 };
 
-class EncryptableAddressDetails : public serde::Serializer<EncryptableAddressDetails>
+class EncryptableAddressDetails : public core::behavior::Serializer<EncryptableAddressDetails>
 {
 public:
     void set_line1(OptionalEncryptableSecretStringValue value)
@@ -8348,7 +4554,7 @@ public:
     OptionalEncryptableEmailValue email{};
 };
 
-class ExtendedCardInfo : public serde::Serializer<ExtendedCardInfo>
+class ExtendedCardInfo : public core::behavior::Serializer<ExtendedCardInfo>
 {
 public:
     void set_card_number(CardNumberValue value)
@@ -8464,7 +4670,7 @@ public:
 };
 
 class ExternalAuthenticationDetailsResponse :
-    public serde::Serializer<ExternalAuthenticationDetailsResponse>
+    public core::behavior::Serializer<ExternalAuthenticationDetailsResponse>
 {
 public:
     void set_authentication_flow(std::optional<DecoupledAuthenticationTypeValue> value)
@@ -8570,23 +4776,7 @@ public:
     std::optional<std::string> trans_status_reason{};
 };
 
-class FetchQrCodeInformation : public serde::Serializer<FetchQrCodeInformation>
-{
-public:
-    void set_qr_code_fetch_url(UrlValue value)
-    {
-        qr_code_fetch_url = std::move(value);
-    }
-
-    [[nodiscard]] const UrlValue& get_qr_code_fetch_url() const noexcept
-    {
-        return qr_code_fetch_url;
-    }
-
-    UrlValue qr_code_fetch_url{};
-};
-
-class FlexibleAmountDetails : public serde::Serializer<FlexibleAmountDetails>
+class FlexibleAmountDetails : public core::behavior::Serializer<FlexibleAmountDetails>
 {
 public:
     void set_min_value(std::optional<StringMajorUnitValue> value)
@@ -8624,346 +4814,8 @@ public:
     std::optional<CalculationType> value_type{};
 };
 
-class GiftCardDetails : public serde::Serializer<GiftCardDetails>
-{
-public:
-    void set_number(SecretValue value)
-    {
-        number = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_number() const noexcept
-    {
-        return number;
-    }
-
-    void set_cvc(SecretValue value)
-    {
-        cvc = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_cvc() const noexcept
-    {
-        return cvc;
-    }
-
-    SecretValue number{};
-    SecretValue cvc{};
-};
-
-class GiftCardResponse : public serde::Serializer<GiftCardResponse>
-{
-public:
-    void set_details(std::optional<GiftCardAdditionalDataValue> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<GiftCardAdditionalDataValue>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    std::optional<GiftCardAdditionalDataValue> details{};
-};
-
-class GooglePayPaymentMethodInfo : public serde::Serializer<GooglePayPaymentMethodInfo>
-{
-public:
-    void set_card_network(std::string value)
-    {
-        card_network = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_network() const noexcept
-    {
-        return card_network;
-    }
-
-    void set_card_details(std::string value)
-    {
-        card_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_details() const noexcept
-    {
-        return card_details;
-    }
-
-    void set_assurance_details(std::optional<GooglePayAssuranceDetails> value)
-    {
-        assurance_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<GooglePayAssuranceDetails>&
-    get_assurance_details() const noexcept
-    {
-        return assurance_details;
-    }
-
-    void set_card_funding_source(std::optional<GooglePayCardFundingSourceValue> value)
-    {
-        card_funding_source = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<GooglePayCardFundingSourceValue>&
-    get_card_funding_source() const noexcept
-    {
-        return card_funding_source;
-    }
-
-    std::string card_network{};
-    std::string card_details{};
-    std::optional<GooglePayAssuranceDetails> assurance_details{};
-    std::optional<GooglePayCardFundingSourceValue> card_funding_source{};
-};
-
-class GooglePayThirdPartySdkData : public serde::Serializer<GooglePayThirdPartySdkData>
-{
-public:
-    void set_token(std::optional<SecretValue> value)
-    {
-        token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_token() const noexcept
-    {
-        return token;
-    }
-
-    std::optional<SecretValue> token{};
-};
-
-class GooglePayTokenizationParameters : public serde::Serializer<GooglePayTokenizationParameters>
-{
-public:
-    void set_gateway(std::optional<std::string> value)
-    {
-        gateway = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_gateway() const noexcept
-    {
-        return gateway;
-    }
-
-    void set_public_key(std::optional<SecretValue> value)
-    {
-        public_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_public_key() const noexcept
-    {
-        return public_key;
-    }
-
-    void set_private_key(std::optional<SecretValue> value)
-    {
-        private_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_private_key() const noexcept
-    {
-        return private_key;
-    }
-
-    void set_recipient_id(std::optional<SecretValue> value)
-    {
-        recipient_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_recipient_id() const noexcept
-    {
-        return recipient_id;
-    }
-
-    void set_gateway_merchant_id(std::optional<SecretValue> value)
-    {
-        gateway_merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_gateway_merchant_id() const noexcept
-    {
-        return gateway_merchant_id;
-    }
-
-    void set_stripe_publishable_key(std::optional<SecretValue> value)
-    {
-        stripe_publishable_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_stripe_publishable_key() const noexcept
-    {
-        return stripe_publishable_key;
-    }
-
-    void set_stripe_version(std::optional<SecretValue> value)
-    {
-        stripe_version = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_stripe_version() const noexcept
-    {
-        return stripe_version;
-    }
-
-    std::optional<std::string> gateway{};
-    std::optional<SecretValue> public_key{};
-    std::optional<SecretValue> private_key{};
-    std::optional<SecretValue> recipient_id{};
-    std::optional<SecretValue> gateway_merchant_id{};
-    std::optional<SecretValue> stripe_publishable_key{};
-    std::optional<SecretValue> stripe_version{};
-};
-
-class GpayBillingAddressParameters : public serde::Serializer<GpayBillingAddressParameters>
-{
-public:
-    void set_phone_number_required(bool value)
-    {
-        phone_number_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_phone_number_required() const noexcept
-    {
-        return phone_number_required;
-    }
-
-    void set_format(GpayBillingAddressFormat value)
-    {
-        format = std::move(value);
-    }
-
-    [[nodiscard]] const GpayBillingAddressFormat& get_format() const noexcept
-    {
-        return format;
-    }
-
-    bool phone_number_required{};
-    GpayBillingAddressFormat format{};
-};
-
-class GpayTokenParameters : public serde::Serializer<GpayTokenParameters>
-{
-public:
-    void set_gateway(std::optional<std::string> value)
-    {
-        gateway = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_gateway() const noexcept
-    {
-        return gateway;
-    }
-
-    void set_gateway_merchant_id(std::optional<std::string> value)
-    {
-        gateway_merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_gateway_merchant_id() const noexcept
-    {
-        return gateway_merchant_id;
-    }
-
-    void set_stripe_version(std::optional<std::string> value)
-    {
-        stripe_version = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_stripe_version() const noexcept
-    {
-        return stripe_version;
-    }
-
-    void set_stripe_publishable_key(std::optional<std::string> value)
-    {
-        stripe_publishable_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_stripe_publishable_key() const noexcept
-    {
-        return stripe_publishable_key;
-    }
-
-    void set_protocol_version(std::optional<std::string> value)
-    {
-        protocol_version = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_protocol_version() const noexcept
-    {
-        return protocol_version;
-    }
-
-    void set_public_key(std::optional<SecretValue> value)
-    {
-        public_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_public_key() const noexcept
-    {
-        return public_key;
-    }
-
-    std::optional<std::string> gateway{};
-    std::optional<std::string> gateway_merchant_id{};
-    std::optional<std::string> stripe_version{};
-    std::optional<std::string> stripe_publishable_key{};
-    std::optional<std::string> protocol_version{};
-    std::optional<SecretValue> public_key{};
-};
-
-class GpayTransactionInfo : public serde::Serializer<GpayTransactionInfo>
-{
-public:
-    void set_country_code(CountryAlpha2Value value)
-    {
-        country_code = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_country_code() const noexcept
-    {
-        return country_code;
-    }
-
-    void set_currency_code(CurrencyValue value)
-    {
-        currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency_code() const noexcept
-    {
-        return currency_code;
-    }
-
-    void set_total_price_status(std::string value)
-    {
-        total_price_status = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_total_price_status() const noexcept
-    {
-        return total_price_status;
-    }
-
-    void set_total_price(StringMajorUnitValue value)
-    {
-        total_price = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_price() const noexcept
-    {
-        return total_price;
-    }
-
-    CountryAlpha2Value country_code{};
-    CurrencyValue currency_code{};
-    std::string total_price_status{};
-    StringMajorUnitValue total_price{};
-};
-
-class HyperswitchVaultSessionDetails : public serde::Serializer<HyperswitchVaultSessionDetails>
+class HyperswitchVaultSessionDetails :
+    public core::behavior::Serializer<HyperswitchVaultSessionDetails>
 {
 public:
     void set_sdk_authorization(SecretValue value)
@@ -8979,7 +4831,7 @@ public:
     SecretValue sdk_authorization{};
 };
 
-class ImmediateExpirationTime : public serde::Serializer<ImmediateExpirationTime>
+class ImmediateExpirationTime : public core::behavior::Serializer<ImmediateExpirationTime>
 {
 public:
     void set_time(std::uint32_t value)
@@ -9006,7 +4858,8 @@ public:
     std::optional<PixKeyValue> pix_key{};
 };
 
-class IncrementalAuthorizationResponse : public serde::Serializer<IncrementalAuthorizationResponse>
+class IncrementalAuthorizationResponse :
+    public core::behavior::Serializer<IncrementalAuthorizationResponse>
 {
 public:
     void set_authorization_id(std::string value)
@@ -9077,7 +4930,7 @@ public:
     MinorUnitValue previously_authorized_amount{};
 };
 
-class IndomaretVoucherData : public serde::Serializer<IndomaretVoucherData>
+class IndomaretVoucherData : public core::behavior::Serializer<IndomaretVoucherData>
 {
 public:
     void set_first_name(std::optional<SecretValue> value)
@@ -9115,7 +4968,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class InstallmentDetails : public serde::Serializer<InstallmentDetails>
+class InstallmentDetails : public core::behavior::Serializer<InstallmentDetails>
 {
 public:
     void set_max_partial_payments(std::optional<std::uint32_t> value)
@@ -9142,7 +4995,7 @@ public:
     std::optional<CalculationType> value_type{};
 };
 
-class InstallmentRequest : public serde::Serializer<InstallmentRequest>
+class InstallmentRequest : public core::behavior::Serializer<InstallmentRequest>
 {
 public:
     void set_number_of_installments(NonZeroU8Value value)
@@ -9169,52 +5022,7 @@ public:
     BillingFrequencyValue billing_frequency{};
 };
 
-class InteracPaymentMethod : public serde::Serializer<InteracPaymentMethod>
-{
-public:
-    void set_customer_info(std::optional<InteracCustomerInfoDetailsValue> value)
-    {
-        customer_info = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<InteracCustomerInfoDetailsValue>&
-    get_customer_info() const noexcept
-    {
-        return customer_info;
-    }
-
-    std::optional<InteracCustomerInfoDetailsValue> customer_info{};
-};
-
-class InterestDetail : public serde::Serializer<InterestDetail>
-{
-public:
-    void set_interest_percentage(std::optional<StringMajorUnitValue> value)
-    {
-        interest_percentage = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StringMajorUnitValue>&
-    get_interest_percentage() const noexcept
-    {
-        return interest_percentage;
-    }
-
-    void set_iof_percentage(std::optional<StringMajorUnitValue> value)
-    {
-        iof_percentage = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StringMajorUnitValue>& get_iof_percentage() const noexcept
-    {
-        return iof_percentage;
-    }
-
-    std::optional<StringMajorUnitValue> interest_percentage{};
-    std::optional<StringMajorUnitValue> iof_percentage{};
-};
-
-class JCSVoucherData : public serde::Serializer<JCSVoucherData>
+class JCSVoucherData : public core::behavior::Serializer<JCSVoucherData>
 {
 public:
     void set_first_name(std::optional<SecretValue> value)
@@ -9263,7 +5071,8 @@ public:
     std::optional<std::string> phone_number{};
 };
 
-class ListMethodsForPaymentsRequest : public serde::Serializer<ListMethodsForPaymentsRequest>
+class ListMethodsForPaymentsRequest :
+    public core::behavior::Serializer<ListMethodsForPaymentsRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -9348,7 +5157,7 @@ public:
     std::optional<std::int64_t> limit{};
 };
 
-class MandateAmountData : public serde::Serializer<MandateAmountData>
+class MandateAmountData : public core::behavior::Serializer<MandateAmountData>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -9408,7 +5217,7 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class MandateData : public serde::Serializer<MandateData>
+class MandateData : public core::behavior::Serializer<MandateData>
 {
 public:
     void set_update_mandate_id(std::optional<std::string> value)
@@ -9447,23 +5256,7 @@ public:
     std::optional<MandateType> mandate_type{};
 };
 
-class MbWayRedirection : public serde::Serializer<MbWayRedirection>
-{
-public:
-    void set_telephone_number(std::optional<SecretValue> value)
-    {
-        telephone_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_telephone_number() const noexcept
-    {
-        return telephone_number;
-    }
-
-    std::optional<SecretValue> telephone_number{};
-};
-
-class MifinityData : public serde::Serializer<MifinityData>
+class MifinityData : public core::behavior::Serializer<MifinityData>
 {
 public:
     void set_date_of_birth(SecretValue value)
@@ -9490,7 +5283,7 @@ public:
     std::optional<std::string> language_preference{};
 };
 
-class MobilePaymentNextStepData : public serde::Serializer<MobilePaymentNextStepData>
+class MobilePaymentNextStepData : public core::behavior::Serializer<MobilePaymentNextStepData>
 {
 public:
     void set_consent_data_required(MobilePaymentConsent value)
@@ -9506,7 +5299,7 @@ public:
     MobilePaymentConsent consent_data_required{};
 };
 
-class MobilePaymentResponse : public serde::Serializer<MobilePaymentResponse>
+class MobilePaymentResponse : public core::behavior::Serializer<MobilePaymentResponse>
 {
 public:
     void set_details(std::optional<MobilePaymentData> value)
@@ -9522,100 +5315,7 @@ public:
     std::optional<MobilePaymentData> details{};
 };
 
-class MultiCurrencyProcessingData : public serde::Serializer<MultiCurrencyProcessingData>
-{
-public:
-    void set_currency(CurrencyValue value)
-    {
-        currency = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency() const noexcept
-    {
-        return currency;
-    }
-
-    void set_amount(MinorUnitValue value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const MinorUnitValue& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    void set_conversion_rate(std::optional<double> value)
-    {
-        conversion_rate = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<double>& get_conversion_rate() const noexcept
-    {
-        return conversion_rate;
-    }
-
-    void set_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_date() const noexcept
-    {
-        return date;
-    }
-
-    void set_processing_reference_id(std::optional<std::string> value)
-    {
-        processing_reference_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_processing_reference_id() const noexcept
-    {
-        return processing_reference_id;
-    }
-
-    void set_user_id(std::optional<std::string> value)
-    {
-        user_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_user_id() const noexcept
-    {
-        return user_id;
-    }
-
-    void set_conversion_provider(std::optional<std::string> value)
-    {
-        conversion_provider = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_conversion_provider() const noexcept
-    {
-        return conversion_provider;
-    }
-
-    void set_conversion_reason_code(std::optional<std::string> value)
-    {
-        conversion_reason_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_conversion_reason_code() const noexcept
-    {
-        return conversion_reason_code;
-    }
-
-    CurrencyValue currency{};
-    MinorUnitValue amount{};
-    std::optional<double> conversion_rate{};
-    std::optional<PrimitiveDateTimeValue> date{};
-    std::optional<std::string> processing_reference_id{};
-    std::optional<std::string> user_id{};
-    std::optional<std::string> conversion_provider{};
-    std::optional<std::string> conversion_reason_code{};
-};
-
-class MultibancoBillingDetails : public serde::Serializer<MultibancoBillingDetails>
+class MultibancoBillingDetails : public core::behavior::Serializer<MultibancoBillingDetails>
 {
 public:
     void set_email(std::optional<EmailValue> value)
@@ -9631,7 +5331,8 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class MultibancoTransferInstructions : public serde::Serializer<MultibancoTransferInstructions>
+class MultibancoTransferInstructions :
+    public core::behavior::Serializer<MultibancoTransferInstructions>
 {
 public:
     void set_reference(SecretValue value)
@@ -9658,7 +5359,7 @@ public:
     std::string entity{};
 };
 
-class NetworkTokenData : public serde::Serializer<NetworkTokenData>
+class NetworkTokenData : public core::behavior::Serializer<NetworkTokenData>
 {
 public:
     void set_network_token(NetworkTokenValue value)
@@ -9806,7 +5507,7 @@ public:
     std::optional<SecretValue> par{};
 };
 
-class NetworkTokenResponse : public serde::Serializer<NetworkTokenResponse>
+class NetworkTokenResponse : public core::behavior::Serializer<NetworkTokenResponse>
 {
 public:
     void set_last4(std::optional<std::string> value)
@@ -9921,7 +5622,7 @@ public:
     std::optional<SecretValue> par{};
 };
 
-class OpenBankingResponse : public serde::Serializer<OpenBankingResponse>
+class OpenBankingResponse : public core::behavior::Serializer<OpenBankingResponse>
 {
 public:
     void set_details(std::optional<OpenBankingData> value)
@@ -9937,7 +5638,7 @@ public:
     std::optional<OpenBankingData> details{};
 };
 
-class OrderDetailsWithAmount : public serde::Serializer<OrderDetailsWithAmount>
+class OrderDetailsWithAmount : public core::behavior::Serializer<OrderDetailsWithAmount>
 {
 public:
     void set_product_name(std::string value)
@@ -10196,7 +5897,7 @@ public:
     std::optional<std::string> discount_type{};
 };
 
-class OrderDetailsWithStringAmount : public serde::Serializer<OrderDetailsWithStringAmount>
+class OrderDetailsWithStringAmount : public core::behavior::Serializer<OrderDetailsWithStringAmount>
 {
 public:
     void set_product_name(std::string value)
@@ -10245,7 +5946,8 @@ public:
     std::optional<std::string> product_img_link{};
 };
 
-class PMBalanceCheckSuccessResponse : public serde::Serializer<PMBalanceCheckSuccessResponse>
+class PMBalanceCheckSuccessResponse :
+    public core::behavior::Serializer<PMBalanceCheckSuccessResponse>
 {
 public:
     void set_balance(MinorUnitValue value)
@@ -10283,7 +5985,7 @@ public:
     CurrencyValue currency{};
 };
 
-class PaylaterResponse : public serde::Serializer<PaylaterResponse>
+class PaylaterResponse : public core::behavior::Serializer<PaylaterResponse>
 {
 public:
     void set_klarna_sdk(std::optional<KlarnaSdkPaymentMethodResponse> value)
@@ -10300,7 +6002,7 @@ public:
     std::optional<KlarnaSdkPaymentMethodResponse> klarna_sdk{};
 };
 
-class PaymentAmountDetailsResponse : public serde::Serializer<PaymentAmountDetailsResponse>
+class PaymentAmountDetailsResponse : public core::behavior::Serializer<PaymentAmountDetailsResponse>
 {
 public:
     void set_order_amount(MinorUnitValue value)
@@ -10438,7 +6140,7 @@ public:
     std::optional<MinorUnitValue> amount_captured{};
 };
 
-class PaymentAttemptAmountDetails : public serde::Serializer<PaymentAttemptAmountDetails>
+class PaymentAttemptAmountDetails : public core::behavior::Serializer<PaymentAttemptAmountDetails>
 {
 public:
     void set_net_amount(MinorUnitValue value)
@@ -10531,7 +6233,7 @@ public:
     std::optional<MinorUnitValue> amount_captured{};
 };
 
-class PaymentAttemptListRequest : public serde::Serializer<PaymentAttemptListRequest>
+class PaymentAttemptListRequest : public core::behavior::Serializer<PaymentAttemptListRequest>
 {
 public:
     void set_payment_intent_id(GlobalPaymentIdValue value)
@@ -10547,96 +6249,8 @@ public:
     GlobalPaymentIdValue payment_intent_id{};
 };
 
-class PaymentAttemptRevenueRecoveryData :
-    public serde::Serializer<PaymentAttemptRevenueRecoveryData>
-{
-public:
-    void set_attempt_triggered_by(TriggeredByValue value)
-    {
-        attempt_triggered_by = std::move(value);
-    }
-
-    [[nodiscard]] const TriggeredByValue& get_attempt_triggered_by() const noexcept
-    {
-        return attempt_triggered_by;
-    }
-
-    void set_charge_id(std::optional<std::string> value)
-    {
-        charge_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_charge_id() const noexcept
-    {
-        return charge_id;
-    }
-
-    void set_customer_present(std::optional<PresenceOfCustomerDuringPaymentValue> value)
-    {
-        customer_present = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PresenceOfCustomerDuringPaymentValue>&
-    get_customer_present() const noexcept
-    {
-        return customer_present;
-    }
-
-    void set_setup_future_usage(std::optional<FutureUsageValue> value)
-    {
-        setup_future_usage = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FutureUsageValue>& get_setup_future_usage() const noexcept
-    {
-        return setup_future_usage;
-    }
-
-    void set_recovery_request_id(std::optional<std::string> value)
-    {
-        recovery_request_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_recovery_request_id() const noexcept
-    {
-        return recovery_request_id;
-    }
-
-    TriggeredByValue attempt_triggered_by{};
-    std::optional<std::string> charge_id{};
-    std::optional<PresenceOfCustomerDuringPaymentValue> customer_present{};
-    std::optional<FutureUsageValue> setup_future_usage{};
-    std::optional<std::string> recovery_request_id{};
-};
-
-class PaymentConnectorInvokeDDCData : public serde::Serializer<PaymentConnectorInvokeDDCData>
-{
-public:
-    void set_iframe_url(UrlValue value)
-    {
-        iframe_url = std::move(value);
-    }
-
-    [[nodiscard]] const UrlValue& get_iframe_url() const noexcept
-    {
-        return iframe_url;
-    }
-
-    void set_timeout_ms(std::optional<std::int32_t> value)
-    {
-        timeout_ms = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int32_t>& get_timeout_ms() const noexcept
-    {
-        return timeout_ms;
-    }
-
-    UrlValue iframe_url{};
-    std::optional<std::int32_t> timeout_ms{};
-};
-
-class PaymentCreatePaymentLinkConfig : public serde::Serializer<PaymentCreatePaymentLinkConfig>
+class PaymentCreatePaymentLinkConfig :
+    public core::behavior::Serializer<PaymentCreatePaymentLinkConfig>
 {
 public:
     void set_theme_config(PaymentLinkConfigRequestValue value)
@@ -10652,7 +6266,7 @@ public:
     PaymentLinkConfigRequestValue theme_config{};
 };
 
-class PaymentLinkInitiateRequest : public serde::Serializer<PaymentLinkInitiateRequest>
+class PaymentLinkInitiateRequest : public core::behavior::Serializer<PaymentLinkInitiateRequest>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -10679,7 +6293,7 @@ public:
     PaymentIdValue payment_id{};
 };
 
-class PaymentLinkListConstraints : public serde::Serializer<PaymentLinkListConstraints>
+class PaymentLinkListConstraints : public core::behavior::Serializer<PaymentLinkListConstraints>
 {
 public:
     void set_limit(PageSizeValue value)
@@ -10723,7 +6337,7 @@ enum class PaymentLinkStatusWrap
     IntentStatus,
 };
 
-class PaymentListFilters : public serde::Serializer<PaymentListFilters>
+class PaymentListFilters : public core::behavior::Serializer<PaymentListFilters>
 {
 public:
     void set_connector(std::vector<std::string> value)
@@ -10796,7 +6410,7 @@ public:
     std::vector<AuthenticationTypeValue> authentication_type{};
 };
 
-class PaymentListFiltersV2 : public serde::Serializer<PaymentListFiltersV2>
+class PaymentListFiltersV2 : public core::behavior::Serializer<PaymentListFiltersV2>
 {
 public:
     void set_connector(
@@ -10885,7 +6499,8 @@ public:
     std::vector<CardDiscoveryValue> card_discovery{};
 };
 
-class PaymentMethodTokenizationDetails : public serde::Serializer<PaymentMethodTokenizationDetails>
+class PaymentMethodTokenizationDetails :
+    public core::behavior::Serializer<PaymentMethodTokenizationDetails>
 {
 public:
     void set_payment_method_id(std::string value)
@@ -10967,7 +6582,7 @@ public:
     bool is_eligible_for_mit_payment{};
 };
 
-class PaymentProcessingDetails : public serde::Serializer<PaymentProcessingDetails>
+class PaymentProcessingDetails : public core::behavior::Serializer<PaymentProcessingDetails>
 {
 public:
     void set_payment_processing_certificate(SecretValue value)
@@ -10994,7 +6609,7 @@ public:
     SecretValue payment_processing_certificate_key{};
 };
 
-class PaymentRetrieveBody : public serde::Serializer<PaymentRetrieveBody>
+class PaymentRetrieveBody : public core::behavior::Serializer<PaymentRetrieveBody>
 {
 public:
     void set_merchant_id(std::optional<MerchantIdValue> value)
@@ -11066,7 +6681,7 @@ public:
 };
 
 class PaymentRetrieveBodyWithCredentials :
-    public serde::Serializer<PaymentRetrieveBodyWithCredentials>
+    public core::behavior::Serializer<PaymentRetrieveBodyWithCredentials>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11116,50 +6731,8 @@ public:
     std::optional<MerchantConnectorDetailsWrapValue> merchant_connector_details{};
 };
 
-class PaymentStartRedirectionParams : public serde::Serializer<PaymentStartRedirectionParams>
-{
-public:
-    void set_publishable_key(std::string value)
-    {
-        publishable_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_publishable_key() const noexcept
-    {
-        return publishable_key;
-    }
-
-    void set_profile_id(ProfileIdValue value)
-    {
-        profile_id = std::move(value);
-    }
-
-    [[nodiscard]] const ProfileIdValue& get_profile_id() const noexcept
-    {
-        return profile_id;
-    }
-
-    std::string publishable_key{};
-    ProfileIdValue profile_id{};
-};
-
-class PaymentStartRedirectionRequest : public serde::Serializer<PaymentStartRedirectionRequest>
-{
-public:
-    void set_id(GlobalPaymentIdValue value)
-    {
-        id = std::move(value);
-    }
-
-    [[nodiscard]] const GlobalPaymentIdValue& get_id() const noexcept
-    {
-        return id;
-    }
-
-    GlobalPaymentIdValue id{};
-};
-
-class PaymentSurchargeDetailsResponse : public serde::Serializer<PaymentSurchargeDetailsResponse>
+class PaymentSurchargeDetailsResponse :
+    public core::behavior::Serializer<PaymentSurchargeDetailsResponse>
 {
 public:
     void set_surcharge_amount(MinorUnitValue value)
@@ -11209,7 +6782,7 @@ public:
     std::optional<SurchargeErrorDetailsValue> error_details{};
 };
 
-class PaymentsApproveRequest : public serde::Serializer<PaymentsApproveRequest>
+class PaymentsApproveRequest : public core::behavior::Serializer<PaymentsApproveRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11226,7 +6799,7 @@ public:
 };
 
 class PaymentsExtendAuthorizationRequest :
-    public serde::Serializer<PaymentsExtendAuthorizationRequest>
+    public core::behavior::Serializer<PaymentsExtendAuthorizationRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11243,7 +6816,7 @@ public:
 };
 
 class PaymentsExternalAuthenticationResponse :
-    public serde::Serializer<PaymentsExternalAuthenticationResponse>
+    public core::behavior::Serializer<PaymentsExternalAuthenticationResponse>
 {
 public:
     void set_transaction_status(TransactionStatusValue value)
@@ -11369,7 +6942,7 @@ public:
     std::optional<std::string> error_message{};
 };
 
-class PaymentsGetIntentRequest : public serde::Serializer<PaymentsGetIntentRequest>
+class PaymentsGetIntentRequest : public core::behavior::Serializer<PaymentsGetIntentRequest>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -11386,7 +6959,7 @@ public:
 };
 
 class PaymentsManualStatusUpdateEligibleStatusesResponse :
-    public serde::Serializer<PaymentsManualStatusUpdateEligibleStatusesResponse>
+    public core::behavior::Serializer<PaymentsManualStatusUpdateEligibleStatusesResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11415,7 +6988,7 @@ public:
 };
 
 class PaymentsManualStatusUpdateRequest :
-    public serde::Serializer<PaymentsManualStatusUpdateRequest>
+    public core::behavior::Serializer<PaymentsManualStatusUpdateRequest>
 {
 public:
     void set_intent_status(ManualUpdateIntentStatusValue value)
@@ -11432,7 +7005,7 @@ public:
 };
 
 class PaymentsManualStatusUpdateResponse :
-    public serde::Serializer<PaymentsManualStatusUpdateResponse>
+    public core::behavior::Serializer<PaymentsManualStatusUpdateResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11481,7 +7054,7 @@ public:
     AttemptStatusValue attempt_status{};
 };
 
-class PaymentsManualUpdateRequest : public serde::Serializer<PaymentsManualUpdateRequest>
+class PaymentsManualUpdateRequest : public core::behavior::Serializer<PaymentsManualUpdateRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11607,7 +7180,7 @@ public:
     std::optional<MinorUnitValue> amount_captured{};
 };
 
-class PaymentsManualUpdateResponse : public serde::Serializer<PaymentsManualUpdateResponse>
+class PaymentsManualUpdateResponse : public core::behavior::Serializer<PaymentsManualUpdateResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11723,7 +7296,7 @@ public:
 };
 
 class PaymentsPostCaptureVoidSyncTrackingData :
-    public serde::Serializer<PaymentsPostCaptureVoidSyncTrackingData>
+    public core::behavior::Serializer<PaymentsPostCaptureVoidSyncTrackingData>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11750,7 +7323,8 @@ public:
     MerchantIdValue merchant_id{};
 };
 
-class PaymentsPostSessionTokensRequest : public serde::Serializer<PaymentsPostSessionTokensRequest>
+class PaymentsPostSessionTokensRequest :
+    public core::behavior::Serializer<PaymentsPostSessionTokensRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11799,56 +7373,7 @@ public:
     PaymentMethodValue payment_method{};
 };
 
-class PaymentsRedirectRequest : public serde::Serializer<PaymentsRedirectRequest>
-{
-public:
-    void set_payment_id(PaymentIdValue value)
-    {
-        payment_id = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentIdValue& get_payment_id() const noexcept
-    {
-        return payment_id;
-    }
-
-    void set_merchant_id(MerchantIdValue value)
-    {
-        merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const MerchantIdValue& get_merchant_id() const noexcept
-    {
-        return merchant_id;
-    }
-
-    void set_connector(std::string value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_param(std::string value)
-    {
-        param = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_param() const noexcept
-    {
-        return param;
-    }
-
-    PaymentIdValue payment_id{};
-    MerchantIdValue merchant_id{};
-    std::string connector{};
-    std::string param{};
-};
-
-class PaymentsRejectRequest : public serde::Serializer<PaymentsRejectRequest>
+class PaymentsRejectRequest : public core::behavior::Serializer<PaymentsRejectRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -11864,7 +7389,7 @@ public:
     PaymentIdValue payment_id{};
 };
 
-class PaymentsResponseForm : public serde::Serializer<PaymentsResponseForm>
+class PaymentsResponseForm : public core::behavior::Serializer<PaymentsResponseForm>
 {
 public:
     void set_transaction_id(std::string value)
@@ -11902,7 +7427,7 @@ public:
     std::string order_id{};
 };
 
-class PaymentsRetrieveRequest : public serde::Serializer<PaymentsRetrieveRequest>
+class PaymentsRetrieveRequest : public core::behavior::Serializer<PaymentsRetrieveRequest>
 {
 public:
     void set_resource_id(PaymentIdType value)
@@ -12018,7 +7543,7 @@ public:
     std::optional<bool> all_keys_required{};
 };
 
-class PaymentsSessionRequest : public serde::Serializer<PaymentsSessionRequest>
+class PaymentsSessionRequest : public core::behavior::Serializer<PaymentsSessionRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -12068,7 +7593,7 @@ public:
     std::optional<MerchantConnectorDetailsWrapValue> merchant_connector_details{};
 };
 
-class PaymentsSessionResponse : public serde::Serializer<PaymentsSessionResponse>
+class PaymentsSessionResponse : public core::behavior::Serializer<PaymentsSessionResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -12117,7 +7642,7 @@ public:
     std::optional<VaultDetailsResponse> vault_details{};
 };
 
-class PaymentsStartRequest : public serde::Serializer<PaymentsStartRequest>
+class PaymentsStartRequest : public core::behavior::Serializer<PaymentsStartRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -12155,324 +7680,7 @@ public:
     std::string attempt_id{};
 };
 
-class PaypalConnectorMetadata : public serde::Serializer<PaypalConnectorMetadata>
-{
-public:
-    void set_paypal_client_metadata_id(std::optional<SecretValue> value)
-    {
-        paypal_client_metadata_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_paypal_client_metadata_id() const noexcept
-    {
-        return paypal_client_metadata_id;
-    }
-
-    std::optional<SecretValue> paypal_client_metadata_id{};
-};
-
-class PaypalRedirection : public serde::Serializer<PaypalRedirection>
-{
-public:
-    void set_email(std::optional<EmailValue> value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email() const noexcept
-    {
-        return email;
-    }
-
-    void set_payer_id(std::optional<SecretValue> value)
-    {
-        payer_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_payer_id() const noexcept
-    {
-        return payer_id;
-    }
-
-    std::optional<EmailValue> email{};
-    std::optional<SecretValue> payer_id{};
-};
-
-class PaypalSdkSessionTokenData : public serde::Serializer<PaypalSdkSessionTokenData>
-{
-public:
-    void set_data(PaypalSdkMetaData value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const PaypalSdkMetaData& get_data() const noexcept
-    {
-        return data;
-    }
-
-    PaypalSdkMetaData data{};
-};
-
-class PaypalTransactionInfo : public serde::Serializer<PaypalTransactionInfo>
-{
-public:
-    void set_flow(PaypalFlow value)
-    {
-        flow = std::move(value);
-    }
-
-    [[nodiscard]] const PaypalFlow& get_flow() const noexcept
-    {
-        return flow;
-    }
-
-    void set_currency_code(CurrencyValue value)
-    {
-        currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency_code() const noexcept
-    {
-        return currency_code;
-    }
-
-    void set_total_price(StringMajorUnitValue value)
-    {
-        total_price = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_price() const noexcept
-    {
-        return total_price;
-    }
-
-    PaypalFlow flow{};
-    CurrencyValue currency_code{};
-    StringMajorUnitValue total_price{};
-};
-
-class PazeSessionTokenData : public serde::Serializer<PazeSessionTokenData>
-{
-public:
-    void set_data(PazeMetadata value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const PazeMetadata& get_data() const noexcept
-    {
-        return data;
-    }
-
-    PazeMetadata data{};
-};
-
-class PazeSessionTokenResponse : public serde::Serializer<PazeSessionTokenResponse>
-{
-public:
-    void set_client_id(std::string value)
-    {
-        client_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_id() const noexcept
-    {
-        return client_id;
-    }
-
-    void set_client_name(std::string value)
-    {
-        client_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_name() const noexcept
-    {
-        return client_name;
-    }
-
-    void set_client_profile_id(std::string value)
-    {
-        client_profile_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_client_profile_id() const noexcept
-    {
-        return client_profile_id;
-    }
-
-    void set_transaction_currency_code(CurrencyValue value)
-    {
-        transaction_currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_transaction_currency_code() const noexcept
-    {
-        return transaction_currency_code;
-    }
-
-    void set_transaction_amount(StringMajorUnitValue value)
-    {
-        transaction_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_transaction_amount() const noexcept
-    {
-        return transaction_amount;
-    }
-
-    void set_email_address(std::optional<EmailValue> value)
-    {
-        email_address = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email_address() const noexcept
-    {
-        return email_address;
-    }
-
-    std::string client_id{};
-    std::string client_name{};
-    std::string client_profile_id{};
-    CurrencyValue transaction_currency_code{};
-    StringMajorUnitValue transaction_amount{};
-    std::optional<EmailValue> email_address{};
-};
-
-class PazeWalletData : public serde::Serializer<PazeWalletData>
-{
-public:
-    void set_complete_response(SecretValue value)
-    {
-        complete_response = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_complete_response() const noexcept
-    {
-        return complete_response;
-    }
-
-    SecretValue complete_response{};
-};
-
-class PeachpaymentsData : public serde::Serializer<PeachpaymentsData>
-{
-public:
-    void set_rrn(std::optional<std::string> value)
-    {
-        rrn = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_rrn() const noexcept
-    {
-        return rrn;
-    }
-
-    void set_card_on_file_transaction_type(
-        std::optional<PeachpaymentsCardOnFileTransactionType> value
-    )
-    {
-        card_on_file_transaction_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PeachpaymentsCardOnFileTransactionType>&
-    get_card_on_file_transaction_type() const noexcept
-    {
-        return card_on_file_transaction_type;
-    }
-
-    std::optional<std::string> rrn{};
-    std::optional<PeachpaymentsCardOnFileTransactionType> card_on_file_transaction_type{};
-};
-
-class PenaltyDetail : public serde::Serializer<PenaltyDetail>
-{
-public:
-    void set_value(std::optional<StringMajorUnitValue> value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StringMajorUnitValue>& get_value() const noexcept
-    {
-        return value;
-    }
-
-    void set_grace_period_days(std::optional<std::uint32_t> value)
-    {
-        grace_period_days = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::uint32_t>& get_grace_period_days() const noexcept
-    {
-        return grace_period_days;
-    }
-
-    std::optional<StringMajorUnitValue> value{};
-    std::optional<std::uint32_t> grace_period_days{};
-};
-
-class PgRedirectResponse : public serde::Serializer<PgRedirectResponse>
-{
-public:
-    void set_payment_id(PaymentIdValue value)
-    {
-        payment_id = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentIdValue& get_payment_id() const noexcept
-    {
-        return payment_id;
-    }
-
-    void set_status(IntentStatusValue value)
-    {
-        status = std::move(value);
-    }
-
-    [[nodiscard]] const IntentStatusValue& get_status() const noexcept
-    {
-        return status;
-    }
-
-    void set_gateway_id(std::string value)
-    {
-        gateway_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_gateway_id() const noexcept
-    {
-        return gateway_id;
-    }
-
-    void set_customer_id(std::optional<CustomerIdValue> value)
-    {
-        customer_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CustomerIdValue>& get_customer_id() const noexcept
-    {
-        return customer_id;
-    }
-
-    void set_amount(std::optional<MinorUnitValue> value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MinorUnitValue>& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    PaymentIdValue payment_id{};
-    IntentStatusValue status{};
-    std::string gateway_id{};
-    std::optional<CustomerIdValue> customer_id{};
-    std::optional<MinorUnitValue> amount{};
-};
-
-class PlatformPaymentListFilters : public serde::Serializer<PlatformPaymentListFilters>
+class PlatformPaymentListFilters : public core::behavior::Serializer<PlatformPaymentListFilters>
 {
 public:
     void set_connector(
@@ -12561,34 +7769,7 @@ public:
     std::vector<CardDiscoveryValue> card_discovery{};
 };
 
-class ProtestRules : public serde::Serializer<ProtestRules>
-{
-public:
-    void set_protest_type(std::optional<ProtestType> value)
-    {
-        protest_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ProtestType>& get_protest_type() const noexcept
-    {
-        return protest_type;
-    }
-
-    void set_days_after_due_date(std::optional<std::uint32_t> value)
-    {
-        days_after_due_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::uint32_t>& get_days_after_due_date() const noexcept
-    {
-        return days_after_due_date;
-    }
-
-    std::optional<ProtestType> protest_type{};
-    std::optional<std::uint32_t> days_after_due_date{};
-};
-
-class ProxyCardData : public serde::Serializer<ProxyCardData>
+class ProxyCardData : public core::behavior::Serializer<ProxyCardData>
 {
 public:
     void set_card_number(SecretValue value)
@@ -12736,45 +7917,7 @@ public:
     std::optional<std::string> last_four{};
 };
 
-class QrCodeNextStepsInstruction : public serde::Serializer<QrCodeNextStepsInstruction>
-{
-public:
-    void set_image_data_url(UrlValue value)
-    {
-        image_data_url = std::move(value);
-    }
-
-    [[nodiscard]] const UrlValue& get_image_data_url() const noexcept
-    {
-        return image_data_url;
-    }
-
-    void set_display_to_timestamp(std::optional<std::int64_t> value)
-    {
-        display_to_timestamp = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::int64_t>& get_display_to_timestamp() const noexcept
-    {
-        return display_to_timestamp;
-    }
-
-    void set_qr_code_url(std::optional<UrlValue> value)
-    {
-        qr_code_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<UrlValue>& get_qr_code_url() const noexcept
-    {
-        return qr_code_url;
-    }
-
-    UrlValue image_data_url{};
-    std::optional<std::int64_t> display_to_timestamp{};
-    std::optional<UrlValue> qr_code_url{};
-};
-
-class RealTimePaymentDataResponse : public serde::Serializer<RealTimePaymentDataResponse>
+class RealTimePaymentDataResponse : public core::behavior::Serializer<RealTimePaymentDataResponse>
 {
 public:
     void set_details(std::optional<RealTimePaymentData> value)
@@ -12790,7 +7933,7 @@ public:
     std::optional<RealTimePaymentData> details{};
 };
 
-class RecoveryPaymentsResponse : public serde::Serializer<RecoveryPaymentsResponse>
+class RecoveryPaymentsResponse : public core::behavior::Serializer<RecoveryPaymentsResponse>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -12829,7 +7972,7 @@ public:
     std::optional<PaymentReferenceIdValue> merchant_reference_id{};
 };
 
-class RecoveryRequestAccepted : public serde::Serializer<RecoveryRequestAccepted>
+class RecoveryRequestAccepted : public core::behavior::Serializer<RecoveryRequestAccepted>
 {
 public:
     void set_merchant_reference_id(PaymentReferenceIdValue value)
@@ -12856,7 +7999,7 @@ public:
     std::string connector_transaction_id{};
 };
 
-class RecoveryRetryWebhookDetails : public serde::Serializer<RecoveryRetryWebhookDetails>
+class RecoveryRetryWebhookDetails : public core::behavior::Serializer<RecoveryRetryWebhookDetails>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -12894,96 +8037,7 @@ public:
     RecoveryNextRetryValue next_retry{};
 };
 
-class RedirectResponse : public serde::Serializer<RedirectResponse>
-{
-public:
-    void set_param(std::optional<SecretValue> value)
-    {
-        param = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_param() const noexcept
-    {
-        return param;
-    }
-
-    void set_json_payload(std::optional<SecretSerdeValueValue> value)
-    {
-        json_payload = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretSerdeValueValue>& get_json_payload() const noexcept
-    {
-        return json_payload;
-    }
-
-    std::optional<SecretValue> param{};
-    std::optional<SecretSerdeValueValue> json_payload{};
-};
-
-class RedirectionResponse : public serde::Serializer<RedirectionResponse>
-{
-public:
-    void set_return_url(std::string value)
-    {
-        return_url = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_return_url() const noexcept
-    {
-        return return_url;
-    }
-
-    void set_params(std::vector<std::pair<std::string, SecretValue>> value)
-    {
-        params = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::pair<std::string, SecretValue>>&
-    get_params() const noexcept
-    {
-        return params;
-    }
-
-    void set_return_url_with_query_params(SecretValue value)
-    {
-        return_url_with_query_params = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_return_url_with_query_params() const noexcept
-    {
-        return return_url_with_query_params;
-    }
-
-    void set_http_method(std::string value)
-    {
-        http_method = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_http_method() const noexcept
-    {
-        return http_method;
-    }
-
-    void set_headers(std::vector<std::pair<std::string, std::string>> value)
-    {
-        headers = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::pair<std::string, std::string>>&
-    get_headers() const noexcept
-    {
-        return headers;
-    }
-
-    std::string return_url{};
-    std::vector<std::pair<std::string, SecretValue>> params{};
-    SecretValue return_url_with_query_params{};
-    std::string http_method{};
-    std::vector<std::pair<std::string, std::string>> headers{};
-};
-
-class RequestSurchargeDetails : public serde::Serializer<RequestSurchargeDetails>
+class RequestSurchargeDetails : public core::behavior::Serializer<RequestSurchargeDetails>
 {
 public:
     void set_surcharge_amount(MinorUnitValue value)
@@ -13022,7 +8076,7 @@ public:
 };
 
 class ResponsePaymentMethodTypesForPayments :
-    public serde::Serializer<ResponsePaymentMethodTypesForPayments>
+    public core::behavior::Serializer<ResponsePaymentMethodTypesForPayments>
 {
 public:
     void set_payment_method_type(PaymentMethodValue value)
@@ -13096,7 +8150,7 @@ public:
     std::optional<SurchargeDetailsResponseValue> surcharge_details{};
 };
 
-class RetrievePaymentLinkResponse : public serde::Serializer<RetrievePaymentLinkResponse>
+class RetrievePaymentLinkResponse : public core::behavior::Serializer<RetrievePaymentLinkResponse>
 {
 public:
     void set_payment_link_id(std::string value)
@@ -13244,7 +8298,7 @@ public:
     std::optional<std::string> secure_link{};
 };
 
-class RewardData : public serde::Serializer<RewardData>
+class RewardData : public core::behavior::Serializer<RewardData>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -13260,378 +8314,7 @@ public:
     MerchantIdValue merchant_id{};
 };
 
-class SamsungPayAmountDetails : public serde::Serializer<SamsungPayAmountDetails>
-{
-public:
-    void set_amount_format(SamsungPayAmountFormat value)
-    {
-        amount_format = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayAmountFormat& get_amount_format() const noexcept
-    {
-        return amount_format;
-    }
-
-    void set_currency_code(CurrencyValue value)
-    {
-        currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency_code() const noexcept
-    {
-        return currency_code;
-    }
-
-    void set_total_amount(StringMajorUnitValue value)
-    {
-        total_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_amount() const noexcept
-    {
-        return total_amount;
-    }
-
-    SamsungPayAmountFormat amount_format{};
-    CurrencyValue currency_code{};
-    StringMajorUnitValue total_amount{};
-};
-
-class SamsungPayApplicationCredentials : public serde::Serializer<SamsungPayApplicationCredentials>
-{
-public:
-    void set_merchant_display_name(std::string value)
-    {
-        merchant_display_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_display_name() const noexcept
-    {
-        return merchant_display_name;
-    }
-
-    void set_merchant_business_country(CountryAlpha2Value value)
-    {
-        merchant_business_country = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_merchant_business_country() const noexcept
-    {
-        return merchant_business_country;
-    }
-
-    void set_allowed_brands(std::vector<std::string> value)
-    {
-        allowed_brands = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_allowed_brands() const noexcept
-    {
-        return allowed_brands;
-    }
-
-    std::string merchant_display_name{};
-    CountryAlpha2Value merchant_business_country{};
-    std::vector<std::string> allowed_brands{};
-};
-
-class SamsungPayMerchantCredentials : public serde::Serializer<SamsungPayMerchantCredentials>
-{
-public:
-    void set_service_id(std::string value)
-    {
-        service_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_service_id() const noexcept
-    {
-        return service_id;
-    }
-
-    void set_merchant_display_name(std::string value)
-    {
-        merchant_display_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_display_name() const noexcept
-    {
-        return merchant_display_name;
-    }
-
-    void set_merchant_business_country(CountryAlpha2Value value)
-    {
-        merchant_business_country = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_merchant_business_country() const noexcept
-    {
-        return merchant_business_country;
-    }
-
-    void set_allowed_brands(std::vector<std::string> value)
-    {
-        allowed_brands = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_allowed_brands() const noexcept
-    {
-        return allowed_brands;
-    }
-
-    std::string service_id{};
-    std::string merchant_display_name{};
-    CountryAlpha2Value merchant_business_country{};
-    std::vector<std::string> allowed_brands{};
-};
-
-class SamsungPayMerchantPaymentInformation :
-    public serde::Serializer<SamsungPayMerchantPaymentInformation>
-{
-public:
-    void set_name(std::string value)
-    {
-        name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_name() const noexcept
-    {
-        return name;
-    }
-
-    void set_url(std::optional<std::string> value)
-    {
-        url = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_url() const noexcept
-    {
-        return url;
-    }
-
-    void set_country_code(CountryAlpha2Value value)
-    {
-        country_code = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_country_code() const noexcept
-    {
-        return country_code;
-    }
-
-    std::string name{};
-    std::optional<std::string> url{};
-    CountryAlpha2Value country_code{};
-};
-
-class SamsungPaySessionTokenData : public serde::Serializer<SamsungPaySessionTokenData>
-{
-public:
-    void set_data(SamsungPayCombinedMetadata value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayCombinedMetadata& get_data() const noexcept
-    {
-        return data;
-    }
-
-    SamsungPayCombinedMetadata data{};
-};
-
-class SamsungPayTokenData : public serde::Serializer<SamsungPayTokenData>
-{
-public:
-    void set_three_ds_type(std::optional<std::string> value)
-    {
-        three_ds_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_three_ds_type() const noexcept
-    {
-        return three_ds_type;
-    }
-
-    void set_version(std::string value)
-    {
-        version = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_version() const noexcept
-    {
-        return version;
-    }
-
-    void set_data(SecretValue value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_data() const noexcept
-    {
-        return data;
-    }
-
-    std::optional<std::string> three_ds_type{};
-    std::string version{};
-    SecretValue data{};
-};
-
-class SamsungPayWalletData : public serde::Serializer<SamsungPayWalletData>
-{
-public:
-    void set_payment_credential(SamsungPayWalletCredentials value)
-    {
-        payment_credential = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayWalletCredentials& get_payment_credential() const noexcept
-    {
-        return payment_credential;
-    }
-
-    SamsungPayWalletCredentials payment_credential{};
-};
-
-class SantanderData : public serde::Serializer<SantanderData>
-{
-public:
-    void set_end_to_end_id(std::optional<std::string> value)
-    {
-        end_to_end_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_end_to_end_id() const noexcept
-    {
-        return end_to_end_id;
-    }
-
-    void set_journey_name(std::optional<SantanderJourneyName> value)
-    {
-        journey_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderJourneyName>& get_journey_name() const noexcept
-    {
-        return journey_name;
-    }
-
-    void set_paid_at(std::optional<PrimitiveDateTimeValue> value)
-    {
-        paid_at = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_paid_at() const noexcept
-    {
-        return paid_at;
-    }
-
-    std::optional<std::string> end_to_end_id{};
-    std::optional<SantanderJourneyName> journey_name{};
-    std::optional<PrimitiveDateTimeValue> paid_at{};
-};
-
-class SantanderMandateDetails : public serde::Serializer<SantanderMandateDetails>
-{
-public:
-    void set_fixed_recurring_amount(std::optional<MinorUnitValue> value)
-    {
-        fixed_recurring_amount = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MinorUnitValue>& get_fixed_recurring_amount() const noexcept
-    {
-        return fixed_recurring_amount;
-    }
-
-    void set_min_recurring_amount(std::optional<MinorUnitValue> value)
-    {
-        min_recurring_amount = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MinorUnitValue>& get_min_recurring_amount() const noexcept
-    {
-        return min_recurring_amount;
-    }
-
-    void set_start_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        start_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_start_date() const noexcept
-    {
-        return start_date;
-    }
-
-    void set_end_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        end_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_end_date() const noexcept
-    {
-        return end_date;
-    }
-
-    void set_periodicity(std::optional<SantanderMandatePeriodicity> value)
-    {
-        periodicity = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderMandatePeriodicity>& get_periodicity() const noexcept
-    {
-        return periodicity;
-    }
-
-    std::optional<MinorUnitValue> fixed_recurring_amount{};
-    std::optional<MinorUnitValue> min_recurring_amount{};
-    std::optional<PrimitiveDateTimeValue> start_date{};
-    std::optional<PrimitiveDateTimeValue> end_date{};
-    std::optional<SantanderMandatePeriodicity> periodicity{};
-};
-
-class SantanderPixAutomaticoReceiverDetails :
-    public serde::Serializer<SantanderPixAutomaticoReceiverDetails>
-{
-public:
-    void set_branch_code(std::optional<SecretValue> value)
-    {
-        branch_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_branch_code() const noexcept
-    {
-        return branch_code;
-    }
-
-    void set_account_number(std::optional<SecretValue> value)
-    {
-        account_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_account_number() const noexcept
-    {
-        return account_number;
-    }
-
-    void set_account_type(std::optional<AccountType> value)
-    {
-        account_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<AccountType>& get_account_type() const noexcept
-    {
-        return account_type;
-    }
-
-    std::optional<SecretValue> branch_code{};
-    std::optional<SecretValue> account_number{};
-    std::optional<AccountType> account_type{};
-};
-
-class ScheduledExpirationTime : public serde::Serializer<ScheduledExpirationTime>
+class ScheduledExpirationTime : public core::behavior::Serializer<ScheduledExpirationTime>
 {
 public:
     void set_date(PrimitiveDateTimeValue value)
@@ -13669,7 +8352,7 @@ public:
     std::optional<PixKeyValue> pix_key{};
 };
 
-class SdkInformation : public serde::Serializer<SdkInformation>
+class SdkInformation : public core::behavior::Serializer<SdkInformation>
 {
 public:
     void set_sdk_app_id(std::string value)
@@ -13763,34 +8446,7 @@ public:
     std::optional<DeviceDetails> device_details{};
 };
 
-class SdkNextAction : public serde::Serializer<SdkNextAction>
-{
-public:
-    void set_next_action(NextActionCall value)
-    {
-        next_action = std::move(value);
-    }
-
-    [[nodiscard]] const NextActionCall& get_next_action() const noexcept
-    {
-        return next_action;
-    }
-
-    void set_should_block_confirm(std::optional<bool> value)
-    {
-        should_block_confirm = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_should_block_confirm() const noexcept
-    {
-        return should_block_confirm;
-    }
-
-    NextActionCall next_action{};
-    std::optional<bool> should_block_confirm{};
-};
-
-class SdkNextActionData : public serde::Serializer<SdkNextActionData>
+class SdkNextActionData : public core::behavior::Serializer<SdkNextActionData>
 {
 public:
     void set_next_action(NextActionCall value)
@@ -13817,34 +8473,7 @@ public:
     std::optional<std::string> order_id{};
 };
 
-class SecretInfoToInitiateSdk : public serde::Serializer<SecretInfoToInitiateSdk>
-{
-public:
-    void set_display(SecretValue value)
-    {
-        display = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_display() const noexcept
-    {
-        return display;
-    }
-
-    void set_payment(std::optional<SecretValue> value)
-    {
-        payment = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_payment() const noexcept
-    {
-        return payment;
-    }
-
-    SecretValue display{};
-    std::optional<SecretValue> payment{};
-};
-
-class SepaAndBacsBillingDetails : public serde::Serializer<SepaAndBacsBillingDetails>
+class SepaAndBacsBillingDetails : public core::behavior::Serializer<SepaAndBacsBillingDetails>
 {
 public:
     void set_email(std::optional<EmailValue> value)
@@ -13871,205 +8500,7 @@ public:
     std::optional<SecretValue> name{};
 };
 
-class SepaBankTransferInstructions : public serde::Serializer<SepaBankTransferInstructions>
-{
-public:
-    void set_account_holder_name(SecretValue value)
-    {
-        account_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_account_holder_name() const noexcept
-    {
-        return account_holder_name;
-    }
-
-    void set_bic(SecretValue value)
-    {
-        bic = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_bic() const noexcept
-    {
-        return bic;
-    }
-
-    void set_country(std::string value)
-    {
-        country = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_country() const noexcept
-    {
-        return country;
-    }
-
-    void set_iban(SecretValue value)
-    {
-        iban = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_iban() const noexcept
-    {
-        return iban;
-    }
-
-    void set_reference(SecretValue value)
-    {
-        reference = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_reference() const noexcept
-    {
-        return reference;
-    }
-
-    SecretValue account_holder_name{};
-    SecretValue bic{};
-    std::string country{};
-    SecretValue iban{};
-    SecretValue reference{};
-};
-
-class SessionTokenForSimplifiedApplePay :
-    public serde::Serializer<SessionTokenForSimplifiedApplePay>
-{
-public:
-    void set_initiative_context(std::string value)
-    {
-        initiative_context = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_initiative_context() const noexcept
-    {
-        return initiative_context;
-    }
-
-    void set_merchant_business_country(std::optional<CountryAlpha2Value> value)
-    {
-        merchant_business_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>&
-    get_merchant_business_country() const noexcept
-    {
-        return merchant_business_country;
-    }
-
-    std::string initiative_context{};
-    std::optional<CountryAlpha2Value> merchant_business_country{};
-};
-
-class SessionTokenInfo : public serde::Serializer<SessionTokenInfo>
-{
-public:
-    void set_certificate(SecretValue value)
-    {
-        certificate = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_certificate() const noexcept
-    {
-        return certificate;
-    }
-
-    void set_certificate_keys(SecretValue value)
-    {
-        certificate_keys = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_certificate_keys() const noexcept
-    {
-        return certificate_keys;
-    }
-
-    void set_merchant_identifier(std::string value)
-    {
-        merchant_identifier = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_identifier() const noexcept
-    {
-        return merchant_identifier;
-    }
-
-    void set_display_name(std::string value)
-    {
-        display_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_display_name() const noexcept
-    {
-        return display_name;
-    }
-
-    void set_initiative(ApplepayInitiative value)
-    {
-        initiative = std::move(value);
-    }
-
-    [[nodiscard]] const ApplepayInitiative& get_initiative() const noexcept
-    {
-        return initiative;
-    }
-
-    void set_initiative_context(std::optional<std::string> value)
-    {
-        initiative_context = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_initiative_context() const noexcept
-    {
-        return initiative_context;
-    }
-
-    void set_merchant_business_country(std::optional<CountryAlpha2Value> value)
-    {
-        merchant_business_country = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CountryAlpha2Value>&
-    get_merchant_business_country() const noexcept
-    {
-        return merchant_business_country;
-    }
-
-    void set_payment_processing_details_at(std::optional<PaymentProcessingDetailsAt> value)
-    {
-        payment_processing_details_at = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentProcessingDetailsAt>&
-    get_payment_processing_details_at() const noexcept
-    {
-        return payment_processing_details_at;
-    }
-
-    void set_payment_processing_detail_input_type(
-        std::optional<PaymentProcessingDetailInputType> value
-    )
-    {
-        payment_processing_detail_input_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentProcessingDetailInputType>&
-    get_payment_processing_detail_input_type() const noexcept
-    {
-        return payment_processing_detail_input_type;
-    }
-
-    SecretValue certificate{};
-    SecretValue certificate_keys{};
-    std::string merchant_identifier{};
-    std::string display_name{};
-    ApplepayInitiative initiative{};
-    std::optional<std::string> initiative_context{};
-    std::optional<CountryAlpha2Value> merchant_business_country{};
-    std::optional<PaymentProcessingDetailsAt> payment_processing_details_at{};
-    std::optional<PaymentProcessingDetailInputType> payment_processing_detail_input_type{};
-};
-
-class SingleUseMandate : public serde::Serializer<SingleUseMandate>
+class SingleUseMandate : public core::behavior::Serializer<SingleUseMandate>
 {
 public:
     void set_amount(MinorUnitValue value)
@@ -14104,7 +8535,7 @@ enum class SortOn
     Modified,
 };
 
-class ThreeDsData : public serde::Serializer<ThreeDsData>
+class ThreeDsData : public core::behavior::Serializer<ThreeDsData>
 {
 public:
     void set_three_ds_authentication_url(SecretValue value)
@@ -14203,7 +8634,7 @@ enum class ThreeDsMethodKey
     JWT,
 };
 
-class UpiCollectData : public serde::Serializer<UpiCollectData>
+class UpiCollectData : public core::behavior::Serializer<UpiCollectData>
 {
 public:
     void set_vpa_id(std::optional<SecretValue> value)
@@ -14230,7 +8661,7 @@ public:
     std::optional<UpiSource> upi_source{};
 };
 
-class UpiIntentData : public serde::Serializer<UpiIntentData>
+class UpiIntentData : public core::behavior::Serializer<UpiIntentData>
 {
 public:
     void set_upi_source(std::optional<UpiSource> value)
@@ -14257,7 +8688,7 @@ public:
     std::optional<std::string> app_name{};
 };
 
-class UpiQrData : public serde::Serializer<UpiQrData>
+class UpiQrData : public core::behavior::Serializer<UpiQrData>
 {
 public:
     void set_upi_source(std::optional<UpiSource> value)
@@ -14273,7 +8704,7 @@ public:
     std::optional<UpiSource> upi_source{};
 };
 
-class UpiResponse : public serde::Serializer<UpiResponse>
+class UpiResponse : public core::behavior::Serializer<UpiResponse>
 {
 public:
     void set_details(std::optional<UpiAdditionalDataValue> value)
@@ -14289,34 +8720,7 @@ public:
     std::optional<UpiAdditionalDataValue> details{};
 };
 
-class VaultCardToken : public serde::Serializer<VaultCardToken>
-{
-public:
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    void set_card_cvc(std::optional<SecretValue> value)
-    {
-        card_cvc = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_cvc() const noexcept
-    {
-        return card_cvc;
-    }
-
-    std::optional<SecretValue> card_holder_name{};
-    std::optional<SecretValue> card_cvc{};
-};
-
-class VaultDetails : public serde::Serializer<VaultDetails>
+class VaultDetails : public core::behavior::Serializer<VaultDetails>
 {
 public:
     void set_internal_vault(std::optional<InternalVaultSessionDetails> value)
@@ -14345,34 +8749,7 @@ public:
     std::optional<VaultSessionDetails> external_vault_details{};
 };
 
-class VaultToken : public serde::Serializer<VaultToken>
-{
-public:
-    void set_card_cvc(SecretValue value)
-    {
-        card_cvc = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_card_cvc() const noexcept
-    {
-        return card_cvc;
-    }
-
-    void set_card_holder_name(std::optional<SecretValue> value)
-    {
-        card_holder_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_card_holder_name() const noexcept
-    {
-        return card_holder_name;
-    }
-
-    SecretValue card_cvc{};
-    std::optional<SecretValue> card_holder_name{};
-};
-
-class VgsSessionDetails : public serde::Serializer<VgsSessionDetails>
+class VgsSessionDetails : public core::behavior::Serializer<VgsSessionDetails>
 {
 public:
     void set_external_vault_id(SecretValue value)
@@ -14399,7 +8776,7 @@ public:
     std::string sdk_env{};
 };
 
-class VgsVaultData : public serde::Serializer<VgsVaultData>
+class VgsVaultData : public core::behavior::Serializer<VgsVaultData>
 {
 public:
     void set_vault_id(SecretValue value)
@@ -14426,7 +8803,7 @@ public:
     std::string environment{};
 };
 
-class VoucherNextStepData : public serde::Serializer<VoucherNextStepData>
+class VoucherNextStepData : public core::behavior::Serializer<VoucherNextStepData>
 {
 public:
     void set_entry_date(std::optional<std::string> value)
@@ -14541,7 +8918,7 @@ public:
     std::optional<std::string> raw_qr_data{};
 };
 
-class VoucherResponse : public serde::Serializer<VoucherResponse>
+class VoucherResponse : public core::behavior::Serializer<VoucherResponse>
 {
 public:
     void set_details(std::optional<VoucherData> value)
@@ -14557,7 +8934,7 @@ public:
     std::optional<VoucherData> details{};
 };
 
-class WaitScreenInstructions : public serde::Serializer<WaitScreenInstructions>
+class WaitScreenInstructions : public core::behavior::Serializer<WaitScreenInstructions>
 {
 public:
     void set_display_from_timestamp(std::int64_t value)
@@ -14595,7 +8972,7 @@ public:
     std::optional<PollConfig> poll_config{};
 };
 
-class WalletResponse : public serde::Serializer<WalletResponse>
+class WalletResponse : public core::behavior::Serializer<WalletResponse>
 {
 public:
     void set_details(std::optional<WalletResponseData> value)
@@ -14611,96 +8988,7 @@ public:
     std::optional<WalletResponseData> details{};
 };
 
-class WorldpayxmlData : public serde::Serializer<WorldpayxmlData>
-{
-public:
-    void set_funding_transaction_type(std::optional<WorldpayxmlFundingTransactionType> value)
-    {
-        funding_transaction_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<WorldpayxmlFundingTransactionType>&
-    get_funding_transaction_type() const noexcept
-    {
-        return funding_transaction_type;
-    }
-
-    void set_payment_purpose(std::optional<WorldpayxmlPaymentPurpose> value)
-    {
-        payment_purpose = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<WorldpayxmlPaymentPurpose>&
-    get_payment_purpose() const noexcept
-    {
-        return payment_purpose;
-    }
-
-    std::optional<WorldpayxmlFundingTransactionType> funding_transaction_type{};
-    std::optional<WorldpayxmlPaymentPurpose> payment_purpose{};
-};
-
-enum class AdditionalPaymentData
-{
-    Card,
-    BankRedirect,
-    Wallet,
-    PayLater,
-    BankTransfer,
-    Crypto,
-    BankDebit,
-    MandatePayment,
-    Reward,
-    RealTimePayment,
-    Upi,
-    GiftCard,
-    Voucher,
-    CardRedirect,
-    CardToken,
-    OpenBanking,
-    MobilePayment,
-    NetworkToken,
-};
-
-class Address : public serde::Serializer<Address>
-{
-public:
-    void set_address(std::optional<AddressDetails> value)
-    {
-        address = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<AddressDetails>& get_address() const noexcept
-    {
-        return address;
-    }
-
-    void set_phone(std::optional<PhoneDetailsValue> value)
-    {
-        phone = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PhoneDetailsValue>& get_phone() const noexcept
-    {
-        return phone;
-    }
-
-    void set_email(std::optional<EmailValue> value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email() const noexcept
-    {
-        return email;
-    }
-
-    std::optional<AddressDetails> address{};
-    std::optional<PhoneDetailsValue> phone{};
-    std::optional<EmailValue> email{};
-};
-
-class AddressDetailsWithPhone : public serde::Serializer<AddressDetailsWithPhone>
+class AddressDetailsWithPhone : public core::behavior::Serializer<AddressDetailsWithPhone>
 {
 public:
     void set_address(std::optional<AddressDetails> value)
@@ -14738,72 +9026,7 @@ public:
     std::optional<EmailValue> email{};
 };
 
-class AdyenConnectorMetadata : public serde::Serializer<AdyenConnectorMetadata>
-{
-public:
-    void set_testing(AdyenTestingData value)
-    {
-        testing = std::move(value);
-    }
-
-    [[nodiscard]] const AdyenTestingData& get_testing() const noexcept
-    {
-        return testing;
-    }
-
-    AdyenTestingData testing{};
-};
-
-class AmazonPayDeliveryOptions : public serde::Serializer<AmazonPayDeliveryOptions>
-{
-public:
-    void set_id(std::string value)
-    {
-        id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_id() const noexcept
-    {
-        return id;
-    }
-
-    void set_price(AmazonPayDeliveryPrice value)
-    {
-        price = std::move(value);
-    }
-
-    [[nodiscard]] const AmazonPayDeliveryPrice& get_price() const noexcept
-    {
-        return price;
-    }
-
-    void set_shipping_method(AmazonPayShippingMethod value)
-    {
-        shipping_method = std::move(value);
-    }
-
-    [[nodiscard]] const AmazonPayShippingMethod& get_shipping_method() const noexcept
-    {
-        return shipping_method;
-    }
-
-    void set_is_default(bool value)
-    {
-        is_default = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_is_default() const noexcept
-    {
-        return is_default;
-    }
-
-    std::string id{};
-    AmazonPayDeliveryPrice price{};
-    AmazonPayShippingMethod shipping_method{};
-    bool is_default{};
-};
-
-class ApiIssuerErrorDetails : public serde::Serializer<ApiIssuerErrorDetails>
+class ApiIssuerErrorDetails : public core::behavior::Serializer<ApiIssuerErrorDetails>
 {
 public:
     void set_code(std::optional<std::string> value)
@@ -14841,438 +9064,7 @@ public:
     std::optional<ApiNetworkErrorDetails> network_details{};
 };
 
-class ApplePayMetadata : public serde::Serializer<ApplePayMetadata>
-{
-public:
-    void set_payment_request_data(PaymentRequestMetadata value)
-    {
-        payment_request_data = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentRequestMetadata& get_payment_request_data() const noexcept
-    {
-        return payment_request_data;
-    }
-
-    void set_session_token_data(SessionTokenInfo value)
-    {
-        session_token_data = std::move(value);
-    }
-
-    [[nodiscard]] const SessionTokenInfo& get_session_token_data() const noexcept
-    {
-        return session_token_data;
-    }
-
-    PaymentRequestMetadata payment_request_data{};
-    SessionTokenInfo session_token_data{};
-};
-
-class ApplePayRecurringDetails : public serde::Serializer<ApplePayRecurringDetails>
-{
-public:
-    void set_payment_description(std::string value)
-    {
-        payment_description = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_description() const noexcept
-    {
-        return payment_description;
-    }
-
-    void set_regular_billing(ApplePayRegularBillingDetails value)
-    {
-        regular_billing = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayRegularBillingDetails& get_regular_billing() const noexcept
-    {
-        return regular_billing;
-    }
-
-    void set_billing_agreement(std::optional<std::string> value)
-    {
-        billing_agreement = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_billing_agreement() const noexcept
-    {
-        return billing_agreement;
-    }
-
-    void set_management_url(UrlValue value)
-    {
-        management_url = std::move(value);
-    }
-
-    [[nodiscard]] const UrlValue& get_management_url() const noexcept
-    {
-        return management_url;
-    }
-
-    std::string payment_description{};
-    ApplePayRegularBillingDetails regular_billing{};
-    std::optional<std::string> billing_agreement{};
-    UrlValue management_url{};
-};
-
-class ApplePayRecurringPaymentRequest : public serde::Serializer<ApplePayRecurringPaymentRequest>
-{
-public:
-    void set_payment_description(std::string value)
-    {
-        payment_description = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_description() const noexcept
-    {
-        return payment_description;
-    }
-
-    void set_regular_billing(ApplePayRegularBillingRequest value)
-    {
-        regular_billing = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayRegularBillingRequest& get_regular_billing() const noexcept
-    {
-        return regular_billing;
-    }
-
-    void set_billing_agreement(std::optional<std::string> value)
-    {
-        billing_agreement = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_billing_agreement() const noexcept
-    {
-        return billing_agreement;
-    }
-
-    void set_management_u_r_l(UrlValue value)
-    {
-        management_u_r_l = std::move(value);
-    }
-
-    [[nodiscard]] const UrlValue& get_management_u_r_l() const noexcept
-    {
-        return management_u_r_l;
-    }
-
-    std::string payment_description{};
-    ApplePayRegularBillingRequest regular_billing{};
-    std::optional<std::string> billing_agreement{};
-    UrlValue management_u_r_l{};
-};
-
-class ApplePayWalletData : public serde::Serializer<ApplePayWalletData>
-{
-public:
-    void set_payment_data(ApplePayPaymentDataValue value)
-    {
-        payment_data = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayPaymentDataValue& get_payment_data() const noexcept
-    {
-        return payment_data;
-    }
-
-    void set_payment_method(ApplepayPaymentMethod value)
-    {
-        payment_method = std::move(value);
-    }
-
-    [[nodiscard]] const ApplepayPaymentMethod& get_payment_method() const noexcept
-    {
-        return payment_method;
-    }
-
-    void set_transaction_identifier(std::string value)
-    {
-        transaction_identifier = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_transaction_identifier() const noexcept
-    {
-        return transaction_identifier;
-    }
-
-    ApplePayPaymentDataValue payment_data{};
-    ApplepayPaymentMethod payment_method{};
-    std::string transaction_identifier{};
-};
-
-class ApplepayCombinedSessionTokenData : public serde::Serializer<ApplepayCombinedSessionTokenData>
-{
-public:
-    void set_apple_pay_combined(ApplePayCombinedWrapper value)
-    {
-        apple_pay_combined = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayCombinedWrapper& get_apple_pay_combined() const noexcept
-    {
-        return apple_pay_combined;
-    }
-
-    ApplePayCombinedWrapper apple_pay_combined{};
-};
-
-class ApplepayConnectorMetadataRequest : public serde::Serializer<ApplepayConnectorMetadataRequest>
-{
-public:
-    void set_session_token_data(std::optional<SessionTokenInfo> value)
-    {
-        session_token_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SessionTokenInfo>& get_session_token_data() const noexcept
-    {
-        return session_token_data;
-    }
-
-    std::optional<SessionTokenInfo> session_token_data{};
-};
-
-class BankCodeInformation : public serde::Serializer<BankCodeInformation>
-{
-public:
-    void set_bank_name(BankNamesValue value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const BankNamesValue& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_connector_codes(std::vector<ConnectorCode> value)
-    {
-        connector_codes = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<ConnectorCode>& get_connector_codes() const noexcept
-    {
-        return connector_codes;
-    }
-
-    BankNamesValue bank_name{};
-    std::vector<ConnectorCode> connector_codes{};
-};
-
-class BankDebitBilling : public serde::Serializer<BankDebitBilling>
-{
-public:
-    void set_name(std::optional<SecretValue> value)
-    {
-        name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_name() const noexcept
-    {
-        return name;
-    }
-
-    void set_email(std::optional<EmailValue> value)
-    {
-        email = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EmailValue>& get_email() const noexcept
-    {
-        return email;
-    }
-
-    void set_address(std::optional<AddressDetails> value)
-    {
-        address = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<AddressDetails>& get_address() const noexcept
-    {
-        return address;
-    }
-
-    std::optional<SecretValue> name{};
-    std::optional<EmailValue> email{};
-    std::optional<AddressDetails> address{};
-};
-
-class BankRedirectResponse : public serde::Serializer<BankRedirectResponse>
-{
-public:
-    void set_bank_name(std::optional<BankNamesValue> value)
-    {
-        bank_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankNamesValue>& get_bank_name() const noexcept
-    {
-        return bank_name;
-    }
-
-    void set_details(std::optional<BankRedirectDetailsValue> value)
-    {
-        details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BankRedirectDetailsValue>& get_details() const noexcept
-    {
-        return details;
-    }
-
-    void set_interac(std::optional<InteracPaymentMethod> value)
-    {
-        interac = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<InteracPaymentMethod>& get_interac() const noexcept
-    {
-        return interac;
-    }
-
-    std::optional<BankNamesValue> bank_name{};
-    std::optional<BankRedirectDetailsValue> details{};
-    std::optional<InteracPaymentMethod> interac{};
-};
-
-enum class BankTransferInstructions
-{
-    DokuBankTransferInstructions,
-    AchCreditTransfer,
-    SepaBankInstructions,
-    BacsBankInstructions,
-    Multibanco,
-};
-
-enum class BillingConnectorPaymentMethodDetails
-{
-    Card,
-};
-
-class CheckAndApplyPaymentMethodDataResponse :
-    public serde::Serializer<CheckAndApplyPaymentMethodDataResponse>
-{
-public:
-    void set_balances(std::vector<EligibilityBalanceCheckResponseItem> value)
-    {
-        balances = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<EligibilityBalanceCheckResponseItem>&
-    get_balances() const noexcept
-    {
-        return balances;
-    }
-
-    void set_remaining_amount(MinorUnitValue value)
-    {
-        remaining_amount = std::move(value);
-    }
-
-    [[nodiscard]] const MinorUnitValue& get_remaining_amount() const noexcept
-    {
-        return remaining_amount;
-    }
-
-    void set_currency(CurrencyValue value)
-    {
-        currency = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency() const noexcept
-    {
-        return currency;
-    }
-
-    void set_requires_additional_pm_data(bool value)
-    {
-        requires_additional_pm_data = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_requires_additional_pm_data() const noexcept
-    {
-        return requires_additional_pm_data;
-    }
-
-    void set_surcharge_details(
-        std::optional<std::vector<ApplyPaymentMethodDataSurchargeResponseItem>> value
-    )
-    {
-        surcharge_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::vector<ApplyPaymentMethodDataSurchargeResponseItem>>&
-    get_surcharge_details() const noexcept
-    {
-        return surcharge_details;
-    }
-
-    std::vector<EligibilityBalanceCheckResponseItem> balances{};
-    MinorUnitValue remaining_amount{};
-    CurrencyValue currency{};
-    bool requires_additional_pm_data{};
-    std::optional<std::vector<ApplyPaymentMethodDataSurchargeResponseItem>> surcharge_details{};
-};
-
-class CollectionActions : public serde::Serializer<CollectionActions>
-{
-public:
-    void set_legal_protest(std::optional<ProtestRules> value)
-    {
-        legal_protest = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ProtestRules>& get_legal_protest() const noexcept
-    {
-        return legal_protest;
-    }
-
-    void set_auto_write_off_days(std::optional<std::uint32_t> value)
-    {
-        auto_write_off_days = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::uint32_t>& get_auto_write_off_days() const noexcept
-    {
-        return auto_write_off_days;
-    }
-
-    std::optional<ProtestRules> legal_protest{};
-    std::optional<std::uint32_t> auto_write_off_days{};
-};
-
-class CustomRecoveryPaymentMethodData : public serde::Serializer<CustomRecoveryPaymentMethodData>
-{
-public:
-    void set_primary_processor_payment_method_token(SecretValue value)
-    {
-        primary_processor_payment_method_token = std::move(value);
-    }
-
-    [[nodiscard]] const SecretValue& get_primary_processor_payment_method_token() const noexcept
-    {
-        return primary_processor_payment_method_token;
-    }
-
-    void set_payment_method_metadata(AdditionalCardInfo value)
-    {
-        payment_method_metadata = std::move(value);
-    }
-
-    [[nodiscard]] const AdditionalCardInfo& get_payment_method_metadata() const noexcept
-    {
-        return payment_method_metadata;
-    }
-
-    SecretValue primary_processor_payment_method_token{};
-    AdditionalCardInfo payment_method_metadata{};
-};
-
-class EligibilityOfferDetails : public serde::Serializer<EligibilityOfferDetails>
+class EligibilityOfferDetails : public core::behavior::Serializer<EligibilityOfferDetails>
 {
 public:
     void set_uplifted_offer_quote_ids(std::vector<std::string> value)
@@ -15299,245 +9091,7 @@ public:
     std::vector<EligibleOffer> eligible_offers{};
 };
 
-enum class EligibilityPaymentMethodData
-{
-    Card,
-    CardBin,
-    CardRedirect,
-    Wallet,
-    PayLater,
-    BankRedirect,
-    BankDebit,
-    BankTransfer,
-    RealTimePayment,
-    Crypto,
-    MandatePayment,
-    Reward,
-    Upi,
-    Voucher,
-    GiftCard,
-    CardToken,
-    OpenBanking,
-    MobilePayment,
-    NetworkToken,
-};
-
-class GooglePayThirdPartySdk : public serde::Serializer<GooglePayThirdPartySdk>
-{
-public:
-    void set_delayed_session_token(bool value)
-    {
-        delayed_session_token = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_delayed_session_token() const noexcept
-    {
-        return delayed_session_token;
-    }
-
-    void set_connector(std::string value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_sdk_next_action(SdkNextAction value)
-    {
-        sdk_next_action = std::move(value);
-    }
-
-    [[nodiscard]] const SdkNextAction& get_sdk_next_action() const noexcept
-    {
-        return sdk_next_action;
-    }
-
-    bool delayed_session_token{};
-    std::string connector{};
-    SdkNextAction sdk_next_action{};
-};
-
-class GooglePayTokenizationSpecification :
-    public serde::Serializer<GooglePayTokenizationSpecification>
-{
-public:
-    void set_tokenization_type(GooglePayTokenizationType value)
-    {
-        tokenization_type = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayTokenizationType& get_tokenization_type() const noexcept
-    {
-        return tokenization_type;
-    }
-
-    void set_parameters(GooglePayTokenizationParameters value)
-    {
-        parameters = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayTokenizationParameters& get_parameters() const noexcept
-    {
-        return parameters;
-    }
-
-    GooglePayTokenizationType tokenization_type{};
-    GooglePayTokenizationParameters parameters{};
-};
-
-class GooglePayWalletData : public serde::Serializer<GooglePayWalletData>
-{
-public:
-    void set_pm_type(std::string value)
-    {
-        pm_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_pm_type() const noexcept
-    {
-        return pm_type;
-    }
-
-    void set_description(std::string value)
-    {
-        description = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_description() const noexcept
-    {
-        return description;
-    }
-
-    void set_info(GooglePayPaymentMethodInfo value)
-    {
-        info = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayPaymentMethodInfo& get_info() const noexcept
-    {
-        return info;
-    }
-
-    void set_tokenization_data(GpayTokenizationDataValue value)
-    {
-        tokenization_data = std::move(value);
-    }
-
-    [[nodiscard]] const GpayTokenizationDataValue& get_tokenization_data() const noexcept
-    {
-        return tokenization_data;
-    }
-
-    std::string pm_type{};
-    std::string description{};
-    GooglePayPaymentMethodInfo info{};
-    GpayTokenizationDataValue tokenization_data{};
-};
-
-class GpayAllowedMethodsParameters : public serde::Serializer<GpayAllowedMethodsParameters>
-{
-public:
-    void set_allowed_auth_methods(std::vector<std::string> value)
-    {
-        allowed_auth_methods = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_allowed_auth_methods() const noexcept
-    {
-        return allowed_auth_methods;
-    }
-
-    void set_allowed_card_networks(std::vector<std::string> value)
-    {
-        allowed_card_networks = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_allowed_card_networks() const noexcept
-    {
-        return allowed_card_networks;
-    }
-
-    void set_billing_address_required(std::optional<bool> value)
-    {
-        billing_address_required = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_billing_address_required() const noexcept
-    {
-        return billing_address_required;
-    }
-
-    void set_billing_address_parameters(std::optional<GpayBillingAddressParameters> value)
-    {
-        billing_address_parameters = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<GpayBillingAddressParameters>&
-    get_billing_address_parameters() const noexcept
-    {
-        return billing_address_parameters;
-    }
-
-    void set_assurance_details_required(std::optional<bool> value)
-    {
-        assurance_details_required = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_assurance_details_required() const noexcept
-    {
-        return assurance_details_required;
-    }
-
-    void set_allow_credit_cards(std::optional<bool> value)
-    {
-        allow_credit_cards = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_allow_credit_cards() const noexcept
-    {
-        return allow_credit_cards;
-    }
-
-    std::vector<std::string> allowed_auth_methods{};
-    std::vector<std::string> allowed_card_networks{};
-    std::optional<bool> billing_address_required{};
-    std::optional<GpayBillingAddressParameters> billing_address_parameters{};
-    std::optional<bool> assurance_details_required{};
-    std::optional<bool> allow_credit_cards{};
-};
-
-class GpayTokenizationSpecification : public serde::Serializer<GpayTokenizationSpecification>
-{
-public:
-    void set_token_specification_type(GooglePayTokenizationSpecificationType value)
-    {
-        token_specification_type = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayTokenizationSpecificationType&
-    get_token_specification_type() const noexcept
-    {
-        return token_specification_type;
-    }
-
-    void set_parameters(GpayTokenParameters value)
-    {
-        parameters = std::move(value);
-    }
-
-    [[nodiscard]] const GpayTokenParameters& get_parameters() const noexcept
-    {
-        return parameters;
-    }
-
-    GooglePayTokenizationSpecificationType token_specification_type{};
-    GpayTokenParameters parameters{};
-};
-
-class MandateValidationFields : public serde::Serializer<MandateValidationFields>
+class MandateValidationFields : public core::behavior::Serializer<MandateValidationFields>
 {
 public:
     void set_recurring_details(std::optional<RecurringDetailsValue> value)
@@ -15608,7 +9162,7 @@ public:
     std::optional<bool> off_session{};
 };
 
-class NetworkParams : public serde::Serializer<NetworkParams>
+class NetworkParams : public core::behavior::Serializer<NetworkParams>
 {
 public:
     void set_cartes_bancaires(std::optional<CartesBancairesParams> value)
@@ -15643,7 +9197,7 @@ enum class NextActionData
     InvokeDdc,
 };
 
-class Order : public serde::Serializer<Order>
+class Order : public core::behavior::Serializer<Order>
 {
 public:
     void set_on(SortOn value)
@@ -15670,24 +9224,7 @@ public:
     SortBy by{};
 };
 
-class PaymentAttemptFeatureMetadata : public serde::Serializer<PaymentAttemptFeatureMetadata>
-{
-public:
-    void set_revenue_recovery(std::optional<PaymentAttemptRevenueRecoveryData> value)
-    {
-        revenue_recovery = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentAttemptRevenueRecoveryData>&
-    get_revenue_recovery() const noexcept
-    {
-        return revenue_recovery;
-    }
-
-    std::optional<PaymentAttemptRevenueRecoveryData> revenue_recovery{};
-};
-
-class PaymentLinkDetails : public serde::Serializer<PaymentLinkDetails>
+class PaymentLinkDetails : public core::behavior::Serializer<PaymentLinkDetails>
 {
 public:
     void set_amount(StringMajorUnitValue value)
@@ -16161,7 +9698,7 @@ public:
     std::optional<std::string> payment_methods_separator_text{};
 };
 
-class PaymentLinkListResponse : public serde::Serializer<PaymentLinkListResponse>
+class PaymentLinkListResponse : public core::behavior::Serializer<PaymentLinkListResponse>
 {
 public:
     void set_size(std::size_t value)
@@ -16199,7 +9736,7 @@ public:
     std::vector<RetrievePaymentLinkResponse> data{};
 };
 
-class PaymentLinkStatusDetails : public serde::Serializer<PaymentLinkStatusDetails>
+class PaymentLinkStatusDetails : public core::behavior::Serializer<PaymentLinkStatusDetails>
 {
 public:
     void set_amount(StringMajorUnitValue value)
@@ -16417,7 +9954,7 @@ public:
     std::optional<std::uint32_t> redirect_delay_seconds{};
 };
 
-class PaymentListConstraints : public serde::Serializer<PaymentListConstraints>
+class PaymentListConstraints : public core::behavior::Serializer<PaymentListConstraints>
 {
 public:
     void set_payment_id(std::optional<GlobalPaymentIdValue> value)
@@ -16704,58 +10241,8 @@ public:
     std::optional<std::string> merchant_order_reference_id{};
 };
 
-enum class PaymentMethodData
-{
-    Card,
-    CardWithNoCVC,
-    CardRedirect,
-    Wallet,
-    PayLater,
-    BankRedirect,
-    BankDebit,
-    BankTransfer,
-    RealTimePayment,
-    Crypto,
-    MandatePayment,
-    Reward,
-    Upi,
-    Voucher,
-    GiftCard,
-    CardToken,
-    OpenBanking,
-    MobilePayment,
-    NetworkToken,
-    NetworkTransactionIdAndCardDetails,
-    NetworkTransactionIdAndNetworkTokenDetails,
-    NetworkTransactionIdAndDecryptedWalletTokenDetails,
-    ProxyCard,
-    VaultCardTokenData,
-};
-
-enum class PaymentMethodDataResponse
-{
-    Card,
-    BankTransfer,
-    Wallet,
-    PayLater,
-    BankRedirect,
-    Crypto,
-    BankDebit,
-    MandatePayment,
-    Reward,
-    RealTimePayment,
-    Upi,
-    Voucher,
-    GiftCard,
-    CardRedirect,
-    CardToken,
-    OpenBanking,
-    MobilePayment,
-    NetworkToken,
-};
-
 class PaymentMethodListResponseForPayments :
-    public serde::Serializer<PaymentMethodListResponseForPayments>
+    public core::behavior::Serializer<PaymentMethodListResponseForPayments>
 {
 public:
     void set_payment_methods_enabled(std::vector<ResponsePaymentMethodTypesForPayments> value)
@@ -16786,7 +10273,7 @@ public:
     std::optional<std::vector<CustomerPaymentMethodResponseItemValue>> customer_payment_methods{};
 };
 
-class PaymentsCaptureResponse : public serde::Serializer<PaymentsCaptureResponse>
+class PaymentsCaptureResponse : public core::behavior::Serializer<PaymentsCaptureResponse>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -16825,7 +10312,7 @@ public:
 };
 
 class PaymentsDynamicTaxCalculationResponse :
-    public serde::Serializer<PaymentsDynamicTaxCalculationResponse>
+    public core::behavior::Serializer<PaymentsDynamicTaxCalculationResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -16885,7 +10372,8 @@ public:
     DisplayAmountOnSdk display_amount{};
 };
 
-class PaymentsEligibilityCheckResponse : public serde::Serializer<PaymentsEligibilityCheckResponse>
+class PaymentsEligibilityCheckResponse :
+    public core::behavior::Serializer<PaymentsEligibilityCheckResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -16913,7 +10401,7 @@ public:
 };
 
 class PaymentsExternalAuthenticationRequest :
-    public serde::Serializer<PaymentsExternalAuthenticationRequest>
+    public core::behavior::Serializer<PaymentsExternalAuthenticationRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -16973,7 +10461,7 @@ public:
     ThreeDsCompletionIndicator threeds_method_comp_ind{};
 };
 
-class PaymentsListResponseItem : public serde::Serializer<PaymentsListResponseItem>
+class PaymentsListResponseItem : public core::behavior::Serializer<PaymentsListResponseItem>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -17327,127 +10815,7 @@ public:
     bool is_split_payment{};
 };
 
-class PaypalSessionTokenResponse : public serde::Serializer<PaypalSessionTokenResponse>
-{
-public:
-    void set_connector(std::string value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_session_token(std::string value)
-    {
-        session_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_session_token() const noexcept
-    {
-        return session_token;
-    }
-
-    void set_sdk_next_action(SdkNextAction value)
-    {
-        sdk_next_action = std::move(value);
-    }
-
-    [[nodiscard]] const SdkNextAction& get_sdk_next_action() const noexcept
-    {
-        return sdk_next_action;
-    }
-
-    void set_client_token(std::optional<std::string> value)
-    {
-        client_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_client_token() const noexcept
-    {
-        return client_token;
-    }
-
-    void set_transaction_info(std::optional<PaypalTransactionInfo> value)
-    {
-        transaction_info = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaypalTransactionInfo>& get_transaction_info() const noexcept
-    {
-        return transaction_info;
-    }
-
-    void set_data_user_id_token(std::optional<std::string> value)
-    {
-        data_user_id_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_data_user_id_token() const noexcept
-    {
-        return data_user_id_token;
-    }
-
-    void set_currency(std::optional<CurrencyValue> value)
-    {
-        currency = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CurrencyValue>& get_currency() const noexcept
-    {
-        return currency;
-    }
-
-    void set_intent(std::optional<PaypalCaptureMethod> value)
-    {
-        intent = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaypalCaptureMethod>& get_intent() const noexcept
-    {
-        return intent;
-    }
-
-    std::string connector{};
-    std::string session_token{};
-    SdkNextAction sdk_next_action{};
-    std::optional<std::string> client_token{};
-    std::optional<PaypalTransactionInfo> transaction_info{};
-    std::optional<std::string> data_user_id_token{};
-    std::optional<CurrencyValue> currency{};
-    std::optional<PaypalCaptureMethod> intent{};
-};
-
-class PenaltyRules : public serde::Serializer<PenaltyRules>
-{
-public:
-    void set_fixed_penalty(std::optional<PenaltyDetail> value)
-    {
-        fixed_penalty = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PenaltyDetail>& get_fixed_penalty() const noexcept
-    {
-        return fixed_penalty;
-    }
-
-    void set_interest(std::optional<InterestDetail> value)
-    {
-        interest = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<InterestDetail>& get_interest() const noexcept
-    {
-        return interest;
-    }
-
-    std::optional<PenaltyDetail> fixed_penalty{};
-    std::optional<InterestDetail> interest{};
-};
-
-class PixAutomaticoMitData : public serde::Serializer<PixAutomaticoMitData>
+class PixAutomaticoMitData : public core::behavior::Serializer<PixAutomaticoMitData>
 {
 public:
     void set_receiver_details(std::optional<SantanderPixAutomaticoReceiverDetails> value)
@@ -17487,7 +10855,7 @@ public:
     std::optional<bool> auto_adjust_date{};
 };
 
-class PixAutomaticoPushData : public serde::Serializer<PixAutomaticoPushData>
+class PixAutomaticoPushData : public core::behavior::Serializer<PixAutomaticoPushData>
 {
 public:
     void set_time(std::uint32_t value)
@@ -17525,7 +10893,7 @@ public:
     std::optional<SantanderMandateDetails> mandate_details{};
 };
 
-class PixAutomaticoQrData : public serde::Serializer<PixAutomaticoQrData>
+class PixAutomaticoQrData : public core::behavior::Serializer<PixAutomaticoQrData>
 {
 public:
     void set_retry_policy(std::optional<bool> value)
@@ -17552,7 +10920,7 @@ public:
     std::optional<SantanderMandateDetails> mandate_details{};
 };
 
-class PlatformPaymentListItem : public serde::Serializer<PlatformPaymentListItem>
+class PlatformPaymentListItem : public core::behavior::Serializer<PlatformPaymentListItem>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -18195,13 +11563,8 @@ public:
     std::optional<std::vector<InstallmentOptionValue>> installment_options{};
 };
 
-enum class ProxyPaymentMethodData
-{
-    ProxyCard,
-    VaultToken,
-};
-
-class RecoveryPaymentsListResponseItem : public serde::Serializer<RecoveryPaymentsListResponseItem>
+class RecoveryPaymentsListResponseItem :
+    public core::behavior::Serializer<RecoveryPaymentsListResponseItem>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -18418,292 +11781,7 @@ public:
     std::optional<PrimitiveDateTimeValue> last_attempt_at{};
 };
 
-class SamsungPayAppWalletData : public serde::Serializer<SamsungPayAppWalletData>
-{
-public:
-    void set_token_data(SamsungPayTokenData value)
-    {
-        token_data = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayTokenData& get_token_data() const noexcept
-    {
-        return token_data;
-    }
-
-    void set_payment_card_brand(SamsungPayCardBrand value)
-    {
-        payment_card_brand = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayCardBrand& get_payment_card_brand() const noexcept
-    {
-        return payment_card_brand;
-    }
-
-    void set_payment_currency_type(std::string value)
-    {
-        payment_currency_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_currency_type() const noexcept
-    {
-        return payment_currency_type;
-    }
-
-    void set_payment_last4_dpan(std::optional<std::string> value)
-    {
-        payment_last4_dpan = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_payment_last4_dpan() const noexcept
-    {
-        return payment_last4_dpan;
-    }
-
-    void set_payment_last4_fpan(std::string value)
-    {
-        payment_last4_fpan = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_last4_fpan() const noexcept
-    {
-        return payment_last4_fpan;
-    }
-
-    void set_merchant_ref(std::optional<std::string> value)
-    {
-        merchant_ref = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_merchant_ref() const noexcept
-    {
-        return merchant_ref;
-    }
-
-    void set_method(std::optional<std::string> value)
-    {
-        method = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_method() const noexcept
-    {
-        return method;
-    }
-
-    void set_recurring_payment(std::optional<bool> value)
-    {
-        recurring_payment = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_recurring_payment() const noexcept
-    {
-        return recurring_payment;
-    }
-
-    SamsungPayTokenData token_data{};
-    SamsungPayCardBrand payment_card_brand{};
-    std::string payment_currency_type{};
-    std::optional<std::string> payment_last4_dpan{};
-    std::string payment_last4_fpan{};
-    std::optional<std::string> merchant_ref{};
-    std::optional<std::string> method{};
-    std::optional<bool> recurring_payment{};
-};
-
-class SamsungPaySessionTokenResponse : public serde::Serializer<SamsungPaySessionTokenResponse>
-{
-public:
-    void set_version(std::string value)
-    {
-        version = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_version() const noexcept
-    {
-        return version;
-    }
-
-    void set_service_id(std::string value)
-    {
-        service_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_service_id() const noexcept
-    {
-        return service_id;
-    }
-
-    void set_order_number(std::string value)
-    {
-        order_number = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_order_number() const noexcept
-    {
-        return order_number;
-    }
-
-    void set_merchant_payment_information(SamsungPayMerchantPaymentInformation value)
-    {
-        merchant_payment_information = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayMerchantPaymentInformation&
-    get_merchant_payment_information() const noexcept
-    {
-        return merchant_payment_information;
-    }
-
-    void set_amount(SamsungPayAmountDetails value)
-    {
-        amount = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayAmountDetails& get_amount() const noexcept
-    {
-        return amount;
-    }
-
-    void set_protocol(SamsungPayProtocolType value)
-    {
-        protocol = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayProtocolType& get_protocol() const noexcept
-    {
-        return protocol;
-    }
-
-    void set_allowed_brands(std::vector<std::string> value)
-    {
-        allowed_brands = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<std::string>& get_allowed_brands() const noexcept
-    {
-        return allowed_brands;
-    }
-
-    void set_billing_address_required(bool value)
-    {
-        billing_address_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_billing_address_required() const noexcept
-    {
-        return billing_address_required;
-    }
-
-    void set_shipping_address_required(bool value)
-    {
-        shipping_address_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_shipping_address_required() const noexcept
-    {
-        return shipping_address_required;
-    }
-
-    std::string version{};
-    std::string service_id{};
-    std::string order_number{};
-    SamsungPayMerchantPaymentInformation merchant_payment_information{};
-    SamsungPayAmountDetails amount{};
-    SamsungPayProtocolType protocol{};
-    std::vector<std::string> allowed_brands{};
-    bool billing_address_required{};
-    bool shipping_address_required{};
-};
-
-class SamsungPayWebWalletData : public serde::Serializer<SamsungPayWebWalletData>
-{
-public:
-    void set_method(std::optional<std::string> value)
-    {
-        method = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_method() const noexcept
-    {
-        return method;
-    }
-
-    void set_recurring_payment(std::optional<bool> value)
-    {
-        recurring_payment = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_recurring_payment() const noexcept
-    {
-        return recurring_payment;
-    }
-
-    void set_card_brand(SamsungPayCardBrand value)
-    {
-        card_brand = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayCardBrand& get_card_brand() const noexcept
-    {
-        return card_brand;
-    }
-
-    void set_card_last_four_digits(std::string value)
-    {
-        card_last_four_digits = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_card_last_four_digits() const noexcept
-    {
-        return card_last_four_digits;
-    }
-
-    void set_token_data(SamsungPayTokenData value)
-    {
-        token_data = std::move(value);
-    }
-
-    [[nodiscard]] const SamsungPayTokenData& get_token_data() const noexcept
-    {
-        return token_data;
-    }
-
-    std::optional<std::string> method{};
-    std::optional<bool> recurring_payment{};
-    SamsungPayCardBrand card_brand{};
-    std::string card_last_four_digits{};
-    SamsungPayTokenData token_data{};
-};
-
-class SantanderPaymentDiscountRules : public serde::Serializer<SantanderPaymentDiscountRules>
-{
-public:
-    void set_discount_type(std::optional<DiscountType> value)
-    {
-        discount_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<DiscountType>& get_discount_type() const noexcept
-    {
-        return discount_type;
-    }
-
-    void set_tiers(std::vector<DiscountTier> value)
-    {
-        tiers = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<DiscountTier>& get_tiers() const noexcept
-    {
-        return tiers;
-    }
-
-    std::optional<DiscountType> discount_type{};
-    std::vector<DiscountTier> tiers{};
-};
-
-class ThirdPartySdkSessionResponse : public serde::Serializer<ThirdPartySdkSessionResponse>
+class ThirdPartySdkSessionResponse : public core::behavior::Serializer<ThirdPartySdkSessionResponse>
 {
 public:
     void set_secrets(SecretInfoToInitiateSdk value)
@@ -18719,425 +11797,7 @@ public:
     SecretInfoToInitiateSdk secrets{};
 };
 
-class AmazonPaySessionTokenResponse : public serde::Serializer<AmazonPaySessionTokenResponse>
-{
-public:
-    void set_merchant_id(std::string value)
-    {
-        merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept
-    {
-        return merchant_id;
-    }
-
-    void set_ledger_currency(CurrencyValue value)
-    {
-        ledger_currency = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_ledger_currency() const noexcept
-    {
-        return ledger_currency;
-    }
-
-    void set_store_id(std::string value)
-    {
-        store_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_store_id() const noexcept
-    {
-        return store_id;
-    }
-
-    void set_payment_intent(AmazonPayPaymentIntent value)
-    {
-        payment_intent = std::move(value);
-    }
-
-    [[nodiscard]] const AmazonPayPaymentIntent& get_payment_intent() const noexcept
-    {
-        return payment_intent;
-    }
-
-    void set_total_shipping_amount(StringMajorUnitValue value)
-    {
-        total_shipping_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_shipping_amount() const noexcept
-    {
-        return total_shipping_amount;
-    }
-
-    void set_total_tax_amount(StringMajorUnitValue value)
-    {
-        total_tax_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_tax_amount() const noexcept
-    {
-        return total_tax_amount;
-    }
-
-    void set_total_base_amount(StringMajorUnitValue value)
-    {
-        total_base_amount = std::move(value);
-    }
-
-    [[nodiscard]] const StringMajorUnitValue& get_total_base_amount() const noexcept
-    {
-        return total_base_amount;
-    }
-
-    void set_delivery_options(std::vector<AmazonPayDeliveryOptions> value)
-    {
-        delivery_options = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<AmazonPayDeliveryOptions>& get_delivery_options() const noexcept
-    {
-        return delivery_options;
-    }
-
-    std::string merchant_id{};
-    CurrencyValue ledger_currency{};
-    std::string store_id{};
-    AmazonPayPaymentIntent payment_intent{};
-    StringMajorUnitValue total_shipping_amount{};
-    StringMajorUnitValue total_tax_amount{};
-    StringMajorUnitValue total_base_amount{};
-    std::vector<AmazonPayDeliveryOptions> delivery_options{};
-};
-
-class ApplePayPaymentRequest : public serde::Serializer<ApplePayPaymentRequest>
-{
-public:
-    void set_country_code(CountryAlpha2Value value)
-    {
-        country_code = std::move(value);
-    }
-
-    [[nodiscard]] const CountryAlpha2Value& get_country_code() const noexcept
-    {
-        return country_code;
-    }
-
-    void set_currency_code(CurrencyValue value)
-    {
-        currency_code = std::move(value);
-    }
-
-    [[nodiscard]] const CurrencyValue& get_currency_code() const noexcept
-    {
-        return currency_code;
-    }
-
-    void set_total(AmountInfo value)
-    {
-        total = std::move(value);
-    }
-
-    [[nodiscard]] const AmountInfo& get_total() const noexcept
-    {
-        return total;
-    }
-
-    void set_merchant_capabilities(std::optional<std::vector<std::string>> value)
-    {
-        merchant_capabilities = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::vector<std::string>>&
-    get_merchant_capabilities() const noexcept
-    {
-        return merchant_capabilities;
-    }
-
-    void set_supported_networks(std::optional<std::vector<std::string>> value)
-    {
-        supported_networks = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::vector<std::string>>&
-    get_supported_networks() const noexcept
-    {
-        return supported_networks;
-    }
-
-    void set_merchant_identifier(std::optional<std::string> value)
-    {
-        merchant_identifier = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_merchant_identifier() const noexcept
-    {
-        return merchant_identifier;
-    }
-
-    void set_required_billing_contact_fields(std::optional<ApplePayBillingContactFields> value)
-    {
-        required_billing_contact_fields = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayBillingContactFields>&
-    get_required_billing_contact_fields() const noexcept
-    {
-        return required_billing_contact_fields;
-    }
-
-    void set_required_shipping_contact_fields(std::optional<ApplePayShippingContactFields> value)
-    {
-        required_shipping_contact_fields = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayShippingContactFields>&
-    get_required_shipping_contact_fields() const noexcept
-    {
-        return required_shipping_contact_fields;
-    }
-
-    void set_recurring_payment_request(std::optional<ApplePayRecurringPaymentRequest> value)
-    {
-        recurring_payment_request = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayRecurringPaymentRequest>&
-    get_recurring_payment_request() const noexcept
-    {
-        return recurring_payment_request;
-    }
-
-    CountryAlpha2Value country_code{};
-    CurrencyValue currency_code{};
-    AmountInfo total{};
-    std::optional<std::vector<std::string>> merchant_capabilities{};
-    std::optional<std::vector<std::string>> supported_networks{};
-    std::optional<std::string> merchant_identifier{};
-    std::optional<ApplePayBillingContactFields> required_billing_contact_fields{};
-    std::optional<ApplePayShippingContactFields> required_shipping_contact_fields{};
-    std::optional<ApplePayRecurringPaymentRequest> recurring_payment_request{};
-};
-
-class ApplepaySessionTokenData : public serde::Serializer<ApplepaySessionTokenData>
-{
-public:
-    void set_apple_pay(ApplePayMetadata value)
-    {
-        apple_pay = std::move(value);
-    }
-
-    [[nodiscard]] const ApplePayMetadata& get_apple_pay() const noexcept
-    {
-        return apple_pay;
-    }
-
-    ApplePayMetadata apple_pay{};
-};
-
-class BankData : public serde::Serializer<BankData>
-{
-public:
-    void set_payment_method_type(PaymentMethodTypeValue value)
-    {
-        payment_method_type = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodTypeValue& get_payment_method_type() const noexcept
-    {
-        return payment_method_type;
-    }
-
-    void set_code_information(std::vector<BankCodeInformation> value)
-    {
-        code_information = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<BankCodeInformation>& get_code_information() const noexcept
-    {
-        return code_information;
-    }
-
-    PaymentMethodTypeValue payment_method_type{};
-    std::vector<BankCodeInformation> code_information{};
-};
-
-class BankTransferNextStepsData : public serde::Serializer<BankTransferNextStepsData>
-{
-public:
-    void set_bank_transfer_instructions(BankTransferInstructions value)
-    {
-        bank_transfer_instructions = std::move(value);
-    }
-
-    [[nodiscard]] const BankTransferInstructions& get_bank_transfer_instructions() const noexcept
-    {
-        return bank_transfer_instructions;
-    }
-
-    void set_receiver(std::optional<ReceiverDetails> value)
-    {
-        receiver = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ReceiverDetails>& get_receiver() const noexcept
-    {
-        return receiver;
-    }
-
-    BankTransferInstructions bank_transfer_instructions{};
-    std::optional<ReceiverDetails> receiver{};
-};
-
-class BoletoAdditionalDetails : public serde::Serializer<BoletoAdditionalDetails>
-{
-public:
-    void set_due_date(std::optional<PrimitiveDateTimeValue> value)
-    {
-        due_date = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>& get_due_date() const noexcept
-    {
-        return due_date;
-    }
-
-    void set_document_kind(std::optional<BoletoDocumentKindValue> value)
-    {
-        document_kind = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoDocumentKindValue>& get_document_kind() const noexcept
-    {
-        return document_kind;
-    }
-
-    void set_payment_type(std::optional<BoletoPaymentTypeValue> value)
-    {
-        payment_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoPaymentTypeValue>& get_payment_type() const noexcept
-    {
-        return payment_type;
-    }
-
-    void set_covenant_code(std::optional<SecretValue> value)
-    {
-        covenant_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretValue>& get_covenant_code() const noexcept
-    {
-        return covenant_code;
-    }
-
-    void set_pix_key(std::optional<PixKeyValue> value)
-    {
-        pix_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PixKeyValue>& get_pix_key() const noexcept
-    {
-        return pix_key;
-    }
-
-    void set_discount_rules(std::optional<SantanderPaymentDiscountRules> value)
-    {
-        discount_rules = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderPaymentDiscountRules>&
-    get_discount_rules() const noexcept
-    {
-        return discount_rules;
-    }
-
-    void set_penalties(std::optional<PenaltyRules> value)
-    {
-        penalties = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PenaltyRules>& get_penalties() const noexcept
-    {
-        return penalties;
-    }
-
-    void set_collection_actions(std::optional<CollectionActions> value)
-    {
-        collection_actions = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CollectionActions>& get_collection_actions() const noexcept
-    {
-        return collection_actions;
-    }
-
-    void set_payment_constraints(std::optional<BoletoPaymentTypeConstraints> value)
-    {
-        payment_constraints = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoPaymentTypeConstraints>&
-    get_payment_constraints() const noexcept
-    {
-        return payment_constraints;
-    }
-
-    void set_beneficiary(std::optional<BeneficiaryDetails> value)
-    {
-        beneficiary = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BeneficiaryDetails>& get_beneficiary() const noexcept
-    {
-        return beneficiary;
-    }
-
-    std::optional<PrimitiveDateTimeValue> due_date{};
-    std::optional<BoletoDocumentKindValue> document_kind{};
-    std::optional<BoletoPaymentTypeValue> payment_type{};
-    std::optional<SecretValue> covenant_code{};
-    std::optional<PixKeyValue> pix_key{};
-    std::optional<SantanderPaymentDiscountRules> discount_rules{};
-    std::optional<PenaltyRules> penalties{};
-    std::optional<CollectionActions> collection_actions{};
-    std::optional<BoletoPaymentTypeConstraints> payment_constraints{};
-    std::optional<BeneficiaryDetails> beneficiary{};
-};
-
-class EligibilityPaymentMethodDataRequest :
-    public serde::Serializer<EligibilityPaymentMethodDataRequest>
-{
-public:
-    void set_payment_method_data(std::optional<EligibilityPaymentMethodData> value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<EligibilityPaymentMethodData>&
-    get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_billing(std::optional<Address> value)
-    {
-        billing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<Address>& get_billing() const noexcept
-    {
-        return billing;
-    }
-
-    std::optional<EligibilityPaymentMethodData> payment_method_data{};
-    std::optional<Address> billing{};
-};
-
-class ExternalThreeDsData : public serde::Serializer<ExternalThreeDsData>
+class ExternalThreeDsData : public core::behavior::Serializer<ExternalThreeDsData>
 {
 public:
     void set_authentication_cryptogram(Cryptogram value)
@@ -19220,85 +11880,7 @@ public:
     std::optional<NetworkParams> network_params{};
 };
 
-class GooglePayMerchantInfo : public serde::Serializer<GooglePayMerchantInfo>
-{
-public:
-    void set_merchant_name(std::string value)
-    {
-        merchant_name = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_merchant_name() const noexcept
-    {
-        return merchant_name;
-    }
-
-    void set_merchant_id(std::optional<std::string> value)
-    {
-        merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_merchant_id() const noexcept
-    {
-        return merchant_id;
-    }
-
-    void set_tokenization_specification(GooglePayTokenizationSpecification value)
-    {
-        tokenization_specification = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayTokenizationSpecification&
-    get_tokenization_specification() const noexcept
-    {
-        return tokenization_specification;
-    }
-
-    std::string merchant_name{};
-    std::optional<std::string> merchant_id{};
-    GooglePayTokenizationSpecification tokenization_specification{};
-};
-
-class GpayAllowedPaymentMethods : public serde::Serializer<GpayAllowedPaymentMethods>
-{
-public:
-    void set_payment_method_type(std::string value)
-    {
-        payment_method_type = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_payment_method_type() const noexcept
-    {
-        return payment_method_type;
-    }
-
-    void set_parameters(GpayAllowedMethodsParameters value)
-    {
-        parameters = std::move(value);
-    }
-
-    [[nodiscard]] const GpayAllowedMethodsParameters& get_parameters() const noexcept
-    {
-        return parameters;
-    }
-
-    void set_tokenization_specification(GpayTokenizationSpecification value)
-    {
-        tokenization_specification = std::move(value);
-    }
-
-    [[nodiscard]] const GpayTokenizationSpecification&
-    get_tokenization_specification() const noexcept
-    {
-        return tokenization_specification;
-    }
-
-    std::string payment_method_type{};
-    GpayAllowedMethodsParameters parameters{};
-    GpayTokenizationSpecification tokenization_specification{};
-};
-
-class PaymentErrorDetails : public serde::Serializer<PaymentErrorDetails>
+class PaymentErrorDetails : public core::behavior::Serializer<PaymentErrorDetails>
 {
 public:
     void set_unified_details(std::optional<ApiUnifiedErrorDetails> value)
@@ -19343,7 +11925,7 @@ enum class PaymentLinkData
     PaymentLinkStatusDetails,
 };
 
-class PaymentListFilterConstraints : public serde::Serializer<PaymentListFilterConstraints>
+class PaymentListFilterConstraints : public core::behavior::Serializer<PaymentListFilterConstraints>
 {
 public:
     void set_query(std::optional<std::string> value)
@@ -19677,7 +12259,7 @@ public:
     std::optional<EmailValue> customer_email{};
 };
 
-class PaymentListResponse : public serde::Serializer<PaymentListResponse>
+class PaymentListResponse : public core::behavior::Serializer<PaymentListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -19715,271 +12297,8 @@ public:
     std::vector<PaymentsListResponseItem> data{};
 };
 
-class PaymentMethodDataRequest : public serde::Serializer<PaymentMethodDataRequest>
-{
-public:
-    void set_payment_method_data(std::optional<PaymentMethodData> value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentMethodData>& get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_billing(std::optional<Address> value)
-    {
-        billing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<Address>& get_billing() const noexcept
-    {
-        return billing;
-    }
-
-    std::optional<PaymentMethodData> payment_method_data{};
-    std::optional<Address> billing{};
-};
-
-class PaymentMethodDataResponseWithBilling :
-    public serde::Serializer<PaymentMethodDataResponseWithBilling>
-{
-public:
-    void set_payment_method_data(std::optional<PaymentMethodDataResponse> value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentMethodDataResponse>&
-    get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_billing(std::optional<Address> value)
-    {
-        billing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<Address>& get_billing() const noexcept
-    {
-        return billing;
-    }
-
-    std::optional<PaymentMethodDataResponse> payment_method_data{};
-    std::optional<Address> billing{};
-};
-
-class PaymentRevenueRecoveryMetadata : public serde::Serializer<PaymentRevenueRecoveryMetadata>
-{
-public:
-    void set_total_retry_count(std::uint16_t value)
-    {
-        total_retry_count = std::move(value);
-    }
-
-    [[nodiscard]] const std::uint16_t& get_total_retry_count() const noexcept
-    {
-        return total_retry_count;
-    }
-
-    void set_payment_connector_transmission(std::optional<PaymentConnectorTransmissionValue> value)
-    {
-        payment_connector_transmission = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentConnectorTransmissionValue>&
-    get_payment_connector_transmission() const noexcept
-    {
-        return payment_connector_transmission;
-    }
-
-    void set_billing_connector_id(std::optional<MerchantConnectorAccountIdValue> value)
-    {
-        billing_connector_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MerchantConnectorAccountIdValue>&
-    get_billing_connector_id() const noexcept
-    {
-        return billing_connector_id;
-    }
-
-    void set_active_attempt_payment_connector_id(
-        std::optional<MerchantConnectorAccountIdValue> value
-    )
-    {
-        active_attempt_payment_connector_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MerchantConnectorAccountIdValue>&
-    get_active_attempt_payment_connector_id() const noexcept
-    {
-        return active_attempt_payment_connector_id;
-    }
-
-    void set_billing_connector_payment_details(BillingConnectorPaymentDetails value)
-    {
-        billing_connector_payment_details = std::move(value);
-    }
-
-    [[nodiscard]] const BillingConnectorPaymentDetails&
-    get_billing_connector_payment_details() const noexcept
-    {
-        return billing_connector_payment_details;
-    }
-
-    void set_payment_method_type(PaymentMethodValue value)
-    {
-        payment_method_type = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodValue& get_payment_method_type() const noexcept
-    {
-        return payment_method_type;
-    }
-
-    void set_payment_method_subtype(PaymentMethodTypeValue value)
-    {
-        payment_method_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodTypeValue& get_payment_method_subtype() const noexcept
-    {
-        return payment_method_subtype;
-    }
-
-    void set_connector(ConnectorValue value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const ConnectorValue& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_billing_connector_payment_method_details(
-        std::optional<BillingConnectorPaymentMethodDetails> value
-    )
-    {
-        billing_connector_payment_method_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BillingConnectorPaymentMethodDetails>&
-    get_billing_connector_payment_method_details() const noexcept
-    {
-        return billing_connector_payment_method_details;
-    }
-
-    void set_invoice_next_billing_time(std::optional<PrimitiveDateTimeValue> value)
-    {
-        invoice_next_billing_time = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_invoice_next_billing_time() const noexcept
-    {
-        return invoice_next_billing_time;
-    }
-
-    void set_invoice_billing_started_at_time(std::optional<PrimitiveDateTimeValue> value)
-    {
-        invoice_billing_started_at_time = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PrimitiveDateTimeValue>&
-    get_invoice_billing_started_at_time() const noexcept
-    {
-        return invoice_billing_started_at_time;
-    }
-
-    void set_first_payment_attempt_pg_error_code(std::optional<std::string> value)
-    {
-        first_payment_attempt_pg_error_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>&
-    get_first_payment_attempt_pg_error_code() const noexcept
-    {
-        return first_payment_attempt_pg_error_code;
-    }
-
-    void set_first_payment_attempt_network_decline_code(std::optional<std::string> value)
-    {
-        first_payment_attempt_network_decline_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>&
-    get_first_payment_attempt_network_decline_code() const noexcept
-    {
-        return first_payment_attempt_network_decline_code;
-    }
-
-    void set_first_payment_attempt_network_advice_code(std::optional<std::string> value)
-    {
-        first_payment_attempt_network_advice_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>&
-    get_first_payment_attempt_network_advice_code() const noexcept
-    {
-        return first_payment_attempt_network_advice_code;
-    }
-
-    void set_revenue_recovery_ab_routing(std::optional<RevenueRecoveryABAlgorithmValue> value)
-    {
-        revenue_recovery_ab_routing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<RevenueRecoveryABAlgorithmValue>&
-    get_revenue_recovery_ab_routing() const noexcept
-    {
-        return revenue_recovery_ab_routing;
-    }
-
-    void set_external_trigger_state(std::optional<ExternalTriggerStateValue> value)
-    {
-        external_trigger_state = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ExternalTriggerStateValue>&
-    get_external_trigger_state() const noexcept
-    {
-        return external_trigger_state;
-    }
-
-    void set_last_failure_code(std::optional<StandardisedCodeValue> value)
-    {
-        last_failure_code = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StandardisedCodeValue>& get_last_failure_code() const noexcept
-    {
-        return last_failure_code;
-    }
-
-    std::uint16_t total_retry_count{};
-    std::optional<PaymentConnectorTransmissionValue> payment_connector_transmission{};
-    std::optional<MerchantConnectorAccountIdValue> billing_connector_id{};
-    std::optional<MerchantConnectorAccountIdValue> active_attempt_payment_connector_id{};
-    BillingConnectorPaymentDetails billing_connector_payment_details{};
-    PaymentMethodValue payment_method_type{};
-    PaymentMethodTypeValue payment_method_subtype{};
-    ConnectorValue connector{};
-    std::optional<BillingConnectorPaymentMethodDetails> billing_connector_payment_method_details{};
-    std::optional<PrimitiveDateTimeValue> invoice_next_billing_time{};
-    std::optional<PrimitiveDateTimeValue> invoice_billing_started_at_time{};
-    std::optional<std::string> first_payment_attempt_pg_error_code{};
-    std::optional<std::string> first_payment_attempt_network_decline_code{};
-    std::optional<std::string> first_payment_attempt_network_advice_code{};
-    std::optional<RevenueRecoveryABAlgorithmValue> revenue_recovery_ab_routing{};
-    std::optional<ExternalTriggerStateValue> external_trigger_state{};
-    std::optional<StandardisedCodeValue> last_failure_code{};
-};
-
-class PaymentsCancelPostCaptureRequest : public serde::Serializer<PaymentsCancelPostCaptureRequest>
+class PaymentsCancelPostCaptureRequest :
+    public core::behavior::Serializer<PaymentsCancelPostCaptureRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20017,7 +12336,7 @@ public:
     std::optional<PaymentMethodData> payment_method_data{};
 };
 
-class PaymentsCancelRequest : public serde::Serializer<PaymentsCancelRequest>
+class PaymentsCancelRequest : public core::behavior::Serializer<PaymentsCancelRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20078,7 +12397,7 @@ public:
     std::optional<PaymentMethodData> payment_method_data{};
 };
 
-class PaymentsCaptureRequest : public serde::Serializer<PaymentsCaptureRequest>
+class PaymentsCaptureRequest : public core::behavior::Serializer<PaymentsCaptureRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20195,7 +12514,8 @@ public:
     std::optional<CaptureFeatureMetadataValue> feature_metadata{};
 };
 
-class PaymentsCompleteAuthorizeRequest : public serde::Serializer<PaymentsCompleteAuthorizeRequest>
+class PaymentsCompleteAuthorizeRequest :
+    public core::behavior::Serializer<PaymentsCompleteAuthorizeRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20245,7 +12565,7 @@ public:
     std::optional<ThreeDsCompletionIndicator> threeds_method_comp_ind{};
 };
 
-class PaymentsCreateIntentRequest : public serde::Serializer<PaymentsCreateIntentRequest>
+class PaymentsCreateIntentRequest : public core::behavior::Serializer<PaymentsCreateIntentRequest>
 {
 public:
     void set_amount_details(AmountDetails value)
@@ -20421,7 +12741,7 @@ public:
 };
 
 class PaymentsDynamicTaxCalculationRequest :
-    public serde::Serializer<PaymentsDynamicTaxCalculationRequest>
+    public core::behavior::Serializer<PaymentsDynamicTaxCalculationRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20481,7 +12801,7 @@ public:
     std::optional<std::string> session_id{};
 };
 
-class PaymentsEligibilityResponse : public serde::Serializer<PaymentsEligibilityResponse>
+class PaymentsEligibilityResponse : public core::behavior::Serializer<PaymentsEligibilityResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20543,7 +12863,7 @@ public:
 };
 
 class PaymentsIncrementalAuthorizationRequest :
-    public serde::Serializer<PaymentsIncrementalAuthorizationRequest>
+    public core::behavior::Serializer<PaymentsIncrementalAuthorizationRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20592,7 +12912,7 @@ public:
     std::optional<PaymentMethodData> payment_method_data{};
 };
 
-class PaymentsIntentResponse : public serde::Serializer<PaymentsIntentResponse>
+class PaymentsIntentResponse : public core::behavior::Serializer<PaymentsIntentResponse>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -20799,7 +13119,7 @@ public:
 };
 
 class PaymentsPostSessionTokensResponse :
-    public serde::Serializer<PaymentsPostSessionTokensResponse>
+    public core::behavior::Serializer<PaymentsPostSessionTokensResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -20837,7 +13157,7 @@ public:
     IntentStatusValue status{};
 };
 
-class PaymentsUpdateIntentRequest : public serde::Serializer<PaymentsUpdateIntentRequest>
+class PaymentsUpdateIntentRequest : public core::behavior::Serializer<PaymentsUpdateIntentRequest>
 {
 public:
     void set_amount_details(std::optional<AmountDetailsUpdate> value)
@@ -20978,7 +13298,8 @@ public:
     std::optional<StatementDescriptorValue> statement_descriptor{};
 };
 
-class PlatformPaymentListConstraints : public serde::Serializer<PlatformPaymentListConstraints>
+class PlatformPaymentListConstraints :
+    public core::behavior::Serializer<PlatformPaymentListConstraints>
 {
 public:
     void set_payment_id(std::optional<PaymentIdValue> value)
@@ -21211,7 +13532,7 @@ public:
     std::optional<Order> order{};
 };
 
-class PlatformPaymentListResponse : public serde::Serializer<PlatformPaymentListResponse>
+class PlatformPaymentListResponse : public core::behavior::Serializer<PlatformPaymentListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -21249,35 +13570,7 @@ public:
     std::vector<PlatformPaymentListItem> data{};
 };
 
-class ProxyPaymentMethodDataRequest : public serde::Serializer<ProxyPaymentMethodDataRequest>
-{
-public:
-    void set_payment_method_data(std::optional<ProxyPaymentMethodData> value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ProxyPaymentMethodData>&
-    get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_billing(std::optional<Address> value)
-    {
-        billing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<Address>& get_billing() const noexcept
-    {
-        return billing;
-    }
-
-    std::optional<ProxyPaymentMethodData> payment_method_data{};
-    std::optional<Address> billing{};
-};
-
-class ProxyPaymentsRequest : public serde::Serializer<ProxyPaymentsRequest>
+class ProxyPaymentsRequest : public core::behavior::Serializer<ProxyPaymentsRequest>
 {
 public:
     void set_return_url(std::optional<UrlValue> value)
@@ -21359,35 +13652,7 @@ public:
     MerchantConnectorAccountIdValue merchant_connector_id{};
 };
 
-class RecordAttemptPaymentMethodDataRequest :
-    public serde::Serializer<RecordAttemptPaymentMethodDataRequest>
-{
-public:
-    void set_payment_method_data(AdditionalPaymentData value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const AdditionalPaymentData& get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_billing(std::optional<Address> value)
-    {
-        billing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<Address>& get_billing() const noexcept
-    {
-        return billing;
-    }
-
-    AdditionalPaymentData payment_method_data{};
-    std::optional<Address> billing{};
-};
-
-class RecoveryPaymentListResponse : public serde::Serializer<RecoveryPaymentListResponse>
+class RecoveryPaymentListResponse : public core::behavior::Serializer<RecoveryPaymentListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -21425,7 +13690,7 @@ public:
     std::vector<RecoveryPaymentsListResponseItem> data{};
 };
 
-class RecoveryPaymentsCreate : public serde::Serializer<RecoveryPaymentsCreate>
+class RecoveryPaymentsCreate : public core::behavior::Serializer<RecoveryPaymentsCreate>
 {
 public:
     void set_amount_details(AmountDetails value)
@@ -21701,7 +13966,8 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class RevenueRecoveryGetIntentResponse : public serde::Serializer<RevenueRecoveryGetIntentResponse>
+class RevenueRecoveryGetIntentResponse :
+    public core::behavior::Serializer<RevenueRecoveryGetIntentResponse>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -21918,80 +14184,7 @@ public:
     std::optional<StatementDescriptorValue> statement_descriptor{};
 };
 
-class SantanderBoletoData : public serde::Serializer<SantanderBoletoData>
-{
-public:
-    void set_discount_rules(std::optional<SantanderPaymentDiscountRules> value)
-    {
-        discount_rules = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderPaymentDiscountRules>&
-    get_discount_rules() const noexcept
-    {
-        return discount_rules;
-    }
-
-    void set_penalties(std::optional<PenaltyRules> value)
-    {
-        penalties = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PenaltyRules>& get_penalties() const noexcept
-    {
-        return penalties;
-    }
-
-    void set_collection_actions(std::optional<CollectionActions> value)
-    {
-        collection_actions = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CollectionActions>& get_collection_actions() const noexcept
-    {
-        return collection_actions;
-    }
-
-    void set_payment_constraints(std::optional<BoletoPaymentTypeConstraints> value)
-    {
-        payment_constraints = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoPaymentTypeConstraints>&
-    get_payment_constraints() const noexcept
-    {
-        return payment_constraints;
-    }
-
-    void set_beneficiary(std::optional<BeneficiaryDetails> value)
-    {
-        beneficiary = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BeneficiaryDetails>& get_beneficiary() const noexcept
-    {
-        return beneficiary;
-    }
-
-    void set_document_kind(std::optional<BoletoDocumentKindValue> value)
-    {
-        document_kind = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoDocumentKindValue>& get_document_kind() const noexcept
-    {
-        return document_kind;
-    }
-
-    std::optional<SantanderPaymentDiscountRules> discount_rules{};
-    std::optional<PenaltyRules> penalties{};
-    std::optional<CollectionActions> collection_actions{};
-    std::optional<BoletoPaymentTypeConstraints> payment_constraints{};
-    std::optional<BeneficiaryDetails> beneficiary{};
-    std::optional<BoletoDocumentKindValue> document_kind{};
-};
-
-class SecurePaymentLinkDetails : public serde::Serializer<SecurePaymentLinkDetails>
+class SecurePaymentLinkDetails : public core::behavior::Serializer<SecurePaymentLinkDetails>
 {
 public:
     void set_enabled_saved_payment_method(bool value)
@@ -22205,45 +14398,7 @@ public:
     std::optional<std::string> payment_methods_separator_text{};
 };
 
-class SplitPaymentMethodDataRequest : public serde::Serializer<SplitPaymentMethodDataRequest>
-{
-public:
-    void set_payment_method_data(PaymentMethodData value)
-    {
-        payment_method_data = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodData& get_payment_method_data() const noexcept
-    {
-        return payment_method_data;
-    }
-
-    void set_payment_method_type(PaymentMethodValue value)
-    {
-        payment_method_type = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodValue& get_payment_method_type() const noexcept
-    {
-        return payment_method_type;
-    }
-
-    void set_payment_method_subtype(PaymentMethodTypeValue value)
-    {
-        payment_method_subtype = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentMethodTypeValue& get_payment_method_subtype() const noexcept
-    {
-        return payment_method_subtype;
-    }
-
-    PaymentMethodData payment_method_data{};
-    PaymentMethodValue payment_method_type{};
-    PaymentMethodTypeValue payment_method_subtype{};
-};
-
-class VerifyRequest : public serde::Serializer<VerifyRequest>
+class VerifyRequest : public core::behavior::Serializer<VerifyRequest>
 {
 public:
     void set_merchant_id(std::optional<std::string> value)
@@ -22403,7 +14558,7 @@ public:
     std::optional<MerchantConnectorDetailsWrapValue> merchant_connector_details{};
 };
 
-class VerifyResponse : public serde::Serializer<VerifyResponse>
+class VerifyResponse : public core::behavior::Serializer<VerifyResponse>
 {
 public:
     void set_verify_id(std::optional<PaymentIdValue> value)
@@ -22552,143 +14707,8 @@ public:
     std::optional<std::string> error_message{};
 };
 
-enum class WalletData
-{
-    AliPayHkRedirect,
-    AliPayQr,
-    AliPayRedirect,
-    AmazonPay,
-    AmazonPayRedirect,
-    ApplePay,
-    ApplePayRedirect,
-    ApplePayThirdPartySdk,
-    BluecodeRedirect,
-    CashappQr,
-    DanaRedirect,
-    GcashRedirect,
-    GoPayRedirect,
-    GooglePay,
-    GooglePayRedirect,
-    GooglePayThirdPartySdk,
-    KakaoPayRedirect,
-    MbWayRedirect,
-    Mifinity,
-    MobilePayRedirect,
-    MomoRedirect,
-    PaypalRedirect,
-    PaypalSdk,
-    Paysera,
-    Paze,
-    RevolutPay,
-    SamsungPay,
-    Skrill,
-    Neteller,
-    SwishQr,
-    TouchNGoRedirect,
-    TwintRedirect,
-    VippsRedirect,
-    WeroRedirect,
-    WeChatPayQr,
-    WeChatPayRedirect,
-};
-
-class ApplepaySessionTokenResponse : public serde::Serializer<ApplepaySessionTokenResponse>
-{
-public:
-    void set_session_token_data(std::optional<ApplePaySessionResponse> value)
-    {
-        session_token_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePaySessionResponse>&
-    get_session_token_data() const noexcept
-    {
-        return session_token_data;
-    }
-
-    void set_payment_request_data(std::optional<ApplePayPaymentRequest> value)
-    {
-        payment_request_data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayPaymentRequest>&
-    get_payment_request_data() const noexcept
-    {
-        return payment_request_data;
-    }
-
-    void set_connector(std::string value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_delayed_session_token(bool value)
-    {
-        delayed_session_token = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_delayed_session_token() const noexcept
-    {
-        return delayed_session_token;
-    }
-
-    void set_sdk_next_action(SdkNextAction value)
-    {
-        sdk_next_action = std::move(value);
-    }
-
-    [[nodiscard]] const SdkNextAction& get_sdk_next_action() const noexcept
-    {
-        return sdk_next_action;
-    }
-
-    void set_connector_reference_id(std::optional<std::string> value)
-    {
-        connector_reference_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_connector_reference_id() const noexcept
-    {
-        return connector_reference_id;
-    }
-
-    void set_connector_sdk_public_key(std::optional<std::string> value)
-    {
-        connector_sdk_public_key = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_connector_sdk_public_key() const noexcept
-    {
-        return connector_sdk_public_key;
-    }
-
-    void set_connector_merchant_id(std::optional<std::string> value)
-    {
-        connector_merchant_id = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_connector_merchant_id() const noexcept
-    {
-        return connector_merchant_id;
-    }
-
-    std::optional<ApplePaySessionResponse> session_token_data{};
-    std::optional<ApplePayPaymentRequest> payment_request_data{};
-    std::string connector{};
-    bool delayed_session_token{};
-    SdkNextAction sdk_next_action{};
-    std::optional<std::string> connector_reference_id{};
-    std::optional<std::string> connector_sdk_public_key{};
-    std::optional<std::string> connector_merchant_id{};
-};
-
 class ExternalVaultProxyPaymentsRequest :
-    public serde::Serializer<ExternalVaultProxyPaymentsRequest>
+    public core::behavior::Serializer<ExternalVaultProxyPaymentsRequest>
 {
 public:
     void set_return_url(std::optional<UrlValue> value)
@@ -22817,280 +14837,7 @@ public:
     std::optional<bool> return_raw_connector_response{};
 };
 
-class FeatureMetadata : public serde::Serializer<FeatureMetadata>
-{
-public:
-    void set_redirect_response(std::optional<RedirectResponse> value)
-    {
-        redirect_response = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<RedirectResponse>& get_redirect_response() const noexcept
-    {
-        return redirect_response;
-    }
-
-    void set_search_tags(std::optional<std::vector<HashedStringValue>> value)
-    {
-        search_tags = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::vector<HashedStringValue>>&
-    get_search_tags() const noexcept
-    {
-        return search_tags;
-    }
-
-    void set_apple_pay_recurring_details(std::optional<ApplePayRecurringDetails> value)
-    {
-        apple_pay_recurring_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplePayRecurringDetails>&
-    get_apple_pay_recurring_details() const noexcept
-    {
-        return apple_pay_recurring_details;
-    }
-
-    void set_revenue_recovery(std::optional<PaymentRevenueRecoveryMetadata> value)
-    {
-        revenue_recovery = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaymentRevenueRecoveryMetadata>&
-    get_revenue_recovery() const noexcept
-    {
-        return revenue_recovery;
-    }
-
-    void set_pix_additional_details(std::optional<PixAdditionalDetails> value)
-    {
-        pix_additional_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PixAdditionalDetails>&
-    get_pix_additional_details() const noexcept
-    {
-        return pix_additional_details;
-    }
-
-    void set_boleto_additional_details(std::optional<BoletoAdditionalDetails> value)
-    {
-        boleto_additional_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BoletoAdditionalDetails>&
-    get_boleto_additional_details() const noexcept
-    {
-        return boleto_additional_details;
-    }
-
-    void set_pix_automatico_additional_details(std::optional<PixAutomaticoAdditionalDetails> value)
-    {
-        pix_automatico_additional_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PixAutomaticoAdditionalDetails>&
-    get_pix_automatico_additional_details() const noexcept
-    {
-        return pix_automatico_additional_details;
-    }
-
-    void set_finix_additional_details(std::optional<FinixAdditionalDetails> value)
-    {
-        finix_additional_details = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FinixAdditionalDetails>&
-    get_finix_additional_details() const noexcept
-    {
-        return finix_additional_details;
-    }
-
-    void set_multi_currency_processing(std::optional<MultiCurrencyProcessingData> value)
-    {
-        multi_currency_processing = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<MultiCurrencyProcessingData>&
-    get_multi_currency_processing() const noexcept
-    {
-        return multi_currency_processing;
-    }
-
-    std::optional<RedirectResponse> redirect_response{};
-    std::optional<std::vector<HashedStringValue>> search_tags{};
-    std::optional<ApplePayRecurringDetails> apple_pay_recurring_details{};
-    std::optional<PaymentRevenueRecoveryMetadata> revenue_recovery{};
-    std::optional<PixAdditionalDetails> pix_additional_details{};
-    std::optional<BoletoAdditionalDetails> boleto_additional_details{};
-    std::optional<PixAutomaticoAdditionalDetails> pix_automatico_additional_details{};
-    std::optional<FinixAdditionalDetails> finix_additional_details{};
-    std::optional<MultiCurrencyProcessingData> multi_currency_processing{};
-};
-
-class GooglePayMerchantDetails : public serde::Serializer<GooglePayMerchantDetails>
-{
-public:
-    void set_merchant_info(GooglePayMerchantInfo value)
-    {
-        merchant_info = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayMerchantInfo& get_merchant_info() const noexcept
-    {
-        return merchant_info;
-    }
-
-    GooglePayMerchantInfo merchant_info{};
-};
-
-class GooglePaySessionResponse : public serde::Serializer<GooglePaySessionResponse>
-{
-public:
-    void set_merchant_info(GpayMerchantInfo value)
-    {
-        merchant_info = std::move(value);
-    }
-
-    [[nodiscard]] const GpayMerchantInfo& get_merchant_info() const noexcept
-    {
-        return merchant_info;
-    }
-
-    void set_shipping_address_required(bool value)
-    {
-        shipping_address_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_shipping_address_required() const noexcept
-    {
-        return shipping_address_required;
-    }
-
-    void set_email_required(bool value)
-    {
-        email_required = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_email_required() const noexcept
-    {
-        return email_required;
-    }
-
-    void set_shipping_address_parameters(GpayShippingAddressParameters value)
-    {
-        shipping_address_parameters = std::move(value);
-    }
-
-    [[nodiscard]] const GpayShippingAddressParameters&
-    get_shipping_address_parameters() const noexcept
-    {
-        return shipping_address_parameters;
-    }
-
-    void set_allowed_payment_methods(std::vector<GpayAllowedPaymentMethods> value)
-    {
-        allowed_payment_methods = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<GpayAllowedPaymentMethods>&
-    get_allowed_payment_methods() const noexcept
-    {
-        return allowed_payment_methods;
-    }
-
-    void set_transaction_info(GpayTransactionInfo value)
-    {
-        transaction_info = std::move(value);
-    }
-
-    [[nodiscard]] const GpayTransactionInfo& get_transaction_info() const noexcept
-    {
-        return transaction_info;
-    }
-
-    void set_delayed_session_token(bool value)
-    {
-        delayed_session_token = std::move(value);
-    }
-
-    [[nodiscard]] const bool& get_delayed_session_token() const noexcept
-    {
-        return delayed_session_token;
-    }
-
-    void set_connector(std::string value)
-    {
-        connector = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_connector() const noexcept
-    {
-        return connector;
-    }
-
-    void set_sdk_next_action(SdkNextAction value)
-    {
-        sdk_next_action = std::move(value);
-    }
-
-    [[nodiscard]] const SdkNextAction& get_sdk_next_action() const noexcept
-    {
-        return sdk_next_action;
-    }
-
-    void set_secrets(std::optional<SecretInfoToInitiateSdk> value)
-    {
-        secrets = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretInfoToInitiateSdk>& get_secrets() const noexcept
-    {
-        return secrets;
-    }
-
-    GpayMerchantInfo merchant_info{};
-    bool shipping_address_required{};
-    bool email_required{};
-    GpayShippingAddressParameters shipping_address_parameters{};
-    std::vector<GpayAllowedPaymentMethods> allowed_payment_methods{};
-    GpayTransactionInfo transaction_info{};
-    bool delayed_session_token{};
-    std::string connector{};
-    SdkNextAction sdk_next_action{};
-    std::optional<SecretInfoToInitiateSdk> secrets{};
-};
-
-class GpayMetaData : public serde::Serializer<GpayMetaData>
-{
-public:
-    void set_merchant_info(GpayMerchantInfo value)
-    {
-        merchant_info = std::move(value);
-    }
-
-    [[nodiscard]] const GpayMerchantInfo& get_merchant_info() const noexcept
-    {
-        return merchant_info;
-    }
-
-    void set_allowed_payment_methods(std::vector<GpayAllowedPaymentMethods> value)
-    {
-        allowed_payment_methods = std::move(value);
-    }
-
-    [[nodiscard]] const std::vector<GpayAllowedPaymentMethods>&
-    get_allowed_payment_methods() const noexcept
-    {
-        return allowed_payment_methods;
-    }
-
-    GpayMerchantInfo merchant_info{};
-    std::vector<GpayAllowedPaymentMethods> allowed_payment_methods{};
-};
-
-class PaymentAttemptResponse : public serde::Serializer<PaymentAttemptResponse>
+class PaymentAttemptResponse : public core::behavior::Serializer<PaymentAttemptResponse>
 {
 public:
     void set_attempt_id(std::string value)
@@ -23384,7 +15131,7 @@ public:
     std::optional<PaymentErrorDetails> error_details{};
 };
 
-class PaymentsAttemptRecordRequest : public serde::Serializer<PaymentsAttemptRecordRequest>
+class PaymentsAttemptRecordRequest : public core::behavior::Serializer<PaymentsAttemptRecordRequest>
 {
 public:
     void set_amount_details(PaymentAttemptAmountDetails value)
@@ -23650,7 +15397,7 @@ public:
     std::optional<StandardisedCodeValue> standardised_error_code{};
 };
 
-class PaymentsConfirmIntentRequest : public serde::Serializer<PaymentsConfirmIntentRequest>
+class PaymentsConfirmIntentRequest : public core::behavior::Serializer<PaymentsConfirmIntentRequest>
 {
 public:
     void set_return_url(std::optional<UrlValue> value)
@@ -23827,7 +15574,8 @@ public:
     std::optional<bool> enable_account_name_verification{};
 };
 
-class PaymentsEligibilityCheckRequest : public serde::Serializer<PaymentsEligibilityCheckRequest>
+class PaymentsEligibilityCheckRequest :
+    public core::behavior::Serializer<PaymentsEligibilityCheckRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -23911,7 +15659,7 @@ public:
     std::optional<SecretValue> payment_token{};
 };
 
-class PaymentsEligibilityRequest : public serde::Serializer<PaymentsEligibilityRequest>
+class PaymentsEligibilityRequest : public core::behavior::Serializer<PaymentsEligibilityRequest>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -23995,7 +15743,7 @@ public:
     std::optional<SecretValue> payment_token{};
 };
 
-class PaymentsRequest : public serde::Serializer<PaymentsRequest>
+class PaymentsRequest : public core::behavior::Serializer<PaymentsRequest>
 {
 public:
     void set_amount(std::optional<Amount> value)
@@ -24343,183 +16091,7 @@ public:
     std::optional<std::string> statement_descriptor_suffix{};
 };
 
-class SantanderConnectorMetadataData : public serde::Serializer<SantanderConnectorMetadataData>
-{
-public:
-    void set_boleto(std::optional<SantanderBoletoData> value)
-    {
-        boleto = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderBoletoData>& get_boleto() const noexcept
-    {
-        return boleto;
-    }
-
-    std::optional<SantanderBoletoData> boleto{};
-};
-
-class ConnectorMetadata : public serde::Serializer<ConnectorMetadata>
-{
-public:
-    void set_apple_pay(std::optional<ApplepayConnectorMetadataRequest> value)
-    {
-        apple_pay = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<ApplepayConnectorMetadataRequest>&
-    get_apple_pay() const noexcept
-    {
-        return apple_pay;
-    }
-
-    void set_airwallex(std::optional<AirwallexData> value)
-    {
-        airwallex = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<AirwallexData>& get_airwallex() const noexcept
-    {
-        return airwallex;
-    }
-
-    void set_noon(std::optional<NoonData> value)
-    {
-        noon = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<NoonData>& get_noon() const noexcept
-    {
-        return noon;
-    }
-
-    void set_braintree(std::optional<BraintreeData> value)
-    {
-        braintree = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<BraintreeData>& get_braintree() const noexcept
-    {
-        return braintree;
-    }
-
-    void set_adyen(std::optional<AdyenConnectorMetadata> value)
-    {
-        adyen = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<AdyenConnectorMetadata>& get_adyen() const noexcept
-    {
-        return adyen;
-    }
-
-    void set_peachpayments(std::optional<PeachpaymentsData> value)
-    {
-        peachpayments = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PeachpaymentsData>& get_peachpayments() const noexcept
-    {
-        return peachpayments;
-    }
-
-    void set_santander(std::optional<SantanderConnectorMetadataData> value)
-    {
-        santander = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SantanderConnectorMetadataData>&
-    get_santander() const noexcept
-    {
-        return santander;
-    }
-
-    void set_paypal(std::optional<PaypalConnectorMetadata> value)
-    {
-        paypal = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<PaypalConnectorMetadata>& get_paypal() const noexcept
-    {
-        return paypal;
-    }
-
-    void set_worldpayxml(std::optional<WorldpayxmlData> value)
-    {
-        worldpayxml = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<WorldpayxmlData>& get_worldpayxml() const noexcept
-    {
-        return worldpayxml;
-    }
-
-    void set_checkout(std::optional<CheckoutData> value)
-    {
-        checkout = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<CheckoutData>& get_checkout() const noexcept
-    {
-        return checkout;
-    }
-
-    void set_stripe(std::optional<StripeConnectorMetadata> value)
-    {
-        stripe = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<StripeConnectorMetadata>& get_stripe() const noexcept
-    {
-        return stripe;
-    }
-
-    std::optional<ApplepayConnectorMetadataRequest> apple_pay{};
-    std::optional<AirwallexData> airwallex{};
-    std::optional<NoonData> noon{};
-    std::optional<BraintreeData> braintree{};
-    std::optional<AdyenConnectorMetadata> adyen{};
-    std::optional<PeachpaymentsData> peachpayments{};
-    std::optional<SantanderConnectorMetadataData> santander{};
-    std::optional<PaypalConnectorMetadata> paypal{};
-    std::optional<WorldpayxmlData> worldpayxml{};
-    std::optional<CheckoutData> checkout{};
-    std::optional<StripeConnectorMetadata> stripe{};
-};
-
-class GooglePayDetailsWrapper : public serde::Serializer<GooglePayDetailsWrapper>
-{
-public:
-    void set_data(std::optional<GpayMetaData> value)
-    {
-        data = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<GpayMetaData>& get_data() const noexcept
-    {
-        return data;
-    }
-
-    void set_support_predecrypted_token(std::optional<bool> value)
-    {
-        support_predecrypted_token = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<bool>& get_support_predecrypted_token() const noexcept
-    {
-        return support_predecrypted_token;
-    }
-
-    std::optional<GpayMetaData> data{};
-    std::optional<bool> support_predecrypted_token{};
-};
-
-enum class GooglePayProviderDetails
-{
-    GooglePayMerchantDetails,
-};
-
-class PaymentAttemptListResponse : public serde::Serializer<PaymentAttemptListResponse>
+class PaymentAttemptListResponse : public core::behavior::Serializer<PaymentAttemptListResponse>
 {
 public:
     void set_payment_attempt_list(std::vector<PaymentAttemptResponse> value)
@@ -24536,7 +16108,7 @@ public:
     std::vector<PaymentAttemptResponse> payment_attempt_list{};
 };
 
-class PaymentAttemptRecordResponse : public serde::Serializer<PaymentAttemptRecordResponse>
+class PaymentAttemptRecordResponse : public core::behavior::Serializer<PaymentAttemptRecordResponse>
 {
 public:
     void set_id(GlobalAttemptIdValue value)
@@ -24620,7 +16192,7 @@ public:
     PrimitiveDateTimeValue created_at{};
 };
 
-class PaymentsCancelResponse : public serde::Serializer<PaymentsCancelResponse>
+class PaymentsCancelResponse : public core::behavior::Serializer<PaymentsCancelResponse>
 {
 public:
     void set_id(GlobalPaymentIdValue value)
@@ -24759,7 +16331,7 @@ public:
     std::optional<ErrorDetails> error{};
 };
 
-class PaymentsResponse : public serde::Serializer<PaymentsResponse>
+class PaymentsResponse : public core::behavior::Serializer<PaymentsResponse>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -26183,121 +17755,7 @@ public:
     std::optional<bool> enable_account_name_verification{};
 };
 
-class PaymentsUpdateMetadataRequest : public serde::Serializer<PaymentsUpdateMetadataRequest>
-{
-public:
-    void set_payment_id(PaymentIdValue value)
-    {
-        payment_id = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentIdValue& get_payment_id() const noexcept
-    {
-        return payment_id;
-    }
-
-    void set_metadata(std::optional<SecretSerdeValueValue> value)
-    {
-        metadata = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretSerdeValueValue>& get_metadata() const noexcept
-    {
-        return metadata;
-    }
-
-    void set_feature_metadata(std::optional<FeatureMetadata> value)
-    {
-        feature_metadata = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FeatureMetadata>& get_feature_metadata() const noexcept
-    {
-        return feature_metadata;
-    }
-
-    PaymentIdValue payment_id{};
-    std::optional<SecretSerdeValueValue> metadata{};
-    std::optional<FeatureMetadata> feature_metadata{};
-};
-
-class PaymentsUpdateMetadataResponse : public serde::Serializer<PaymentsUpdateMetadataResponse>
-{
-public:
-    void set_payment_id(PaymentIdValue value)
-    {
-        payment_id = std::move(value);
-    }
-
-    [[nodiscard]] const PaymentIdValue& get_payment_id() const noexcept
-    {
-        return payment_id;
-    }
-
-    void set_metadata(std::optional<SecretSerdeValueValue> value)
-    {
-        metadata = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<SecretSerdeValueValue>& get_metadata() const noexcept
-    {
-        return metadata;
-    }
-
-    void set_status(std::optional<IntentStatusValue> value)
-    {
-        status = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<IntentStatusValue>& get_status() const noexcept
-    {
-        return status;
-    }
-
-    void set_feature_metadata(std::optional<FeatureMetadata> value)
-    {
-        feature_metadata = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<FeatureMetadata>& get_feature_metadata() const noexcept
-    {
-        return feature_metadata;
-    }
-
-    PaymentIdValue payment_id{};
-    std::optional<SecretSerdeValueValue> metadata{};
-    std::optional<IntentStatusValue> status{};
-    std::optional<FeatureMetadata> feature_metadata{};
-};
-
-class GooglePayDetails : public serde::Serializer<GooglePayDetails>
-{
-public:
-    void set_provider_details(GooglePayProviderDetails value)
-    {
-        provider_details = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayProviderDetails& get_provider_details() const noexcept
-    {
-        return provider_details;
-    }
-
-    void set_cards(GpayAllowedMethodsParameters value)
-    {
-        cards = std::move(value);
-    }
-
-    [[nodiscard]] const GpayAllowedMethodsParameters& get_cards() const noexcept
-    {
-        return cards;
-    }
-
-    GooglePayProviderDetails provider_details{};
-    GpayAllowedMethodsParameters cards{};
-};
-
-class GpaySessionTokenData : public serde::Serializer<GpaySessionTokenData>
+class GpaySessionTokenData : public core::behavior::Serializer<GpaySessionTokenData>
 {
 public:
     void set_google_pay(GooglePayDetailsWrapper value)
@@ -26313,7 +17771,7 @@ public:
     GooglePayDetailsWrapper google_pay{};
 };
 
-class PaymentListResponseV2 : public serde::Serializer<PaymentListResponseV2>
+class PaymentListResponseV2 : public core::behavior::Serializer<PaymentListResponseV2>
 {
 public:
     void set_count(std::size_t value)
@@ -26359,7 +17817,7 @@ public:
 
 /** Typed query for the v1/v2 payments list families (`payments_list`,
  *  `profile_payments_list`, `payments_list_by_filter`, `payments_list_for_platform`). */
-class PaymentsListRequest : public serde::Serializer<PaymentsListRequest>
+class PaymentsListRequest : public core::behavior::Serializer<PaymentsListRequest>
 {
 public:
     void set_merchant_id(std::optional<std::string> value)
@@ -26476,7 +17934,7 @@ public:
 
 /** Typed query for the filter endpoints (`get_payment_filters`,
  *  `get_payment_filters_profile`, `get_filters_for_payments`). */
-class PaymentsFilterRequest : public serde::Serializer<PaymentsFilterRequest>
+class PaymentsFilterRequest : public core::behavior::Serializer<PaymentsFilterRequest>
 {
 public:
     void set_status(std::optional<std::string> value)
@@ -26570,7 +18028,7 @@ public:
 };
 
 /** Typed query for the aggregate endpoints (`get_payments_aggregates{,_profile}`). */
-class PaymentsAggregateRequest : public serde::Serializer<PaymentsAggregateRequest>
+class PaymentsAggregateRequest : public core::behavior::Serializer<PaymentsAggregateRequest>
 {
 public:
     void set_start(std::optional<std::string> value)
@@ -26620,7 +18078,8 @@ public:
 };
 
 /** Typed query for `list_payment_attempts` (typed attempt-list fields, SR-6). */
-class PaymentAttemptListFilterRequest : public serde::Serializer<PaymentAttemptListFilterRequest>
+class PaymentAttemptListFilterRequest :
+    public core::behavior::Serializer<PaymentAttemptListFilterRequest>
 {
 public:
     void set_payment_id(std::optional<std::string> value)
@@ -26684,7 +18143,7 @@ public:
  *  `PaymentListFilterConstraints` (api_models/src/payments.rs:9888-9951); every
  *  field is optional so a sparse filter body round-trips without synthetic
  *  defaults. */
-class PaymentsAdvancedListRequest : public serde::Serializer<PaymentsAdvancedListRequest>
+class PaymentsAdvancedListRequest : public core::behavior::Serializer<PaymentsAdvancedListRequest>
 {
 public:
     void set_query(std::optional<std::string> value)
@@ -26824,7 +18283,7 @@ public:
 
 /** Typed response for the OpenSearch advanced-list routes. Mirrors the upstream
  *  `SearchResponse` envelope (`count` + `hits`) with typed payment rows. */
-class PaymentsAdvancedListResponse : public serde::Serializer<PaymentsAdvancedListResponse>
+class PaymentsAdvancedListResponse : public core::behavior::Serializer<PaymentsAdvancedListResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -26863,7 +18322,7 @@ public:
 };
 
 /** Typed row of the `/payments/{id}/client` payment-methods listing. */
-class PaymentsClientMethod : public serde::Serializer<PaymentsClientMethod>
+class PaymentsClientMethod : public core::behavior::Serializer<PaymentsClientMethod>
 {
 public:
     void set_payment_method(std::optional<std::string> value)
@@ -26913,7 +18372,8 @@ public:
 };
 
 /** Typed response for `list_payment_methods_for_payments_client`. */
-class PaymentsClientMethodsResponse : public serde::Serializer<PaymentsClientMethodsResponse>
+class PaymentsClientMethodsResponse :
+    public core::behavior::Serializer<PaymentsClientMethodsResponse>
 {
 public:
     void set_count(std::size_t value)
@@ -26940,122 +18400,7 @@ public:
     std::vector<PaymentsClientMethod> data{};
 };
 
-class GooglePayWalletDetails : public serde::Serializer<GooglePayWalletDetails>
-{
-public:
-    void set_google_pay(GooglePayDetails value)
-    {
-        google_pay = std::move(value);
-    }
-
-    [[nodiscard]] const GooglePayDetails& get_google_pay() const noexcept
-    {
-        return google_pay;
-    }
-
-    GooglePayDetails google_pay{};
-};
 } // namespace app::model::payments
-
-template<>
-struct serde::Serializable<app::model::payments::BankData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_type",
-                &app::model::payments::BankData::get_payment_method_type,
-                &app::model::payments::BankData::set_payment_method_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "code_information",
-                &app::model::payments::BankData::get_code_information,
-                &app::model::payments::BankData::set_code_information,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankCodeInformation>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payments::BankCodeInformation::get_bank_name,
-                &app::model::payments::BankCodeInformation::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_codes",
-                &app::model::payments::BankCodeInformation::get_connector_codes,
-                &app::model::payments::BankCodeInformation::set_connector_codes,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_code_information";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ConnectorCode>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::ConnectorCode::get_connector,
-                &app::model::payments::ConnectorCode::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "code",
-                &app::model::payments::ConnectorCode::get_code,
-                &app::model::payments::ConnectorCode::set_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "connector_code";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankCodeResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payments::BankCodeResponse::get_bank_name,
-                &app::model::payments::BankCodeResponse::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "eligible_connectors",
-                &app::model::payments::BankCodeResponse::get_eligible_connectors,
-                &app::model::payments::BankCodeResponse::set_eligible_connectors,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_code_response";
-    }
-};
 
 template<>
 struct serde::Serializable<app::model::payments::CustomerDetails>
@@ -28621,64 +19966,6 @@ struct serde::Serializable<app::model::payments::RecoveryRetryWebhookDetails>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::PaymentAttemptFeatureMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "revenue_recovery",
-            &app::model::payments::PaymentAttemptFeatureMetadata::get_revenue_recovery,
-            &app::model::payments::PaymentAttemptFeatureMetadata::set_revenue_recovery,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_attempt_feature_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentAttemptRevenueRecoveryData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "attempt_triggered_by",
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::get_attempt_triggered_by,
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::set_attempt_triggered_by,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "charge_id",
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::get_charge_id,
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::set_charge_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "customer_present",
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::get_customer_present,
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::set_customer_present,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "setup_future_usage",
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::get_setup_future_usage,
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::set_setup_future_usage,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recovery_request_id",
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::get_recovery_request_id,
-                &app::model::payments::PaymentAttemptRevenueRecoveryData::set_recovery_request_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_attempt_revenue_recovery_data";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::CaptureResponse>
 {
     static constexpr auto fields()
@@ -28750,41 +20037,6 @@ struct serde::Serializable<app::model::payments::CaptureResponse>
     static constexpr std::string_view table_name()
     {
         return "capture_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentsRedirectRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_id",
-                &app::model::payments::PaymentsRedirectRequest::get_payment_id,
-                &app::model::payments::PaymentsRedirectRequest::set_payment_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_id",
-                &app::model::payments::PaymentsRedirectRequest::get_merchant_id,
-                &app::model::payments::PaymentsRedirectRequest::set_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::PaymentsRedirectRequest::get_connector,
-                &app::model::payments::PaymentsRedirectRequest::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "param",
-                &app::model::payments::PaymentsRedirectRequest::get_param,
-                &app::model::payments::PaymentsRedirectRequest::set_param,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payments_redirect_request";
     }
 };
 
@@ -28987,181 +20239,6 @@ struct serde::Serializable<app::model::payments::NetworkDetails>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::Card>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_number",
-                &app::model::payments::Card::get_card_number,
-                &app::model::payments::Card::set_card_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::payments::Card::get_card_exp_month,
-                &app::model::payments::Card::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::payments::Card::get_card_exp_year,
-                &app::model::payments::Card::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::Card::get_card_holder_name,
-                &app::model::payments::Card::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_cvc",
-                &app::model::payments::Card::get_card_cvc,
-                &app::model::payments::Card::set_card_cvc,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::payments::Card::get_card_issuer,
-                &app::model::payments::Card::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payments::Card::get_card_network,
-                &app::model::payments::Card::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::payments::Card::get_card_type,
-                &app::model::payments::Card::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_subtype",
-                &app::model::payments::Card::get_card_subtype,
-                &app::model::payments::Card::set_card_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_segment_type",
-                &app::model::payments::Card::get_card_segment_type,
-                &app::model::payments::Card::set_card_segment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "funding_source",
-                &app::model::payments::Card::get_funding_source,
-                &app::model::payments::Card::set_funding_source,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::payments::Card::get_card_issuing_country,
-                &app::model::payments::Card::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country_code",
-                &app::model::payments::Card::get_card_issuing_country_code,
-                &app::model::payments::Card::set_card_issuing_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payments::Card::get_bank_code,
-                &app::model::payments::Card::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "nick_name",
-                &app::model::payments::Card::get_nick_name,
-                &app::model::payments::Card::set_nick_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CardWithNoCVC>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_number",
-                &app::model::payments::CardWithNoCVC::get_card_number,
-                &app::model::payments::CardWithNoCVC::set_card_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::payments::CardWithNoCVC::get_card_exp_month,
-                &app::model::payments::CardWithNoCVC::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::payments::CardWithNoCVC::get_card_exp_year,
-                &app::model::payments::CardWithNoCVC::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::CardWithNoCVC::get_card_holder_name,
-                &app::model::payments::CardWithNoCVC::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::payments::CardWithNoCVC::get_card_issuer,
-                &app::model::payments::CardWithNoCVC::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payments::CardWithNoCVC::get_card_network,
-                &app::model::payments::CardWithNoCVC::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::payments::CardWithNoCVC::get_card_type,
-                &app::model::payments::CardWithNoCVC::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_subtype",
-                &app::model::payments::CardWithNoCVC::get_card_subtype,
-                &app::model::payments::CardWithNoCVC::set_card_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_segment_type",
-                &app::model::payments::CardWithNoCVC::get_card_segment_type,
-                &app::model::payments::CardWithNoCVC::set_card_segment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "funding_source",
-                &app::model::payments::CardWithNoCVC::get_funding_source,
-                &app::model::payments::CardWithNoCVC::set_funding_source,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::payments::CardWithNoCVC::get_card_issuing_country,
-                &app::model::payments::CardWithNoCVC::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country_code",
-                &app::model::payments::CardWithNoCVC::get_card_issuing_country_code,
-                &app::model::payments::CardWithNoCVC::set_card_issuing_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payments::CardWithNoCVC::get_bank_code,
-                &app::model::payments::CardWithNoCVC::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "nick_name",
-                &app::model::payments::CardWithNoCVC::get_nick_name,
-                &app::model::payments::CardWithNoCVC::set_nick_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_with_no_cvc";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::ExtendedCardInfo>
 {
     static constexpr auto fields()
@@ -29223,168 +20300,6 @@ struct serde::Serializable<app::model::payments::ExtendedCardInfo>
     static constexpr std::string_view table_name()
     {
         return "extended_card_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CardToken>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::CardToken::get_card_holder_name,
-                &app::model::payments::CardToken::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_cvc",
-                &app::model::payments::CardToken::get_card_cvc,
-                &app::model::payments::CardToken::set_card_cvc,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_cvc_token",
-                &app::model::payments::CardToken::get_card_cvc_token,
-                &app::model::payments::CardToken::set_card_cvc_token,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_token";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::VaultCardToken>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::VaultCardToken::get_card_holder_name,
-                &app::model::payments::VaultCardToken::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_cvc",
-                &app::model::payments::VaultCardToken::get_card_cvc,
-                &app::model::payments::VaultCardToken::set_card_cvc,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "vault_card_token";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::PaymentMethodDataRequest::get_payment_method_data,
-                &app::model::payments::PaymentMethodDataRequest::set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing",
-                &app::model::payments::PaymentMethodDataRequest::get_billing,
-                &app::model::payments::PaymentMethodDataRequest::set_billing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_method_data_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SplitPaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::SplitPaymentMethodDataRequest::get_payment_method_data,
-                &app::model::payments::SplitPaymentMethodDataRequest::set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_type",
-                &app::model::payments::SplitPaymentMethodDataRequest::get_payment_method_type,
-                &app::model::payments::SplitPaymentMethodDataRequest::set_payment_method_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_subtype",
-                &app::model::payments::SplitPaymentMethodDataRequest::get_payment_method_subtype,
-                &app::model::payments::SplitPaymentMethodDataRequest::set_payment_method_subtype,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "split_payment_method_data_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::RecordAttemptPaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::RecordAttemptPaymentMethodDataRequest::
-                    get_payment_method_data,
-                &app::model::payments::RecordAttemptPaymentMethodDataRequest::
-                    set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing",
-                &app::model::payments::RecordAttemptPaymentMethodDataRequest::get_billing,
-                &app::model::payments::RecordAttemptPaymentMethodDataRequest::set_billing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "record_attempt_payment_method_data_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ProxyPaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::ProxyPaymentMethodDataRequest::get_payment_method_data,
-                &app::model::payments::ProxyPaymentMethodDataRequest::set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing",
-                &app::model::payments::ProxyPaymentMethodDataRequest::get_billing,
-                &app::model::payments::ProxyPaymentMethodDataRequest::set_billing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "proxy_payment_method_data_request";
     }
 };
 
@@ -29465,31 +20380,6 @@ struct serde::Serializable<app::model::payments::ProxyCardData>
     static constexpr std::string_view table_name()
     {
         return "proxy_card_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::VaultToken>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_cvc",
-                &app::model::payments::VaultToken::get_card_cvc,
-                &app::model::payments::VaultToken::set_card_cvc,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::VaultToken::get_card_holder_name,
-                &app::model::payments::VaultToken::set_card_holder_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "vault_token";
     }
 };
 
@@ -29639,24 +20529,6 @@ struct serde::Serializable<app::model::payments::NetworkTokenResponse>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::ApplyPaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "payment_methods",
-            &app::model::payments::ApplyPaymentMethodDataRequest::get_payment_methods,
-            &app::model::payments::ApplyPaymentMethodDataRequest::set_payment_methods,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apply_payment_method_data_request";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::PMBalanceCheckSuccessResponse>
 {
     static constexpr auto fields()
@@ -29701,286 +20573,6 @@ struct serde::Serializable<app::model::payments::PMBalanceCheckFailureResponse>
     static constexpr std::string_view table_name()
     {
         return "pm_balance_check_failure_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::EligibilityBalanceCheckResponseItem>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::EligibilityBalanceCheckResponseItem::get_payment_method_data,
-                &app::model::payments::EligibilityBalanceCheckResponseItem::set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "eligibility",
-                &app::model::payments::EligibilityBalanceCheckResponseItem::get_eligibility,
-                &app::model::payments::EligibilityBalanceCheckResponseItem::set_eligibility,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "eligibility_balance_check_response_item";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CheckAndApplyPaymentMethodDataResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "balances",
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::get_balances,
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::set_balances,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "remaining_amount",
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::get_remaining_amount,
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::set_remaining_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency",
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::get_currency,
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::set_currency,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "requires_additional_pm_data",
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::
-                    get_requires_additional_pm_data,
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::
-                    set_requires_additional_pm_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "surcharge_details",
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::
-                    get_surcharge_details,
-                &app::model::payments::CheckAndApplyPaymentMethodDataResponse::
-                    set_surcharge_details,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "check_and_apply_payment_method_data_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_type",
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    get_payment_method_type,
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    set_payment_method_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_subtype",
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    get_payment_method_subtype,
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    set_payment_method_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "surcharge_details",
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    get_surcharge_details,
-                &app::model::payments::ApplyPaymentMethodDataSurchargeResponseItem::
-                    set_surcharge_details,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apply_payment_method_data_surcharge_response_item";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BHNGiftCardDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "account_number",
-                &app::model::payments::BHNGiftCardDetails::get_account_number,
-                &app::model::payments::BHNGiftCardDetails::set_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "pin",
-                &app::model::payments::BHNGiftCardDetails::get_pin,
-                &app::model::payments::BHNGiftCardDetails::set_pin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "cvv2",
-                &app::model::payments::BHNGiftCardDetails::get_cvv2,
-                &app::model::payments::BHNGiftCardDetails::set_cvv2,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "expiration_date",
-                &app::model::payments::BHNGiftCardDetails::get_expiration_date,
-                &app::model::payments::BHNGiftCardDetails::set_expiration_date,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bhn_gift_card_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GiftCardDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "number",
-                &app::model::payments::GiftCardDetails::get_number,
-                &app::model::payments::GiftCardDetails::set_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "cvc",
-                &app::model::payments::GiftCardDetails::get_cvc,
-                &app::model::payments::GiftCardDetails::set_cvc,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gift_card_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AdditionalCardInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::payments::AdditionalCardInfo::get_card_issuer,
-                &app::model::payments::AdditionalCardInfo::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payments::AdditionalCardInfo::get_card_network,
-                &app::model::payments::AdditionalCardInfo::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::payments::AdditionalCardInfo::get_card_type,
-                &app::model::payments::AdditionalCardInfo::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_subtype",
-                &app::model::payments::AdditionalCardInfo::get_card_subtype,
-                &app::model::payments::AdditionalCardInfo::set_card_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_segment_type",
-                &app::model::payments::AdditionalCardInfo::get_card_segment_type,
-                &app::model::payments::AdditionalCardInfo::set_card_segment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "funding_source",
-                &app::model::payments::AdditionalCardInfo::get_funding_source,
-                &app::model::payments::AdditionalCardInfo::set_funding_source,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::payments::AdditionalCardInfo::get_card_issuing_country,
-                &app::model::payments::AdditionalCardInfo::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country_code",
-                &app::model::payments::AdditionalCardInfo::get_card_issuing_country_code,
-                &app::model::payments::AdditionalCardInfo::set_card_issuing_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_code",
-                &app::model::payments::AdditionalCardInfo::get_bank_code,
-                &app::model::payments::AdditionalCardInfo::set_bank_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "last4",
-                &app::model::payments::AdditionalCardInfo::get_last4,
-                &app::model::payments::AdditionalCardInfo::set_last4,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_isin",
-                &app::model::payments::AdditionalCardInfo::get_card_isin,
-                &app::model::payments::AdditionalCardInfo::set_card_isin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_extended_bin",
-                &app::model::payments::AdditionalCardInfo::get_card_extended_bin,
-                &app::model::payments::AdditionalCardInfo::set_card_extended_bin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::payments::AdditionalCardInfo::get_card_exp_month,
-                &app::model::payments::AdditionalCardInfo::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::payments::AdditionalCardInfo::get_card_exp_year,
-                &app::model::payments::AdditionalCardInfo::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_holder_name",
-                &app::model::payments::AdditionalCardInfo::get_card_holder_name,
-                &app::model::payments::AdditionalCardInfo::set_card_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_checks",
-                &app::model::payments::AdditionalCardInfo::get_payment_checks,
-                &app::model::payments::AdditionalCardInfo::set_payment_checks,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "authentication_data",
-                &app::model::payments::AdditionalCardInfo::get_authentication_data,
-                &app::model::payments::AdditionalCardInfo::set_authentication_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "is_regulated",
-                &app::model::payments::AdditionalCardInfo::get_is_regulated,
-                &app::model::payments::AdditionalCardInfo::set_is_regulated,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "signature_network",
-                &app::model::payments::AdditionalCardInfo::get_signature_network,
-                &app::model::payments::AdditionalCardInfo::set_signature_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "auth_code",
-                &app::model::payments::AdditionalCardInfo::get_auth_code,
-                &app::model::payments::AdditionalCardInfo::set_auth_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "additional_card_info";
     }
 };
 
@@ -30069,24 +20661,6 @@ struct serde::Serializable<app::model::payments::KlarnaSdkPaymentMethod>
     static constexpr std::string_view table_name()
     {
         return "klarna_sdk_payment_method";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::InteracPaymentMethod>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "customer_info",
-            &app::model::payments::InteracPaymentMethod::get_customer_info,
-            &app::model::payments::InteracPaymentMethod::set_customer_info,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "interac_payment_method";
     }
 };
 
@@ -30388,31 +20962,6 @@ struct serde::Serializable<app::model::payments::SofortBilling>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::BankRedirectBilling>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "billing_name",
-                &app::model::payments::BankRedirectBilling::get_billing_name,
-                &app::model::payments::BankRedirectBilling::set_billing_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "email",
-                &app::model::payments::BankRedirectBilling::get_email,
-                &app::model::payments::BankRedirectBilling::set_email,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_redirect_billing";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::DocumentDetails>
 {
     static constexpr auto fields()
@@ -30434,303 +20983,6 @@ struct serde::Serializable<app::model::payments::DocumentDetails>
     static constexpr std::string_view table_name()
     {
         return "document_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankDebitBilling>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "name",
-                &app::model::payments::BankDebitBilling::get_name,
-                &app::model::payments::BankDebitBilling::set_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "email",
-                &app::model::payments::BankDebitBilling::get_email,
-                &app::model::payments::BankDebitBilling::set_email,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "address",
-                &app::model::payments::BankDebitBilling::get_address,
-                &app::model::payments::BankDebitBilling::set_address,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_debit_billing";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PazeWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "complete_response",
-            &app::model::payments::PazeWalletData::get_complete_response,
-            &app::model::payments::PazeWalletData::set_complete_response,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paze_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "payment_credential",
-            &app::model::payments::SamsungPayWalletData::get_payment_credential,
-            &app::model::payments::SamsungPayWalletData::set_payment_credential,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayAppWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "3_d_s",
-                &app::model::payments::SamsungPayAppWalletData::get_token_data,
-                &app::model::payments::SamsungPayAppWalletData::set_token_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_card_brand",
-                &app::model::payments::SamsungPayAppWalletData::get_payment_card_brand,
-                &app::model::payments::SamsungPayAppWalletData::set_payment_card_brand,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_currency_type",
-                &app::model::payments::SamsungPayAppWalletData::get_payment_currency_type,
-                &app::model::payments::SamsungPayAppWalletData::set_payment_currency_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_last4_dpan",
-                &app::model::payments::SamsungPayAppWalletData::get_payment_last4_dpan,
-                &app::model::payments::SamsungPayAppWalletData::set_payment_last4_dpan,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_last4_fpan",
-                &app::model::payments::SamsungPayAppWalletData::get_payment_last4_fpan,
-                &app::model::payments::SamsungPayAppWalletData::set_payment_last4_fpan,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_ref",
-                &app::model::payments::SamsungPayAppWalletData::get_merchant_ref,
-                &app::model::payments::SamsungPayAppWalletData::set_merchant_ref,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "method",
-                &app::model::payments::SamsungPayAppWalletData::get_method,
-                &app::model::payments::SamsungPayAppWalletData::set_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment",
-                &app::model::payments::SamsungPayAppWalletData::get_recurring_payment,
-                &app::model::payments::SamsungPayAppWalletData::set_recurring_payment,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_app_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayWebWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "method",
-                &app::model::payments::SamsungPayWebWalletData::get_method,
-                &app::model::payments::SamsungPayWebWalletData::set_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment",
-                &app::model::payments::SamsungPayWebWalletData::get_recurring_payment,
-                &app::model::payments::SamsungPayWebWalletData::set_recurring_payment,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_brand",
-                &app::model::payments::SamsungPayWebWalletData::get_card_brand,
-                &app::model::payments::SamsungPayWebWalletData::set_card_brand,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_last4digits",
-                &app::model::payments::SamsungPayWebWalletData::get_card_last_four_digits,
-                &app::model::payments::SamsungPayWebWalletData::set_card_last_four_digits,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "3_d_s",
-                &app::model::payments::SamsungPayWebWalletData::get_token_data,
-                &app::model::payments::SamsungPayWebWalletData::set_token_data,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_web_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::SamsungPayTokenData::get_three_ds_type,
-                &app::model::payments::SamsungPayTokenData::set_three_ds_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "version",
-                &app::model::payments::SamsungPayTokenData::get_version,
-                &app::model::payments::SamsungPayTokenData::set_version,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "data",
-                &app::model::payments::SamsungPayTokenData::get_data,
-                &app::model::payments::SamsungPayTokenData::set_data,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::GooglePayWalletData::get_pm_type,
-                &app::model::payments::GooglePayWalletData::set_pm_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "description",
-                &app::model::payments::GooglePayWalletData::get_description,
-                &app::model::payments::GooglePayWalletData::set_description,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "info",
-                &app::model::payments::GooglePayWalletData::get_info,
-                &app::model::payments::GooglePayWalletData::set_info,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tokenization_data",
-                &app::model::payments::GooglePayWalletData::get_tokenization_data,
-                &app::model::payments::GooglePayWalletData::set_tokenization_data,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPaySessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "amazon_pay",
-            &app::model::payments::AmazonPaySessionTokenData::get_data,
-            &app::model::payments::AmazonPaySessionTokenData::set_data,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayMerchantCredentials>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_id",
-                &app::model::payments::AmazonPayMerchantCredentials::get_merchant_id,
-                &app::model::payments::AmazonPayMerchantCredentials::set_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "store_id",
-                &app::model::payments::AmazonPayMerchantCredentials::get_store_id,
-                &app::model::payments::AmazonPayMerchantCredentials::set_store_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_merchant_credentials";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayRedirectData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_redirect_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayRedirectData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_redirect_data";
     }
 };
 
@@ -30777,70 +21029,6 @@ struct serde::Serializable<app::model::payments::PayseraData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::GooglePayRedirectData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_redirect_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayThirdPartySdkData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "token",
-            &app::model::payments::GooglePayThirdPartySdkData::get_token,
-            &app::model::payments::GooglePayThirdPartySdkData::set_token,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_third_party_sdk_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayThirdPartySdkData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "token",
-            &app::model::payments::ApplePayThirdPartySdkData::get_token,
-            &app::model::payments::ApplePayThirdPartySdkData::set_token,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_third_party_sdk_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::WeChatPayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "we_chat_pay_redirection";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::WeChatPay>
 {
     static constexpr auto fields()
@@ -30851,295 +21039,6 @@ struct serde::Serializable<app::model::payments::WeChatPay>
     static constexpr std::string_view table_name()
     {
         return "we_chat_pay";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::WeChatPayQr>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "we_chat_pay_qr";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CashappQr>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "cashapp_qr";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaypalRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "email",
-                &app::model::payments::PaypalRedirection::get_email,
-                &app::model::payments::PaypalRedirection::set_email,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payer_id",
-                &app::model::payments::PaypalRedirection::get_payer_id,
-                &app::model::payments::PaypalRedirection::set_payer_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AliPayQr>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "ali_pay_qr";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AliPayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "ali_pay_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AliPayHkRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "ali_pay_hk_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BluecodeQrRedirect>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bluecode_qr_redirect";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::MomoRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "momo_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::KakaoPayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "kakao_pay_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GoPayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "go_pay_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GcashRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gcash_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::MobilePayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "mobile_pay_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::MbWayRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "telephone_number",
-            &app::model::payments::MbWayRedirection::get_telephone_number,
-            &app::model::payments::MbWayRedirection::set_telephone_number,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "mb_way_redirection";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayPaymentMethodInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payments::GooglePayPaymentMethodInfo::get_card_network,
-                &app::model::payments::GooglePayPaymentMethodInfo::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_details",
-                &app::model::payments::GooglePayPaymentMethodInfo::get_card_details,
-                &app::model::payments::GooglePayPaymentMethodInfo::set_card_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "assurance_details",
-                &app::model::payments::GooglePayPaymentMethodInfo::get_assurance_details,
-                &app::model::payments::GooglePayPaymentMethodInfo::set_assurance_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_funding_source",
-                &app::model::payments::GooglePayPaymentMethodInfo::get_card_funding_source,
-                &app::model::payments::GooglePayPaymentMethodInfo::set_card_funding_source,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_payment_method_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayAssuranceDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_holder_authenticated",
-                &app::model::payments::GooglePayAssuranceDetails::get_card_holder_authenticated,
-                &app::model::payments::GooglePayAssuranceDetails::set_card_holder_authenticated,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_verified",
-                &app::model::payments::GooglePayAssuranceDetails::get_account_verified,
-                &app::model::payments::GooglePayAssuranceDetails::set_account_verified,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_assurance_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PayPalWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "token",
-            &app::model::payments::PayPalWalletData::get_token,
-            &app::model::payments::PayPalWalletData::set_token,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pay_pal_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::TouchNGoRedirection>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "touch_n_go_redirection";
     }
 };
 
@@ -31193,144 +21092,6 @@ struct serde::Serializable<app::model::payments::MifinityData>
     static constexpr std::string_view table_name()
     {
         return "mifinity_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "checkout_session_id",
-            &app::model::payments::AmazonPayWalletData::get_checkout_session_id,
-            &app::model::payments::AmazonPayWalletData::set_checkout_session_id,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayWalletData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_data",
-                &app::model::payments::ApplePayWalletData::get_payment_data,
-                &app::model::payments::ApplePayWalletData::set_payment_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method",
-                &app::model::payments::ApplePayWalletData::get_payment_method,
-                &app::model::payments::ApplePayWalletData::set_payment_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_identifier",
-                &app::model::payments::ApplePayWalletData::get_transaction_identifier,
-                &app::model::payments::ApplePayWalletData::set_transaction_identifier,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_wallet_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepayPaymentMethod>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "display_name",
-                &app::model::payments::ApplepayPaymentMethod::get_display_name,
-                &app::model::payments::ApplepayPaymentMethod::set_display_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "network",
-                &app::model::payments::ApplepayPaymentMethod::get_network,
-                &app::model::payments::ApplepayPaymentMethod::set_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::ApplepayPaymentMethod::get_pm_type,
-                &app::model::payments::ApplepayPaymentMethod::set_pm_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_month",
-                &app::model::payments::ApplepayPaymentMethod::get_card_exp_month,
-                &app::model::payments::ApplepayPaymentMethod::set_card_exp_month,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_exp_year",
-                &app::model::payments::ApplepayPaymentMethod::get_card_exp_year,
-                &app::model::payments::ApplepayPaymentMethod::set_card_exp_year,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "device_pan_bin",
-                &app::model::payments::ApplepayPaymentMethod::get_device_pan_bin,
-                &app::model::payments::ApplepayPaymentMethod::set_device_pan_bin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_bin",
-                &app::model::payments::ApplepayPaymentMethod::get_card_bin,
-                &app::model::payments::ApplepayPaymentMethod::set_card_bin,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::payments::ApplepayPaymentMethod::get_card_type,
-                &app::model::payments::ApplepayPaymentMethod::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "auth_code",
-                &app::model::payments::ApplepayPaymentMethod::get_auth_code,
-                &app::model::payments::ApplepayPaymentMethod::set_auth_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_subtype",
-                &app::model::payments::ApplepayPaymentMethod::get_card_subtype,
-                &app::model::payments::ApplepayPaymentMethod::set_card_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_segment_type",
-                &app::model::payments::ApplepayPaymentMethod::get_card_segment_type,
-                &app::model::payments::ApplepayPaymentMethod::set_card_segment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "funding_source",
-                &app::model::payments::ApplepayPaymentMethod::get_funding_source,
-                &app::model::payments::ApplepayPaymentMethod::set_funding_source,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "issuer_name",
-                &app::model::payments::ApplepayPaymentMethod::get_issuer_name,
-                &app::model::payments::ApplepayPaymentMethod::set_issuer_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "issuer_country",
-                &app::model::payments::ApplepayPaymentMethod::get_issuer_country,
-                &app::model::payments::ApplepayPaymentMethod::set_issuer_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_checks",
-                &app::model::payments::ApplepayPaymentMethod::get_payment_checks,
-                &app::model::payments::ApplepayPaymentMethod::set_payment_checks,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_payment_method";
     }
 };
 
@@ -31448,168 +21209,6 @@ struct serde::Serializable<app::model::payments::RewardData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::BoletoVoucherData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "social_security_number",
-                &app::model::payments::BoletoVoucherData::get_social_security_number,
-                &app::model::payments::BoletoVoucherData::set_social_security_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bank_number",
-                &app::model::payments::BoletoVoucherData::get_bank_number,
-                &app::model::payments::BoletoVoucherData::set_bank_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "document_type",
-                &app::model::payments::BoletoVoucherData::get_document_type,
-                &app::model::payments::BoletoVoucherData::set_document_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "fine_percentage",
-                &app::model::payments::BoletoVoucherData::get_fine_percentage,
-                &app::model::payments::BoletoVoucherData::set_fine_percentage,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "fine_quantity_days",
-                &app::model::payments::BoletoVoucherData::get_fine_quantity_days,
-                &app::model::payments::BoletoVoucherData::set_fine_quantity_days,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "interest_percentage",
-                &app::model::payments::BoletoVoucherData::get_interest_percentage,
-                &app::model::payments::BoletoVoucherData::set_interest_percentage,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "write_off_quantity_days",
-                &app::model::payments::BoletoVoucherData::get_write_off_quantity_days,
-                &app::model::payments::BoletoVoucherData::set_write_off_quantity_days,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "messages",
-                &app::model::payments::BoletoVoucherData::get_messages,
-                &app::model::payments::BoletoVoucherData::set_messages,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "due_date",
-                &app::model::payments::BoletoVoucherData::get_due_date,
-                &app::model::payments::BoletoVoucherData::set_due_date,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "boleto_voucher_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankDebitResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "details",
-            &app::model::payments::BankDebitResponse::get_details,
-            &app::model::payments::BankDebitResponse::set_details,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_debit_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankRedirectResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_name",
-                &app::model::payments::BankRedirectResponse::get_bank_name,
-                &app::model::payments::BankRedirectResponse::set_bank_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "details",
-                &app::model::payments::BankRedirectResponse::get_details,
-                &app::model::payments::BankRedirectResponse::set_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "interac",
-                &app::model::payments::BankRedirectResponse::get_interac,
-                &app::model::payments::BankRedirectResponse::set_interac,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_redirect_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankTransferResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "details",
-            &app::model::payments::BankTransferResponse::get_details,
-            &app::model::payments::BankTransferResponse::set_details,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_transfer_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CardRedirectResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "details",
-            &app::model::payments::CardRedirectResponse::get_details,
-            &app::model::payments::CardRedirectResponse::set_details,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_redirect_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CardTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "details",
-            &app::model::payments::CardTokenResponse::get_details,
-            &app::model::payments::CardTokenResponse::set_details,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_token_response";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::CryptoResponse>
 {
     static constexpr auto fields()
@@ -31624,24 +21223,6 @@ struct serde::Serializable<app::model::payments::CryptoResponse>
     static constexpr std::string_view table_name()
     {
         return "crypto_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GiftCardResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "details",
-            &app::model::payments::GiftCardResponse::get_details,
-            &app::model::payments::GiftCardResponse::set_details,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gift_card_response";
     }
 };
 
@@ -31786,155 +21367,6 @@ struct serde::Serializable<app::model::payments::KlarnaSdkPaymentMethodResponse>
     static constexpr std::string_view table_name()
     {
         return "klarna_sdk_payment_method_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentMethodDataResponseWithBilling>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::PaymentMethodDataResponseWithBilling::
-                    get_payment_method_data,
-                &app::model::payments::PaymentMethodDataResponseWithBilling::
-                    set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing",
-                &app::model::payments::PaymentMethodDataResponseWithBilling::get_billing,
-                &app::model::payments::PaymentMethodDataResponseWithBilling::set_billing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_method_data_response_with_billing";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CustomRecoveryPaymentMethodData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "primary_processor_payment_method_token",
-                &app::model::payments::CustomRecoveryPaymentMethodData::
-                    get_primary_processor_payment_method_token,
-                &app::model::payments::CustomRecoveryPaymentMethodData::
-                    set_primary_processor_payment_method_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_metadata",
-                &app::model::payments::CustomRecoveryPaymentMethodData::get_payment_method_metadata,
-                &app::model::payments::CustomRecoveryPaymentMethodData::set_payment_method_metadata,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "custom_recovery_payment_method_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::Address>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "address",
-                &app::model::payments::Address::get_address,
-                &app::model::payments::Address::set_address,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "phone",
-                &app::model::payments::Address::get_phone,
-                &app::model::payments::Address::set_phone,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "email",
-                &app::model::payments::Address::get_email,
-                &app::model::payments::Address::set_email,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "address";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AddressDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "city",
-                &app::model::payments::AddressDetails::get_city,
-                &app::model::payments::AddressDetails::set_city,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "country",
-                &app::model::payments::AddressDetails::get_country,
-                &app::model::payments::AddressDetails::set_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "line1",
-                &app::model::payments::AddressDetails::get_line1,
-                &app::model::payments::AddressDetails::set_line1,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "line2",
-                &app::model::payments::AddressDetails::get_line2,
-                &app::model::payments::AddressDetails::set_line2,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "line3",
-                &app::model::payments::AddressDetails::get_line3,
-                &app::model::payments::AddressDetails::set_line3,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "zip",
-                &app::model::payments::AddressDetails::get_zip,
-                &app::model::payments::AddressDetails::set_zip,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "state",
-                &app::model::payments::AddressDetails::get_state,
-                &app::model::payments::AddressDetails::set_state,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "first_name",
-                &app::model::payments::AddressDetails::get_first_name,
-                &app::model::payments::AddressDetails::set_first_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "last_name",
-                &app::model::payments::AddressDetails::get_last_name,
-                &app::model::payments::AddressDetails::set_last_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "origin_zip",
-                &app::model::payments::AddressDetails::get_origin_zip,
-                &app::model::payments::AddressDetails::set_origin_zip,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "address_details";
     }
 };
 
@@ -32417,49 +21849,6 @@ struct serde::Serializable<app::model::payments::SdkNextActionData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::FetchQrCodeInformation>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "qr_code_fetch_url",
-            &app::model::payments::FetchQrCodeInformation::get_qr_code_fetch_url,
-            &app::model::payments::FetchQrCodeInformation::set_qr_code_fetch_url,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "fetch_qr_code_information";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BankTransferNextStepsData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "bank_transfer_instructions",
-                &app::model::payments::BankTransferNextStepsData::get_bank_transfer_instructions,
-                &app::model::payments::BankTransferNextStepsData::set_bank_transfer_instructions,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "receiver",
-                &app::model::payments::BankTransferNextStepsData::get_receiver,
-                &app::model::payments::BankTransferNextStepsData::set_receiver,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bank_transfer_next_steps_data";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::VoucherNextStepData>
 {
     static constexpr auto fields()
@@ -32543,36 +21932,6 @@ struct serde::Serializable<app::model::payments::MobilePaymentNextStepData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::QrCodeNextStepsInstruction>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "image_data_url",
-                &app::model::payments::QrCodeNextStepsInstruction::get_image_data_url,
-                &app::model::payments::QrCodeNextStepsInstruction::set_image_data_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "display_to_timestamp",
-                &app::model::payments::QrCodeNextStepsInstruction::get_display_to_timestamp,
-                &app::model::payments::QrCodeNextStepsInstruction::set_display_to_timestamp,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "qr_code_url",
-                &app::model::payments::QrCodeNextStepsInstruction::get_qr_code_url,
-                &app::model::payments::QrCodeNextStepsInstruction::set_qr_code_url,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "qr_code_next_steps_instruction";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::WaitScreenInstructions>
 {
     static constexpr auto fields()
@@ -32646,168 +22005,6 @@ struct serde::Serializable<app::model::payments::PollConfig>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::SepaBankTransferInstructions>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payments::SepaBankTransferInstructions::get_account_holder_name,
-                &app::model::payments::SepaBankTransferInstructions::set_account_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "bic",
-                &app::model::payments::SepaBankTransferInstructions::get_bic,
-                &app::model::payments::SepaBankTransferInstructions::set_bic,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "country",
-                &app::model::payments::SepaBankTransferInstructions::get_country,
-                &app::model::payments::SepaBankTransferInstructions::set_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "iban",
-                &app::model::payments::SepaBankTransferInstructions::get_iban,
-                &app::model::payments::SepaBankTransferInstructions::set_iban,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "reference",
-                &app::model::payments::SepaBankTransferInstructions::get_reference,
-                &app::model::payments::SepaBankTransferInstructions::set_reference,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "sepa_bank_transfer_instructions";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentsConnectorThreeDsInvokeData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "directory_server_id",
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::get_directory_server_id,
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::set_directory_server_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "three_ds_method_url",
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::get_three_ds_method_url,
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::set_three_ds_method_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "three_ds_method_data",
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::get_three_ds_method_data,
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::set_three_ds_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "message_version",
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::get_message_version,
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::set_message_version,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "three_ds_method_data_submission",
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::
-                    get_three_ds_method_data_submission,
-                &app::model::payments::PaymentsConnectorThreeDsInvokeData::
-                    set_three_ds_method_data_submission,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payments_connector_three_ds_invoke_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentConnectorInvokeDDCMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "iframe_url",
-                &app::model::payments::PaymentConnectorInvokeDDCMetadata::get_iframe_url,
-                &app::model::payments::PaymentConnectorInvokeDDCMetadata::set_iframe_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "timeout_ms",
-                &app::model::payments::PaymentConnectorInvokeDDCMetadata::get_timeout_ms,
-                &app::model::payments::PaymentConnectorInvokeDDCMetadata::set_timeout_ms,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_connector_invoke_ddc_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentConnectorInvokeDDCData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "iframe_url",
-                &app::model::payments::PaymentConnectorInvokeDDCData::get_iframe_url,
-                &app::model::payments::PaymentConnectorInvokeDDCData::set_iframe_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "timeout_ms",
-                &app::model::payments::PaymentConnectorInvokeDDCData::get_timeout_ms,
-                &app::model::payments::PaymentConnectorInvokeDDCData::set_timeout_ms,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_connector_invoke_ddc_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BacsBankTransferInstructions>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "account_holder_name",
-                &app::model::payments::BacsBankTransferInstructions::get_account_holder_name,
-                &app::model::payments::BacsBankTransferInstructions::set_account_holder_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_number",
-                &app::model::payments::BacsBankTransferInstructions::get_account_number,
-                &app::model::payments::BacsBankTransferInstructions::set_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "sort_code",
-                &app::model::payments::BacsBankTransferInstructions::get_sort_code,
-                &app::model::payments::BacsBankTransferInstructions::set_sort_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "bacs_bank_transfer_instructions";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::MultibancoTransferInstructions>
 {
     static constexpr auto fields()
@@ -32829,36 +22026,6 @@ struct serde::Serializable<app::model::payments::MultibancoTransferInstructions>
     static constexpr std::string_view table_name()
     {
         return "multibanco_transfer_instructions";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::DokuBankTransferInstructions>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "expires_at",
-                &app::model::payments::DokuBankTransferInstructions::get_expires_at,
-                &app::model::payments::DokuBankTransferInstructions::set_expires_at,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "reference",
-                &app::model::payments::DokuBankTransferInstructions::get_reference,
-                &app::model::payments::DokuBankTransferInstructions::set_reference,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "instructions_url",
-                &app::model::payments::DokuBankTransferInstructions::get_instructions_url,
-                &app::model::payments::DokuBankTransferInstructions::set_instructions_url,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "doku_bank_transfer_instructions";
     }
 };
 
@@ -32894,36 +22061,6 @@ struct serde::Serializable<app::model::payments::AchTransfer>
     static constexpr std::string_view table_name()
     {
         return "ach_transfer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ReceiverDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "amount_received",
-                &app::model::payments::ReceiverDetails::get_amount_received,
-                &app::model::payments::ReceiverDetails::set_amount_received,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount_charged",
-                &app::model::payments::ReceiverDetails::get_amount_charged,
-                &app::model::payments::ReceiverDetails::set_amount_charged,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount_remaining",
-                &app::model::payments::ReceiverDetails::get_amount_remaining,
-                &app::model::payments::ReceiverDetails::set_amount_remaining,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "receiver_details";
     }
 };
 
@@ -34359,36 +23496,6 @@ struct serde::Serializable<app::model::payments::ApiNetworkErrorDetails>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::ApiConnectorErrorDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "code",
-                &app::model::payments::ApiConnectorErrorDetails::get_code,
-                &app::model::payments::ApiConnectorErrorDetails::set_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "message",
-                &app::model::payments::ApiConnectorErrorDetails::get_message,
-                &app::model::payments::ApiConnectorErrorDetails::set_message,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "reason",
-                &app::model::payments::ApiConnectorErrorDetails::get_reason,
-                &app::model::payments::ApiConnectorErrorDetails::set_reason,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "api_connector_error_details";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::ErrorDetails>
 {
     static constexpr auto fields()
@@ -34440,76 +23547,6 @@ struct serde::Serializable<app::model::payments::ErrorDetails>
     static constexpr std::string_view table_name()
     {
         return "error_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ConnectorTokenDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "token",
-                &app::model::payments::ConnectorTokenDetails::get_token,
-                &app::model::payments::ConnectorTokenDetails::set_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_token_request_reference_id",
-                &app::model::payments::ConnectorTokenDetails::
-                    get_connector_token_request_reference_id,
-                &app::model::payments::ConnectorTokenDetails::
-                    set_connector_token_request_reference_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "connector_token_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentStartRedirectionRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "id",
-            &app::model::payments::PaymentStartRedirectionRequest::get_id,
-            &app::model::payments::PaymentStartRedirectionRequest::set_id,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_start_redirection_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentStartRedirectionParams>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "publishable_key",
-                &app::model::payments::PaymentStartRedirectionParams::get_publishable_key,
-                &app::model::payments::PaymentStartRedirectionParams::set_publishable_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "profile_id",
-                &app::model::payments::PaymentStartRedirectionParams::get_profile_id,
-                &app::model::payments::PaymentStartRedirectionParams::set_profile_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_start_redirection_params";
     }
 };
 
@@ -36120,24 +25157,6 @@ struct serde::Serializable<app::model::payments::VerifyResponse>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::PaymentsRedirectionResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "redirect_url",
-            &app::model::payments::PaymentsRedirectionResponse::get_redirect_url,
-            &app::model::payments::PaymentsRedirectionResponse::set_redirect_url,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payments_redirection_response";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::MandateValidationFields>
 {
     static constexpr auto fields()
@@ -36179,86 +25198,6 @@ struct serde::Serializable<app::model::payments::MandateValidationFields>
     static constexpr std::string_view table_name()
     {
         return "mandate_validation_fields";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PgRedirectResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_id",
-                &app::model::payments::PgRedirectResponse::get_payment_id,
-                &app::model::payments::PgRedirectResponse::set_payment_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "status",
-                &app::model::payments::PgRedirectResponse::get_status,
-                &app::model::payments::PgRedirectResponse::set_status,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "gateway_id",
-                &app::model::payments::PgRedirectResponse::get_gateway_id,
-                &app::model::payments::PgRedirectResponse::set_gateway_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "customer_id",
-                &app::model::payments::PgRedirectResponse::get_customer_id,
-                &app::model::payments::PgRedirectResponse::set_customer_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::PgRedirectResponse::get_amount,
-                &app::model::payments::PgRedirectResponse::set_amount,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "pg_redirect_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::RedirectionResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "return_url",
-                &app::model::payments::RedirectionResponse::get_return_url,
-                &app::model::payments::RedirectionResponse::set_return_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "params",
-                &app::model::payments::RedirectionResponse::get_params,
-                &app::model::payments::RedirectionResponse::set_params,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "return_url_with_query_params",
-                &app::model::payments::RedirectionResponse::get_return_url_with_query_params,
-                &app::model::payments::RedirectionResponse::set_return_url_with_query_params,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "http_method",
-                &app::model::payments::RedirectionResponse::get_http_method,
-                &app::model::payments::RedirectionResponse::set_http_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "headers",
-                &app::model::payments::RedirectionResponse::get_headers,
-                &app::model::payments::RedirectionResponse::set_headers,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "redirection_response";
     }
 };
 
@@ -36423,31 +25362,6 @@ struct serde::Serializable<app::model::payments::OrderDetailsWithAmount>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::RedirectResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "param",
-                &app::model::payments::RedirectResponse::get_param,
-                &app::model::payments::RedirectResponse::set_param,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "json_payload",
-                &app::model::payments::RedirectResponse::get_json_payload,
-                &app::model::payments::RedirectResponse::set_json_payload,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "redirect_response";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::PaymentsSessionRequest>
 {
     static constexpr auto fields()
@@ -36479,71 +25393,6 @@ struct serde::Serializable<app::model::payments::PaymentsSessionRequest>
     static constexpr std::string_view table_name()
     {
         return "payments_session_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentsUpdateMetadataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_id",
-                &app::model::payments::PaymentsUpdateMetadataRequest::get_payment_id,
-                &app::model::payments::PaymentsUpdateMetadataRequest::set_payment_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "metadata",
-                &app::model::payments::PaymentsUpdateMetadataRequest::get_metadata,
-                &app::model::payments::PaymentsUpdateMetadataRequest::set_metadata,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "feature_metadata",
-                &app::model::payments::PaymentsUpdateMetadataRequest::get_feature_metadata,
-                &app::model::payments::PaymentsUpdateMetadataRequest::set_feature_metadata,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payments_update_metadata_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentsUpdateMetadataResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_id",
-                &app::model::payments::PaymentsUpdateMetadataResponse::get_payment_id,
-                &app::model::payments::PaymentsUpdateMetadataResponse::set_payment_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "metadata",
-                &app::model::payments::PaymentsUpdateMetadataResponse::get_metadata,
-                &app::model::payments::PaymentsUpdateMetadataResponse::set_metadata,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "status",
-                &app::model::payments::PaymentsUpdateMetadataResponse::get_status,
-                &app::model::payments::PaymentsUpdateMetadataResponse::set_status,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "feature_metadata",
-                &app::model::payments::PaymentsUpdateMetadataResponse::get_feature_metadata,
-                &app::model::payments::PaymentsUpdateMetadataResponse::set_feature_metadata,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payments_update_metadata_response";
     }
 };
 
@@ -36725,286 +25574,6 @@ struct serde::Serializable<app::model::payments::DisplayAmountOnSdk>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::GpayAllowedMethodsParameters>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "allowed_auth_methods",
-                &app::model::payments::GpayAllowedMethodsParameters::get_allowed_auth_methods,
-                &app::model::payments::GpayAllowedMethodsParameters::set_allowed_auth_methods,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_card_networks",
-                &app::model::payments::GpayAllowedMethodsParameters::get_allowed_card_networks,
-                &app::model::payments::GpayAllowedMethodsParameters::set_allowed_card_networks,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_address_required",
-                &app::model::payments::GpayAllowedMethodsParameters::get_billing_address_required,
-                &app::model::payments::GpayAllowedMethodsParameters::set_billing_address_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_address_parameters",
-                &app::model::payments::GpayAllowedMethodsParameters::get_billing_address_parameters,
-                &app::model::payments::GpayAllowedMethodsParameters::set_billing_address_parameters,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "assurance_details_required",
-                &app::model::payments::GpayAllowedMethodsParameters::get_assurance_details_required,
-                &app::model::payments::GpayAllowedMethodsParameters::set_assurance_details_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allow_credit_cards",
-                &app::model::payments::GpayAllowedMethodsParameters::get_allow_credit_cards,
-                &app::model::payments::GpayAllowedMethodsParameters::set_allow_credit_cards,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_allowed_methods_parameters";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayBillingAddressParameters>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "phone_number_required",
-                &app::model::payments::GpayBillingAddressParameters::get_phone_number_required,
-                &app::model::payments::GpayBillingAddressParameters::set_phone_number_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "format",
-                &app::model::payments::GpayBillingAddressParameters::get_format,
-                &app::model::payments::GpayBillingAddressParameters::set_format,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_billing_address_parameters";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayTokenParameters>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "gateway",
-                &app::model::payments::GpayTokenParameters::get_gateway,
-                &app::model::payments::GpayTokenParameters::set_gateway,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "gateway_merchant_id",
-                &app::model::payments::GpayTokenParameters::get_gateway_merchant_id,
-                &app::model::payments::GpayTokenParameters::set_gateway_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "stripe:version",
-                &app::model::payments::GpayTokenParameters::get_stripe_version,
-                &app::model::payments::GpayTokenParameters::set_stripe_version,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "stripe:publishableKey",
-                &app::model::payments::GpayTokenParameters::get_stripe_publishable_key,
-                &app::model::payments::GpayTokenParameters::set_stripe_publishable_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "protocol_version",
-                &app::model::payments::GpayTokenParameters::get_protocol_version,
-                &app::model::payments::GpayTokenParameters::set_protocol_version,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "public_key",
-                &app::model::payments::GpayTokenParameters::get_public_key,
-                &app::model::payments::GpayTokenParameters::set_public_key,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_token_parameters";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayTokenizationSpecification>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::GpayTokenizationSpecification::get_token_specification_type,
-                &app::model::payments::GpayTokenizationSpecification::set_token_specification_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "parameters",
-                &app::model::payments::GpayTokenizationSpecification::get_parameters,
-                &app::model::payments::GpayTokenizationSpecification::set_parameters,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_tokenization_specification";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayAllowedPaymentMethods>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::GpayAllowedPaymentMethods::get_payment_method_type,
-                &app::model::payments::GpayAllowedPaymentMethods::set_payment_method_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "parameters",
-                &app::model::payments::GpayAllowedPaymentMethods::get_parameters,
-                &app::model::payments::GpayAllowedPaymentMethods::set_parameters,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tokenization_specification",
-                &app::model::payments::GpayAllowedPaymentMethods::get_tokenization_specification,
-                &app::model::payments::GpayAllowedPaymentMethods::set_tokenization_specification,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_allowed_payment_methods";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayTransactionInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "country_code",
-                &app::model::payments::GpayTransactionInfo::get_country_code,
-                &app::model::payments::GpayTransactionInfo::set_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency_code",
-                &app::model::payments::GpayTransactionInfo::get_currency_code,
-                &app::model::payments::GpayTransactionInfo::set_currency_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_price_status",
-                &app::model::payments::GpayTransactionInfo::get_total_price_status,
-                &app::model::payments::GpayTransactionInfo::set_total_price_status,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_price",
-                &app::model::payments::GpayTransactionInfo::get_total_price,
-                &app::model::payments::GpayTransactionInfo::set_total_price,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_transaction_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayMerchantInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_id",
-                &app::model::payments::GpayMerchantInfo::get_merchant_id,
-                &app::model::payments::GpayMerchantInfo::set_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_name",
-                &app::model::payments::GpayMerchantInfo::get_merchant_name,
-                &app::model::payments::GpayMerchantInfo::set_merchant_name,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_merchant_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayMetaData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_info",
-                &app::model::payments::GpayMetaData::get_merchant_info,
-                &app::model::payments::GpayMetaData::set_merchant_info,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_payment_methods",
-                &app::model::payments::GpayMetaData::get_allowed_payment_methods,
-                &app::model::payments::GpayMetaData::set_allowed_payment_methods,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_meta_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayDetailsWrapper>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "data",
-                &app::model::payments::GooglePayDetailsWrapper::get_data,
-                &app::model::payments::GooglePayDetailsWrapper::set_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "support_predecrypted_token",
-                &app::model::payments::GooglePayDetailsWrapper::get_support_predecrypted_token,
-                &app::model::payments::GooglePayDetailsWrapper::set_support_predecrypted_token,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_details_wrapper";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::GpaySessionTokenData>
 {
     static constexpr auto fields()
@@ -37023,359 +25592,6 @@ struct serde::Serializable<app::model::payments::GpaySessionTokenData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::PazeSessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "paze",
-            &app::model::payments::PazeSessionTokenData::get_data,
-            &app::model::payments::PazeSessionTokenData::set_data,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paze_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PazeMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "client_id",
-                &app::model::payments::PazeMetadata::get_client_id,
-                &app::model::payments::PazeMetadata::set_client_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "client_name",
-                &app::model::payments::PazeMetadata::get_client_name,
-                &app::model::payments::PazeMetadata::set_client_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "client_profile_id",
-                &app::model::payments::PazeMetadata::get_client_profile_id,
-                &app::model::payments::PazeMetadata::set_client_profile_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paze_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPaySessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "samsung_pay",
-            &app::model::payments::SamsungPaySessionTokenData::get_data,
-            &app::model::payments::SamsungPaySessionTokenData::set_data,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayMerchantCredentials>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "service_id",
-                &app::model::payments::SamsungPayMerchantCredentials::get_service_id,
-                &app::model::payments::SamsungPayMerchantCredentials::set_service_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_display_name",
-                &app::model::payments::SamsungPayMerchantCredentials::get_merchant_display_name,
-                &app::model::payments::SamsungPayMerchantCredentials::set_merchant_display_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_business_country",
-                &app::model::payments::SamsungPayMerchantCredentials::get_merchant_business_country,
-                &app::model::payments::SamsungPayMerchantCredentials::set_merchant_business_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_brands",
-                &app::model::payments::SamsungPayMerchantCredentials::get_allowed_brands,
-                &app::model::payments::SamsungPayMerchantCredentials::set_allowed_brands,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_merchant_credentials";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayApplicationCredentials>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_display_name",
-                &app::model::payments::SamsungPayApplicationCredentials::get_merchant_display_name,
-                &app::model::payments::SamsungPayApplicationCredentials::set_merchant_display_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_business_country",
-                &app::model::payments::SamsungPayApplicationCredentials::
-                    get_merchant_business_country,
-                &app::model::payments::SamsungPayApplicationCredentials::
-                    set_merchant_business_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_brands",
-                &app::model::payments::SamsungPayApplicationCredentials::get_allowed_brands,
-                &app::model::payments::SamsungPayApplicationCredentials::set_allowed_brands,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_application_credentials";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaypalSdkMetaData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "client_id",
-            &app::model::payments::PaypalSdkMetaData::get_client_id,
-            &app::model::payments::PaypalSdkMetaData::set_client_id,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_sdk_meta_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaypalSdkSessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "paypal_sdk",
-            &app::model::payments::PaypalSdkSessionTokenData::get_data,
-            &app::model::payments::PaypalSdkSessionTokenData::set_data,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_sdk_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepaySessionRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchantIdentifier",
-                &app::model::payments::ApplepaySessionRequest::get_merchant_identifier,
-                &app::model::payments::ApplepaySessionRequest::set_merchant_identifier,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "displayName",
-                &app::model::payments::ApplepaySessionRequest::get_display_name,
-                &app::model::payments::ApplepaySessionRequest::set_display_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "initiative",
-                &app::model::payments::ApplepaySessionRequest::get_initiative,
-                &app::model::payments::ApplepaySessionRequest::set_initiative,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "initiativeContext",
-                &app::model::payments::ApplepaySessionRequest::get_initiative_context,
-                &app::model::payments::ApplepaySessionRequest::set_initiative_context,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_session_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ConnectorMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "apple_pay",
-                &app::model::payments::ConnectorMetadata::get_apple_pay,
-                &app::model::payments::ConnectorMetadata::set_apple_pay,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "airwallex",
-                &app::model::payments::ConnectorMetadata::get_airwallex,
-                &app::model::payments::ConnectorMetadata::set_airwallex,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "noon",
-                &app::model::payments::ConnectorMetadata::get_noon,
-                &app::model::payments::ConnectorMetadata::set_noon,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "braintree",
-                &app::model::payments::ConnectorMetadata::get_braintree,
-                &app::model::payments::ConnectorMetadata::set_braintree,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "adyen",
-                &app::model::payments::ConnectorMetadata::get_adyen,
-                &app::model::payments::ConnectorMetadata::set_adyen,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "peachpayments",
-                &app::model::payments::ConnectorMetadata::get_peachpayments,
-                &app::model::payments::ConnectorMetadata::set_peachpayments,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "santander",
-                &app::model::payments::ConnectorMetadata::get_santander,
-                &app::model::payments::ConnectorMetadata::set_santander,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "paypal",
-                &app::model::payments::ConnectorMetadata::get_paypal,
-                &app::model::payments::ConnectorMetadata::set_paypal,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "worldpayxml",
-                &app::model::payments::ConnectorMetadata::get_worldpayxml,
-                &app::model::payments::ConnectorMetadata::set_worldpayxml,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "checkout",
-                &app::model::payments::ConnectorMetadata::get_checkout,
-                &app::model::payments::ConnectorMetadata::set_checkout,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "stripe",
-                &app::model::payments::ConnectorMetadata::get_stripe,
-                &app::model::payments::ConnectorMetadata::set_stripe,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "connector_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaypalConnectorMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "paypal_client_metadata_id",
-            &app::model::payments::PaypalConnectorMetadata::get_paypal_client_metadata_id,
-            &app::model::payments::PaypalConnectorMetadata::set_paypal_client_metadata_id,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_connector_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::StripeConnectorMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "error_on_requires_action",
-            &app::model::payments::StripeConnectorMetadata::get_error_on_requires_action,
-            &app::model::payments::StripeConnectorMetadata::set_error_on_requires_action,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "stripe_connector_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CheckoutData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "purpose_of_payment",
-            &app::model::payments::CheckoutData::get_purpose_of_payment,
-            &app::model::payments::CheckoutData::set_purpose_of_payment,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "checkout_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::WorldpayxmlData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "funding_transaction_type",
-                &app::model::payments::WorldpayxmlData::get_funding_transaction_type,
-                &app::model::payments::WorldpayxmlData::set_funding_transaction_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_purpose",
-                &app::model::payments::WorldpayxmlData::get_payment_purpose,
-                &app::model::payments::WorldpayxmlData::set_payment_purpose,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "worldpayxml_data";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::Revolv3Data>
 {
     static constexpr auto fields()
@@ -37390,407 +25606,6 @@ struct serde::Serializable<app::model::payments::Revolv3Data>
     static constexpr std::string_view table_name()
     {
         return "revolv3_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SantanderData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "end_to_end_id",
-                &app::model::payments::SantanderData::get_end_to_end_id,
-                &app::model::payments::SantanderData::set_end_to_end_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "journey_name",
-                &app::model::payments::SantanderData::get_journey_name,
-                &app::model::payments::SantanderData::set_journey_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "paid_at",
-                &app::model::payments::SantanderData::get_paid_at,
-                &app::model::payments::SantanderData::set_paid_at,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AirwallexData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "payload",
-            &app::model::payments::AirwallexData::get_payload,
-            &app::model::payments::AirwallexData::set_payload,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "airwallex_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::NoonData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "order_category",
-            &app::model::payments::NoonData::get_order_category,
-            &app::model::payments::NoonData::set_order_category,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "noon_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BraintreeData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_account_id",
-                &app::model::payments::BraintreeData::get_merchant_account_id,
-                &app::model::payments::BraintreeData::set_merchant_account_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_config_currency",
-                &app::model::payments::BraintreeData::get_merchant_config_currency,
-                &app::model::payments::BraintreeData::set_merchant_config_currency,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "braintree_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::MultiCurrencyProcessingData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "currency",
-                &app::model::payments::MultiCurrencyProcessingData::get_currency,
-                &app::model::payments::MultiCurrencyProcessingData::set_currency,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::MultiCurrencyProcessingData::get_amount,
-                &app::model::payments::MultiCurrencyProcessingData::set_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "conversion_rate",
-                &app::model::payments::MultiCurrencyProcessingData::get_conversion_rate,
-                &app::model::payments::MultiCurrencyProcessingData::set_conversion_rate,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "date",
-                &app::model::payments::MultiCurrencyProcessingData::get_date,
-                &app::model::payments::MultiCurrencyProcessingData::set_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "processing_reference_id",
-                &app::model::payments::MultiCurrencyProcessingData::get_processing_reference_id,
-                &app::model::payments::MultiCurrencyProcessingData::set_processing_reference_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "user_id",
-                &app::model::payments::MultiCurrencyProcessingData::get_user_id,
-                &app::model::payments::MultiCurrencyProcessingData::set_user_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "conversion_provider",
-                &app::model::payments::MultiCurrencyProcessingData::get_conversion_provider,
-                &app::model::payments::MultiCurrencyProcessingData::set_conversion_provider,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "conversion_reason_code",
-                &app::model::payments::MultiCurrencyProcessingData::get_conversion_reason_code,
-                &app::model::payments::MultiCurrencyProcessingData::set_conversion_reason_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "multi_currency_processing_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AdyenConnectorMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "testing",
-            &app::model::payments::AdyenConnectorMetadata::get_testing,
-            &app::model::payments::AdyenConnectorMetadata::set_testing,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "adyen_connector_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AdyenTestingData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "holder_name",
-            &app::model::payments::AdyenTestingData::get_holder_name,
-            &app::model::payments::AdyenTestingData::set_holder_name,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "adyen_testing_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepayConnectorMetadataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "session_token_data",
-            &app::model::payments::ApplepayConnectorMetadataRequest::get_session_token_data,
-            &app::model::payments::ApplepayConnectorMetadataRequest::set_session_token_data,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_connector_metadata_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepaySessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "apple_pay",
-            &app::model::payments::ApplepaySessionTokenData::get_apple_pay,
-            &app::model::payments::ApplepaySessionTokenData::set_apple_pay,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayCombinedWrapper>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "data",
-                &app::model::payments::ApplePayCombinedWrapper::get_data,
-                &app::model::payments::ApplePayCombinedWrapper::set_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "support_predecrypted_token",
-                &app::model::payments::ApplePayCombinedWrapper::get_support_predecrypted_token,
-                &app::model::payments::ApplePayCombinedWrapper::set_support_predecrypted_token,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_combined_wrapper";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepayCombinedSessionTokenData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "apple_pay_combined",
-            &app::model::payments::ApplepayCombinedSessionTokenData::get_apple_pay_combined,
-            &app::model::payments::ApplepayCombinedSessionTokenData::set_apple_pay_combined,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_combined_session_token_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_request_data",
-                &app::model::payments::ApplePayMetadata::get_payment_request_data,
-                &app::model::payments::ApplePayMetadata::set_payment_request_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "session_token_data",
-                &app::model::payments::ApplePayMetadata::get_session_token_data,
-                &app::model::payments::ApplePayMetadata::set_session_token_data,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PeachpaymentsData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "rrn",
-                &app::model::payments::PeachpaymentsData::get_rrn,
-                &app::model::payments::PeachpaymentsData::set_rrn,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_on_file_transaction_type",
-                &app::model::payments::PeachpaymentsData::get_card_on_file_transaction_type,
-                &app::model::payments::PeachpaymentsData::set_card_on_file_transaction_type,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "peachpayments_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentRequestMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "supported_networks",
-                &app::model::payments::PaymentRequestMetadata::get_supported_networks,
-                &app::model::payments::PaymentRequestMetadata::set_supported_networks,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_capabilities",
-                &app::model::payments::PaymentRequestMetadata::get_merchant_capabilities,
-                &app::model::payments::PaymentRequestMetadata::set_merchant_capabilities,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "label",
-                &app::model::payments::PaymentRequestMetadata::get_label,
-                &app::model::payments::PaymentRequestMetadata::set_label,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_request_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SessionTokenInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "certificate",
-                &app::model::payments::SessionTokenInfo::get_certificate,
-                &app::model::payments::SessionTokenInfo::set_certificate,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "certificate_keys",
-                &app::model::payments::SessionTokenInfo::get_certificate_keys,
-                &app::model::payments::SessionTokenInfo::set_certificate_keys,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_identifier",
-                &app::model::payments::SessionTokenInfo::get_merchant_identifier,
-                &app::model::payments::SessionTokenInfo::set_merchant_identifier,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "display_name",
-                &app::model::payments::SessionTokenInfo::get_display_name,
-                &app::model::payments::SessionTokenInfo::set_display_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "initiative",
-                &app::model::payments::SessionTokenInfo::get_initiative,
-                &app::model::payments::SessionTokenInfo::set_initiative,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "initiative_context",
-                &app::model::payments::SessionTokenInfo::get_initiative_context,
-                &app::model::payments::SessionTokenInfo::set_initiative_context,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_business_country",
-                &app::model::payments::SessionTokenInfo::get_merchant_business_country,
-                &app::model::payments::SessionTokenInfo::set_merchant_business_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_processing_details_at",
-                &app::model::payments::SessionTokenInfo::get_payment_processing_details_at,
-                &app::model::payments::SessionTokenInfo::set_payment_processing_details_at,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_processing_detail_input_type",
-                &app::model::payments::SessionTokenInfo::get_payment_processing_detail_input_type,
-                &app::model::payments::SessionTokenInfo::set_payment_processing_detail_input_type,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "session_token_info";
     }
 };
 
@@ -37818,199 +25633,6 @@ struct serde::Serializable<app::model::payments::PaymentProcessingDetails>
     static constexpr std::string_view table_name()
     {
         return "payment_processing_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SessionTokenForSimplifiedApplePay>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "initiative_context",
-                &app::model::payments::SessionTokenForSimplifiedApplePay::get_initiative_context,
-                &app::model::payments::SessionTokenForSimplifiedApplePay::set_initiative_context,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_business_country",
-                &app::model::payments::SessionTokenForSimplifiedApplePay::
-                    get_merchant_business_country,
-                &app::model::payments::SessionTokenForSimplifiedApplePay::
-                    set_merchant_business_country,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "session_token_for_simplified_apple_pay";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayWalletDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "google_pay",
-            &app::model::payments::GooglePayWalletDetails::get_google_pay,
-            &app::model::payments::GooglePayWalletDetails::set_google_pay,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_wallet_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "provider_details",
-                &app::model::payments::GooglePayDetails::get_provider_details,
-                &app::model::payments::GooglePayDetails::set_provider_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "cards",
-                &app::model::payments::GooglePayDetails::get_cards,
-                &app::model::payments::GooglePayDetails::set_cards,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayMerchantDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "merchant_info",
-            &app::model::payments::GooglePayMerchantDetails::get_merchant_info,
-            &app::model::payments::GooglePayMerchantDetails::set_merchant_info,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_merchant_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayMerchantInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_name",
-                &app::model::payments::GooglePayMerchantInfo::get_merchant_name,
-                &app::model::payments::GooglePayMerchantInfo::set_merchant_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_id",
-                &app::model::payments::GooglePayMerchantInfo::get_merchant_id,
-                &app::model::payments::GooglePayMerchantInfo::set_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tokenization_specification",
-                &app::model::payments::GooglePayMerchantInfo::get_tokenization_specification,
-                &app::model::payments::GooglePayMerchantInfo::set_tokenization_specification,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_merchant_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayTokenizationSpecification>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::GooglePayTokenizationSpecification::get_tokenization_type,
-                &app::model::payments::GooglePayTokenizationSpecification::set_tokenization_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "parameters",
-                &app::model::payments::GooglePayTokenizationSpecification::get_parameters,
-                &app::model::payments::GooglePayTokenizationSpecification::set_parameters,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_tokenization_specification";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayTokenizationParameters>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "gateway",
-                &app::model::payments::GooglePayTokenizationParameters::get_gateway,
-                &app::model::payments::GooglePayTokenizationParameters::set_gateway,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "public_key",
-                &app::model::payments::GooglePayTokenizationParameters::get_public_key,
-                &app::model::payments::GooglePayTokenizationParameters::set_public_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "private_key",
-                &app::model::payments::GooglePayTokenizationParameters::get_private_key,
-                &app::model::payments::GooglePayTokenizationParameters::set_private_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recipient_id",
-                &app::model::payments::GooglePayTokenizationParameters::get_recipient_id,
-                &app::model::payments::GooglePayTokenizationParameters::set_recipient_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "gateway_merchant_id",
-                &app::model::payments::GooglePayTokenizationParameters::get_gateway_merchant_id,
-                &app::model::payments::GooglePayTokenizationParameters::set_gateway_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "stripe:publishableKey",
-                &app::model::payments::GooglePayTokenizationParameters::get_stripe_publishable_key,
-                &app::model::payments::GooglePayTokenizationParameters::set_stripe_publishable_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "stripe:version",
-                &app::model::payments::GooglePayTokenizationParameters::get_stripe_version,
-                &app::model::payments::GooglePayTokenizationParameters::set_stripe_version,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_tokenization_parameters";
     }
 };
 
@@ -38144,288 +25766,6 @@ struct serde::Serializable<app::model::payments::VgsVaultData>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::PazeSessionTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "client_id",
-                &app::model::payments::PazeSessionTokenResponse::get_client_id,
-                &app::model::payments::PazeSessionTokenResponse::set_client_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "client_name",
-                &app::model::payments::PazeSessionTokenResponse::get_client_name,
-                &app::model::payments::PazeSessionTokenResponse::set_client_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "client_profile_id",
-                &app::model::payments::PazeSessionTokenResponse::get_client_profile_id,
-                &app::model::payments::PazeSessionTokenResponse::set_client_profile_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_currency_code",
-                &app::model::payments::PazeSessionTokenResponse::get_transaction_currency_code,
-                &app::model::payments::PazeSessionTokenResponse::set_transaction_currency_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_amount",
-                &app::model::payments::PazeSessionTokenResponse::get_transaction_amount,
-                &app::model::payments::PazeSessionTokenResponse::set_transaction_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "email_address",
-                &app::model::payments::PazeSessionTokenResponse::get_email_address,
-                &app::model::payments::PazeSessionTokenResponse::set_email_address,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paze_session_token_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePayThirdPartySdk>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "delayed_session_token",
-                &app::model::payments::GooglePayThirdPartySdk::get_delayed_session_token,
-                &app::model::payments::GooglePayThirdPartySdk::set_delayed_session_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::GooglePayThirdPartySdk::get_connector,
-                &app::model::payments::GooglePayThirdPartySdk::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "sdk_next_action",
-                &app::model::payments::GooglePayThirdPartySdk::get_sdk_next_action,
-                &app::model::payments::GooglePayThirdPartySdk::set_sdk_next_action,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_third_party_sdk";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GooglePaySessionResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_info",
-                &app::model::payments::GooglePaySessionResponse::get_merchant_info,
-                &app::model::payments::GooglePaySessionResponse::set_merchant_info,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shipping_address_required",
-                &app::model::payments::GooglePaySessionResponse::get_shipping_address_required,
-                &app::model::payments::GooglePaySessionResponse::set_shipping_address_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "email_required",
-                &app::model::payments::GooglePaySessionResponse::get_email_required,
-                &app::model::payments::GooglePaySessionResponse::set_email_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shipping_address_parameters",
-                &app::model::payments::GooglePaySessionResponse::get_shipping_address_parameters,
-                &app::model::payments::GooglePaySessionResponse::set_shipping_address_parameters,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_payment_methods",
-                &app::model::payments::GooglePaySessionResponse::get_allowed_payment_methods,
-                &app::model::payments::GooglePaySessionResponse::set_allowed_payment_methods,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_info",
-                &app::model::payments::GooglePaySessionResponse::get_transaction_info,
-                &app::model::payments::GooglePaySessionResponse::set_transaction_info,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "delayed_session_token",
-                &app::model::payments::GooglePaySessionResponse::get_delayed_session_token,
-                &app::model::payments::GooglePaySessionResponse::set_delayed_session_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::GooglePaySessionResponse::get_connector,
-                &app::model::payments::GooglePaySessionResponse::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "sdk_next_action",
-                &app::model::payments::GooglePaySessionResponse::get_sdk_next_action,
-                &app::model::payments::GooglePaySessionResponse::set_sdk_next_action,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "secrets",
-                &app::model::payments::GooglePaySessionResponse::get_secrets,
-                &app::model::payments::GooglePaySessionResponse::set_secrets,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "google_pay_session_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPaySessionTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "version",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_version,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_version,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "service_id",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_service_id,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_service_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "order_number",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_order_number,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_order_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant",
-                &app::model::payments::SamsungPaySessionTokenResponse::
-                    get_merchant_payment_information,
-                &app::model::payments::SamsungPaySessionTokenResponse::
-                    set_merchant_payment_information,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_amount,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "protocol",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_protocol,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_protocol,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "allowed_brands",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_allowed_brands,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_allowed_brands,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_address_required",
-                &app::model::payments::SamsungPaySessionTokenResponse::get_billing_address_required,
-                &app::model::payments::SamsungPaySessionTokenResponse::set_billing_address_required,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shipping_address_required",
-                &app::model::payments::SamsungPaySessionTokenResponse::
-                    get_shipping_address_required,
-                &app::model::payments::SamsungPaySessionTokenResponse::
-                    set_shipping_address_required,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_session_token_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayMerchantPaymentInformation>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "name",
-                &app::model::payments::SamsungPayMerchantPaymentInformation::get_name,
-                &app::model::payments::SamsungPayMerchantPaymentInformation::set_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "url",
-                &app::model::payments::SamsungPayMerchantPaymentInformation::get_url,
-                &app::model::payments::SamsungPayMerchantPaymentInformation::set_url,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "country_code",
-                &app::model::payments::SamsungPayMerchantPaymentInformation::get_country_code,
-                &app::model::payments::SamsungPayMerchantPaymentInformation::set_country_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_merchant_payment_information";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SamsungPayAmountDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "option",
-                &app::model::payments::SamsungPayAmountDetails::get_amount_format,
-                &app::model::payments::SamsungPayAmountDetails::set_amount_format,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency_code",
-                &app::model::payments::SamsungPayAmountDetails::get_currency_code,
-                &app::model::payments::SamsungPayAmountDetails::set_currency_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total",
-                &app::model::payments::SamsungPayAmountDetails::get_total_amount,
-                &app::model::payments::SamsungPayAmountDetails::set_total_amount,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "samsung_pay_amount_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::GpayShippingAddressParameters>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "phone_number_required",
-            &app::model::payments::GpayShippingAddressParameters::get_phone_number_required,
-            &app::model::payments::GpayShippingAddressParameters::set_phone_number_required,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "gpay_shipping_address_parameters";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::KlarnaSessionTokenResponse>
 {
     static constexpr auto fields()
@@ -38451,91 +25791,6 @@ struct serde::Serializable<app::model::payments::KlarnaSessionTokenResponse>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::PaypalTransactionInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "flow",
-                &app::model::payments::PaypalTransactionInfo::get_flow,
-                &app::model::payments::PaypalTransactionInfo::set_flow,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency_code",
-                &app::model::payments::PaypalTransactionInfo::get_currency_code,
-                &app::model::payments::PaypalTransactionInfo::set_currency_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_price",
-                &app::model::payments::PaypalTransactionInfo::get_total_price,
-                &app::model::payments::PaypalTransactionInfo::set_total_price,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_transaction_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaypalSessionTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::PaypalSessionTokenResponse::get_connector,
-                &app::model::payments::PaypalSessionTokenResponse::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "session_token",
-                &app::model::payments::PaypalSessionTokenResponse::get_session_token,
-                &app::model::payments::PaypalSessionTokenResponse::set_session_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "sdk_next_action",
-                &app::model::payments::PaypalSessionTokenResponse::get_sdk_next_action,
-                &app::model::payments::PaypalSessionTokenResponse::set_sdk_next_action,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "client_token",
-                &app::model::payments::PaypalSessionTokenResponse::get_client_token,
-                &app::model::payments::PaypalSessionTokenResponse::set_client_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "transaction_info",
-                &app::model::payments::PaypalSessionTokenResponse::get_transaction_info,
-                &app::model::payments::PaypalSessionTokenResponse::set_transaction_info,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "data_user_id_token",
-                &app::model::payments::PaypalSessionTokenResponse::get_data_user_id_token,
-                &app::model::payments::PaypalSessionTokenResponse::set_data_user_id_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency",
-                &app::model::payments::PaypalSessionTokenResponse::get_currency,
-                &app::model::payments::PaypalSessionTokenResponse::set_currency,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "intent",
-                &app::model::payments::PaypalSessionTokenResponse::get_intent,
-                &app::model::payments::PaypalSessionTokenResponse::set_intent,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "paypal_session_token_response";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::OpenBankingSessionToken>
 {
     static constexpr auto fields()
@@ -38554,86 +25809,6 @@ struct serde::Serializable<app::model::payments::OpenBankingSessionToken>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::ApplepaySessionTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "session_token_data",
-                &app::model::payments::ApplepaySessionTokenResponse::get_session_token_data,
-                &app::model::payments::ApplepaySessionTokenResponse::set_session_token_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_request_data",
-                &app::model::payments::ApplepaySessionTokenResponse::get_payment_request_data,
-                &app::model::payments::ApplepaySessionTokenResponse::set_payment_request_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::ApplepaySessionTokenResponse::get_connector,
-                &app::model::payments::ApplepaySessionTokenResponse::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "delayed_session_token",
-                &app::model::payments::ApplepaySessionTokenResponse::get_delayed_session_token,
-                &app::model::payments::ApplepaySessionTokenResponse::set_delayed_session_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "sdk_next_action",
-                &app::model::payments::ApplepaySessionTokenResponse::get_sdk_next_action,
-                &app::model::payments::ApplepaySessionTokenResponse::set_sdk_next_action,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_reference_id",
-                &app::model::payments::ApplepaySessionTokenResponse::get_connector_reference_id,
-                &app::model::payments::ApplepaySessionTokenResponse::set_connector_reference_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_sdk_public_key",
-                &app::model::payments::ApplepaySessionTokenResponse::get_connector_sdk_public_key,
-                &app::model::payments::ApplepaySessionTokenResponse::set_connector_sdk_public_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_merchant_id",
-                &app::model::payments::ApplepaySessionTokenResponse::get_connector_merchant_id,
-                &app::model::payments::ApplepaySessionTokenResponse::set_connector_merchant_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_session_token_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SdkNextAction>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "next_action",
-                &app::model::payments::SdkNextAction::get_next_action,
-                &app::model::payments::SdkNextAction::set_next_action,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "should_block_confirm",
-                &app::model::payments::SdkNextAction::get_should_block_confirm,
-                &app::model::payments::SdkNextAction::set_should_block_confirm,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "sdk_next_action";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::ThirdPartySdkSessionResponse>
 {
     static constexpr auto fields()
@@ -38648,420 +25823,6 @@ struct serde::Serializable<app::model::payments::ThirdPartySdkSessionResponse>
     static constexpr std::string_view table_name()
     {
         return "third_party_sdk_session_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SecretInfoToInitiateSdk>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "display",
-                &app::model::payments::SecretInfoToInitiateSdk::get_display,
-                &app::model::payments::SecretInfoToInitiateSdk::set_display,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment",
-                &app::model::payments::SecretInfoToInitiateSdk::get_payment,
-                &app::model::payments::SecretInfoToInitiateSdk::set_payment,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "secret_info_to_initiate_sdk";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayPaymentRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "country_code",
-                &app::model::payments::ApplePayPaymentRequest::get_country_code,
-                &app::model::payments::ApplePayPaymentRequest::set_country_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency_code",
-                &app::model::payments::ApplePayPaymentRequest::get_currency_code,
-                &app::model::payments::ApplePayPaymentRequest::set_currency_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total",
-                &app::model::payments::ApplePayPaymentRequest::get_total,
-                &app::model::payments::ApplePayPaymentRequest::set_total,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_capabilities",
-                &app::model::payments::ApplePayPaymentRequest::get_merchant_capabilities,
-                &app::model::payments::ApplePayPaymentRequest::set_merchant_capabilities,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "supported_networks",
-                &app::model::payments::ApplePayPaymentRequest::get_supported_networks,
-                &app::model::payments::ApplePayPaymentRequest::set_supported_networks,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "merchant_identifier",
-                &app::model::payments::ApplePayPaymentRequest::get_merchant_identifier,
-                &app::model::payments::ApplePayPaymentRequest::set_merchant_identifier,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "required_billing_contact_fields",
-                &app::model::payments::ApplePayPaymentRequest::get_required_billing_contact_fields,
-                &app::model::payments::ApplePayPaymentRequest::set_required_billing_contact_fields,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "required_shipping_contact_fields",
-                &app::model::payments::ApplePayPaymentRequest::get_required_shipping_contact_fields,
-                &app::model::payments::ApplePayPaymentRequest::set_required_shipping_contact_fields,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_request",
-                &app::model::payments::ApplePayPaymentRequest::get_recurring_payment_request,
-                &app::model::payments::ApplePayPaymentRequest::set_recurring_payment_request,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_payment_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayRecurringPaymentRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_description",
-                &app::model::payments::ApplePayRecurringPaymentRequest::get_payment_description,
-                &app::model::payments::ApplePayRecurringPaymentRequest::set_payment_description,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "regular_billing",
-                &app::model::payments::ApplePayRecurringPaymentRequest::get_regular_billing,
-                &app::model::payments::ApplePayRecurringPaymentRequest::set_regular_billing,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_agreement",
-                &app::model::payments::ApplePayRecurringPaymentRequest::get_billing_agreement,
-                &app::model::payments::ApplePayRecurringPaymentRequest::set_billing_agreement,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "management_u_r_l",
-                &app::model::payments::ApplePayRecurringPaymentRequest::get_management_u_r_l,
-                &app::model::payments::ApplePayRecurringPaymentRequest::set_management_u_r_l,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_recurring_payment_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayRegularBillingRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::ApplePayRegularBillingRequest::get_amount,
-                &app::model::payments::ApplePayRegularBillingRequest::set_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "label",
-                &app::model::payments::ApplePayRegularBillingRequest::get_label,
-                &app::model::payments::ApplePayRegularBillingRequest::set_label,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_timing",
-                &app::model::payments::ApplePayRegularBillingRequest::get_payment_timing,
-                &app::model::payments::ApplePayRegularBillingRequest::set_payment_timing,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_start_date",
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    get_recurring_payment_start_date,
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    set_recurring_payment_start_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_end_date",
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    get_recurring_payment_end_date,
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    set_recurring_payment_end_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_interval_unit",
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    get_recurring_payment_interval_unit,
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    set_recurring_payment_interval_unit,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_interval_count",
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    get_recurring_payment_interval_count,
-                &app::model::payments::ApplePayRegularBillingRequest::
-                    set_recurring_payment_interval_count,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_regular_billing_request";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayBillingContactFields>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "value",
-            &app::model::payments::ApplePayBillingContactFields::get_value,
-            &app::model::payments::ApplePayBillingContactFields::set_value,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_billing_contact_fields";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayShippingContactFields>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "value",
-            &app::model::payments::ApplePayShippingContactFields::get_value,
-            &app::model::payments::ApplePayShippingContactFields::set_value,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_shipping_contact_fields";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmountInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "label",
-                &app::model::payments::AmountInfo::get_label,
-                &app::model::payments::AmountInfo::set_label,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "type",
-                &app::model::payments::AmountInfo::get_total_type,
-                &app::model::payments::AmountInfo::set_total_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::AmountInfo::get_amount,
-                &app::model::payments::AmountInfo::set_amount,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amount_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplepayErrorResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "statusCode",
-                &app::model::payments::ApplepayErrorResponse::get_status_code,
-                &app::model::payments::ApplepayErrorResponse::set_status_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "statusMessage",
-                &app::model::payments::ApplepayErrorResponse::get_status_message,
-                &app::model::payments::ApplepayErrorResponse::set_status_message,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "applepay_error_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPaySessionTokenResponse>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "merchant_id",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_merchant_id,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_merchant_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "ledger_currency",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_ledger_currency,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_ledger_currency,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "store_id",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_store_id,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_store_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_intent",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_payment_intent,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_payment_intent,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_shipping_amount",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_total_shipping_amount,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_total_shipping_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_tax_amount",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_total_tax_amount,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_total_tax_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "total_base_amount",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_total_base_amount,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_total_base_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "delivery_options",
-                &app::model::payments::AmazonPaySessionTokenResponse::get_delivery_options,
-                &app::model::payments::AmazonPaySessionTokenResponse::set_delivery_options,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_session_token_response";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayDeliveryOptions>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "id",
-                &app::model::payments::AmazonPayDeliveryOptions::get_id,
-                &app::model::payments::AmazonPayDeliveryOptions::set_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "price",
-                &app::model::payments::AmazonPayDeliveryOptions::get_price,
-                &app::model::payments::AmazonPayDeliveryOptions::set_price,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shipping_method",
-                &app::model::payments::AmazonPayDeliveryOptions::get_shipping_method,
-                &app::model::payments::AmazonPayDeliveryOptions::set_shipping_method,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "is_default",
-                &app::model::payments::AmazonPayDeliveryOptions::get_is_default,
-                &app::model::payments::AmazonPayDeliveryOptions::set_is_default,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_delivery_options";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayDeliveryPrice>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::AmazonPayDeliveryPrice::get_amount,
-                &app::model::payments::AmazonPayDeliveryPrice::set_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "display_amount",
-                &app::model::payments::AmazonPayDeliveryPrice::get_display_amount,
-                &app::model::payments::AmazonPayDeliveryPrice::set_display_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "currency_code",
-                &app::model::payments::AmazonPayDeliveryPrice::get_currency_code,
-                &app::model::payments::AmazonPayDeliveryPrice::set_currency_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_delivery_price";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::AmazonPayShippingMethod>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "shipping_method_name",
-                &app::model::payments::AmazonPayShippingMethod::get_shipping_method_name,
-                &app::model::payments::AmazonPayShippingMethod::set_shipping_method_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "shipping_method_code",
-                &app::model::payments::AmazonPayShippingMethod::get_shipping_method_code,
-                &app::model::payments::AmazonPayShippingMethod::set_shipping_method_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "amazon_pay_shipping_method";
     }
 };
 
@@ -39961,149 +26722,6 @@ struct serde::Serializable<app::model::payments::PaymentsStartRequest>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::FeatureMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "redirect_response",
-                &app::model::payments::FeatureMetadata::get_redirect_response,
-                &app::model::payments::FeatureMetadata::set_redirect_response,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "search_tags",
-                &app::model::payments::FeatureMetadata::get_search_tags,
-                &app::model::payments::FeatureMetadata::set_search_tags,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "apple_pay_recurring_details",
-                &app::model::payments::FeatureMetadata::get_apple_pay_recurring_details,
-                &app::model::payments::FeatureMetadata::set_apple_pay_recurring_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "revenue_recovery",
-                &app::model::payments::FeatureMetadata::get_revenue_recovery,
-                &app::model::payments::FeatureMetadata::set_revenue_recovery,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "pix_additional_details",
-                &app::model::payments::FeatureMetadata::get_pix_additional_details,
-                &app::model::payments::FeatureMetadata::set_pix_additional_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "boleto_additional_details",
-                &app::model::payments::FeatureMetadata::get_boleto_additional_details,
-                &app::model::payments::FeatureMetadata::set_boleto_additional_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "pix_automatico_additional_details",
-                &app::model::payments::FeatureMetadata::get_pix_automatico_additional_details,
-                &app::model::payments::FeatureMetadata::set_pix_automatico_additional_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "finix_additional_details",
-                &app::model::payments::FeatureMetadata::get_finix_additional_details,
-                &app::model::payments::FeatureMetadata::set_finix_additional_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "multi_currency_processing",
-                &app::model::payments::FeatureMetadata::get_multi_currency_processing,
-                &app::model::payments::FeatureMetadata::set_multi_currency_processing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "feature_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BoletoAdditionalDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "due_date",
-                &app::model::payments::BoletoAdditionalDetails::get_due_date,
-                &app::model::payments::BoletoAdditionalDetails::set_due_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "document_kind",
-                &app::model::payments::BoletoAdditionalDetails::get_document_kind,
-                &app::model::payments::BoletoAdditionalDetails::set_document_kind,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_type",
-                &app::model::payments::BoletoAdditionalDetails::get_payment_type,
-                &app::model::payments::BoletoAdditionalDetails::set_payment_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "covenant_code",
-                &app::model::payments::BoletoAdditionalDetails::get_covenant_code,
-                &app::model::payments::BoletoAdditionalDetails::set_covenant_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "pix_key",
-                &app::model::payments::BoletoAdditionalDetails::get_pix_key,
-                &app::model::payments::BoletoAdditionalDetails::set_pix_key,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "discount_rules",
-                &app::model::payments::BoletoAdditionalDetails::get_discount_rules,
-                &app::model::payments::BoletoAdditionalDetails::set_discount_rules,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "penalties",
-                &app::model::payments::BoletoAdditionalDetails::get_penalties,
-                &app::model::payments::BoletoAdditionalDetails::set_penalties,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "collection_actions",
-                &app::model::payments::BoletoAdditionalDetails::get_collection_actions,
-                &app::model::payments::BoletoAdditionalDetails::set_collection_actions,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_constraints",
-                &app::model::payments::BoletoAdditionalDetails::get_payment_constraints,
-                &app::model::payments::BoletoAdditionalDetails::set_payment_constraints,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "beneficiary",
-                &app::model::payments::BoletoAdditionalDetails::get_beneficiary,
-                &app::model::payments::BoletoAdditionalDetails::set_beneficiary,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "boleto_additional_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::FinixAdditionalDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "fraud_session_id",
-            &app::model::payments::FinixAdditionalDetails::get_fraud_session_id,
-            &app::model::payments::FinixAdditionalDetails::set_fraud_session_id,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "finix_additional_details";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::ImmediateExpirationTime>
 {
     static constexpr auto fields()
@@ -40240,159 +26858,6 @@ struct serde::Serializable<app::model::payments::PixAutomaticoMitData>
     static constexpr std::string_view table_name()
     {
         return "pix_automatico_mit_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SantanderMandateDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "fixed_recurring_amount",
-                &app::model::payments::SantanderMandateDetails::get_fixed_recurring_amount,
-                &app::model::payments::SantanderMandateDetails::set_fixed_recurring_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "min_recurring_amount",
-                &app::model::payments::SantanderMandateDetails::get_min_recurring_amount,
-                &app::model::payments::SantanderMandateDetails::set_min_recurring_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "start_date",
-                &app::model::payments::SantanderMandateDetails::get_start_date,
-                &app::model::payments::SantanderMandateDetails::set_start_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "end_date",
-                &app::model::payments::SantanderMandateDetails::get_end_date,
-                &app::model::payments::SantanderMandateDetails::set_end_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "periodicity",
-                &app::model::payments::SantanderMandateDetails::get_periodicity,
-                &app::model::payments::SantanderMandateDetails::set_periodicity,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_mandate_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SantanderPixAutomaticoReceiverDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "branch_code",
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::get_branch_code,
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::set_branch_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_number",
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::get_account_number,
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::set_account_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "account_type",
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::get_account_type,
-                &app::model::payments::SantanderPixAutomaticoReceiverDetails::set_account_type,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_pix_automatico_receiver_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayRecurringDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_description",
-                &app::model::payments::ApplePayRecurringDetails::get_payment_description,
-                &app::model::payments::ApplePayRecurringDetails::set_payment_description,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "regular_billing",
-                &app::model::payments::ApplePayRecurringDetails::get_regular_billing,
-                &app::model::payments::ApplePayRecurringDetails::set_regular_billing,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_agreement",
-                &app::model::payments::ApplePayRecurringDetails::get_billing_agreement,
-                &app::model::payments::ApplePayRecurringDetails::set_billing_agreement,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "management_url",
-                &app::model::payments::ApplePayRecurringDetails::get_management_url,
-                &app::model::payments::ApplePayRecurringDetails::set_management_url,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_recurring_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ApplePayRegularBillingDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "label",
-                &app::model::payments::ApplePayRegularBillingDetails::get_label,
-                &app::model::payments::ApplePayRegularBillingDetails::set_label,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_start_date",
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    get_recurring_payment_start_date,
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    set_recurring_payment_start_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_end_date",
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    get_recurring_payment_end_date,
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    set_recurring_payment_end_date,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_interval_unit",
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    get_recurring_payment_interval_unit,
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    set_recurring_payment_interval_unit,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "recurring_payment_interval_count",
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    get_recurring_payment_interval_count,
-                &app::model::payments::ApplePayRegularBillingDetails::
-                    set_recurring_payment_interval_count,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "apple_pay_regular_billing_details";
     }
 };
 
@@ -41405,31 +27870,6 @@ struct serde::Serializable<app::model::payments::EligibilityCardBin>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::EligibilityPaymentMethodDataRequest>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_method_data",
-                &app::model::payments::EligibilityPaymentMethodDataRequest::get_payment_method_data,
-                &app::model::payments::EligibilityPaymentMethodDataRequest::set_payment_method_data,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing",
-                &app::model::payments::EligibilityPaymentMethodDataRequest::get_billing,
-                &app::model::payments::EligibilityPaymentMethodDataRequest::set_billing,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "eligibility_payment_method_data_request";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::PaymentsEligibilityCheckResponse>
 {
     static constexpr auto fields()
@@ -41699,191 +28139,6 @@ struct serde::Serializable<app::model::payments::AppliedOffer>
     static constexpr std::string_view table_name()
     {
         return "applied_offer";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PaymentRevenueRecoveryMetadata>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "total_retry_count",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_total_retry_count,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_total_retry_count,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_connector_transmission",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_payment_connector_transmission,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_payment_connector_transmission,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_connector_id",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_billing_connector_id,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_billing_connector_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "active_attempt_payment_connector_id",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_active_attempt_payment_connector_id,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_active_attempt_payment_connector_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_connector_payment_details",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_billing_connector_payment_details,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_billing_connector_payment_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_type",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_payment_method_type,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_payment_method_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_method_subtype",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_payment_method_subtype,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_payment_method_subtype,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_connector,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_connector,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "billing_connector_payment_method_details",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_billing_connector_payment_method_details,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_billing_connector_payment_method_details,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "invoice_next_billing_time",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_invoice_next_billing_time,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_invoice_next_billing_time,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "invoice_billing_started_at_time",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_invoice_billing_started_at_time,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_invoice_billing_started_at_time,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "first_payment_attempt_pg_error_code",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_first_payment_attempt_pg_error_code,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_first_payment_attempt_pg_error_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "first_payment_attempt_network_decline_code",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_first_payment_attempt_network_decline_code,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_first_payment_attempt_network_decline_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "first_payment_attempt_network_advice_code",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_first_payment_attempt_network_advice_code,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_first_payment_attempt_network_advice_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "revenue_recovery_ab_routing",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    get_revenue_recovery_ab_routing,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::
-                    set_revenue_recovery_ab_routing,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "external_trigger_state",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_external_trigger_state,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_external_trigger_state,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "last_failure_code",
-                &app::model::payments::PaymentRevenueRecoveryMetadata::get_last_failure_code,
-                &app::model::payments::PaymentRevenueRecoveryMetadata::set_last_failure_code,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "payment_revenue_recovery_metadata";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BillingConnectorAdditionalCardInfo>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "card_network",
-                &app::model::payments::BillingConnectorAdditionalCardInfo::get_card_network,
-                &app::model::payments::BillingConnectorAdditionalCardInfo::set_card_network,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuer",
-                &app::model::payments::BillingConnectorAdditionalCardInfo::get_card_issuer,
-                &app::model::payments::BillingConnectorAdditionalCardInfo::set_card_issuer,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_type",
-                &app::model::payments::BillingConnectorAdditionalCardInfo::get_card_type,
-                &app::model::payments::BillingConnectorAdditionalCardInfo::set_card_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_issuing_country",
-                &app::model::payments::BillingConnectorAdditionalCardInfo::get_card_issuing_country,
-                &app::model::payments::BillingConnectorAdditionalCardInfo::set_card_issuing_country,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "card_isin",
-                &app::model::payments::BillingConnectorAdditionalCardInfo::get_card_isin,
-                &app::model::payments::BillingConnectorAdditionalCardInfo::set_card_isin,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "billing_connector_additional_card_info";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BillingConnectorPaymentDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "payment_processor_token",
-                &app::model::payments::BillingConnectorPaymentDetails::get_payment_processor_token,
-                &app::model::payments::BillingConnectorPaymentDetails::set_payment_processor_token,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "connector_customer_id",
-                &app::model::payments::BillingConnectorPaymentDetails::get_connector_customer_id,
-                &app::model::payments::BillingConnectorPaymentDetails::set_connector_customer_id,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "billing_connector_payment_details";
     }
 };
 
@@ -42313,199 +28568,6 @@ struct serde::Serializable<app::model::payments::CartesBancairesParams>
 };
 
 template<>
-struct serde::Serializable<app::model::payments::SantanderConnectorMetadataData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{serde::FieldDesc<
-            "boleto",
-            &app::model::payments::SantanderConnectorMetadataData::get_boleto,
-            &app::model::payments::SantanderConnectorMetadataData::set_boleto,
-            serde::FieldOptions{}>{}};
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_connector_metadata_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::SantanderBoletoData>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "discount_rules",
-                &app::model::payments::SantanderBoletoData::get_discount_rules,
-                &app::model::payments::SantanderBoletoData::set_discount_rules,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "penalties",
-                &app::model::payments::SantanderBoletoData::get_penalties,
-                &app::model::payments::SantanderBoletoData::set_penalties,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "collection_actions",
-                &app::model::payments::SantanderBoletoData::get_collection_actions,
-                &app::model::payments::SantanderBoletoData::set_collection_actions,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "payment_constraints",
-                &app::model::payments::SantanderBoletoData::get_payment_constraints,
-                &app::model::payments::SantanderBoletoData::set_payment_constraints,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "beneficiary",
-                &app::model::payments::SantanderBoletoData::get_beneficiary,
-                &app::model::payments::SantanderBoletoData::set_beneficiary,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "document_kind",
-                &app::model::payments::SantanderBoletoData::get_document_kind,
-                &app::model::payments::SantanderBoletoData::set_document_kind,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_boleto_data";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::BeneficiaryDetails>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "name",
-                &app::model::payments::BeneficiaryDetails::get_name,
-                &app::model::payments::BeneficiaryDetails::set_name,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "document_number",
-                &app::model::payments::BeneficiaryDetails::get_document_number,
-                &app::model::payments::BeneficiaryDetails::set_document_number,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "document_type",
-                &app::model::payments::BeneficiaryDetails::get_document_type,
-                &app::model::payments::BeneficiaryDetails::set_document_type,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "beneficiary_details";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PenaltyRules>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "fixed_penalty",
-                &app::model::payments::PenaltyRules::get_fixed_penalty,
-                &app::model::payments::PenaltyRules::set_fixed_penalty,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "interest",
-                &app::model::payments::PenaltyRules::get_interest,
-                &app::model::payments::PenaltyRules::set_interest,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "penalty_rules";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::InterestDetail>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "interest_percentage",
-                &app::model::payments::InterestDetail::get_interest_percentage,
-                &app::model::payments::InterestDetail::set_interest_percentage,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "iof_percentage",
-                &app::model::payments::InterestDetail::get_iof_percentage,
-                &app::model::payments::InterestDetail::set_iof_percentage,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "interest_detail";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::PenaltyDetail>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "value",
-                &app::model::payments::PenaltyDetail::get_value,
-                &app::model::payments::PenaltyDetail::set_value,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "grace_period_days",
-                &app::model::payments::PenaltyDetail::get_grace_period_days,
-                &app::model::payments::PenaltyDetail::set_grace_period_days,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "penalty_detail";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::CollectionActions>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "legal_protest",
-                &app::model::payments::CollectionActions::get_legal_protest,
-                &app::model::payments::CollectionActions::set_legal_protest,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "auto_write_off_days",
-                &app::model::payments::CollectionActions::get_auto_write_off_days,
-                &app::model::payments::CollectionActions::set_auto_write_off_days,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "collection_actions";
-    }
-};
-
-template<>
 struct serde::Serializable<app::model::payments::FlexibleAmountDetails>
 {
     static constexpr auto fields()
@@ -42560,80 +28622,6 @@ struct serde::Serializable<app::model::payments::InstallmentDetails>
     }
 };
 
-template<>
-struct serde::Serializable<app::model::payments::SantanderPaymentDiscountRules>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "discount_type",
-                &app::model::payments::SantanderPaymentDiscountRules::get_discount_type,
-                &app::model::payments::SantanderPaymentDiscountRules::set_discount_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "tiers",
-                &app::model::payments::SantanderPaymentDiscountRules::get_tiers,
-                &app::model::payments::SantanderPaymentDiscountRules::set_tiers,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "santander_payment_discount_rules";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::DiscountTier>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "amount",
-                &app::model::payments::DiscountTier::get_amount,
-                &app::model::payments::DiscountTier::set_amount,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "end_date",
-                &app::model::payments::DiscountTier::get_end_date,
-                &app::model::payments::DiscountTier::set_end_date,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "discount_tier";
-    }
-};
-
-template<>
-struct serde::Serializable<app::model::payments::ProtestRules>
-{
-    static constexpr auto fields()
-    {
-        return std::tuple{
-            serde::FieldDesc<
-                "protest_type",
-                &app::model::payments::ProtestRules::get_protest_type,
-                &app::model::payments::ProtestRules::set_protest_type,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "days_after_due_date",
-                &app::model::payments::ProtestRules::get_days_after_due_date,
-                &app::model::payments::ProtestRules::set_days_after_due_date,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "protest_rules";
-    }
-};
 
 #ifdef CONGELADO_TEST
 namespace app::model::payments::tests {

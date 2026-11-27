@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ExchangeTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     exchange_token(const ExchangeTokenInput& input) const
     {
         const auto& request = input.request;
@@ -172,7 +172,7 @@ public:
         // core/pm_auth.rs:244,311 — exchange_token_core returns RouterResponse<()> /
         // ApplicationResponse::StatusOk: HTTP 200 with an empty body. No access_token is
         // emitted; the empty body is a typed empty document, not raw JSON text.
-        return ExchangeTokenResult{ResponseDocument::empty()};
+        return serde::Value{ResponseDocument::empty()};
     }
 
 private:

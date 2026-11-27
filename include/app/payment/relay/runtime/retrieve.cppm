@@ -38,7 +38,7 @@ public:
     }
 
     // Upstream flow: Flow::RelayRetrieve (server_wrap, LockAction::NotApplicable).
-    [[nodiscard]] std::expected<RelayRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
     retrieve(const RelayRetrieveInput& input) const
     {
         m_support.record_flow("RelayRetrieve", "relay_retrieve_total");
@@ -185,7 +185,7 @@ public:
         if (!sync_response.get_reference_id().empty()) {
             response.set_connector_reference_id(sync_response.get_reference_id());
         }
-        return RelayRetrieveResult{std::move(response)};
+        return ::app::dto::relay::RelayResponse{std::move(response)};
     }
 
 private:

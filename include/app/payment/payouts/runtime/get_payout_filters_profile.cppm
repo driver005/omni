@@ -36,13 +36,13 @@ public:
     }
 
     // ───────────────────────── Core: get_payout_filters_profile ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsGetFiltersProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFiltersV2, core::error::AppError>
     get_payout_filters_profile(const PayoutsGetFiltersProfileInput& input) const
     {
         m_context.metrics().record_flow("get_payout_filters_profile");
         m_context.metrics().counter("payouts_get_filters_profile_total").increment();
 
-        return PayoutsGetFiltersProfileResult{
+        return ::app::model::payouts::PayoutListFiltersV2{
             m_support.filters_v2_from_mcas(input.profile_id, input.merchant_id)
         };
     }

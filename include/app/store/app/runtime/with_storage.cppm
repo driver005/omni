@@ -36,7 +36,7 @@ public:
     }
 
     // Upstream AppState::with_storage() is an async constructor (app.rs:497-643), no auth.
-    [[nodiscard]] std::expected<WithStorageResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     with_storage(const WithStorageInput& input) const
     {
         const auto storage_impl = input.storage_impl;
@@ -75,17 +75,32 @@ public:
         m_context.metrics().record_flow("AppStateWithStorage");
         m_context.metrics().counter("APP_STATE_WITH_STORAGE").increment();
 
-        WithStorageResult result{};
-        result.set_partition("app");
-        result.set_op("with_storage");
-        result.set_session_id(session_id);
-        result.set_storage_impl(storage_impl);
-        result.set_service_name(service_name);
-        result.set_storage_ok(storage_ok);
-        result.set_secrets_configured(secrets_configured);
-        result.set_superposition_backend(superposition_backend);
-        result.set_process_tracker_id(process_tracker_id);
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{with_storage_wire_fields()[0]},
+            serde::Value{std::string{"app"}}
+        );
+        document.insert(
+            std::string{with_storage_wire_fields()[1]},
+            serde::Value{std::string{"with_storage"}}
+        );
+        document.insert(std::string{with_storage_wire_fields()[2]}, serde::Value{session_id});
+        document.insert(std::string{with_storage_wire_fields()[3]}, serde::Value{storage_impl});
+        document.insert(std::string{with_storage_wire_fields()[4]}, serde::Value{service_name});
+        document.insert(std::string{with_storage_wire_fields()[5]}, serde::Value{storage_ok});
+        document.insert(
+            std::string{with_storage_wire_fields()[6]},
+            serde::Value{secrets_configured}
+        );
+        document.insert(
+            std::string{with_storage_wire_fields()[7]},
+            serde::Value{superposition_backend}
+        );
+        document.insert(
+            std::string{with_storage_wire_fields()[8]},
+            serde::Value{process_tracker_id}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

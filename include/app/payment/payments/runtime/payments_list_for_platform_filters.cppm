@@ -31,13 +31,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsListForPlatformFiltersResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
     payments_list_for_platform_filters(const PaymentsListForPlatformFiltersInput& input) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return PaymentsListForPlatformFiltersResult{m_support.payment_response_view(input.data)};
+        return ::app::model::payments::PaymentsResponse{
+            m_support.payment_response_view(input.data)
+        };
     }
 
 private:

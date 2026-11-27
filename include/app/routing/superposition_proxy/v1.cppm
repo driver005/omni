@@ -8,7 +8,6 @@ import utils_openapi;
 import app_context;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
 import :superposition_proxy_runtime;
 import :superposition_proxy_handlers_v1_contexts;
 import :superposition_proxy_handlers_v1_default_configs;
@@ -30,16 +29,18 @@ public:
     SuperpositionProxyHandlersV1(
         ::app::context::AppContext& context,
         SuperpositionProxyRuntime& runtime,
-        SuperpositionProxyInputSupport& input_support
+        SuperpositionProxyInputSupport& input_support,
+        SuperpositionProxyRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_contexts{context, runtime, input_support},
-        m_default_configs{context, runtime, input_support},
-        m_dimensions{context, runtime, input_support},
-        m_resolve{context, runtime, input_support},
-        m_audit{context, runtime, input_support}
+        m_request_support{request_support},
+        m_contexts{context, runtime, input_support, request_support},
+        m_default_configs{context, runtime, input_support, request_support},
+        m_dimensions{context, runtime, input_support, request_support},
+        m_resolve{context, runtime, input_support, request_support},
+        m_audit{context, runtime, input_support, request_support}
     {
     }
 
@@ -201,6 +202,7 @@ private:
     ::app::context::AppContext& m_context;
     SuperpositionProxyRuntime& m_runtime;
     SuperpositionProxyInputSupport& m_input_support;
+    SuperpositionProxyRequestSupport& m_request_support;
     SuperpositionProxyHandlersV1Contexts m_contexts;
     SuperpositionProxyHandlersV1DefaultConfigs m_default_configs;
     SuperpositionProxyHandlersV1Dimensions m_dimensions;

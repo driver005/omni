@@ -38,7 +38,7 @@ public:
     // initiate_secure_payment_link (routes:100-133) ->
     // initiate_secure_payment_link_flow (core:362-470). Renders a GenericLinks
     // form (SecurePaymentLink) or the status page, after header validation.
-    [[nodiscard]] std::expected<PaymentLinkInitiateSecureResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     initiate_secure(const PaymentLinkInitiateSecureInput& input) const
     {
         m_context.metrics().record_flow("payment_link.initiate_secure");
@@ -63,7 +63,7 @@ public:
         if (form->is_status) {
             // core:382-397: status page is a PaymentLinkStatus payload (not a
             // GenericLinks wrapper), even on the secure route.
-            return PaymentLinkInitiateSecureResult{
+            return serde::Value{
                 m_support.status_page_data_document(form->status, css, form->status_inner)
             };
         }
@@ -80,7 +80,7 @@ public:
             form->config.sdk_url,
             m_support.get_meta_tags_html(form->details)
         );
-        return PaymentLinkInitiateSecureResult{
+        return serde::Value{
             m_support.generic_links_document(form->config.allowed_domains, std::move(data), "en")
         };
     }

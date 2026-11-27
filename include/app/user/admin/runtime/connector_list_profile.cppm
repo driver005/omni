@@ -35,14 +35,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorListProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
+        core::error::AppError>
     list(const ConnectorListProfileInput& input) const
     {
         auto response = m_support.list_payment_connectors(input.merchant_id, "");
 
         m_context.metrics().record_flow("connector_list_profile");
         m_context.metrics().counter("admin.connector_list_profile").increment();
-        return ConnectorListProfileResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

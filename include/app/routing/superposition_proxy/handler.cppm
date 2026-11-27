@@ -6,7 +6,6 @@ import core_router;
 import app_context;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
 import :superposition_proxy_runtime;
 import :superposition_proxy_handlers_v1;
 
@@ -28,8 +27,10 @@ public:
     explicit SuperpositionProxyRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{&context},
         m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy},
         m_runtime{context},
-        m_v1{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -41,8 +42,10 @@ public:
 private:
     ::app::context::AppContext* m_context{nullptr};
     SuperpositionProxyInputSupport m_input_support; // SINGLE parse/auth support.
-    SuperpositionProxyRuntime m_runtime;            // SINGLE runtime - no duplicated state.
-    SuperpositionProxyHandlersV1 m_v1;              // Holds AppContext& + refs above.
+    SuperpositionProxyPolicy m_policy;
+    SuperpositionProxyRequestSupport m_request_support;
+    SuperpositionProxyRuntime m_runtime; // SINGLE runtime - no duplicated state.
+    SuperpositionProxyHandlersV1 m_v1;   // Holds AppContext& + refs above.
 };
 
 } // namespace app::handlers::superposition_proxy

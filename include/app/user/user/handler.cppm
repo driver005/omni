@@ -20,8 +20,8 @@ public:
         m_context{context},
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -35,6 +35,10 @@ private:
     ::app::context::AppContext& m_context;
     UserRuntime m_runtime;
     UserInputSupport m_input_support;
+
+    UserPolicy m_policy{m_input_support};
+
+    UserRequestSupport m_request_support{m_policy};
     UserHandlersV1 m_v1;
     UserHandlersV2 m_v2;
 };

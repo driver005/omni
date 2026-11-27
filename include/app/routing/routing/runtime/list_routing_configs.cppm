@@ -1,6 +1,7 @@
 export module app_routing:routing_runtime_list_routing_configs;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 import app_model;
@@ -20,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListRoutingConfigsResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_routing_configs(const RoutingInput& input) const
     {
         ::app::model::routing::RoutingRetrieveQuery filter;
@@ -43,7 +44,7 @@ public:
             "list_routing_configs",
             filter
         );
-        return ListRoutingConfigsResult{ResponseDocument::from(items)};
+        return ResponseDocument::from(items);
     }
 
 private:

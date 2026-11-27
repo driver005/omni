@@ -2,16 +2,18 @@ module;
 export module app_dto:surcharge_decision_configs;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::surcharge_decision_configs {
 
-class MerchantSurchargeConfigs : public serde::Serializer<MerchantSurchargeConfigs>
+class MerchantSurchargeConfigs : public core::behavior::Serializer<MerchantSurchargeConfigs>
 {
 public:
     void set_show_surcharge_breakup_screen(std::optional<bool> value)
@@ -27,7 +29,7 @@ public:
     std::optional<bool> show_surcharge_breakup_screen{};
 };
 
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
+class MinorUnitValue : public core::behavior::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string v)
@@ -43,7 +45,7 @@ public:
     std::string value{};
 };
 
-class PercentageValue : public serde::Serializer<PercentageValue>
+class PercentageValue : public core::behavior::Serializer<PercentageValue>
 {
 public:
     void set_value(std::string v)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class ProgramValue : public serde::Serializer<ProgramValue>
+class ProgramValue : public core::behavior::Serializer<ProgramValue>
 {
 public:
     void set_value(std::string v)
@@ -81,7 +83,7 @@ enum class SurchargeOutput
     Rate,
 };
 
-class SurchargeDecisionConfigReq : public serde::Serializer<SurchargeDecisionConfigReq>
+class SurchargeDecisionConfigReq : public core::behavior::Serializer<SurchargeDecisionConfigReq>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -119,7 +121,8 @@ public:
     std::optional<ProgramValue> algorithm{};
 };
 
-class SurchargeDecisionManagerRecord : public serde::Serializer<SurchargeDecisionManagerRecord>
+class SurchargeDecisionManagerRecord :
+    public core::behavior::Serializer<SurchargeDecisionManagerRecord>
 {
 public:
     void set_name(std::string value)
@@ -179,7 +182,7 @@ public:
     std::int64_t modified_at{};
 };
 
-class SurchargeDetailsOutput : public serde::Serializer<SurchargeDetailsOutput>
+class SurchargeDetailsOutput : public core::behavior::Serializer<SurchargeDetailsOutput>
 {
 public:
     void set_surcharge(SurchargeOutput value)
@@ -206,7 +209,7 @@ public:
     std::optional<PercentageValue> tax_on_surcharge{};
 };
 
-class SurchargeDecisionConfigs : public serde::Serializer<SurchargeDecisionConfigs>
+class SurchargeDecisionConfigs : public core::behavior::Serializer<SurchargeDecisionConfigs>
 {
 public:
     void set_surcharge_details(std::optional<SurchargeDetailsOutput> value)

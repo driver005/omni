@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrievePollStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::poll::PollResponseWire, core::error::AppError>
     retrieve_poll_status(const RetrievePollStatusInput& input) const
     {
         return m_retrieve_poll_status.retrieve_poll_status(input);

@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorDeleteResult, core::error::AppError>
-    remove(const ConnectorDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::admin::MerchantConnectorDeleteResponse, core::error::AppError>
+        remove(const ConnectorDeleteInput& input) const
     {
         const auto found =
             m_context.repository().find_merchant_connector_by_string(input.connector_id);
@@ -65,7 +66,7 @@ public:
 
         m_context.metrics().record_flow("connector_delete");
         m_context.metrics().counter("admin.connector_delete").increment();
-        return ConnectorDeleteResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

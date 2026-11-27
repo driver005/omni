@@ -1,6 +1,7 @@
 export module app_routing:blocklist_runtime;
 
 import std;
+import app_model;
 import core_error;
 import app_context;
 
@@ -40,68 +41,77 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AddEntryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
     add_entry(const AddEntryInput& input) const
     {
         return m_add_entry.add_entry(input);
     }
 
-    [[nodiscard]] std::expected<RemoveEntryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
     remove_entry(const RemoveEntryInput& input) const
     {
         return m_remove_entry.remove_entry(input);
     }
 
-    [[nodiscard]] std::expected<ListBlockedPaymentMethodsResult, core::error::AppError>
-    list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ListBlocklistResponse, core::error::AppError>
+        list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
     {
         return m_list_blocked_payment_methods.list_blocked_payment_methods(input);
     }
 
-    [[nodiscard]] std::expected<GetBlocklistCountResult, core::error::AppError>
-    get_blocklist_count(const GetBlocklistCountInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistCountResponse, core::error::AppError>
+        get_blocklist_count(const GetBlocklistCountInput& input) const
     {
         return m_get_blocklist_count.get_blocklist_count(input);
     }
 
-    [[nodiscard]] std::expected<LookupBlocklistEntryResult, core::error::AppError>
-    lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistLookupResponse, core::error::AppError>
+        lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
     {
         return m_lookup_blocklist_entry.lookup_blocklist_entry(input);
     }
 
-    [[nodiscard]] std::expected<ToggleBlocklistGuardResult, core::error::AppError>
-    toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ToggleBlocklistResponse, core::error::AppError>
+        toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
     {
         return m_toggle_blocklist_guard.toggle_blocklist_guard(input);
     }
 
-    [[nodiscard]] std::expected<UploadBatchBlocklistResult, core::error::AppError>
-    upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BatchBlocklistUploadResponse, core::error::AppError>
+        upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
     {
         return m_upload_batch_blocklist.upload_batch_blocklist(input);
     }
 
-    [[nodiscard]] std::expected<GetBatchBlocklistJobStatusResult, core::error::AppError>
-    get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BatchBlocklistJobStatusResponse, core::error::AppError>
+        get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
     {
         return m_get_batch_blocklist_job_status.get_batch_blocklist_job_status(input);
     }
 
-    [[nodiscard]] std::expected<ListBatchBlocklistJobsResult, core::error::AppError>
-    list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::ListBatchBlocklistJobsResponse, core::error::AppError>
+        list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
     {
         return m_list_batch_blocklist_jobs.list_batch_blocklist_jobs(input);
     }
 
-    [[nodiscard]] std::expected<CreateBlocklistExportResult, core::error::AppError>
-    create_blocklist_export(const CreateBlocklistExportInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistExportResponse, core::error::AppError>
+        create_blocklist_export(const CreateBlocklistExportInput& input) const
     {
         return m_create_blocklist_export.create_blocklist_export(input);
     }
 
-    [[nodiscard]] std::expected<CloneBlocklistEntriesResult, core::error::AppError>
-    clone_blocklist_entries(const CloneBlocklistEntriesInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::CloneBlocklistEntriesResponse, core::error::AppError>
+        clone_blocklist_entries(const CloneBlocklistEntriesInput& input) const
     {
         return m_clone_blocklist_entries.clone_blocklist_entries(input);
     }

@@ -29,6 +29,13 @@ export namespace app::handlers::payment_methods {
 class PaymentMethodSessionByIdHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     PaymentMethodSessionByIdHandlers(
         ::app::context::AppContext& ctx,
         PaymentMethodsRuntime& runtime
@@ -152,7 +159,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "payment_methods_session_retrieve");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_methods_session_retrieve",
+            spec_for("payment_methods_session_retrieve")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -192,7 +203,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -202,7 +213,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "payment_methods_session_update");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_methods_session_update",
+            spec_for("payment_methods_session_update")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -249,7 +264,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -259,7 +274,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "payment_method_session_confirm");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_method_session_confirm",
+            spec_for("payment_method_session_confirm")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -332,7 +351,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

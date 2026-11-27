@@ -38,8 +38,9 @@ public:
 
     /** @brief core::api_keys::list_api_keys (523-541): merchant-scoped query with
      * limit/offset pushed into the database query, not an in-memory filter. */
-    [[nodiscard]] std::expected<ApiKeyListResult, core::error::AppError>
-    list(const ApiKeyListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>, core::error::AppError>
+        list(const ApiKeyListInput& input) const
     {
         using ApiKeyRecord = ::app::store::api_keys::ApiKeyRecord;
         const std::int64_t limit = input.constraints.get_limit().value_or(-1);
@@ -69,7 +70,7 @@ public:
 
         m_context.metrics().record_flow("ApiKeyList");
         m_context.metrics().counter("API_KEY_LISTED").increment();
-        return ApiKeyListResult{std::move(responses)};
+        return std::move(responses);
     }
 
 private:

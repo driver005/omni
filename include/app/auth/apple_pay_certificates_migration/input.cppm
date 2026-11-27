@@ -3,6 +3,7 @@ export module app_auth:apple_pay_certificates_migration_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_dto;
 import app_context_core;
@@ -36,6 +37,49 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy for the admin-only certificate migration route.
+ *
+ * The declarative rule stays in the shared registry; the policy only adapts it
+ * to the generic RequestSupport contract. Permission/scope flags are resolved
+ * from the rule for this operation, not re-derived from the request.
+ */
+class ApplePayCertificatesMigrationPolicy
+{
+public:
+    explicit ApplePayCertificatesMigrationPolicy(::app::context::AppContext& context) noexcept :
+        m_support{context}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)operation;
+        (void)spec;
+        return m_support.authorize(req);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        (void)req;
+        return {};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope& scope) const
+    {
+        (void)scope;
+        return std::nullopt;
+    }
+
+private:
+    ApplePayCertificatesMigrationInputSupport m_support;
 };
 
 // Plain input — carries exactly what the old core call received. The core only

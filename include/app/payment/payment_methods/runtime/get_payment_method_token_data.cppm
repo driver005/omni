@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetPaymentMethodTokenDataResult, core::error::AppError>
-    get_payment_method_token_data(const GetPaymentMethodTokenDataInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::TokenDataResponse, core::error::AppError>
+        get_payment_method_token_data(const GetPaymentMethodTokenDataInput& input) const
     {
         const auto& record = input.record;
         const auto vault = m_support.call_connector(
@@ -70,7 +71,7 @@ public:
             "payment_methods.token:" + token,
             core::cache::to_cache_value(input.payment_method_id)
         );
-        return GetPaymentMethodTokenDataResult{std::move(response)};
+        return ::app::model::payment_methods::TokenDataResponse{std::move(response)};
     }
 
 private:

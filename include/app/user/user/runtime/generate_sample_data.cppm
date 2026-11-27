@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GenerateSampleDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     generate_sample_data(const GenerateSampleDataInput& input) const
     {
         std::string set_cookie{};
@@ -65,7 +65,7 @@ public:
         m_context.metrics().record_flow("generate_sample_data");
         m_context.metrics().counter("user.generate_sample_data").increment();
 
-        return GenerateSampleDataResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

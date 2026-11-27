@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MigratePaymentMethodApiResult, core::error::AppError>
-    migrate_payment_method_api(const MigratePaymentMethodApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodMigrateResponse, core::error::AppError>
+        migrate_payment_method_api(const MigratePaymentMethodApiInput& input) const
     {
         if (auto mca_error = m_support.check_merchant_connector(input.merchant_id)) {
             return std::unexpected{*mca_error};
@@ -105,7 +106,7 @@ public:
         response.set_network_transaction_id_migrated(
             input.request.get_network_transaction_id().has_value()
         );
-        return MigratePaymentMethodApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodMigrateResponse{std::move(response)};
     }
 
 private:

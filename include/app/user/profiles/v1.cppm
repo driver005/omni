@@ -34,11 +34,12 @@ public:
     ProfilesHandlersV1(
         ::app::context::AppContext& context,
         ProfilesRuntime& runtime,
-        ProfilesInputSupport& input_support
+        ProfilesInputSupport& input_support,
+        ProfilesRequestSupport& request_support
     ) noexcept :
-        m_crud{context, runtime, input_support},
-        m_list{context, runtime, input_support},
-        m_toggles{context, runtime, input_support}
+        m_crud{context, runtime, input_support, request_support},
+        m_list{context, runtime, input_support, request_support},
+        m_toggles{context, runtime, input_support, request_support}
     {
     }
 

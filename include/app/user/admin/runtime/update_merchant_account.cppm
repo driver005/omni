@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateMerchantAccountResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     update(const UpdateMerchantAccountInput& input) const
     {
         auto found = m_context.repository().find_merchant_account_by_string(input.merchant_id);
@@ -99,7 +99,7 @@ public:
         m_context.metrics().record_flow("update_merchant_account");
         m_context.metrics().counter("admin.update_merchant_account").increment();
         m_context.events().publish("merchant_account.updated", serde::Ser::encode_json(response));
-        return UpdateMerchantAccountResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

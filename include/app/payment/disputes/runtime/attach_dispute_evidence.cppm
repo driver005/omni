@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AttachDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, Error>
     attach_dispute_evidence(const AttachDisputeEvidenceInput& input) const
     {
         m_context.metrics().record_flow("dispute_attach_evidence");
@@ -115,7 +115,7 @@ public:
 
         ::app::dto::files::CreateFileResponse response{};
         response.set_file_id(file_id);
-        return AttachDisputeEvidenceResult{response};
+        return ::app::dto::files::CreateFileResponse{response};
     }
 
 private:

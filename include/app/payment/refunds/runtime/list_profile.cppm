@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsListProfileResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
     list_profile(const RefundsListProfileInput& input) const
     {
         m_context.metrics().record_flow("refund_profile_list");
@@ -32,7 +32,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsListProfileResult{*result};
+        return ::app::model::refunds::RefundListResponse{*result};
     }
 
 private:

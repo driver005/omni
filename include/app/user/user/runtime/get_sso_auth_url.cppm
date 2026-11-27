@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetSsoAuthUrlResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     get_sso_auth_url(const GetSsoAuthUrlInput& input) const
     {
         std::string set_cookie{};
@@ -85,7 +85,7 @@ public:
         response.set_return_url_with_query_params(authorization_url);
         response.set_http_method("");
         auto document = ResponseDocument::from(response);
-        return GetSsoAuthUrlResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

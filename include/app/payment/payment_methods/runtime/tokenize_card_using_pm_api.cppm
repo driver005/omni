@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TokenizeCardUsingPmApiResult, core::error::AppError>
-    tokenize_card_using_pm_api(const TokenizeCardUsingPmApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::TokenizedCardValue1, core::error::AppError>
+        tokenize_card_using_pm_api(const TokenizeCardUsingPmApiInput& input) const
     {
         const auto& record = input.record;
         const auto vault = m_support.call_connector(
@@ -60,7 +61,7 @@ public:
         response.set_exp_month("");
         response.set_card_last_four(record.get_last4());
         response.set_card_token(token);
-        return TokenizeCardUsingPmApiResult{std::move(response)};
+        return ::app::model::payment_methods::TokenizedCardValue1{std::move(response)};
     }
 
 private:

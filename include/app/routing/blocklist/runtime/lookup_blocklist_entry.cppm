@@ -36,8 +36,9 @@ public:
     }
 
     // utils.rs:271-314 lookup_blocklist_entry.
-    [[nodiscard]] std::expected<LookupBlocklistEntryResult, core::error::AppError>
-    lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistLookupResponse, core::error::AppError>
+        lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
     {
         std::vector<std::string> distinct;
         for (const auto& record: m_support.list_entries()) {
@@ -71,7 +72,7 @@ public:
         response.set_transaction_types(std::move(types));
         m_support.emit("blocklist.lookup", response);
         m_support.track("lookup_blocklist_entry");
-        return LookupBlocklistEntryResult{response};
+        return response;
     }
 
 private:

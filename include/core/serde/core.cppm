@@ -175,12 +175,121 @@ public:
     }
 };
 
+// ─── Query metadata ───────────────────────────────────────────────────────────
+
+/**
+ * @brief Role a reflected field plays in a Behavior query builder.
+ * @note `none` is the default and means an ordinary data field; `ignore` also stays an
+ * ordinary data field but is explicitly never consulted by the query builder.
+ */
+enum class QueryRole : std::uint8_t
+{
+    none,
+    filter,
+    limit,
+    offset,
+    order,
+    ignore
+};
+
+/** @brief How sibling `filter` fields are combined by the query builder. */
+enum class QueryJoin : std::uint8_t
+{
+    And,
+    Or
+};
+
 // ─── FieldOptions ─────────────────────────────────────────────────────────────
+
+/**
+ * @brief Structural string-view carrier for a field's wire-name override.
+ * @warning `std::string_view` cannot be stored in `FieldOptions`: `FieldOptions` rides as a
+ * class-type NTTP on `FieldDesc`, and `std::string_view` has private data members, so it is
+ * not a structural type. This public-member twin keeps `FieldOptions` structural while
+ * behaving like a view for every reader.
+ * @warning Points at caller-owned storage — pass string literals or static storage, same
+ * contract as `FieldOptionsDb::references`.
+ */
+class FieldWireName
+{
+public:
+    const char* m_data{nullptr};
+    std::size_t m_size{0};
+
+    constexpr FieldWireName() = default;
+
+    constexpr FieldWireName(std::string_view value) noexcept :
+        m_data{value.data()},
+        m_size{value.size()}
+    {
+    }
+
+    [[nodiscard]] constexpr bool empty() const noexcept
+    {
+        return m_size == 0;
+    }
+
+    [[nodiscard]] constexpr std::size_t size() const noexcept
+    {
+        return m_size;
+    }
+
+    [[nodiscard]] constexpr const char* data() const noexcept
+    {
+        return m_data;
+    }
+
+    [[nodiscard]] constexpr operator std::string_view() const noexcept
+    {
+        return m_data != nullptr ? std::string_view{m_data, m_size} : std::string_view{};
+    }
+
+    [[nodiscard]] constexpr bool operator==(std::string_view other) const noexcept
+    {
+        return static_cast<std::string_view>(*this) == other;
+    }
+};
 
 class FieldOptions
 {
 public:
     FieldOptionsDb m_db{};
+
+    /// @brief Wire-key override; empty means fall back to `FieldDesc::name`.
+    FieldWireName m_wire_name{};
+
+    /// @brief Reject a missing (disengaged optional / null pointer) value on validation.
+    bool m_required{false};
+
+    /// @brief Reject an empty (empty string/container/optional) value on validation.
+    bool m_non_empty{false};
+
+    /// @brief Optional per-field predicate; receives the address of the field's value.
+    bool (*m_validator)(const void*){nullptr};
+
+    /// @brief Query-builder role. `none` keeps this a plain data field.
+    QueryRole m_query_role{QueryRole::none};
+
+    /// @brief Join operator for sibling `filter` fields (And by default).
+    QueryJoin m_query_join{QueryJoin::And};
+
+    /// @brief Include this field's value in the Behavior cache key.
+    bool m_cache_key{false};
+
+    /// @brief Fill with the current epoch string before insert.
+    bool m_created_at{false};
+
+    /// @brief Fill with the current epoch string before insert and update.
+    bool m_updated_at{false};
+
+    /// @brief Increment this numeric field before update.
+    bool m_version{false};
+
+    /// @brief Soft-delete flag: `remove()` flips it and find/list exclude set rows.
+    bool m_soft_delete{false};
+
+    /// @brief Cache TTL in seconds. Zero leaves the caller's TTL untouched.
+    std::uint64_t m_ttl_seconds{0};
 
     /// @brief Builds a default-initialized FieldOptions — the fluent-chain starting point.
     /// @return a fresh FieldOptions with a default-constructed `m_db` block.
@@ -199,6 +308,139 @@ public:
     {
         auto opt = *this;
         opt.m_db = db_options;
+        return opt;
+    }
+
+    /// @brief Returns a copy with a wire-key override attached; empty keeps `FieldDesc::name`.
+    /// @param name the alternate wire key — pass literal/static storage.
+    [[nodiscard]] constexpr FieldOptions wire_name(std::string_view name) const
+    {
+        auto opt = *this;
+        opt.m_wire_name = FieldWireName{name};
+        return opt;
+    }
+
+    /// @brief Returns a copy marking this field as required.
+    [[nodiscard]] constexpr FieldOptions required() const
+    {
+        auto opt = *this;
+        opt.m_required = true;
+        return opt;
+    }
+
+    /// @brief Returns a copy marking this field as non-empty.
+    [[nodiscard]] constexpr FieldOptions non_empty() const
+    {
+        auto opt = *this;
+        opt.m_non_empty = true;
+        return opt;
+    }
+
+    /// @brief Returns a copy with a per-field validator function attached.
+    /// @param validator predicate taking the address of the field value; nullptr clears it.
+    [[nodiscard]] constexpr FieldOptions with_validator(bool (*validator)(const void*)) const
+    {
+        auto opt = *this;
+        opt.m_validator = validator;
+        return opt;
+    }
+
+    /// @brief Marks the field as an AND-ed equality filter in a Behavior query.
+    [[nodiscard]] constexpr FieldOptions query_filter_and() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::filter;
+        opt.m_query_join = QueryJoin::And;
+        return opt;
+    }
+
+    /// @brief Marks the field as an OR-group source; `std::vector<T>` fields carry one group
+    /// per element and groups are OR-ed by executing one query each.
+    [[nodiscard]] constexpr FieldOptions query_filter_or() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::filter;
+        opt.m_query_join = QueryJoin::Or;
+        return opt;
+    }
+
+    /// @brief Marks the field as supplying the query's LIMIT.
+    [[nodiscard]] constexpr FieldOptions query_limit() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::limit;
+        return opt;
+    }
+
+    /// @brief Marks the field as supplying the query's OFFSET.
+    [[nodiscard]] constexpr FieldOptions query_offset() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::offset;
+        return opt;
+    }
+
+    /// @brief Marks the field as the ORDER BY column; its value carries the direction.
+    [[nodiscard]] constexpr FieldOptions query_order_by() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::order;
+        return opt;
+    }
+
+    /// @brief Explicitly keeps the field out of the query builder while leaving it data.
+    [[nodiscard]] constexpr FieldOptions query_ignore() const
+    {
+        auto opt = *this;
+        opt.m_query_role = QueryRole::ignore;
+        return opt;
+    }
+
+    /// @brief Includes this field's value in the Behavior cache key.
+    [[nodiscard]] constexpr FieldOptions cache_key() const
+    {
+        auto opt = *this;
+        opt.m_cache_key = true;
+        return opt;
+    }
+
+    /// @brief Overrides the cache TTL (in seconds) used by `Behavior::cache_put`.
+    [[nodiscard]] constexpr FieldOptions ttl(std::uint64_t seconds) const
+    {
+        auto opt = *this;
+        opt.m_ttl_seconds = seconds;
+        return opt;
+    }
+
+    /// @brief Marks the field for epoch stamping on insert.
+    [[nodiscard]] constexpr FieldOptions created_at() const
+    {
+        auto opt = *this;
+        opt.m_created_at = true;
+        return opt;
+    }
+
+    /// @brief Marks the field for epoch stamping on insert and update.
+    [[nodiscard]] constexpr FieldOptions updated_at() const
+    {
+        auto opt = *this;
+        opt.m_updated_at = true;
+        return opt;
+    }
+
+    /// @brief Marks the field as a version counter incremented before update.
+    [[nodiscard]] constexpr FieldOptions version() const
+    {
+        auto opt = *this;
+        opt.m_version = true;
+        return opt;
+    }
+
+    /// @brief Marks the field as the soft-delete flag.
+    [[nodiscard]] constexpr FieldOptions soft_delete() const
+    {
+        auto opt = *this;
+        opt.m_soft_delete = true;
         return opt;
     }
 };
@@ -534,6 +776,53 @@ suite<"FieldOptions"> field_options_suite = []
         constexpr auto options = FieldOptions::init().with_db(db_options);
 
         expect(options.m_db.m_primary_key);
+    };
+
+    "query metadata defaults to none/And with every behavior flag off"_test = []
+    {
+        constexpr auto options = FieldOptions::init();
+
+        expect(options.m_query_role == QueryRole::none);
+        expect(options.m_query_join == QueryJoin::And);
+        expect(not options.m_cache_key);
+        expect(not options.m_created_at);
+        expect(not options.m_updated_at);
+        expect(not options.m_version);
+        expect(not options.m_soft_delete);
+        expect(options.m_ttl_seconds == 0u);
+    };
+
+    "query/cache/timestamp wrappers return copies without mutating the original"_test = []
+    {
+        constexpr auto base = FieldOptions::init();
+        constexpr auto filtered = base.query_filter_or()
+                                      .cache_key()
+                                      .ttl(30)
+                                      .created_at()
+                                      .updated_at()
+                                      .version()
+                                      .soft_delete();
+
+        expect(filtered.m_query_role == QueryRole::filter);
+        expect(filtered.m_query_join == QueryJoin::Or);
+        expect(filtered.m_cache_key);
+        expect(filtered.m_ttl_seconds == 30u);
+        expect(filtered.m_created_at);
+        expect(filtered.m_updated_at);
+        expect(filtered.m_version);
+        expect(filtered.m_soft_delete);
+        expect(base.m_query_role == QueryRole::none);
+        expect(base.m_query_join == QueryJoin::And);
+        expect(not base.m_cache_key);
+    };
+
+    "every query role wrapper maps to its QueryRole"_test = []
+    {
+        expect(FieldOptions::init().query_filter_and().m_query_role == QueryRole::filter);
+        expect(FieldOptions::init().query_limit().m_query_role == QueryRole::limit);
+        expect(FieldOptions::init().query_offset().m_query_role == QueryRole::offset);
+        expect(FieldOptions::init().query_order_by().m_query_role == QueryRole::order);
+        expect(FieldOptions::init().query_ignore().m_query_role == QueryRole::ignore);
     };
 };
 

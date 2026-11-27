@@ -36,8 +36,9 @@ public:
     }
 
     // ───────────────────────── Core: manual_update ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsManualUpdateResult, core::error::AppError>
-    manual_update(const PayoutsManualUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payouts::PayoutsManualUpdateResponse, core::error::AppError>
+        manual_update(const PayoutsManualUpdateInput& input) const
     {
         // `PayoutsManualUpdateRequest::is_update_parameter_present`
         // (`api_models/payouts.rs:1931-1938`).
@@ -137,7 +138,7 @@ public:
         response.set_error_message(input.request.get_error_message());
         response.set_connector_payout_id(input.request.get_connector_payout_id());
 
-        return PayoutsManualUpdateResult{response};
+        return ::app::model::payouts::PayoutsManualUpdateResponse{response};
     }
 
 private:

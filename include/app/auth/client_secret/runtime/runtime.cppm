@@ -3,6 +3,7 @@ export module app_auth:client_secret_runtime;
 import std;
 import core_error;
 import app_context;
+import app_dto;
 
 import :client_secret_input;
 import :client_secret_result;
@@ -22,14 +23,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ClientSecretCreateResult, core::error::AppError>
-    create(const ClientSecretCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
+        create(const ClientSecretCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<ClientSecretDeleteResult, core::error::AppError>
-    delete_client_secret(const ClientSecretDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
+        delete_client_secret(const ClientSecretDeleteInput& input) const
     {
         return m_delete.delete_client_secret(input);
     }

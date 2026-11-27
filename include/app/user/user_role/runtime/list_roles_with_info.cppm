@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListRolesWithInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_roles_with_info(const ListRolesWithInfoInput& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -88,7 +88,7 @@ public:
                 with_parents.push_back(std::move(item));
             }
             m_support.track_flow("list_roles_with_info", "user_role.list_roles_with_info");
-            return ListRolesWithInfoResult{ResponseDocument::from(with_parents)};
+            return ResponseDocument::from(with_parents);
         }
         std::vector<RoleInfoResponseNewWire> response{};
         for (const auto& role: roles) {
@@ -101,7 +101,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track_flow("list_roles_with_info", "user_role.list_roles_with_info");
-        return ListRolesWithInfoResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

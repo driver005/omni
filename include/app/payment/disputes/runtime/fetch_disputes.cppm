@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FetchDisputesResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
     fetch_disputes(const FetchDisputesInput& input) const
     {
         m_context.metrics().record_flow("dispute_fetch");
@@ -91,7 +91,7 @@ public:
             }
             result.push_back(m_support.to_response(record));
         }
-        return FetchDisputesResult{std::move(result)};
+        return std::vector<::app::model::disputes::DisputeResponse>{std::move(result)};
     }
 
 private:

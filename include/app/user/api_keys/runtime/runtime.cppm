@@ -28,32 +28,33 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ApiKeyCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::CreateApiKeyResponse, core::error::AppError>
     create(const ApiKeyCreateInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<ApiKeyRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
     retrieve(const ApiKeyRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<ApiKeyUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
     update(const ApiKeyUpdateInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<ApiKeyRevokeResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RevokeApiKeyResponse, core::error::AppError>
     revoke(const ApiKeyRevokeInput& input) const
     {
         return m_revoke.revoke(input);
     }
 
-    [[nodiscard]] std::expected<ApiKeyListResult, core::error::AppError>
-    list(const ApiKeyListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>, core::error::AppError>
+        list(const ApiKeyListInput& input) const
     {
         return m_list.list(input);
     }

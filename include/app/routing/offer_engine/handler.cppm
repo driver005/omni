@@ -39,7 +39,7 @@ public:
         // (auth/registry.cppm:244) and `authorize_route` enforces it.
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
-                m_input_support.authorize(auth, "offer_engine_connectivity_check")) {
+                m_request_support.authorize(req, "offer_engine_connectivity_check", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -53,8 +53,13 @@ public:
             return;
         }
 
+        auto wire = result->serialize(wire_fields<ConnectivityCheckResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -70,7 +75,8 @@ public:
         // The registry entry `offer_engine_browse_offers` carries those flags
         // (auth/registry.cppm:243).
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        if (const auto auth_error = m_input_support.authorize(auth, "offer_engine_browse_offers")) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "offer_engine_browse_offers", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -115,8 +121,14 @@ public:
 
         // Both API error shapes (IR_22 / HE_00) arrive as AppError through the
         // `!result` branch above; the success case is the typed DTO below.
+        auto wire =
+            result->serialize(wire_fields<::app::dto::offer_engine::BrowseOffersResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_response()));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -161,13 +173,17 @@ public:
 
     explicit OfferEngineRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     OfferEngineRuntime m_runtime;
     OfferEngineInputSupport m_input_support;
+    OfferEnginePolicy m_policy;
+    OfferEngineRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::offer_engine

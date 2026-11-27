@@ -1,6 +1,7 @@
 export module app_routing:feature_matrix_runtime;
 
 import std;
+import app_dto;
 import core_error;
 import app_context;
 
@@ -20,8 +21,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FeatureMatrixFetchResult, core::error::AppError>
-    fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::feature_matrix::FeatureMatrixListResponse, core::error::AppError>
+        fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
     {
         return m_fetch_feature_matrix.fetch_feature_matrix(input);
     }

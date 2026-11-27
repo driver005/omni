@@ -18,7 +18,6 @@ import app_store;
 import app_services;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
 import :superposition_proxy_runtime;
 
 export namespace app::handlers::superposition_proxy {
@@ -34,11 +33,13 @@ public:
     SuperpositionProxyHandlersV1Audit(
         ::app::context::AppContext& context,
         SuperpositionProxyRuntime& runtime,
-        SuperpositionProxyInputSupport& input_support
+        SuperpositionProxyInputSupport& input_support,
+        SuperpositionProxyRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -49,7 +50,7 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize_request(req, "list_audit_logs");
+        const auto auth_error = m_request_support.authorize(req, "list_audit_logs", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -76,7 +77,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -84,6 +85,7 @@ private:
     ::app::context::AppContext& m_context;
     SuperpositionProxyRuntime& m_runtime;
     SuperpositionProxyInputSupport& m_input_support;
+    SuperpositionProxyRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::superposition_proxy

@@ -3,6 +3,7 @@ export module app_webhook:verification_runtime;
 import std;
 import core_error;
 import app_context;
+import app_dto;
 
 import :verification_input;
 import :verification_result;
@@ -22,14 +23,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ApplePayMerchantRegistrationResult, core::error::AppError>
-    apple_pay_merchant_registration(const ApplePayMerchantRegistrationInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::verifications::ApplepayMerchantResponse, core::error::AppError>
+        apple_pay_merchant_registration(const ApplePayMerchantRegistrationInput& input) const
     {
         return m_apple_pay_merchant_registration.verify_merchant_creds_for_applepay(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveApplePayVerifiedDomainsResult, core::error::AppError>
-    retrieve_apple_pay_verified_domains(const RetrieveApplePayVerifiedDomainsInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::verifications::ApplepayVerifiedDomainsResponse, core::error::AppError>
+        retrieve_apple_pay_verified_domains(const RetrieveApplePayVerifiedDomainsInput& input) const
     {
         return m_retrieve_apple_pay_verified_domains.get_verified_apple_domains_with_mid_mca_id(
             input

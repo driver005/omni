@@ -2,16 +2,18 @@ module;
 export module app_dto:connector_enums;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::connector_enums {
 
-class ConnectorEnumsCatalog : public serde::Serializer<ConnectorEnumsCatalog>
+class ConnectorEnumsCatalog : public core::behavior::Serializer<ConnectorEnumsCatalog>
 {
 public:
     void set_name(std::string value)

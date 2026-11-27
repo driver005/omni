@@ -6,95 +6,69 @@ import core_serde;
 export namespace app::handlers::telephone_order {
 
 /**
- * @brief Twilio charge outcome wire document. All four fields are present on the
- * wire; a missing value is `null`. The Serializable field order below is the
- * upstream key order (charge_id, error_code, error_message, parameters).
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
  */
-class TelephoneOrderChargeResult
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    void set_charge_id(std::optional<std::string> value)
-    {
-        charge_id = std::move(value);
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const std::optional<std::string>& get_charge_id() const noexcept
-    {
-        return charge_id;
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
+{
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    void set_error_code(std::optional<std::string> value)
-    {
-        error_code = std::move(value);
-    }
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
-    [[nodiscard]] const std::optional<std::string>& get_error_code() const noexcept
-    {
-        return error_code;
-    }
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
-    void set_error_message(std::optional<std::string> value)
-    {
-        error_message = std::move(value);
-    }
-
-    [[nodiscard]] const std::optional<std::string>& get_error_message() const noexcept
-    {
-        return error_message;
-    }
-
-    void set_parameters(std::unordered_map<std::string, std::string> value)
-    {
-        parameters = std::move(value);
-    }
-
-    [[nodiscard]] const std::unordered_map<std::string, std::string>&
-    get_parameters() const noexcept
-    {
-        return parameters;
-    }
-
-private:
-    std::optional<std::string> charge_id{};
-    std::optional<std::string> error_code{};
-    std::optional<std::string> error_message{};
-    std::unordered_map<std::string, std::string> parameters{};
-};
+// Exact wire key order of the former TelephoneOrderChargeResult.
+inline constexpr std::array<std::string_view, 4>
+    kTelephoneOrderChargeWireFields{"charge_id", "error_code", "error_message", "parameters"};
 
 } // namespace app::handlers::telephone_order
-
-template<>
-struct serde::Serializable<::app::handlers::telephone_order::TelephoneOrderChargeResult>
-{
-    static constexpr auto fields()
-    {
-        using Wire = ::app::handlers::telephone_order::TelephoneOrderChargeResult;
-        return std::tuple{
-            serde::FieldDesc<
-                "charge_id",
-                &Wire::get_charge_id,
-                &Wire::set_charge_id,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "error_code",
-                &Wire::get_error_code,
-                &Wire::set_error_code,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "error_message",
-                &Wire::get_error_message,
-                &Wire::set_error_message,
-                serde::FieldOptions{}>{},
-            serde::FieldDesc<
-                "parameters",
-                &Wire::get_parameters,
-                &Wire::set_parameters,
-                serde::FieldOptions{}>{}
-        };
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "telephone_order_charge_result";
-    }
-};

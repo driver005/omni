@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetMultipleDashboardMetadataResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     get_multiple_dashboard_metadata(const GetMultipleDashboardMetadataInput& input) const
     {
         std::string set_cookie{};
@@ -62,7 +62,7 @@ public:
             }
         }
         (void)keys;
-        return GetMultipleDashboardMetadataResult{std::move(document), set_cookie};
+        return std::pair{std::move(document), set_cookie};
     }
 
 private:

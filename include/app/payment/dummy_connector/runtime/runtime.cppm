@@ -1,6 +1,7 @@
 export module app_payment:dummy_connector_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -30,38 +31,40 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DummyConnectorAuthorizePaymentResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::string, core::error::AppError>
     authorize_payment(const AuthorizePaymentInput& input) const
     {
         return m_authorize_payment.authorize_payment(input);
     }
 
-    [[nodiscard]] std::expected<DummyConnectorCompletePaymentResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     complete_payment(const CompletePaymentInput& input) const
     {
         return m_complete_payment.complete_payment(input);
     }
 
-    [[nodiscard]] std::expected<DummyConnectorPaymentResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     payment(const PaymentInput& input) const
     {
         return m_payment.payment(input);
     }
 
-    [[nodiscard]] std::expected<DummyConnectorPaymentDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     payment_data(const PaymentDataInput& input) const
     {
         return m_payment_data.payment_data(input);
     }
 
-    [[nodiscard]] std::expected<DummyConnectorRefundResult, core::error::AppError>
-    refund(const RefundInput& input) const
+    [[nodiscard]] std::
+        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
+        refund(const RefundInput& input) const
     {
         return m_refund.refund(input);
     }
 
-    [[nodiscard]] std::expected<DummyConnectorRefundDataResult, core::error::AppError>
-    refund_data(const RefundDataInput& input) const
+    [[nodiscard]] std::
+        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
+        refund_data(const RefundDataInput& input) const
     {
         return m_refund_data.refund_data(input);
     }

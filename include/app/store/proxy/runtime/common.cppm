@@ -11,7 +11,6 @@ import app_metrics;
 import app_connector;
 
 import :proxy_input;
-import :proxy_result;
 
 export namespace app::handlers::proxy {
 

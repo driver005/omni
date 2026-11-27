@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListPaymentMethodApiResult, core::error::AppError>
-    list_payment_method_api(const ListPaymentMethodApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodListResponse, core::error::AppError>
+        list_payment_method_api(const ListPaymentMethodApiInput& input) const
     {
         m_context.metrics().record_flow("list_payment_method_api");
         m_context.metrics().counter("PAYMENT_METHOD_LIST_PAYMENT_METHOD_API").increment();
@@ -56,7 +57,7 @@ public:
             enabled.push_back(std::move(item));
         }
         response.set_payment_methods(std::move(enabled));
-        return ListPaymentMethodApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodListResponse{std::move(response)};
     }
 
 private:

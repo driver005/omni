@@ -2,16 +2,19 @@ module;
 export module app_model:cards_info;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
+import app_connector;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::model::cards_info {
 
-class CardAuthenticationValue : public serde::Serializer<CardAuthenticationValue>
+class CardAuthenticationValue : public core::behavior::Serializer<CardAuthenticationValue>
 {
 public:
     void set_value(std::string value)
@@ -27,7 +30,7 @@ public:
     std::string value{};
 };
 
-class CardCostValue : public serde::Serializer<CardCostValue>
+class CardCostValue : public core::behavior::Serializer<CardCostValue>
 {
 public:
     void set_value(std::string value)
@@ -49,7 +52,7 @@ enum class CardInfoMigrationStatus
     Failed,
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+class CardNetworkValue : public core::behavior::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string value)
@@ -65,7 +68,7 @@ public:
     std::string value{};
 };
 
-class CardsInfoRequest : public serde::Serializer<CardsInfoRequest>
+class CardsInfoRequest : public core::behavior::Serializer<CardsInfoRequest>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -92,7 +95,7 @@ public:
     std::string card_iin{};
 };
 
-class CardsInfoRequestParams : public serde::Serializer<CardsInfoRequestParams>
+class CardsInfoRequestParams : public core::behavior::Serializer<CardsInfoRequestParams>
 {
 public:
     void set_client_secret(std::optional<std::string> value)
@@ -108,7 +111,7 @@ public:
     std::optional<std::string> client_secret{};
 };
 
-class CoBadgedCardNetworkMetadataValue : public serde::Serializer<CoBadgedCardNetworkMetadataValue>
+class FundingSourceValue : public core::behavior::Serializer<FundingSourceValue>
 {
 public:
     void set_value(std::string value)
@@ -124,7 +127,7 @@ public:
     std::string value{};
 };
 
-class FundingSourceValue : public serde::Serializer<FundingSourceValue>
+class PanOrTokenValue : public core::behavior::Serializer<PanOrTokenValue>
 {
 public:
     void set_value(std::string value)
@@ -140,23 +143,7 @@ public:
     std::string value{};
 };
 
-class PanOrTokenValue : public serde::Serializer<PanOrTokenValue>
-{
-public:
-    void set_value(std::string value)
-    {
-        this->value = std::move(value);
-    }
-
-    [[nodiscard]] const std::string& get_value() const noexcept
-    {
-        return value;
-    }
-
-    std::string value{};
-};
-
-class CardInfoCreateRequest : public serde::Serializer<CardInfoCreateRequest>
+class CardInfoCreateRequest : public core::behavior::Serializer<CardInfoCreateRequest>
 {
 public:
     void set_card_iin(std::string value)
@@ -581,7 +568,8 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoMigrateResponseRecord : public serde::Serializer<CardInfoMigrateResponseRecord>
+class CardInfoMigrateResponseRecord :
+    public core::behavior::Serializer<CardInfoMigrateResponseRecord>
 {
 public:
     void set_card_iin(std::optional<std::string> value)
@@ -973,7 +961,7 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoMigrationResponse : public serde::Serializer<CardInfoMigrationResponse>
+class CardInfoMigrationResponse : public core::behavior::Serializer<CardInfoMigrationResponse>
 {
 public:
     void set_line_number(std::optional<std::int64_t> value)
@@ -1398,7 +1386,7 @@ public:
     CardInfoMigrationStatus migration_status{};
 };
 
-class CardInfoResponse : public serde::Serializer<CardInfoResponse>
+class CardInfoResponse : public core::behavior::Serializer<CardInfoResponse>
 {
 public:
     void set_card_iin(std::string value)
@@ -1790,7 +1778,7 @@ public:
     std::optional<std::string> multi_account_access_indicator{};
 };
 
-class CardInfoUpdateRequest : public serde::Serializer<CardInfoUpdateRequest>
+class CardInfoUpdateRequest : public core::behavior::Serializer<CardInfoUpdateRequest>
 {
 public:
     void set_card_iin(std::string value)

@@ -37,11 +37,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<ListCountriesCurrenciesForConnectorPaymentMethodResult, core::error::AppError>
-        list_countries_currencies_for_connector_payment_method(
-            const ListCountriesCurrenciesForConnectorPaymentMethodInput& input
-        ) const
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::ListCountriesCurrenciesResponse,
+        core::error::AppError>
+    list_countries_currencies_for_connector_payment_method(
+        const ListCountriesCurrenciesForConnectorPaymentMethodInput& input
+    ) const
     {
         // Upstream cards.rs:7801-7856 — pm_filters[connector][payment_method_type] with a
         // "default" fallback; when no filter is configured the full Currency / CountryAlpha2
@@ -146,7 +147,7 @@ public:
             response.set_currencies(::app::model::payment_methods::AllCurrencyCodes{}());
             response.set_countries(::app::model::payment_methods::AllCountryCodes{}());
         }
-        return ListCountriesCurrenciesForConnectorPaymentMethodResult{std::move(response)};
+        return ::app::model::payment_methods::ListCountriesCurrenciesResponse{std::move(response)};
     }
 
 private:

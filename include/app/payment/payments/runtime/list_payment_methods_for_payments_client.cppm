@@ -31,10 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListPaymentMethodsForPaymentsClientResult, core::error::AppError>
-    list_payment_methods_for_payments_client(
-        const ListPaymentMethodsForPaymentsClientInput& input
-    ) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsClientMethodsResponse, core::error::AppError>
+        list_payment_methods_for_payments_client(
+            const ListPaymentMethodsForPaymentsClientInput& input
+        ) const
     {
         auto text = m_support.client_payment_methods_response(input.data);
         if (!text) {
@@ -43,7 +44,7 @@ public:
                 "Invalid client secret"
             )};
         }
-        return ListPaymentMethodsForPaymentsClientResult{*text};
+        return *text;
     }
 
 private:

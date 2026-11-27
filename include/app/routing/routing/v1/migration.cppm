@@ -27,11 +27,13 @@ public:
     RoutingV1MigrationHandlers(
         ::app::context::AppContext& context,
         RoutingRuntime& runtime,
-        RoutingInputSupport& input_support
+        RoutingInputSupport& input_support,
+        RoutingRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -42,8 +44,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "routing_migration_status")) {
+        if (const auto denied = m_request_support.authorize(req, "routing_migration_status", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -77,7 +78,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -88,7 +89,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "migrate_routing_rules")) {
+        if (const auto denied = m_request_support.authorize(req, "migrate_routing_rules", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -126,7 +127,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -177,6 +178,7 @@ private:
     ::app::context::AppContext& m_context;
     RoutingRuntime& m_runtime;
     RoutingInputSupport& m_input_support;
+    RoutingRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::routing

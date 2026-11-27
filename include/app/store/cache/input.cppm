@@ -3,6 +3,7 @@ export module app_store:cache_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -35,25 +36,46 @@ public:
         return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    // Upstream takes the key from web::Path<String> (/cache/invalidate/:key);
-    // no body is read (routes/cache.rs:14,18). Read the matched path segment.
-    [[nodiscard]] std::string cache_key_from_request(interfaces::io::IRequest& req) const
+private:
+    ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Cache invalidation has one declarative rule ("invalidate"); the cache key is
+ * a generic path segment, so RequestSupport::path owns that extraction.
+ */
+class CachePolicy
+{
+public:
+    explicit CachePolicy(CacheInputSupport& support) noexcept :
+        m_support{support}
     {
-        const auto segments = ::app::http::RequestPath{}(req);
-        // The :key route parameter is the third segment of /cache/invalidate/:key.
-        if (const auto key = segments.at(2U)) {
-            return std::string{*key};
-        }
-        // Fall back to the last segment if the router mounts the route under a
-        // longer prefix, preserving upstream's web::Path<String> semantics.
-        if (segments.count() > 0U) {
-            return std::string{segments.at(segments.count() - 1U).value_or("")};
-        }
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view,
+        const core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize(req);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest&) const noexcept
+    {
         return {};
     }
 
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
 private:
-    ::app::context::AppContext& m_context;
+    CacheInputSupport& m_support;
 };
 
 struct CacheInvalidateInput

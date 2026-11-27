@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdatePaymentMethodsResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse,
+        core::error::AppError>
     update_payment_methods(const UpdatePaymentMethodsInput& input) const
     {
         m_context.metrics().record_flow("update_payment_methods");
@@ -61,7 +63,9 @@ public:
             response.set_network_transaction_id(*first.get_network_transaction_id());
         }
         response.set_updated_payment_method_data(true);
-        return UpdatePaymentMethodsResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodRecordUpdateResponse{
+            std::move(response)
+        };
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_data_backfill_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -595,4 +596,58 @@ private:
     ::app::context::AppContext& m_context;
 };
 
+/** @brief Request policy for the revenue_recovery_data_backfill domain: wraps the domain auth
+ * rules. */
+class RevenueRecoveryDataBackfillPolicy
+{
+public:
+    RevenueRecoveryDataBackfillPolicy(
+        ::app::context::AppContext& /*context*/,
+        RevenueRecoveryDataBackfillInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    RevenueRecoveryDataBackfillInputSupport& m_support;
+};
+
+using RevenueRecoveryDataBackfillRequestSupport =
+    core::behavior::RequestSupport<RevenueRecoveryDataBackfillPolicy>;
+using RevenueRecoveryDataBackfillPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] RevenueRecoveryDataBackfillPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return RevenueRecoveryDataBackfillPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::revenue_recovery_data_backfill

@@ -16,7 +16,6 @@ import app_http;
 import app_metrics;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime;
 
 export namespace app::handlers::customers {
@@ -27,11 +26,13 @@ public:
     CustomersHandlersV2GlobalId(
         ::app::context::AppContext& context,
         CustomersRuntime& runtime,
-        CustomersInputSupport& input_support
+        CustomersInputSupport& input_support,
+        CustomersRequestSupport& request_support
     ) noexcept :
         m_context{&context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -69,7 +70,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -94,6 +95,7 @@ private:
     ::app::context::AppContext* m_context{nullptr};
     CustomersRuntime& m_runtime;
     CustomersInputSupport& m_input_support;
+    CustomersRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::customers

@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListMembersForEntityResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_members_for_entity(const ListMembersForEntityInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
             break;
         }
         auto document = ResponseDocument::from(response);
-        return ListMembersForEntityResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

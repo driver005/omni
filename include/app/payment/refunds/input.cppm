@@ -1,6 +1,7 @@
 export module app_payment:refunds_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -494,4 +495,112 @@ struct RefundsManualUpdateInput
     ::app::model::refunds::RefundManualUpdateRequest request{};
 };
 
+/** @brief Request policy for the refunds domain: wraps the domain auth rules. */
+class RefundsPolicy
+{
+public:
+    RefundsPolicy(::app::context::AppContext& /*context*/, RefundsInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        const AuthProfile profile = profile_for(operation);
+        return m_support.authorize_op(req, profile);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] static AuthProfile profile_for(std::string_view operation) noexcept
+    {
+        if (operation == "V1Create") {
+            return AuthProfile::V1Create;
+        }
+        if (operation == "V1Retrieve") {
+            return AuthProfile::V1Retrieve;
+        }
+        if (operation == "V1Sync") {
+            return AuthProfile::V1Sync;
+        }
+        if (operation == "V1Update") {
+            return AuthProfile::V1Update;
+        }
+        if (operation == "V1Reverse") {
+            return AuthProfile::V1Reverse;
+        }
+        if (operation == "V1List") {
+            return AuthProfile::V1List;
+        }
+        if (operation == "Platform") {
+            return AuthProfile::Platform;
+        }
+        if (operation == "ProfileList") {
+            return AuthProfile::ProfileList;
+        }
+        if (operation == "Filter") {
+            return AuthProfile::Filter;
+        }
+        if (operation == "Filters") {
+            return AuthProfile::Filters;
+        }
+        if (operation == "FiltersProfile") {
+            return AuthProfile::FiltersProfile;
+        }
+        if (operation == "Aggregates") {
+            return AuthProfile::Aggregates;
+        }
+        if (operation == "AggregatesProfile") {
+            return AuthProfile::AggregatesProfile;
+        }
+        if (operation == "Admin") {
+            return AuthProfile::Admin;
+        }
+        if (operation == "V2Create") {
+            return AuthProfile::V2Create;
+        }
+        if (operation == "V2Retrieve") {
+            return AuthProfile::V2Retrieve;
+        }
+        if (operation == "V2Gateway") {
+            return AuthProfile::V2Gateway;
+        }
+        if (operation == "V2Metadata") {
+            return AuthProfile::V2Metadata;
+        }
+        return AuthProfile::V2List;
+    }
+
+private:
+    RefundsInputSupport& m_support;
+};
+
+using RefundsRequestSupport = core::behavior::RequestSupport<RefundsPolicy>;
+using RefundsPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] RefundsPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return RefundsPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::refunds

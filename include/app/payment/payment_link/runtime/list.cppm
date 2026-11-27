@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentLinkListResult, core::error::AppError>
-    list(const PaymentLinkListInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
+        list(const PaymentLinkListInput& input) const
     {
         m_context.metrics().record_flow("payment_link.list");
         m_context.metrics().counter("payment_link.list").increment();
@@ -45,7 +46,7 @@ public:
         if (!response) {
             return std::unexpected{response.error()};
         }
-        return PaymentLinkListResult{std::move(*response)};
+        return ::app::model::payments::PaymentLinkListResponse{std::move(*response)};
     }
 
 private:

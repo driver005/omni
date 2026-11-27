@@ -26,7 +26,7 @@ public:
      * @brief Port of `files_create_core` (`core/files.rs:14-90`).
      *  validate -> generate_id -> insert(available=false) -> upload -> update(available=true).
      */
-    [[nodiscard]] std::expected<FilesCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, core::error::AppError>
     create(const FilesCreateInput& input) const
     {
         // Upstream: files.rs:39 — server_wrap records the flow and route counter.
@@ -102,7 +102,7 @@ public:
         // core/files.rs:87-89 — Json(CreateFileResponse { file_id }).
         ::app::dto::files::CreateFileResponse response{};
         response.set_file_id(file_id);
-        return FilesCreateResult{std::move(response)};
+        return response;
     }
 
 private:

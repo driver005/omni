@@ -2,9 +2,11 @@ module;
 export module app_dto:currency;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ export namespace app::dto::currency {
  * directly from the query string as an integer; `from_string` performs that
  * parse and `get_amount_as_i64` is the exact upstream accessor.
  */
-class MinorUnit : public serde::Serializer<MinorUnit>
+class MinorUnit : public core::behavior::Serializer<MinorUnit>
 {
 public:
     MinorUnit() = default;
@@ -57,7 +59,7 @@ public:
     std::int64_t m_value{};
 };
 
-class CurrencyConversionResponse : public serde::Serializer<CurrencyConversionResponse>
+class CurrencyConversionResponse : public core::behavior::Serializer<CurrencyConversionResponse>
 {
 public:
     void set_converted_amount(std::string value)
@@ -84,7 +86,7 @@ public:
     std::string currency{};
 };
 
-class CurrencyConversionParams : public serde::Serializer<CurrencyConversionParams>
+class CurrencyConversionParams : public core::behavior::Serializer<CurrencyConversionParams>
 {
 public:
     void set_amount(MinorUnit value)

@@ -1,6 +1,7 @@
 export module app_payment:mandates_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -243,4 +244,55 @@ struct RetrieveMandatesListInput
     std::optional<std::string> merchant_filter{};
 };
 
+/** @brief Request policy for the mandates domain: wraps the domain auth rules. */
+class MandatesPolicy
+{
+public:
+    MandatesPolicy(::app::context::AppContext& /*context*/, MandatesInputSupport& support) noexcept
+        :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        const auto ctx = ::app::auth::AuthContextBuilder{}(req);
+        return m_support.authorize(ctx, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    MandatesInputSupport& m_support;
+};
+
+using MandatesRequestSupport = core::behavior::RequestSupport<MandatesPolicy>;
+using MandatesPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] MandatesPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return MandatesPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::mandates

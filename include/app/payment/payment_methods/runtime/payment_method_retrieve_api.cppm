@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodRetrieveApiResult, core::error::AppError>
-    payment_method_retrieve_api(const PaymentMethodRetrieveApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
+        payment_method_retrieve_api(const PaymentMethodRetrieveApiInput& input) const
     {
         auto record = input.record;
         if (input.force_sync) {
@@ -53,7 +54,9 @@ public:
         }
         m_context.metrics().record_flow("payment_method_retrieve_api");
         m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_API").increment();
-        return PaymentMethodRetrieveApiResult{m_support.response_from_record(record)};
+        return ::app::model::payment_methods::PaymentMethodResponse{
+            m_support.response_from_record(record)
+        };
     }
 
 private:

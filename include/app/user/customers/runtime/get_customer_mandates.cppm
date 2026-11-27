@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetCustomerMandatesResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_customer_mandates(const CustomersMandatesRouteInput& input) const
     {
         auto repo = m_context.repository();
@@ -47,7 +46,7 @@ public:
         }
         m_context.metrics().record_flow("customers.get_customer_mandates");
         m_context.metrics().counter("customers_get_customer_mandates").increment();
-        return GetCustomerMandatesResult{serde::Value{std::move(out)}};
+        return serde::Value{std::move(out)};
     }
 
 private:

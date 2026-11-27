@@ -27,7 +27,7 @@ public:
     // ── Core: create ───────────────────────────────────────────────────────
     // Upstream gsm_rule.foreign_into() then add_gsm_rule (core/gsm.rs:14-24,
     // transformers.rs:2055-2078).
-    [[nodiscard]] std::expected<CreateGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     create(const CreateGsmRuleInput& input) const
     {
         const auto& in = input.request;
@@ -66,7 +66,7 @@ public:
         m_context.events().publish("gsm.rule.created", m_support.audit_payload("created", key));
         m_context.metrics().record_flow("GsmRuleCreate");
         m_context.metrics().counter("GSM_RULE_CREATED").increment();
-        return CreateGsmRuleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

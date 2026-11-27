@@ -18,7 +18,7 @@ import app_store;
 import app_services;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
+import :policy;
 import :superposition_proxy_runtime;
 
 export namespace app::handlers::superposition_proxy {
@@ -35,11 +35,13 @@ public:
     SuperpositionProxyHandlersV1Dimensions(
         ::app::context::AppContext& context,
         SuperpositionProxyRuntime& runtime,
-        SuperpositionProxyInputSupport& input_support
+        SuperpositionProxyInputSupport& input_support,
+        SuperpositionProxyRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -50,7 +52,7 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize_request(req, "list_dimensions");
+        const auto auth_error = m_request_support.authorize(req, "list_dimensions", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -77,7 +79,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -88,7 +90,7 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize_request(req, "get_dimension");
+        const auto auth_error = m_request_support.authorize(req, "get_dimension", {});
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -103,7 +105,9 @@ public:
         m_input_support.cache_scope(req, *scope);
 
         GetDimensionHandlerInput input{
-            GetDimensionRequest{m_input_support.last_path_segment(req)},
+            GetDimensionRequest{
+                m_request_support.path(req, ::app::routing::policy::last_path_index(req))
+            },
             ::app::auth::AuthContextBuilder{}(req),
             scope->org_id,
             scope->workspace_id
@@ -115,7 +119,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -123,6 +127,7 @@ private:
     ::app::context::AppContext& m_context;
     SuperpositionProxyRuntime& m_runtime;
     SuperpositionProxyInputSupport& m_input_support;
+    SuperpositionProxyRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::superposition_proxy

@@ -2,6 +2,7 @@ export module app_store:app_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 
 import :app_input;
@@ -28,31 +29,31 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentCallbackConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     payment_callback_config(const PaymentCallbackConfigInput& input) const
     {
         return m_payment_callback_config.payment_callback_config(input);
     }
 
-    [[nodiscard]] std::expected<CreateEmailClientResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_email_client(const CreateEmailClientInput& input) const
     {
         return m_create_email_client.create_email_client(input);
     }
 
-    [[nodiscard]] std::expected<WithStorageResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     with_storage(const WithStorageInput& input) const
     {
         return m_with_storage.with_storage(input);
     }
 
-    [[nodiscard]] std::expected<GetStoreInterfaceResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_store_interface(const GetStoreInterfaceInput& input) const
     {
         return m_get_store_interface.get_store_interface(input);
     }
 
-    [[nodiscard]] std::expected<NewResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     app_new(const NewInput& input) const
     {
         return m_new.app_new(input);

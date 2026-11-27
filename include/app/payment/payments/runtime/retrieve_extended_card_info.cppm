@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveExtendedCardInfoResult, core::error::AppError>
-    retrieve_extended_card_info(const RetrieveExtendedCardInfoInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::ExtendedCardInfoResponse, core::error::AppError>
+        retrieve_extended_card_info(const RetrieveExtendedCardInfoInput& input) const
     {
         auto records = m_support.list_payments_scoped(input.data);
         if (const auto status_filter = m_support.query(input.data, "status");
@@ -51,7 +52,7 @@ public:
         (void)records;
         ::app::model::payments::ExtendedCardInfoResponse response{};
         response.set_payload(input.data.body);
-        return RetrieveExtendedCardInfoResult{response};
+        return ::app::model::payments::ExtendedCardInfoResponse{response};
     }
 
 private:

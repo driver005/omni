@@ -3,9 +3,12 @@ export module app_routing:gsm_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_auth;
 import app_dto;
+
+import :policy;
 
 export namespace app::handlers::gsm {
 
@@ -35,6 +38,41 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
+/** @brief Domain policy: all four GSM routes use the registry rule by operation. */
+class GsmPolicy
+{
+public:
+    explicit GsmPolicy(GsmInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize_request(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope& scope) const
+    {
+        return ::app::routing::policy::scope_error(scope);
+    }
+
+private:
+    GsmInputSupport& m_support;
+};
+
+using GsmRequestSupport = ::core::behavior::RequestSupport<GsmPolicy>;
 
 // Each input carries exactly what the old inline core block consumed.
 struct CreateGsmRuleInput

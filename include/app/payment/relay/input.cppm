@@ -1,6 +1,7 @@
 export module app_payment:relay_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -159,4 +160,56 @@ struct RelayIncomingWebhookInput
     std::string signature{};
 };
 
+/** @brief Request policy for the relay domain: wraps the domain auth rules. */
+class RelayPolicy
+{
+public:
+    RelayPolicy(::app::context::AppContext& /*context*/, RelayInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        if (operation == "receive_incoming_relay_webhook") {
+            return m_support.authorize_webhook(req, m_support.webhook_path_ids(req));
+        }
+        return m_support.authorize_route(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    RelayInputSupport& m_support;
+};
+
+using RelayRequestSupport = core::behavior::RequestSupport<RelayPolicy>;
+using RelayPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] RelayPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return RelayPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::relay

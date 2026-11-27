@@ -36,8 +36,9 @@ public:
     }
 
     // export.rs:73-162 initiate_blocklist_export.
-    [[nodiscard]] std::expected<CreateBlocklistExportResult, core::error::AppError>
-    create_blocklist_export(const CreateBlocklistExportInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BlocklistExportResponse, core::error::AppError>
+        create_blocklist_export(const CreateBlocklistExportInput& input) const
     {
         const auto export_id = m_context.ids().payment_id("blkexp");
         const auto stamp = m_support.now_iso8601();
@@ -113,7 +114,7 @@ public:
         response.set_file_name(file_name);
         m_support.emit("blocklist.export.created", response);
         m_support.track("create_blocklist_export");
-        return CreateBlocklistExportResult{response};
+        return response;
     }
 
 private:

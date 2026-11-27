@@ -30,6 +30,13 @@ export namespace app::handlers::payouts {
 class PayoutsAggregatesHandlersV1
 {
 public:
+    void bind_request_support(PayoutsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PayoutsRequestSupport* m_request_support{nullptr};
+
     explicit PayoutsAggregatesHandlersV1(
         PayoutsRuntime& runtime,
         PayoutsInputSupport& input_support
@@ -45,8 +52,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "get_payouts_aggregates")) {
+        if (const auto denied = m_request_support->authorize(
+                req,
+                "get_payouts_aggregates",
+                spec_for("get_payouts_aggregates")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -63,7 +73,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -73,8 +83,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "get_payouts_aggregates_profile")) {
+        if (const auto denied = m_request_support->authorize(
+                req,
+                "get_payouts_aggregates_profile",
+                spec_for("get_payouts_aggregates_profile")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -91,7 +104,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

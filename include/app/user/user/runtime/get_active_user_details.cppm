@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetActiveUserDetailsResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     get_active_user_details(const GetActiveUserDetailsInput& input) const
     {
         std::string set_cookie{};
@@ -170,7 +170,7 @@ public:
         source.set_value(credential_source.value_or(std::string{"config"}));
         response.set_offer_engine_credential_source(source);
         auto document = ResponseDocument::from(response);
-        return GetActiveUserDetailsResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

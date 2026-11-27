@@ -36,8 +36,9 @@ public:
     }
 
     /** Port of core::tokenization::create_vault_token_core (core/tokenization.rs:34-96). */
-    [[nodiscard]] std::expected<CreateTokenVaultResult, core::error::AppError>
-    create_token_vault(const CreateTokenVaultInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::tokenization::GenericTokenizationResponse, core::error::AppError>
+        create_token_vault(const CreateTokenVaultInput& input) const
     {
         // core:40 — VaultId::generate(generate_uuid_v7().to_string()).
         const std::string vault_id = m_support.uuid_v7();
@@ -78,7 +79,7 @@ public:
         response.set_id(inserted->get_token_id());
         response.set_created_at(inserted->get_created_at());
         response.set_flag(inserted->get_status());
-        return CreateTokenVaultResult{response};
+        return ::app::dto::tokenization::GenericTokenizationResponse{response};
     }
 
 private:

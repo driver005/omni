@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OrganizationRetrieveResult, core::error::AppError>
-    retrieve(const OrganizationRetrieveInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        retrieve(const OrganizationRetrieveInput& input) const
     {
         const auto found =
             m_context.repository().find_organization_by_string(input.organization_id);
@@ -74,7 +75,7 @@ public:
 
         m_context.metrics().record_flow("organization_retrieve");
         m_context.metrics().counter("admin.organization_retrieve").increment();
-        return OrganizationRetrieveResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

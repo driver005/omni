@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodDeleteApiResult, core::error::AppError>
-    payment_method_delete_api(const PaymentMethodDeleteApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodDeleteResponse, core::error::AppError>
+        payment_method_delete_api(const PaymentMethodDeleteApiInput& input) const
     {
         const auto& record = input.record;
         const auto response_vault = m_support.call_connector(
@@ -59,7 +60,7 @@ public:
         ::app::model::payment_methods::PaymentMethodDeleteResponse response{};
         response.set_payment_method_id(input.payment_method_id);
         response.set_deleted(true);
-        return PaymentMethodDeleteApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodDeleteResponse{std::move(response)};
     }
 
 private:

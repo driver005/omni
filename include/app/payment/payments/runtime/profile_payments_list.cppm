@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfilePaymentsListResult, core::error::AppError>
-    profile_payments_list(const ProfilePaymentsListInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentListResponseV2, core::error::AppError>
+        profile_payments_list(const ProfilePaymentsListInput& input) const
     {
         auto records = m_support.list_payments_scoped(input.data);
         if (const auto status_filter = m_support.query(input.data, "status");
@@ -48,7 +49,9 @@ public:
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return ProfilePaymentsListResult{m_support.payment_list_response(records)};
+        return ::app::model::payments::PaymentListResponseV2{
+            m_support.payment_list_response(records)
+        };
     }
 
 private:

@@ -33,8 +33,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteUserRoleResult, core::error::AppError>
-    delete_user_role(const DeleteUserRoleInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::user_role::DeleteUserRoleResponse, core::error::AppError>
+        delete_user_role(const DeleteUserRoleInput& input) const
     {
         const ::app::crypto::SecretString email_secret{input.request.get_email().get_value()};
         const auto user = m_support.active_user_by_email(email_secret.value());
@@ -117,7 +118,7 @@ public:
         ::app::dto::user_role::DeleteUserRoleResponse response{};
         response.set_is_email_sent(is_email_sent);
         m_support.track_flow("delete_user_role", "user_role.delete_user_role");
-        return DeleteUserRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

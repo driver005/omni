@@ -2,12 +2,15 @@ export module app_routing:offer_engine_result;
 
 import std;
 import core_serde;
-import app_dto;
 
 export namespace app::handlers::offer_engine {
 
-/** @brief Port of upstream `OfferEngineConnectivityResponse` (connectivity.rs:13-24). */
-class ConnectivityCheckResult
+/**
+ * @brief Port of upstream `OfferEngineConnectivityResponse` (connectivity.rs:13-24).
+ * Wire field list: enabled, reachable, status_code, detail — unchanged from the
+ * removed ConnectivityCheckResult wrapper.
+ */
+class ConnectivityCheckResponse : public serde::Serializer<ConnectivityCheckResponse>
 {
 public:
     void set_enabled(bool value) noexcept
@@ -56,40 +59,29 @@ public:
     std::string detail{};
 };
 
-/**
- * @brief Result of browse_offers. Success carries the typed BrowseOffersResponse DTO.
- * The two upstream API error shapes (IR_22 AccessForbidden / HE_00 InternalServerError)
- * are returned through the runtime's `std::unexpected<core::error::AppError>` channel:
- * real message in `message`, upstream code in `kind_name`, status from `get_status()`.
- */
-class BrowseOffersResult
+// The removed BrowseOffersResult wrapped the typed BrowseOffersResponse DTO;
+// runtimes now return that DTO directly. Both wrappers' field lists are captured
+// here so handlers keep the original wire keys and declaration order.
+template<class T>
+[[nodiscard]] consteval auto wire_fields()
 {
-public:
-    BrowseOffersResult() = default;
-
-    explicit BrowseOffersResult(::app::dto::offer_engine::BrowseOffersResponse value) noexcept :
-        m_response{std::move(value)}
+    using fields_type = decltype(serde::Serializable<T>::fields());
+    return []<std::size_t... I>(std::index_sequence<I...>)
     {
-    }
-
-    [[nodiscard]] const ::app::dto::offer_engine::BrowseOffersResponse&
-    get_response() const noexcept
-    {
-        return m_response;
-    }
-
-private:
-    ::app::dto::offer_engine::BrowseOffersResponse m_response{};
-};
+        return std::array<std::string_view, sizeof...(I)>{
+            std::tuple_element_t<I, fields_type>::name.string_view()...
+        };
+    }(std::make_index_sequence<std::tuple_size_v<fields_type>>{});
+}
 
 } // namespace app::handlers::offer_engine
 
 template<>
-struct serde::Serializable<::app::handlers::offer_engine::ConnectivityCheckResult>
+struct serde::Serializable<::app::handlers::offer_engine::ConnectivityCheckResponse>
 {
     static constexpr auto fields()
     {
-        using T = ::app::handlers::offer_engine::ConnectivityCheckResult;
+        using T = ::app::handlers::offer_engine::ConnectivityCheckResponse;
         return std::tuple{
             serde::FieldDesc<"enabled", &T::get_enabled, &T::set_enabled, serde::FieldOptions{}>{},
             serde::FieldDesc<

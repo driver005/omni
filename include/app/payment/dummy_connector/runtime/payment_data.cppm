@@ -1,6 +1,7 @@
 export module app_payment:dummy_connector_runtime_payment_data;
 
 import std;
+import core_serde;
 import interfaces;
 import core_error;
 import core_cache;
@@ -23,7 +24,7 @@ public:
     }
 
     // routes/dummy_connector.rs:87-105 -> core.rs:44-56 (payment_data).
-    [[nodiscard]] std::expected<DummyConnectorPaymentDataResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     payment_data(const PaymentDataInput& input) const
     {
         const auto payment = m_support.load_payment(input.payment_id);
@@ -33,7 +34,7 @@ public:
         }
         m_context.metrics().record_flow("DummyPaymentRetrieve");
         m_context.metrics().counter("DUMMY_CONNECTOR_PAYMENT_DATA").increment();
-        return DummyConnectorPaymentDataResult{m_support.payment_response(*payment)};
+        return serde::Value{m_support.payment_response(*payment)};
     }
 
 private:

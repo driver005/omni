@@ -4,11 +4,13 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
 
 import :webhooks_input;
+import :webhook_policy;
 import :webhooks_result;
 import :webhooks_runtime;
 import :webhooks_handlers_common;
@@ -23,14 +25,18 @@ export namespace app::handlers::webhooks {
 class WebhooksHandlersV2
 {
 public:
+    using RequestSupport = ::core::behavior::RequestSupport<::app::webhook::policy::WebhooksPolicy>;
+
     WebhooksHandlersV2(
         ::app::context::AppContext& ctx,
         WebhooksRuntime& runtime,
-        WebhooksInputSupport& input_support
+        WebhooksInputSupport& input_support,
+        RequestSupport& request_support
     ) noexcept :
         m_context{ctx},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -42,8 +48,11 @@ public:
     {
         // 1. request -> Input.
         const auto ids = m_input_support.path_ids(req, true);
-        if (const auto auth_error =
-                m_input_support.authorize(req, AuthVariant::MERCHANT_AND_PROFILE_ID, ids)) {
+        if (const auto auth_error = m_request_support.authorize(
+                req,
+                "receive_incoming_webhook",
+                ::app::webhook::policy::kWebhooksMerchantProfileAuth
+            )) {
             res.set_status((*auth_error).get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -58,7 +67,7 @@ public:
             "WEBHOOK_V2_RECEIVED"
         };
 
-        // 2. Input -> Result.
+        // 2. Input -> WebhookAck envelope.
         auto result = m_runtime.receive_incoming_webhook_v2(input);
         if (!result) {
             res.set_status((result.error()).get_status());
@@ -67,8 +76,8 @@ public:
             return;
         }
 
-        // 3. Result -> response.
-        const auto& ack = result->get_ack();
+        // 3. Ack -> response.
+        const auto& ack = *result;
         if (ack.kind() == AckKind::STATUS_OK) {
             res.set_status(interfaces::io::types::Status::OK);
             res.set_body(std::vector<std::byte>{});
@@ -79,18 +88,18 @@ public:
             }
             res.add_header("content-type", ack.mime());
             res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", result->get_body()));
+            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
             send();
         } else if (ack.kind() == AckKind::JSON_WITH_HEADERS) {
             for (const auto& [name, value]: ack.headers()) {
                 res.add_header(name, value);
             }
             res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", result->get_body()));
+            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
             send();
         } else {
             res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", result->get_body()));
+            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
             send();
         }
     }
@@ -187,6 +196,7 @@ private:
     ::app::context::AppContext& m_context;
     WebhooksRuntime& m_runtime;
     WebhooksInputSupport& m_input_support;
+    RequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::webhooks

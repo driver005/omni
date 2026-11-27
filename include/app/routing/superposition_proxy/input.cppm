@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import core_cache;
 import core_router;
 import app_context;
@@ -13,6 +14,8 @@ import app_crypto;
 import app_dto;
 import app_model;
 import utils_openapi;
+
+import :policy;
 
 export namespace app::handlers::superposition_proxy {
 
@@ -421,16 +424,7 @@ public:
         }
     }
 
-    // ── Path / query helpers ──────────────────────────────────────────────
-    [[nodiscard]] std::string last_path_segment(interfaces::io::IRequest& req) const
-    {
-        const auto segments = ::app::http::RequestPath{}(req);
-        if (segments.count() == 0U) {
-            return {};
-        }
-        return std::string{segments.at(segments.count() - 1U).value_or("")};
-    }
-
+    // ── Query helpers ──────────────────────────────────────────────
     [[nodiscard]] QueryPairs query_pairs(interfaces::io::IRequest& req) const
     {
         std::vector<std::pair<std::string, std::string>> pairs{};
@@ -681,5 +675,43 @@ private:
 
     ::app::context::AppContext& m_context;
 };
+
+/**
+ * @brief Domain policy: upstream ProfileSuperpositionConfig* auth, including the
+ * AccessForbidden wire error mapping.
+ */
+class SuperpositionProxyPolicy
+{
+public:
+    explicit SuperpositionProxyPolicy(SuperpositionProxyInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize_request(req, operation);
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope& scope) const
+    {
+        return ::app::routing::policy::scope_error(scope);
+    }
+
+private:
+    SuperpositionProxyInputSupport& m_support;
+};
+
+using SuperpositionProxyRequestSupport = ::core::behavior::RequestSupport<SuperpositionProxyPolicy>;
 
 } // namespace app::handlers::superposition_proxy

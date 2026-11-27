@@ -37,8 +37,9 @@ public:
 
     /** @brief Port of `verify_merchant_creds_for_applepay`
      *  (core/verification.rs:11-93). */
-    [[nodiscard]] std::expected<ApplePayMerchantRegistrationResult, core::error::AppError>
-    verify_merchant_creds_for_applepay(const ApplePayMerchantRegistrationInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::verifications::ApplepayMerchantResponse, core::error::AppError>
+        verify_merchant_creds_for_applepay(const ApplePayMerchantRegistrationInput& input) const
     {
         const auto& domain_names = input.request.get_domain_names();
         const auto& merchant_connector_id = input.request.get_merchant_connector_account_id();
@@ -104,7 +105,7 @@ public:
 
         // #[instrument(fields(flow = ?Flow::Verification))] on the route.
         m_context.metrics().record_flow("Verification");
-        return ApplePayMerchantRegistrationResult{response_dto};
+        return response_dto;
     }
 
 private:

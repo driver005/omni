@@ -24,8 +24,10 @@ public:
     explicit GsmRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -38,7 +40,9 @@ public:
 private:
     GsmRuntime m_runtime;            // SINGLE runtime instance — shared mutable state.
     GsmInputSupport m_input_support; // SINGLE input helper.
-    GsmHandlersV1 m_v1;              // holds AppContext&, GsmRuntime&, GsmInputSupport&.
+    GsmPolicy m_policy;
+    GsmRequestSupport m_request_support;
+    GsmHandlersV1 m_v1; // holds AppContext&, GsmRuntime&, GsmInputSupport&.
     GsmHandlersV2 m_v2;
 };
 

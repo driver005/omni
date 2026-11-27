@@ -30,9 +30,11 @@ public:
         m_context{context},
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support},
-        m_common{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support},
+        m_common{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -47,7 +49,9 @@ private:
     ::app::context::AppContext& m_context;
     RoutingRuntime m_runtime;            // SINGLE runtime instance.
     RoutingInputSupport m_input_support; // SINGLE input helper.
-    RoutingHandlersV1 m_v1;              // holds AppContext& + Runtime& + InputSupport&.
+    RoutingPolicy m_policy;
+    RoutingRequestSupport m_request_support;
+    RoutingHandlersV1 m_v1; // holds AppContext& + Runtime& + InputSupport&.
     RoutingHandlersV2 m_v2;
     RoutingHandlersCommon m_common;
 };

@@ -21,13 +21,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsAggregatesProfileResult, core::error::AppError>
-    aggregates_profile(const RefundsAggregatesProfileInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
+        aggregates_profile(const RefundsAggregatesProfileInput& input) const
     {
         m_context.metrics().record_flow("refund_profile_aggregates");
         m_context.metrics().counter("refunds_profile_aggregates_total").increment();
 
-        return RefundsAggregatesProfileResult{m_support.get_aggregates_for_refunds(
+        return ::app::model::refunds::RefundAggregateResponse{m_support.get_aggregates_for_refunds(
             input.facts,
             input.start_time,
             input.end_time,

@@ -1,6 +1,7 @@
 export module app_dto;
 
 import core_serde;
+import core_behavior;
 
 export import :admin;
 export import :analytics;

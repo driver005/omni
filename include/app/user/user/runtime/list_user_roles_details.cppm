@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListUserRolesDetailsResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_user_roles_details(const ListUserRolesDetailsInput& input) const
     {
         std::string set_cookie{};
@@ -110,7 +110,7 @@ public:
         m_context.metrics().counter("user.list_user_roles_details").increment();
 
         auto document = ResponseDocument::from(response);
-        return ListUserRolesDetailsResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

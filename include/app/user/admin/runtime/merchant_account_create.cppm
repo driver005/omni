@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
     create(const MerchantAccountCreateInput& input) const
     {
         std::string merchant_id{input.request.get_merchant_id().get_value()};
@@ -131,7 +131,7 @@ public:
         m_context.metrics().record_flow("merchant_account_create");
         m_context.metrics().counter("admin.merchant_account_create").increment();
         m_context.events().publish("merchant_account.created", serde::Ser::encode_json(response));
-        return MerchantAccountCreateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

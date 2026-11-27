@@ -26,7 +26,7 @@ public:
 
     // ── Core: retrieve ─────────────────────────────────────────────────────
     // find_gsm_rule + to_not_found_response (core/gsm.rs:28-46).
-    [[nodiscard]] std::expected<GetGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     get(const GetGsmRuleInput& input) const
     {
         const auto& in = input.request;
@@ -66,7 +66,7 @@ public:
         m_context.events().publish("gsm.rule.retrieved", m_support.audit_payload("retrieved", key));
         m_context.metrics().record_flow("GsmRuleRetrieve");
         m_context.metrics().counter("GSM_RULE_RETRIEVED").increment();
-        return GetGsmRuleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

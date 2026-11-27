@@ -31,9 +31,13 @@ public:
         // affect authorization (AppAuthorizer consults them only for
         // HEADER_MERCHANT/HEADER_ORG); the registry row is recorded as a shared-file
         // follow-up so its evidence matches upstream exactly.
-        const auto authorized = m_input_support.authorize_execute_decision_rule(req);
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        const auto auth_error = m_request_support.authorize(
+            req,
+            "execute_decision_rule",
+            spec_for("execute_decision_rule")
+        );
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -63,7 +67,7 @@ public:
             return;
         }
 
-        ExecuteDecisionRuleInput input{*parsed, authorized.merchant_id};
+        ExecuteDecisionRuleInput input{*parsed, m_policy.last().merchant_id};
         auto result = m_runtime.execute_decision_rule(input);
         if (!result) {
             const auto& error = result.error();
@@ -72,7 +76,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -99,7 +103,9 @@ public:
     explicit ThreeDsDecisionRuleRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
@@ -107,6 +113,8 @@ private:
     ::app::context::AppContext& m_context;
     ThreeDsDecisionRuleRuntime m_runtime;
     ThreeDsDecisionRuleInputSupport m_input_support;
+    ThreeDsDecisionRulePolicy m_policy;
+    ThreeDsDecisionRuleRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::three_ds_decision_rule

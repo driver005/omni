@@ -3,6 +3,7 @@ export module app_store:files_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -81,28 +82,6 @@ public:
     {
         const auto header = ::app::http::merchant_id_from_header{}(req);
         return header.empty() ? auth.merchant_id() : header;
-    }
-
-    /** @brief Extract `:file_id` from the `/files/{file_id}` v1 routes. */
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
-    file_id_from_path(interfaces::io::IRequest& req) const
-    {
-        const auto segments = ::app::http::RequestPath{}(req);
-        for (std::size_t i{0}; i < segments.count(); ++i) {
-            if (segments.at(i).value_or(std::string_view{}) != "files") {
-                continue;
-            }
-            for (std::size_t j{i + 1}; j < segments.count(); ++j) {
-                const auto candidate = segments.at(j).value_or(std::string_view{});
-                if (!candidate.empty()) {
-                    return std::string{candidate};
-                }
-            }
-        }
-        return std::unexpected{core::error::AppErrorBuilder{}(
-            core::error::AppErrorKind::INVALID_REQUEST,
-            "missing file id in path"
-        )};
     }
 
     /**
@@ -402,6 +381,49 @@ private:
     }
 
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * Files auth (API key with connected-scope allowed) and the processor merchant
+ * scope are the domain rules; the file id is a generic path segment and the
+ * dispute id is a generic query parameter, both owned by RequestSupport.
+ */
+class FilesPolicy
+{
+public:
+    explicit FilesPolicy(FilesInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec; // the files rule is registry-derived and fixed by operation.
+        return m_support.authorize_request(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope result;
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        result.merchant_id = m_support.scope_merchant_id(req, auth);
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
+private:
+    FilesInputSupport& m_support;
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

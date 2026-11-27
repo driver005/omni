@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: retrieve ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     retrieve(const PayoutsRetrieveInput& input) const
     {
         m_context.metrics().record_flow("payout_retrieve");
@@ -84,7 +84,7 @@ public:
 
         auto response = m_support.response_from_record(record);
         m_support.enrich_response(response, record, input.expand_attempts);
-        return PayoutsRetrieveResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

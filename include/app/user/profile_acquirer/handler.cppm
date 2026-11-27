@@ -72,8 +72,8 @@ public:
         // Upstream extracts payload.profile_id before `server_wrap` and binds it to
         // JWTAuthProfileFromRoute (routes/profile_acquirer.rs:20,39-44).
         const std::string profile_id = std::string{parsed->get_profile_id().get_value()};
-        if (const auto denied =
-                m_input_support.authorize(req, "create_profile_acquirer", profile_id)) {
+        m_policy.bind_profile_id(profile_id);
+        if (const auto denied = m_request_support.authorize(req, "create_profile_acquirer", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -88,7 +88,12 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kProfileAcquirerResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -144,8 +149,8 @@ public:
 
         // Upstream binds the route profile_id to JWTAuthProfileFromRoute
         // (routes/profile_acquirer.rs:87-91).
-        if (const auto denied =
-                m_input_support.authorize(req, "profile_acquirer_update", profile_id)) {
+        m_policy.bind_profile_id(profile_id);
+        if (const auto denied = m_request_support.authorize(req, "profile_acquirer_update", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -160,7 +165,12 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        auto encoded = result->serialize(kProfileAcquirerResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -210,6 +220,10 @@ public:
 private:
     ProfileAcquirerRuntime m_runtime;
     ProfileAcquirerInputSupport m_input_support;
+
+    ProfileAcquirerPolicy m_policy{m_input_support};
+
+    ProfileAcquirerRequestSupport m_request_support{m_policy};
 };
 
 } // namespace app::handlers::profile_acquirer

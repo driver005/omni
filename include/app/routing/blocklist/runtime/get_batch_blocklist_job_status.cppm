@@ -36,8 +36,9 @@ public:
     }
 
     // batch.rs:553-590 get_batch_blocklist_job_status.
-    [[nodiscard]] std::expected<GetBatchBlocklistJobStatusResult, core::error::AppError>
-    get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BatchBlocklistJobStatusResponse, core::error::AppError>
+        get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
     {
         auto response = m_support.job_status_of(input.stored);
         // batch.rs:581-589: the only place a download link is minted.
@@ -53,7 +54,7 @@ public:
         }
         m_support.emit("blocklist.job.status", response);
         m_support.track("get_batch_blocklist_job_status");
-        return GetBatchBlocklistJobStatusResult{response};
+        return response;
     }
 
 private:

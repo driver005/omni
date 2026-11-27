@@ -18,7 +18,6 @@ import app_services;
 import utils_openapi;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
 
 export namespace app::handlers::superposition_proxy {
 

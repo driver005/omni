@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountKvStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
     status(const MerchantAccountKvStatusInput& input) const
     {
         const auto found =
@@ -55,7 +55,7 @@ public:
 
         m_context.metrics().record_flow("merchant_account_kv_status");
         m_context.metrics().counter("admin.merchant_account_kv_status").increment();
-        return MerchantAccountKvStatusResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

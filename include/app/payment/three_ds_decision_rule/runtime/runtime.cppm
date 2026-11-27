@@ -19,7 +19,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ExecuteDecisionRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse,
+        core::error::AppError>
     execute_decision_rule(const ExecuteDecisionRuleInput& input) const
     {
         return m_execute_decision_rule.execute_decision_rule(input);

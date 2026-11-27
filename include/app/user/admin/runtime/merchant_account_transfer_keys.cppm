@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<MerchantAccountTransferKeysResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::TransferKeyResponse, core::error::AppError>
     transfer(const MerchantAccountTransferKeysInput& input) const
     {
         if (const auto duplicate =
@@ -82,7 +82,7 @@ public:
             "merchant_account.keys_transferred",
             serde::Ser::encode_json(response)
         );
-        return MerchantAccountTransferKeysResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

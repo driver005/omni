@@ -20,11 +20,13 @@ public:
     UserHandlersV2(
         ::app::context::AppContext& ctx,
         UserRuntime& runtime,
-        UserInputSupport& input
+        UserInputSupport& input,
+        UserRequestSupport& request_support
     ) noexcept :
         m_context{ctx},
         m_runtime{runtime},
-        m_input_support{input}
+        m_input_support{input},
+        m_request_support{request_support}
     {
     }
 
@@ -109,7 +111,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "user_signin")) {
+        if (const auto auth_error = m_request_support.authorize(req, "user_signin", {})) {
             res.set_status((*auth_error).get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -144,11 +146,11 @@ public:
             send();
             return;
         }
-        if (!result->get_set_cookie().empty()) {
-            res.add_set_cookie(result->get_set_cookie());
+        if (!result->second.empty()) {
+            res.add_set_cookie(result->second);
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", result->first));
         send();
     }
 
@@ -158,7 +160,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "verify_email")) {
+        if (const auto auth_error = m_request_support.authorize(req, "verify_email", {})) {
             res.set_status((*auth_error).get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -193,11 +195,11 @@ public:
             send();
             return;
         }
-        if (!result->get_set_cookie().empty()) {
-            res.add_set_cookie(result->get_set_cookie());
+        if (!result->second.empty()) {
+            res.add_set_cookie(result->second);
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", result->first));
         send();
     }
 
@@ -207,7 +209,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "list_user_roles_details")) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "list_user_roles_details", {})) {
             res.set_status((*auth_error).get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -245,11 +248,11 @@ public:
             send();
             return;
         }
-        if (!result->get_set_cookie().empty()) {
-            res.add_set_cookie(result->get_set_cookie());
+        if (!result->second.empty()) {
+            res.add_set_cookie(result->second);
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", result->first));
         send();
     }
 
@@ -260,7 +263,7 @@ public:
     )
     {
         if (const auto auth_error =
-                m_input_support.authorize(req, "list_merchants_for_user_in_org")) {
+                m_request_support.authorize(req, "list_merchants_for_user_in_org", {})) {
             res.set_status((*auth_error).get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth_error));
             send();
@@ -298,11 +301,11 @@ public:
             send();
             return;
         }
-        if (!result->get_set_cookie().empty()) {
-            res.add_set_cookie(result->get_set_cookie());
+        if (!result->second.empty()) {
+            res.add_set_cookie(result->second);
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", result->first));
         send();
     }
 
@@ -310,6 +313,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRuntime& m_runtime;
     UserInputSupport& m_input_support;
+    UserRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::user

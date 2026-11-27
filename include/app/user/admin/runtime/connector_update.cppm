@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectorUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
     update(const ConnectorUpdateInput& input) const
     {
         auto found = m_context.repository().find_merchant_connector_by_string(input.connector_id);
@@ -93,7 +93,7 @@ public:
         m_context.metrics().record_flow("connector_update");
         m_context.metrics().counter("admin.connector_update").increment();
         m_context.events().publish("merchant_connector.updated", serde::Ser::encode_json(response));
-        return ConnectorUpdateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

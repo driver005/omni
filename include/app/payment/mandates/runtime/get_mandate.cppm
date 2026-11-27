@@ -21,7 +21,7 @@ public:
 
     // ───────────────────────── Core: get_mandate ─────────────────────────
     // core/mandate.rs:33-58 (find + MandateResponse::from_db_mandate).
-    [[nodiscard]] std::expected<GetMandateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::mandates::MandateResponse, core::error::AppError>
     get_mandate(const GetMandateInput& input) const
     {
         m_support.record_flow(
@@ -42,7 +42,7 @@ public:
 
         // MandateResponse::from_db_mandate (types/api/mandates.rs:39-135) is
         // encoded by the handler via serde::Ser::serialize into the exact wire shape.
-        return GetMandateResult{m_support.from_db_mandate(*record)};
+        return ::app::model::mandates::MandateResponse{m_support.from_db_mandate(*record)};
     }
 
 private:

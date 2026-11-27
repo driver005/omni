@@ -2,9 +2,11 @@ module;
 export module app_model:organization;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -12,7 +14,7 @@ import boost.ut;
 export namespace app::model::organization {
 
 class ConvertOrganizationToPlatformRequest :
-    public serde::Serializer<ConvertOrganizationToPlatformRequest>
+    public core::behavior::Serializer<ConvertOrganizationToPlatformRequest>
 {
 public:
     void set_platform_merchant_name(std::optional<std::string> value)
@@ -28,7 +30,7 @@ public:
     std::optional<std::string> platform_merchant_name{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -44,7 +46,7 @@ public:
     std::string value{};
 };
 
-class OrganizationIdValue : public serde::Serializer<OrganizationIdValue>
+class OrganizationIdValue : public core::behavior::Serializer<OrganizationIdValue>
 {
 public:
     void set_value(std::string v)
@@ -60,7 +62,7 @@ public:
     std::string value{};
 };
 
-class OrganizationTypeValue : public serde::Serializer<OrganizationTypeValue>
+class OrganizationTypeValue : public core::behavior::Serializer<OrganizationTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -76,7 +78,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -92,7 +94,7 @@ public:
     std::string value{};
 };
 
-class SecretSerdeValueValue : public serde::Serializer<SecretSerdeValueValue>
+class SecretSerdeValueValue : public core::behavior::Serializer<SecretSerdeValueValue>
 {
 public:
     void set_value(std::string v)
@@ -109,7 +111,7 @@ public:
 };
 
 class ConvertOrganizationToPlatformResponse :
-    public serde::Serializer<ConvertOrganizationToPlatformResponse>
+    public core::behavior::Serializer<ConvertOrganizationToPlatformResponse>
 {
 public:
     void set_organization_id(OrganizationIdValue value)
@@ -147,7 +149,7 @@ public:
     MerchantIdValue platform_merchant_id{};
 };
 
-class OrganizationCreateRequest : public serde::Serializer<OrganizationCreateRequest>
+class OrganizationCreateRequest : public core::behavior::Serializer<OrganizationCreateRequest>
 {
 public:
     void set_organization_name(std::string value)
@@ -186,7 +188,7 @@ public:
     std::optional<SecretSerdeValueValue> metadata{};
 };
 
-class OrganizationId : public serde::Serializer<OrganizationId>
+class OrganizationId : public core::behavior::Serializer<OrganizationId>
 {
 public:
     void set_organization_id(OrganizationIdValue value)
@@ -202,7 +204,7 @@ public:
     OrganizationIdValue organization_id{};
 };
 
-class OrganizationNew : public serde::Serializer<OrganizationNew>
+class OrganizationNew : public core::behavior::Serializer<OrganizationNew>
 {
 public:
     void set_org_id(OrganizationIdValue value)
@@ -240,7 +242,7 @@ public:
     std::optional<std::string> org_name{};
 };
 
-class OrganizationResponse : public serde::Serializer<OrganizationResponse>
+class OrganizationResponse : public core::behavior::Serializer<OrganizationResponse>
 {
 public:
     void set_organization_id(OrganizationIdValue value)
@@ -323,7 +325,7 @@ public:
     std::optional<OrganizationTypeValue> organization_type{};
 };
 
-class OrganizationUpdateRequest : public serde::Serializer<OrganizationUpdateRequest>
+class OrganizationUpdateRequest : public core::behavior::Serializer<OrganizationUpdateRequest>
 {
 public:
     void set_organization_name(std::optional<std::string> value)

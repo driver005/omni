@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TerminateTwoFactorAuthResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     terminate_two_factor_auth(const TerminateTwoFactorAuthInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         purpose.set_value("LOGIN");
         response.set_token(token);
         response.set_token_type(purpose);
-        return TerminateTwoFactorAuthResult{ResponseDocument::from(response), set_cookie};
+        return std::pair{ResponseDocument::from(response), set_cookie};
     }
 
 private:

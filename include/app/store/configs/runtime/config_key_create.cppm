@@ -2,6 +2,7 @@ export module app_store:configs_runtime_config_key_create;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_context_core;
 
@@ -21,7 +22,7 @@ public:
     }
 
     /** Upstream `config_key_create` -> `set_config` (core/configs.rs:22-34). */
-    [[nodiscard]] std::expected<ConfigKeyCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create(const ConfigKeyCreateInput& input) const
     {
         // set_config: store.insert_config(ConfigNew { key: config.key,
@@ -38,10 +39,16 @@ public:
         m_support.record_flow("CreateConfigKey");
 
         // Json(config.foreign_into()) emits the stored row as {key, value}.
-        ConfigKeyCreateResult result{};
-        result.set_key(created->get_config_key());
-        result.set_value(created->get_config_value());
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{config_key_wire_fields()[0]},
+            serde::Value{created->get_config_key()}
+        );
+        document.insert(
+            std::string{config_key_wire_fields()[1]},
+            serde::Value{created->get_config_value()}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

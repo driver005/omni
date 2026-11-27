@@ -36,7 +36,7 @@ public:
     }
 
     // ───────────────────────── Core: create ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
     create(const PayoutsCreateInput& input) const
     {
         m_context.metrics().record_flow("payout_create");
@@ -228,7 +228,7 @@ public:
             response.set_description(*input.request.description);
         }
 
-        return PayoutsCreateResult{response};
+        return ::app::model::payouts::PayoutCreateResponse{response};
     }
 
 private:

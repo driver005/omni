@@ -2,6 +2,7 @@ export module app_store:configs_runtime_config_key_update;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_context_core;
 
@@ -21,7 +22,7 @@ public:
     }
 
     /** Upstream `config_key_update` -> `update_config` (core/configs.rs:46-56). */
-    [[nodiscard]] std::expected<ConfigKeyUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     update(const ConfigKeyUpdateInput& input) const
     {
         // update_config: store.update_config_by_key(&key, update.foreign_into())
@@ -40,10 +41,16 @@ public:
         m_support.record_flow("ConfigKeyUpdate");
 
         // Json(config.foreign_into()) of the updated row.
-        ConfigKeyUpdateResult result{};
-        result.set_key(existing->get_config_key());
-        result.set_value(existing->get_config_value());
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{config_key_wire_fields()[0]},
+            serde::Value{existing->get_config_key()}
+        );
+        document.insert(
+            std::string{config_key_wire_fields()[1]},
+            serde::Value{existing->get_config_value()}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

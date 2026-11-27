@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -107,4 +108,66 @@ struct RevenueRecoveryCancelInput
     ::app::auth::AuthContext auth{};
 };
 
+/** @brief Request policy for the revenue_recovery domain: wraps the domain auth rules. */
+class RevenueRecoveryPolicy
+{
+public:
+    RevenueRecoveryPolicy(
+        ::app::context::AppContext& /*context*/,
+        RevenueRecoveryInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        m_last = m_support.authorize_cancel(req);
+        if (!*m_last) {
+            return std::optional<core::error::AppError>{(*m_last).error()};
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] const std::expected<::app::auth::AuthContext, core::error::AppError>&
+    last() const noexcept
+    {
+        return *m_last;
+    }
+
+private:
+    RevenueRecoveryInputSupport& m_support;
+    mutable std::optional<std::expected<::app::auth::AuthContext, core::error::AppError>> m_last{};
+};
+
+using RevenueRecoveryRequestSupport = core::behavior::RequestSupport<RevenueRecoveryPolicy>;
+using RevenueRecoveryPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] RevenueRecoveryPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return RevenueRecoveryPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::revenue_recovery

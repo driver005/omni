@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,24 +20,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CustomersCreateResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create(const CustomersCreateRouteInput& input) const
     {
         auto value = create_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersCreateResult{std::move(*value)};
+        return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<CustomersCreateV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_v2(const CustomersCreateRouteInput& input) const
     {
         auto value = create_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersCreateV2Result{std::move(*value)};
+        return std::move(*value);
     }
 
 private:

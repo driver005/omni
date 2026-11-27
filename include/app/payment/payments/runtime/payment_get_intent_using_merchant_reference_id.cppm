@@ -32,7 +32,7 @@ public:
     }
 
     [[nodiscard]] std::
-        expected<PaymentGetIntentUsingMerchantReferenceIdResult, core::error::AppError>
+        expected<::app::model::payments::PaymentListResponseV2, core::error::AppError>
         payment_get_intent_using_merchant_reference_id(
             const PaymentGetIntentUsingMerchantReferenceIdInput& input
         ) const
@@ -51,7 +51,7 @@ public:
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return PaymentGetIntentUsingMerchantReferenceIdResult{
+        return ::app::model::payments::PaymentListResponseV2{
             m_support.payment_list_response(records)
         };
     }

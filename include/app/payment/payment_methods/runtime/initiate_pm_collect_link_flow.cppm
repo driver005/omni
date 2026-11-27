@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<InitiatePmCollectLinkFlowResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodCollectLinkResponse,
+        core::error::AppError>
     initiate_pm_collect_link_flow(const InitiatePmCollectLinkFlowInput& input) const
     {
         const std::string collect_id = m_context.ids().payment_id("pml_");
@@ -65,7 +67,7 @@ public:
         if (input.request.get_return_url()) {
             response.set_return_url(*input.request.get_return_url());
         }
-        return InitiatePmCollectLinkFlowResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodCollectLinkResponse{std::move(response)};
     }
 
 private:

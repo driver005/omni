@@ -3,6 +3,7 @@ export module app_auth:hypersense_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -37,15 +38,23 @@ public:
         std::function<void()> send
     )
     {
-        GetTokenInput input{m_input_support.bearer_token(req), m_input_support.merchant_id(req)};
+        GetTokenInput input{
+            m_input_support.bearer_token(req),
+            m_request_support.scope(req).merchant_id
+        };
         auto result = m_runtime.get_token(input);
         if (!result) {
             const auto& error = result.error();
             error.send(res, send);
             return;
         }
+        auto encoded = result->serialize(get_token_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -82,8 +91,13 @@ public:
             error.send(res, send);
             return;
         }
+        auto encoded = result->serialize(HypersenseVerifyResponse::wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -177,6 +191,8 @@ public:
     explicit HypersenseRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{&context},
         m_runtime{context},
+        m_policy{},
+        m_request_support{m_policy},
         m_input_support{context}
     {
     }
@@ -184,6 +200,8 @@ public:
 private:
     ::app::context::AppContext* m_context{nullptr};
     HypersenseRuntime m_runtime;
+    HypersensePolicy m_policy;
+    core::behavior::RequestSupport<HypersensePolicy> m_request_support;
     HypersenseInputSupport m_input_support;
 };
 

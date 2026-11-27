@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListOrgsForUserResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_orgs_for_user(const ListOrgsForUserInput& input) const
     {
         std::string set_cookie{};
@@ -60,7 +60,7 @@ public:
             response.push_back(std::move(item));
         }
         auto document = ResponseDocument::from(response);
-        return ListOrgsForUserResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

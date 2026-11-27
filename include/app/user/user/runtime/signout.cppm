@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SignoutResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     signout(const SignoutInput& input) const
     {
         std::string set_cookie{};
@@ -63,7 +63,7 @@ public:
         m_context.metrics().record_flow("signout");
         m_context.metrics().counter("user.signout").increment();
 
-        return SignoutResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

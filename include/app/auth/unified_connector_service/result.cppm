@@ -6,9 +6,25 @@ import core_serde;
 export namespace app::handlers::unified_connector_service {
 
 /** @brief Typed upstream KillSwitchStatusResponse wire shape. */
-class KillSwitchStatusResult
+class KillSwitchStatusResponse : public serde::Serializer<KillSwitchStatusResponse>
 {
 public:
+    /**
+     * @brief Exact wire fields, captured from the retired KillSwitchStatusResult Serializable
+     * specialization in declaration order.
+     */
+    [[nodiscard]] static constexpr auto wire_fields()
+    {
+        return std::array<std::string_view, 6>{
+            "rollout_scope",
+            "counter",
+            "threshold",
+            "decline_counter",
+            "connector_decline_threshold",
+            "tripped"
+        };
+    }
+
     void set_rollout_scope(std::string value)
     {
         m_rollout_scope = std::move(value);
@@ -79,28 +95,8 @@ private:
     bool m_tripped{false};
 };
 
-/** @brief ApplicationResponse::StatusOk: typed empty-object document. */
-class ResetKillSwitchResult
-{
-public:
-    ResetKillSwitchResult() :
-        m_document{serde::Value{serde::Value::Object{}}}
-    {
-    }
-
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
-    }
-
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
-
-private:
-    serde::Value m_document{};
-};
+// ApplicationResponse::StatusOk: the runtime returns a typed empty-object serde::Value
+// document, which the handler writes through Ser::serialize.
 
 } // namespace app::handlers::unified_connector_service
 
@@ -109,9 +105,9 @@ private:
 // Ser::serialize. Field names and order match the original
 // KillSwitchStatusResponse exactly, including JSON null for absent thresholds.
 template<>
-struct serde::Serializable<::app::handlers::unified_connector_service::KillSwitchStatusResult>
+struct serde::Serializable<::app::handlers::unified_connector_service::KillSwitchStatusResponse>
 {
-    using Response = ::app::handlers::unified_connector_service::KillSwitchStatusResult;
+    using Response = ::app::handlers::unified_connector_service::KillSwitchStatusResponse;
 
     static constexpr auto fields()
     {

@@ -2,6 +2,7 @@ export module app_store:configs_runtime_config_key_delete;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_context_core;
 
@@ -21,7 +22,7 @@ public:
     }
 
     /** Upstream `config_key_delete` -> `config_delete` (core/configs.rs:58-65). */
-    [[nodiscard]] std::expected<ConfigKeyDeleteResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     remove(const ConfigKeyDeleteInput& input) const
     {
         // config_delete: store.delete_config_by_key(&key)
@@ -37,10 +38,16 @@ public:
         m_support.record_flow("ConfigKeyDelete");
 
         // Json(config.foreign_into()) of the deleted row.
-        ConfigKeyDeleteResult result{};
-        result.set_key(record->get_config_key());
-        result.set_value(record->get_config_value());
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{config_key_wire_fields()[0]},
+            serde::Value{record->get_config_key()}
+        );
+        document.insert(
+            std::string{config_key_wire_fields()[1]},
+            serde::Value{record->get_config_value()}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

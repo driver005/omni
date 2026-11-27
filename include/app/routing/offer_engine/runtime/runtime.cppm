@@ -1,6 +1,7 @@
 export module app_routing:offer_engine_runtime;
 
 import std;
+import app_dto;
 import core_error;
 import app_context;
 
@@ -22,14 +23,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectivityCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<ConnectivityCheckResponse, core::error::AppError>
     connectivity_check(const ConnectivityCheckInput& input) const
     {
         return m_connectivity_check.connectivity_check(input);
     }
 
-    [[nodiscard]] std::expected<BrowseOffersResult, core::error::AppError>
-    browse_offers(const BrowseOffersInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::offer_engine::BrowseOffersResponse, core::error::AppError>
+        browse_offers(const BrowseOffersInput& input) const
     {
         return m_browse_offers.browse_offers(input);
     }

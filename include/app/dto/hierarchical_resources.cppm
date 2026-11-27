@@ -4,9 +4,11 @@ module;
 export module app_dto:hierarchical_resources;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -19,7 +21,7 @@ export namespace app::dto::hierarchical_resources {
 // `FieldConverter` specializations below). These typed wrappers keep the
 // compile-time distinction while emitting the exact upstream wire shape.
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -35,7 +37,7 @@ public:
     std::string value{};
 };
 
-class ResourceIdValue : public serde::Serializer<ResourceIdValue>
+class ResourceIdValue : public core::behavior::Serializer<ResourceIdValue>
 {
 public:
     void set_value(std::string v)
@@ -51,7 +53,7 @@ public:
     std::string value{};
 };
 
-class ResourceRequestorTypeValue : public serde::Serializer<ResourceRequestorTypeValue>
+class ResourceRequestorTypeValue : public core::behavior::Serializer<ResourceRequestorTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -67,7 +69,7 @@ public:
     std::string value{};
 };
 
-class ResourceTypeValue : public serde::Serializer<ResourceTypeValue>
+class ResourceTypeValue : public core::behavior::Serializer<ResourceTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -83,7 +85,7 @@ public:
     std::string value{};
 };
 
-class UploadCertificateRequest : public serde::Serializer<UploadCertificateRequest>
+class UploadCertificateRequest : public core::behavior::Serializer<UploadCertificateRequest>
 {
 public:
     void set_certificate(std::string value)
@@ -100,7 +102,7 @@ public:
 };
 
 class GenerateHierarchicalResourceRequest :
-    public serde::Serializer<GenerateHierarchicalResourceRequest>
+    public core::behavior::Serializer<GenerateHierarchicalResourceRequest>
 {
 public:
     void set_resource_type(ResourceTypeValue value)
@@ -122,7 +124,7 @@ public:
 // are emitted as embedded JSON objects, never as escaped strings.
 
 class GenerateHierarchicalResourceResponse :
-    public serde::Serializer<GenerateHierarchicalResourceResponse>
+    public core::behavior::Serializer<GenerateHierarchicalResourceResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -149,7 +151,7 @@ public:
     serde::RawJson data{};
 };
 
-class HierarchicalResourceSummary : public serde::Serializer<HierarchicalResourceSummary>
+class HierarchicalResourceSummary : public core::behavior::Serializer<HierarchicalResourceSummary>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -209,7 +211,8 @@ public:
     bool is_linked{};
 };
 
-class LinkHierarchicalResourceRequest : public serde::Serializer<LinkHierarchicalResourceRequest>
+class LinkHierarchicalResourceRequest :
+    public core::behavior::Serializer<LinkHierarchicalResourceRequest>
 {
 public:
     void set_requestor_type(ResourceRequestorTypeValue value)
@@ -236,7 +239,8 @@ public:
     std::string requestor_id{};
 };
 
-class LinkHierarchicalResourceResponse : public serde::Serializer<LinkHierarchicalResourceResponse>
+class LinkHierarchicalResourceResponse :
+    public core::behavior::Serializer<LinkHierarchicalResourceResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -252,7 +256,8 @@ public:
     ResourceIdValue id{};
 };
 
-class ListHierarchicalResourcesRequest : public serde::Serializer<ListHierarchicalResourcesRequest>
+class ListHierarchicalResourcesRequest :
+    public core::behavior::Serializer<ListHierarchicalResourcesRequest>
 {
 public:
     void set_resource_type(ResourceTypeValue value)
@@ -290,7 +295,7 @@ public:
     std::optional<ResourceRequestorTypeValue> scope_type{};
 };
 
-class UploadCertificateResponse : public serde::Serializer<UploadCertificateResponse>
+class UploadCertificateResponse : public core::behavior::Serializer<UploadCertificateResponse>
 {
 public:
     void set_id(ResourceIdValue value)
@@ -318,7 +323,7 @@ public:
 };
 
 class ListHierarchicalResourcesResponse :
-    public serde::Serializer<ListHierarchicalResourcesResponse>
+    public core::behavior::Serializer<ListHierarchicalResourcesResponse>
 {
 public:
     void set_resources(std::vector<HierarchicalResourceSummary> value)

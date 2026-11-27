@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsCreateIntentResult, core::error::AppError>
-    payments_create_intent(const PaymentsCreateIntentInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsIntentResponse, core::error::AppError>
+        payments_create_intent(const PaymentsCreateIntentInput& input) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
@@ -55,7 +56,9 @@ public:
                 "routing decision rejected"
             )};
         }
-        return PaymentsCreateIntentResult{m_support.v2_intent_response(pipeline)};
+        return ::app::model::payments::PaymentsIntentResponse{
+            m_support.v2_intent_response(pipeline)
+        };
     }
 
 private:

@@ -25,7 +25,7 @@ public:
     //  - cache closed -> InternalServerError ("Failed to get redis connection").
     //  - key miss -> PollNotFound.
     //  - parse_enum("PollStatus") failure -> InternalServerError.
-    [[nodiscard]] std::expected<RetrievePollStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::poll::PollResponseWire, core::error::AppError>
     retrieve_poll_status(const RetrievePollStatusInput& input) const
     {
         // routes/poll.rs:27,33,51-52 — Flow::RetrievePollStatus.
@@ -48,7 +48,7 @@ public:
         }
 
         m_support.record_retrieve_metrics(input.request_poll_id);
-        return RetrievePollStatusResult{
+        return ::app::dto::poll::PollResponseWire{
             m_support.encode_poll_response(input.request_poll_id, *status)
         };
     }

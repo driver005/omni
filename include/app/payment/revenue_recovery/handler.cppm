@@ -22,8 +22,13 @@ public:
     explicit RevenueRecoveryRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_v2{context, m_runtime}
+        m_v2{context, m_runtime},
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v2.bind_request_support(m_request_support);
+        m_v2.bind_policy(m_policy);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -35,6 +40,9 @@ private:
     ::app::context::AppContext& m_context;
     RevenueRecoveryRuntime m_runtime;
     RevenueRecoveryHandlersV2 m_v2;
+    RevenueRecoveryInputSupport m_input_support;
+    RevenueRecoveryPolicy m_policy;
+    RevenueRecoveryRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::revenue_recovery

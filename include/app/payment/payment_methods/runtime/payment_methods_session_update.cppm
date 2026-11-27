@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodsSessionUpdateResult, core::error::AppError>
-    payment_methods_session_update(const PaymentMethodsSessionUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
+        payment_methods_session_update(const PaymentMethodsSessionUpdateInput& input) const
     {
         auto record = input.record;
         const auto& parsed = input.request;
@@ -77,7 +78,7 @@ public:
         ::app::model::payment_methods::StorageTypeValue storage{};
         storage.set_value("payment_methods");
         response.set_storage_type(std::move(storage));
-        return PaymentMethodsSessionUpdateResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodSessionResponse{std::move(response)};
     }
 
 private:

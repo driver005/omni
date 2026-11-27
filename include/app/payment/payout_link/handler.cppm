@@ -45,7 +45,7 @@ public:
         // &auth::MerchantIdAuth(merchant_id) (routes/payout_link.rs:35): bind the
         // principal to the path merchant id and reject a conflicting header.
         const auto denied =
-            m_input_support.authorize_operation(req, "render_payout_link", path_ids->first);
+            m_request_support.authorize(req, "render_payout_link", spec_for("render_payout_link"));
         if (denied.has_value()) {
             const auto& error = *denied;
             error.send(res, send);
@@ -72,7 +72,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -100,13 +100,17 @@ public:
 
     explicit PayoutLinkRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     PayoutLinkRuntime m_runtime;
     PayoutLinkInputSupport m_input_support;
+    PayoutLinkPolicy m_policy;
+    PayoutLinkRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::payout_link

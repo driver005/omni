@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoutingUnlinkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     routing_unlink_config(const RoutingInput& input) const
     {
         auto profile = input.profile_id;
@@ -64,7 +64,7 @@ public:
         m_support.set_active_id(profile, txn, std::string{});
         auto response = m_support.dictionary_record(*record);
         m_support.track("routing_unlink_config");
-        return RoutingUnlinkConfigResult{ResponseDocument::from(response)};
+        return ResponseDocument::from(response);
     }
 
 private:

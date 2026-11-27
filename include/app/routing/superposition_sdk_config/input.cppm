@@ -4,10 +4,13 @@ import std;
 import interfaces;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_auth;
 import app_http;
 import app_crypto;
+
+import :policy;
 
 export namespace app::handlers::superposition_sdk_config {
 
@@ -280,15 +283,12 @@ public:
 
     // Upstream check_sdk_auth_and_get_auth (authentication.rs:6037-6066) plus the SDK-header
     // claim decoding of SdkAuthorization::decode (domain_models/sdk_auth.rs:134-236).
-    [[nodiscard]] std::expected<::app::auth::AuthContext, core::error::AppError> authorize_request(
+    [[nodiscard]] ::app::auth::AuthContext build_context(
         interfaces::io::IRequest& req,
-        std::string_view operation,
         std::string_view client_secret,
-        const std::optional<SdkAuth>& sdk_auth,
-        bool has_authorization_header
+        const std::optional<SdkAuth>& sdk_auth
     ) const
     {
-        const auto rule = m_context.auth_rules().rule_for(operation);
         auto ctx = ::app::auth::AuthContextBuilder{}(req);
 
         // SdkAuthorization::decode yields a base64-wrapped comma-separated key=value map.
@@ -334,10 +334,18 @@ public:
                 ctx.set_token(::app::auth::BearerToken{std::string{*publishable_key}});
             }
         }
+        return ctx;
+    }
 
-        const auto auth = m_context.authorizer().authorize_route(ctx, rule);
-        if (auth) {
-            return std::unexpected{*auth};
+    [[nodiscard]] std::optional<core::error::AppError> authorize_context(
+        const ::app::auth::AuthContext& ctx,
+        std::string_view operation,
+        bool has_authorization_header
+    ) const
+    {
+        const auto rule = m_context.auth_rules().rule_for(operation);
+        if (const auto auth = m_context.authorizer().authorize_route(ctx, rule)) {
+            return auth;
         }
 
         // Upstream HeaderAuth(PublishableKeyAuth) for the profile route (routes:119-122);
@@ -346,10 +354,10 @@ public:
             (operation == "get_sdk_config" && has_authorization_header)) {
             const auto publishable_key = ctx.claim(::app::auth::kClaimPublishableKey);
             if (!publishable_key.has_value() || publishable_key->empty()) {
-                return std::unexpected{m_errors.unauthorized()};
+                return m_errors.unauthorized();
             }
         }
-        return ctx;
+        return std::nullopt;
     }
 
     [[nodiscard]] std::string provider_merchant_id(interfaces::io::IRequest& req) const
@@ -403,6 +411,49 @@ private:
     ::app::context::AppContext& m_context;
     SdkConfigErrorSupport m_errors{};
 };
+
+/**
+ * @brief Domain policy for the SDK-config routes. The SDK header/query claims are
+ * resolved exactly as in the original flow before the registry rule is applied.
+ */
+class SuperpositionSdkConfigPolicy
+{
+public:
+    explicit SuperpositionSdkConfigPolicy(SuperpositionSdkConfigInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const ::core::behavior::AuthSpec&
+    ) const
+    {
+        const auto header = ::app::http::HeaderReader{}.get(req, "authorization");
+        const auto sdk_auth = m_support.decode_sdk_authorization(header);
+        const auto secret = ::app::http::RequestQuery{}(req).get("client_secret");
+        const auto ctx = m_support.build_context(req, secret.value_or(std::string{}), sdk_auth);
+        return m_support.authorize_context(ctx, operation, !header.empty());
+    }
+
+    [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const ::core::behavior::Scope& scope) const
+    {
+        return ::app::routing::policy::scope_error(scope);
+    }
+
+private:
+    SuperpositionSdkConfigInputSupport& m_support;
+};
+
+using SuperpositionSdkConfigRequestSupport =
+    ::core::behavior::RequestSupport<SuperpositionSdkConfigPolicy>;
 
 // ───────────────────────── Plain inputs ─────────────────────────
 // Each struct carries exactly what the old core call received.

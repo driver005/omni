@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetGroupsAndResourcesForRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<GroupsAndResourcesWire, core::error::AppError>
     get_groups_and_resources_for_role_from_token(
         const GetGroupsAndResourcesForRoleFromTokenInput& input
     ) const
@@ -67,7 +67,7 @@ public:
             "get_groups_and_resources_for_role_from_token",
             "user_role.get_groups_and_resources_for_role_from_token"
         );
-        return GetGroupsAndResourcesForRoleFromTokenResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

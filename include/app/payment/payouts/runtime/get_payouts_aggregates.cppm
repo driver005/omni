@@ -36,8 +36,9 @@ public:
     }
 
     // ───────────────────────── Core: get_payouts_aggregates ─────────────────────────
-    [[nodiscard]] std::expected<PayoutsAggregatesResult, core::error::AppError>
-    get_payouts_aggregates(const PayoutsAggregatesInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
+        get_payouts_aggregates(const PayoutsAggregatesInput& input) const
     {
         // Upstream input is `web::Query<TimeRange>` (`payouts.rs:708`); no body is read.
         m_context.metrics().record_flow("get_payouts_aggregates");
@@ -47,7 +48,7 @@ public:
         }
 
         auto response = m_support.aggregate_response(m_support.scoped_records("", input.range));
-        return PayoutsAggregatesResult{response};
+        return ::app::model::payouts::PayoutsAggregateResponse{response};
     }
 
 private:

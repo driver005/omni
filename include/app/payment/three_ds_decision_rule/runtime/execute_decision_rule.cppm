@@ -25,7 +25,9 @@ public:
 
     // Port of core::three_ds_decision_rule::execute_three_ds_decision_rule
     // (core/three_ds_decision_rule.rs:23-39).
-    [[nodiscard]] std::expected<ExecuteDecisionRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse,
+        core::error::AppError>
     execute_decision_rule(const ExecuteDecisionRuleInput& input) const
     {
         auto decision =
@@ -35,7 +37,7 @@ public:
         }
         Dto::ThreeDsDecisionRuleExecuteResponse response{};
         response.set_decision(*decision);
-        return ExecuteDecisionRuleResult{response};
+        return ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse{response};
     }
 
 private:

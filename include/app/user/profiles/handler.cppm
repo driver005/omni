@@ -30,8 +30,8 @@ public:
     explicit ProfilesRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -44,6 +44,10 @@ public:
 private:
     ProfilesRuntime m_runtime;            // SINGLE runtime instance — shared mutable state.
     ProfilesInputSupport m_input_support; // SINGLE input helper.
+
+    ProfilesPolicy m_policy{m_input_support};
+
+    ProfilesRequestSupport m_request_support{m_policy};
     ProfilesHandlersV1 m_v1; // holds AppContext&, ProfilesRuntime&, ProfilesInputSupport&.
     ProfilesHandlersV2 m_v2;
 };

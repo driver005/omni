@@ -1,6 +1,7 @@
 export module app_payment:fraud_check_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -497,6 +498,55 @@ struct FrmFulfillmentInput
     std::string org_id{};
 };
 
+/** @brief Request policy for the fraud_check domain: wraps the domain auth rules. */
+class FraudCheckPolicy
+{
+public:
+    FraudCheckPolicy(::app::context::AppContext& /*context*/, FrmInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return m_support.authorize_frm_fulfillment(req);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    FrmInputSupport& m_support;
+};
+
+using FraudCheckRequestSupport = core::behavior::RequestSupport<FraudCheckPolicy>;
+using FraudCheckPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] FraudCheckPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return FraudCheckPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::fraud_check
 
 template<>

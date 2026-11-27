@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListUsersInLineageResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ListUsersInEntityWire>, core::error::AppError>
     list_users_in_lineage(const ListUsersInLineageInput& input) const
     {
         const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
@@ -81,7 +81,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track_flow("list_users_in_lineage", "user_role.list_users_in_lineage");
-        return ListUsersInLineageResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

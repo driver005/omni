@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<DeleteMerchantAccountResult, core::error::AppError>
-    remove(const DeleteMerchantAccountInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::admin::MerchantAccountDeleteResponse, core::error::AppError>
+        remove(const DeleteMerchantAccountInput& input) const
     {
         const auto found =
             m_context.repository().find_merchant_account_by_string(input.merchant_id);
@@ -67,7 +68,7 @@ public:
 
         m_context.metrics().record_flow("delete_merchant_account");
         m_context.metrics().counter("admin.delete_merchant_account").increment();
-        return DeleteMerchantAccountResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

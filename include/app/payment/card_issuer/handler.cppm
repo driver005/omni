@@ -39,7 +39,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "add_card_issuer")) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "add_card_issuer", spec_for("add_card_issuer"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -74,7 +75,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -85,14 +86,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "update_card_issuer")) {
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "update_card_issuer", spec_for("update_card_issuer"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
 
         // Upstream `web::Path<id_type::CardIssuerId>` extraction (path id only).
-        const std::string id = m_input_support.id_from_request(req);
+        const std::string id = m_request_support.path(req, 1);
 
         const auto body = req.body_as_string();
         if (body.empty()) {
@@ -123,7 +126,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -134,7 +137,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize(req, "delete_card_issuer")) {
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "delete_card_issuer", spec_for("delete_card_issuer"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -142,7 +147,7 @@ public:
 
         // Upstream builds `CardIssuerDeleteRequest { id: path.into_inner() }` —
         // the id comes from the path only (no body fallback upstream).
-        const std::string id = m_input_support.id_from_request(req);
+        const std::string id = m_request_support.path(req, 1);
 
         CardIssuerDeleteInput input{id};
         auto result = m_runtime.remove(input);
@@ -153,7 +158,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -170,7 +175,9 @@ public:
         // The `list_jwt_fallback` flag models upstream `auth_type`: the
         // ApiKeyAuth branch (default) OR the JWTAuth(MerchantAccountRead) branch,
         // both with allow_connected:false and allow_platform:false.
-        if (const auto auth_error = m_input_support.authorize(req, "list_card_issuers", true)) {
+        if (const auto auth_error =
+                m_request_support
+                    .authorize(req, "list_card_issuers", spec_for("list_card_issuers"))) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -185,7 +192,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -257,13 +264,17 @@ public:
 
     explicit CardIssuerRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     CardIssuerRuntime m_runtime;
     CardIssuerInputSupport m_input_support;
+    CardIssuerPolicy m_policy;
+    CardIssuerRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::card_issuer

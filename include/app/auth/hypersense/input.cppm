@@ -2,6 +2,8 @@ export module app_auth:hypersense_input;
 
 import std;
 import interfaces;
+import core_error;
+import core_behavior;
 import app_context;
 import app_dto;
 import app_context_core;
@@ -32,14 +34,44 @@ public:
         return bearer.is_empty() ? std::string{} : std::string{bearer.value()};
     }
 
-    /** @brief Locally issued dashboard tokens carry the merchant id as a header. */
-    [[nodiscard]] std::string merchant_id(interfaces::io::IRequest& req) const
-    {
-        return ::app::http::merchant_id_from_header{}(req);
-    }
-
 private:
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy for the dashboard-no-permission hypersense routes.
+ *
+ * These routes apply no declarative authorization; the bearer credential and
+ * merchant identity are request facts exposed through RequestSupport::scope.
+ */
+class HypersensePolicy
+{
+public:
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)req;
+        (void)operation;
+        (void)spec;
+        return std::nullopt;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope out{};
+        out.merchant_id = ::app::http::merchant_id_from_header{}(req);
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope& scope) const
+    {
+        (void)scope;
+        return std::nullopt;
+    }
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

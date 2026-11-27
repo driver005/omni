@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ContractBasedRoutingSetupConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     contract_based_routing_setup_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -29,9 +29,7 @@ public:
             // Disable path (core:2772-2785): drop the contract algorithm ref.
             m_support.put_dynamic_ref(profile, R"({"contract_based_routing":null})");
             m_support.track("contract_based_routing_setup_config");
-            return ContractBasedRoutingSetupConfigResult{
-                ResponseDocument::empty()
-            }; // StatusOk document
+            return ResponseDocument::empty(); // StatusOk document
         }
         if (input.body.empty()) {
             return std::unexpected{m_support.error(
@@ -78,16 +76,14 @@ public:
             )
         );
         m_support.track("contract_based_routing_setup_config");
-        return ContractBasedRoutingSetupConfigResult{
-            ResponseDocument::from(m_support.dictionary_record(
-                algorithm,
-                profile,
-                "Contract based dynamic routing algorithm",
-                "",
-                "contract_based",
-                "payment"
-            ))
-        };
+        return ResponseDocument::from(m_support.dictionary_record(
+            algorithm,
+            profile,
+            "Contract based dynamic routing algorithm",
+            "",
+            "contract_based",
+            "payment"
+        ));
     }
 
 private:

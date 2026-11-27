@@ -37,8 +37,9 @@ public:
 
     // ───────────────────────── Core: create ─────────────────────────
     // unified_authentication_service.rs:712-875 authentication_create_core.
-    [[nodiscard]] std::expected<AuthenticationCreateResult, core::error::AppError>
-    create(const AuthenticationCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::authentication::AuthenticationResponse, core::error::AppError>
+        create(const AuthenticationCreateInput& input) const
     {
         // :721-732 get_profile_from_business_details + validate_profile_id_from_auth_layer.
         std::string profile_id{};
@@ -153,7 +154,7 @@ public:
 
         // :861-870 AuthenticationResponse::foreign_try_from (round-trip decrypt of
         // customer_details via crypto_operation DecryptOptional, :835-859).
-        return AuthenticationCreateResult{m_support.build_create_response(record, input.request)};
+        return m_support.build_create_response(record, input.request);
     }
 
 private:

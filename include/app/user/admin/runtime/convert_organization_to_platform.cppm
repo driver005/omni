@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConvertOrganizationToPlatformResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::organization::ConvertOrganizationToPlatformResponse,
+        core::error::AppError>
     convert(const ConvertOrganizationToPlatformInput& input) const
     {
         if (m_context.config_store().get_value("platform", "enabled").value_or("true") == "false") {
@@ -108,7 +110,7 @@ public:
             "organization.converted_to_platform",
             serde::Ser::encode_json(response)
         );
-        return ConvertOrganizationToPlatformResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

@@ -21,7 +21,7 @@ public:
 
     // Upstream POST /webhooks/network_token_requestor/ref, NoAuth
     // (routes/webhooks.rs:172-194, app.rs:2346-2351).
-    [[nodiscard]] std::expected<ReceiveNetworkTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
     receive_network_token(const ReceiveNetworkTokenInput& input) const
     {
         (void)m_context;
@@ -36,7 +36,7 @@ public:
         if (!ack) {
             return std::unexpected{ack.error()};
         }
-        return ReceiveNetworkTokenResult{std::move(*ack)};
+        return std::move(*ack);
     }
 
 private:

@@ -37,7 +37,7 @@ public:
     }
 
     /** @brief core::api_keys::retrieve_api_key (261-275). */
-    [[nodiscard]] std::expected<ApiKeyRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
     retrieve(const ApiKeyRetrieveInput& input) const
     {
         const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
@@ -47,7 +47,7 @@ public:
 
         m_context.metrics().record_flow("ApiKeyRetrieve");
         m_context.metrics().counter("API_KEY_RETRIEVED").increment();
-        return ApiKeyRetrieveResult{m_support.to_retrieve_response(*found)};
+        return m_support.to_retrieve_response(*found);
     }
 
 private:

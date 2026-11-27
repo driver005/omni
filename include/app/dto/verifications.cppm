@@ -2,16 +2,18 @@ module;
 export module app_dto:verifications;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::verifications {
 
-class ApplepayMerchantResponse : public serde::Serializer<ApplepayMerchantResponse>
+class ApplepayMerchantResponse : public core::behavior::Serializer<ApplepayMerchantResponse>
 {
 public:
     void set_status_message(std::string value)
@@ -28,7 +30,7 @@ public:
 };
 
 class ApplepayMerchantVerificationConfigs :
-    public serde::Serializer<ApplepayMerchantVerificationConfigs>
+    public core::behavior::Serializer<ApplepayMerchantVerificationConfigs>
 {
 public:
     void set_domain_names(std::vector<std::string> value)
@@ -77,7 +79,8 @@ public:
     std::string partner_merchant_name{};
 };
 
-class ApplepayVerifiedDomainsResponse : public serde::Serializer<ApplepayVerifiedDomainsResponse>
+class ApplepayVerifiedDomainsResponse :
+    public core::behavior::Serializer<ApplepayVerifiedDomainsResponse>
 {
 public:
     void set_verified_domains(std::vector<std::string> value)
@@ -93,7 +96,8 @@ public:
     std::vector<std::string> verified_domains{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantConnectorAccountIdValue :
+    public core::behavior::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -109,7 +113,7 @@ public:
     std::string value{};
 };
 
-class MerchantIdValue : public serde::Serializer<MerchantIdValue>
+class MerchantIdValue : public core::behavior::Serializer<MerchantIdValue>
 {
 public:
     void set_value(std::string v)
@@ -125,7 +129,8 @@ public:
     std::string value{};
 };
 
-class ApplepayGetVerifiedDomainsParam : public serde::Serializer<ApplepayGetVerifiedDomainsParam>
+class ApplepayGetVerifiedDomainsParam :
+    public core::behavior::Serializer<ApplepayGetVerifiedDomainsParam>
 {
 public:
     void set_merchant_id(MerchantIdValue value)
@@ -154,7 +159,7 @@ public:
 };
 
 class ApplepayMerchantVerificationRequest :
-    public serde::Serializer<ApplepayMerchantVerificationRequest>
+    public core::behavior::Serializer<ApplepayMerchantVerificationRequest>
 {
 public:
     void set_domain_names(std::vector<std::string> value)

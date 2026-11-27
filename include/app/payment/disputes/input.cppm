@@ -1,6 +1,7 @@
 export module app_payment:disputes_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -67,13 +68,7 @@ inline constexpr DisputeAuthSpec
     kPlatformMerchantRead{Perm::DISPUTE_READ, "MerchantDisputeRead", false, true, false, true};
 
 /** @brief Caller identity resolved from the authenticated context. */
-struct DisputeScope
-{
-    std::string merchant_id{};
-    std::string profile_id{};
-    std::string org_id{};
-    std::string connected_merchant_id{};
-};
+using DisputeScope = core::behavior::Scope;
 
 /** @brief Parse/auth/path/query support for the disputes handlers. */
 class DisputesInputSupport
@@ -638,7 +633,94 @@ struct GetDisputesAggregateProfileInput
     std::optional<std::vector<std::string>> profile_id_list{};
 };
 
+/** @brief Request policy for the disputes domain: wraps the domain auth rules. */
+class DisputesPolicy
+{
+public:
+    DisputesPolicy(::app::context::AppContext& /*context*/, DisputesInputSupport& support) noexcept
+        :
+        m_support{support}
+    {
+    }
 
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        const auto ctx = ::app::auth::AuthContextBuilder{}(req);
+        DisputeAuthSpec dspec{};
+        dspec.upstream_permission = spec.permission;
+        dspec.allow_connected = spec.allow_connected;
+        dspec.allow_platform = spec.allow_platform;
+        dspec.allow_connected_scope_operation = spec.allow_connected_scope_operation;
+        dspec.allow_platform_self_operation = spec.allow_platform_self_operation;
+        if (spec.permission == "MerchantDisputeRead") {
+            dspec.permission = Perm::DISPUTE_READ;
+        } else if (spec.permission == "ProfileDisputeWrite") {
+            dspec.permission = Perm::DISPUTE_WRITE;
+        } else {
+            dspec.permission = Perm::DISPUTE_READ;
+        }
+        return m_support.authorize_dispute(req, ctx, dspec);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        const auto dispute = m_support.scope_of(auth, ::app::http::RequestQuery{}(req), req);
+        core::behavior::Scope result;
+        result.merchant_id = dispute.merchant_id;
+        result.profile_id = dispute.profile_id;
+        result.org_id = dispute.org_id;
+        result.connected_merchant_id = dispute.connected_merchant_id;
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope& value) const
+    {
+        DisputeScope dispute;
+        dispute.merchant_id = value.merchant_id;
+        dispute.profile_id = value.profile_id;
+        dispute.org_id = value.org_id;
+        dispute.connected_merchant_id = value.connected_merchant_id;
+        return m_support.scope_error(dispute, false);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    platform_scope_error(const core::behavior::Scope& value) const
+    {
+        DisputeScope dispute;
+        dispute.merchant_id = value.merchant_id;
+        dispute.profile_id = value.profile_id;
+        dispute.org_id = value.org_id;
+        dispute.connected_merchant_id = value.connected_merchant_id;
+        return m_support.scope_error(dispute, true);
+    }
+
+private:
+    DisputesInputSupport& m_support;
+};
+
+using DisputesRequestSupport = core::behavior::RequestSupport<DisputesPolicy>;
+using DisputesPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] DisputesPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return DisputesPolicySpec{.permission = operation};
+}
+
+inline constexpr DisputesPolicySpec
+    kDisputeProfileReadSpec{"ProfileDisputeRead", true, false, true, false};
+inline constexpr DisputesPolicySpec
+    kDisputeProfileWriteSpec{"ProfileDisputeWrite", true, false, true, false};
+inline constexpr DisputesPolicySpec
+    kDisputeMerchantReadSpec{"MerchantDisputeRead", true, false, true, false};
+inline constexpr DisputesPolicySpec
+    kDisputePlatformMerchantReadSpec{"MerchantDisputeRead", false, true, false, true};
 } // namespace app::handlers::disputes
 
 template<>

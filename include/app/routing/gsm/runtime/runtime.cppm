@@ -1,6 +1,7 @@
 export module app_routing:gsm_runtime;
 
 import std;
+import app_dto;
 import core_error;
 import app_context;
 
@@ -26,25 +27,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     create(const CreateGsmRuleInput& input) const
     {
         return m_create.create(input);
     }
 
-    [[nodiscard]] std::expected<GetGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     get(const GetGsmRuleInput& input) const
     {
         return m_get.get(input);
     }
 
-    [[nodiscard]] std::expected<UpdateGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
     update(const UpdateGsmRuleInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<DeleteGsmRuleResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::gsm::GsmDeleteResponse, core::error::AppError>
     remove(const DeleteGsmRuleInput& input) const
     {
         return m_delete.remove(input);

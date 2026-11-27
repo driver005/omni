@@ -37,7 +37,9 @@ public:
      * Upstream: routes/revenue_recovery_data_backfill.rs:75-104 ->
      * core/revenue_recovery/retry_stats/migration.rs:21-130.
      */
-    [[nodiscard]] std::expected<RetryStatsMigrationResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse,
+        core::error::AppError>
     retry_stats_migration(const RetryStatsMigrationInput& input) const
     {
         using Error = ::app::dto::revenue_recovery_data_backfill::CsvParsingError;
@@ -111,7 +113,9 @@ public:
         response.set_processed_records(processed_records);
         response.set_failed_records(row_errors.size());
         response.set_row_errors(std::move(row_errors));
-        return RetryStatsMigrationResult{std::move(response)};
+        return ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse{
+            std::move(response)
+        };
     }
 
 private:

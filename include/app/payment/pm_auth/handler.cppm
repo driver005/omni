@@ -48,9 +48,10 @@ public:
         // Upstream uses SDK / client-secret API-key auth (routes/pm_auth.rs:20-45,86-111).
         // Base rule comes from RouteAuthRegistry; SDK and client-secret schemes are accepted
         // as alternates so both v1 SDK calls and v2 client-secret calls authenticate.
-        const auto auth = m_input_support.authorize_request(req, body, "link_token_create");
-        if (auth.error) {
-            const auto& error = *auth.error;
+        const auto auth_error =
+            m_request_support.authorize(req, "link_token_create", spec_for("link_token_create"));
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -78,7 +79,8 @@ public:
             return;
         }
         // routes/pm_auth.rs:62-64 — auth.client_secret overwrites payload.client_secret.
-        if (const auto authenticated_secret = auth.context.claim(::app::auth::kClaimClientSecret);
+        if (const auto authenticated_secret =
+                m_policy.last().context.claim(::app::auth::kClaimClientSecret);
             authenticated_secret.has_value() && !authenticated_secret->empty()) {
             parsed->set_client_secret(std::string{*authenticated_secret});
         }
@@ -97,7 +99,8 @@ public:
         const auto client_platform = ::app::http::HeaderReader{}.get(req, "x-client-platform");
         const auto app_id = ::app::http::HeaderReader{}.get(req, "x-app-id");
         const auto redirect_uri = ::app::http::HeaderReader{}.get(req, "x-redirect-uri");
-        LinkTokenCreateInput input{*parsed, *merchant, auth, client_platform, app_id, redirect_uri};
+        LinkTokenCreateInput
+            input{*parsed, *merchant, m_policy.last(), client_platform, app_id, redirect_uri};
         auto result = m_runtime.link_token_create(input);
         if (!result) {
             const auto& error = result.error();
@@ -105,7 +108,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -125,9 +128,10 @@ public:
             return;
         }
 
-        const auto auth = m_input_support.authorize_request(req, body, "exchange_token");
-        if (auth.error) {
-            const auto& error = *auth.error;
+        const auto auth_error =
+            m_request_support.authorize(req, "exchange_token", spec_for("exchange_token"));
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -155,7 +159,8 @@ public:
             return;
         }
         // routes/pm_auth.rs:119-121 — auth.client_secret overwrites payload.client_secret.
-        if (const auto authenticated_secret = auth.context.claim(::app::auth::kClaimClientSecret);
+        if (const auto authenticated_secret =
+                m_policy.last().context.claim(::app::auth::kClaimClientSecret);
             authenticated_secret.has_value() && !authenticated_secret->empty()) {
             parsed->set_client_secret(std::string{*authenticated_secret});
         }
@@ -173,7 +178,7 @@ public:
             return;
         }
 
-        ExchangeTokenInput input{*parsed, *merchant, auth, body};
+        ExchangeTokenInput input{*parsed, *merchant, m_policy.last(), body};
         auto result = m_runtime.exchange_token(input);
         if (!result) {
             const auto& error = result.error();
@@ -181,7 +186,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -226,13 +231,17 @@ public:
 
     explicit PmAuthRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     PmAuthRuntime m_runtime;
     PmAuthInputSupport m_input_support;
+    PmAuthPolicy m_policy;
+    PmAuthRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::pm_auth

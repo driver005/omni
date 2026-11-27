@@ -22,8 +22,12 @@ public:
         m_runtime{context},
         m_input_support{context},
         m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v2{context, m_runtime, m_input_support},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v1.bind_request_support(m_request_support);
+        m_v2.bind_request_support(m_request_support);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -38,6 +42,8 @@ private:
     RefundsInputSupport m_input_support;
     RefundsHandlersV1 m_v1;
     RefundsHandlersV2 m_v2;
+    RefundsPolicy m_policy;
+    RefundsRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::refunds

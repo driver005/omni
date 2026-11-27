@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ForgotPasswordResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     forgot_password(const ForgotPasswordInput& input) const
     {
         std::string set_cookie{};
@@ -63,7 +63,7 @@ public:
         m_context.metrics().record_flow("forgot_password");
         m_context.metrics().counter("user.forgot_password").increment();
 
-        return ForgotPasswordResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

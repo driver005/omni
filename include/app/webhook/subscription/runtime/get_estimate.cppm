@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -26,7 +25,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetEstimateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_estimate(const GetEstimateInput& input) const
     {
         if (const auto failure =
@@ -62,7 +61,7 @@ public:
         );
 
         m_support.metrics_for("subscription.get_estimate");
-        return GetEstimateResult{m_support.build_estimate_response(estimate, input.profile_id)};
+        return m_support.build_estimate_response(estimate, input.profile_id);
     }
 
 private:

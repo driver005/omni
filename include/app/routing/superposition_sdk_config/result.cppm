@@ -2,70 +2,21 @@ export module app_routing:superposition_sdk_config_result;
 
 import std;
 import core_serde;
-import app_dto;
 
 export namespace app::handlers::superposition_sdk_config {
 
-// Both routes encode the exact SuperPositionConfigResponse DTO the old core built and
-// encoded, so field names, order and wrapper types stay byte-identical. The Serializable
-// specialization reuses the DTO's FieldDesc tuple; those descriptors apply to the derived
-// object just as they do to the base object.
-
-class GetSdkConfigResult : public ::app::dto::superposition_sdk_config::SuperPositionConfigResponse
+// The removed Result wrappers reused SuperPositionConfigResponse's FieldDesc
+// tuple. This constant captures that exact wire field list.
+template<class T>
+[[nodiscard]] consteval auto wire_fields()
 {
-public:
-    GetSdkConfigResult() = default;
-
-    explicit GetSdkConfigResult(
-        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse value
-    ) noexcept :
-        SuperPositionConfigResponse{std::move(value)}
+    using fields_type = decltype(serde::Serializable<T>::fields());
+    return []<std::size_t... I>(std::index_sequence<I...>)
     {
-    }
-};
-
-class GetProfileSdkConfigResult :
-    public ::app::dto::superposition_sdk_config::SuperPositionConfigResponse
-{
-public:
-    GetProfileSdkConfigResult() = default;
-
-    explicit GetProfileSdkConfigResult(
-        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse value
-    ) noexcept :
-        SuperPositionConfigResponse{std::move(value)}
-    {
-    }
-};
+        return std::array<std::string_view, sizeof...(I)>{
+            std::tuple_element_t<I, fields_type>::name.string_view()...
+        };
+    }(std::make_index_sequence<std::tuple_size_v<fields_type>>{});
+}
 
 } // namespace app::handlers::superposition_sdk_config
-
-template<>
-struct serde::Serializable<::app::handlers::superposition_sdk_config::GetSdkConfigResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::superposition_sdk_config::SuperPositionConfigResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_sdk_config_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::superposition_sdk_config::GetProfileSdkConfigResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::superposition_sdk_config::SuperPositionConfigResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "get_profile_sdk_config_result";
-    }
-};

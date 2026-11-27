@@ -36,7 +36,7 @@ public:
     }
 
     // Upstream create_email_client() is a free helper (app.rs:477-495), no HTTP auth.
-    [[nodiscard]] std::expected<CreateEmailClientResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_email_client(const CreateEmailClientInput& input) const
     {
         // Upstream create_email_client(): choose from EmailClientConfigs
@@ -97,16 +97,31 @@ public:
         m_context.metrics().record_flow("CreateEmailClient");
         m_context.metrics().counter("EMAIL_CLIENT_CREATED").increment();
 
-        CreateEmailClientResult result{};
-        result.set_partition("app");
-        result.set_op("create_email_client");
-        result.set_client_id(client_id);
-        result.set_client_config(client_type);
-        result.set_proxy_url(proxy_url);
-        result.set_secret(secret.masked_as(::app::crypto::SecretFieldKind::ConnectorCredential));
-        result.set_key_configured(key_configured);
-        result.set_event_id(event_id);
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{create_email_client_wire_fields()[0]},
+            serde::Value{std::string{"app"}}
+        );
+        document.insert(
+            std::string{create_email_client_wire_fields()[1]},
+            serde::Value{std::string{"create_email_client"}}
+        );
+        document.insert(std::string{create_email_client_wire_fields()[2]}, serde::Value{client_id});
+        document.insert(
+            std::string{create_email_client_wire_fields()[3]},
+            serde::Value{client_type}
+        );
+        document.insert(std::string{create_email_client_wire_fields()[4]}, serde::Value{proxy_url});
+        document.insert(
+            std::string{create_email_client_wire_fields()[5]},
+            serde::Value{secret.masked_as(::app::crypto::SecretFieldKind::ConnectorCredential)}
+        );
+        document.insert(
+            std::string{create_email_client_wire_fields()[6]},
+            serde::Value{key_configured}
+        );
+        document.insert(std::string{create_email_client_wire_fields()[7]}, serde::Value{event_id});
+        return serde::Value{std::move(document)};
     }
 
 private:

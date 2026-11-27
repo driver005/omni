@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -29,11 +30,11 @@ public:
     ConfigsHandlersV1(
         ::app::context::AppContext& context,
         ConfigsRuntime& runtime,
-        ConfigsInputSupport& input_support
+        core::behavior::RequestSupport<ConfigsPolicy>& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_request_support{request_support}
     {
     }
 
@@ -46,7 +47,7 @@ public:
     {
         // 1. request -> Input.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:31) -> registry PLATFORM_ADMIN.
-        if (const auto auth_error = m_input_support.authorize_operation(req, "config_key_create")) {
+        if (const auto auth_error = m_request_support.authorize(req, "config_key_create", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -85,15 +86,16 @@ public:
     {
         // 1. request -> Input.
         // server_wrap auth: &InternalApiKeyAuth(ADMIN_API_AUTH) (routes/configs.rs:51).
-        if (const auto auth_error =
-                m_input_support.authorize_operation(req, "config_key_retrieve")) {
+        if (const auto auth_error = m_request_support.authorize(req, "config_key_retrieve", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
 
         // web::Path<String> key (routes/configs.rs:40); never read from the body.
-        const auto config_key = m_input_support.config_key_from_request(req);
+        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
+        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
+        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
         ConfigKeyRetrieveInput input{config_key};
 
         // 2. Input -> Result.
@@ -119,7 +121,7 @@ public:
     {
         // 1. request -> Input.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:74) -> registry PLATFORM_ADMIN.
-        if (const auto auth_error = m_input_support.authorize_operation(req, "config_key_update")) {
+        if (const auto auth_error = m_request_support.authorize(req, "config_key_update", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -135,7 +137,9 @@ public:
         }
 
         // payload.key = path.into_inner() (routes/configs.rs:65-66) — the path wins.
-        const auto config_key = m_input_support.config_key_from_request(req);
+        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
+        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
+        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
         ConfigKeyUpdateInput input{*parsed, config_key};
 
         // 2. Input -> Result.
@@ -161,14 +165,16 @@ public:
     {
         // 1. request -> Input.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:95) -> registry PLATFORM_ADMIN.
-        if (const auto auth_error = m_input_support.authorize_operation(req, "config_key_delete")) {
+        if (const auto auth_error = m_request_support.authorize(req, "config_key_delete", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
 
         // web::Path<String> key (routes/configs.rs:84).
-        const auto config_key = m_input_support.config_key_from_request(req);
+        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
+        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
+        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
         ConfigKeyDeleteInput input{config_key};
 
         // 2. Input -> Result.
@@ -263,7 +269,7 @@ private:
 
     ::app::context::AppContext& m_context;
     ConfigsRuntime& m_runtime;
-    ConfigsInputSupport& m_input_support;
+    core::behavior::RequestSupport<ConfigsPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::configs

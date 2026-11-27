@@ -36,8 +36,9 @@ public:
     }
 
     // routes/profile_acquirer.rs:11-50 -> core/profile_acquirer.rs:12-102.
-    [[nodiscard]] std::expected<CreateProfileAcquirerResult, core::error::AppError>
-    create(const CreateProfileAcquirerInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
+        create(const CreateProfileAcquirerInput& input) const
     {
         // core:20-26 — find_business_profile_by_profile_id -> ProfileNotFound.
         if (!m_support.profile_exists(input.profile_id)) {
@@ -93,7 +94,7 @@ public:
         m_context.metrics().record_flow("ProfileAcquirerCreate");
         m_context.metrics().counter("profile_acquirer_create").increment();
 
-        return CreateProfileAcquirerResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

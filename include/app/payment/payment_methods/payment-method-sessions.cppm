@@ -31,6 +31,15 @@ export namespace app::handlers::payment_methods {
 class PaymentMethodSessionsHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+        m_by_id.bind_request_support(support);
+        m_by_id_saved.bind_request_support(support);
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     PaymentMethodSessionsHandlers(
         ::app::context::AppContext& ctx,
         PaymentMethodsRuntime& runtime
@@ -88,7 +97,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "payment_methods_session_create");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "payment_methods_session_create",
+            spec_for("payment_methods_session_create")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -136,7 +149,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

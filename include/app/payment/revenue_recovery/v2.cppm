@@ -39,6 +39,20 @@ export namespace app::handlers::revenue_recovery {
 class RevenueRecoveryHandlersV2
 {
 public:
+    void bind_request_support(RevenueRecoveryRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RevenueRecoveryRequestSupport* m_request_support{nullptr};
+
+    void bind_policy(RevenueRecoveryPolicy& p) noexcept
+    {
+        m_policy = &p;
+    }
+
+    RevenueRecoveryPolicy* m_policy{nullptr};
+
     /**
      * Upstream: revenue_recovery_cancel (routes/revenue_recovery.rs:10-39).
      * Flow::RevenueRecoveryCancel, server_wrap, LockAction::NotApplicable (:16, :19-37).
@@ -50,12 +64,18 @@ public:
     )
     {
         // 1. request -> Input: auth (incl. both check_merchant_access flags) + path.
-        auto auth = m_input_support.authorize_cancel(req);
-        if (!auth) {
-            const auto& error = auth.error();
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "revenue_recovery_cancel",
+            spec_for("revenue_recovery_cancel")
+        );
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
+
+        const auto& auth = m_policy->last();
 
         // server_wrap(Flow::RevenueRecoveryCancel, LockAction::NotApplicable): flow and
         // counter are recorded in-process; no API lock is taken because upstream declares
@@ -84,7 +104,7 @@ public:
 
         // 3. Result -> response (direct writes).
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

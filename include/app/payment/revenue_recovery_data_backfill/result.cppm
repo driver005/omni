@@ -6,129 +6,66 @@ import app_dto;
 
 export namespace app::handlers::revenue_recovery_data_backfill {
 
-// The two processed-count responses inherit their wire fields from the exact DTO
-// the old core built and encoded, so field names, order and wrapper types stay
-// byte-identical. The Serializable specialization reuses the DTO's FieldDesc tuple.
-
-class RevenueRecoveryDataBackfillResult :
-    public ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse
-{
-public:
-    RevenueRecoveryDataBackfillResult() = default;
-
-    explicit RevenueRecoveryDataBackfillResult(
-        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse value
-    ) noexcept :
-        RevenueRecoveryDataBackfillResponse{std::move(value)}
-    {
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
     }
-};
-
-class RetryStatsMigrationResult :
-    public ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    RetryStatsMigrationResult() = default;
-
-    explicit RetryStatsMigrationResult(
-        ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse value
-    ) noexcept :
-        RetryStatsMigrationResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-// The rotated success bodies keep their exact DTO wire fields. Error paths are
-// core::error::AppError values (with the upstream code in kind_name), serialized
-// through the shared error branch of the handler.
-
-class UpdateRedisDataResult :
-    public ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    UpdateRedisDataResult() = default;
-
-    explicit UpdateRedisDataResult(
-        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse value
-    ) noexcept :
-        UpdateTokenStatusResponse{std::move(value)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class UnlockStatusResult : public ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    UnlockStatusResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit UnlockStatusResult(
-        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse value
-    ) noexcept :
-        UnlockStatusResponse{std::move(value)}
-    {
-    }
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::revenue_recovery_data_backfill
-
-template<>
-struct serde::Serializable<
-    ::app::handlers::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::revenue_recovery_data_backfill::
-                                       RevenueRecoveryDataBackfillResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "revenue_recovery_data_backfill_result";
-    }
-};
-
-template<>
-struct serde::Serializable<
-    ::app::handlers::revenue_recovery_data_backfill::RetryStatsMigrationResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "retry_stats_migration_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::revenue_recovery_data_backfill::UpdateRedisDataResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "update_redis_data_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::revenue_recovery_data_backfill::UnlockStatusResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "unlock_status_result";
-    }
-};

@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_redis_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -88,4 +89,57 @@ struct GetRevenueRecoveryRedisDataInput
     bool is_tokens{false};
 };
 
+/** @brief Request policy for the revenue_recovery_redis domain: wraps the domain auth rules. */
+class RevenueRecoveryRedisPolicy
+{
+public:
+    RevenueRecoveryRedisPolicy(
+        ::app::context::AppContext& /*context*/,
+        RevenueRecoveryRedisInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        return m_support.authorize(req);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    RevenueRecoveryRedisInputSupport& m_support;
+};
+
+using RevenueRecoveryRedisRequestSupport =
+    core::behavior::RequestSupport<RevenueRecoveryRedisPolicy>;
+using RevenueRecoveryRedisPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] RevenueRecoveryRedisPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return RevenueRecoveryRedisPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::revenue_recovery_redis

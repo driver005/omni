@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<VerifyEmailRequestResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     verify_email_request(const VerifyEmailRequestInput& input) const
     {
         std::string set_cookie{};
@@ -63,7 +63,7 @@ public:
         m_context.metrics().record_flow("verify_email_request");
         m_context.metrics().counter("user.verify_email_request").increment();
 
-        return VerifyEmailRequestResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

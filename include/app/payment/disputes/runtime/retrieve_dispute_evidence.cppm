@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeEvidenceBlock>, Error>
     retrieve_dispute_evidence(const RetrieveDisputeEvidenceInput& input) const
     {
         m_context.metrics().record_flow("dispute_retrieve_evidence");
@@ -50,7 +50,7 @@ public:
         if (const auto invalid = m_support.validate_profile_id_from_auth_layer(scope, *dispute)) {
             return std::unexpected{*invalid};
         }
-        return RetrieveDisputeEvidenceResult{
+        return std::vector<::app::model::disputes::DisputeEvidenceBlock>{
             m_support.get_dispute_evidence_vec(req.get_dispute_id())
         };
     }

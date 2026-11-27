@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpdateUserRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
     update_user_role(const UpdateUserRoleInput& input) const
     {
         const ::app::crypto::SecretString email_secret{input.request.get_email().get_value()};
@@ -115,7 +115,7 @@ public:
         StatusOkWire response{};
         response.set_status("Ok");
         m_support.track_flow("update_user_role", "user_role.update_user_role");
-        return UpdateUserRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

@@ -38,7 +38,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputesListForPlatformResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListResponse, Error>
     retrieve_disputes_list_for_platform(const RetrieveDisputesListForPlatformInput& input) const
     {
         m_context.metrics().record_flow("dispute_platform_list");
@@ -79,7 +79,7 @@ public:
             items.push_back(m_support.to_platform_item(record));
         }
         response.set_data(std::move(items));
-        return RetrieveDisputesListForPlatformResult{response};
+        return ::app::model::disputes::PlatformDisputeListResponse{response};
     }
 
 private:

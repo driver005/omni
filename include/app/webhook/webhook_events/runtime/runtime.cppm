@@ -3,6 +3,7 @@ export module app_webhook:webhook_events_runtime;
 import std;
 import core_error;
 import app_context;
+import app_dto;
 
 import :webhook_events_input;
 import :webhook_events_result;
@@ -26,26 +27,31 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListInitialWithJwtAuthResult, core::error::AppError>
-    list_initial_with_jwtauth(const ListInitialWithJwtAuthInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
+        list_initial_with_jwtauth(const ListInitialWithJwtAuthInput& input) const
     {
         return m_list_initial_with_jwtauth.list_initial_with_jwtauth(input);
     }
 
-    [[nodiscard]] std::expected<ListInitialResult, core::error::AppError>
-    list_initial(const ListInitialInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
+        list_initial(const ListInitialInput& input) const
     {
         return m_list_initial.list_initial(input);
     }
 
-    [[nodiscard]] std::expected<ListAttemptsResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        std::vector<::app::dto::webhook_events::EventRetrieveResponse>,
+        core::error::AppError>
     list_attempts(const ListAttemptsInput& input) const
     {
         return m_list_attempts.list_attempts(input);
     }
 
-    [[nodiscard]] std::expected<RetryResult, core::error::AppError>
-    retry(const RetryInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::webhook_events::EventRetrieveResponse, core::error::AppError>
+        retry(const RetryInput& input) const
     {
         return m_retry.retry(input);
     }

@@ -7,7 +7,6 @@ import app_context;
 import app_store;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime_common;
 
 export namespace app::handlers::customers {
@@ -21,24 +20,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CustomersListWithCountResult, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_with_count(const CustomersListWithCountRouteInput& input) const
     {
         auto value = list_with_count_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersListWithCountResult{std::move(*value)};
+        return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<CustomersListWithCountV2Result, ::core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     list_with_count_v2(const CustomersListWithCountRouteInput& input) const
     {
         auto value = list_with_count_core(input);
         if (!value) {
             return std::unexpected{value.error()};
         }
-        return CustomersListWithCountV2Result{std::move(*value)};
+        return std::move(*value);
     }
 
 private:

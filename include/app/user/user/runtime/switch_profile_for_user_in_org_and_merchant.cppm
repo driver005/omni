@@ -39,7 +39,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SwitchProfileForUserInOrgAndMerchantResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     switch_profile_for_user_in_org_and_merchant(
         const SwitchProfileForUserInOrgAndMerchantInput& input
     ) const
@@ -70,10 +70,7 @@ public:
         purpose.set_value("LOGIN");
         response.set_token(switched_token);
         response.set_token_type(purpose);
-        return SwitchProfileForUserInOrgAndMerchantResult{
-            ResponseDocument::from(response),
-            set_cookie
-        };
+        return std::pair{ResponseDocument::from(response), set_cookie};
     }
 
 private:

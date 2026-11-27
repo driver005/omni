@@ -22,11 +22,13 @@ public:
     AdminHandlersV2Connectors(
         ::app::context::AppContext& context,
         AdminRuntime& runtime,
-        AdminInputSupport& input_support
+        AdminInputSupport& input_support,
+        AdminRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -36,7 +38,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_input_support.authorize(req, "connector_list")) {
+        if (const auto error = m_request_support.authorize(req, "connector_list", {})) {
             res.set_status(error->get_status());
             res.set_body(serde::Ser::serialize("application/json", *error));
             send();
@@ -44,14 +46,14 @@ public:
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_input_support.path_part(req, 2);
+            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 2));
         }
         std::string profile_id_filter{
             ::app::http::RequestQuery{}(req).get("profile_id").value_or("")
         };
         const bool for_profile = m_input_support.path_has(req, "profiles");
         if (profile_id_filter.empty() && for_profile) {
-            profile_id_filter = m_input_support.path_part(req, 2);
+            profile_id_filter = m_request_support.path(req, AdminPolicy::path_index(req, 2));
         }
         ConnectorListInput input{std::move(merchant_id), std::move(profile_id_filter), for_profile};
         auto result = m_runtime.list_connectors(input);
@@ -61,7 +63,14 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded =
+            serde::Serializer<std::vector<::app::dto::admin::MerchantConnectorListResponse>>::
+                serialize_values(*result, kMerchantConnectorListResponseWireFields);
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -91,6 +100,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
+    AdminRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::admin

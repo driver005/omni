@@ -33,8 +33,9 @@ public:
 
     /** @brief Port of `browse_offers(state, auth.platform, profile_id, payload)` (browse.rs:22-85).
      */
-    [[nodiscard]] std::expected<BrowseOffersResult, core::error::AppError>
-    browse_offers(const BrowseOffersInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::offer_engine::BrowseOffersResponse, core::error::AppError>
+        browse_offers(const BrowseOffersInput& input) const
     {
         m_context.metrics().record_flow("OfferEngineBrowseOffers");
         m_context.metrics().counter("OFFER_ENGINE_BROWSE_OFFERS").increment();
@@ -98,7 +99,7 @@ public:
         m_context.metrics().record_flow("OfferEngineEligibilityFilter");
         m_context.metrics().counter("OFFER_ENGINE_ELIGIBILITY_FILTER").increment();
 
-        return BrowseOffersResult{std::move(typed_response)};
+        return std::move(typed_response);
     }
 
 private:

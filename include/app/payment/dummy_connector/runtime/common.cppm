@@ -604,9 +604,10 @@ public:
     }
 
     /** @brief `DummyConnectorRefundResponse` (types.rs:376-385) as a typed DTO. */
-    [[nodiscard]] DummyConnectorRefundResult refund_response(const RefundData& data) const
+    [[nodiscard]] ::app::handlers::dummy_connector::DummyConnectorRefundWire
+    refund_response(const RefundData& data) const
     {
-        return DummyConnectorRefundResult{
+        return ::app::handlers::dummy_connector::DummyConnectorRefundWire{
             std::string{m_values.status_wire(data.status)},
             data.id,
             data.currency,
@@ -617,9 +618,10 @@ public:
     }
 
     /** @brief Retrieve-route variant of the same flat refund response DTO. */
-    [[nodiscard]] DummyConnectorRefundDataResult refund_data_response(const RefundData& data) const
+    [[nodiscard]] ::app::handlers::dummy_connector::DummyConnectorRefundWire
+    refund_data_response(const RefundData& data) const
     {
-        return DummyConnectorRefundDataResult{
+        return ::app::handlers::dummy_connector::DummyConnectorRefundWire{
             std::string{m_values.status_wire(data.status)},
             data.id,
             data.currency,

@@ -38,7 +38,9 @@ public:
     )
     {
         // Upstream route: ApiKeyAuth with a required profile (relay.rs:14-47).
-        if (const auto auth = m_input_support.authorize_route(req, "unreferenced_refund");
+        if (const auto auth =
+                m_request_support
+                    .authorize(req, "unreferenced_refund", spec_for("unreferenced_refund"));
             auth.has_value()) {
             const auto& error = *auth;
             error.send(res, send);
@@ -78,7 +80,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -89,7 +91,8 @@ public:
     )
     {
         // Upstream route: ApiKeyAuth with connected scope optional (relay.rs:51-81).
-        if (const auto auth = m_input_support.authorize_route(req, "relay"); auth.has_value()) {
+        if (const auto auth = m_request_support.authorize(req, "relay", spec_for("relay"));
+            auth.has_value()) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -116,7 +119,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -127,7 +130,8 @@ public:
     )
     {
         // Upstream route: ApiKeyAuth with connected scope (relay.rs:85-119).
-        if (const auto auth = m_input_support.authorize_route(req, "relay_retrieve");
+        if (const auto auth =
+                m_request_support.authorize(req, "relay_retrieve", spec_for("relay_retrieve"));
             auth.has_value()) {
             const auto& error = *auth;
             error.send(res, send);
@@ -163,7 +167,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -194,7 +198,12 @@ public:
         // Upstream: MerchantIdAuth(merchant_id) with Flow::IncomingWebhookReceive
         // and LockAction::NotApplicable (webhooks.rs:57-80). The path id is the
         // authoritative merchant identity for this auth scheme.
-        if (const auto auth = m_input_support.authorize_webhook(req, ids); auth.has_value()) {
+        if (const auto auth = m_request_support.authorize(
+                req,
+                "receive_incoming_relay_webhook",
+                spec_for("receive_incoming_relay_webhook")
+            );
+            auth.has_value()) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -217,7 +226,7 @@ public:
 
         // Upstream WebhookResponse::StatusOk -> HTTP 200; empty typed result DTO.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -294,13 +303,17 @@ public:
 
     explicit RelayRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     RelayRuntime m_runtime;
     RelayInputSupport m_input_support;
+    RelayPolicy m_policy;
+    RelayRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::relay

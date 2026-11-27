@@ -3,6 +3,7 @@ export module app_auth:authentication_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_dto;
 import app_context_core;
@@ -163,39 +164,113 @@ public:
         return AuthorizedRequest{std::move(denied), context, flow, std::move(effective_secret)};
     }
 
-    // Path helpers return the error instead of writing it, so the handler keeps
-    // the single response-writing path (set_status/set_body/send) for every route.
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
-    auth_id_from_path(interfaces::io::IRequest& req, std::size_t index) const
+private:
+    ::app::context::AppContext& m_context;
+};
+
+// Upstream HeaderAuth(ApiKeyAuth { allow_connected_scope_operation: false,
+// allow_platform_self_operation: false }) with the operation's own permission.
+inline constexpr core::behavior::AuthSpec kAuthenticationCreateAuthSpec{
+    "PAYMENT_WRITE",
+    false,
+    false,
+    false,
+    false,
+};
+inline constexpr core::behavior::AuthSpec kAuthenticationRetrieveAuthSpec{
+    "PAYMENT_READ",
+    false,
+    false,
+    false,
+    false,
+};
+inline constexpr core::behavior::AuthSpec kAuthenticationSdkAuthSpec{
+    "PAYMENT_WRITE",
+    false,
+    false,
+    false,
+    false,
+};
+inline constexpr core::behavior::AuthSpec kAuthenticationMerchantAuthSpec{
+    "PAYMENT_WRITE",
+    false,
+    false,
+    false,
+    false,
+};
+
+/**
+ * @brief Domain policy for authentication routes.
+ *
+ * Route-level auth is delegated to the retained input-support helpers so the
+ * exact upstream flow (SDK / publishable key / API key / header merchant) and
+ * its errors stay unchanged. The resulting AuthorizedRequest is cached for the
+ * handler that made the decision; RequestSupport owns the decision itself.
+ */
+class AuthenticationPolicy
+{
+public:
+    explicit AuthenticationPolicy(::app::context::AppContext& context) noexcept :
+        m_support{context}
     {
-        const auto path = ::app::http::RequestPath{}(req);
-        const auto segment = path.at(index);
-        if (!segment.has_value()) {
-            return std::unexpected{core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "authentication id missing in path"
-            )};
-        }
-        return std::string{*segment};
     }
 
-    [[nodiscard]] std::expected<std::pair<std::string, std::string>, core::error::AppError>
-    merchant_and_auth_id_from_path(interfaces::io::IRequest& req) const
+    void set_body_secret(std::optional<std::string> body_secret)
     {
-        const auto path = ::app::http::RequestPath{}(req);
-        const auto merchant_segment = path.at(1);
-        const auto id_segment = path.at(2);
-        if (!merchant_segment.has_value() || !id_segment.has_value()) {
-            return std::unexpected{core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "merchant id or authentication id missing in path"
-            )};
+        m_body_secret = std::move(body_secret);
+    }
+
+    [[nodiscard]] const AuthorizedRequest& authorized() const noexcept
+    {
+        return m_authorized;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        if (operation == "authentication_sync_post_update") {
+            m_authorized = m_support.authorize_merchant(req, operation);
+        } else if (
+            operation == "authentication_create" ||
+            operation == "authentication_retrieve_eligibility_check"
+        ) {
+            const auto permission = spec.permission == "PAYMENT_READ"
+                                        ? ::app::auth::AppPermission::PAYMENT_READ
+                                        : ::app::auth::AppPermission::PAYMENT_WRITE;
+            m_authorized = m_support.authorize_api_key(req, operation, permission);
+        } else {
+            m_authorized =
+                m_support.authorize_sdk(req, operation, req.body_as_string(), m_body_secret);
         }
-        return std::make_pair(std::string{*merchant_segment}, std::string{*id_segment});
+        return m_authorized.error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        core::behavior::Scope out{};
+        out.merchant_id = ::app::http::merchant_id_from_header{}(req);
+        return out;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope& scope) const
+    {
+        if (scope.merchant_id.empty()) {
+            return core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::UNAUTHORIZED,
+                "missing merchant id header"
+            );
+        }
+        return std::nullopt;
     }
 
 private:
-    ::app::context::AppContext& m_context;
+    AuthenticationInputSupport m_support;
+    mutable AuthorizedRequest m_authorized{};
+    std::optional<std::string> m_body_secret{};
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

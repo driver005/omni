@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsFilterListResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundListMetaData, core::error::AppError>
     filter_list(const RefundsFilterListInput& input) const
     {
         m_context.metrics().record_flow("refund_filter_list");
@@ -29,7 +29,7 @@ public:
 
         // core/refunds.rs:2132-2148 — filter_refund_by_meta_constraints(merchant, time_range).
         const auto records = m_support.merchant_records(input.facts, /*profile_scoped=*/false);
-        return RefundsFilterListResult{m_support.filter_list_metadata(
+        return ::app::model::refunds::RefundListMetaData{m_support.filter_list_metadata(
             m_support.apply_time_range(records, input.start_time, input.end_time)
         )};
     }

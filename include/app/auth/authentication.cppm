@@ -3,6 +3,7 @@ export module app_auth:authentication_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import app_context;
 
 import :authentication_input;
@@ -22,11 +23,13 @@ public:
     explicit AuthenticationRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_create{context, m_runtime},
-        m_eligibility_authenticate{context, m_runtime},
-        m_eligibility_check_retrieve{context, m_runtime},
-        m_sync_redirect{context, m_runtime},
-        m_session_token{context, m_runtime}
+        m_policy{context},
+        m_request_support{m_policy},
+        m_create{context, m_runtime, m_policy, m_request_support},
+        m_eligibility_authenticate{context, m_runtime, m_policy, m_request_support},
+        m_eligibility_check_retrieve{context, m_runtime, m_policy, m_request_support},
+        m_sync_redirect{context, m_runtime, m_policy, m_request_support},
+        m_session_token{context, m_runtime, m_policy, m_request_support}
     {
     }
 
@@ -42,6 +45,8 @@ public:
 private:
     ::app::context::AppContext& m_context;
     AuthenticationRuntime m_runtime; // SINGLE shared runtime
+    AuthenticationPolicy m_policy;
+    core::behavior::RequestSupport<AuthenticationPolicy> m_request_support;
     CreateHandlers m_create;
     EligibilityAuthenticateHandlers m_eligibility_authenticate;
     EligibilityCheckRetrieveHandlers m_eligibility_check_retrieve;

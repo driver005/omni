@@ -1,6 +1,7 @@
 export module app_payment:payout_link_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_error;
 import app_context;
@@ -95,4 +96,60 @@ struct PayoutLinkRenderInput
     std::string accept_language{};
 };
 
+/** @brief Request policy for the payout_link domain: wraps the domain auth rules. */
+class PayoutLinkPolicy
+{
+public:
+    PayoutLinkPolicy(
+        ::app::context::AppContext& /*context*/,
+        PayoutLinkInputSupport& support
+    ) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        const auto ids = m_support.payout_link_ids_from_path(req);
+        if (ids) {
+            return m_support.authorize_operation(req, operation, ids->first);
+        }
+        return m_support.authorize_operation(req, operation, std::string_view{});
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+
+private:
+    PayoutLinkInputSupport& m_support;
+};
+
+using PayoutLinkRequestSupport = core::behavior::RequestSupport<PayoutLinkPolicy>;
+using PayoutLinkPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PayoutLinkPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PayoutLinkPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::payout_link

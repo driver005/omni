@@ -6,111 +6,66 @@ import app_dto;
 
 export namespace app::handlers::card_issuer {
 
-// Each result derives from the exact DTO the old core built and encoded, so
-// field names, order and wrapper types stay byte-identical. The Serializable
-// specialization reuses the DTO's FieldDesc tuple; those descriptors apply to
-// the derived object just as they do to the base object.
-
-class CardIssuerAddResult : public ::app::dto::card_issuer::CardIssuerResponse
-{
-public:
-    CardIssuerAddResult() = default;
-
-    explicit CardIssuerAddResult(::app::dto::card_issuer::CardIssuerResponse value) noexcept :
-        CardIssuerResponse{std::move(value)}
-    {
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
     }
-};
-
-class CardIssuerUpdateResult : public ::app::dto::card_issuer::CardIssuerResponse
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    CardIssuerUpdateResult() = default;
-
-    explicit CardIssuerUpdateResult(::app::dto::card_issuer::CardIssuerResponse value) noexcept :
-        CardIssuerResponse{std::move(value)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class CardIssuerDeleteResult : public ::app::dto::card_issuer::CardIssuerDeleteResponse
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
 {
-public:
-    CardIssuerDeleteResult() = default;
-
-    explicit CardIssuerDeleteResult(
-        ::app::dto::card_issuer::CardIssuerDeleteResponse value
-    ) noexcept :
-        CardIssuerDeleteResponse{std::move(value)}
-    {
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
-};
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-class CardIssuerListResult : public ::app::dto::card_issuer::CardIssuerListResponse
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
 {
-public:
-    CardIssuerListResult() = default;
+    return serde::Ser::serialize("application/json", value);
+}
 
-    explicit CardIssuerListResult(::app::dto::card_issuer::CardIssuerListResponse value) noexcept :
-        CardIssuerListResponse{std::move(value)}
-    {
-    }
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::card_issuer
-
-template<>
-struct serde::Serializable<::app::handlers::card_issuer::CardIssuerAddResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::card_issuer::CardIssuerResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_issuer_add_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::card_issuer::CardIssuerUpdateResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::card_issuer::CardIssuerResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_issuer_update_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::card_issuer::CardIssuerDeleteResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::card_issuer::CardIssuerDeleteResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_issuer_delete_result";
-    }
-};
-
-template<>
-struct serde::Serializable<::app::handlers::card_issuer::CardIssuerListResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<::app::dto::card_issuer::CardIssuerListResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "card_issuer_list_result";
-    }
-};

@@ -1,6 +1,7 @@
 export module app_payment:payment_link_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -30,37 +31,40 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentLinkRetrieveResult, core::error::AppError>
-    retrieve(const PaymentLinkRetrieveInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::RetrievePaymentLinkResponse, core::error::AppError>
+        retrieve(const PaymentLinkRetrieveInput& input) const
     {
         return m_retrieve.retrieve(input);
     }
 
-    [[nodiscard]] std::expected<PaymentLinkInitiateResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     initiate(const PaymentLinkInitiateInput& input) const
     {
         return m_initiate.initiate(input);
     }
 
-    [[nodiscard]] std::expected<PaymentLinkInitiateSecureResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     initiate_secure(const PaymentLinkInitiateSecureInput& input) const
     {
         return m_initiate_secure.initiate_secure(input);
     }
 
-    [[nodiscard]] std::expected<PaymentLinkListResult, core::error::AppError>
-    list(const PaymentLinkListInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
+        list(const PaymentLinkListInput& input) const
     {
         return m_list.list(input);
     }
 
-    [[nodiscard]] std::expected<PaymentLinkListResult, core::error::AppError>
-    profile_list(const PaymentLinkListInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
+        profile_list(const PaymentLinkListInput& input) const
     {
         return m_profile_list.profile_list(input);
     }
 
-    [[nodiscard]] std::expected<PaymentLinkStatusResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     status(const PaymentLinkStatusInput& input) const
     {
         return m_status.status(input);

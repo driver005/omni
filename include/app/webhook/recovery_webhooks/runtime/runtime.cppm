@@ -19,7 +19,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RecoveryReceiveIncomingWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookResponse, core::error::AppError>
     recovery_receive_incoming_webhook(const RecoveryReceiveIncomingWebhookInput& input) const
     {
         return m_recovery_receive_incoming_webhook.receive_incoming_webhook(input);

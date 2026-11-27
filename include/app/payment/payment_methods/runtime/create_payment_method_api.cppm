@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreatePaymentMethodApiResult, core::error::AppError>
-    create_payment_method_api(const CreatePaymentMethodApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
+        create_payment_method_api(const CreatePaymentMethodApiInput& input) const
     {
         if (input.request.get_customer_id() &&
             !m_support.customer_exists(input.request.get_customer_id()->get_value())) {
@@ -88,7 +89,7 @@ public:
                 response.set_client_secret(
                     m_support.issued_token(existing->get_payment_method_id())
                 );
-                return CreatePaymentMethodApiResult{std::move(response)};
+                return ::app::model::payment_methods::PaymentMethodResponse{std::move(response)};
             }
         }
         const std::string payment_method_id = m_context.ids().payment_id("pm_");
@@ -144,7 +145,7 @@ public:
             response.set_metadata(*input.request.get_metadata());
         }
         response.set_client_secret(client_secret);
-        return CreatePaymentMethodApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodResponse{std::move(response)};
     }
 
 private:

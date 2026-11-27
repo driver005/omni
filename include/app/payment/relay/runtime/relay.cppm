@@ -40,7 +40,7 @@ public:
     // Upstream RelayedRequestInner<T> is a tagged union; the local DTO folds `data` into an
     // enum while upstream sends an object. Normalize through the generic JSON tree so both
     // shapes decode and the per-variant amount fields remain available for validation.
-    [[nodiscard]] std::expected<RelayResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
     relay(const RelayCreateInput& input) const
     {
         auto document = serde::Ser::decode_generic("application/json", input.body);
@@ -292,7 +292,7 @@ public:
         response.set_relay_type(std::move(response_type));
         response.set_data(m_support.tagged_relay_data(kind, relay_data)
                               .value_or(::app::dto::relay::RelayResponseData{}));
-        return RelayResult{std::move(response)};
+        return ::app::dto::relay::RelayResponse{std::move(response)};
     }
 
 private:

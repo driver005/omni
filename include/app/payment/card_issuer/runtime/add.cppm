@@ -23,7 +23,7 @@ public:
     }
 
     // core/card_issuer.rs:16-39 `add_card_issuer`.
-    [[nodiscard]] std::expected<CardIssuerAddResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
     add(const CardIssuerAddInput& input) const
     {
         const std::string issuer_name = input.request.get_issuer_name().get_value();
@@ -72,7 +72,7 @@ public:
         m_context.metrics().record_flow("AddCardIssuer");
         m_context.metrics().counter("CARD_ISSUER_CREATED").increment();
 
-        return CardIssuerAddResult{std::move(response)};
+        return ::app::dto::card_issuer::CardIssuerResponse{std::move(response)};
     }
 
 private:

@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetPaymentsAggregatesResult, core::error::AppError>
-    get_payments_aggregates(const GetPaymentsAggregatesInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsAggregateResponse, core::error::AppError>
+        get_payments_aggregates(const GetPaymentsAggregatesInput& input) const
     {
         auto records = m_support.list_payments_scoped(input.data);
         if (const auto status_filter = m_support.query(input.data, "status");
@@ -54,7 +55,7 @@ public:
         }
         ::app::model::payments::PaymentsAggregateResponse response{};
         response.set_status_with_count(std::move(status_counts));
-        return GetPaymentsAggregatesResult{response};
+        return ::app::model::payments::PaymentsAggregateResponse{response};
     }
 
 private:

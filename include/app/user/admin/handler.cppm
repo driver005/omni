@@ -28,8 +28,8 @@ public:
     explicit AdminRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -46,6 +46,10 @@ public:
 private:
     AdminRuntime m_runtime;            // SINGLE runtime instance, shared by every family.
     AdminInputSupport m_input_support; // SINGLE input helper, shared by every family.
+
+    AdminPolicy m_policy{m_input_support};
+
+    AdminRequestSupport m_request_support{m_policy};
     AdminHandlersV1 m_v1;
     AdminHandlersV2 m_v2;
 };

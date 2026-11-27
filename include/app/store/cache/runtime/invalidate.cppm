@@ -6,7 +6,6 @@ import app_context;
 import app_metrics;
 
 import :cache_input;
-import :cache_result;
 import :cache_runtime_common;
 
 export namespace app::handlers::cache {
@@ -25,7 +24,7 @@ public:
     //   if result > 0 -> StatusOk, else -> InternalServerError.
     // A zero-delete Redis reply is only logged upstream (cache.rs:988-998),
     // never a failure; a cache miss is therefore not the success gate.
-    [[nodiscard]] std::expected<CacheInvalidateResult, core::error::AppError>
+    [[nodiscard]] std::expected<void, core::error::AppError>
     invalidate(const CacheInvalidateInput& input) const
     {
         // Flow::CacheInvalidate instrumentation: upstream records this through
@@ -62,7 +61,7 @@ public:
 
         // ApplicationResponse::StatusOk has no body (core/cache.rs:20;
         // services/api.rs:499 -> http_response_ok()).
-        return CacheInvalidateResult{};
+        return {};
     }
 
 private:

@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AcceptInvitationsPreAuthResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<TokenResponseWire, std::string>, core::error::AppError>
     accept_invitations_pre_auth(const AcceptInvitationsPreAuthInput& input) const
     {
         const auto lineages = m_support.lineages_for_accept(input.identity, input.request);
@@ -71,7 +71,7 @@ public:
             "accept_invitations_pre_auth",
             "user_role.accept_invitations_pre_auth"
         );
-        return AcceptInvitationsPreAuthResult{std::move(response), std::move(cookie)};
+        return std::pair{std::move(response), std::move(cookie)};
     }
 
 private:

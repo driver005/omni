@@ -1,6 +1,7 @@
 export module app_routing:superposition_sdk_config_runtime;
 
 import std;
+import app_dto;
 import core_error;
 import app_context;
 
@@ -22,13 +23,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetSdkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
+        core::error::AppError>
     get_sdk_config(const GetSdkConfigInput& input) const
     {
         return m_get_sdk_config.get_sdk_config(input);
     }
 
-    [[nodiscard]] std::expected<GetProfileSdkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
+        core::error::AppError>
     get_profile_sdk_config(const GetProfileSdkConfigInput& input) const
     {
         return m_get_profile_sdk_config.get_profile_sdk_config(input);

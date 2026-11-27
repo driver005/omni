@@ -39,7 +39,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payment_link_retrieve")) {
+        if (const auto denied =
+                m_request_support
+                    .authorize(req, "payment_link_retrieve", spec_for("payment_link_retrieve"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -104,7 +106,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -123,7 +125,8 @@ public:
 
         // MerchantIdAuth(merchant_id) from the path (routes:94).
         if (const auto denied =
-                m_input_support.authorize_operation(req, "initiate_payment_link", merchant_id)) {
+                m_request_support
+                    .authorize(req, "initiate_payment_link", spec_for("initiate_payment_link"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -145,7 +148,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -163,9 +166,11 @@ public:
         const std::string payment_id = ids.second;
 
         // MerchantIdAuth(merchant_id) from the path (routes:129).
-        if (const auto denied =
-                m_input_support
-                    .authorize_operation(req, "initiate_secure_payment_link", merchant_id)) {
+        if (const auto denied = m_request_support.authorize(
+                req,
+                "initiate_secure_payment_link",
+                spec_for("initiate_secure_payment_link")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -191,7 +196,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -201,7 +206,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payments_link_list")) {
+        if (const auto denied =
+                m_request_support
+                    .authorize(req, "payments_link_list", spec_for("payments_link_list"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -230,10 +237,10 @@ public:
         const auto auth = m_input_support.auth_merchant_and_profile(req);
         PaymentLinkListInput input{
             *parsed,
-            m_input_support.query_value(req, "limit"),
-            m_input_support.query_value(req, "offset"),
-            m_input_support.query_value(req, "time_range"),
-            m_input_support.query_value(req, "profile_id"),
+            m_request_support.query(req, "limit"),
+            m_request_support.query(req, "offset"),
+            m_request_support.query(req, "time_range"),
+            m_request_support.query(req, "profile_id"),
             m_input_support.merchant_id_from_header(req),
             auth.first,
             auth.second,
@@ -246,7 +253,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -256,8 +263,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "profile_payment_link_list")) {
+        if (const auto denied = m_request_support.authorize(
+                req,
+                "profile_payment_link_list",
+                spec_for("profile_payment_link_list")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -286,10 +296,10 @@ public:
         const auto auth = m_input_support.auth_merchant_and_profile(req);
         PaymentLinkListInput input{
             *parsed,
-            m_input_support.query_value(req, "limit"),
-            m_input_support.query_value(req, "offset"),
-            m_input_support.query_value(req, "time_range"),
-            m_input_support.query_value(req, "profile_id"),
+            m_request_support.query(req, "limit"),
+            m_request_support.query(req, "offset"),
+            m_request_support.query(req, "time_range"),
+            m_request_support.query(req, "profile_id"),
             m_input_support.merchant_id_from_header(req),
             auth.first,
             auth.second,
@@ -302,7 +312,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -325,7 +335,8 @@ public:
 
         // MerchantIdAuth(merchant_id) from the path (routes:245).
         if (const auto denied =
-                m_input_support.authorize_operation(req, "payment_link_status", merchant_id)) {
+                m_request_support
+                    .authorize(req, "payment_link_status", spec_for("payment_link_status"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -347,7 +358,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -456,13 +467,17 @@ public:
 
     explicit PaymentLinkRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
 private:
     PaymentLinkRuntime m_runtime;
     PaymentLinkInputSupport m_input_support;
+    PaymentLinkPolicy m_policy;
+    PaymentLinkRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::payment_link

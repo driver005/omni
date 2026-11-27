@@ -36,8 +36,9 @@ public:
     }
 
     // batch.rs:348-510 initiate_batch_blocklist_upload.
-    [[nodiscard]] std::expected<UploadBatchBlocklistResult, core::error::AppError>
-    upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::blocklist::BatchBlocklistUploadResponse, core::error::AppError>
+        upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
     {
         const auto job_id = m_context.ids().payment_id("blkbatch");
         const auto stamp = m_support.now_iso8601();
@@ -113,7 +114,7 @@ public:
         );
         m_support.emit("blocklist.batch.upload", response);
         m_support.track("upload_batch_blocklist");
-        return UploadBatchBlocklistResult{response};
+        return response;
     }
 
 private:

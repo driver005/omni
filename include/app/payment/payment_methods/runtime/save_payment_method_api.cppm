@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<SavePaymentMethodApiResult, core::error::AppError>
-    save_payment_method_api(const SavePaymentMethodApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
+        save_payment_method_api(const SavePaymentMethodApiInput& input) const
     {
         auto repository = m_context.repository();
         auto record = repository.find_payment_method_by_string(input.payment_method_id);
@@ -90,7 +91,9 @@ public:
         m_support.publish_pm_event("payment_method.save", input.payment_method_id);
         m_context.metrics().record_flow("save_payment_method_api");
         m_context.metrics().counter("PAYMENT_METHOD_SAVE_PAYMENT_METHOD_API").increment();
-        return SavePaymentMethodApiResult{m_support.response_from_record(*record)};
+        return ::app::model::payment_methods::PaymentMethodResponse{
+            m_support.response_from_record(*record)
+        };
     }
 
 private:

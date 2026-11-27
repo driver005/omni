@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<InternalUserSignupResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     internal_user_signup(const InternalUserSignupInput& input) const
     {
         std::string set_cookie{};
@@ -71,7 +71,7 @@ public:
         m_context.metrics().record_flow("internal_user_signup");
         m_context.metrics().counter("user.internal_user_signup").increment();
 
-        return InternalUserSignupResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

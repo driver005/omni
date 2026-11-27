@@ -20,7 +20,6 @@ import app_workflow;
 import app_keystore;
 
 import :health_input;
-import :health_result;
 import :health_runtime_common;
 
 export namespace app::handlers::health {
@@ -37,7 +36,7 @@ public:
     // Sequence and component names mirror deep_health_check_func exactly
     // (routes/health.rs:51-166). Any failure maps to the upstream
     // ApiErrorResponse::HealthCheckError wire shape and returns early.
-    [[nodiscard]] std::expected<DeepHealthCheckResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     deep_health_check(const DeepHealthCheckInput& input) const
     {
         (void)input;
@@ -145,7 +144,7 @@ public:
             project.as_optional(ucs.state)
         );
 
-        return DeepHealthCheckResult{body};
+        return body;
     }
 
 private:

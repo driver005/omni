@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodGetTokenDetailsApiResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse,
+        core::error::AppError>
     payment_method_get_token_details_api(const PaymentMethodGetTokenDetailsApiInput& input) const
     {
         m_context.metrics().record_flow("payment_method_get_token_details_api");
@@ -47,7 +49,9 @@ public:
         id.set_value(input.payment_method_id);
         response.set_id(std::move(id));
         response.set_payment_method_token(input.temporary_token);
-        return PaymentMethodGetTokenDetailsApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse{
+            std::move(response)
+        };
     }
 
 private:

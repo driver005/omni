@@ -35,7 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetTotalPaymentMethodCountResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::TotalPaymentMethodCountResponse,
+        core::error::AppError>
     get_total_payment_method_count(const GetTotalPaymentMethodCountInput& input) const
     {
         m_context.metrics().record_flow("get_total_payment_method_count");
@@ -52,7 +54,7 @@ public:
         }
         ::app::model::payment_methods::TotalPaymentMethodCountResponse response{};
         response.set_total_count(count);
-        return GetTotalPaymentMethodCountResult{std::move(response)};
+        return ::app::model::payment_methods::TotalPaymentMethodCountResponse{std::move(response)};
     }
 
 private:

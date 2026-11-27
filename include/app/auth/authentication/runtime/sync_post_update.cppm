@@ -37,7 +37,7 @@ public:
 
     // ───────────────────────── Core: post-sync ─────────────────────────
     // unified_authentication_service.rs:2386-2496 authentication_post_sync_core.
-    [[nodiscard]] std::expected<AuthenticationSyncPostUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     sync_post_update(const AuthenticationSyncPostUpdateInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
@@ -99,7 +99,7 @@ public:
                                                record->get_client_secret(),
                                                record->get_amount()
                                            );
-        return AuthenticationSyncPostUpdateResult{body.done(), url_with_query};
+        return std::pair{body.done(), std::move(url_with_query)};
     }
 
 private:

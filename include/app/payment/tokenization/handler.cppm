@@ -21,8 +21,13 @@ class TokenizationRouteHandlers
 public:
     explicit TokenizationRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
-        m_v2{context, m_runtime}
+        m_v2{context, m_runtime},
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v2.bind_request_support(m_request_support);
+        m_v2.bind_policy(m_policy);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -33,6 +38,9 @@ public:
 private:
     TokenizationRuntime m_runtime; // SINGLE runtime instance — shared by every family.
     TokenizationHandlersV2 m_v2;   // holds AppContext&, TokenizationRuntime&.
+    TokenizationInputSupport m_input_support;
+    TokenizationPolicy m_policy;
+    TokenizationRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::tokenization

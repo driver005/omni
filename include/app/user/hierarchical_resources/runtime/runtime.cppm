@@ -26,25 +26,33 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GenerateHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse,
+        core::error::AppError>
     generate(const GenerateHierarchicalResourceInput& input) const
     {
         return m_generate.generate(input);
     }
 
-    [[nodiscard]] std::expected<UploadHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::UploadCertificateResponse,
+        core::error::AppError>
     upload(const UploadHierarchicalResourceInput& input) const
     {
         return m_upload.upload(input);
     }
 
-    [[nodiscard]] std::expected<ListHierarchicalResourcesResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse,
+        core::error::AppError>
     list(const ListHierarchicalResourcesInput& input) const
     {
         return m_list.list(input);
     }
 
-    [[nodiscard]] std::expected<LinkHierarchicalResourceResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse,
+        core::error::AppError>
     link(const LinkHierarchicalResourceInput& input) const
     {
         return m_link.link(input);

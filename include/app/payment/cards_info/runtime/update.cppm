@@ -27,7 +27,7 @@ public:
     // core/cards_info.rs:70-125 update_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfoUpdate, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<UpdateCardsInfoResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
     update(const UpdateCardsInfoInput& input) const
     {
         auto repository = m_context.repository();
@@ -50,7 +50,7 @@ public:
 
         m_context.metrics().record_flow("CardsInfoUpdate");
         m_context.metrics().counter("CARDS_INFO_UPDATED").increment();
-        return UpdateCardsInfoResult{
+        return ::app::model::cards_info::CardInfoResponse{
             m_support.response_from_store_enriched(*stored, std::move(response))
         };
     }

@@ -1,6 +1,7 @@
 export module app_payment:pm_auth_input;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -274,4 +275,59 @@ struct ExchangeTokenInput
     std::string body{};
 };
 
+/** @brief Request policy for the pm_auth domain: wraps the domain auth rules. */
+class PmAuthPolicy
+{
+public:
+    PmAuthPolicy(::app::context::AppContext& /*context*/, PmAuthInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec& spec
+    ) const
+    {
+        (void)spec;
+        m_last = m_support.authorize_request(req, req.body_as_string(), operation);
+        return m_last->error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
+    {
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        core::behavior::Scope result;
+        result.merchant_id = std::string{auth.merchant_id()};
+        result.profile_id = std::string{auth.profile_id()};
+        result.org_id = std::string{auth.org_id()};
+        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
+        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
+        return result;
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] const AuthResult& last() const noexcept
+    {
+        return *m_last;
+    }
+
+private:
+    PmAuthInputSupport& m_support;
+    mutable std::optional<AuthResult> m_last{};
+};
+
+using PmAuthRequestSupport = core::behavior::RequestSupport<PmAuthPolicy>;
+using PmAuthPolicySpec = core::behavior::AuthSpec;
+
+[[nodiscard]] PmAuthPolicySpec spec_for(std::string_view operation) noexcept
+{
+    return PmAuthPolicySpec{.permission = operation};
+}
 } // namespace app::handlers::pm_auth

@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UpsertDecisionManagerConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     upsert_decision_manager_config(const RoutingInput& input) const
     {
         const auto name = input.decision_name;
@@ -88,7 +88,7 @@ public:
         m_support.upsert_config(std::move(stored));
         m_support.set_active_algo_ref(profile, "config_algo_id", key);
         m_support.track("upsert_decision_manager_config");
-        return UpsertDecisionManagerConfigResult{ResponseDocument::from(record)};
+        return ResponseDocument::from(record);
     }
 
 private:

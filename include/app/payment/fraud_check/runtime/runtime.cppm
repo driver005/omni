@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FrmFulfillmentResult, core::error::AppError>
+    [[nodiscard]] std::expected<FulfillmentResponseWire, core::error::AppError>
     frm_fulfillment(const FrmFulfillmentInput& input) const
     {
         return m_frm_fulfillment.frm_fulfillment(input);

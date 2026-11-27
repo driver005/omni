@@ -868,6 +868,17 @@ public:
         return item;
     }
 
+    // The two initial-list routes wrap the core EventListResult in the upstream
+    // TotalEventsResponse shape: events, total_count (in that order).
+    [[nodiscard]] static ::app::dto::webhook_events::TotalEventsResponse
+    to_total_events_response(::app::dto::webhook_events::EventListResult listed)
+    {
+        ::app::dto::webhook_events::TotalEventsResponse response{};
+        response.set_total_count(listed.total_count);
+        response.set_events(std::move(listed.items));
+        return response;
+    }
+
     // Redact header values exactly like core/webhooks/utils.rs:576-588.
     // nullopt sensitive names => every value is redacted.
     [[nodiscard]] ::app::dto::webhook_events::EventRetrieveResponse to_retrieve(

@@ -37,7 +37,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodSessionListPaymentMethodsResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::PaymentMethodListResponseForSession,
+        core::error::AppError>
     payment_method_session_list_payment_methods(
         const PaymentMethodSessionListPaymentMethodsInput& input
     ) const
@@ -76,7 +78,9 @@ public:
             items.push_back(std::move(item));
         }
         response.set_customer_payment_methods(std::move(items));
-        return PaymentMethodSessionListPaymentMethodsResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodListResponseForSession{
+            std::move(response)
+        };
     }
 
 private:

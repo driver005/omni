@@ -36,7 +36,7 @@ public:
     }
 
     // Upstream AppState::get_store_interface() is an async constructor (app.rs:648-727).
-    [[nodiscard]] std::expected<GetStoreInterfaceResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_store_interface(const GetStoreInterfaceInput& input) const
     {
         // Pick a storage interface from (storage_impl, event_handler) for the caller's tenant.
@@ -90,20 +90,50 @@ public:
         m_context.metrics().record_flow("GetStoreInterface");
         m_context.metrics().counter("STORE_INTERFACE_RESOLVED").increment();
 
-        GetStoreInterfaceResult result{};
-        result.set_partition("app");
-        result.set_op("get_store_interface");
-        result.set_interface(interface_name);
-        result.set_storage_impl(storage_impl);
-        result.set_event_handler(event_handler);
-        result.set_org_id(org_id);
-        result.set_merchant_id(merchant_id);
-        result.set_tenant_known(tenant_known);
-        result.set_key_manager_configured(key_manager_configured);
-        result.set_mtls_cert_configured(mtls_cert_configured);
-        result.set_mtls_ca_configured(mtls_ca_configured);
-        result.set_event_id(event_id);
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{get_store_interface_wire_fields()[0]},
+            serde::Value{std::string{"app"}}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[1]},
+            serde::Value{std::string{"get_store_interface"}}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[2]},
+            serde::Value{interface_name}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[3]},
+            serde::Value{storage_impl}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[4]},
+            serde::Value{event_handler}
+        );
+        document.insert(std::string{get_store_interface_wire_fields()[5]}, serde::Value{org_id});
+        document.insert(
+            std::string{get_store_interface_wire_fields()[6]},
+            serde::Value{merchant_id}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[7]},
+            serde::Value{tenant_known}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[8]},
+            serde::Value{key_manager_configured}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[9]},
+            serde::Value{mtls_cert_configured}
+        );
+        document.insert(
+            std::string{get_store_interface_wire_fields()[10]},
+            serde::Value{mtls_ca_configured}
+        );
+        document.insert(std::string{get_store_interface_wire_fields()[11]}, serde::Value{event_id});
+        return serde::Value{std::move(document)};
     }
 
 private:

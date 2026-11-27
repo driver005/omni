@@ -29,6 +29,13 @@ export namespace app::handlers::payment_methods {
 class TokenizeHandlers
 {
 public:
+    void bind_request_support(PaymentMethodsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PaymentMethodsRequestSupport* m_request_support{nullptr};
+
     TokenizeHandlers(::app::context::AppContext& ctx, PaymentMethodsRuntime& runtime) noexcept :
         m_context{ctx},
         m_input_support{ctx},
@@ -93,7 +100,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "tokenize_card_api");
+        const auto auth_error =
+            m_request_support->authorize(req, "tokenize_card_api", spec_for("tokenize_card_api"));
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -123,7 +131,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -133,7 +141,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "tokenize_card_using_pm_api");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "tokenize_card_using_pm_api",
+            spec_for("tokenize_card_using_pm_api")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -180,7 +192,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -190,7 +202,11 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_input_support.authorize(req, "tokenize_card_batch_api");
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "tokenize_card_batch_api",
+            spec_for("tokenize_card_batch_api")
+        );
         if (auth_error) {
             const auto& error = *auth_error;
             error.send(res, send);
@@ -241,7 +257,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

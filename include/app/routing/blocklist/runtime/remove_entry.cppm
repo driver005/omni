@@ -36,7 +36,7 @@ public:
     }
 
     // utils.rs:25-74, 506-525.
-    [[nodiscard]] std::expected<RemoveEntryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
     remove_entry(const RemoveEntryInput& input) const
     {
         const auto existing = m_support.find_by_identity(
@@ -57,7 +57,7 @@ public:
         m_support.remove_entry(existing->get_id());
         m_support.emit("blocklist.entry.removed", response);
         m_support.track("remove_entry_from_blocklist");
-        return RemoveEntryResult{response};
+        return response;
     }
 
 private:

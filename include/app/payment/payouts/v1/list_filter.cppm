@@ -30,6 +30,13 @@ export namespace app::handlers::payouts {
 class PayoutsListFilterHandlersV1
 {
 public:
+    void bind_request_support(PayoutsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PayoutsRequestSupport* m_request_support{nullptr};
+
     explicit PayoutsListFilterHandlersV1(
         PayoutsRuntime& runtime,
         PayoutsInputSupport& input_support
@@ -45,7 +52,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_list")) {
+        if (const auto denied =
+                m_request_support->authorize(req, "payouts_list", spec_for("payouts_list"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -76,7 +84,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -86,7 +94,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "payouts_list_profile")) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "payouts_list_profile", spec_for("payouts_list_profile"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -121,7 +131,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -131,8 +141,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "payouts_list_by_filter")) {
+        if (const auto denied = m_request_support->authorize(
+                req,
+                "payouts_list_by_filter",
+                spec_for("payouts_list_by_filter")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -173,7 +186,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -183,8 +196,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "payouts_list_by_filter_profile")) {
+        if (const auto denied = m_request_support->authorize(
+                req,
+                "payouts_list_by_filter_profile",
+                spec_for("payouts_list_by_filter_profile")
+            )) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -230,7 +246,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -240,9 +256,10 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(
+        if (const auto denied = m_request_support->authorize(
                 req,
-                "payouts_list_available_filters_for_merchant"
+                "payouts_list_available_filters_for_merchant",
+                spec_for("payouts_list_available_filters_for_merchant")
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -267,7 +284,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -277,9 +294,10 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(
+        if (const auto denied = m_request_support->authorize(
                 req,
-                "payouts_list_available_filters_for_profile"
+                "payouts_list_available_filters_for_profile",
+                spec_for("payouts_list_available_filters_for_profile")
             )) {
             const auto& error = *denied;
             error.send(res, send);
@@ -307,7 +325,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

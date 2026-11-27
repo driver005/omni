@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsStartResult, core::error::AppError>
-    payments_start(const PaymentsStartInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsRedirectionResponse, core::error::AppError>
+        payments_start(const PaymentsStartInput& input) const
     {
         std::string service_status{"pending"};
         auto connector_request = ::app::connector::ConnectorRequestBuilder{}
@@ -51,7 +52,7 @@ public:
         }
         ::app::model::payments::PaymentsRedirectionResponse response{};
         response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
-        return PaymentsStartResult{response};
+        return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 
 private:

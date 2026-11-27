@@ -6,7 +6,6 @@ import core_router;
 import app_context;
 
 import :customers_input;
-import :customers_result;
 import :customers_runtime;
 import :customers_handlers_v1;
 import :customers_handlers_v2;
@@ -27,8 +26,8 @@ public:
         m_context{&context},
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support},
-        m_v2{context, m_runtime, m_input_support}
+        m_v1{context, m_runtime, m_input_support, m_request_support},
+        m_v2{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -61,6 +60,10 @@ private:
     ::app::context::AppContext* m_context{nullptr};
     CustomersRuntime m_runtime;
     CustomersInputSupport m_input_support;
+
+    CustomersPolicy m_policy{m_input_support};
+
+    CustomersRequestSupport m_request_support{m_policy};
     CustomersHandlersV1 m_v1;
     CustomersHandlersV2 m_v2;
 };

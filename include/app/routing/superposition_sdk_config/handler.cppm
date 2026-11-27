@@ -28,7 +28,9 @@ public:
     explicit SuperpositionSdkConfigRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_input_support{context},
-        m_v1{context, m_runtime, m_input_support}
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_v1{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -40,7 +42,9 @@ public:
 private:
     SuperpositionSdkConfigRuntime m_runtime;            // SINGLE runtime - no duplicated state.
     SuperpositionSdkConfigInputSupport m_input_support; // SINGLE parse/auth support.
-    SuperpositionSdkConfigHandlersV1 m_v1;              // Holds AppContext& + refs above.
+    SuperpositionSdkConfigPolicy m_policy;
+    SuperpositionSdkConfigRequestSupport m_request_support;
+    SuperpositionSdkConfigHandlersV1 m_v1; // Holds AppContext& + refs above.
 };
 
 } // namespace app::handlers::superposition_sdk_config

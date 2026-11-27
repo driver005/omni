@@ -65,91 +65,91 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputeResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     retrieve_dispute(const RetrieveDisputeInput& input) const
     {
         return m_retrieve_dispute.retrieve_dispute(input);
     }
 
-    [[nodiscard]] std::expected<FetchDisputesResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
     fetch_disputes(const FetchDisputesInput& input) const
     {
         return m_fetch_disputes.fetch_disputes(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputesListResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
     retrieve_disputes_list(const RetrieveDisputesListInput& input) const
     {
         return m_retrieve_disputes_list.retrieve_disputes_list(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputesListProfileResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
     retrieve_disputes_list_profile(const RetrieveDisputesListProfileInput& input) const
     {
         return m_retrieve_disputes_list_profile.retrieve_disputes_list_profile(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputesListForPlatformResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListResponse, Error>
     retrieve_disputes_list_for_platform(const RetrieveDisputesListForPlatformInput& input) const
     {
         return m_retrieve_disputes_list_for_platform.retrieve_disputes_list_for_platform(input);
     }
 
-    [[nodiscard]] std::expected<GetDisputesFiltersResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
     get_disputes_filters(const GetDisputesFiltersInput& input) const
     {
         return m_get_disputes_filters.get_disputes_filters(input);
     }
 
-    [[nodiscard]] std::expected<GetDisputesFiltersProfileResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
     get_disputes_filters_profile(const GetDisputesFiltersProfileInput& input) const
     {
         return m_get_disputes_filters_profile.get_disputes_filters_profile(input);
     }
 
-    [[nodiscard]] std::expected<GetPlatformDisputesFiltersResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListFilters, Error>
     get_platform_disputes_filters(const GetPlatformDisputesFiltersInput& input) const
     {
         return m_get_platform_disputes_filters.get_platform_disputes_filters(input);
     }
 
-    [[nodiscard]] std::expected<AcceptDisputeResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     accept_dispute(const AcceptDisputeInput& input) const
     {
         return m_accept_dispute.accept_dispute(input);
     }
 
-    [[nodiscard]] std::expected<SubmitDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     submit_dispute_evidence(const SubmitDisputeEvidenceInput& input) const
     {
         return m_submit_dispute_evidence.submit_dispute_evidence(input);
     }
 
-    [[nodiscard]] std::expected<AttachDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, Error>
     attach_dispute_evidence(const AttachDisputeEvidenceInput& input) const
     {
         return m_attach_dispute_evidence.attach_dispute_evidence(input);
     }
 
-    [[nodiscard]] std::expected<RetrieveDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeEvidenceBlock>, Error>
     retrieve_dispute_evidence(const RetrieveDisputeEvidenceInput& input) const
     {
         return m_retrieve_dispute_evidence.retrieve_dispute_evidence(input);
     }
 
-    [[nodiscard]] std::expected<DeleteDisputeEvidenceResult, Error>
+    [[nodiscard]] std::expected<serde::Value, Error>
     delete_dispute_evidence(const DeleteDisputeEvidenceInput& input) const
     {
         return m_delete_dispute_evidence.delete_dispute_evidence(input);
     }
 
-    [[nodiscard]] std::expected<GetDisputesAggregateResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
     get_disputes_aggregate(const GetDisputesAggregateInput& input) const
     {
         return m_get_disputes_aggregate.get_disputes_aggregate(input);
     }
 
-    [[nodiscard]] std::expected<GetDisputesAggregateProfileResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
     get_disputes_aggregate_profile(const GetDisputesAggregateProfileInput& input) const
     {
         return m_get_disputes_aggregate_profile.get_disputes_aggregate_profile(input);

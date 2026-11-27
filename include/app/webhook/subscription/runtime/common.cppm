@@ -12,7 +12,6 @@ import app_connector;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 
 export namespace app::handlers::subscription {
 

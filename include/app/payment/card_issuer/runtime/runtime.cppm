@@ -26,26 +26,28 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CardIssuerAddResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
     add(const CardIssuerAddInput& input) const
     {
         return m_add.add(input);
     }
 
-    [[nodiscard]] std::expected<CardIssuerUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
     update(const CardIssuerUpdateInput& input) const
     {
         return m_update.update(input);
     }
 
-    [[nodiscard]] std::expected<CardIssuerDeleteResult, core::error::AppError>
-    remove(const CardIssuerDeleteInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::card_issuer::CardIssuerDeleteResponse, core::error::AppError>
+        remove(const CardIssuerDeleteInput& input) const
     {
         return m_delete.remove(input);
     }
 
-    [[nodiscard]] std::expected<CardIssuerListResult, core::error::AppError>
-    list(const CardIssuerListInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::card_issuer::CardIssuerListResponse, core::error::AppError>
+        list(const CardIssuerListInput& input) const
     {
         return m_list.list(input);
     }

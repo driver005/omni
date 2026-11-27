@@ -31,7 +31,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsExtendAuthorizationResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
     payments_extend_authorization(const PaymentsExtendAuthorizationInput& input) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
@@ -55,7 +55,7 @@ public:
                 "routing decision rejected"
             )};
         }
-        return PaymentsExtendAuthorizationResult{m_support.payment_response(pipeline)};
+        return ::app::model::payments::PaymentsResponse{m_support.payment_response(pipeline)};
     }
 
 private:

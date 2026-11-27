@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreatePlatformResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     create_platform(const CreatePlatformInput& input) const
     {
         std::string set_cookie{};
@@ -98,7 +98,7 @@ public:
         response.set_merchant_id(merchant_id);
         response.set_merchant_account_type(merchant_account_type);
         auto document = ResponseDocument::from(response);
-        return CreatePlatformResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

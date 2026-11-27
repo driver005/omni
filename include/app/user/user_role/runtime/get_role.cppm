@@ -33,7 +33,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetRoleResult, core::error::AppError>
+    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
     get_role(const GetRoleInput& input) const
     {
         if (input.role_id.empty()) {
@@ -54,7 +54,7 @@ public:
         response.set_role_scope(role->scope);
         response.set_entity_type(role->entity_type);
         m_support.track_flow("get_role", "user_role.get_role");
-        return GetRoleResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

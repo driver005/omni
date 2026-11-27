@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TotpResetResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     totp_reset(const TotpResetInput& input) const
     {
         std::string set_cookie{};
@@ -64,7 +64,7 @@ public:
         totp_secret.set_totp_url("otpauth://totp/Hyperswitch?secret=" + new_secret);
         ::app::model::user::BeginTotpResponse response{};
         response.set_secret(totp_secret);
-        return TotpResetResult{ResponseDocument::from(response), set_cookie};
+        return std::pair{ResponseDocument::from(response), set_cookie};
     }
 
 private:

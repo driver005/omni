@@ -42,6 +42,20 @@ inline constexpr bool kV1 = true;
 class PollHandlersV1
 {
 public:
+    void bind_request_support(PollRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    PollRequestSupport* m_request_support{nullptr};
+
+    void bind_policy(PollPolicy& p) noexcept
+    {
+        m_policy = &p;
+    }
+
+    PollPolicy* m_policy{nullptr};
+
     PollHandlersV1(::app::context::AppContext& context, PollRuntime& runtime) noexcept :
         m_context{context},
         m_runtime{runtime},
@@ -57,9 +71,13 @@ public:
     {
         // 1. request -> Input.
         // routes/poll.rs:37-50 — dynamic auth extractor selection + registration gate.
-        const auto authorized = m_input_support.authorize_retrieve_poll_status(req);
-        if (authorized.error) {
-            const auto& error = *authorized.error;
+        const auto auth_error = m_request_support->authorize(
+            req,
+            "retrieve_poll_status",
+            spec_for("retrieve_poll_status")
+        );
+        if (auth_error) {
+            const auto& error = *auth_error;
             error.send(res, send);
             return;
         }
@@ -76,7 +94,7 @@ public:
         // routes/poll.rs:56-57 — auth.platform.get_processor().clone() supplies
         // the processor passed to core::poll::retrieve_poll_status.
         const auto processor_merchant_id =
-            m_input_support.resolve_processor_account_id(req, authorized.context);
+            m_input_support.resolve_processor_account_id(req, m_policy->last().context);
         RetrievePollStatusInput input{request_poll_id, processor_merchant_id};
 
         // 2. Input -> Result.
@@ -89,7 +107,7 @@ public:
 
         // 3. Result -> response.
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

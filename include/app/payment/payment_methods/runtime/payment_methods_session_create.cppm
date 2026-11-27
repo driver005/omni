@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentMethodsSessionCreateResult, core::error::AppError>
-    payment_methods_session_create(const PaymentMethodsSessionCreateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
+        payment_methods_session_create(const PaymentMethodsSessionCreateInput& input) const
     {
         const auto& parsed = input.request;
         const std::string session_id =
@@ -101,7 +102,7 @@ public:
             response.set_return_url(*parsed.get_return_url());
         }
         response.set_keep_alive(parsed.get_keep_alive().value_or(false));
-        return PaymentMethodsSessionCreateResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodSessionResponse{std::move(response)};
     }
 
 private:

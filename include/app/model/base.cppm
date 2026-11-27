@@ -1,6 +1,9 @@
 export module app_model;
 
 import core_serde;
+import core_behavior;
+
+export import app_connector;
 
 export import :blocklist;
 export import :cards_info;

@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RetrieveDecisionManagerConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve_decision_manager_config(const RoutingInput& input) const
     {
         const auto profile = input.profile_id;
@@ -53,7 +53,7 @@ public:
             )};
         }
         m_support.track("retrieve_decision_manager_config");
-        return RetrieveDecisionManagerConfigResult{ResponseDocument::from(*parsed)};
+        return ResponseDocument::from(*parsed);
     }
 
 private:

@@ -24,8 +24,9 @@ public:
 
     // ───────────────────────── Core: retrieve_mandates_list ─────────────────────────
     // core/mandate.rs:403-426.
-    [[nodiscard]] std::expected<RetrieveMandatesListResult, core::error::AppError>
-    retrieve_mandates_list(const RetrieveMandatesListInput& input) const
+    [[nodiscard]] std::
+        expected<std::vector<::app::model::mandates::MandateResponse>, core::error::AppError>
+        retrieve_mandates_list(const RetrieveMandatesListInput& input) const
     {
         m_support.record_flow("MandatesList"); // LockAction::NotApplicable (routes/mandates.rs:98)
 
@@ -64,7 +65,7 @@ public:
             }
             items.push_back(m_support.from_db_mandate(record));
         }
-        return RetrieveMandatesListResult{std::move(items)};
+        return std::vector<::app::model::mandates::MandateResponse>{std::move(items)};
     }
 
 private:

@@ -4,16 +4,18 @@ module;
 export module app_dto:external_service_auth;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::external_service_auth {
 
-class ExternalSignoutTokenRequest : public serde::Serializer<ExternalSignoutTokenRequest>
+class ExternalSignoutTokenRequest : public core::behavior::Serializer<ExternalSignoutTokenRequest>
 {
 public:
     void set_token(std::string value)
@@ -29,7 +31,7 @@ public:
     std::string token{};
 };
 
-class ExternalTokenResponse : public serde::Serializer<ExternalTokenResponse>
+class ExternalTokenResponse : public core::behavior::Serializer<ExternalTokenResponse>
 {
 public:
     void set_token(std::string value)
@@ -45,7 +47,7 @@ public:
     std::string token{};
 };
 
-class ExternalVerifyTokenRequest : public serde::Serializer<ExternalVerifyTokenRequest>
+class ExternalVerifyTokenRequest : public core::behavior::Serializer<ExternalVerifyTokenRequest>
 {
 public:
     void set_token(std::string value)
@@ -85,7 +87,7 @@ enum class ValidatingService
  * type of this domain's `validate_token` route. `token` is masked upstream because
  * it is a `Secret<String>` (api_models:43).
  */
-class ExternalVerifyTokenResponse : public serde::Serializer<ExternalVerifyTokenResponse>
+class ExternalVerifyTokenResponse : public core::behavior::Serializer<ExternalVerifyTokenResponse>
 {
 public:
     void set_merchant_id(std::string value)
@@ -143,7 +145,7 @@ public:
  * (ValidatingService has only OfferEngine). Both arms are now real typed DTOs.
  */
 class ExternalVerifyTokenResponseHypersense :
-    public serde::Serializer<ExternalVerifyTokenResponseHypersense>
+    public core::behavior::Serializer<ExternalVerifyTokenResponseHypersense>
 {
 public:
     void set_user_id(std::string value)
@@ -192,7 +194,7 @@ public:
     std::string email{};
 };
 
-class ValidateTokenRequest : public serde::Serializer<ValidateTokenRequest>
+class ValidateTokenRequest : public core::behavior::Serializer<ValidateTokenRequest>
 {
 public:
     void set_token(std::string value)

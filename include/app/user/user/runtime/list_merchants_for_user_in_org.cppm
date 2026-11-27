@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListMerchantsForUserInOrgResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     list_merchants_for_user_in_org(const ListMerchantsForUserInOrgInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
             response.push_back(std::move(item));
         }
         auto document = ResponseDocument::from(response);
-        return ListMerchantsForUserInOrgResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

@@ -20,6 +20,20 @@ export namespace app::handlers::disputes {
 class DisputesHandlersSubmitAccept
 {
 public:
+    void bind_request_support(DisputesRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    DisputesRequestSupport* m_request_support{nullptr};
+
+    void bind_policy(DisputesPolicy& p) noexcept
+    {
+        m_policy = &p;
+    }
+
+    DisputesPolicy* m_policy{nullptr};
+
     DisputesHandlersSubmitAccept(
         ::app::context::AppContext& context,
         DisputesRuntime& runtime,
@@ -81,13 +95,15 @@ public:
     {
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
-        if (const auto denied = m_input_support.authorize_dispute(req, ctx, kProfileWrite)) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "ProfileDisputeWrite", kDisputeProfileWriteSpec)) {
             const auto& error = *denied;
             error.send(res, send);
             return;
         }
-        const auto scope = m_input_support.scope_of(ctx, query, req);
-        if (const auto invalid = m_input_support.scope_error(scope, false)) {
+        const auto scope = m_request_support->scope(req);
+        if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
             error.send(res, send);
             return;
@@ -109,7 +125,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -122,13 +138,15 @@ public:
     {
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
-        if (const auto denied = m_input_support.authorize_dispute(req, ctx, kProfileWrite)) {
+        if (const auto denied =
+                m_request_support
+                    ->authorize(req, "ProfileDisputeWrite", kDisputeProfileWriteSpec)) {
             const auto& error = *denied;
             error.send(res, send);
             return;
         }
-        const auto scope = m_input_support.scope_of(ctx, query, req);
-        if (const auto invalid = m_input_support.scope_error(scope, false)) {
+        const auto scope = m_request_support->scope(req);
+        if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
             error.send(res, send);
             return;
@@ -157,7 +175,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

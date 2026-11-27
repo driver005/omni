@@ -21,6 +21,18 @@ export namespace app::handlers::refunds {
 class RefundsHandlersV1
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+        m_create_retrieve.bind_request_support(support);
+        m_list.bind_request_support(support);
+        m_filter.bind_request_support(support);
+        m_aggregate.bind_request_support(support);
+        m_update_reverse_manual_update.bind_request_support(support);
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsHandlersV1(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,

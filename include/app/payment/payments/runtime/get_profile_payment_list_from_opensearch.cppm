@@ -31,10 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetProfilePaymentListFromOpensearchResult, core::error::AppError>
-    get_profile_payment_list_from_opensearch(
-        const GetProfilePaymentListFromOpensearchInput& input
-    ) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsAdvancedListResponse, core::error::AppError>
+        get_profile_payment_list_from_opensearch(
+            const GetProfilePaymentListFromOpensearchInput& input
+        ) const
     {
         auto text = m_support.advanced_list_response(input.data, true);
         if (!text) {
@@ -43,7 +44,7 @@ public:
                 "Invalid profile payment list constraints"
             )};
         }
-        return GetProfilePaymentListFromOpensearchResult{*text};
+        return ::app::model::payments::PaymentsAdvancedListResponse{*text};
     }
 
 private:

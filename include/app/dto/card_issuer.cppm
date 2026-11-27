@@ -2,16 +2,18 @@ module;
 export module app_dto:card_issuer;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::card_issuer {
 
-class CardIssuerIdValue : public serde::Serializer<CardIssuerIdValue>
+class CardIssuerIdValue : public core::behavior::Serializer<CardIssuerIdValue>
 {
 public:
     void set_value(std::string v)
@@ -27,7 +29,7 @@ public:
     std::string value{};
 };
 
-class CardIssuerNameValue : public serde::Serializer<CardIssuerNameValue>
+class CardIssuerNameValue : public core::behavior::Serializer<CardIssuerNameValue>
 {
 public:
     void set_value(std::string v)
@@ -43,7 +45,7 @@ public:
     std::string value{};
 };
 
-class CardIssuerDeleteRequest : public serde::Serializer<CardIssuerDeleteRequest>
+class CardIssuerDeleteRequest : public core::behavior::Serializer<CardIssuerDeleteRequest>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -59,7 +61,7 @@ public:
     CardIssuerIdValue id{};
 };
 
-class CardIssuerDeleteResponse : public serde::Serializer<CardIssuerDeleteResponse>
+class CardIssuerDeleteResponse : public core::behavior::Serializer<CardIssuerDeleteResponse>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -86,7 +88,7 @@ public:
     bool deleted{};
 };
 
-class CardIssuerRequest : public serde::Serializer<CardIssuerRequest>
+class CardIssuerRequest : public core::behavior::Serializer<CardIssuerRequest>
 {
 public:
     void set_issuer_name(CardIssuerNameValue value)
@@ -102,7 +104,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerResponse : public serde::Serializer<CardIssuerResponse>
+class CardIssuerResponse : public core::behavior::Serializer<CardIssuerResponse>
 {
 public:
     void set_id(CardIssuerIdValue value)
@@ -129,7 +131,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerUpdateRequest : public serde::Serializer<CardIssuerUpdateRequest>
+class CardIssuerUpdateRequest : public core::behavior::Serializer<CardIssuerUpdateRequest>
 {
 public:
     void set_issuer_name(CardIssuerNameValue value)
@@ -145,7 +147,7 @@ public:
     CardIssuerNameValue issuer_name{};
 };
 
-class CardIssuerListResponse : public serde::Serializer<CardIssuerListResponse>
+class CardIssuerListResponse : public core::behavior::Serializer<CardIssuerListResponse>
 {
 public:
     void set_issuers(std::vector<CardIssuerResponse> value)

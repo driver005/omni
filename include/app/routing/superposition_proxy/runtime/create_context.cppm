@@ -1,11 +1,11 @@
 export module app_routing:superposition_proxy_runtime_create_context;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
 import :superposition_proxy_input;
-import :superposition_proxy_result;
 import :superposition_proxy_runtime_common;
 
 export namespace app::handlers::superposition_proxy {
@@ -19,7 +19,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateContextResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_context(const CreateContextHandlerInput& input) const
     {
         auto wire = m_support.finish(
@@ -30,7 +30,7 @@ public:
         if (!wire) {
             return std::unexpected{wire.error()};
         }
-        return CreateContextResult{std::move(*wire)};
+        return std::move(*wire);
     }
 
 private:

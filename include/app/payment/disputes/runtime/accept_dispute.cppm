@@ -36,7 +36,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<AcceptDisputeResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
     accept_dispute(const AcceptDisputeInput& input) const
     {
         m_context.metrics().record_flow("dispute_accept");
@@ -87,7 +87,7 @@ public:
         m_context.repository().update_dispute(*dispute);
         m_support.notify_dispute(*dispute, "dispute.accepted");
         m_context.locks().release(lock_key);
-        return AcceptDisputeResult{m_support.to_response(*dispute)};
+        return ::app::model::disputes::DisputeResponse{m_support.to_response(*dispute)};
     }
 
 private:

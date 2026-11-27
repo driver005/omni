@@ -36,8 +36,9 @@ public:
     }
 
     /** Port of core::tokenization::delete_tokenized_data_core (core/tokenization.rs:100-163). */
-    [[nodiscard]] std::expected<DeleteTokenizedDataResult, core::error::AppError>
-    delete_tokenized_data(const DeleteTokenizedDataInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::tokenization::DeleteTokenDataResponse, core::error::AppError>
+        delete_tokenized_data(const DeleteTokenizedDataInput& input) const
     {
         // core:109-115 — get_entity_id_vault_id_by_token_id -> TokenizationRecordNotFound.
         auto record = m_context.repository().find_tokenization_by_string(input.token_id);
@@ -93,7 +94,7 @@ public:
         // Real typed DTO with a transparent plain-string id field.
         ::app::dto::tokenization::DeleteTokenDataResponse response{};
         response.set_id(std::string{input.token_id});
-        return DeleteTokenizedDataResult{response};
+        return ::app::dto::tokenization::DeleteTokenDataResponse{response};
     }
 
 private:

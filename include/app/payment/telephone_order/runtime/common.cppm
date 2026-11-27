@@ -93,7 +93,7 @@ enum class TwilioPayMethod : std::uint8_t
 };
 
 /** @brief api_models/telephone_order/twilio.rs:71-124 — the provider response body. */
-class TwilioGenericPayResponse
+class TwilioGenericPayResponse : public serde::Serializer<TwilioGenericPayResponse>
 {
 public:
     void set_charge_id(std::optional<std::string> value)

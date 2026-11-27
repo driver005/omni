@@ -2,9 +2,11 @@ module;
 export module app_model:open_router;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -18,7 +20,7 @@ enum class AlgorithmType
     DebitRouting,
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+class CardNetworkValue : public core::behavior::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string value)
@@ -34,7 +36,7 @@ public:
     std::string value{};
 };
 
-class CardTypeValue : public serde::Serializer<CardTypeValue>
+class CardTypeValue : public core::behavior::Serializer<CardTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -50,7 +52,7 @@ public:
     std::string value{};
 };
 
-class CountryAlpha2Value : public serde::Serializer<CountryAlpha2Value>
+class CountryAlpha2Value : public core::behavior::Serializer<CountryAlpha2Value>
 {
 public:
     void set_value(std::string value)
@@ -66,7 +68,7 @@ public:
     std::string value{};
 };
 
-class CurrencyValue : public serde::Serializer<CurrencyValue>
+class CurrencyValue : public core::behavior::Serializer<CurrencyValue>
 {
 public:
     void set_value(std::string value)
@@ -94,7 +96,8 @@ enum class DecisionEngineDynamicAlgorithmType
     Elimination,
 };
 
-class DecisionEngineEliminationData : public serde::Serializer<DecisionEngineEliminationData>
+class DecisionEngineEliminationData :
+    public core::behavior::Serializer<DecisionEngineEliminationData>
 {
 public:
     void set_threshold(double value)
@@ -111,7 +114,7 @@ public:
 };
 
 class DecisionEngineGatewayWiseExtraScore :
-    public serde::Serializer<DecisionEngineGatewayWiseExtraScore>
+    public core::behavior::Serializer<DecisionEngineGatewayWiseExtraScore>
 {
 public:
     void set_gateway_name(std::string value)
@@ -139,7 +142,7 @@ public:
 };
 
 class DecisionEngineMerchantCategoryCodeValue :
-    public serde::Serializer<DecisionEngineMerchantCategoryCodeValue>
+    public core::behavior::Serializer<DecisionEngineMerchantCategoryCodeValue>
 {
 public:
     void set_value(std::string value)
@@ -162,7 +165,7 @@ enum class GrantLevel
     Org,
 };
 
-class HierarchyProfile : public serde::Serializer<HierarchyProfile>
+class HierarchyProfile : public core::behavior::Serializer<HierarchyProfile>
 {
 public:
     void set_profile_id(std::string value)
@@ -189,7 +192,7 @@ public:
     std::optional<std::string> profile_name{};
 };
 
-class MerchantAccount : public serde::Serializer<MerchantAccount>
+class MerchantAccount : public core::behavior::Serializer<MerchantAccount>
 {
 public:
     void set_merchant_id(std::string value)
@@ -217,7 +220,7 @@ public:
     std::optional<std::string> gateway_success_rate_based_decider_input{};
 };
 
-class MinorUnitValue : public serde::Serializer<MinorUnitValue>
+class MinorUnitValue : public core::behavior::Serializer<MinorUnitValue>
 {
 public:
     void set_value(std::string value)
@@ -233,7 +236,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue : public serde::Serializer<PaymentIdValue>
+class PaymentIdValue : public core::behavior::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string value)
@@ -249,7 +252,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -265,7 +268,7 @@ public:
     std::string value{};
 };
 
-class PriorityLogicData : public serde::Serializer<PriorityLogicData>
+class PriorityLogicData : public core::behavior::Serializer<PriorityLogicData>
 {
 public:
     void set_name(std::optional<std::string> value)
@@ -303,7 +306,7 @@ public:
     std::optional<std::string> failure_reason{};
 };
 
-class ProfileIdValue : public serde::Serializer<ProfileIdValue>
+class ProfileIdValue : public core::behavior::Serializer<ProfileIdValue>
 {
 public:
     void set_value(std::string value)
@@ -326,7 +329,7 @@ enum class RankingAlgorithm
     NtwBasedRouting,
 };
 
-class RegulatedNameValue : public serde::Serializer<RegulatedNameValue>
+class RegulatedNameValue : public core::behavior::Serializer<RegulatedNameValue>
 {
 public:
     void set_value(std::string value)
@@ -369,7 +372,7 @@ enum class TxnStatus
     Declined,
 };
 
-class UnifiedError : public serde::Serializer<UnifiedError>
+class UnifiedError : public core::behavior::Serializer<UnifiedError>
 {
 public:
     void set_code(std::string value)
@@ -407,7 +410,7 @@ public:
     std::string developer_message{};
 };
 
-class UpdateScoreResponse : public serde::Serializer<UpdateScoreResponse>
+class UpdateScoreResponse : public core::behavior::Serializer<UpdateScoreResponse>
 {
 public:
     void set_message(std::string value)
@@ -423,7 +426,7 @@ public:
     std::string message{};
 };
 
-class CoBadgedCardNetworksInfo : public serde::Serializer<CoBadgedCardNetworksInfo>
+class CoBadgedCardNetworksInfo : public core::behavior::Serializer<CoBadgedCardNetworksInfo>
 {
 public:
     void set_network(CardNetworkValue value)
@@ -450,7 +453,7 @@ public:
     std::optional<double> saving_percentage{};
 };
 
-class DebitRoutingRequestData : public serde::Serializer<DebitRoutingRequestData>
+class DebitRoutingRequestData : public core::behavior::Serializer<DebitRoutingRequestData>
 {
 public:
     void set_co_badged_card_networks_info(std::vector<CardNetworkValue> value)
@@ -511,7 +514,8 @@ public:
     CardTypeValue card_type{};
 };
 
-class DecisionEngineConfigSetupRequest : public serde::Serializer<DecisionEngineConfigSetupRequest>
+class DecisionEngineConfigSetupRequest :
+    public core::behavior::Serializer<DecisionEngineConfigSetupRequest>
 {
 public:
     void set_merchant_id(std::string value)
@@ -539,7 +543,7 @@ public:
 };
 
 class DecisionEngineSRSubLevelInputConfig :
-    public serde::Serializer<DecisionEngineSRSubLevelInputConfig>
+    public core::behavior::Serializer<DecisionEngineSRSubLevelInputConfig>
 {
 public:
     void set_payment_method_type(std::optional<std::string> value)
@@ -635,7 +639,7 @@ public:
     std::optional<std::vector<DecisionEngineGatewayWiseExtraScore>> gateway_extra_score{};
 };
 
-class ErrorResponse : public serde::Serializer<ErrorResponse>
+class ErrorResponse : public core::behavior::Serializer<ErrorResponse>
 {
 public:
     void set_status(std::string value)
@@ -717,7 +721,7 @@ public:
     bool is_dynamic_mga_enabled{};
 };
 
-class FetchRoutingConfig : public serde::Serializer<FetchRoutingConfig>
+class FetchRoutingConfig : public core::behavior::Serializer<FetchRoutingConfig>
 {
 public:
     void set_merchant_id(std::string value)
@@ -744,7 +748,8 @@ public:
     AlgorithmType algorithm{};
 };
 
-class GetDecisionEngineConfigRequest : public serde::Serializer<GetDecisionEngineConfigRequest>
+class GetDecisionEngineConfigRequest :
+    public core::behavior::Serializer<GetDecisionEngineConfigRequest>
 {
 public:
     void set_merchant_id(std::string value)
@@ -771,7 +776,7 @@ public:
     DecisionEngineDynamicAlgorithmType algorithm{};
 };
 
-class HierarchyMerchant : public serde::Serializer<HierarchyMerchant>
+class HierarchyMerchant : public core::behavior::Serializer<HierarchyMerchant>
 {
 public:
     void set_merchant_id(std::string value)
@@ -809,7 +814,7 @@ public:
     std::vector<HierarchyProfile> profiles{};
 };
 
-class MerchantTokenRequest : public serde::Serializer<MerchantTokenRequest>
+class MerchantTokenRequest : public core::behavior::Serializer<MerchantTokenRequest>
 {
 public:
     void set_merchant_id(std::string value)
@@ -869,7 +874,7 @@ public:
     std::optional<std::string> email{};
 };
 
-class PaymentInfo : public serde::Serializer<PaymentInfo>
+class PaymentInfo : public core::behavior::Serializer<PaymentInfo>
 {
 public:
     void set_payment_id(PaymentIdValue value)
@@ -974,7 +979,7 @@ public:
     std::optional<std::string> card_isin{};
 };
 
-class PriorityLogicOutput : public serde::Serializer<PriorityLogicOutput>
+class PriorityLogicOutput : public core::behavior::Serializer<PriorityLogicOutput>
 {
 public:
     void set_is_enforcement(std::optional<bool> value)
@@ -1048,7 +1053,7 @@ public:
     std::optional<PriorityLogicData> fallback_logic{};
 };
 
-class UpdateScorePayload : public serde::Serializer<UpdateScorePayload>
+class UpdateScorePayload : public core::behavior::Serializer<UpdateScorePayload>
 {
 public:
     void set_merchant_id(ProfileIdValue value)
@@ -1097,7 +1102,7 @@ public:
     PaymentIdValue payment_id{};
 };
 
-class CoBadgedCardNetworks : public serde::Serializer<CoBadgedCardNetworks>
+class CoBadgedCardNetworks : public core::behavior::Serializer<CoBadgedCardNetworks>
 {
 public:
     void set_value(std::vector<CoBadgedCardNetworksInfo> value)
@@ -1113,7 +1118,7 @@ public:
     std::vector<CoBadgedCardNetworksInfo> value{};
 };
 
-class CoBadgedCardRequest : public serde::Serializer<CoBadgedCardRequest>
+class CoBadgedCardRequest : public core::behavior::Serializer<CoBadgedCardRequest>
 {
 public:
     void set_merchant_category_code(DecisionEngineMerchantCategoryCodeValue value)
@@ -1153,7 +1158,7 @@ public:
     std::optional<DebitRoutingRequestData> co_badged_card_data{};
 };
 
-class DecideGatewayResponse : public serde::Serializer<DecideGatewayResponse>
+class DecideGatewayResponse : public core::behavior::Serializer<DecideGatewayResponse>
 {
 public:
     void set_decided_gateway(std::optional<std::string> value)
@@ -1302,7 +1307,8 @@ public:
     std::optional<serde::Value> gateway_mga_id_map{};
 };
 
-class DecisionEngineSuccessRateData : public serde::Serializer<DecisionEngineSuccessRateData>
+class DecisionEngineSuccessRateData :
+    public core::behavior::Serializer<DecisionEngineSuccessRateData>
 {
 public:
     void set_default_latency_threshold(std::optional<double> value)
@@ -1390,7 +1396,7 @@ public:
     std::optional<std::vector<DecisionEngineSRSubLevelInputConfig>> sub_level_input_config{};
 };
 
-class HierarchyOrg : public serde::Serializer<HierarchyOrg>
+class HierarchyOrg : public core::behavior::Serializer<HierarchyOrg>
 {
 public:
     void set_org_id(std::string value)
@@ -1428,7 +1434,8 @@ public:
     std::vector<HierarchyMerchant> merchants{};
 };
 
-class OpenRouterDecideGatewayRequest : public serde::Serializer<OpenRouterDecideGatewayRequest>
+class OpenRouterDecideGatewayRequest :
+    public core::behavior::Serializer<OpenRouterDecideGatewayRequest>
 {
 public:
     void set_payment_info(PaymentInfo value)
@@ -1478,7 +1485,7 @@ public:
     std::optional<RankingAlgorithm> ranking_algorithm{};
 };
 
-class DebitRoutingOutput : public serde::Serializer<DebitRoutingOutput>
+class DebitRoutingOutput : public core::behavior::Serializer<DebitRoutingOutput>
 {
 public:
     void set_co_badged_card_networks_info(CoBadgedCardNetworks value)
@@ -1538,7 +1545,7 @@ public:
     CardTypeValue card_type{};
 };
 
-class HierarchySyncRequest : public serde::Serializer<HierarchySyncRequest>
+class HierarchySyncRequest : public core::behavior::Serializer<HierarchySyncRequest>
 {
 public:
     void set_orgs(std::vector<HierarchyOrg> value)
@@ -1565,7 +1572,7 @@ public:
     bool report_stranded{};
 };
 
-class DecidedGateway : public serde::Serializer<DecidedGateway>
+class DecidedGateway : public core::behavior::Serializer<DecidedGateway>
 {
 public:
     void set_gateway_priority_map(std::optional<std::unordered_map<std::string, double>> value)

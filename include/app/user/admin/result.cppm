@@ -7,422 +7,131 @@ import app_model;
 
 export namespace app::handlers::admin {
 
-// Typed results inherit the exact wire shape of the DTO they wrap. The
-// Serializable specialization reuses the DTO's FieldDesc tuple, which applies to
-// the derived object just as it does to the base object. List responses carry
-// typed vectors; the handler serializes them as top-level JSON arrays.
+// Wire field lists captured from the former Result Serializable specializations.
+// Each Result reused the full FieldDesc tuple of its underlying model, so these
+// lists hold the exact declared field names in Serializable<T>::fields() order.
 
-class OrganizationCreateResult : public ::app::model::organization::OrganizationResponse
-{
-public:
-    OrganizationCreateResult() = default;
-
-    explicit OrganizationCreateResult(
-        ::app::model::organization::OrganizationResponse value
-    ) noexcept :
-        OrganizationResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 7> kOrganizationResponseWireFields{
+    "organization_id",
+    "organization_name",
+    "organization_details",
+    "metadata",
+    "modified_at",
+    "created_at",
+    "organization_type",
 };
 
-class OrganizationUpdateResult : public ::app::model::organization::OrganizationResponse
-{
-public:
-    OrganizationUpdateResult() = default;
-
-    explicit OrganizationUpdateResult(
-        ::app::model::organization::OrganizationResponse value
-    ) noexcept :
-        OrganizationResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 3> kConvertOrganizationToPlatformResponseWireFields{
+    "organization_id",
+    "organization_type",
+    "platform_merchant_id",
 };
 
-class OrganizationRetrieveResult : public ::app::model::organization::OrganizationResponse
-{
-public:
-    OrganizationRetrieveResult() = default;
-
-    explicit OrganizationRetrieveResult(
-        ::app::model::organization::OrganizationResponse value
-    ) noexcept :
-        OrganizationResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 25> kMerchantAccountResponseWireFields{
+    "merchant_id",
+    "merchant_name",
+    "return_url",
+    "enable_payment_response_hash",
+    "payment_response_hash_key",
+    "redirect_to_merchant_with_http_post",
+    "merchant_details",
+    "webhook_details",
+    "routing_algorithm",
+    "payout_routing_algorithm",
+    "sub_merchants_enabled",
+    "parent_merchant_id",
+    "publishable_key",
+    "metadata",
+    "locker_id",
+    "primary_business_details",
+    "frm_routing_algorithm",
+    "organization_id",
+    "is_recon_enabled",
+    "default_profile",
+    "recon_status",
+    "pm_collect_link_config",
+    "product_type",
+    "merchant_account_type",
+    "network_tokenization_credentials",
 };
 
-class ConvertOrganizationToPlatformResult :
-    public ::app::model::organization::ConvertOrganizationToPlatformResponse
-{
-public:
-    ConvertOrganizationToPlatformResult() = default;
-
-    explicit ConvertOrganizationToPlatformResult(
-        ::app::model::organization::ConvertOrganizationToPlatformResponse value
-    ) noexcept :
-        ConvertOrganizationToPlatformResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 2> kMerchantAccountDeleteResponseWireFields{
+    "merchant_id",
+    "deleted",
 };
 
-class MerchantAccountCreateResult : public ::app::dto::admin::MerchantAccountResponse
-{
-public:
-    MerchantAccountCreateResult() = default;
-
-    explicit MerchantAccountCreateResult(::app::dto::admin::MerchantAccountResponse value) noexcept
-        :
-        MerchantAccountResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 17> kMerchantConnectorResponseWireFields{
+    "connector_type",
+    "connector_name",
+    "connector_label",
+    "id",
+    "profile_id",
+    "connector_account_details",
+    "payment_methods_enabled",
+    "connector_webhook_details",
+    "metadata",
+    "disabled",
+    "frm_configs",
+    "applepay_verified_domains",
+    "pm_auth_config",
+    "status",
+    "additional_merchant_data",
+    "connector_wallets_details",
+    "feature_metadata",
 };
 
-class UpdateMerchantAccountResult : public ::app::dto::admin::MerchantAccountResponse
-{
-public:
-    UpdateMerchantAccountResult() = default;
-
-    explicit UpdateMerchantAccountResult(::app::dto::admin::MerchantAccountResponse value) noexcept
-        :
-        MerchantAccountResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 15> kMerchantConnectorListResponseWireFields{
+    "connector_type",
+    "connector_name",
+    "connector_label",
+    "merchant_connector_id",
+    "profile_id",
+    "payment_methods_enabled",
+    "test_mode",
+    "disabled",
+    "frm_configs",
+    "business_country",
+    "business_label",
+    "business_sub_label",
+    "applepay_verified_domains",
+    "pm_auth_config",
+    "status",
 };
 
-class RetrieveMerchantAccountResult : public ::app::dto::admin::MerchantAccountResponse
-{
-public:
-    RetrieveMerchantAccountResult() = default;
-
-    explicit RetrieveMerchantAccountResult(
-        ::app::dto::admin::MerchantAccountResponse value
-    ) noexcept :
-        MerchantAccountResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 3> kMerchantConnectorDeleteResponseWireFields{
+    "merchant_id",
+    "merchant_connector_id",
+    "deleted",
 };
 
-class DeleteMerchantAccountResult : public ::app::dto::admin::MerchantAccountDeleteResponse
-{
-public:
-    DeleteMerchantAccountResult() = default;
-
-    explicit DeleteMerchantAccountResult(
-        ::app::dto::admin::MerchantAccountDeleteResponse value
-    ) noexcept :
-        MerchantAccountDeleteResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 2> kToggleKVResponseWireFields{
+    "merchant_id",
+    "kv_enabled",
 };
 
-class ConnectorCreateResult : public ::app::dto::admin::MerchantConnectorResponse
-{
-public:
-    ConnectorCreateResult() = default;
-
-    explicit ConnectorCreateResult(::app::dto::admin::MerchantConnectorResponse value) noexcept :
-        MerchantConnectorResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 2> kToggleAllKVResponseWireFields{
+    "total_updated",
+    "kv_enabled",
 };
 
-class ConnectorRetrieveResult : public ::app::dto::admin::MerchantConnectorResponse
-{
-public:
-    ConnectorRetrieveResult() = default;
-
-    explicit ConnectorRetrieveResult(::app::dto::admin::MerchantConnectorResponse value) noexcept :
-        MerchantConnectorResponse{std::move(value)}
-    {
-    }
+inline constexpr std::array<std::string_view, 1> kTransferKeyResponseWireFields{
+    "total_transferred",
 };
 
-class ConnectorUpdateResult : public ::app::dto::admin::MerchantConnectorResponse
-{
-public:
-    ConnectorUpdateResult() = default;
-
-    explicit ConnectorUpdateResult(::app::dto::admin::MerchantConnectorResponse value) noexcept :
-        MerchantConnectorResponse{std::move(value)}
-    {
-    }
-};
-
-class ConnectorDeleteResult : public ::app::dto::admin::MerchantConnectorDeleteResponse
-{
-public:
-    ConnectorDeleteResult() = default;
-
-    explicit ConnectorDeleteResult(
-        ::app::dto::admin::MerchantConnectorDeleteResponse value
-    ) noexcept :
-        MerchantConnectorDeleteResponse{std::move(value)}
-    {
-    }
-};
-
-class MerchantAccountToggleKvResult : public ::app::dto::admin::ToggleKVResponse
-{
-public:
-    MerchantAccountToggleKvResult() = default;
-
-    explicit MerchantAccountToggleKvResult(::app::dto::admin::ToggleKVResponse value) noexcept :
-        ToggleKVResponse{std::move(value)}
-    {
-    }
-};
-
-class MerchantAccountKvStatusResult : public ::app::dto::admin::ToggleKVResponse
-{
-public:
-    MerchantAccountKvStatusResult() = default;
-
-    explicit MerchantAccountKvStatusResult(::app::dto::admin::ToggleKVResponse value) noexcept :
-        ToggleKVResponse{std::move(value)}
-    {
-    }
-};
-
-class MerchantAccountToggleAllKvResult : public ::app::dto::admin::ToggleAllKVResponse
-{
-public:
-    MerchantAccountToggleAllKvResult() = default;
-
-    explicit MerchantAccountToggleAllKvResult(::app::dto::admin::ToggleAllKVResponse value) noexcept
-        :
-        ToggleAllKVResponse{std::move(value)}
-    {
-    }
-};
-
-class MerchantAccountTransferKeysResult : public ::app::dto::admin::TransferKeyResponse
-{
-public:
-    MerchantAccountTransferKeysResult() = default;
-
-    explicit MerchantAccountTransferKeysResult(
-        ::app::dto::admin::TransferKeyResponse value
-    ) noexcept :
-        TransferKeyResponse{std::move(value)}
-    {
-    }
-};
-
-class ConnectorWebhookRegisterResult : public ::app::dto::admin::WebhookDetailsResponse
-{
-public:
-    ConnectorWebhookRegisterResult() = default;
-
-    explicit ConnectorWebhookRegisterResult(
-        ::app::dto::admin::WebhookDetailsResponse value
-    ) noexcept :
-        WebhookDetailsResponse{std::move(value)}
-    {
-    }
-};
-
-class RetrieveConnectorWebhookResult : public ::app::dto::admin::WebhookDetailsResponse
-{
-public:
-    RetrieveConnectorWebhookResult() = default;
-
-    explicit RetrieveConnectorWebhookResult(
-        ::app::dto::admin::WebhookDetailsResponse value
-    ) noexcept :
-        WebhookDetailsResponse{std::move(value)}
-    {
-    }
-};
-
-// List results carry typed vectors of the response DTOs. The handler serializes
-// get_items() so the wire stays a top-level JSON array.
-
-class MerchantAccountListResult
-{
-public:
-    MerchantAccountListResult() = default;
-
-    explicit MerchantAccountListResult(
-        std::vector<::app::dto::admin::MerchantAccountResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::dto::admin::MerchantAccountResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::dto::admin::MerchantAccountResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::dto::admin::MerchantAccountResponse> m_items{};
-};
-
-class ConnectorListResult
-{
-public:
-    ConnectorListResult() = default;
-
-    explicit ConnectorListResult(
-        std::vector<::app::dto::admin::MerchantConnectorListResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::dto::admin::MerchantConnectorListResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::dto::admin::MerchantConnectorListResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::dto::admin::MerchantConnectorListResponse> m_items{};
-};
-
-class ConnectorListProfileResult
-{
-public:
-    ConnectorListProfileResult() = default;
-
-    explicit ConnectorListProfileResult(
-        std::vector<::app::dto::admin::MerchantConnectorListResponse> items
-    ) noexcept :
-        m_items{std::move(items)}
-    {
-    }
-
-    [[nodiscard]] const std::vector<::app::dto::admin::MerchantConnectorListResponse>&
-    get_items() const noexcept
-    {
-        return m_items;
-    }
-
-    void set_items(std::vector<::app::dto::admin::MerchantConnectorListResponse> items)
-    {
-        m_items = std::move(items);
-    }
-
-private:
-    std::vector<::app::dto::admin::MerchantConnectorListResponse> m_items{};
+inline constexpr std::array<std::string_view, 13> kWebhookDetailsResponseWireFields{
+    "webhook_version",
+    "webhook_username",
+    "webhook_password",
+    "webhook_url",
+    "payment_created_enabled",
+    "payment_succeeded_enabled",
+    "payment_failed_enabled",
+    "payment_statuses_enabled",
+    "refund_statuses_enabled",
+    "payout_statuses_enabled",
+    "dispute_statuses_enabled",
+    "mandate_statuses_enabled",
+    "invoice_statuses_enabled",
 };
 
 } // namespace app::handlers::admin
-
-#define OMNI_ADMIN_RESULT_SERIALIZER(Name, Dto, Table)                                             \
-    template<>                                                                                     \
-    struct serde::Serializable<::app::handlers::admin::Name>                                       \
-    {                                                                                              \
-        static constexpr auto fields()                                                             \
-        {                                                                                          \
-            return serde::Serializable<Dto>::fields();                                             \
-        }                                                                                          \
-        static constexpr std::string_view table_name()                                             \
-        {                                                                                          \
-            return Table;                                                                          \
-        }                                                                                          \
-    };
-
-OMNI_ADMIN_RESULT_SERIALIZER(
-    OrganizationCreateResult,
-    ::app::model::organization::OrganizationResponse,
-    "admin_organization_create_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    OrganizationUpdateResult,
-    ::app::model::organization::OrganizationResponse,
-    "admin_organization_update_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    OrganizationRetrieveResult,
-    ::app::model::organization::OrganizationResponse,
-    "admin_organization_retrieve_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConvertOrganizationToPlatformResult,
-    ::app::model::organization::ConvertOrganizationToPlatformResponse,
-    "admin_convert_organization_to_platform_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    MerchantAccountCreateResult,
-    ::app::dto::admin::MerchantAccountResponse,
-    "admin_merchant_account_create_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    UpdateMerchantAccountResult,
-    ::app::dto::admin::MerchantAccountResponse,
-    "admin_update_merchant_account_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    RetrieveMerchantAccountResult,
-    ::app::dto::admin::MerchantAccountResponse,
-    "admin_retrieve_merchant_account_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    DeleteMerchantAccountResult,
-    ::app::dto::admin::MerchantAccountDeleteResponse,
-    "admin_delete_merchant_account_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConnectorCreateResult,
-    ::app::dto::admin::MerchantConnectorResponse,
-    "admin_connector_create_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConnectorRetrieveResult,
-    ::app::dto::admin::MerchantConnectorResponse,
-    "admin_connector_retrieve_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConnectorUpdateResult,
-    ::app::dto::admin::MerchantConnectorResponse,
-    "admin_connector_update_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConnectorDeleteResult,
-    ::app::dto::admin::MerchantConnectorDeleteResponse,
-    "admin_connector_delete_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    MerchantAccountToggleKvResult,
-    ::app::dto::admin::ToggleKVResponse,
-    "admin_merchant_account_toggle_kv_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    MerchantAccountKvStatusResult,
-    ::app::dto::admin::ToggleKVResponse,
-    "admin_merchant_account_kv_status_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    MerchantAccountToggleAllKvResult,
-    ::app::dto::admin::ToggleAllKVResponse,
-    "admin_merchant_account_toggle_all_kv_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    MerchantAccountTransferKeysResult,
-    ::app::dto::admin::TransferKeyResponse,
-    "admin_merchant_account_transfer_keys_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    ConnectorWebhookRegisterResult,
-    ::app::dto::admin::WebhookDetailsResponse,
-    "admin_connector_webhook_register_result"
-)
-OMNI_ADMIN_RESULT_SERIALIZER(
-    RetrieveConnectorWebhookResult,
-    ::app::dto::admin::WebhookDetailsResponse,
-    "admin_retrieve_connector_webhook_result"
-)
-
-#undef OMNI_ADMIN_RESULT_SERIALIZER

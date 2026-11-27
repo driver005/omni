@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TotpBeginResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     totp_begin(const TotpBeginInput& input) const
     {
         std::string set_cookie{};
@@ -58,7 +58,7 @@ public:
         if (already_setup) {
             m_context.metrics().record_flow("totp_begin");
             m_context.metrics().counter("user.totp_begin").increment();
-            return TotpBeginResult{
+            return std::pair{
                 ResponseDocument::from(::app::model::user::BeginTotpResponse{}),
                 set_cookie
             };
@@ -100,7 +100,7 @@ public:
         Response response{};
         response.set_secret(totp_secret);
         auto document = ResponseDocument::from(response);
-        return TotpBeginResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

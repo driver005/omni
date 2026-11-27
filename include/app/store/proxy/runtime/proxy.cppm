@@ -7,7 +7,6 @@ import app_context;
 import app_metrics;
 
 import :proxy_input;
-import :proxy_result;
 import :proxy_runtime_common;
 
 export namespace app::handlers::proxy {
@@ -15,7 +14,7 @@ export namespace app::handlers::proxy {
 /**
  * @brief Single route sub-runtime: port of `proxy_core` (`core/proxy.rs:24-137`).
  *
- * All request data arrives in ProxyInput; all outcomes are a typed ProxyResult
+ * All request data arrives in ProxyInput; all outcomes are a typed serde::Value
  * document or a typed AppError. No transport types are referenced here.
  */
 class ProxyForwardRuntime
@@ -27,7 +26,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProxyResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     proxy(const ProxyInput& input) const
     {
         // proxy_core step 1: validate_destination() -> InvalidRequestData "destination_url is not
@@ -132,7 +131,7 @@ public:
 
         m_context.metrics().record_flow("proxy");
         m_context.metrics().counter("proxy.proxy").increment();
-        return ProxyResult{std::move(*document)};
+        return std::move(*document);
     }
 
 private:

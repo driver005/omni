@@ -2,6 +2,7 @@ export module app_store:configs_runtime_config_key_retrieve;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
 import app_context_core;
 
@@ -21,7 +22,7 @@ public:
     }
 
     /** Upstream `config_key_retrieve` -> `read_config` (core/configs.rs:36-44). */
-    [[nodiscard]] std::expected<ConfigKeyRetrieveResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     retrieve(const ConfigKeyRetrieveInput& input) const
     {
         // read_config: store.find_config_by_key_optional(key)
@@ -34,10 +35,16 @@ public:
         m_support.record_flow("ConfigKeyFetch");
 
         // Json(config.foreign_into()) uses the stored key/value.
-        ConfigKeyRetrieveResult result{};
-        result.set_key(record->get_config_key());
-        result.set_value(record->get_config_value());
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{config_key_wire_fields()[0]},
+            serde::Value{record->get_config_key()}
+        );
+        document.insert(
+            std::string{config_key_wire_fields()[1]},
+            serde::Value{record->get_config_value()}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

@@ -22,8 +22,12 @@ public:
         m_runtime{context},
         m_input_support{context},
         m_v1{m_runtime, m_input_support},
-        m_v2{m_runtime, m_input_support}
+        m_v2{m_runtime, m_input_support},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
+        m_v1.bind_request_support(m_request_support);
+        m_v2.bind_request_support(m_request_support);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -43,6 +47,8 @@ private:
     PayoutsInputSupport m_input_support; // single shared stateless helper
     PayoutsHandlersV1 m_v1;
     PayoutsHandlersV2 m_v2;
+    PayoutsPolicy m_policy;
+    PayoutsRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::payouts

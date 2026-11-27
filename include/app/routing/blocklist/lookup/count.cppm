@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import app_model;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -18,9 +19,15 @@ export namespace app::handlers::blocklist {
 class LookupCountHandlers
 {
 public:
-    LookupCountHandlers(::app::context::AppContext& ctx, BlocklistRuntime& runtime) noexcept :
+    LookupCountHandlers(
+        ::app::context::AppContext& ctx,
+        BlocklistRuntime& runtime,
+        BlocklistInputSupport& input_support,
+        BlocklistRequestSupport& request_support
+    ) noexcept :
         m_context{ctx},
-        m_input_support{ctx},
+        m_input_support{input_support},
+        m_request_support{request_support},
         m_runtime{runtime}
     {
     }
@@ -83,7 +90,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "list_blocked_payment_methods")) {
+                m_request_support.authorize(req, "list_blocked_payment_methods", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -143,8 +150,14 @@ public:
             return;
         }
 
+        auto wire =
+            result->serialize(wire_fields<::app::model::blocklist::ListBlocklistResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -156,7 +169,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(req, "get_blocklist_count")) {
+        if (const auto denied = m_request_support.authorize(req, "get_blocklist_count", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -216,8 +229,14 @@ public:
             return;
         }
 
+        auto wire =
+            result->serialize(wire_fields<::app::model::blocklist::BlocklistCountResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
@@ -229,8 +248,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied =
-                m_input_support.authorize_operation(req, "lookup_blocklist_entry")) {
+        if (const auto denied = m_request_support.authorize(req, "lookup_blocklist_entry", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -290,14 +308,22 @@ public:
             return;
         }
 
+        auto wire =
+            result->serialize(wire_fields<::app::model::blocklist::BlocklistLookupResponse>());
+        if (!wire) {
+            wire.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{*wire}));
         send();
     }
 
 private:
     ::app::context::AppContext& m_context;
-    BlocklistInputSupport m_input_support;
+    BlocklistInputSupport& m_input_support;
+
+    BlocklistRequestSupport& m_request_support;
     BlocklistRuntime& m_runtime;
 };
 

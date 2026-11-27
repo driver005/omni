@@ -2,16 +2,18 @@ module;
 export module app_dto:revenue_recovery_data_backfill;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::revenue_recovery_data_backfill {
 
-class AdditionalCardInfoValue : public serde::Serializer<AdditionalCardInfoValue>
+class AdditionalCardInfoValue : public core::behavior::Serializer<AdditionalCardInfoValue>
 {
 public:
     void set_value(std::string v)
@@ -27,7 +29,7 @@ public:
     std::string value{};
 };
 
-class BackfillQuery : public serde::Serializer<BackfillQuery>
+class BackfillQuery : public core::behavior::Serializer<BackfillQuery>
 {
 public:
     void set_cutoff_time(std::optional<std::string> value)
@@ -43,7 +45,7 @@ public:
     std::optional<std::string> cutoff_time{};
 };
 
-class CardNetworkValue : public serde::Serializer<CardNetworkValue>
+class CardNetworkValue : public core::behavior::Serializer<CardNetworkValue>
 {
 public:
     void set_value(std::string v)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class CsvParsingError : public serde::Serializer<CsvParsingError>
+class CsvParsingError : public core::behavior::Serializer<CsvParsingError>
 {
 public:
     void set_row_number(std::size_t value)
@@ -86,7 +88,7 @@ public:
     std::string error{};
 };
 
-class GlobalPaymentIdValue : public serde::Serializer<GlobalPaymentIdValue>
+class GlobalPaymentIdValue : public core::behavior::Serializer<GlobalPaymentIdValue>
 {
 public:
     void set_value(std::string v)
@@ -102,7 +104,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -118,7 +120,7 @@ public:
     std::string value{};
 };
 
-class PrimitiveDateTimeValue : public serde::Serializer<PrimitiveDateTimeValue>
+class PrimitiveDateTimeValue : public core::behavior::Serializer<PrimitiveDateTimeValue>
 {
 public:
     void set_value(std::string v)
@@ -134,7 +136,7 @@ public:
     std::string value{};
 };
 
-class RedisDataResponse : public serde::Serializer<RedisDataResponse>
+class RedisDataResponse : public core::behavior::Serializer<RedisDataResponse>
 {
 public:
     void set_exists(bool value)
@@ -178,7 +180,7 @@ enum class RedisKeyType
     Tokens,
 };
 
-class RetryStatsMigrationRecord : public serde::Serializer<RetryStatsMigrationRecord>
+class RetryStatsMigrationRecord : public core::behavior::Serializer<RetryStatsMigrationRecord>
 {
 public:
     void set_cluster_key(std::string value)
@@ -206,7 +208,7 @@ public:
 };
 
 class RevenueRecoveryDataBackfillResponse :
-    public serde::Serializer<RevenueRecoveryDataBackfillResponse>
+    public core::behavior::Serializer<RevenueRecoveryDataBackfillResponse>
 {
 public:
     void set_processed_records(std::size_t value)
@@ -239,7 +241,7 @@ enum class ScheduledAtUpdate
     SetToDateTime,
 };
 
-class TempFileValue : public serde::Serializer<TempFileValue>
+class TempFileValue : public core::behavior::Serializer<TempFileValue>
 {
 public:
     void set_value(std::string v)
@@ -255,7 +257,7 @@ public:
     std::string value{};
 };
 
-class UnlockStatusResponse : public serde::Serializer<UnlockStatusResponse>
+class UnlockStatusResponse : public core::behavior::Serializer<UnlockStatusResponse>
 {
 public:
     void set_unlocked(bool value)
@@ -271,7 +273,7 @@ public:
     bool unlocked{};
 };
 
-class UpdateTokenStatusResponse : public serde::Serializer<UpdateTokenStatusResponse>
+class UpdateTokenStatusResponse : public core::behavior::Serializer<UpdateTokenStatusResponse>
 {
 public:
     void set_updated(bool value)
@@ -298,7 +300,7 @@ public:
     std::string message{};
 };
 
-class AccountUpdateHistoryRecord : public serde::Serializer<AccountUpdateHistoryRecord>
+class AccountUpdateHistoryRecord : public core::behavior::Serializer<AccountUpdateHistoryRecord>
 {
 public:
     void set_old_token(std::string value)
@@ -367,7 +369,7 @@ enum class BackfillError
     FileProcessingError,
 };
 
-class GetRedisDataQuery : public serde::Serializer<GetRedisDataQuery>
+class GetRedisDataQuery : public core::behavior::Serializer<GetRedisDataQuery>
 {
 public:
     void set_key_type(RedisKeyType value)
@@ -383,7 +385,7 @@ public:
     RedisKeyType key_type{};
 };
 
-class RetryStatsMigrationCsvResult : public serde::Serializer<RetryStatsMigrationCsvResult>
+class RetryStatsMigrationCsvResult : public core::behavior::Serializer<RetryStatsMigrationCsvResult>
 {
 public:
     void set_records(std::vector<std::pair<std::size_t, RetryStatsMigrationRecord>> value)
@@ -400,7 +402,7 @@ public:
     std::vector<std::pair<std::size_t, RetryStatsMigrationRecord>> records{};
 };
 
-class RetryStatsMigrationForm : public serde::Serializer<RetryStatsMigrationForm>
+class RetryStatsMigrationForm : public core::behavior::Serializer<RetryStatsMigrationForm>
 {
 public:
     void set_file(TempFileValue value)
@@ -416,7 +418,7 @@ public:
     TempFileValue file{};
 };
 
-class RetryStatsMigrationResponse : public serde::Serializer<RetryStatsMigrationResponse>
+class RetryStatsMigrationResponse : public core::behavior::Serializer<RetryStatsMigrationResponse>
 {
 public:
     void set_processed_records(std::size_t value)
@@ -454,7 +456,8 @@ public:
     std::vector<CsvParsingError> row_errors{};
 };
 
-class RevenueRecoveryDataBackfillForm : public serde::Serializer<RevenueRecoveryDataBackfillForm>
+class RevenueRecoveryDataBackfillForm :
+    public core::behavior::Serializer<RevenueRecoveryDataBackfillForm>
 {
 public:
     void set_file(TempFileValue value)
@@ -470,7 +473,7 @@ public:
     TempFileValue file{};
 };
 
-class UnlockStatusRequest : public serde::Serializer<UnlockStatusRequest>
+class UnlockStatusRequest : public core::behavior::Serializer<UnlockStatusRequest>
 {
 public:
     void set_connector_customer_id(std::string value)
@@ -497,7 +500,7 @@ public:
     GlobalPaymentIdValue payment_intent_id{};
 };
 
-class UpdateTokenStatusRequest : public serde::Serializer<UpdateTokenStatusRequest>
+class UpdateTokenStatusRequest : public core::behavior::Serializer<UpdateTokenStatusRequest>
 {
 public:
     void set_connector_customer_id(std::string value)
@@ -557,7 +560,7 @@ public:
     std::optional<std::string> error_code{};
 };
 
-class ComprehensiveCardData : public serde::Serializer<ComprehensiveCardData>
+class ComprehensiveCardData : public core::behavior::Serializer<ComprehensiveCardData>
 {
 public:
     void set_card_type(std::optional<std::string> value)
@@ -663,7 +666,8 @@ public:
     std::optional<std::vector<AccountUpdateHistoryRecord>> account_update_history{};
 };
 
-class RevenueRecoveryBackfillRequest : public serde::Serializer<RevenueRecoveryBackfillRequest>
+class RevenueRecoveryBackfillRequest :
+    public core::behavior::Serializer<RevenueRecoveryBackfillRequest>
 {
 public:
     void set_bin_number(std::optional<std::string> value)
@@ -802,7 +806,7 @@ public:
     std::optional<std::vector<AccountUpdateHistoryRecord>> account_update_history{};
 };
 
-class CsvParsingResult : public serde::Serializer<CsvParsingResult>
+class CsvParsingResult : public core::behavior::Serializer<CsvParsingResult>
 {
 public:
     void set_records(std::vector<RevenueRecoveryBackfillRequest> value)

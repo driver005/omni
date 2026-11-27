@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetUserDetailsInternalResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     get_user_details_internal(const GetUserDetailsInternalInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         response.set_user_id(user_id);
         response.set_is_active(stored && stored->get_status() == "active");
         auto document = ResponseDocument::from(response);
-        return GetUserDetailsInternalResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

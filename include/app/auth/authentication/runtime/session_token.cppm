@@ -37,7 +37,7 @@ public:
 
     // ───────────────────────── Core: session token ─────────────────────────
     // unified_authentication_service.rs:2516-2583 authentication_session_core.
-    [[nodiscard]] std::expected<AuthenticationSessionTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     session_token(const AuthenticationSessionTokenInput& input) const
     {
         auto record = m_support.find_authentication(input.authentication_id);
@@ -70,12 +70,10 @@ public:
         if (click_to_pay_enabled) {
             tokens.push_back(m_support.get_session_token_for_click_to_pay(*record));
         }
-        return AuthenticationSessionTokenResult{
-            JsonObject{}
-                .str("authentication_id", std::string{input.authentication_id})
-                .val("session_token", serde::Value{std::move(tokens)})
-                .done()
-        };
+        return JsonObject{}
+            .str("authentication_id", std::string{input.authentication_id})
+            .val("session_token", serde::Value{std::move(tokens)})
+            .done();
     }
 
 private:

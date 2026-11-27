@@ -8,6 +8,7 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import core_behavior;
 import core_cache;
 import core_error;
 import app_context_core;
@@ -34,11 +35,11 @@ public:
     ApplePayCertificatesMigrationHandlersV1(
         ::app::context::AppContext& ctx,
         ApplePayCertificatesMigrationRuntime& runtime,
-        ApplePayCertificatesMigrationInputSupport& input_support
+        core::behavior::RequestSupport<ApplePayCertificatesMigrationPolicy>& request_support
     ) noexcept :
         m_context{ctx},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_request_support{request_support}
     {
     }
 
@@ -56,7 +57,8 @@ public:
         // this operation (app/auth/registry.cppm:38); upstream
         // routes/apple_pay_certificates_migration.rs:26. LockAction::NotApplicable
         // (routes:27) means no lock is acquired.
-        if (const auto auth = m_input_support.authorize(req)) {
+        if (const auto auth =
+                m_request_support.authorize(req, "apple_pay_certificates_migration", {})) {
             const auto& error = *auth;
             error.send(res, send);
             return;
@@ -96,8 +98,13 @@ public:
             return;
         }
 
+        auto encoded = result->serialize(wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -135,7 +142,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
     ApplePayCertificatesMigrationRuntime& m_runtime;
-    ApplePayCertificatesMigrationInputSupport& m_input_support;
+    core::behavior::RequestSupport<ApplePayCertificatesMigrationPolicy>& m_request_support;
 };
 
 } // namespace app::handlers::apple_pay_certificates_migration

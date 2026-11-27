@@ -2,9 +2,11 @@ module;
 export module app_dto:oidc;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -38,7 +40,7 @@ enum class KeyUse
     Sig,
 };
 
-class OidcTokenResponse : public serde::Serializer<OidcTokenResponse>
+class OidcTokenResponse : public core::behavior::Serializer<OidcTokenResponse>
 {
 public:
     void set_access_token(std::string value)
@@ -119,7 +121,7 @@ enum class TokenAuthMethod
     ClientSecretBasic,
 };
 
-class Jwk : public serde::Serializer<Jwk>
+class Jwk : public core::behavior::Serializer<Jwk>
 {
 public:
     void set_kty(KeyType value)
@@ -190,7 +192,7 @@ public:
     std::string e{};
 };
 
-class OidcAuthorizeQuery : public serde::Serializer<OidcAuthorizeQuery>
+class OidcAuthorizeQuery : public core::behavior::Serializer<OidcAuthorizeQuery>
 {
 public:
     void set_response_type(ResponseType value)
@@ -261,7 +263,7 @@ public:
     std::string nonce{};
 };
 
-class OidcDiscoveryResponse : public serde::Serializer<OidcDiscoveryResponse>
+class OidcDiscoveryResponse : public core::behavior::Serializer<OidcDiscoveryResponse>
 {
 public:
     void set_issuer(std::string value)
@@ -433,7 +435,7 @@ public:
     bool request_uri_parameter_supported{};
 };
 
-class OidcTokenRequest : public serde::Serializer<OidcTokenRequest>
+class OidcTokenRequest : public core::behavior::Serializer<OidcTokenRequest>
 {
 public:
     void set_grant_type(GrantType value)
@@ -471,7 +473,7 @@ public:
     std::string redirect_uri{};
 };
 
-class JwksResponse : public serde::Serializer<JwksResponse>
+class JwksResponse : public core::behavior::Serializer<JwksResponse>
 {
 public:
     void set_keys(std::vector<Jwk> value)

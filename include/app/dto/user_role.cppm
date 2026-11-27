@@ -2,9 +2,11 @@ module;
 export module app_dto:user_role;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ enum class AuthorizationInfo
     GroupWithTag,
 };
 
-class DeleteUserRoleResponse : public serde::Serializer<DeleteUserRoleResponse>
+class DeleteUserRoleResponse : public core::behavior::Serializer<DeleteUserRoleResponse>
 {
 public:
     void set_is_email_sent(bool value)
@@ -33,7 +35,7 @@ public:
     bool is_email_sent{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -49,7 +51,7 @@ public:
     std::string value{};
 };
 
-class EntityTypeValue : public serde::Serializer<EntityTypeValue>
+class EntityTypeValue : public core::behavior::Serializer<EntityTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -65,7 +67,7 @@ public:
     std::string value{};
 };
 
-class MinimalRoleInfoValue : public serde::Serializer<MinimalRoleInfoValue>
+class MinimalRoleInfoValue : public core::behavior::Serializer<MinimalRoleInfoValue>
 {
 public:
     void set_value(std::string v)
@@ -81,7 +83,7 @@ public:
     std::string value{};
 };
 
-class ParentGroupValue : public serde::Serializer<ParentGroupValue>
+class ParentGroupValue : public core::behavior::Serializer<ParentGroupValue>
 {
 public:
     void set_value(std::string v)
@@ -97,7 +99,7 @@ public:
     std::string value{};
 };
 
-class PermissionGroupValue : public serde::Serializer<PermissionGroupValue>
+class PermissionGroupValue : public core::behavior::Serializer<PermissionGroupValue>
 {
 public:
     void set_value(std::string v)
@@ -113,7 +115,7 @@ public:
     std::string value{};
 };
 
-class SecretStringValue : public serde::Serializer<SecretStringValue>
+class SecretStringValue : public core::behavior::Serializer<SecretStringValue>
 {
 public:
     void set_value(std::string v)
@@ -135,7 +137,7 @@ enum class UserStatus
     InvitationSent,
 };
 
-class AuthorizationInfoResponse : public serde::Serializer<AuthorizationInfoResponse>
+class AuthorizationInfoResponse : public core::behavior::Serializer<AuthorizationInfoResponse>
 {
 public:
     void set_value(std::vector<AuthorizationInfo> v)
@@ -151,7 +153,7 @@ public:
     std::vector<AuthorizationInfo> value{};
 };
 
-class DeleteUserRoleRequest : public serde::Serializer<DeleteUserRoleRequest>
+class DeleteUserRoleRequest : public core::behavior::Serializer<DeleteUserRoleRequest>
 {
 public:
     void set_email(EmailValue value)
@@ -167,7 +169,7 @@ public:
     EmailValue email{};
 };
 
-class Entity : public serde::Serializer<Entity>
+class Entity : public core::behavior::Serializer<Entity>
 {
 public:
     void set_entity_id(std::string value)
@@ -194,7 +196,7 @@ public:
     EntityTypeValue entity_type{};
 };
 
-class GroupInfo : public serde::Serializer<GroupInfo>
+class GroupInfo : public core::behavior::Serializer<GroupInfo>
 {
 public:
     void set_group(PermissionGroupValue value)
@@ -221,7 +223,8 @@ public:
     std::string description{};
 };
 
-class ListInvitationForUserResponse : public serde::Serializer<ListInvitationForUserResponse>
+class ListInvitationForUserResponse :
+    public core::behavior::Serializer<ListInvitationForUserResponse>
 {
 public:
     void set_entity_id(std::string value)
@@ -270,7 +273,7 @@ public:
     std::string role_id{};
 };
 
-class ListUsersInEntityRequest : public serde::Serializer<ListUsersInEntityRequest>
+class ListUsersInEntityRequest : public core::behavior::Serializer<ListUsersInEntityRequest>
 {
 public:
     void set_entity_type(std::optional<EntityTypeValue> value)
@@ -286,7 +289,7 @@ public:
     std::optional<EntityTypeValue> entity_type{};
 };
 
-class ListUsersInEntityResponse : public serde::Serializer<ListUsersInEntityResponse>
+class ListUsersInEntityResponse : public core::behavior::Serializer<ListUsersInEntityResponse>
 {
 public:
     void set_email(EmailValue value)
@@ -313,7 +316,7 @@ public:
     std::vector<MinimalRoleInfoValue> roles{};
 };
 
-class ParentInfo : public serde::Serializer<ParentInfo>
+class ParentInfo : public core::behavior::Serializer<ParentInfo>
 {
 public:
     void set_name(ParentGroupValue value)
@@ -351,7 +354,7 @@ public:
     std::vector<PermissionGroupValue> groups{};
 };
 
-class UpdateUserRoleRequest : public serde::Serializer<UpdateUserRoleRequest>
+class UpdateUserRoleRequest : public core::behavior::Serializer<UpdateUserRoleRequest>
 {
 public:
     void set_email(EmailValue value)

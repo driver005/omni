@@ -39,7 +39,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CheckTwoFactorAuthStatusWithAttemptsResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     check_two_factor_auth_status_with_attempts(
         const CheckTwoFactorAuthStatusWithAttemptsInput& input
     ) const
@@ -73,7 +73,7 @@ public:
             !totp_active || (skip_flag && (*skip_flag == "true" || *skip_flag == "1"))
         );
         auto document = ResponseDocument::from(response);
-        return CheckTwoFactorAuthStatusWithAttemptsResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

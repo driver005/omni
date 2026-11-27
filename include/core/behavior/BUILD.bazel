@@ -1,0 +1,19 @@
+load("//bazel:build_defs.bzl", "congelado_module_library")
+
+congelado_module_library(
+    name = "core_behavior",
+    primary_interface = "base.cppm",
+    partitions = [
+        "behavior.cppm",
+        "serializer.cppm",
+        "policy.cppm",
+    ],
+    deps = [
+        "//include/core/serde:core_serde",
+        "//include/core/error:core_error",
+        "//include/core/database:core_database",
+        "//include/core/cache:core_cache",
+        "//include/interfaces:interfaces",
+    ],
+    visibility = ["//visibility:public"],
+)

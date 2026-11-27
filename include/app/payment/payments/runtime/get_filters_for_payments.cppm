@@ -31,13 +31,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetFiltersForPaymentsResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
     get_filters_for_payments(const GetFiltersForPaymentsInput& input) const
     {
         if (const auto err = m_support.ensure_payment_exists(input.data)) {
             return std::unexpected{*err};
         }
-        return GetFiltersForPaymentsResult{m_support.payment_response_view(input.data)};
+        return ::app::model::payments::PaymentsResponse{
+            m_support.payment_response_view(input.data)
+        };
     }
 
 private:

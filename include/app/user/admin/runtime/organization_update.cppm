@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OrganizationUpdateResult, core::error::AppError>
-    update(const OrganizationUpdateInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
+        update(const OrganizationUpdateInput& input) const
     {
         auto found = m_context.repository().find_organization_by_string(input.organization_id);
         if (!found.has_value()) {
@@ -84,7 +85,7 @@ public:
         m_context.metrics().record_flow("organization_update");
         m_context.metrics().counter("admin.organization_update").increment();
         m_context.events().publish("organization.updated", serde::Ser::encode_json(response));
-        return OrganizationUpdateResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

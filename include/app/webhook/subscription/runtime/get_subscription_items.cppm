@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -27,7 +26,7 @@ public:
     }
 
     // get_subscription_items + get_subscription_item_prices (core.rs:151-172)
-    [[nodiscard]] std::expected<GetSubscriptionItemsResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     get_subscription_items(const GetSubscriptionItemsInput& input) const
     {
         if (const auto failure =
@@ -48,7 +47,7 @@ public:
         auto items =
             billing.get_items(input.profile_id, input.limit, input.offset, input.item_type);
         m_support.metrics_for("subscription.get_subscription_items");
-        return GetSubscriptionItemsResult{m_support.build_items_response(items)};
+        return m_support.build_items_response(items);
     }
 
 private:

@@ -23,11 +23,12 @@ public:
     UserRoleHandlersV2(
         ::app::context::AppContext& context,
         UserRoleRuntime& runtime,
-        UserRoleInputSupport& input_support
+        UserRoleInputSupport& input_support,
+        UserRoleRequestSupport& request_support
     ) noexcept :
-        m_roles_crud{context, runtime, input_support},
-        m_list_info{context, runtime, input_support},
-        m_aliases{context, runtime, input_support}
+        m_roles_crud{context, runtime, input_support, request_support},
+        m_list_info{context, runtime, input_support, request_support},
+        m_aliases{context, runtime, input_support, request_support}
     {
     }
 

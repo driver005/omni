@@ -31,8 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetPaymentListFromOpensearchResult, core::error::AppError>
-    get_payment_list_from_opensearch(const GetPaymentListFromOpensearchInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payments::PaymentsAdvancedListResponse, core::error::AppError>
+        get_payment_list_from_opensearch(const GetPaymentListFromOpensearchInput& input) const
     {
         auto text = m_support.advanced_list_response(input.data, false);
         if (!text) {
@@ -41,7 +42,7 @@ public:
                 "Invalid payment list constraints"
             )};
         }
-        return GetPaymentListFromOpensearchResult{*text};
+        return ::app::model::payments::PaymentsAdvancedListResponse{*text};
     }
 
 private:

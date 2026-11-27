@@ -32,7 +32,7 @@ public:
 
     // Upstream kill_switch::reset (kill_switch.rs:543-577). Auth and scope
     // resolution stay in the handler; everything below is the old core block.
-    [[nodiscard]] std::expected<ResetKillSwitchResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     reset(const ResetKillSwitchInput& input) const
     {
         const auto& resolved = input.scope;
@@ -64,7 +64,7 @@ public:
         m_context.metrics().counter("unified_connector_service.kill_switch_reset").increment();
 
         // kill_switch.rs:562-569: ApplicationResponse::StatusOk, no JSON body.
-        return ResetKillSwitchResult{};
+        return serde::Value{serde::Value::Object{}};
     }
 
 private:

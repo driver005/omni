@@ -36,7 +36,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ListCustomerPaymentMethodApiClientResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payment_methods::ClientPaymentMethodsListResponse,
+        core::error::AppError>
     list_customer_payment_method_api_client(
         const ListCustomerPaymentMethodApiClientInput& input
     ) const
@@ -65,7 +67,7 @@ public:
             items.push_back(std::move(item));
         }
         response.set_customer_payment_methods(std::move(items));
-        return ListCustomerPaymentMethodApiClientResult{std::move(response)};
+        return ::app::model::payment_methods::ClientPaymentMethodsListResponse{std::move(response)};
     }
 
 private:

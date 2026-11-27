@@ -2,7 +2,9 @@ export module app_auth:oidc_runtime;
 
 import std;
 import core_error;
+import core_serde;
 import app_context;
+import app_dto;
 
 import :oidc_input;
 import :oidc_result;
@@ -26,25 +28,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<OidcDiscoveryResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::oidc::OidcDiscoveryResponse, core::error::AppError>
     discovery(const OidcDiscoveryInput& input) const
     {
         return m_discovery.discovery(input);
     }
 
-    [[nodiscard]] std::expected<JwksEndpointResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::oidc::JwksResponse, core::error::AppError>
     jwks(const JwksEndpointInput& input) const
     {
         return m_jwks.jwks(input);
     }
 
-    [[nodiscard]] std::expected<OidcAuthorizeResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     authorize(const OidcAuthorizeInput& input) const
     {
         return m_authorize.authorize(input);
     }
 
-    [[nodiscard]] std::expected<OidcTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::oidc::OidcTokenResponse, core::error::AppError>
     token(const OidcTokenInput& input) const
     {
         return m_token.token(input);

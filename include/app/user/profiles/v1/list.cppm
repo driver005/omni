@@ -29,11 +29,13 @@ public:
     ProfilesHandlersV1List(
         ::app::context::AppContext& context,
         ProfilesRuntime& runtime,
-        ProfilesInputSupport& input_support
+        ProfilesInputSupport& input_support,
+        ProfilesRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -43,8 +45,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error =
-                m_input_support.authorize_profile_operation(req, "profiles_list")) {
+        if (const auto auth_error = m_request_support.authorize(req, "profiles_list", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -58,7 +59,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ProfileWireResponse>>::serialize_values(
+            *result,
+            kProfileWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -68,10 +77,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_input_support.authorize_profile_operation(
-                req,
-                "profiles_list_at_profile_level"
-            )) {
+        if (const auto auth_error =
+                m_request_support.authorize(req, "profiles_list_at_profile_level", {})) {
             const auto& error = *auth_error;
             error.send(res, send);
             return;
@@ -89,7 +96,15 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_items()));
+        auto encoded = serde::Serializer<std::vector<ProfileWireResponse>>::serialize_values(
+            *result,
+            kProfileWireFields
+        );
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
+        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
         send();
     }
 
@@ -97,6 +112,7 @@ private:
     ::app::context::AppContext& m_context;
     ProfilesRuntime& m_runtime;
     ProfilesInputSupport& m_input_support;
+    ProfilesRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::profiles

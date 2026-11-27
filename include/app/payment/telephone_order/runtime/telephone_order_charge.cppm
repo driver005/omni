@@ -38,7 +38,7 @@ public:
 
     /** @brief routes/telephone_order.rs:19-91 — telephone_order_charge /
      * charge_with<TwilioGenericPay>. */
-    [[nodiscard]] std::expected<TelephoneOrderChargeResult, core::error::AppError>
+    [[nodiscard]] std::expected<TwilioGenericPayResponse, core::error::AppError>
     telephone_order_charge(const TelephoneOrderChargeInput& input) const
     {
         const auto& request = input.request;
@@ -97,10 +97,10 @@ public:
 
 private:
     /** @brief Copy the provider response into the typed Result DTO the handler serializes. */
-    [[nodiscard]] static TelephoneOrderChargeResult
+    [[nodiscard]] static TwilioGenericPayResponse
     to_result(const TwilioGenericPayResponse& response)
     {
-        TelephoneOrderChargeResult result{};
+        TwilioGenericPayResponse result{};
         result.set_charge_id(response.get_charge_id());
         result.set_error_code(response.get_error_code());
         result.set_error_message(response.get_error_message());

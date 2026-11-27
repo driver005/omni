@@ -31,7 +31,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentsCompleteAuthorizeRedirectResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::model::payments::PaymentsRedirectionResponse,
+        core::error::AppError>
     payments_complete_authorize_redirect(const PaymentsCompleteAuthorizeRedirectInput& input) const
     {
         std::string service_status{"pending"};
@@ -51,7 +53,7 @@ public:
         }
         ::app::model::payments::PaymentsRedirectionResponse response{};
         response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
-        return PaymentsCompleteAuthorizeRedirectResult{response};
+        return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 
 private:

@@ -37,7 +37,7 @@ public:
 
     // Upstream SessionState::payment_callback_config() is an internal OnceCell load
     // (app.rs:207-212) with no HTTP auth. The registry row is NO_AUTH.
-    [[nodiscard]] std::expected<PaymentCallbackConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     payment_callback_config(const PaymentCallbackConfigInput& input) const
     {
         (void)input;
@@ -75,14 +75,29 @@ public:
         m_context.metrics().record_flow("PaymentCallbackConfigLoad");
         m_context.metrics().counter("PAYMENT_CALLBACK_CONFIG_LOADED").increment();
 
-        PaymentCallbackConfigResult result{};
-        result.set_partition("app");
-        result.set_op("payment_callback_config");
-        result.set_mode(mode);
-        result.set_issues_tokens(issues_tokens);
-        result.set_allows_legacy(allows_legacy);
-        result.set_config_source(config_source);
-        return result;
+        serde::Value::Object document{};
+        document.insert(
+            std::string{payment_callback_config_wire_fields()[0]},
+            serde::Value{std::string{"app"}}
+        );
+        document.insert(
+            std::string{payment_callback_config_wire_fields()[1]},
+            serde::Value{std::string{"payment_callback_config"}}
+        );
+        document.insert(std::string{payment_callback_config_wire_fields()[2]}, serde::Value{mode});
+        document.insert(
+            std::string{payment_callback_config_wire_fields()[3]},
+            serde::Value{issues_tokens}
+        );
+        document.insert(
+            std::string{payment_callback_config_wire_fields()[4]},
+            serde::Value{allows_legacy}
+        );
+        document.insert(
+            std::string{payment_callback_config_wire_fields()[5]},
+            serde::Value{config_source}
+        );
+        return serde::Value{std::move(document)};
     }
 
 private:

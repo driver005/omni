@@ -2,16 +2,18 @@ module;
 export module app_dto:sender;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::sender {
 
-class AddressDetailsValue : public serde::Serializer<AddressDetailsValue>
+class AddressDetailsValue : public core::behavior::Serializer<AddressDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -27,7 +29,7 @@ public:
     std::string value{};
 };
 
-class EmailValue : public serde::Serializer<EmailValue>
+class EmailValue : public core::behavior::Serializer<EmailValue>
 {
 public:
     void set_value(std::string v)
@@ -43,7 +45,7 @@ public:
     std::string value{};
 };
 
-class MaskedEmailValue : public serde::Serializer<MaskedEmailValue>
+class MaskedEmailValue : public core::behavior::Serializer<MaskedEmailValue>
 {
 public:
     void set_value(std::string v)
@@ -59,7 +61,7 @@ public:
     std::string value{};
 };
 
-class MaskedPhoneNumberValue : public serde::Serializer<MaskedPhoneNumberValue>
+class MaskedPhoneNumberValue : public core::behavior::Serializer<MaskedPhoneNumberValue>
 {
 public:
     void set_value(std::string v)
@@ -75,7 +77,7 @@ public:
     std::string value{};
 };
 
-class PhoneDetailsValue : public serde::Serializer<PhoneDetailsValue>
+class PhoneDetailsValue : public core::behavior::Serializer<PhoneDetailsValue>
 {
 public:
     void set_value(std::string v)
@@ -91,7 +93,7 @@ public:
     std::string value{};
 };
 
-class SecretDateValue : public serde::Serializer<SecretDateValue>
+class SecretDateValue : public core::behavior::Serializer<SecretDateValue>
 {
 public:
     void set_value(std::string v)
@@ -107,7 +109,7 @@ public:
     std::string value{};
 };
 
-class SecretStringValue : public serde::Serializer<SecretStringValue>
+class SecretStringValue : public core::behavior::Serializer<SecretStringValue>
 {
 public:
     void set_value(std::string v)
@@ -145,7 +147,7 @@ enum class SourceOfFunds
     Cash,
 };
 
-class CorporateSenderDetails : public serde::Serializer<CorporateSenderDetails>
+class CorporateSenderDetails : public core::behavior::Serializer<CorporateSenderDetails>
 {
 public:
     void set_company_name(SecretStringValue value)
@@ -216,7 +218,7 @@ public:
     std::optional<SourceOfFunds> source_of_funds{};
 };
 
-class IndividualSenderDetails : public serde::Serializer<IndividualSenderDetails>
+class IndividualSenderDetails : public core::behavior::Serializer<IndividualSenderDetails>
 {
 public:
     void set_first_name(std::optional<SecretStringValue> value)
@@ -309,7 +311,7 @@ public:
     std::optional<SourceOfFunds> source_of_funds{};
 };
 
-class MaskedSenderPhoneDetails : public serde::Serializer<MaskedSenderPhoneDetails>
+class MaskedSenderPhoneDetails : public core::behavior::Serializer<MaskedSenderPhoneDetails>
 {
 public:
     void set_number(std::optional<MaskedPhoneNumberValue> value)
@@ -336,7 +338,8 @@ public:
     std::optional<std::string> country_code{};
 };
 
-class CorporateSenderDetailsResponse : public serde::Serializer<CorporateSenderDetailsResponse>
+class CorporateSenderDetailsResponse :
+    public core::behavior::Serializer<CorporateSenderDetailsResponse>
 {
 public:
     void set_company_name(SecretStringValue value)
@@ -385,7 +388,8 @@ public:
     std::optional<MaskedEmailValue> email{};
 };
 
-class IndividualSenderDetailsResponse : public serde::Serializer<IndividualSenderDetailsResponse>
+class IndividualSenderDetailsResponse :
+    public core::behavior::Serializer<IndividualSenderDetailsResponse>
 {
 public:
     void set_first_name(std::optional<SecretStringValue> value)

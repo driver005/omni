@@ -23,8 +23,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ToggleConnectorAgnosticMitResult, core::error::AppError>
-    toggle(const ToggleConnectorAgnosticMitInput& input) const
+    [[nodiscard]] std::
+        expected<::app::dto::admin::ConnectorAgnosticMitChoice, core::error::AppError>
+        toggle(const ToggleConnectorAgnosticMitInput& input) const
     {
         // core/admin.rs:4950-4992 — processor merchant must equal the route
         // merchant; the header/route binding is enforced by
@@ -65,7 +66,7 @@ public:
         m_context.metrics().record_flow("profiles.toggle_connector_agnostic_mit");
         m_context.metrics().record_flow("Flow::ToggleConnectorAgnosticMit");
         m_context.metrics().counter("profiles_toggle_connector_agnostic_mit").increment();
-        return ToggleConnectorAgnosticMitResult{input.choice};
+        return input.choice;
     }
 
 private:

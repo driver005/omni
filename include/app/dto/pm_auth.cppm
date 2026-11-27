@@ -2,16 +2,18 @@ module;
 export module app_dto:pm_auth;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
 
 export namespace app::dto::pm_auth {
 
-class ExchangeTokenCreateResponse : public serde::Serializer<ExchangeTokenCreateResponse>
+class ExchangeTokenCreateResponse : public core::behavior::Serializer<ExchangeTokenCreateResponse>
 {
 public:
     void set_access_token(std::string value)
@@ -27,7 +29,7 @@ public:
     std::string access_token{};
 };
 
-class LinkTokenCreateResponse : public serde::Serializer<LinkTokenCreateResponse>
+class LinkTokenCreateResponse : public core::behavior::Serializer<LinkTokenCreateResponse>
 {
 public:
     void set_link_token(std::string value)
@@ -54,7 +56,8 @@ public:
     std::string connector{};
 };
 
-class MerchantConnectorAccountIdValue : public serde::Serializer<MerchantConnectorAccountIdValue>
+class MerchantConnectorAccountIdValue :
+    public core::behavior::Serializer<MerchantConnectorAccountIdValue>
 {
 public:
     void set_value(std::string v)
@@ -70,7 +73,7 @@ public:
     std::string value{};
 };
 
-class PaymentIdValue : public serde::Serializer<PaymentIdValue>
+class PaymentIdValue : public core::behavior::Serializer<PaymentIdValue>
 {
 public:
     void set_value(std::string v)
@@ -86,7 +89,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string v)
@@ -102,7 +105,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string v)
@@ -118,7 +121,7 @@ public:
     std::string value{};
 };
 
-class ExchangeTokenCreateRequest : public serde::Serializer<ExchangeTokenCreateRequest>
+class ExchangeTokenCreateRequest : public core::behavior::Serializer<ExchangeTokenCreateRequest>
 {
 public:
     void set_public_token(std::string value)
@@ -178,7 +181,7 @@ public:
     PaymentMethodTypeValue payment_method_type{};
 };
 
-class LinkTokenCreateRequest : public serde::Serializer<LinkTokenCreateRequest>
+class LinkTokenCreateRequest : public core::behavior::Serializer<LinkTokenCreateRequest>
 {
 public:
     void set_language(std::optional<std::string> value)
@@ -238,7 +241,8 @@ public:
     PaymentMethodTypeValue payment_method_type{};
 };
 
-class PaymentMethodAuthConnectorChoice : public serde::Serializer<PaymentMethodAuthConnectorChoice>
+class PaymentMethodAuthConnectorChoice :
+    public core::behavior::Serializer<PaymentMethodAuthConnectorChoice>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -287,7 +291,7 @@ public:
     MerchantConnectorAccountIdValue mca_id{};
 };
 
-class PaymentMethodAuthConfig : public serde::Serializer<PaymentMethodAuthConfig>
+class PaymentMethodAuthConfig : public core::behavior::Serializer<PaymentMethodAuthConfig>
 {
 public:
     void set_enabled_payment_methods(std::vector<PaymentMethodAuthConnectorChoice> value)

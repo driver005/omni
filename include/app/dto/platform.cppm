@@ -2,9 +2,11 @@ module;
 export module app_dto:platform;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -17,7 +19,7 @@ enum class Initiator
     Connected,
 };
 
-class PlatformCatalog : public serde::Serializer<PlatformCatalog>
+class PlatformCatalog : public core::behavior::Serializer<PlatformCatalog>
 {
 public:
     void set_name(std::string value)

@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<UserConnectAccountResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     user_connect_account(const UserConnectAccountInput& input) const
     {
         std::string set_cookie{};
@@ -69,7 +69,7 @@ public:
         response.set_is_email_sent(false);
         response.set_user_id(user_id);
         auto document = ResponseDocument::from(response);
-        return UserConnectAccountResult{document, set_cookie};
+        return std::pair{document, set_cookie};
     }
 
 private:

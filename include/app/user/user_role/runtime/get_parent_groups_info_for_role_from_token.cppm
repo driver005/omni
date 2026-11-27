@@ -35,7 +35,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetParentGroupsInfoForRoleFromTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::vector<ParentGroupInfoWire>, core::error::AppError>
     get_parent_groups_info_for_role_from_token(
         const GetParentGroupsInfoForRoleFromTokenInput& input
     ) const
@@ -54,7 +54,7 @@ public:
             "get_parent_groups_info_for_role_from_token",
             "user_role.get_parent_groups_info_for_role_from_token"
         );
-        return GetParentGroupsInfoForRoleFromTokenResult{std::move(parents)};
+        return std::move(parents);
     }
 
 private:

@@ -21,6 +21,13 @@ export namespace app::handlers::refunds {
 class RefundsV1FilterHandlers
 {
 public:
+    void bind_request_support(RefundsRequestSupport& support) noexcept
+    {
+        m_request_support = &support;
+    }
+
+    RefundsRequestSupport* m_request_support{nullptr};
+
     RefundsV1FilterHandlers(
         ::app::context::AppContext& ctx,
         RefundsRuntime& runtime,
@@ -39,7 +46,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::Platform)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "Platform", spec_for("Platform"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -53,7 +61,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -64,7 +72,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::Filter)) {
+        if (const auto denied = m_request_support->authorize(req, "Filter", spec_for("Filter"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -92,7 +100,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -103,7 +111,7 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::Filters)) {
+        if (const auto denied = m_request_support->authorize(req, "Filters", spec_for("Filters"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -117,7 +125,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -128,7 +136,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_op(req, AuthProfile::FiltersProfile)) {
+        if (const auto denied =
+                m_request_support->authorize(req, "FiltersProfile", spec_for("FiltersProfile"))) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -142,7 +151,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 

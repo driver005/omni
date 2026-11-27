@@ -38,7 +38,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GetDisputesAggregateProfileResult, Error>
+    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
     get_disputes_aggregate_profile(const GetDisputesAggregateProfileInput& input) const
     {
         m_context.metrics().record_flow("dispute_profile_aggregate");
@@ -50,7 +50,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return GetDisputesAggregateProfileResult{*result};
+        return ::app::model::disputes::DisputesAggregateResponse{*result};
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_payment:pm_auth_runtime;
 
 import std;
+import core_serde;
 import core_error;
 import app_context;
 
@@ -22,13 +23,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<LinkTokenCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::dto::pm_auth::LinkTokenCreateResponse, core::error::AppError>
     link_token_create(const LinkTokenCreateInput& input) const
     {
         return m_link_token_create.link_token_create(input);
     }
 
-    [[nodiscard]] std::expected<ExchangeTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     exchange_token(const ExchangeTokenInput& input) const
     {
         return m_exchange_token.exchange_token(input);

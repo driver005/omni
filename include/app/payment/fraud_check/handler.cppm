@@ -43,7 +43,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth = m_input_support.authorize_frm_fulfillment(req)) {
+        if (const auto auth =
+                m_request_support.authorize(req, "frm_fulfillment", spec_for("frm_fulfillment"))) {
             res.set_status(auth->get_status());
             res.set_body(serde::Ser::serialize("application/json", *auth));
             send();
@@ -87,7 +88,7 @@ public:
         }
 
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(serialize_wire(*result));
         send();
     }
 
@@ -114,7 +115,9 @@ public:
     explicit FraudCheckRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_input_support{context}
+        m_input_support{context},
+        m_policy{context, m_input_support},
+        m_request_support{m_policy}
     {
     }
 
@@ -122,6 +125,8 @@ private:
     ::app::context::AppContext& m_context;
     FraudCheckRuntime m_runtime;
     FrmInputSupport m_input_support;
+    FraudCheckPolicy m_policy;
+    FraudCheckRequestSupport m_request_support;
 };
 
 } // namespace app::handlers::fraud_check

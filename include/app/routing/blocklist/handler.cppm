@@ -25,12 +25,15 @@ public:
     explicit BlocklistRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{context},
         m_runtime{context},
-        m_entries{context, m_runtime},
-        m_guard{context, m_runtime},
-        m_lookup_count{context, m_runtime},
-        m_batch{context, m_runtime},
-        m_export{context, m_runtime},
-        m_clone{context, m_runtime}
+        m_input_support{context},
+        m_policy{m_input_support},
+        m_request_support{m_policy},
+        m_entries{context, m_runtime, m_input_support, m_request_support},
+        m_guard{context, m_runtime, m_input_support, m_request_support},
+        m_lookup_count{context, m_runtime, m_input_support, m_request_support},
+        m_batch{context, m_runtime, m_input_support, m_request_support},
+        m_export{context, m_runtime, m_input_support, m_request_support},
+        m_clone{context, m_runtime, m_input_support, m_request_support}
     {
     }
 
@@ -54,6 +57,9 @@ public:
 private:
     ::app::context::AppContext& m_context;
     BlocklistRuntime m_runtime;
+    BlocklistInputSupport m_input_support;     // SINGLE parse/auth helper.
+    BlocklistPolicy m_policy;                  // Domain auth/scope policy.
+    BlocklistRequestSupport m_request_support; // Shared by all family handlers.
     EntriesHandlers m_entries;
     GuardHandlers m_guard;
     LookupCountHandlers m_lookup_count;

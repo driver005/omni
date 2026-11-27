@@ -21,7 +21,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RefundsMetadataUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
     metadata_update(const RefundsMetadataUpdateInput& input) const
     {
         m_context.metrics().record_flow("refund_metadata_update");
@@ -31,7 +31,7 @@ public:
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return RefundsMetadataUpdateResult{m_support.to_refund_response(*result)};
+        return ::app::model::refunds::RefundResponse{m_support.to_refund_response(*result)};
     }
 
 private:

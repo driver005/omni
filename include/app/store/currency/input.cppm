@@ -3,6 +3,7 @@ export module app_store:currency_input;
 import std;
 import interfaces;
 import core_error;
+import core_behavior;
 import app_context;
 import app_context_core;
 import app_http;
@@ -92,6 +93,45 @@ private:
     }
 
     ::app::context::AppContext& m_context;
+};
+
+/**
+ * @brief Domain policy consumed by core::behavior::RequestSupport.
+ *
+ * The forex OR-path (API key first, dashboard JWT second) is the genuine
+ * currency auth rule and stays in CurrencyInputSupport; this policy adapts it
+ * to the generic authorize/scope/scope_error shape.
+ */
+class CurrencyPolicy
+{
+public:
+    explicit CurrencyPolicy(CurrencyInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view,
+        const core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize_forex(req).error;
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest&) const noexcept
+    {
+        return {};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const noexcept
+    {
+        return std::nullopt;
+    }
+
+private:
+    CurrencyInputSupport& m_support;
 };
 
 // ───────────────────────── Plain inputs ─────────────────────────

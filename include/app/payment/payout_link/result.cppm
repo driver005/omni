@@ -5,31 +5,66 @@ import core_serde;
 
 export namespace app::handlers::payout_link {
 
-// The render response is a hand-built GenericLinks document (an externally
-// tagged `data` payload that the flat DTOs cannot express). The runtime builds
-// it as a typed serde::Value; the handler serializes that document directly.
-class PayoutLinkRenderResult
+/**
+ * @brief Wire encoder for the domain's response models.
+ *
+ * The former Result wrappers are gone: runtimes hand back the underlying model,
+ * a std::vector of models, or an explicit serde::Value document. Model encoding
+ * goes through Serializer<T>::serialize(fields). An empty span means all declared
+ * fields in declaration order — Serializer<T>::metadata::field_names() is the
+ * captured wire list, identical to the field tuple the old wrapper forwarded.
+ */
+template<class T>
+    requires requires(const T& value, std::span<const std::string_view> fields) {
+        value.serialize(fields);
+    }
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const T& value, std::span<const std::string_view> fields = {})
 {
-public:
-    PayoutLinkRenderResult() = default;
-
-    explicit PayoutLinkRenderResult(serde::Value document) noexcept :
-        m_document{std::move(document)}
-    {
+    auto text = value.serialize(fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    [[nodiscard]] const serde::Value& get_document() const noexcept
-    {
-        return m_document;
+template<class T>
+[[nodiscard]] std::vector<std::byte>
+serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fields = {})
+{
+    auto text = serde::Serializer<std::vector<T>>::serialize_values(value, fields);
+    if (!text) {
+        return serde::Ser::serialize_error("application/json", "serialization failed");
     }
+    std::vector<std::byte> bytes(text->size());
+    std::ranges::transform(
+        *text,
+        bytes.begin(),
+        [](char character) noexcept
+        {
+            return std::byte(character);
+        }
+    );
+    return bytes;
+}
 
-    void set_document(serde::Value value)
-    {
-        m_document = std::move(value);
-    }
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const serde::Value& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
-private:
-    serde::Value m_document{};
-};
+[[nodiscard]] inline std::vector<std::byte> serialize_wire(const std::string& value)
+{
+    return serde::Ser::serialize("application/json", value);
+}
 
 } // namespace app::handlers::payout_link

@@ -24,19 +24,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ReceiveIncomingWebhookResult, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
     receive_incoming_webhook(const ReceiveIncomingWebhookInput& input) const
     {
         return m_receive_incoming_webhook.receive_incoming_webhook(input);
     }
 
-    [[nodiscard]] std::expected<ReceiveIncomingWebhookV2Result, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
     receive_incoming_webhook_v2(const ReceiveIncomingWebhookV2Input& input) const
     {
         return m_receive_incoming_webhook_v2.receive_incoming_webhook_v2(input);
     }
 
-    [[nodiscard]] std::expected<ReceiveNetworkTokenResult, core::error::AppError>
+    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
     receive_network_token(const ReceiveNetworkTokenInput& input) const
     {
         return m_receive_network_token.receive_network_token(input);

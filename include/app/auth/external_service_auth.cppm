@@ -3,6 +3,7 @@ export module app_auth:external_service_auth_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -33,7 +34,8 @@ public:
     explicit ExternalServiceAuthRouteHandlers(::app::context::AppContext& context) noexcept :
         m_context{&context},
         m_runtime{context},
-        m_input_support{context}
+        m_policy{context},
+        m_request_support{m_policy}
     {
     }
 
@@ -44,10 +46,8 @@ public:
         std::function<void()> send
     )
     {
-        const auto authorized = m_input_support.authorize_no_auth(req);
-        if (authorized) {
-            const auto& error = *authorized;
-            error.send(res, send);
+        if (const auto auth_error = m_request_support.authorize(req, "validate_token", {})) {
+            auth_error->send(res, send);
             return;
         }
 
@@ -84,8 +84,13 @@ public:
             return;
         }
 
+        auto encoded = result->serialize(validate_token_wire_fields());
+        if (!encoded) {
+            encoded.error().send(res, send);
+            return;
+        }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
+        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
         send();
     }
 
@@ -116,7 +121,8 @@ public:
 private:
     ::app::context::AppContext* m_context{nullptr};
     ExternalServiceAuthRuntime m_runtime;
-    ExternalServiceAuthInputSupport m_input_support;
+    ExternalServiceAuthPolicy m_policy;
+    core::behavior::RequestSupport<ExternalServiceAuthPolicy> m_request_support;
 };
 
 } // namespace app::handlers::external_service_auth

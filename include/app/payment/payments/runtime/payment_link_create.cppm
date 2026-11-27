@@ -31,7 +31,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<PaymentLinkCreateResult, core::error::AppError>
+    [[nodiscard]] std::expected<::app::model::payments::PaymentLinkResponse, core::error::AppError>
     payment_link_create(const PaymentLinkCreateInput& input) const
     {
         const std::string new_payment_id = m_context.ids().payment_id();
@@ -44,7 +44,7 @@ public:
         ::app::model::payments::PaymentLinkResponse response{};
         response.set_link(input.data.body);
         response.set_payment_link_id(new_payment_id);
-        return PaymentLinkCreateResult{response};
+        return ::app::model::payments::PaymentLinkResponse{response};
     }
 
 private:

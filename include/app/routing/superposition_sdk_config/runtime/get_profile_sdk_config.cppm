@@ -25,7 +25,9 @@ public:
 
     // ───────────────────────── Core: get_profile_sdk_config ─────────────────────────
     // Upstream core::get_superposition_sdk_config profile path (core:152-345).
-    [[nodiscard]] std::expected<GetProfileSdkConfigResult, core::error::AppError>
+    [[nodiscard]] std::expected<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
+        core::error::AppError>
     get_profile_sdk_config(const GetProfileSdkConfigInput& input) const
     {
         using Response = ::app::dto::superposition_sdk_config::SuperPositionConfigResponse;
@@ -68,7 +70,7 @@ public:
         m_context.metrics().record_flow("GetSuperpositionSdkConfig");
         m_context.metrics().counter("get_profile_superposition_sdk_config").increment();
 
-        return GetProfileSdkConfigResult{std::move(response)};
+        return std::move(response);
     }
 
 private:

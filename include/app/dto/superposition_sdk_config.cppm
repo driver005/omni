@@ -2,9 +2,11 @@ module;
 export module app_dto:superposition_sdk_config;
 
 import core_serde;
+import core_behavior;
 
 import std;
 import core_serde;
+import core_behavior;
 #ifdef CONGELADO_TEST
 import boost.ut;
 #endif
@@ -20,7 +22,7 @@ export namespace app::dto::superposition_sdk_config {
 //   }
 // The structured fields are modelled as serde::Value (rfl::Generic) so the JSON wire shape
 // matches the upstream object instead of wrapping the raw JSON in a string.
-class Config : public serde::Serializer<Config>
+class Config : public core::behavior::Serializer<Config>
 {
 public:
     void set_contexts(serde::Value value)
@@ -76,7 +78,7 @@ enum class PaymentMethodCriteria
     PaymentExperience,
 };
 
-class PaymentMethodTypeValue : public serde::Serializer<PaymentMethodTypeValue>
+class PaymentMethodTypeValue : public core::behavior::Serializer<PaymentMethodTypeValue>
 {
 public:
     void set_value(std::string value)
@@ -92,7 +94,7 @@ public:
     std::string value{};
 };
 
-class PaymentMethodValue : public serde::Serializer<PaymentMethodValue>
+class PaymentMethodValue : public core::behavior::Serializer<PaymentMethodValue>
 {
 public:
     void set_value(std::string value)
@@ -108,7 +110,7 @@ public:
     std::string value{};
 };
 
-class SdkCriteriaRule : public serde::Serializer<SdkCriteriaRule>
+class SdkCriteriaRule : public core::behavior::Serializer<SdkCriteriaRule>
 {
 public:
     void set_criteria_value(std::string value)
@@ -135,7 +137,7 @@ public:
     std::vector<std::string> eligible_connectors{};
 };
 
-class SecretStringValue : public serde::Serializer<SecretStringValue>
+class SecretStringValue : public core::behavior::Serializer<SecretStringValue>
 {
 public:
     void set_value(std::string value)
@@ -157,7 +159,7 @@ enum class VaultingAction
     Skip,
 };
 
-class ProfileAccountConfig : public serde::Serializer<ProfileAccountConfig>
+class ProfileAccountConfig : public core::behavior::Serializer<ProfileAccountConfig>
 {
 public:
     void set_collect_shipping_details_from_wallet_connector(bool value)
@@ -219,7 +221,7 @@ public:
     VaultingAction vaulting_action{};
 };
 
-class SdkConfigRequest : public serde::Serializer<SdkConfigRequest>
+class SdkConfigRequest : public core::behavior::Serializer<SdkConfigRequest>
 {
 public:
     void set_client_secret(std::optional<SecretStringValue> value)
@@ -235,7 +237,7 @@ public:
     std::optional<SecretStringValue> client_secret{};
 };
 
-class SdkPaymentMethodType : public serde::Serializer<SdkPaymentMethodType>
+class SdkPaymentMethodType : public core::behavior::Serializer<SdkPaymentMethodType>
 {
 public:
     void set_payment_method_type(PaymentMethodTypeValue value)
@@ -274,7 +276,7 @@ public:
     std::vector<SdkCriteriaRule> criteria_rules{};
 };
 
-class AccountConfig : public serde::Serializer<AccountConfig>
+class AccountConfig : public core::behavior::Serializer<AccountConfig>
 {
 public:
     void set_profile(ProfileAccountConfig value)
@@ -290,7 +292,7 @@ public:
     ProfileAccountConfig profile{};
 };
 
-class SdkPaymentMethod : public serde::Serializer<SdkPaymentMethod>
+class SdkPaymentMethod : public core::behavior::Serializer<SdkPaymentMethod>
 {
 public:
     void set_payment_method(PaymentMethodValue value)
@@ -317,7 +319,7 @@ public:
     std::vector<SdkPaymentMethodType> payment_method_types{};
 };
 
-class SuperPositionConfigResponse : public serde::Serializer<SuperPositionConfigResponse>
+class SuperPositionConfigResponse : public core::behavior::Serializer<SuperPositionConfigResponse>
 {
 public:
     void set_raw_configs(Config value)

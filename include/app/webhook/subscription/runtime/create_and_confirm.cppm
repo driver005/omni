@@ -12,7 +12,6 @@ import app_metrics;
 import app_events;
 
 import :subscription_input;
-import :subscription_result;
 import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
@@ -27,7 +26,7 @@ public:
     }
 
     // core::create_and_confirm_subscription (core.rs:176-307)
-    [[nodiscard]] std::expected<CreateAndConfirmSubscriptionResult, core::error::AppError>
+    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
     create_and_confirm(const CreateAndConfirmSubscriptionInput& input) const
     {
         const auto merchant = input.merchant_id;
@@ -106,9 +105,7 @@ public:
         m_context.repository().update_subscription(m_support.to_store_record(record));
 
         m_support.metrics_for("subscription.create_and_confirm");
-        return CreateAndConfirmSubscriptionResult{
-            m_support.build_confirm_response(record, invoice, payment)
-        };
+        return m_support.build_confirm_response(record, invoice, payment);
     }
 
 private:

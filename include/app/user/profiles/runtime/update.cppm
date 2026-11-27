@@ -23,7 +23,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileUpdateResult, core::error::AppError>
+    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
     update(const ProfileUpdateInput& input) const
     {
         auto repository = m_context.repository();
@@ -77,7 +77,7 @@ public:
         m_context.metrics().record_flow("profiles.update");
         m_context.metrics().record_flow("Flow::ProfileUpdate");
         m_context.metrics().counter("profiles_update").increment();
-        return ProfileUpdateResult{std::move(*updated)};
+        return std::move(*updated);
     }
 
 private:

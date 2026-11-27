@@ -53,10 +53,4 @@ private:
     serde::Value m_value{};
 };
 
-/** One Result per handle_* method. */
-struct RecoveryReceiveIncomingWebhookResult
-{
-    WebhookResponse response{};
-};
-
 } // namespace app::handlers::recovery_webhooks

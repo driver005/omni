@@ -1,41 +1,18 @@
 export module app_auth:external_service_auth_result;
 
 import std;
-import core_serde;
-import app_dto;
 
 export namespace app::handlers::external_service_auth {
 
-// The wire fields inherit from the exact typed DTO the old core encoded, so
-// field names, order and wrapper types stay byte-identical. The Serializable
-// specialization reuses the DTO's FieldDesc tuple; those descriptors apply to
-// the derived object just as they do to the base object.
-class ValidateTokenResult : public ::app::dto::external_service_auth::ExternalVerifyTokenResponse
+/**
+ * @brief Exact wire fields of ExternalVerifyTokenResponse, in declaration order.
+ *
+ * Captured from the retired ValidateTokenResult Serializable specialization so the handler can
+ * emit the same document through Serializer<T>::serialize(fields).
+ */
+[[nodiscard]] inline constexpr auto validate_token_wire_fields()
 {
-public:
-    ValidateTokenResult() = default;
-
-    explicit ValidateTokenResult(
-        ::app::dto::external_service_auth::ExternalVerifyTokenResponse value
-    ) noexcept :
-        ExternalVerifyTokenResponse{std::move(value)}
-    {
-    }
-};
+    return std::array<std::string_view, 4>{"merchant_id", "context", "token", "permissions"};
+}
 
 } // namespace app::handlers::external_service_auth
-
-template<>
-struct serde::Serializable<::app::handlers::external_service_auth::ValidateTokenResult>
-{
-    static constexpr auto fields()
-    {
-        return serde::Serializable<
-            ::app::dto::external_service_auth::ExternalVerifyTokenResponse>::fields();
-    }
-
-    static constexpr std::string_view table_name()
-    {
-        return "validate_token_result";
-    }
-};

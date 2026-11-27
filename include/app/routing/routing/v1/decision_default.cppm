@@ -29,11 +29,13 @@ public:
     RoutingV1DecisionHandlers(
         ::app::context::AppContext& context,
         RoutingRuntime& runtime,
-        RoutingInputSupport& input_support
+        RoutingInputSupport& input_support,
+        RoutingRequestSupport& request_support
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_input_support{input_support}
+        m_input_support{input_support},
+        m_request_support{request_support}
     {
     }
 
@@ -45,7 +47,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "routing_update_default_config")) {
+                m_request_support.authorize(req, "routing_update_default_config", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -80,7 +82,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -93,7 +95,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "routing_retrieve_default_config")) {
+                m_request_support.authorize(req, "routing_retrieve_default_config", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -108,7 +110,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -120,7 +122,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "upsert_decision_manager_config")) {
+                m_request_support.authorize(req, "upsert_decision_manager_config", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -156,7 +158,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -167,7 +169,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "delete_decision_manager_config")) {
+                m_request_support.authorize(req, "delete_decision_manager_config", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -182,7 +184,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -193,7 +195,7 @@ public:
     )
     {
         if (const auto denied =
-                m_input_support.authorize_operation(req, "retrieve_decision_manager_config")) {
+                m_request_support.authorize(req, "retrieve_decision_manager_config", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -208,7 +210,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -220,10 +222,9 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(
-                req,
-                "routing_retrieve_default_config_for_profiles"
-            )) {
+        if (const auto denied =
+                m_request_support
+                    .authorize(req, "routing_retrieve_default_config_for_profiles", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -238,7 +239,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -249,10 +250,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_input_support.authorize_operation(
-                req,
-                "routing_update_default_config_for_profile"
-            )) {
+        if (const auto denied =
+                m_request_support.authorize(req, "routing_update_default_config_for_profile", {})) {
             const auto& error = *denied;
             error.send(res, send);
             return;
@@ -287,7 +286,7 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->get_document()));
+        res.set_body(serde::Ser::serialize("application/json", *result));
         send();
     }
 
@@ -502,6 +501,7 @@ private:
     ::app::context::AppContext& m_context;
     RoutingRuntime& m_runtime;
     RoutingInputSupport& m_input_support;
+    RoutingRequestSupport& m_request_support;
 };
 
 } // namespace app::handlers::routing

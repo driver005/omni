@@ -37,7 +37,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreateTenantUserResult, core::error::AppError>
+    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
     create_tenant_user(const CreateTenantUserInput& input) const
     {
         std::string set_cookie{};
@@ -71,7 +71,7 @@ public:
         m_context.metrics().record_flow("create_tenant_user");
         m_context.metrics().counter("user.create_tenant_user").increment();
 
-        return CreateTenantUserResult{ResponseDocument::empty(), set_cookie};
+        return std::pair{ResponseDocument::empty(), set_cookie};
     }
 
 private:

@@ -20,7 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TelephoneOrderChargeResult, core::error::AppError>
+    [[nodiscard]] std::expected<TwilioGenericPayResponse, core::error::AppError>
     telephone_order_charge(const TelephoneOrderChargeInput& input) const
     {
         return m_telephone_order_charge.telephone_order_charge(input);

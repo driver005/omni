@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TokenizeCardApiResult, core::error::AppError>
-    tokenize_card_api(const TokenizeCardApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::CardNetworkTokenizeResponse, core::error::AppError>
+        tokenize_card_api(const TokenizeCardApiInput& input) const
     {
         const auto payload = serde::Ser::encode_json(input.request);
         const auto vault =
@@ -66,7 +67,7 @@ public:
             );
         card_response.set_client_secret(token);
         response.set_payment_method_response(std::move(card_response));
-        return TokenizeCardApiResult{std::move(response)};
+        return ::app::model::payment_methods::CardNetworkTokenizeResponse{std::move(response)};
     }
 
 private:

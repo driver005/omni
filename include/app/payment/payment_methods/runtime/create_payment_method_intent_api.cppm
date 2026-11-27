@@ -35,8 +35,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<CreatePaymentMethodIntentApiResult, core::error::AppError>
-    create_payment_method_intent_api(const CreatePaymentMethodIntentApiInput& input) const
+    [[nodiscard]] std::
+        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
+        create_payment_method_intent_api(const CreatePaymentMethodIntentApiInput& input) const
     {
         const std::string& customer_id = input.request.get_customer_id().get_value();
         if (!customer_id.empty() && !m_support.customer_exists(customer_id)) {
@@ -70,7 +71,7 @@ public:
             response.set_metadata(*input.request.get_metadata());
         }
         response.set_client_secret(client_secret);
-        return CreatePaymentMethodIntentApiResult{std::move(response)};
+        return ::app::model::payment_methods::PaymentMethodResponse{std::move(response)};
     }
 
 private:

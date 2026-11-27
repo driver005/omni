@@ -50,8 +50,8 @@ public:
 
 
         const auto merchant_id = ctx.merchant_id;
-        m_context.metrics().record_flow("list_profiles_for_user_in_org_and_merchant");
-        m_context.metrics().counter("user.list_profiles_for_user_in_org_and_merchant").increment();
+        m_context.logger().record_flow("list_profiles_for_user_in_org_and_merchant");
+        m_context.logger().counter("user.list_profiles_for_user_in_org_and_merchant").increment();
 
         using Response =
             std::vector<::app::model::user::ListProfilesForUserInOrgAndMerchantAccountResponse>;

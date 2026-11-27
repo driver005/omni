@@ -55,7 +55,7 @@ public:
         std::optional<serde::Value> body{};
         const auto text = req.body_as_string();
         if (!text.empty()) {
-            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            body = *serde::Ser::decode_generic(req.get_content_type(), text);
             if (!body) {
                 const auto error = core::error::AppErrorBuilder{}(
                     core::error::AppErrorKind::INVALID_JSON,
@@ -84,7 +84,7 @@ public:
         std::optional<serde::Value> body{};
         const auto text = req.body_as_string();
         if (!text.empty()) {
-            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            body = *serde::Ser::decode_generic(req.get_content_type(), text);
             if (!body) {
                 const auto error = core::error::AppErrorBuilder{}(
                     core::error::AppErrorKind::INVALID_JSON,
@@ -114,7 +114,7 @@ public:
         std::optional<serde::Value> body{};
         const auto text = req.body_as_string();
         if (!text.empty()) {
-            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            body = *serde::Ser::decode_generic(req.get_content_type(), text);
             if (!body) {
                 const auto error = core::error::AppErrorBuilder{}(
                     core::error::AppErrorKind::INVALID_JSON,

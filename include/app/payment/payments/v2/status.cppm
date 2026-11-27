@@ -66,8 +66,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payment_status");
-        m_context.metrics().counter("payments.payment_status").increment();
+        m_context.logger().record_flow("payments.payment_status");
+        m_context.logger().counter("payments.payment_status").increment();
 
         const auto body =
             m_input_support.path_body({{"payment_id", m_input_support.payment_id_from_path(req)}});
@@ -79,8 +79,11 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payment_status(dto, m_request_support->context(req)).handle(sink);
     }
@@ -101,13 +104,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_status_with_gateway_creds");
-        m_context.metrics().counter("payments.payments_status_with_gateway_creds").increment();
+        m_context.logger().record_flow("payments.payments_status_with_gateway_creds");
+        m_context.logger().counter("payments.payments_status_with_gateway_creds").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payments_status_with_gateway_creds(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.payments_status_with_gateway_creds(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #20
@@ -124,7 +131,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payment_status(req, res, std::move(send));
                     }
@@ -147,7 +154,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_status_with_gateway_creds(req, res, std::move(send));
                     }

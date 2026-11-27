@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    check_two_factor_auth_status(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    check_two_factor_auth_status(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -57,8 +59,8 @@ public:
         const auto recovery_enabled =
             m_context.repository().get_config("user.recovery_codes." + owner).has_value();
 
-        m_context.metrics().record_flow("check_two_factor_auth_status");
-        m_context.metrics().counter("user.check_two_factor_auth_status").increment();
+        m_context.logger().record_flow("check_two_factor_auth_status");
+        m_context.logger().counter("user.check_two_factor_auth_status").increment();
 
         using Response = ::app::model::user::TwoFactorAuthStatusResponse;
         Response response{};

@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime_payment;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -26,9 +27,9 @@ public:
     // routes/dummy_connector.rs:66-83 -> core.rs:13-42 (payment).
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        payment(const Dto& dto, const core::behavior::CallContext& ctx) const
+    payment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        const auto input = PaymentData{dto, ctx};
+        const auto input = PaymentInputData{dto, ctx};
         const PaymentRequest& request = input.request;
 
         // types.rs:77-88 - PaymentId::default() (pay_*) and
@@ -63,8 +64,8 @@ public:
             .put(attempt_id, core::cache::to_cache_value(payment_id), m_support.ttl("authorize"));
         m_support.save_payment(data);
 
-        m_context.metrics().record_flow("DummyPaymentCreate");
-        m_context.metrics().counter("DUMMY_CONNECTOR_PAYMENT").increment();
+        m_context.logger().record_flow("DummyPaymentCreate");
+        m_context.logger().counter("DUMMY_CONNECTOR_PAYMENT").increment();
         return serde::Value{m_support.payment_response(data)};
     }
 

@@ -302,8 +302,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.totp_verify(*parsed, ctx).handle(sink);
     }
@@ -322,8 +325,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::VerifyRecoveryCodeRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::VerifyRecoveryCodeRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.verify_recovery_code(*parsed, ctx).handle(sink);
     }
@@ -342,8 +351,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.totp_update(*parsed, ctx).handle(sink);
     }
@@ -355,8 +367,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "generate_recovery_codes", {})) {
+        if (const auto auth_error = m_support.authorize(req, "generate_recovery_codes", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -393,8 +404,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "terminate_two_factor_auth", {})) {
+        if (const auto auth_error = m_support.authorize(req, "terminate_two_factor_auth", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -431,8 +441,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "check_two_factor_auth_status", {})) {
+        if (const auto auth_error = m_support.authorize(req, "check_two_factor_auth_status", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -470,8 +479,7 @@ public:
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_support
-                    .authorize(req, "check_two_factor_auth_status_with_attempts", {})) {
+                m_support.authorize(req, "check_two_factor_auth_status_with_attempts", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();

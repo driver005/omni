@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    change_password(const ::app::model::user::ChangePasswordRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> change_password(
+        const ::app::model::user::ChangePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -80,8 +81,8 @@ public:
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(new_secret.value())
         );
 
-        m_context.metrics().record_flow("change_password");
-        m_context.metrics().counter("user.change_password").increment();
+        m_context.logger().record_flow("change_password");
+        m_context.logger().counter("user.change_password").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

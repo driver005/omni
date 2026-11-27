@@ -113,8 +113,15 @@ private:
         }
     }
     constexpr std::string_view kHeaders[] = {
-        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
-        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+        "x-merchant-id",
+        "x-org-id",
+        "x-organization-id",
+        "x-profile-id",
+        "authorization",
+        "x-client-secret",
+        "x-api-key",
+        "x-connected-merchant-id",
+        "x-forwarded-for"
     };
     for (const auto name: kHeaders) {
         const auto value = req.find_header(name);
@@ -131,7 +138,8 @@ private:
     return ctx;
 }
 
-[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
+[[nodiscard]] inline std::string
+ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
     const auto it = ctx.claims.find(std::string{key});
     return it == ctx.claims.end() ? std::string{} : it->second;
@@ -142,7 +150,8 @@ private:
     return ctx_string(ctx, key) == "true";
 }
 
-[[nodiscard]] inline std::size_t ctx_size(const ::core::behavior::CallContext& ctx, std::string_view key)
+[[nodiscard]] inline std::size_t
+ctx_size(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
     const auto raw = ctx_string(ctx, key);
     std::size_t value{};
@@ -193,8 +202,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] ::core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         return make_call_context(req);
     }

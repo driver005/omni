@@ -70,8 +70,8 @@ public:
             core::cache::to_cache_value(storage_impl)
         );
 
-        m_context.metrics().record_flow("AppStateWithStorage");
-        m_context.metrics().counter("APP_STATE_WITH_STORAGE").increment();
+        m_context.logger().record_flow("AppStateWithStorage");
+        m_context.logger().counter("APP_STATE_WITH_STORAGE").increment();
 
         serde::Value::Object document{};
         document.insert(

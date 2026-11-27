@@ -73,6 +73,22 @@ struct SerdeField
     static constexpr bool unique = Unique;
 };
 
+/** @brief Reflection descriptor backed by a public data member from serde DataFieldDesc. */
+template<auto Name, auto Member, ColumnType Type, bool PrimaryKey = false>
+struct SerdeDataField
+{
+    using traits = MemberPointerTraits<decltype(Member)>;
+    using entity_type = typename traits::class_t;
+    using value_type = std::remove_cvref_t<typename traits::value_t>;
+
+    static constexpr auto name = Name.string_view();
+    static constexpr auto member = Member;
+    static constexpr ColumnType type = Type;
+    static constexpr bool primary_key = PrimaryKey;
+    static constexpr bool not_null = PrimaryKey;
+    static constexpr bool unique = false;
+};
+
 /** @brief Write a field described by either member pointer or serde setter. */
 template<typename Entity, typename FieldDesc, typename Value>
 void set_field(Entity& entity, FieldDesc, const Value& value)

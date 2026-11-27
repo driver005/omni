@@ -28,8 +28,7 @@ public:
 
     // ───────────────────────── Core: payment_connector_verify ─────────────────────────
     // routes/verify_connector.rs:12-34 -> core/verify_connector.rs:22-66.
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    payment_connector_verify(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> payment_connector_verify(
         const ::app::dto::verify_connector::VerifyConnectorRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -90,8 +89,8 @@ public:
         }
 
         // Upstream #[instrument(flow = ?Flow::VerifyPaymentConnector)] (routes:12,18) flow marker.
-        m_context.metrics().record_flow("VerifyPaymentConnector");
-        m_context.metrics().counter("VERIFY_PAYMENT_CONNECTOR").increment();
+        m_context.logger().record_flow("VerifyPaymentConnector");
+        m_context.logger().counter("VERIFY_PAYMENT_CONNECTOR").increment();
 
         // Upstream returns RouterResponse<()> / StatusOk with no payload
         // (core/verify_connector.rs:23,60). The empty serde::Value document is serialized by the

@@ -34,8 +34,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcTokenResponse>
-    token(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcTokenResponse> token(
         const ::app::dto::oidc::OidcTokenRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -43,9 +42,9 @@ public:
         // Upstream applies OIDC_CLIENT_AUTH (HTTP Basic), not a dashboard JWT.
         // The exact Basic client validation is enforced here (see input support).
 
-        m_context.metrics().record_flow("oidc_token");
-        m_context.metrics().counter("oidc.oidc_token").increment();
-        m_context.metrics().counter("oidc.api_event.Oidc").increment();
+        m_context.logger().record_flow("oidc_token");
+        m_context.logger().counter("oidc.oidc_token").increment();
+        m_context.logger().counter("oidc.api_event.Oidc").increment();
 
         m_support.ensure_oidc_config();
 
@@ -59,8 +58,6 @@ public:
                 oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidBasicAuth)
             };
         }
-        const auto& client_id = client->client_id;
-
         // validate_token_request
         if (oidc_support::trim(request.get_redirect_uri()).empty()) {
             return std::unexpected{

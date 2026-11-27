@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    embedded_token_info(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> embedded_token_info(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -56,8 +57,8 @@ public:
         }
 
         const auto auth_ctx = ctx_auth(ctx);
-        m_context.metrics().record_flow("embedded_token_info");
-        m_context.metrics().counter("user.embedded_token_info").increment();
+        m_context.logger().record_flow("embedded_token_info");
+        m_context.logger().counter("user.embedded_token_info").increment();
 
         using Response = ::app::model::user::EmbeddedTokenInfoResponse;
         Response response{};

@@ -1,4 +1,8 @@
+module;
+#include <uuid.h>
+
 export module app_payment:relay_runtime_unreferenced_refund;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -39,8 +43,9 @@ public:
 
     // Upstream: process_relay_unreferenced_refund (core/relay.rs:46-95).
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::unreferenced_refund::UnreferencedRefundResponse>
-        unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::unreferenced_refund::UnreferencedRefundResponse>
+    unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RelayUnreferencedRefundData{dto, ctx};
         const auto amount = m_support.parse_amount(input.request.get_amount().get_value());
@@ -152,7 +157,7 @@ public:
         );
         if (base_url.has_value() && access_token.has_value()) {
             // Credentials are deliberately kept out of the persisted payload and all logs.
-            (void)m_context.metrics().counter("relay_connector_credential_resolved").increment();
+            (void)m_context.logger().counter("relay_connector_credential_resolved").increment();
         }
 
         // Upstream insert_relay with processor_merchant_id / created_by. The local RelayRecord
@@ -173,15 +178,16 @@ public:
         relay = std::move(*stored);
 
         // Refund mirror retained for the existing refund-facing read paths.
-        ::app::store::refunds::RefundRecord refund{};
-        refund.set_refund_id(relay_id);
-        refund.set_payment_id(resource_id);
-        refund.set_merchant_id(connector_id);
-        refund.set_amount(*amount);
-        refund.set_currency(currency);
-        refund.set_reason("UnreferencedRefund");
-        refund.set_status("pending");
-        refund = m_context.repository().save_refund(refund);
+        ::app::model::Refund refund{};
+        refund.id = uuids::uuid::from_string(m_context.ids().uuid_v4()).value_or(uuids::uuid{});
+        refund.refund_id = relay_id;
+        refund.payment_id = uuids::uuid::from_string(resource_id).value_or(uuids::uuid{});
+        refund.merchant_id = connector_id;
+        refund.amount = *amount;
+        refund.currency = currency;
+        refund.reason = "UnreferencedRefund";
+        refund.status = "pending";
+        refund = m_context.refunds().save_refund(refund);
 
         ::app::connector::ConnectorResponse connector_response{};
         {
@@ -196,13 +202,13 @@ public:
             if (!connector_response.get_reference_id().empty()) {
                 relay.set_refund_id(connector_response.get_reference_id());
             }
-            refund.set_connector(connector_name);
+            refund.connector = connector_name;
             if (!connector_response.get_status().empty()) {
                 relay.set_status(connector_response.get_status());
-                refund.set_status(connector_response.get_status());
+                refund.status = connector_response.get_status();
             }
             (void)m_context.repository().update_relay_record(relay);
-            (void)m_context.repository().update_refund(refund);
+            (void)m_context.refunds().update_refund(refund);
         }
 
         if (connector_response.get_retryable()) {

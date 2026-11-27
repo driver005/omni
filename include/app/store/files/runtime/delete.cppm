@@ -28,8 +28,8 @@ public:
     delete_file(const core::behavior::CallContext& ctx) const
     {
         // Upstream: files.rs:96-97 — server_wrap records the flow and route counter.
-        m_context.metrics().record_flow("files.delete");
-        m_context.metrics().counter("files_delete_total").increment();
+        m_context.logger().record_flow("files.delete");
+        m_context.logger().counter("files_delete_total").increment();
 
         const auto file_id = m_support.file_id_from(ctx);
         if (!file_id.has_value()) {
@@ -37,8 +37,7 @@ public:
         }
 
         // core/files.rs:97 — delete_file_using_file_id (guards + file-storage delete).
-        const auto record =
-            m_support.delete_file_using_file_id(ctx.merchant_id, *file_id);
+        const auto record = m_support.delete_file_using_file_id(ctx.merchant_id, *file_id);
         if (!record) {
             return std::unexpected{std::move(record.error())};
         }

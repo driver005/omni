@@ -27,8 +27,7 @@ public:
     }
 
     // pause_subscription_on_connector (billing_processor_handler.rs:354-383)
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    pause(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> pause(
         const std::optional<ParsedPayload>& payload,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -36,15 +35,14 @@ public:
         const std::string subscription_id =
             ctx.path_segments.size() > 1 ? ctx.path_segments.at(1) : std::string{};
 
-        if (const auto failure =
-                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
         auto found = m_support.find_subscription(subscription_id);
         if (!found) {
-            return std::unexpected{m_support.generic_not_found(
-                "subscription not found for id: " + subscription_id
-            )};
+            return std::unexpected{
+                m_support.generic_not_found("subscription not found for id: " + subscription_id)
+            };
         }
         BillingProcessor billing{m_context};
         if (const auto failure = billing.create(found->profile_id, found->merchant_id)) {

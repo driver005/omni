@@ -252,8 +252,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         auto ctx = detail::make_call_context(req);
         ctx.client_secret = m_authorized.client_secret;

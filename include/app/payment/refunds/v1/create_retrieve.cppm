@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module app_payment:refunds_handlers_v1_create_retrieve;
 
 import std;
@@ -8,6 +11,7 @@ import core_serde;
 import utils_openapi;
 import app_model;
 import app_context;
+import app_context_core;
 import core_error;
 import app_auth;
 import app_http;
@@ -69,15 +73,18 @@ public:
 
         const auto payment_id = m_input_support.json_string(body, "payment_id");
         if (v2) {
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+            auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+            if (!parsed) {
+                return;
+            }
+            m_runtime.create(*parsed, m_request_support->context(req)).handle(sink);
         } else {
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundRequest>::pass(req, sink);
-        if (!parsed) return;
+            auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+            if (!parsed) {
+                return;
+            }
+            m_runtime.create(*parsed, m_request_support->context(req)).handle(sink);
         }
-
-        auto result = m_runtime.create(dto, m_request_support->context(req));
-        result.handle(sink);
     }
 
     /** @brief refunds_retrieve_with_body — routes/refunds.rs:358-392 (v1 sync). */
@@ -100,12 +107,17 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsRetrieveRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
 
-        const auto refund_id = !parsed->get_refund_id().empty()
-                                   ? std::optional<std::string>{parsed->get_refund_id()}
+        const auto refund_id = !parsed->refund_id.empty()
+                                   ? std::optional<std::string>{parsed->refund_id}
                                    : ::app::http::RequestQuery{}(req).get("refund_id");
+        if (refund_id) {
+            parsed->refund_id = *refund_id;
+        }
         if (!refund_id.has_value() || refund_id->empty()) {
             const auto error =
                 core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund_id");
@@ -136,11 +148,9 @@ public:
             error.send(sink);
             return;
         }
-        const auto path_id = m_input_support.refund_id_from_path(req);
+        const auto path_id = m_input_support.refund_uuid_from_path(req);
         if (!path_id.has_value()) {
-            const auto error =
-                core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(sink);
+            path_id.error().send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -149,13 +159,14 @@ public:
         const bool include_raw =
             query.get("return_raw_connector_response").value_or("false") == "true";
 
-        ::app::model::refunds::RefundsRetrieveRequest request{};
-        request.set_refund_id(*path_id);
-        request.set_force_sync(force_sync);
-        request.set_all_keys_required(all_keys);
+        ::app::model::Refund request{};
+        request.id = *path_id;
+        request.refund_id = uuids::to_string(*path_id);
+        request.force_sync = force_sync;
+        request.all_keys_required = all_keys;
         const auto& dto = request;
 
-        auto result = m_runtime.retrieve(m_request_support->context(req)));
+        auto result = m_runtime.retrieve(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

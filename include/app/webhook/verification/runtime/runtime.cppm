@@ -33,8 +33,8 @@ public:
         return m_apple_pay_merchant_registration.verify_merchant_creds_for_applepay(wire, ctx);
     }
 
-    [[nodiscard]] core::behavior::
-        Outcome<::app::dto::verifications::ApplepayVerifiedDomainsResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::verifications::ApplepayVerifiedDomainsResponse>
     retrieve_apple_pay_verified_domains(const ::core::behavior::CallContext& ctx) const
     {
         return m_retrieve_apple_pay_verified_domains.get_verified_apple_domains_with_mid_mca_id(

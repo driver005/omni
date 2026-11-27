@@ -51,8 +51,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "get_authorization_info", {})) {
+        if (const auto auth_error = m_support.authorize(req, "get_authorization_info", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;
@@ -109,8 +108,14 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
-        ctx.claims.insert_or_assign("product_type", std::string{m_support.query(req, "product_type").value_or("")});
+        ctx.claims.insert_or_assign(
+            "entity_type",
+            std::string{m_support.query(req, "entity_type").value_or("")}
+        );
+        ctx.claims.insert_or_assign(
+            "product_type",
+            std::string{m_support.query(req, "product_type").value_or("")}
+        );
         m_runtime.get_parent_group_info(ctx).handle(sink);
     }
 
@@ -128,7 +133,10 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        ctx.claims.insert_or_assign(
+            "entity_type",
+            std::string{m_support.query(req, "entity_type").value_or("")}
+        );
         m_runtime.list_users_in_lineage(ctx).handle(sink);
     }
 
@@ -146,8 +154,14 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
-        ctx.claims.insert_or_assign("groups", m_support.query(req, "groups").value_or("") == "true" ? "true" : "false");
+        ctx.claims.insert_or_assign(
+            "entity_type",
+            std::string{m_support.query(req, "entity_type").value_or("")}
+        );
+        ctx.claims.insert_or_assign(
+            "groups",
+            m_support.query(req, "groups").value_or("") == "true" ? "true" : "false"
+        );
         m_runtime.list_roles_with_info(ctx).handle(sink);
     }
 
@@ -166,7 +180,10 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        ctx.claims.insert_or_assign(
+            "entity_type",
+            std::string{m_support.query(req, "entity_type").value_or("")}
+        );
         m_runtime.list_updatable_roles_at_entity_level(ctx).handle(sink);
     }
 

@@ -19,7 +19,6 @@ import :store_organizations;
 import :store_payment_records;
 import :store_payments;
 import :store_payouts;
-import :store_refunds;
 import :store_risk_records;
 import :store_routing;
 import :store_subscriptions;
@@ -94,73 +93,6 @@ public:
 private:
     std::string m_merchant_id{};
     std::string m_merchant_reference_id{};
-    std::string m_status{};
-    std::size_t m_limit{0};
-    std::size_t m_offset{0};
-};
-
-/** @brief Value-object filters for refund list queries. */
-class RefundQuery
-{
-public:
-    RefundQuery& payment_id(std::string value)
-    {
-        m_payment_id = std::move(value);
-        return *this;
-    }
-
-    [[nodiscard]] const std::string& get_payment_id() const noexcept
-    {
-        return m_payment_id;
-    }
-
-    RefundQuery& merchant_id(std::string value)
-    {
-        m_merchant_id = std::move(value);
-        return *this;
-    }
-
-    [[nodiscard]] const std::string& get_merchant_id() const noexcept
-    {
-        return m_merchant_id;
-    }
-
-    RefundQuery& status(std::string value)
-    {
-        m_status = std::move(value);
-        return *this;
-    }
-
-    [[nodiscard]] const std::string& get_status() const noexcept
-    {
-        return m_status;
-    }
-
-    RefundQuery& limit(std::size_t value)
-    {
-        m_limit = value;
-        return *this;
-    }
-
-    [[nodiscard]] std::size_t get_limit() const noexcept
-    {
-        return m_limit;
-    }
-
-    RefundQuery& offset(std::size_t value)
-    {
-        m_offset = value;
-        return *this;
-    }
-
-    [[nodiscard]] std::size_t get_offset() const noexcept
-    {
-        return m_offset;
-    }
-
-private:
-    std::string m_payment_id{};
-    std::string m_merchant_id{};
     std::string m_status{};
     std::size_t m_limit{0};
     std::size_t m_offset{0};
@@ -446,21 +378,6 @@ public:
     [[nodiscard]] std::vector<payments::PaymentIntentRecord> list_payments() const
     {
         return m_db.all<payments::PaymentIntentRecord>();
-    }
-
-    refunds::RefundRecord save_refund(refunds::RefundRecord record)
-    {
-        return m_db.insert<refunds::RefundRecord>(std::move(record));
-    }
-
-    [[nodiscard]] std::optional<refunds::RefundRecord> find_refund(std::int64_t id) const
-    {
-        return m_db.find<refunds::RefundRecord>(core::db::DbValue{id});
-    }
-
-    [[nodiscard]] std::vector<refunds::RefundRecord> list_refunds() const
-    {
-        return m_db.all<refunds::RefundRecord>();
     }
 
     customers::CustomerRecord save_customer(customers::CustomerRecord record)
@@ -901,27 +818,6 @@ public:
     bool remove_payment(std::int64_t id)
     {
         return m_db.remove<payments::PaymentIntentRecord>(core::db::DbValue{id}) > 0;
-    }
-
-    [[nodiscard]] std::optional<refunds::RefundRecord>
-    find_refund_by_string(std::string_view refund_id) const
-    {
-        return find_by_string<refunds::RefundRecord>("refund_id", refund_id);
-    }
-
-    bool update_refund(const refunds::RefundRecord& record)
-    {
-        return m_db.update_where_column<refunds::RefundRecord>(
-                   record,
-                   "id",
-                   core::db::Compare::EQ,
-                   core::db::DbValue{record.get_id()}
-               ) > 0;
-    }
-
-    bool remove_refund(std::int64_t id)
-    {
-        return m_db.remove<refunds::RefundRecord>(core::db::DbValue{id}) > 0;
     }
 
     [[nodiscard]] std::optional<customers::CustomerRecord>
@@ -2047,68 +1943,6 @@ public:
         return m_db.collect<payments::PaymentIntentRecord>(spec);
     }
 
-    [[nodiscard]] std::vector<refunds::RefundRecord>
-    find_refunds_by_payment_id(std::string_view payment_id) const
-    {
-        core::db::QuerySpec spec = m_db.query<refunds::RefundRecord>().spec();
-        spec.predicates.push_back(
-            core::db::Predicate{
-                .column = "payment_id",
-                .comparison = core::db::Compare::EQ,
-                .value = core::db::DbValue{std::string{payment_id}}
-            }
-        );
-        return m_db.collect<refunds::RefundRecord>(spec);
-    }
-
-    [[nodiscard]] std::vector<refunds::RefundRecord>
-    find_refunds_by_constraints(const RefundQuery& query) const
-    {
-        core::db::QuerySpec spec = m_db.query<refunds::RefundRecord>().spec();
-        if (!query.get_payment_id().empty()) {
-            spec.predicates.push_back(
-                core::db::Predicate{
-                    .column = "payment_id",
-                    .comparison = core::db::Compare::EQ,
-                    .value = core::db::DbValue{query.get_payment_id()}
-                }
-            );
-        }
-        if (!query.get_merchant_id().empty()) {
-            spec.predicates.push_back(
-                core::db::Predicate{
-                    .column = "merchant_id",
-                    .comparison = core::db::Compare::EQ,
-                    .value = core::db::DbValue{query.get_merchant_id()}
-                }
-            );
-        }
-        if (!query.get_status().empty()) {
-            spec.predicates.push_back(
-                core::db::Predicate{
-                    .column = "status",
-                    .comparison = core::db::Compare::EQ,
-                    .value = core::db::DbValue{query.get_status()}
-                }
-            );
-        }
-        if (query.get_limit() > 0) {
-            spec.limit_count = query.get_limit();
-        }
-        spec.offset_count = query.get_offset();
-        return m_db.collect<refunds::RefundRecord>(spec);
-    }
-
-    bool update_refund_status(std::string_view refund_id, std::string status)
-    {
-        auto record = find_refund_by_string(refund_id);
-        if (!record) {
-            return false;
-        }
-        record->set_status(std::move(status));
-        return update_refund(*record);
-    }
-
     [[nodiscard]] std::vector<webhook_events::WebhookEventRecord>
     find_webhook_events_by_merchant_id(
         std::string_view merchant_id,
@@ -2513,15 +2347,6 @@ public:
             return std::unexpected{already_exists("payment", record.get_payment_id())};
         }
         return m_db.insert<payments::PaymentIntentRecord>(std::move(record));
-    }
-
-    std::expected<refunds::RefundRecord, core::error::AppError>
-    create_refund(refunds::RefundRecord record)
-    {
-        if (any_match("refunds", "refund_id", record.get_refund_id())) {
-            return std::unexpected{already_exists("refund", record.get_refund_id())};
-        }
-        return m_db.insert<refunds::RefundRecord>(std::move(record));
     }
 
     std::expected<customers::CustomerRecord, core::error::AppError>
@@ -2943,7 +2768,6 @@ suite<"app_store_repository"> app_repository_suite = []
         expect(
             serde::Serializable<payments::PaymentIntentRecord>::table_name() == "payment_intents"
         );
-        expect(serde::Serializable<refunds::RefundRecord>::table_name() == "refunds");
         expect(serde::Serializable<customers::CustomerRecord>::table_name() == "customers");
         expect(serde::Serializable<api_keys::ApiKeyRecord>::table_name() == "api_keys");
         expect(serde::Serializable<users::UserRecord>::table_name() == "users");

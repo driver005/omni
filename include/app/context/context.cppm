@@ -4,9 +4,11 @@ export module app_context:context;
 import std;
 import core_cache;
 import core_database;
+import core_logger;
 import core_workflow;
 import app_context_core;
 import app_connector;
+import app_model;
 import app_crypto;
 import app_db;
 import app_events;
@@ -33,6 +35,7 @@ public:
         m_cache{std::move(cache)},
         m_workflow{std::move(workflow)},
         m_metrics{},
+        m_logger{m_metrics},
         m_authorizer{},
         m_connector_router{},
         m_ids{},
@@ -54,6 +57,7 @@ public:
     core::cache::Cache m_cache;
     core::workflow::Workflow m_workflow{};
     app::metrics::MetricsRegistry m_metrics{};
+    core::logger::MetricsLogger<app::metrics::MetricsRegistry> m_logger{m_metrics};
     app::auth::AppAuthorizer m_authorizer{};
     app::connector::ConnectorRouter m_connector_router{};
     app::crypto::IdGenerator m_ids{};
@@ -96,6 +100,12 @@ public:
         return app::store::AppRepository{m_state->m_database};
     }
 
+    /** @brief Refund persistence lives with the model; the store keeps generic interfaces. */
+    [[nodiscard]] app::model::RefundRepository refunds() noexcept
+    {
+        return app::model::RefundRepository{m_state->m_database};
+    }
+
     [[nodiscard]] app::auth::AppAuthorizer& authorizer() noexcept
     {
         return m_state->m_authorizer;
@@ -114,6 +124,11 @@ public:
     [[nodiscard]] app::metrics::MetricsRegistry& metrics() noexcept
     {
         return m_state->m_metrics;
+    }
+
+    [[nodiscard]] auto& logger() noexcept
+    {
+        return m_state->m_logger;
     }
 
     [[nodiscard]] app::crypto::IdGenerator& ids() noexcept

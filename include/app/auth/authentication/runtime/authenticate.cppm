@@ -60,11 +60,10 @@ public:
         const auto outcome = m_support.perform_authentication(*record, flow, request);
         m_support.update_trackers_from_outcome(*record, outcome);
         m_support.save_authentication(*record);
-        m_context.metrics().record_flow("AuthenticationAuthenticate");
+        m_context.logger().record_flow("AuthenticationAuthenticate");
 
         // :1485-1506 CAVV/ECI are returned only for AuthFlow::Merchant on a Success trans_status.
-        const bool include_cavv =
-            flow == AuthFlowKind::Merchant && outcome.trans_status == "Y";
+        const bool include_cavv = flow == AuthFlowKind::Merchant && outcome.trans_status == "Y";
         return m_support.build_authenticate_response(*record, include_cavv, outcome);
     }
 

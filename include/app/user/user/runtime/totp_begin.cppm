@@ -39,8 +39,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    totp_begin(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    totp_begin(const interfaces::Value& generic, const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -58,8 +57,8 @@ public:
             }
         }
         if (already_setup) {
-            m_context.metrics().record_flow("totp_begin");
-            m_context.metrics().counter("user.totp_begin").increment();
+            m_context.logger().record_flow("totp_begin");
+            m_context.logger().counter("user.totp_begin").increment();
             return std::pair{
                 ResponseDocument::from(::app::model::user::BeginTotpResponse{}),
                 set_cookie
@@ -84,16 +83,16 @@ public:
         (void)m_context.repository().create_authentication_record(record);
 
         const auto key =
-            std::string{"user.totp_begin:"} + std::to_string(ctx_string(ctx,"body").size());
+            std::string{"user.totp_begin:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("totp_begin");
-        m_context.metrics().counter("user.totp_begin").increment();
+        m_context.logger().record_flow("totp_begin");
+        m_context.logger().counter("user.totp_begin").increment();
 
         ::app::model::user::TotpSecret totp_secret{};
         totp_secret.set_secret(totp_secret_value);

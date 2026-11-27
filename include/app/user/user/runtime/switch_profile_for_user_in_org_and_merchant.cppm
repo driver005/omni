@@ -63,8 +63,8 @@ public:
         set_cookie = "user_token=" + switched_token + "; HttpOnly; Path=/";
         m_support.publish_identity_event("user.profile_switched", owner);
 
-        m_context.metrics().record_flow("switch_profile_for_user_in_org_and_merchant");
-        m_context.metrics().counter("user.switch_profile_for_user_in_org_and_merchant").increment();
+        m_context.logger().record_flow("switch_profile_for_user_in_org_and_merchant");
+        m_context.logger().counter("user.switch_profile_for_user_in_org_and_merchant").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

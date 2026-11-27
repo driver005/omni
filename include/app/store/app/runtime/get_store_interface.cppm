@@ -85,8 +85,8 @@ public:
             m_support.serialize_document(serde::Value{std::move(event_body)});
         const auto event_id = m_context.events().publish("store_interface.resolved", event_payload);
 
-        m_context.metrics().record_flow("GetStoreInterface");
-        m_context.metrics().counter("STORE_INTERFACE_RESOLVED").increment();
+        m_context.logger().record_flow("GetStoreInterface");
+        m_context.logger().counter("STORE_INTERFACE_RESOLVED").increment();
 
         serde::Value::Object document{};
         document.insert(

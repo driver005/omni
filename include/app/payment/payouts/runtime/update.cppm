@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_update;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,7 +39,7 @@ public:
     // ───────────────────────── Core: update ─────────────────────────
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsUpdateData{dto, ctx};
         PayoutLockGuard lock{
@@ -53,8 +54,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("payout_update");
-        m_context.metrics().counter("payouts_update_total").increment();
+        m_context.logger().record_flow("payout_update");
+        m_context.logger().counter("payouts_update_total").increment();
 
         auto found = m_support.find_payout_record(input.payout_id);
         if (!found.has_value()) {

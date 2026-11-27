@@ -66,8 +66,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_list");
-        m_context.metrics().counter("payments.payments_list").increment();
+        m_context.logger().record_flow("payments.payments_list");
+        m_context.logger().counter("payments.payments_list").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.payments_list(dto, m_request_support->context(req)).handle(sink);
@@ -89,8 +89,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.revenue_recovery_invoices_list");
-        m_context.metrics().counter("payments.revenue_recovery_invoices_list").increment();
+        m_context.logger().record_flow("payments.revenue_recovery_invoices_list");
+        m_context.logger().counter("payments.revenue_recovery_invoices_list").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.revenue_recovery_invoices_list(dto, m_request_support->context(req)).handle(sink);
@@ -112,11 +112,12 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.revenue_recovery_invoices_list_profile");
-        m_context.metrics().counter("payments.revenue_recovery_invoices_list_profile").increment();
+        m_context.logger().record_flow("payments.revenue_recovery_invoices_list_profile");
+        m_context.logger().counter("payments.revenue_recovery_invoices_list_profile").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
-        m_runtime.revenue_recovery_invoices_list_profile(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.revenue_recovery_invoices_list_profile(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #4
@@ -133,7 +134,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_list(req, res, std::move(send));
                     }
@@ -156,7 +157,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_revenue_recovery_invoices_list(req, res, std::move(send));
                     }
@@ -180,7 +181,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_revenue_recovery_invoices_list_profile(
                                 req,

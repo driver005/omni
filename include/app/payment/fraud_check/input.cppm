@@ -10,6 +10,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::fraud_check {
 
 /**
@@ -489,12 +490,14 @@ private:
 
     ::app::context::AppContext& m_context;
 };
+
 struct FrmFulfillmentData
 {
     FrmFulfillmentRequestWire request{};
     std::string raw_payload{};
     std::string header_merchant_id{};
     std::string org_id{};
+
     template<class Dto>
     explicit FrmFulfillmentData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<FrmFulfillmentRequestWire>(dto)},
@@ -504,7 +507,6 @@ struct FrmFulfillmentData
     {
     }
 };
-
 
 /** @brief Request policy for the fraud_check domain: wraps the domain auth rules. */
 class FraudCheckPolicy

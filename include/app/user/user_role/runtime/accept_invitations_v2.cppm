@@ -34,9 +34,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
-    accept_invitations_v2(const std::vector<AcceptEntityWire>& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire> accept_invitations_v2(
+        const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         const auto lineages = m_support.lineages_for_accept(identity_from_context(ctx), request);
         std::size_t accepted{0};

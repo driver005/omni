@@ -184,8 +184,15 @@ private:
         }
     }
     constexpr std::string_view kHeaders[] = {
-        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
-        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+        "x-merchant-id",
+        "x-org-id",
+        "x-organization-id",
+        "x-profile-id",
+        "authorization",
+        "x-client-secret",
+        "x-api-key",
+        "x-connected-merchant-id",
+        "x-forwarded-for"
     };
     for (const auto name: kHeaders) {
         const auto value = req.find_header(name);
@@ -245,8 +252,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] ::core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         return make_call_context(req);
     }

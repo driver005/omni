@@ -37,9 +37,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcDiscoveryResponse>
     discovery(const core::behavior::CallContext& /*ctx*/) const
     {
-        m_context.metrics().record_flow("oidc_discovery");
-        m_context.metrics().counter("oidc.oidc_discovery").increment();
-        m_context.metrics().counter("oidc.api_event.Oidc").increment();
+        m_context.logger().record_flow("oidc_discovery");
+        m_context.logger().counter("oidc.oidc_discovery").increment();
+        m_context.logger().counter("oidc.api_event.Oidc").increment();
 
         // Upstream: OidcDiscoveryResponse::new(state.tenant.base_url,
         // user_utils::get_base_url(&state)). Config store supplies both values.

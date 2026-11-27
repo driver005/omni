@@ -38,11 +38,9 @@ public:
 
     /** @brief Port of `get_verified_apple_domains_with_mid_mca_id`
      *  (core/verification.rs:95-119). */
-    [[nodiscard]] core::behavior::
-        Outcome<::app::dto::verifications::ApplepayVerifiedDomainsResponse>
-        get_verified_apple_domains_with_mid_mca_id(
-            const ::core::behavior::CallContext& ctx
-        ) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::verifications::ApplepayVerifiedDomainsResponse>
+    get_verified_apple_domains_with_mid_mca_id(const ::core::behavior::CallContext& ctx) const
     {
         const auto connector = ctx.query.find("merchant_connector_account_id");
         auto account = m_support.get_apple_pay_merchant_connector_account(
@@ -61,7 +59,7 @@ public:
         );
 
         // #[instrument(fields(flow = ?Flow::Verification))] on the route.
-        m_context.metrics().record_flow("Verification");
+        m_context.logger().record_flow("Verification");
         return response;
     }
 

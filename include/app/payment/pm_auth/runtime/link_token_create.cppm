@@ -1,4 +1,5 @@
 export module app_payment:pm_auth_runtime_link_token_create;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::pm_auth::LinkTokenCreateResponse>
-        link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = LinkTokenCreateData{dto, ctx};
         const auto& request = input.request;
@@ -179,8 +180,8 @@ public:
             core::cache::to_cache_value(m_support.encrypt_secret(token_secret.value()))
         );
 
-        m_context.metrics().record_flow("PmAuthLinkTokenCreate");
-        m_context.metrics().counter("PM_AUTH_LINK_TOKEN_CREATE").increment();
+        m_context.logger().record_flow("PmAuthLinkTokenCreate");
+        m_context.logger().counter("PM_AUTH_LINK_TOKEN_CREATE").increment();
 
         ::app::dto::pm_auth::LinkTokenCreateResponse response{};
         response.set_link_token(token_secret.value());

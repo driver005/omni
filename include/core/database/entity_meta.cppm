@@ -64,15 +64,29 @@ template<SerdeReflected E>
 struct EntityMeta<E>
 {
 private:
+    template<typename Descriptor>
+    static consteval auto make_one()
+    {
+        if constexpr (serde::IDataFieldDesc<Descriptor>) {
+            return SerdeDataField<
+                Descriptor::name,
+                Descriptor::member,
+                serde_column_type<typename Descriptor::ValueType>(),
+                serde_pk<Descriptor>()>{};
+        } else {
+            return SerdeField<
+                Descriptor::name,
+                Descriptor::getter,
+                Descriptor::setter,
+                serde_column_type<typename Descriptor::ValueType>(),
+                serde_pk<Descriptor>()>{};
+        }
+    }
+
     template<typename... Descriptors>
     static consteval auto make_fields(std::tuple<Descriptors...>)
     {
-        return std::tuple<SerdeField<
-            Descriptors::name,
-            Descriptors::getter,
-            Descriptors::setter,
-            serde_column_type<typename Descriptors::ValueType>(),
-            serde_pk<Descriptors>()>...>{};
+        return std::tuple{make_one<Descriptors>()...};
     }
 
 public:

@@ -248,12 +248,12 @@ public:
         std::size_t failed
     ) const
     {
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(std::string{counter} + ".requests").increment();
-        m_context.metrics()
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(std::string{counter} + ".requests").increment();
+        m_context.logger()
             .counter(std::string{counter} + ".processed_records")
             .increment(processed);
-        m_context.metrics().counter(std::string{counter} + ".failed_records").increment(failed);
+        m_context.logger().counter(std::string{counter} + ".failed_records").increment(failed);
     }
 
     [[nodiscard]] std::int64_t lock_ttl_seconds() const noexcept

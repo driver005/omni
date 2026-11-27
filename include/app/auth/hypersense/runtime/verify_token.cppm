@@ -39,15 +39,14 @@ public:
 
     // routes/hypersense.rs:75 -> core/external_service_auth.rs:73-102.
     // NoAuth: the payload token is the only credential.
-    [[nodiscard]] core::behavior::Outcome<HypersenseVerifyResponse>
-    verify_token(
+    [[nodiscard]] core::behavior::Outcome<HypersenseVerifyResponse> verify_token(
         const ::app::dto::external_service_auth::ExternalVerifyTokenRequest& request,
         const core::behavior::CallContext& ctx
     ) const
     {
         (void)ctx;
         m_support.record_flow("HypersenseVerifyToken", LockActionNotApplicable{});
-        m_context.metrics().counter("hypersense.verify_token").increment();
+        m_context.logger().counter("hypersense.verify_token").increment();
 
         // core/external_service_auth.rs:73-75 — decode_jwt::<ExternalToken> ->
         // Unauthorized.

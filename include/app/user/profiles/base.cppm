@@ -10,4 +10,4 @@ export import :profiles_handlers_v1;
 export import :profiles_handlers_v2_crud;
 export import :profiles_handlers_v2_list;
 export import :profiles_handlers_v2;
-export import :profiles_handler;
+export import :profiles_router;

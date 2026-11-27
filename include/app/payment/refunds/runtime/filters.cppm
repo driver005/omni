@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_filters;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -21,17 +22,14 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     filters(const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsFiltersData{ctx};
-        (void)input;
-        m_context.metrics().record_flow("refund_filters");
-        m_context.metrics().counter("refunds_filters_total").increment();
+        m_context.logger().record_flow("refund_filters");
+        m_context.logger().counter("refunds_filters_total").increment();
 
-        return ::app::model::refunds::RefundListFilters{
-            m_support.get_filters_for_refunds(input.facts, /*profile_scoped=*/false)
-        };
+        return m_support.get_filters_for_refunds(input.facts, /*profile_scoped=*/false);
     }
 
 private:

@@ -68,7 +68,7 @@ export namespace app::payment::detail {
                 using Header = std::remove_cvref_t<decltype(*header)>;
                 if constexpr (std::same_as<Header, ::interfaces::io::HeaderField<true>>) {
                     result.headers[std::string{
-                        ::interfaces::io::token_to_string(header->get_name())
+                        ::interfaces::io::types::token_to_string(header->get_name())
                     }] = header->get_value();
                 } else {
                     result.headers[std::string{header->get_name()}] = header->get_value();
@@ -91,8 +91,7 @@ export namespace app::payment::detail {
     };
 }
 
-[[nodiscard]] inline std::string
-path_at(const core::behavior::CallContext& ctx, std::size_t index)
+[[nodiscard]] inline std::string path_at(const core::behavior::CallContext& ctx, std::size_t index)
 {
     return index < ctx.path_segments.size() ? ctx.path_segments[index] : std::string{};
 }
@@ -102,8 +101,11 @@ path_at(const core::behavior::CallContext& ctx, std::size_t index)
     return ctx.path_segments.empty() ? std::string{} : ctx.path_segments.back();
 }
 
-[[nodiscard]] inline std::string
-query_of(const core::behavior::CallContext& ctx, std::string_view key, std::string_view fallback = {})
+[[nodiscard]] inline std::string query_of(
+    const core::behavior::CallContext& ctx,
+    std::string_view key,
+    std::string_view fallback = {}
+)
 {
     const auto it = ctx.query.find(std::string{key});
     return it == ctx.query.end() ? std::string{fallback} : it->second;

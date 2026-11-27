@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    user_merchant_account_create(const ::app::model::user::UserMerchantCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    user_merchant_account_create(
+        const ::app::model::user::UserMerchantCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -55,16 +57,16 @@ public:
         m_context.repository().save_merchant_account(std::move(merchant));
 
         const auto key = std::string{"user.user_merchant_account_create:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("user_merchant_account_create");
-        m_context.metrics().counter("user.user_merchant_account_create").increment();
+        m_context.logger().record_flow("user_merchant_account_create");
+        m_context.logger().counter("user.user_merchant_account_create").increment();
 
         using Response = ::app::model::user::UserMerchantAccountResponse;
         Response response{};

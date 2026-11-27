@@ -36,9 +36,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
-    create(const ::app::dto::admin::MerchantAccountCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse> create(
+        const ::app::dto::admin::MerchantAccountCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string merchant_id{request.get_merchant_id().get_value()};
         if (merchant_id.empty()) {
@@ -54,7 +55,7 @@ public:
                 m_support.acquire_operation_lock("merchant_account_create", merchant_id)) {
             return std::unexpected{*duplicate};
         }
-        std::string organization_id{ctx_string(ctx,"organization_id")};
+        std::string organization_id{ctx_string(ctx, "organization_id")};
         if (organization_id.empty() && request.get_organization_id().has_value()) {
             organization_id = request.get_organization_id()->get_value();
         }
@@ -101,9 +102,7 @@ public:
             request.get_redirect_to_merchant_with_http_post().value_or(false)
         );
         if (request.get_merchant_account_type().has_value()) {
-            record.set_merchant_account_type(
-                request.get_merchant_account_type()->get_value()
-            );
+            record.set_merchant_account_type(request.get_merchant_account_type()->get_value());
         }
         const auto saved = m_context.repository().save_merchant_account(std::move(record));
         m_support.release_operation_lock("merchant_account_create", merchant_id);
@@ -130,8 +129,8 @@ public:
             response.set_payment_response_hash_key(saved.get_payment_response_hash_key());
         }
 
-        m_context.metrics().record_flow("merchant_account_create");
-        m_context.metrics().counter("admin.merchant_account_create").increment();
+        m_context.logger().record_flow("merchant_account_create");
+        m_context.logger().counter("admin.merchant_account_create").increment();
         m_context.events().publish("merchant_account.created", serde::Ser::encode_json(response));
         return std::move(response);
     }

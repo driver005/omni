@@ -27,16 +27,19 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     list(const ::core::behavior::CallContext& ctx) const
     {
-        auto result = m_support.list_profile(ctx_string(ctx,"merchant_id"), ctx_ids(ctx,"profile_id_list"));
+        auto result =
+            m_support.list_profile(ctx_string(ctx, "merchant_id"), ctx_ids(ctx, "profile_id_list"));
         if (!result) {
             return std::unexpected{result.error()};
         }
-        m_context.metrics().record_flow("profiles.list");
-        m_context.metrics().record_flow("Flow::ProfileList");
-        m_context.metrics().counter("profiles_list").increment();
-                serde::Value::Array array{};
+        m_context.logger().record_flow("profiles.list");
+        m_context.logger().record_flow("Flow::ProfileList");
+        m_context.logger().counter("profiles_list").increment();
+        serde::Value::Array array{};
         for (const auto& item: *result) {
-            array.push_back(serde::Serializer<ProfileWireResponse>::build_value(item, kProfileWireFields));
+            array.push_back(
+                serde::Serializer<ProfileWireResponse>::build_value(item, kProfileWireFields)
+            );
         }
         return serde::Value{std::move(array)};
     }

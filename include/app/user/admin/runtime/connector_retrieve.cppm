@@ -39,8 +39,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
     retrieve(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found =
-            m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
+        const auto found = m_context.repository().find_merchant_connector_by_string(
+            ctx_string(ctx, "connector_id")
+        );
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -48,18 +49,20 @@ public:
             )};
         }
         // core/admin.rs:3029-3038 (v2) rejects a connector owned by another merchant.
-        if (!ctx_string(ctx,"merchant_id").empty() && found->get_merchant_id() != ctx_string(ctx,"merchant_id")) {
+        if (!ctx_string(ctx, "merchant_id").empty() &&
+            found->get_merchant_id() != ctx_string(ctx, "merchant_id")) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 std::format(
                     "Invalid merchant_id {} provided for merchant_connector_account",
-                    ctx_string(ctx,"merchant_id")
+                    ctx_string(ctx, "merchant_id")
                 )
             )};
         }
         const std::string decrypted{::app::crypto::AesWrap{}.decrypt(
             found->get_connector_account_details(),
-            m_support.connector_encryption_key(found->get_merchant_id(), ctx_string(ctx,"connector_id"))
+            m_support
+                .connector_encryption_key(found->get_merchant_id(), ctx_string(ctx, "connector_id"))
         )};
         ::app::dto::admin::MerchantConnectorResponse response;
         response.set_connector_type(m_support.connector_type_value(found->get_connector_type()));
@@ -76,8 +79,8 @@ public:
             response.set_status(m_support.connector_status_value(found->get_status()));
         }
 
-        m_context.metrics().record_flow("connector_retrieve");
-        m_context.metrics().counter("admin.connector_retrieve").increment();
+        m_context.logger().record_flow("connector_retrieve");
+        m_context.logger().counter("admin.connector_retrieve").increment();
         return std::move(response);
     }
 

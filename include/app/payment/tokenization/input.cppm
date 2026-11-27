@@ -11,6 +11,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::tokenization {
 
 struct AuthorizedRequest
@@ -200,28 +201,35 @@ private:
 
     ::app::context::AppContext& m_context;
 };
+
 struct CreateTokenVaultData
 {
     ::app::dto::tokenization::GenericTokenizationRequest request{};
     std::string merchant_id{};
+
     template<class Dto>
     explicit CreateTokenVaultData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::dto::tokenization::GenericTokenizationRequest>(dto)},
+        request{
+            ::app::payment::detail::as_dto<::app::dto::tokenization::GenericTokenizationRequest>(
+                dto
+            )
+        },
         merchant_id{ctx.merchant_id}
     {
     }
 };
+
 struct DeleteTokenizedDataData
 {
     std::string token_id{};
     std::string customer_id{};
+
     explicit DeleteTokenizedDataData(const core::behavior::CallContext& ctx) :
         token_id{::app::payment::detail::last_path(ctx)},
         customer_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
-
 
 /** @brief Request policy for the tokenization domain: wraps the domain auth rules. */
 class TokenizationPolicy

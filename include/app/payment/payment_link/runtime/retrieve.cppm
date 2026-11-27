@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_retrieve;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,11 +37,11 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::RetrievePaymentLinkResponse>
-        retrieve(const core::behavior::CallContext& ctx) const
+    retrieve(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkRetrieveData{ctx};
-        m_context.metrics().record_flow("payment_link.retrieve");
-        m_context.metrics().counter("payment_link.retrieve").increment();
+        m_context.logger().record_flow("payment_link.retrieve");
+        m_context.logger().counter("payment_link.retrieve").increment();
 
         // retrieve_payment_link(): find the dedicated link row and authorize the
         // processor/merchant id against it (core:54-83).

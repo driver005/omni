@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    get_user_details_internal(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    get_user_details_internal(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -63,8 +65,8 @@ public:
         }
 
         const auto stored = m_context.repository().find_user_by_string(user_id);
-        m_context.metrics().record_flow("get_user_details_internal");
-        m_context.metrics().counter("user.get_user_details_internal").increment();
+        m_context.logger().record_flow("get_user_details_internal");
+        m_context.logger().counter("user.get_user_details_internal").increment();
 
         using Response = ::app::model::user::GetUserInternalDetailsResponse;
         Response response{};

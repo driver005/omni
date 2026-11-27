@@ -46,7 +46,7 @@ public:
                 m_support.acquire_operation_lock("merchant_account_toggle_all_kv", "all")) {
             return std::unexpected{*duplicate};
         }
-        const std::string target_scheme{ctx_bool(ctx,"kv_enabled") ? "kv" : "database"};
+        const std::string target_scheme{ctx_bool(ctx, "kv_enabled") ? "kv" : "database"};
         std::size_t total_updated{0};
         for (const auto& record: m_context.repository().list_merchant_accounts()) {
             const auto current =
@@ -62,10 +62,10 @@ public:
 
         ::app::dto::admin::ToggleAllKVResponse response;
         response.set_total_updated(total_updated);
-        response.set_kv_enabled(ctx_bool(ctx,"kv_enabled"));
+        response.set_kv_enabled(ctx_bool(ctx, "kv_enabled"));
 
-        m_context.metrics().record_flow("merchant_account_toggle_all_kv");
-        m_context.metrics().counter("admin.merchant_account_toggle_all_kv").increment();
+        m_context.logger().record_flow("merchant_account_toggle_all_kv");
+        m_context.logger().counter("admin.merchant_account_toggle_all_kv").increment();
         m_context.events().publish(
             "merchant_account.kv_toggled_all",
             serde::Ser::encode_json(response)

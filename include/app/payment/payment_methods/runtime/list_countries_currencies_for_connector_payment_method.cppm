@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_list_countries_currencies_for_connector_payment_method;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,8 +38,11 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::ListCountriesCurrenciesResponse>
-    list_countries_currencies_for_connector_payment_method(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ListCountriesCurrenciesResponse>
+    list_countries_currencies_for_connector_payment_method(
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const auto input = ListCountriesCurrenciesForConnectorPaymentMethodData{ctx};
         // Upstream cards.rs:7801-7856 — pm_filters[connector][payment_method_type] with a
@@ -115,8 +119,8 @@ public:
                 }
             }
         }
-        m_context.metrics().record_flow("list_countries_currencies_for_connector_payment_method");
-        m_context.metrics()
+        m_context.logger().record_flow("list_countries_currencies_for_connector_payment_method");
+        m_context.logger()
             .counter("PAYMENT_METHOD_LIST_COUNTRIES_CURRENCIES_FOR_CONNECTOR_PAYMENT_METHOD")
             .increment();
         ::app::model::payment_methods::ListCountriesCurrenciesResponse response{};

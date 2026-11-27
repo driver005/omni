@@ -106,7 +106,7 @@ public:
         // Upstream server_wrap/instrument + typed Flow (hypersense.rs:15-16,42-43,62-63)
         // are framework plumbing with no observable behavior; NotApplicable acquires no
         // lock here or upstream — no behavior to port, only flow instrumentation runs.
-        m_context.metrics().record_flow(flow);
+        m_context.logger().record_flow(flow);
     }
 
     /** @brief state.conf.secrets.jwt_secret (jwt.rs:50), resolved from local infra. */

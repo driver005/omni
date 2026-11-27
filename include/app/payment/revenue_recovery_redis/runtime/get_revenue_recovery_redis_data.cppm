@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_redis_runtime_get_revenue_recovery_redis_data;
+import core_behavior;
 
 import std;
 import core_error;
@@ -21,7 +22,8 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
     get_revenue_recovery_redis_data(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetRevenueRecoveryRedisDataData{ctx};
@@ -50,8 +52,8 @@ public:
         );
 
         // Flow::RevenueRecoveryRedis instrumentation (revenue_recovery_redis.rs:11, :18).
-        m_context.metrics().record_flow("RevenueRecoveryRedis");
-        m_context.metrics()
+        m_context.logger().record_flow("RevenueRecoveryRedis");
+        m_context.logger()
             .counter("revenue_recovery_redis.get_revenue_recovery_redis_data")
             .increment();
 

@@ -131,7 +131,7 @@ public:
         auto connector = connector_for(dispute->get_connector(), processor_merchant_id);
         if (!connector) {
             // Local substitute: no connector registered means deterministic validation below.
-            m_context.metrics().counter("files_validation_local_total").increment();
+            m_context.logger().counter("files_validation_local_total").increment();
             return std::nullopt;
         }
 
@@ -149,7 +149,7 @@ public:
             )
         );
         const auto response = connector->check_feature_matrix(validation);
-        m_context.metrics().counter("files_validation_connector_total").increment();
+        m_context.logger().counter("files_validation_connector_total").increment();
         if (validation_failed(response)) {
             const std::string reason = response.get_message().empty() ? std::string{"invalid file"}
                                                                       : response.get_message();
@@ -235,14 +235,14 @@ public:
                 attempt->get_connector()
             );
             outcome.merchant_connector_id = mca;
-            m_context.metrics().counter("files_upload_connector_total").increment();
+            m_context.logger().counter("files_upload_connector_total").increment();
         } else {
             // helpers.rs:392-403 — file_storage_client.upload_file(&file_key, file);
             // returns (file_key, FileUploadProvider::Router, None, None).
             file_storage_upload(file_key, request.file);
             outcome.provider_file_id = std::string{file_key};
             outcome.provider = FileUploadProvider::Router;
-            m_context.metrics().counter("files_upload_local_total").increment();
+            m_context.logger().counter("files_upload_local_total").increment();
         }
         return outcome;
     }
@@ -474,7 +474,7 @@ public:
             !iequals(connector->name(), connector_name)) {
             // The local router selects by merchant; keep the selected connector but do
             // not claim it is the named one (shared contract request below).
-            m_context.metrics().counter("files_connector_name_fallback_total").increment();
+            m_context.logger().counter("files_connector_name_fallback_total").increment();
         }
         if (!connector) {
             connector = m_context.connector_router().select(processor_merchant_id);

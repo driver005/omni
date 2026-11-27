@@ -236,7 +236,7 @@ public:
         if (!parsed) {
             // kill_switch.rs:628-636: an unparseable config is logged and treated
             // as absent; fail-closed metrics counter is the local log substitute.
-            m_context.metrics()
+            m_context.logger()
                 .counter("unified_connector_service.rollout_config_parse_error")
                 .increment();
             return std::nullopt;

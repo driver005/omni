@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_manual_update;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -22,13 +23,12 @@ public:
     {
     }
 
-    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    manual_update(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsManualUpdateData{dto, ctx};
-        m_context.metrics().record_flow("refund_manual_update");
-        m_context.metrics().counter("refunds_manual_update_total").increment();
+        m_context.logger().record_flow("refund_manual_update");
+        m_context.logger().counter("refunds_manual_update_total").increment();
 
         if (const auto failure = m_support.refund_manual_update(input.request)) {
             return std::unexpected{*failure};

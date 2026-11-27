@@ -1,4 +1,5 @@
 export module app_payment:mandates_runtime_revoke_mandate;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -26,7 +27,7 @@ public:
     // ───────────────────────── Core: revoke_mandate ─────────────────────────
     // core/mandate.rs:60-165.
     [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateRevokedResponse>
-        revoke_mandate(const core::behavior::CallContext& ctx) const
+    revoke_mandate(const core::behavior::CallContext& ctx) const
     {
         const auto input = RevokeMandateData{ctx};
         m_support.record_flow(
@@ -87,7 +88,7 @@ public:
             connector = m_context.connector_router().select(input.merchant_id);
         }
         if (!connector) {
-            m_context.metrics().record_flow("mandate.revoke.connector_unavailable");
+            m_context.logger().record_flow("mandate.revoke.connector_unavailable");
             return std::unexpected(
                 m_context.connector_router().last_error().value_or(m_support.make_error(
                     core::error::AppErrorKind::CONNECTOR_ERROR,

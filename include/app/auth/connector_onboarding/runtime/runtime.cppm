@@ -27,8 +27,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    get_action_url(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> get_action_url(
         const ::app::dto::connector_onboarding::ActionUrlRequest& request,
         const core::behavior::CallContext& ctx
     ) const

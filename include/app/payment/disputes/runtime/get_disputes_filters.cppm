@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_get_disputes_filters;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,7 +41,7 @@ public:
     get_disputes_filters(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetDisputesFiltersData{ctx};
-        m_context.metrics().record_flow("dispute_filters");
+        m_context.logger().record_flow("dispute_filters");
         auto result = m_support.get_filters_for_disputes(input.scope, std::nullopt);
         if (!result) {
             return std::unexpected{result.error()};

@@ -11,6 +11,7 @@ import app_http;
 import app_model;
 
 import :context;
+
 export namespace app::handlers::payouts {
 
 // ───────────────────────── Plain request data ─────────────────────────
@@ -50,6 +51,7 @@ struct PayoutListQuery
     std::optional<std::string> offset{};
     std::optional<std::string> limit{};
 };
+
 struct PayoutsCreateData
 {
     ::app::model::payouts::PayoutCreateRequest request{};
@@ -58,10 +60,11 @@ struct PayoutsCreateData
     std::string auth_merchant_id{};
     std::string profile_id{};
     std::string browser_info{};
+
     template<class Dto>
     explicit PayoutsCreateData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<::app::model::payouts::PayoutCreateRequest>(dto)},
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         header_merchant_id{ctx.merchant_id},
         auth_merchant_id{ctx.merchant_id},
         profile_id{ctx.profile_id},
@@ -69,12 +72,14 @@ struct PayoutsCreateData
     {
     }
 };
+
 struct PayoutsRetrieveData
 {
     std::string payout_id{};
     bool force_sync{};
     bool expand_attempts{};
     std::string profile_id{};
+
     explicit PayoutsRetrieveData(const core::behavior::CallContext& ctx) :
         payout_id{::app::payment::detail::last_path(ctx)},
         force_sync{},
@@ -83,6 +88,7 @@ struct PayoutsRetrieveData
     {
     }
 };
+
 struct PayoutsUpdateData
 {
     ::app::model::payouts::PayoutCreateRequest request{};
@@ -91,10 +97,11 @@ struct PayoutsUpdateData
     std::string header_merchant_id{};
     std::string profile_id{};
     std::string browser_info{};
+
     template<class Dto>
     explicit PayoutsUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<::app::model::payouts::PayoutCreateRequest>(dto)},
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         payout_id{::app::payment::detail::last_path(ctx)},
         header_merchant_id{ctx.merchant_id},
         profile_id{ctx.profile_id},
@@ -102,147 +109,188 @@ struct PayoutsUpdateData
     {
     }
 };
+
 struct PayoutsConfirmData
 {
     std::optional<::app::model::payouts::PayoutCreateRequest> request{};
     std::string body{};
     std::string payout_id{};
+
     explicit PayoutsConfirmData(const core::behavior::CallContext& ctx) :
         request{},
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         payout_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct PayoutsCancelData
 {
     std::string payout_id{};
+
     explicit PayoutsCancelData(const core::behavior::CallContext& ctx) :
         payout_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct PayoutsFulfillData
 {
     std::string payout_id{};
+
     explicit PayoutsFulfillData(const core::behavior::CallContext& ctx) :
         payout_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct PayoutsListData
 {
     ::app::model::payouts::PayoutListConstraints constraints{};
     TimeRange range{};
+
     template<class Dto>
     explicit PayoutsListData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        constraints{::app::payment::detail::as_dto<::app::model::payouts::PayoutListConstraints>(dto)},
+        constraints{
+            ::app::payment::detail::as_dto<::app::model::payouts::PayoutListConstraints>(dto)
+        },
         range{}
     {
     }
 };
+
 struct PayoutsListProfileData
 {
     ::app::model::payouts::PayoutListConstraints constraints{};
     TimeRange range{};
     std::string profile_id{};
+
     template<class Dto>
     explicit PayoutsListProfileData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        constraints{::app::payment::detail::as_dto<::app::model::payouts::PayoutListConstraints>(dto)},
+        constraints{
+            ::app::payment::detail::as_dto<::app::model::payouts::PayoutListConstraints>(dto)
+        },
         range{},
         profile_id{ctx.profile_id}
     {
     }
 };
+
 struct PayoutsListByFilterData
 {
     ::app::model::payouts::PayoutListFilterConstraints request{};
     std::string body{};
     PayoutListQuery query{};
+
     template<class Dto>
     explicit PayoutsListByFilterData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::payouts::PayoutListFilterConstraints>(dto)},
-        body{::app::payment::detail::body_of(dto)},
+        request{
+            ::app::payment::detail::as_dto<::app::model::payouts::PayoutListFilterConstraints>(dto)
+        },
+        body{::app::payment::detail::body_of(ctx)},
         query{}
     {
     }
 };
+
 struct PayoutsListByFilterProfileData
 {
     ::app::model::payouts::PayoutListFilterConstraints request{};
     std::string body{};
     PayoutListQuery query{};
     std::string profile_id{};
+
     template<class Dto>
-    explicit PayoutsListByFilterProfileData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::payouts::PayoutListFilterConstraints>(dto)},
-        body{::app::payment::detail::body_of(dto)},
+    explicit PayoutsListByFilterProfileData(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) :
+        request{
+            ::app::payment::detail::as_dto<::app::model::payouts::PayoutListFilterConstraints>(dto)
+        },
+        body{::app::payment::detail::body_of(ctx)},
         query{},
         profile_id{ctx.profile_id}
     {
     }
 };
+
 struct PayoutsListAvailableFiltersForMerchantData
 {
     std::string body{};
+
     explicit PayoutsListAvailableFiltersForMerchantData(const core::behavior::CallContext& ctx) :
-        body{::app::payment::detail::body_of(dto)}
+        body{::app::payment::detail::body_of(ctx)}
     {
     }
 };
+
 struct PayoutsListAvailableFiltersForProfileData
 {
     std::string body{};
     std::string profile_id{};
+
     explicit PayoutsListAvailableFiltersForProfileData(const core::behavior::CallContext& ctx) :
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         profile_id{ctx.profile_id}
     {
     }
 };
+
 struct PayoutsGetFiltersData
 {
     std::string merchant_id{};
+
     explicit PayoutsGetFiltersData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id}
     {
     }
 };
+
 struct PayoutsGetFiltersProfileData
 {
     std::string merchant_id{};
     std::string profile_id{};
+
     explicit PayoutsGetFiltersProfileData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         profile_id{ctx.profile_id}
     {
     }
 };
+
 struct PayoutsAggregatesData
 {
     TimeRange range{};
+
     explicit PayoutsAggregatesData(const core::behavior::CallContext& ctx) :
         range{}
     {
     }
 };
+
 struct PayoutsAggregatesProfileData
 {
     TimeRange range{};
     std::string profile_id{};
+
     explicit PayoutsAggregatesProfileData(const core::behavior::CallContext& ctx) :
         range{},
         profile_id{ctx.profile_id}
     {
     }
 };
+
 struct PayoutsManualUpdateData
 {
     ::app::model::payouts::PayoutsManualUpdateRequest request{};
     std::string payout_id{};
+
     template<class Dto>
     explicit PayoutsManualUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::payouts::PayoutsManualUpdateRequest>(dto)},
+        request{
+            ::app::payment::detail::as_dto<::app::model::payouts::PayoutsManualUpdateRequest>(dto)
+        },
         payout_id{::app::payment::detail::last_path(ctx)}
     {
     }

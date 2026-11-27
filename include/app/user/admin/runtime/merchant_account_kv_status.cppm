@@ -40,7 +40,7 @@ public:
     status(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx, "merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -54,8 +54,8 @@ public:
         response.set_merchant_id(m_support.merchant_id_value(found->get_merchant_id()));
         response.set_kv_enabled(kv_enabled);
 
-        m_context.metrics().record_flow("merchant_account_kv_status");
-        m_context.metrics().counter("admin.merchant_account_kv_status").increment();
+        m_context.logger().record_flow("merchant_account_kv_status");
+        m_context.logger().counter("admin.merchant_account_kv_status").increment();
         return std::move(response);
     }
 

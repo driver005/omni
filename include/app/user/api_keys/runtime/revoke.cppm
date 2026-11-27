@@ -41,7 +41,10 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RevokeApiKeyResponse>
     revoke(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found = m_support.find_api_key(ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}));
+        const auto found = m_support.find_api_key(
+            ctx.merchant_id,
+            (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{})
+        );
         if (!found) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }
@@ -58,13 +61,15 @@ public:
         m_support.revoke_api_key_decision(record.get_api_key());
 
         if constexpr (kEmail) {
-            if (auto expiry_error = m_support.revoke_api_key_expiry_task((ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}))) {
+            if (auto expiry_error = m_support.revoke_api_key_expiry_task(
+                    (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{})
+                )) {
                 return std::unexpected{*expiry_error};
             }
         }
 
-        m_context.metrics().record_flow("ApiKeyRevoke");
-        m_context.metrics().counter("API_KEY_REVOKED").increment();
+        m_context.logger().record_flow("ApiKeyRevoke");
+        m_context.logger().counter("API_KEY_REVOKED").increment();
         return m_support.build_revoke_response(record);
     }
 

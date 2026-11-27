@@ -479,7 +479,7 @@ public:
             iso_utc(schedule_epoch)
         );
         m_context.config_store().put("api_key_expiry", task_id, std::to_string(tracker_id));
-        m_context.metrics().counter("TASKS_ADDED_COUNT").increment();
+        m_context.logger().counter("TASKS_ADDED_COUNT").increment();
         return std::nullopt;
     }
 
@@ -574,13 +574,13 @@ public:
      * API_KEY_REQUEST_INITIATED / ..._COMPLETED counters. */
     void spawn_tracked_job(std::string_view request_type, std::string payload) const
     {
-        m_context.metrics().counter("API_KEY_REQUEST_INITIATED").increment();
+        m_context.logger().counter("API_KEY_REQUEST_INITIATED").increment();
         m_context.process_trackers().schedule(
             std::string{"api_key_decision_"} + std::string{request_type},
             std::move(payload),
             {}
         );
-        m_context.metrics().counter("API_KEY_REQUEST_COMPLETED").increment();
+        m_context.logger().counter("API_KEY_REQUEST_COMPLETED").increment();
     }
 
     /** @brief authentication::decision::add_api_key (decision.rs:78-104).

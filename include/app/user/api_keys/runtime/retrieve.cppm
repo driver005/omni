@@ -47,8 +47,8 @@ public:
             return std::unexpected{m_support.api_key_not_found_error()};
         }
 
-        m_context.metrics().record_flow("ApiKeyRetrieve");
-        m_context.metrics().counter("API_KEY_RETRIEVED").increment();
+        m_context.logger().record_flow("ApiKeyRetrieve");
+        m_context.logger().counter("API_KEY_RETRIEVED").increment();
         return m_support.to_retrieve_response(*found);
     }
 

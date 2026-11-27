@@ -33,13 +33,19 @@ namespace {
 void publish_event_value(
     interfaces::io::ResponseSink& sink,
     const std::expected<std::string, core::error::AppError>& encoded
-) {
+)
+{
     if (!encoded) {
         encoded.error().send(sink);
         return;
     }
     sink.set_status(interfaces::io::types::Status::OK);
-    sink.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
+    std::vector<std::byte> body_bytes{};
+    body_bytes.reserve(encoded->size());
+    for (const char ch: *encoded) {
+        body_bytes.push_back(static_cast<std::byte>(ch));
+    }
+    sink.set_body(std::move(body_bytes));
     sink.send();
 }
 
@@ -50,9 +56,8 @@ class core::behavior::Outcome<::app::dto::webhook_events::TotalEventsResponse> :
     public std::expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
 {
 public:
-    using std::expected<
-        ::app::dto::webhook_events::TotalEventsResponse,
-        core::error::AppError>::expected;
+    using std::expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>::
+        expected;
 
     void handle(interfaces::io::ResponseSink& sink)
     {
@@ -60,9 +65,10 @@ public:
             error().send(sink);
             return;
         }
-        publish_event_value(sink, value().serialize(
-            app::handlers::webhook_events::total_events_wire_fields()
-        ));
+        publish_event_value(
+            sink,
+            value().serialize(app::handlers::webhook_events::total_events_wire_fields())
+        );
     }
 };
 
@@ -71,9 +77,8 @@ class core::behavior::Outcome<::app::dto::webhook_events::EventRetrieveResponse>
     public std::expected<::app::dto::webhook_events::EventRetrieveResponse, core::error::AppError>
 {
 public:
-    using std::expected<
-        ::app::dto::webhook_events::EventRetrieveResponse,
-        core::error::AppError>::expected;
+    using std::expected<::app::dto::webhook_events::EventRetrieveResponse, core::error::AppError>::
+        expected;
 
     void handle(interfaces::io::ResponseSink& sink)
     {
@@ -81,9 +86,10 @@ public:
             error().send(sink);
             return;
         }
-        publish_event_value(sink, value().serialize(
-            app::handlers::webhook_events::event_retrieve_wire_fields()
-        ));
+        publish_event_value(
+            sink,
+            value().serialize(app::handlers::webhook_events::event_retrieve_wire_fields())
+        );
     }
 };
 
@@ -105,9 +111,12 @@ public:
             return;
         }
         using Dto = ::app::dto::webhook_events::EventRetrieveResponse;
-        publish_event_value(sink, serde::Serializer<std::vector<Dto>>::serialize_values(
-            value(),
-            app::handlers::webhook_events::event_retrieve_wire_fields()
-        ));
+        publish_event_value(
+            sink,
+            serde::Serializer<std::vector<Dto>>::serialize_values(
+                value(),
+                app::handlers::webhook_events::event_retrieve_wire_fields()
+            )
+        );
     }
 };

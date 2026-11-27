@@ -67,11 +67,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_capture");
-        m_context.metrics().counter("payments.payments_capture").increment();
+        m_context.logger().record_flow("payments.payments_capture");
+        m_context.logger().counter("payments.payments_capture").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_capture(dto, m_request_support->context(req)).handle(sink);
     }
@@ -89,11 +92,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_cancel");
-        m_context.metrics().counter("payments.payments_cancel").increment();
+        m_context.logger().record_flow("payments.payments_cancel");
+        m_context.logger().counter("payments.payments_cancel").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_cancel(dto, m_request_support->context(req)).handle(sink);
     }
@@ -113,7 +119,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_capture(req, res, std::move(send));
                         }
@@ -138,7 +144,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_cancel(req, res, std::move(send));
                         }

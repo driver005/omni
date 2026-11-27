@@ -1,4 +1,5 @@
 export module app_payment:card_issuer_runtime_add;
+import core_behavior;
 
 import std;
 import core_error;
@@ -25,7 +26,7 @@ public:
     // core/card_issuer.rs:16-39 `add_card_issuer`.
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
-        add(const Dto& dto, const core::behavior::CallContext& ctx) const
+    add(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = CardIssuerAddData{dto, ctx};
         const std::string issuer_name = input.request.get_issuer_name().get_value();
@@ -71,8 +72,8 @@ public:
         auto response = m_support.response_from(*created);
 
         // `#[instrument(skip_all, fields(flow = Flow::AddCardIssuer))]` substitute.
-        m_context.metrics().record_flow("AddCardIssuer");
-        m_context.metrics().counter("CARD_ISSUER_CREATED").increment();
+        m_context.logger().record_flow("AddCardIssuer");
+        m_context.logger().counter("CARD_ISSUER_CREATED").increment();
 
         return ::app::dto::card_issuer::CardIssuerResponse{std::move(response)};
     }

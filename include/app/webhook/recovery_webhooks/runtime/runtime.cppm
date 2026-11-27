@@ -20,8 +20,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<WebhookResponse>
-    recovery_receive_incoming_webhook(
+    [[nodiscard]] core::behavior::Outcome<WebhookResponse> recovery_receive_incoming_webhook(
         const IncomingWebhookRequestDetails& request,
         const ::core::behavior::CallContext& ctx
     ) const

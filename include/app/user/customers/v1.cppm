@@ -93,7 +93,10 @@ public:
         }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         m_runtime.create(request, ctx).handle(sink);
     }
 
@@ -132,7 +135,10 @@ public:
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("id", std::string{id});
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         m_runtime.retrieve(ctx).handle(sink);
     }
 
@@ -171,10 +177,16 @@ public:
         }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         ctx.claims.insert_or_assign("offset", encode_optional<std::uint32_t>(offset));
         ctx.claims.insert_or_assign("limit", encode_optional<std::uint16_t>(limit));
-        ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<std::string>{customer_id}));
+        ctx.claims.insert_or_assign(
+            "customer_id",
+            encode_optional_string(std::optional<std::string>{customer_id})
+        );
         m_runtime.list(ctx).handle(sink);
     }
 
@@ -229,10 +241,16 @@ public:
         }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
-                ctx.claims.insert_or_assign("offset", std::to_string(off));
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
+        ctx.claims.insert_or_assign("offset", std::to_string(off));
         ctx.claims.insert_or_assign("limit", std::to_string(lim));
-ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<std::string>{customer_id}));
+        ctx.claims.insert_or_assign(
+            "customer_id",
+            encode_optional_string(std::optional<std::string>{customer_id})
+        );
         auto customers_time_range = std::move(time_range);
         ctx.claims.insert_or_assign("start_time", encode_time_range(customers_time_range));
         ctx.claims.insert_or_assign("end_time", encode_time_range_end(customers_time_range));
@@ -301,7 +319,10 @@ ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("id", std::string{id});
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         m_runtime.update(request, ctx).handle(sink);
     }
 
@@ -340,7 +361,10 @@ ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("id", std::string{id});
         ctx.claims.insert_or_assign("version", ApiVersion::V1 == ApiVersion::V1 ? "v1" : "v2");
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         m_runtime.delete_customer(ctx).handle(sink);
     }
 

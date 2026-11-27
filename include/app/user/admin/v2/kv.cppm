@@ -56,8 +56,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::dto::admin::ToggleKVRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::ToggleKVRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
         ctx.claims.insert_or_assign("kv_enabled", parsed->get_kv_enabled() ? "true" : "false");

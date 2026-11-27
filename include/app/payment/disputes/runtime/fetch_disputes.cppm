@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_fetch_disputes;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,11 +39,11 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
-        fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
+    fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = FetchDisputesData{dto, ctx};
-        m_context.metrics().record_flow("dispute_fetch");
-        m_context.metrics().counter("disputes_fetch_total").increment();
+        m_context.logger().record_flow("dispute_fetch");
+        m_context.logger().counter("disputes_fetch_total").increment();
         const auto& scope = input.scope;
         const auto& merchant_connector_id = input.connector_id;
         const auto& payload = input.payload;
@@ -51,7 +52,7 @@ public:
         const auto mca =
             m_context.repository().find_merchant_connector_by_string(merchant_connector_id);
         if (!mca) {
-            m_context.metrics().counter("disputes_mca_not_found").increment();
+            m_context.logger().counter("disputes_mca_not_found").increment();
             return std::unexpected{core::error::AppErrorBuilder{}(
                 Kind::NOT_FOUND,
                 std::string{merchant_connector_id} + " does not exist"

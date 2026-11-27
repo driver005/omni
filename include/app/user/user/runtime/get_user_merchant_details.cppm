@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    get_user_merchant_details(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    get_user_merchant_details(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -49,13 +51,13 @@ public:
         const auto key = std::string{"user.get_user_merchant_details:"} + merchant_id;
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("get_user_merchant_details");
-        m_context.metrics().counter("user.get_user_merchant_details").increment();
+        m_context.logger().record_flow("get_user_merchant_details");
+        m_context.logger().counter("user.get_user_merchant_details").increment();
 
         using Response = ::app::model::user::UserMerchantDetailsResponse;
         Response response{};

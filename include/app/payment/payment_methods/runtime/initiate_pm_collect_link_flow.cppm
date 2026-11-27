@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_initiate_pm_collect_link_flow;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodCollectLinkResponse>
-        initiate_pm_collect_link_flow(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodCollectLinkResponse>
+    initiate_pm_collect_link_flow(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = InitiatePmCollectLinkFlowData{dto, ctx};
         const std::string collect_id = m_context.ids().payment_id("pml_");
@@ -55,8 +57,8 @@ public:
             link = "/payment_methods/collect/" + input.merchant_id + "/" + collect_id +
                    "?token=" + token;
         }
-        m_context.metrics().record_flow("initiate_pm_collect_link_flow");
-        m_context.metrics().counter("PAYMENT_METHOD_INITIATE_PM_COLLECT_LINK_FLOW").increment();
+        m_context.logger().record_flow("initiate_pm_collect_link_flow");
+        m_context.logger().counter("PAYMENT_METHOD_INITIATE_PM_COLLECT_LINK_FLOW").increment();
         ::app::model::payment_methods::PaymentMethodCollectLinkResponse response{};
         response.set_pm_collect_link_id(collect_id);
         response.set_customer_id(input.request.get_customer_id());

@@ -36,19 +36,24 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
-    update(const ::app::dto::admin::MerchantConnectorUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse> update(
+        const ::app::dto::admin::MerchantConnectorUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        auto found = m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
+        auto found = m_context.repository().find_merchant_connector_by_string(
+            ctx_string(ctx, "connector_id")
+        );
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
                 "Merchant connector account does not exist in our records"
             )};
         }
-        if (const auto duplicate =
-                m_support.acquire_operation_lock("connector_update", ctx_string(ctx,"connector_id"))) {
+        if (const auto duplicate = m_support.acquire_operation_lock(
+                "connector_update",
+                ctx_string(ctx, "connector_id")
+            )) {
             return std::unexpected{*duplicate};
         }
         auto record = std::move(*found);
@@ -68,12 +73,15 @@ public:
             record.set_connector_account_details(
                 ::app::crypto::AesWrap{}.encrypt(
                     request.get_connector_account_details()->get_value(),
-                    m_support.connector_encryption_key(record.get_merchant_id(), ctx_string(ctx,"connector_id"))
+                    m_support.connector_encryption_key(
+                        record.get_merchant_id(),
+                        ctx_string(ctx, "connector_id")
+                    )
                 )
             );
         }
         m_context.repository().update_merchant_connector(record);
-        m_support.release_operation_lock("connector_update", ctx_string(ctx,"connector_id"));
+        m_support.release_operation_lock("connector_update", ctx_string(ctx, "connector_id"));
 
         ::app::dto::admin::MerchantConnectorResponse response;
         response.set_connector_type(m_support.connector_type_value(record.get_connector_type()));
@@ -92,8 +100,8 @@ public:
             response.set_status(m_support.connector_status_value(record.get_status()));
         }
 
-        m_context.metrics().record_flow("connector_update");
-        m_context.metrics().counter("admin.connector_update").increment();
+        m_context.logger().record_flow("connector_update");
+        m_context.logger().counter("admin.connector_update").increment();
         m_context.events().publish("merchant_connector.updated", serde::Ser::encode_json(response));
         return std::move(response);
     }

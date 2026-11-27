@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_delete_dispute_evidence;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,10 +39,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = DeleteDisputeEvidenceData{dto, ctx};
-        m_context.metrics().record_flow("dispute_delete_evidence");
+        m_context.logger().record_flow("dispute_delete_evidence");
         const auto& scope = input.scope;
         const auto& req = input.request;
         auto dispute =
@@ -53,7 +54,7 @@ public:
             return std::unexpected{*invalid};
         }
 
-        m_context.metrics().counter("disputes_delete_evidence_total").increment();
+        m_context.logger().counter("disputes_delete_evidence_total").increment();
         const std::string lock_key = std::string{"dispute:delete:"} + req.get_dispute_id();
         const auto lock =
             m_context.locks().acquire(lock_key, std::int64_t{30}, "dispute_delete_evidence");

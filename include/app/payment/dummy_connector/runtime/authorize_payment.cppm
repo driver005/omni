@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime_authorize_payment;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,15 +39,15 @@ public:
             payment_id.empty() ? std::optional<PaymentData>{} : m_support.load_payment(payment_id);
         if (!payment) {
             // core.rs:78-84 - FileData(get_expired_page, TEXT_HTML)
-            m_context.metrics().record_flow("DummyPaymentAuthorize");
+            m_context.logger().record_flow("DummyPaymentAuthorize");
             return std::string{m_support.expired_page()};
         }
 
         // core.rs:67-76 - return_url uses state.base_url, page via get_authorize_page.
         const std::string return_url =
             m_support.base_url() + "/dummy-connector/complete/" + input.attempt_id;
-        m_context.metrics().record_flow("DummyPaymentAuthorize");
-        m_context.metrics().counter("DUMMY_CONNECTOR_AUTHORIZE").increment();
+        m_context.logger().record_flow("DummyPaymentAuthorize");
+        m_context.logger().counter("DUMMY_CONNECTOR_AUTHORIZE").increment();
         return std::string{m_support.authorize_page(*payment, return_url)};
     }
 

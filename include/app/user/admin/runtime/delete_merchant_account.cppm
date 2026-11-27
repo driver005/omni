@@ -37,10 +37,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountDeleteResponse>
-        remove(const ::core::behavior::CallContext& ctx) const
+    remove(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx, "merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -59,15 +59,16 @@ public:
             m_context.repository().remove_merchant_account(found->get_id());
         bool key_store_deleted = false;
         if (account_deleted) {
-            key_store_deleted =
-                m_context.key_store().find_record("merchant_aes", ctx_string(ctx,"merchant_id")).has_value();
+            key_store_deleted = m_context.key_store()
+                                    .find_record("merchant_aes", ctx_string(ctx, "merchant_id"))
+                                    .has_value();
         }
         ::app::dto::admin::MerchantAccountDeleteResponse response;
         response.set_merchant_id(m_support.merchant_id_value(found->get_merchant_id()));
         response.set_deleted(account_deleted && key_store_deleted);
 
-        m_context.metrics().record_flow("delete_merchant_account");
-        m_context.metrics().counter("admin.delete_merchant_account").increment();
+        m_context.logger().record_flow("delete_merchant_account");
+        m_context.logger().counter("admin.delete_merchant_account").increment();
         return std::move(response);
     }
 

@@ -37,11 +37,12 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    get_parent_groups_info_for_role_from_token(
-        const ::core::behavior::CallContext& ctx
-    ) const
+    get_parent_groups_info_for_role_from_token(const ::core::behavior::CallContext& ctx) const
     {
-        const auto role = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto role = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!role) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")

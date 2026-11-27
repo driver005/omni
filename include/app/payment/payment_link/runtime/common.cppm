@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -1002,7 +1003,8 @@ public:
     }
 
     /** @brief get_payment_link_status() (core:892-1073) for the status route. */
-    [[nodiscard]] core::behavior::Outcome<std::tuple<::app::model::payments::PaymentLinkStatusDetails, std::string, std::string>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::tuple<::app::model::payments::PaymentLinkStatusDetails, std::string, std::string>>
     build_status_page_data(std::string_view merchant_id, std::string_view payment_id) const
     {
         auto intent = find_intent(payment_id);
@@ -1424,7 +1426,7 @@ public:
      */
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
-        build_list_response(const Dto& dto, const core::behavior::CallContext& ctx) const
+    build_list_response(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkListData{dto, ctx};
         std::size_t limit = parse_size(input.request.get_limit().get_value());

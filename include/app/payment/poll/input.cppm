@@ -10,6 +10,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::poll {
 
 struct PollAuthorizedRequest
@@ -112,17 +113,18 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct RetrievePollStatusData
 {
     std::string request_poll_id{};
     std::string processor_merchant_id{};
+
     explicit RetrievePollStatusData(const core::behavior::CallContext& ctx) :
         request_poll_id{::app::payment::detail::last_path(ctx)},
         processor_merchant_id{ctx.merchant_id}
     {
     }
 };
-
 
 /** @brief Request policy for the poll domain: wraps the domain auth rules. */
 class PollPolicy

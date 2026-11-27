@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    terminate_two_factor_auth(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    terminate_two_factor_auth(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -62,8 +64,8 @@ public:
         set_cookie = "user_token=" + token + "; HttpOnly; Path=/";
         m_context.cache().put("user.token_email:" + token, core::cache::to_cache_value(owner));
 
-        m_context.metrics().record_flow("terminate_two_factor_auth");
-        m_context.metrics().counter("user.terminate_two_factor_auth").increment();
+        m_context.logger().record_flow("terminate_two_factor_auth");
+        m_context.logger().counter("user.terminate_two_factor_auth").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

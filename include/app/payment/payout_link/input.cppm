@@ -9,6 +9,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::payout_link {
 
 /**
@@ -83,6 +84,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct PayoutLinkRenderData
 {
     std::string merchant_id{};
@@ -91,6 +93,7 @@ struct PayoutLinkRenderData
     std::string origin{};
     std::string referer{};
     std::string accept_language{};
+
     explicit PayoutLinkRenderData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         payout_id{::app::payment::detail::last_path(ctx)},
@@ -101,7 +104,6 @@ struct PayoutLinkRenderData
     {
     }
 };
-
 
 /** @brief Request policy for the payout_link domain: wraps the domain auth rules. */
 class PayoutLinkPolicy

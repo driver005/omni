@@ -45,8 +45,8 @@ public:
         }
         std::size_t total_transferred{0};
         const auto accounts = m_context.repository().list_merchant_accounts();
-        for (std::size_t index{ctx_size(ctx,"offset")};
-             index < accounts.size() && total_transferred < ctx_size(ctx,"limit");
+        for (std::size_t index{ctx_size(ctx, "offset")};
+             index < accounts.size() && total_transferred < ctx_size(ctx, "limit");
              ++index) {
             auto record = accounts[index];
             const std::string new_key{m_context.ids().key_id()};
@@ -77,8 +77,8 @@ public:
         ::app::dto::admin::TransferKeyResponse response;
         response.set_total_transferred(total_transferred);
 
-        m_context.metrics().record_flow("merchant_account_transfer_keys");
-        m_context.metrics().counter("admin.merchant_account_transfer_keys").increment();
+        m_context.logger().record_flow("merchant_account_transfer_keys");
+        m_context.logger().counter("admin.merchant_account_transfer_keys").increment();
         m_context.events().publish(
             "merchant_account.keys_transferred",
             serde::Ser::encode_json(response)

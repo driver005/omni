@@ -56,8 +56,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::dto::admin::ToggleKVRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::ToggleKVRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
         ctx.claims.insert_or_assign("kv_enabled", parsed->get_kv_enabled() ? "true" : "false");
@@ -98,15 +101,17 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto error =
-                m_support.authorize(req, "merchant_account_toggle_all_kv", {})) {
+        if (const auto error = m_support.authorize(req, "merchant_account_toggle_all_kv", {})) {
             sink.set_status(error->get_status());
             sink.set_body(serde::Ser::serialize("application/json", *error));
             sink.send();
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::dto::admin::ToggleAllKVRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::ToggleAllKVRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("kv_enabled", parsed->get_kv_enabled() ? "true" : "false");
         m_runtime.toggle_all_kv(ctx).handle(sink);

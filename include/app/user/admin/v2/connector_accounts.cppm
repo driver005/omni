@@ -46,8 +46,11 @@ public:
             sink.send();
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::dto::admin::MerchantConnectorCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::MerchantConnectorCreate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
             merchant_id = m_support.path(req, AdminPolicy::path_index(req, 2));
@@ -70,9 +73,7 @@ public:
             sink.send();
             return;
         }
-        const std::string connector_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string connector_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -104,9 +105,7 @@ public:
             sink.send();
             return;
         }
-        const std::string connector_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string connector_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -116,8 +115,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::dto::admin::MerchantConnectorUpdate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::MerchantConnectorUpdate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("connector_id", std::string{connector_id});
         m_runtime.update_connector(*parsed, ctx).handle(sink);
@@ -136,9 +138,7 @@ public:
             sink.send();
             return;
         }
-        const std::string connector_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string connector_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,

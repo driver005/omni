@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_initiate_secure;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -42,8 +43,8 @@ public:
     initiate_secure(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkInitiateSecureData{ctx};
-        m_context.metrics().record_flow("payment_link.initiate_secure");
-        m_context.metrics().counter("payment_link.initiate_secure").increment();
+        m_context.logger().record_flow("payment_link.initiate_secure");
+        m_context.logger().counter("payment_link.initiate_secure").increment();
 
         auto form = m_support.form_payment_link_data(input.merchant_id, input.payment_id);
         if (!form) {

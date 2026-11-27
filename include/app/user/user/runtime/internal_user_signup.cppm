@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    internal_user_signup(const ::app::model::user::CreateInternalUserRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    internal_user_signup(
+        const ::app::model::user::CreateInternalUserRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -62,16 +64,16 @@ public:
         m_support.publish_identity_event("user.internal_created", internal_user_id);
 
         const auto key = std::string{"user.internal_user_signup:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("internal_user_signup");
-        m_context.metrics().counter("user.internal_user_signup").increment();
+        m_context.logger().record_flow("internal_user_signup");
+        m_context.logger().counter("user.internal_user_signup").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

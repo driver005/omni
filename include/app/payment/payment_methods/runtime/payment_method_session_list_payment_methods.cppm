@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_session_list_payment_methods;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,13 +39,17 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodListResponseForSession>
-        payment_method_session_list_payment_methods(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodListResponseForSession>
+    payment_method_session_list_payment_methods(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const auto input = PaymentMethodSessionListPaymentMethodsData{dto, ctx};
         const auto& session = input.session;
-        m_context.metrics().record_flow("payment_method_session_list_payment_methods");
-        m_context.metrics()
+        m_context.logger().record_flow("payment_method_session_list_payment_methods");
+        m_context.logger()
             .counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_LIST_PAYMENT_METHODS")
             .increment();
         ::app::model::payment_methods::PaymentMethodListResponseForSession response{};

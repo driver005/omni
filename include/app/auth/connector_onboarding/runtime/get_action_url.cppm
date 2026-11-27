@@ -38,8 +38,7 @@ public:
     }
 
     // Upstream core::get_action_url (core/connector_onboarding.rs:20-58).
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    get_action_url(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> get_action_url(
         const ::app::dto::connector_onboarding::ActionUrlRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -60,8 +59,7 @@ public:
         if (!tracking) {
             return std::unexpected{std::move(tracking.error())};
         }
-        if (!enabled.has_value() || !*enabled ||
-            !m_support.is_paypal(request.get_connector())) {
+        if (!enabled.has_value() || !*enabled || !m_support.is_paypal(request.get_connector())) {
             return std::unexpected{m_support.flow_not_supported(request.get_connector())};
         }
         auto action_url = m_support.get_action_url_from_paypal(
@@ -79,8 +77,8 @@ public:
         serde::Value::Object envelope{};
         envelope["paypal"] = ResponseDocument::from(inner);
 
-        m_context.metrics().record_flow("GetActionUrl");
-        m_context.metrics().counter("connector_onboarding.get_action_url").increment();
+        m_context.logger().record_flow("GetActionUrl");
+        m_context.logger().counter("connector_onboarding.get_action_url").increment();
         return serde::Value{std::move(envelope)};
     }
 

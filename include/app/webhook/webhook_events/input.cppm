@@ -104,7 +104,7 @@ public:
         }
         const auto stored = m_context.config_store().get_value("business_profile", profile_id);
         if (!stored) {
-            m_context.metrics().counter("WEBHOOK_EVENT_PROFILE_UNRESOLVED").increment();
+            m_context.logger().counter("WEBHOOK_EVENT_PROFILE_UNRESOLVED").increment();
             return std::nullopt;
         }
         if (!merchant_id.empty() && *stored != merchant_id) {

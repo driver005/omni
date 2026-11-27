@@ -1,3 +1,3 @@
 export module app_store:metrics_base;
 
-export import :metrics_utils;
+export import :metrics_router;

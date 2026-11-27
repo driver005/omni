@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    totp_verify(const ::app::model::user::VerifyTotpRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> totp_verify(
+        const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -72,16 +73,16 @@ public:
         }
 
         const auto key =
-            std::string{"user.totp_verify:"} + std::to_string(ctx_string(ctx,"body").size());
+            std::string{"user.totp_verify:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("totp_verify");
-        m_context.metrics().counter("user.totp_verify").increment();
+        m_context.logger().record_flow("totp_verify");
+        m_context.logger().counter("user.totp_verify").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

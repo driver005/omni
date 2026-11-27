@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -68,7 +69,7 @@ public:
 
     [[nodiscard]] Error dispute_not_found(std::string_view dispute_id) const
     {
-        m_context.metrics().counter("disputes_not_found").increment();
+        m_context.logger().counter("disputes_not_found").increment();
         return core::error::AppErrorBuilder{}(
             Kind::NOT_FOUND,
             "Dispute does not exist in our records"
@@ -126,7 +127,7 @@ public:
 
     [[nodiscard]] Error status_validation_failed(std::string_view reason) const
     {
-        m_context.metrics().counter("disputes_status_validation_failed").increment();
+        m_context.logger().counter("disputes_status_validation_failed").increment();
         return core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, std::string{reason});
     }
 
@@ -141,8 +142,9 @@ public:
         }
         std::int64_t captured = intent->get_amount();
         std::int64_t refunded = 0;
-        for (const auto& refund: db.find_refunds_by_payment_id(dispute.get_payment_id())) {
-            refunded += refund.get_amount();
+        for (const auto& refund:
+             m_context.refunds().find_refunds_by_payment_id(dispute.get_payment_id())) {
+            refunded += refund.amount;
         }
         if (m_input.canonical_status(dispute.get_status()) == "dispute_lost") {
             refunded += dispute.get_amount();
@@ -484,16 +486,16 @@ public:
             connector = m_context.connector_router().select(request.get_merchant_id());
         }
         if (!connector) {
-            m_context.metrics().counter("disputes_connector_unavailable").increment();
+            m_context.logger().counter("disputes_connector_unavailable").increment();
             return {};
         }
         const std::string name{connector->name()};
         record.set_connector(name);
         if (m_context.config_store().is_killed(name)) {
-            m_context.metrics().counter("disputes_connector_killed").increment();
+            m_context.logger().counter("disputes_connector_killed").increment();
         }
         if (m_context.config_store().is_shadow_killed(name)) {
-            m_context.metrics().counter("disputes_connector_shadow_killed").increment();
+            m_context.logger().counter("disputes_connector_shadow_killed").increment();
         }
 
         ::app::connector::ConnectorResponse response{};
@@ -516,10 +518,10 @@ public:
             m_context.config_store()
                 .put("dispute_connector_status", std::string{dispute_id}, response.get_status());
         } else {
-            m_context.metrics().counter("disputes_connector_no_status").increment();
+            m_context.logger().counter("disputes_connector_no_status").increment();
         }
-        m_context.metrics().record_flow(std::string{"dispute.connector."} + std::string{operation});
-        m_context.metrics()
+        m_context.logger().record_flow(std::string{"dispute.connector."} + std::string{operation});
+        m_context.logger()
             .counter(std::string{"disputes_connector_"} + std::string{operation})
             .increment();
         return response;
@@ -558,7 +560,7 @@ public:
                 .get_value("dispute_webhook_endpoint", record.get_merchant_id())
                 .value_or(std::string{"local://dispute-webhook/"} + record.get_merchant_id());
         m_context.webhook_delivery().enqueue(event_id, endpoint);
-        m_context.metrics().counter("disputes_webhook_notified").increment();
+        m_context.logger().counter("disputes_webhook_notified").increment();
     }
 
     // ── DTO conversion ────────────────────────────────────────────────────────

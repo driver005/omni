@@ -38,13 +38,15 @@ public:
     }
 
     /** @brief core::api_keys::update_api_key (278-369). */
-    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
-    update(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse> update(
         const ::app::dto::api_keys::UpdateApiKeyRequest& request,
         const ::core::behavior::CallContext& ctx
     ) const
     {
-        const auto found = m_support.find_api_key(ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}));
+        const auto found = m_support.find_api_key(
+            ctx.merchant_id,
+            (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{})
+        );
         if (!found) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }
@@ -73,8 +75,12 @@ public:
         m_support.upsert_expiry_record(record, expires);
 
         // decision ADD on update (core/api_keys.rs:300-312).
-        m_support
-            .add_api_key_decision(record.get_api_key(), ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}), expires);
+        m_support.add_api_key_decision(
+            record.get_api_key(),
+            ctx.merchant_id,
+            (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}),
+            expires
+        );
 
         if constexpr (kEmail) {
             if (auto expiry_error = m_support.update_api_key_expiry_task(record, expires)) {
@@ -82,8 +88,8 @@ public:
             }
         }
 
-        m_context.metrics().record_flow("ApiKeyUpdate");
-        m_context.metrics().counter("API_KEY_UPDATED").increment();
+        m_context.logger().record_flow("ApiKeyUpdate");
+        m_context.logger().counter("API_KEY_UPDATED").increment();
         return m_support.to_retrieve_response(record);
     }
 

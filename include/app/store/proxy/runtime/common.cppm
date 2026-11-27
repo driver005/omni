@@ -1227,7 +1227,7 @@ public:
             )};
         }
         if (record->merchant_id.empty() || record->merchant_id != merchant_id) {
-            m_context.metrics().counter("proxy.ownership_denied").increment();
+            m_context.logger().counter("proxy.ownership_denied").increment();
             return std::unexpected{m_proxy_errors(
                 ProxyError::Kind::PaymentMethodNotFound,
                 "Payment method does not exist in our records"
@@ -1276,7 +1276,7 @@ public:
                 has_cvc = true;
             } else {
                 // Upstream logs a warning and proceeds without the CVC.
-                m_context.metrics().counter("proxy.cvc_consumed").increment();
+                m_context.logger().counter("proxy.cvc_consumed").increment();
             }
         }
         if (!found_any) {
@@ -1328,7 +1328,7 @@ public:
                             .raw_payload(std::string{envelope})();
         auto selected = m_context.connector_router().select_for(outbound);
         if (!selected) {
-            m_context.metrics().counter("proxy.connector_unavailable").increment();
+            m_context.logger().counter("proxy.connector_unavailable").increment();
             return std::unexpected{m_proxy_errors(
                 ProxyError::Kind::InternalServerError,
                 "Failed to call the destination"
@@ -1336,7 +1336,7 @@ public:
         }
         const auto result = selected->sync(outbound);
         if (result.get_retryable() || result.get_status().empty()) {
-            m_context.metrics().counter("proxy.connector_failed").increment();
+            m_context.logger().counter("proxy.connector_failed").increment();
             return std::unexpected{m_proxy_errors(
                 ProxyError::Kind::InternalServerError,
                 "Error while receiving response"

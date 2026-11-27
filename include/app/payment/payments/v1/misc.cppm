@@ -69,15 +69,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.list_payment_methods_for_payments_client");
-        m_context.metrics()
-            .counter("payments.list_payment_methods_for_payments_client")
-            .increment();
+        m_context.logger().record_flow("payments.list_payment_methods_for_payments_client");
+        m_context.logger().counter("payments.list_payment_methods_for_payments_client").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.list_payment_methods_for_payments_client(m_request_support->context(req))).handle(sink);
+        m_runtime.list_payment_methods_for_payments_client(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_payments_dynamic_tax_calculation(
@@ -96,13 +98,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_dynamic_tax_calculation");
-        m_context.metrics().counter("payments.payments_dynamic_tax_calculation").increment();
+        m_context.logger().record_flow("payments.payments_dynamic_tax_calculation");
+        m_context.logger().counter("payments.payments_dynamic_tax_calculation").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payments_dynamic_tax_calculation(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.payments_dynamic_tax_calculation(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #40
@@ -120,7 +126,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_methods_for_payments_client(
                                 req,
@@ -149,7 +155,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_dynamic_tax_calculation(req, res, std::move(send));
                         }

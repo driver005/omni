@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_list_profile;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,11 +39,11 @@ public:
     // ───────────────────────── Core: list_profile ─────────────────────────
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsListProfileData{dto, ctx};
-        m_context.metrics().record_flow("payout_list_profile");
-        m_context.metrics().counter("payouts_list_profile_total").increment();
+        m_context.logger().record_flow("payout_list_profile");
+        m_context.logger().counter("payouts_list_profile_total").increment();
 
         auto response = m_support.list_response(
             m_support.list_filters_from_constraints(input.constraints),

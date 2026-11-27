@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_data_backfill_runtime_unlock_status;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,8 +41,9 @@ public:
      * (types/storage/revenue_recovery_redis_operation.rs:232-286).
      */
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
-        unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
+    unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = UnlockStatusData{dto, ctx};
         const auto& customer_id = input.parsed.get_connector_customer_id();

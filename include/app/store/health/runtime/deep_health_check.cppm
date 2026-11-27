@@ -40,8 +40,8 @@ public:
         (void)ctx;
 
         // HEALTH_METRIC.add(1, &[]) (routes/health.rs:28) — local metrics substitute.
-        m_context.metrics().record_flow("deep_health_check");
-        m_context.metrics().counter("health").increment();
+        m_context.logger().record_flow("deep_health_check");
+        m_context.logger().counter("health").increment();
 
         const HealthStateProjection project{};
         using State = ::app::dto::health_check::HealthState;

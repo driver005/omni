@@ -43,8 +43,10 @@ public:
 
     [[nodiscard]] core::behavior::Outcome<
         ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse>
-    list(const ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    list(
+        const ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_list.list(request, ctx);
     }

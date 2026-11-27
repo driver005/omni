@@ -45,7 +45,7 @@ public:
     {
         (void)ctx;
         m_support.record_flow("HypersenseSignoutToken", LockActionNotApplicable{});
-        m_context.metrics().counter("hypersense.signout_token").increment();
+        m_context.logger().counter("hypersense.signout_token").increment();
 
         // core/external_service_auth.rs:55-57 — decode_jwt::<ExternalToken> ->
         // Unauthorized.

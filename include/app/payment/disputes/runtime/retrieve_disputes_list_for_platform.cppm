@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_retrieve_disputes_list_for_platform;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,10 +41,13 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListResponse>
-        retrieve_disputes_list_for_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_disputes_list_for_platform(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const auto input = RetrieveDisputesListForPlatformData{dto, ctx};
-        m_context.metrics().record_flow("dispute_platform_list");
+        m_context.logger().record_flow("dispute_platform_list");
         const auto& scope = input.scope;
         const auto& constraints = input.constraints;
         // core/disputes.rs:299-305 — platform-account guard is enforced by scope_error.

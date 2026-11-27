@@ -44,7 +44,7 @@ public:
     get_token(const core::behavior::CallContext& ctx) const
     {
         m_support.record_flow("HypersenseTokenRequest", LockActionNotApplicable{});
-        m_context.metrics().counter("hypersense.token_request").increment();
+        m_context.logger().counter("hypersense.token_request").increment();
 
         // DashboardNoPermissionAuth: parse the dashboard JWT, check its blacklist
         // and tenant, then hand UserFromToken to the token generator. No named

@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    user_connect_account(const ::app::model::user::ConnectAccountRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    user_connect_account(
+        const ::app::model::user::ConnectAccountRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -53,18 +55,11 @@ public:
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(password_secret.value());
 
         m_support.store_password(email, password_hash);
-        m_support.persist_new_user(
-            user_id,
-            email,
-            email,
-            "active",
-            ctx.merchant_id,
-            "admin"
-        );
+        m_support.persist_new_user(user_id, email, email, "active", ctx.merchant_id, "admin");
         m_support.publish_identity_event("user.account_connected", user_id);
 
-        m_context.metrics().record_flow("user_connect_account");
-        m_context.metrics().counter("user.user_connect_account").increment();
+        m_context.logger().record_flow("user_connect_account");
+        m_context.logger().counter("user.user_connect_account").increment();
 
         using Response = ::app::model::user::AuthorizeResponse;
         Response response{};

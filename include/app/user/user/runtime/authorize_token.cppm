@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    authorize_token(const ::app::model::user::AuthorizeTokenRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> authorize_token(
+        const ::app::model::user::AuthorizeTokenRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -89,8 +90,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("authorize_token");
-        m_context.metrics().counter("user.authorize_token").increment();
+        m_context.logger().record_flow("authorize_token");
+        m_context.logger().counter("user.authorize_token").increment();
 
         // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
         return std::pair{ResponseDocument::empty(), set_cookie};

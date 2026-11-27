@@ -200,8 +200,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::UserOrgMerchantCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::UserOrgMerchantCreateRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.user_org_create(*parsed, ctx).handle(sink);
     }
@@ -213,16 +219,18 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "user_merchant_account_create", {})) {
+        if (const auto auth_error = m_support.authorize(req, "user_merchant_account_create", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::UserMerchantCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::UserMerchantCreate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.user_merchant_account_create(*parsed, ctx).handle(sink);
     }
@@ -310,8 +318,7 @@ public:
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_support
-                    .authorize(req, "list_profiles_for_user_in_org_and_merchant", {})) {
+                m_support.authorize(req, "list_profiles_for_user_in_org_and_merchant", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -355,8 +362,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::SwitchOrganizationRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::SwitchOrganizationRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.switch_org_for_user(*parsed, ctx).handle(sink);
     }
@@ -376,8 +389,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::SwitchMerchantRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::SwitchMerchantRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.switch_merchant_for_user_in_org(*parsed, ctx).handle(sink);
     }
@@ -390,16 +406,18 @@ public:
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_support
-                    .authorize(req, "switch_profile_for_user_in_org_and_merchant", {})) {
+                m_support.authorize(req, "switch_profile_for_user_in_org_and_merchant", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::SwitchProfileRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::SwitchProfileRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.switch_profile_for_user_in_org_and_merchant(*parsed, ctx).handle(sink);
     }
@@ -411,8 +429,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "get_user_merchant_details", {})) {
+        if (const auto auth_error = m_support.authorize(req, "get_user_merchant_details", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();

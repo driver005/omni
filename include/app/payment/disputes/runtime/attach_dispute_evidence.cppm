@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_attach_dispute_evidence;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,10 +39,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
-        attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = AttachDisputeEvidenceData{dto, ctx};
-        m_context.metrics().record_flow("dispute_attach_evidence");
+        m_context.logger().record_flow("dispute_attach_evidence");
         const auto& scope = input.scope;
         const auto& request = input.request;
         const std::string dispute_id = request.get_dispute_id().value_or(std::string{});
@@ -70,7 +71,7 @@ public:
             )};
         }
 
-        m_context.metrics().counter("disputes_attach_evidence_total").increment();
+        m_context.logger().counter("disputes_attach_evidence_total").increment();
         const std::string lock_key = std::string{"dispute:attach:"} + dispute_id;
         const auto lock =
             m_context.locks().acquire(lock_key, std::int64_t{30}, "dispute_attach_evidence");

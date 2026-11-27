@@ -13,7 +13,8 @@ class ResponseSink
 {
 public:
     ResponseSink(IResponse& res, std::function<void()> send) noexcept :
-        m_res{res}, m_send{std::move(send)}
+        m_res{res},
+        m_send{std::move(send)}
     {
     }
 

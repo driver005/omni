@@ -37,42 +37,49 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
-    register_webhook(const ::app::dto::admin::WebhookDetailsRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    register_webhook(
+        const ::app::dto::admin::WebhookDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         // The connector-hosted webhook registration API is external; the local
         // ConnectorWebhookRecord + encrypted secret + delivery enqueue is the
         // in-process substitute while preserving the request/response wire shape.
-        std::string connector_name{ctx_string(ctx,"connector_id")};
-        const auto connector =
-            m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
+        std::string connector_name{ctx_string(ctx, "connector_id")};
+        const auto connector = m_context.repository().find_merchant_connector_by_string(
+            ctx_string(ctx, "connector_id")
+        );
         if (connector.has_value() && !connector->get_connector_name().empty()) {
             connector_name = connector->get_connector_name();
         }
         if (const auto duplicate = m_support.acquire_operation_lock(
                 "connector_webhook_register",
-                ctx_string(ctx,"connector_id")
+                ctx_string(ctx, "connector_id")
             )) {
             return std::unexpected{*duplicate};
         }
-        const ::app::crypto::SecretString password{
-            request.get_webhook_password().value_or("")
-        };
+        const ::app::crypto::SecretString password{request.get_webhook_password().value_or("")};
         ::app::store::connector_webhooks::ConnectorWebhookRecord record;
-        record.set_connector_webhook_id(std::string{ctx_string(ctx,"connector_id")});
+        record.set_connector_webhook_id(std::string{ctx_string(ctx, "connector_id")});
         record.set_connector(connector_name);
-        record.set_merchant_id(std::string{ctx_string(ctx,"merchant_id")});
+        record.set_merchant_id(std::string{ctx_string(ctx, "merchant_id")});
         record.set_event_type(request.get_webhook_version().value_or(""));
         record.set_scope(request.get_webhook_url().value_or(""));
         record.set_secret(
             ::app::crypto::AesWrap{}.encrypt(
                 password.value(),
-                m_support.connector_encryption_key(ctx_string(ctx,"merchant_id"), ctx_string(ctx,"connector_id"))
+                m_support.connector_encryption_key(
+                    ctx_string(ctx, "merchant_id"),
+                    ctx_string(ctx, "connector_id")
+                )
             )
         );
         record.set_status("active");
         const auto saved = m_context.repository().save_connector_webhook(std::move(record));
-        m_support.release_operation_lock("connector_webhook_register", ctx_string(ctx,"connector_id"));
+        m_support.release_operation_lock(
+            "connector_webhook_register",
+            ctx_string(ctx, "connector_id")
+        );
 
         ::app::dto::admin::WebhookDetailsResponse response;
         if (!saved.get_event_type().empty()) {
@@ -83,7 +90,8 @@ public:
         }
         const std::string decrypted_password{::app::crypto::AesWrap{}.decrypt(
             saved.get_secret(),
-            m_support.connector_encryption_key(saved.get_merchant_id(), ctx_string(ctx,"connector_id"))
+            m_support
+                .connector_encryption_key(saved.get_merchant_id(), ctx_string(ctx, "connector_id"))
         )};
         if (!decrypted_password.empty()) {
             response.set_webhook_password(decrypted_password);
@@ -107,8 +115,8 @@ public:
             m_context.webhook_delivery().enqueue(event_id, saved.get_scope());
         }
 
-        m_context.metrics().record_flow("connector_webhook_register");
-        m_context.metrics().counter("admin.connector_webhook_register").increment();
+        m_context.logger().record_flow("connector_webhook_register");
+        m_context.logger().counter("admin.connector_webhook_register").increment();
         return std::move(response);
     }
 

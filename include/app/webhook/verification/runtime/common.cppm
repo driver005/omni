@@ -283,9 +283,9 @@ public:
     void log_applepay_verification_response_if_error(const AppleCallResult& response) const
     {
         if (response.outcome() == AppleCallOutcome::TRANSPORT_ERROR) {
-            m_context.metrics().counter("applepay_domain_verification.transport_error").increment();
+            m_context.logger().counter("applepay_domain_verification.transport_error").increment();
         } else if (response.outcome() == AppleCallOutcome::CONNECTOR_ERROR) {
-            m_context.metrics().counter("applepay_domain_verification.connector_error").increment();
+            m_context.logger().counter("applepay_domain_verification.connector_error").increment();
         }
     }
 
@@ -397,7 +397,7 @@ public:
         }
 
         if (!request.certificate().empty() && !request.certificate_key().empty()) {
-            m_context.metrics().counter("applepay.cert_authenticated_transport").increment();
+            m_context.logger().counter("applepay.cert_authenticated_transport").increment();
         }
 
         ::app::connector::ConnectorRequest connector_request{};

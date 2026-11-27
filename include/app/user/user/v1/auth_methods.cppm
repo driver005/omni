@@ -197,8 +197,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::SsoSignInRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::SsoSignInRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.sso_sign(*parsed, ctx).handle(sink);
     }
@@ -218,8 +221,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::CreateUserAuthenticationMethodRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::user::CreateUserAuthenticationMethodRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.create_user_authentication_method(*parsed, ctx).handle(sink);
     }
@@ -239,8 +245,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::AuthSelectRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::AuthSelectRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.terminate_auth_select(*parsed, ctx).handle(sink);
     }
@@ -258,10 +267,47 @@ public:
             sink.send();
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::user::UserKeyTransferRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::UserKeyTransferRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.transfer_user_key(*parsed, ctx).handle(sink);
+    }
+
+    void handle_list_user_authentication_methods(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error =
+                m_support.authorize(req, "list_user_authentication_methods", {})) {
+            auth_error->send(sink);
+            return;
+        }
+        m_runtime.list_user_authentication_methods(m_support.context(req)).handle(sink);
+    }
+
+    void handle_terminate_auth_select(
+        interfaces::io::IRequest& req,
+        interfaces::io::IResponse& res,
+        std::function<void()> send
+    )
+    {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "terminate_auth_select", {})) {
+            auth_error->send(sink);
+            return;
+        }
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::AuthSelectRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
+        m_runtime.terminate_auth_select(*parsed, m_support.context(req)).handle(sink);
     }
 
 private:

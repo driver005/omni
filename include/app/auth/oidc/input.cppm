@@ -200,8 +200,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         auto ctx = detail::make_call_context(req);
         if (const auto basic = m_support.parse_basic_auth(req)) {

@@ -34,15 +34,14 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    authorize(
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> authorize(
         const ::app::dto::oidc::OidcAuthorizeQuery& payload,
         const core::behavior::CallContext& ctx
     ) const
     {
-        m_context.metrics().record_flow("oidc_authorize");
-        m_context.metrics().counter("oidc.oidc_authorize").increment();
-        m_context.metrics().counter("oidc.api_event.Oidc").increment();
+        m_context.logger().record_flow("oidc_authorize");
+        m_context.logger().counter("oidc.oidc_authorize").increment();
+        m_context.logger().counter("oidc.api_event.Oidc").increment();
 
         m_support.ensure_oidc_config();
 

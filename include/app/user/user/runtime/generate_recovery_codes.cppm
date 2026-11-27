@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    generate_recovery_codes(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    generate_recovery_codes(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -62,16 +64,16 @@ public:
         );
 
         const auto key = std::string{"user.generate_recovery_codes:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("generate_recovery_codes");
-        m_context.metrics().counter("user.generate_recovery_codes").increment();
+        m_context.logger().record_flow("generate_recovery_codes");
+        m_context.logger().counter("user.generate_recovery_codes").increment();
 
         using Response = ::app::model::user::RecoveryCodes;
         Response response{};

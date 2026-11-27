@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_methods_batch_retrieve_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,14 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>>
     payment_methods_batch_retrieve_api(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodsBatchRetrieveApiData{ctx};
-        m_context.metrics().record_flow("payment_methods_batch_retrieve_api");
-        m_context.metrics()
-            .counter("PAYMENT_METHOD_PAYMENT_METHODS_BATCH_RETRIEVE_API")
-            .increment();
+        m_context.logger().record_flow("payment_methods_batch_retrieve_api");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHODS_BATCH_RETRIEVE_API").increment();
         auto repository = m_context.repository();
         std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse> responses{};
         for (const auto& [payment_method_id, line_number]: input.rows) {

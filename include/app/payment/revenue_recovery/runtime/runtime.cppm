@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -20,7 +21,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::RecoveryPaymentsResponse>
-        cancel(const core::behavior::CallContext& ctx) const
+    cancel(const core::behavior::CallContext& ctx) const
     {
         return m_cancel.cancel(ctx);
     }

@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_get_token_details_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse>
     payment_method_get_token_details_api(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodGetTokenDetailsApiData{ctx};
-        m_context.metrics().record_flow("payment_method_get_token_details_api");
-        m_context.metrics()
+        m_context.logger().record_flow("payment_method_get_token_details_api");
+        m_context.logger()
             .counter("PAYMENT_METHOD_PAYMENT_METHOD_GET_TOKEN_DETAILS_API")
             .increment();
         ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse response{};

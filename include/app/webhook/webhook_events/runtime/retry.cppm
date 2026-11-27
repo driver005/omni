@@ -45,7 +45,7 @@ public:
         const std::string lock_key = "webhook_retry:" + ctx.merchant_id + ":" + event_id;
         const auto lock = m_context.locks().acquire(lock_key, std::int64_t{30}, "webhook_events");
         if (!lock) {
-            m_context.metrics().counter("WEBHOOK_EVENT_RETRY_LOCK_CONTENTED").increment();
+            m_context.logger().counter("WEBHOOK_EVENT_RETRY_LOCK_CONTENTED").increment();
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::DUPLICATE_REQUEST,
                 "retry already in progress"
@@ -95,8 +95,8 @@ public:
             const auto payload = m_support.payload_of(candidate, ctx.merchant_id);
             if (m_support.payload_field(payload, "idempotent_event_id") == idempotent_event_id) {
                 m_context.locks().release(lock_key);
-                m_context.metrics().record_flow("WebhookEventDeliveryRetry");
-                m_context.metrics().counter("WEBHOOK_EVENT_DELIVERY_RETRY").increment();
+                m_context.logger().record_flow("WebhookEventDeliveryRetry");
+                m_context.logger().counter("WEBHOOK_EVENT_DELIVERY_RETRY").increment();
                 auto item = m_support.to_list_item(
                     candidate,
                     payload,
@@ -167,8 +167,8 @@ public:
         if (!item) {
             return std::unexpected{std::move(item.error())};
         }
-        m_context.metrics().record_flow("WebhookEventDeliveryRetry");
-        m_context.metrics().counter("WEBHOOK_EVENT_DELIVERY_RETRY").increment();
+        m_context.logger().record_flow("WebhookEventDeliveryRetry");
+        m_context.logger().counter("WEBHOOK_EVENT_DELIVERY_RETRY").increment();
         return m_support.to_retrieve(*item, *stored, stored_payload, sensitive);
     }
 

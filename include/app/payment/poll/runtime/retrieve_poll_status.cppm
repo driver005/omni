@@ -1,4 +1,5 @@
 export module app_payment:poll_runtime_retrieve_poll_status;
+import core_behavior;
 
 import std;
 import core_error;
@@ -30,7 +31,7 @@ public:
     {
         const auto input = RetrievePollStatusData{ctx};
         // routes/poll.rs:27,33,51-52 — Flow::RetrievePollStatus.
-        m_context.metrics().record_flow("RetrievePollStatus");
+        m_context.logger().record_flow("RetrievePollStatus");
 
         if (!m_context.cache().is_open()) {
             return std::unexpected{m_support.internal_server_error()};

@@ -1488,8 +1488,8 @@ public:
 
     void track_flow(std::string_view flow, std::string_view counter) const
     {
-        m_context.metrics().record_flow(std::string{flow});
-        m_context.metrics().counter(std::string{counter}).increment();
+        m_context.logger().record_flow(std::string{flow});
+        m_context.logger().counter(std::string{counter}).increment();
     }
 
     [[nodiscard]] std::string now_string() const

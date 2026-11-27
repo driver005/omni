@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    verify_recovery_code(const ::app::model::user::VerifyRecoveryCodeRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    verify_recovery_code(
+        const ::app::model::user::VerifyRecoveryCodeRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -60,16 +62,16 @@ public:
         }
 
         const auto key = std::string{"user.verify_recovery_code:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("verify_recovery_code");
-        m_context.metrics().counter("user.verify_recovery_code").increment();
+        m_context.logger().record_flow("verify_recovery_code");
+        m_context.logger().counter("user.verify_recovery_code").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

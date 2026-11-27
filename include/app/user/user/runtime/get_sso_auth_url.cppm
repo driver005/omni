@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    get_sso_auth_url(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> get_sso_auth_url(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -78,8 +79,8 @@ public:
         const auto authorization_url =
             std::format("{}?state={}&client_id=local", base_url, sso_state);
 
-        m_context.metrics().record_flow("get_sso_auth_url");
-        m_context.metrics().counter("user.get_sso_auth_url").increment();
+        m_context.logger().record_flow("get_sso_auth_url");
+        m_context.logger().counter("user.get_sso_auth_url").increment();
 
         using Response = ::app::model::user::RedirectionResponse;
         Response response{};

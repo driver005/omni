@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    resend_invite(const ::app::model::user::ReInviteUserRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> resend_invite(
+        const ::app::model::user::ReInviteUserRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -60,16 +61,16 @@ public:
         m_support.publish_identity_event("user.invite_resent", email);
 
         const auto key =
-            std::string{"user.resend_invite:"} + std::to_string(ctx_string(ctx,"body").size());
+            std::string{"user.resend_invite:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("resend_invite");
-        m_context.metrics().counter("user.resend_invite").increment();
+        m_context.logger().record_flow("resend_invite");
+        m_context.logger().counter("user.resend_invite").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

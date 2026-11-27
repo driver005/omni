@@ -47,8 +47,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::organization::OrganizationCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::organization::OrganizationCreateRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.create_organization(*parsed, ctx).handle(sink);
     }
@@ -66,9 +72,7 @@ public:
             sink.send();
             return;
         }
-        const std::string organization_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string organization_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -95,9 +99,7 @@ public:
             sink.send();
             return;
         }
-        const std::string organization_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string organization_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -106,8 +108,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::organization::OrganizationUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::organization::OrganizationUpdateRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
         m_runtime.update_organization(*parsed, ctx).handle(sink);

@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_list;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -21,19 +22,18 @@ public:
     {
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
-        list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsListData{dto, ctx};
-        m_context.metrics().record_flow("refund_list");
-        m_context.metrics().counter("refunds_list_total").increment();
+        m_context.logger().record_flow("refund_list");
+        m_context.logger().counter("refunds_list_total").increment();
 
         const auto result = m_support.refund_list(input.facts, input.request, input.profile_scoped);
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return ::app::model::refunds::RefundListResponse{*result};
+        return *result;
     }
 
 private:

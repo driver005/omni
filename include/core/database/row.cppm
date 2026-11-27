@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module core_database:row;
 
 import std;
@@ -47,21 +50,25 @@ public:
             if (const auto* s = std::get_if<std::string>(&value)) {
                 return *s;
             }
-        }
-        if constexpr (std::integral<T> && !std::same_as<T, bool>) {
+        } else if constexpr (std::same_as<T, uuids::uuid>) {
+            if (const auto* s = std::get_if<std::string>(&value)) {
+                return uuids::uuid::from_string(*s).value_or(uuids::uuid{});
+            }
+        } else if constexpr (std::integral<T> && !std::same_as<T, bool>) {
             if (const auto* n = std::get_if<std::int64_t>(&value)) {
                 return static_cast<T>(*n);
             }
             if (const auto* u = std::get_if<std::uint64_t>(&value)) {
                 return static_cast<T>(*u);
             }
-        }
-        if constexpr (std::same_as<T, bool>) {
+        } else if constexpr (std::same_as<T, bool>) {
             if (const auto* b = std::get_if<bool>(&value)) {
                 return *b;
             }
+        } else {
+            return std::get<T>(value);
         }
-        return std::get<T>(value);
+        return T{};
     }
 
     /** @brief Fetches a cell or returns `fallback` on any failure. */

@@ -11,6 +11,7 @@ import app_auth;
 import app_metrics;
 
 import :context;
+
 export namespace app::handlers::telephone_order {
 
 using Parameters = std::unordered_map<std::string, std::string>;
@@ -172,6 +173,7 @@ struct TelephoneOrderChargeData
     std::string merchant_id{};
     std::string transaction_reference{};
     ::app::auth::AuthContext auth_context{};
+
     template<class Dto>
     explicit TelephoneOrderChargeData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<TwilioGenericPayRequest>(dto)},
@@ -181,7 +183,6 @@ struct TelephoneOrderChargeData
     {
     }
 };
-
 
 struct ChargePath
 {

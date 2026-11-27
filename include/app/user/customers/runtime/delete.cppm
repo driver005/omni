@@ -47,14 +47,18 @@ private:
     {
         auto repo = m_context.repository();
         auto existing = ctx_version(ctx) == ApiVersion::V1
-                            ? m_support.locate_customer(repo, ctx_string(ctx,"merchant_id"), ctx_string(ctx,"id"))
-                            : m_support.locate_global_customer(repo, ctx_string(ctx,"id"));
+                            ? m_support.locate_customer(
+                                  repo,
+                                  ctx_string(ctx, "merchant_id"),
+                                  ctx_string(ctx, "id")
+                              )
+                            : m_support.locate_global_customer(repo, ctx_string(ctx, "id"));
         if (!existing) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")
             };
         }
-        const std::string merchant_id = ctx_string(ctx,"merchant_id");
+        const std::string merchant_id = ctx_string(ctx, "merchant_id");
         if (!merchant_id.empty() && !existing->record.get_merchant_id().empty() &&
             existing->record.get_merchant_id() != merchant_id) {
             return std::unexpected{
@@ -125,10 +129,10 @@ private:
         response["customer_deleted"] = serde::Value{true};
         response["address_deleted"] = serde::Value{true};
         response["payment_methods_deleted"] = serde::Value{true};
-        m_context.metrics().record_flow("customers.redacted");
-        m_context.metrics().counter("CUSTOMER_REDACTED").increment();
-        m_context.metrics().record_flow("customers.delete");
-        m_context.metrics().counter("customers_delete").increment();
+        m_context.logger().record_flow("customers.redacted");
+        m_context.logger().counter("CUSTOMER_REDACTED").increment();
+        m_context.logger().record_flow("customers.delete");
+        m_context.logger().counter("customers_delete").increment();
         return serde::Value{std::move(response)};
     }
 

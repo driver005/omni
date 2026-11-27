@@ -44,17 +44,14 @@ public:
         const ::core::behavior::CallContext& ctx
     ) const
     {
-        auto listed = m_support.list_initial_delivery_attempts(
-            ctx.merchant_id,
-            ctx.profile_id,
-            constraints
-        );
+        auto listed =
+            m_support.list_initial_delivery_attempts(ctx.merchant_id, ctx.profile_id, constraints);
         if (!listed) {
             return std::unexpected{std::move(listed.error())};
         }
 
-        m_context.metrics().record_flow("WebhookEventInitialDeliveryAttemptList");
-        m_context.metrics().counter("WEBHOOK_EVENT_INITIAL_ATTEMPTS_LIST").increment();
+        m_context.logger().record_flow("WebhookEventInitialDeliveryAttemptList");
+        m_context.logger().counter("WEBHOOK_EVENT_INITIAL_ATTEMPTS_LIST").increment();
         return m_support.to_total_events_response(std::move(*listed));
     }
 

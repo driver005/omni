@@ -5,6 +5,8 @@ congelado_module_library(
     primary_interface = "logger.cppm",
     partitions = [
         "registry.cppm",
+        "facade.cppm",
+        "metrics_logger.cppm",
     ],
     deps = [
         "//include/interfaces:interfaces",

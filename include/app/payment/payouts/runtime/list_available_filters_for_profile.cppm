@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_list_available_filters_for_profile;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -47,8 +48,8 @@ public:
         if (const auto invalid = m_support.require_time_range(range)) {
             return std::unexpected{*invalid};
         }
-        m_context.metrics().record_flow("payout_available_filters_profile");
-        m_context.metrics().counter("payouts_available_filters_profile_total").increment();
+        m_context.logger().record_flow("payout_available_filters_profile");
+        m_context.logger().counter("payouts_available_filters_profile_total").increment();
 
         const auto filters =
             m_support.available_filters(m_support.scoped_records(input.profile_id, range));

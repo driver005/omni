@@ -107,7 +107,7 @@ public:
         response_dto.set_status_message("Applepay verification Completed");
 
         // #[instrument(fields(flow = ?Flow::Verification))] on the route.
-        m_context.metrics().record_flow("Verification");
+        m_context.logger().record_flow("Verification");
         return response_dto;
     }
 

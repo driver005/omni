@@ -5,4 +5,4 @@ export import :proxy_runtime;
 export import :proxy_handlers_v1;
 export import :proxy_handlers_v2;
 export import :proxy_handlers_prefix;
-export import :proxy_handler;
+export import :proxy_router;

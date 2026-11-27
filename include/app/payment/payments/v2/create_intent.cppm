@@ -69,11 +69,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_create_intent");
-        m_context.metrics().counter("payments.payments_create_intent").increment();
+        m_context.logger().record_flow("payments.payments_create_intent");
+        m_context.logger().counter("payments.payments_create_intent").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_create_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -94,13 +97,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_create_and_confirm_intent");
-        m_context.metrics().counter("payments.payments_create_and_confirm_intent").increment();
+        m_context.logger().record_flow("payments.payments_create_and_confirm_intent");
+        m_context.logger().counter("payments.payments_create_and_confirm_intent").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payments_create_and_confirm_intent(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.payments_create_and_confirm_intent(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_payments_update_intent(
@@ -119,11 +126,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_update_intent");
-        m_context.metrics().counter("payments.payments_update_intent").increment();
+        m_context.logger().record_flow("payments.payments_update_intent");
+        m_context.logger().counter("payments.payments_update_intent").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_update_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -142,7 +152,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_create_intent(req, res, std::move(send));
                     }
@@ -165,7 +175,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_create_and_confirm_intent(req, res, std::move(send));
                     }
@@ -189,7 +199,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_update_intent(req, res, std::move(send));
                         }

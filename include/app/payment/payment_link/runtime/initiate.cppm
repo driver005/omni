@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_initiate;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -41,8 +42,8 @@ public:
     initiate(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkInitiateData{ctx};
-        m_context.metrics().record_flow("payment_link.initiate");
-        m_context.metrics().counter("payment_link.initiate").increment();
+        m_context.logger().record_flow("payment_link.initiate");
+        m_context.logger().counter("payment_link.initiate").increment();
 
         auto form = m_support.form_payment_link_data(input.merchant_id, input.payment_id);
         if (!form) {

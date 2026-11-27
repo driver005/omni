@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_list_customer_payment_method_api_client;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,12 +37,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::ClientPaymentMethodsListResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ClientPaymentMethodsListResponse>
     list_customer_payment_method_api_client(const core::behavior::CallContext& ctx) const
     {
         const auto input = ListCustomerPaymentMethodApiClientData{ctx};
-        m_context.metrics().record_flow("list_customer_payment_method_api_client");
-        m_context.metrics()
+        m_context.logger().record_flow("list_customer_payment_method_api_client");
+        m_context.logger()
             .counter("PAYMENT_METHOD_LIST_CUSTOMER_PAYMENT_METHOD_API_CLIENT")
             .increment();
         ::app::model::payment_methods::ClientPaymentMethodsListResponse response{};

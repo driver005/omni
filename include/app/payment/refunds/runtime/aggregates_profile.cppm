@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_aggregates_profile;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -21,19 +22,19 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
-        aggregates_profile(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    aggregates_profile(const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsAggregatesProfileData{ctx};
-        m_context.metrics().record_flow("refund_profile_aggregates");
-        m_context.metrics().counter("refunds_profile_aggregates_total").increment();
+        m_context.logger().record_flow("refund_profile_aggregates");
+        m_context.logger().counter("refunds_profile_aggregates_total").increment();
 
-        return ::app::model::refunds::RefundAggregateResponse{m_support.get_aggregates_for_refunds(
+        return m_support.get_aggregates_for_refunds(
             input.facts,
             input.start_time,
             input.end_time,
             /*profile_scoped=*/true
-        )};
+        );
     }
 
 private:

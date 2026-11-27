@@ -87,6 +87,96 @@ struct MFPTraits<R (C::*)() const noexcept>
     using value_t = std::remove_cvref_t<R>;
 };
 
+/** @brief Data-member pointers, for reflectors built from public members. */
+template<typename C, typename R>
+    requires std::is_member_object_pointer_v<R C::*>
+struct MFPTraits<R C::*>
+{
+    using class_t = C;
+    using value_t = std::remove_cvref_t<R>;
+};
+
+// ─── Wire operations ──────────────────────────────────────────────────────────
+
+/** @brief CRUD/list operations a field may appear on. */
+enum class WireOp : std::uint8_t
+{
+    create,
+    read,
+    update,
+    list,
+    del
+};
+
+/** @brief Single-bit mask for one WireOp. */
+[[nodiscard]] constexpr std::uint8_t wire_op_bit(WireOp op) noexcept
+{
+    return static_cast<std::uint8_t>(1u << static_cast<unsigned>(op));
+}
+
+/** @brief True when `Fd` is enabled for `op` by its FieldOptions wire mask. */
+template<typename Fd>
+[[nodiscard]] constexpr bool enabled_on_wire(WireOp op) noexcept
+{
+    return (Fd::options.m_wire_ops & wire_op_bit(op)) != 0;
+}
+
+// ─── Wire views ───────────────────────────────────────────────────────────────
+
+/**
+ * @brief Bitmask tag for one wire shape. Bits from the CRUD and REST sections may be OR'd
+ *        together on one field; v1/v2 select a version variant. Version bits match exactly
+ *        at lookup time, so one state bit can carry several shapes.
+ */
+enum class WireView : std::uint32_t
+{
+    // ── CRUD section ───────────────────────────────────────────────────────────
+    create = 1u << 0,
+    find = 1u << 1,
+    update = 1u << 2,
+    remove = 1u << 3,
+    all_crud = create | find | update | remove,
+
+    // ── REST section ───────────────────────────────────────────────────────────
+    post = 1u << 4,
+    get = 1u << 5,
+    put = 1u << 6,
+    patch = 1u << 7,
+    query = 1u << 8,
+    del = 1u << 9,
+    list = 1u << 10,
+    filters = 1u << 11,
+    aggregate = 1u << 12,
+    reverse = 1u << 13,
+    all_rest = post | get | put | patch | query | del | list | filters | aggregate | reverse,
+
+    // ── versions ───────────────────────────────────────────────────────────────
+    v1 = 1u << 14,
+    v2 = 1u << 15,
+};
+
+/** @brief Combination of WireView bits. */
+using WireViewMask = std::uint32_t;
+
+/** @brief Mask covering the two version bits. */
+inline constexpr WireViewMask wire_version_mask =
+    static_cast<WireViewMask>(WireView::v1) | static_cast<WireViewMask>(WireView::v2);
+
+/** @brief Mask covering every state bit (CRUD + REST). */
+inline constexpr WireViewMask wire_state_mask = ~wire_version_mask;
+
+/** @brief Converts one WireView tag to its mask value. */
+[[nodiscard]] constexpr WireViewMask wire_view_bit(WireView view) noexcept
+{
+    return static_cast<WireViewMask>(view);
+}
+
+/** @brief Combines two view bits (or groups) into one structural mask value. */
+[[nodiscard]] constexpr WireView operator|(WireView left, WireView right) noexcept
+{
+    return static_cast<WireView>(wire_view_bit(left) | wire_view_bit(right));
+}
+
 // ─── FieldOptionsDb ───────────────────────────────────────────────────────────
 
 class FieldOptionsDb
@@ -213,15 +303,20 @@ enum class QueryJoin : std::uint8_t
 class FieldWireName
 {
 public:
-    const char* m_data{nullptr};
+    /// @brief Fixed inline capacity keeps the type structural for use as an NTTP.
+    static constexpr std::size_t capacity = 64;
+
+    char m_data[capacity]{};
     std::size_t m_size{0};
 
     constexpr FieldWireName() = default;
 
     constexpr FieldWireName(std::string_view value) noexcept :
-        m_data{value.data()},
-        m_size{value.size()}
+        m_size{value.size() <= capacity ? value.size() : capacity}
     {
+        for (std::size_t i = 0; i < m_size; ++i) {
+            m_data[i] = value[i];
+        }
     }
 
     [[nodiscard]] constexpr bool empty() const noexcept
@@ -239,14 +334,81 @@ public:
         return m_data;
     }
 
+    [[nodiscard]] constexpr std::string_view view() const noexcept
+    {
+        return {m_data, m_size};
+    }
+
     [[nodiscard]] constexpr operator std::string_view() const noexcept
     {
-        return m_data != nullptr ? std::string_view{m_data, m_size} : std::string_view{};
+        return view();
     }
 
     [[nodiscard]] constexpr bool operator==(std::string_view other) const noexcept
     {
-        return static_cast<std::string_view>(*this) == other;
+        return view() == other;
+    }
+};
+
+/**
+ * @brief One field's participation in a wire shape: views, order, and optional key override.
+ */
+struct WireUse
+{
+    WireView views{};
+    std::uint8_t order{};
+    FieldWireName name{};
+};
+
+/**
+ * @brief True when a WireUse contributes to the queried mask.
+ * @details State bits intersect; version bits must match exactly. A query with no state bits
+ *          matches every state, so one state bit can carry several shapes.
+ */
+[[nodiscard]] constexpr bool wire_use_matches(WireUse use, WireView mask) noexcept
+{
+    const auto views = wire_view_bit(use.views);
+    const auto wanted = wire_view_bit(mask);
+    const auto use_versions = views & wire_version_mask;
+    if (use_versions != (wanted & wire_version_mask)) {
+        return false;
+    }
+    const auto use_states = views & wire_state_mask;
+    const auto wanted_states = wanted & wire_state_mask;
+    return wanted_states == 0 ? use_states != 0 : (use_states & wanted_states) != 0;
+}
+
+/**
+ * @brief Structural carrier for a field's validation pattern.
+ * @warning Same storage contract as FieldWireName: points at caller-owned static/literal text.
+ */
+class FieldPattern
+{
+public:
+    const char* m_data{nullptr};
+    std::size_t m_size{0};
+
+    constexpr FieldPattern() = default;
+
+    constexpr FieldPattern(std::string_view value) noexcept :
+        m_data{value.data()},
+        m_size{value.size()}
+    {
+    }
+
+    [[nodiscard]] constexpr bool empty() const noexcept
+    {
+        return m_size == 0;
+    }
+
+    [[nodiscard]] constexpr std::string_view view() const noexcept
+    {
+        return m_data != nullptr ? std::string_view{m_data, m_size} : std::string_view{};
+    }
+
+    [[nodiscard]] constexpr operator std::string_view() const noexcept
+    {
+        return view();
     }
 };
 
@@ -257,6 +419,21 @@ public:
 
     /// @brief Wire-key override; empty means fall back to `FieldDesc::name`.
     FieldWireName m_wire_name{};
+
+    /// @brief Bitmask of WireOp bits; 0xff means every operation.
+    std::uint8_t m_wire_ops{0xFF};
+
+    /// @brief Optional regex pattern checked against string-like field values on validation.
+    FieldPattern m_pattern{};
+
+    /// @brief Maximum number of wire-shape entries one field may declare.
+    static constexpr std::size_t max_wire_uses = 12;
+
+    /// @brief Structural wire-shape entries; unused slots stay default-initialized.
+    std::array<WireUse, max_wire_uses> m_wire_uses{};
+
+    /// @brief Number of populated entries in m_wire_uses.
+    std::uint8_t m_wire_use_count{0};
 
     /// @brief Reject a missing (disengaged optional / null pointer) value on validation.
     bool m_required{false};
@@ -318,6 +495,87 @@ public:
         auto opt = *this;
         opt.m_wire_name = FieldWireName{name};
         return opt;
+    }
+
+    /// @brief Returns a copy with only the listed wire ops enabled.
+    [[nodiscard]] constexpr FieldOptions only(std::initializer_list<WireOp> ops) const
+    {
+        auto opt = *this;
+        std::uint8_t mask = 0;
+        for (const WireOp op: ops) {
+            mask = static_cast<std::uint8_t>(mask | wire_op_bit(op));
+        }
+        opt.m_wire_ops = mask;
+        return opt;
+    }
+
+    /// @brief Returns a copy with the listed wire ops disabled.
+    [[nodiscard]] constexpr FieldOptions not_on(std::initializer_list<WireOp> ops) const
+    {
+        auto opt = *this;
+        for (const WireOp op: ops) {
+            opt.m_wire_ops = static_cast<std::uint8_t>(opt.m_wire_ops & ~wire_op_bit(op));
+        }
+        return opt;
+    }
+
+    /// @brief Returns a copy with this field excluded from every wire operation.
+    [[nodiscard]] constexpr FieldOptions none_on_wire() const
+    {
+        auto opt = *this;
+        opt.m_wire_ops = 0;
+        return opt;
+    }
+
+    /**
+     * @brief Returns a copy declaring this field's wire-shape memberships.
+     * @tparam Uses structural WireUse entries; first match wins when a query selects several.
+     */
+    template<WireUse... Uses>
+    [[nodiscard]] constexpr FieldOptions wire() const
+    {
+        static_assert(sizeof...(Uses) <= max_wire_uses, "too many wire-shape entries");
+        auto opt = *this;
+        opt.m_wire_uses = {};
+        std::size_t index = 0;
+        ((opt.m_wire_uses[index++] = Uses), ...);
+        opt.m_wire_use_count = static_cast<std::uint8_t>(sizeof...(Uses));
+        return opt;
+    }
+
+    /// @brief Returns a copy with a validation pattern attached (literal/static storage).
+    [[nodiscard]] constexpr FieldOptions pattern(std::string_view value) const
+    {
+        auto opt = *this;
+        opt.m_pattern = FieldPattern{value};
+        return opt;
+    }
+
+    // ─── FieldOptionsDb convenience wrappers ───────────────────────────────────
+
+    [[nodiscard]] constexpr FieldOptions pk() const
+    {
+        return with_db(m_db.pk());
+    }
+
+    [[nodiscard]] constexpr FieldOptions not_null() const
+    {
+        return with_db(m_db.not_null());
+    }
+
+    [[nodiscard]] constexpr FieldOptions no_insert() const
+    {
+        return with_db(m_db.no_insert());
+    }
+
+    [[nodiscard]] constexpr FieldOptions no_update() const
+    {
+        return with_db(m_db.no_update());
+    }
+
+    [[nodiscard]] constexpr FieldOptions references(const char* table, const char* column) const
+    {
+        return with_db(m_db.references(table, column));
     }
 
     /// @brief Returns a copy marking this field as required.
@@ -492,6 +750,180 @@ struct FieldDesc
     using ClassType = MFPTraits<decltype(Getter)>::class_t;
     using ValueType = MFPTraits<decltype(Getter)>::value_t;
 };
+
+/**
+ * @brief Reflection descriptor for a public data member — the compile-time mirror of
+ * FieldDesc for models whose fields need no hand-written getters/setters.
+ * @note Consumers should use `field_value<Fd>()`/`set_field_value<Fd>()`; those dispatch on
+ * the presence of `member` so legacy FieldDesc descriptors keep working unchanged.
+ */
+template<
+    rfl::internal::StringLiteral Name,
+    auto MemberPtr,
+    FieldOptions Opts = FieldOptions{},
+    auto Normalize = identity_normalizer{}>
+struct DataFieldDesc
+{
+    static constexpr auto name = Name;
+    static constexpr auto member = MemberPtr;
+    static constexpr FieldOptions options = Opts;
+    static constexpr auto normalize = Normalize;
+    using ClassType = MFPTraits<decltype(MemberPtr)>::class_t;
+    using ValueType = MFPTraits<decltype(MemberPtr)>::value_t;
+};
+
+/** @brief One row of a model-declared `field_metadata()` tuple. */
+template<
+    rfl::internal::StringLiteral Name,
+    auto MemberPtr,
+    FieldOptions Opts = FieldOptions{},
+    auto Normalize = identity_normalizer{}>
+struct FieldMeta
+{
+    using Descriptor = DataFieldDesc<Name, MemberPtr, Opts, Normalize>;
+    static constexpr auto descriptor = Descriptor{};
+    static constexpr auto name = Name;
+    static constexpr auto member = MemberPtr;
+    static constexpr FieldOptions options = Opts;
+    using ClassType = typename Descriptor::ClassType;
+    using ValueType = typename Descriptor::ValueType;
+};
+
+/**
+ * @brief Converts `T::field_metadata()` (a tuple of FieldMeta) into the descriptor tuple serde
+ * consumes everywhere FieldDesc used to be required.
+ */
+template<typename T>
+constexpr auto generated_fields()
+{
+    using Metadata = decltype(T::field_metadata());
+    return []<std::size_t... I>(std::index_sequence<I...>)
+    {
+        return std::tuple<typename std::tuple_element_t<I, Metadata>::Descriptor...>{};
+    }(std::make_index_sequence<std::tuple_size_v<Metadata>>{});
+}
+
+/**
+ * @brief First matching WireUse for a descriptor under a mask, if any.
+ */
+template<typename Meta>
+[[nodiscard]] constexpr const WireUse* matched_wire_use(WireView mask) noexcept
+{
+    for (std::size_t i = 0; i < Meta::options.m_wire_use_count; ++i) {
+        const WireUse& use = Meta::options.m_wire_uses[i];
+        if (wire_use_matches(use, mask)) {
+            return &use;
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * @brief Builds the captured wire key list for one view from T::field_metadata().
+ * @details Fields are emitted in the order stored on their first matching WireUse; equal
+ *          orders fall back to field_metadata() declaration order.
+ */
+template<typename T, WireView Mask>
+consteval auto wire_fields()
+{
+    using Metadata = decltype(T::field_metadata());
+    constexpr std::size_t total = std::tuple_size_v<Metadata>;
+
+    struct Entry
+    {
+        std::string_view name;
+        std::uint8_t order;
+        std::uint8_t declaration;
+    };
+
+    constexpr std::size_t count = []<std::size_t... I>(std::index_sequence<I...>)
+    {
+        return (
+            std::size_t{0} + ... +
+            (matched_wire_use<std::tuple_element_t<I, Metadata>>(Mask) ? 1u : 0u)
+        );
+    }(std::make_index_sequence<total>{});
+
+    std::array<Entry, count> entries{};
+    std::size_t written = 0;
+    [&]<std::size_t... I>(std::index_sequence<I...>)
+    {
+        (
+            [&]
+            {
+                using Meta = std::tuple_element_t<I, Metadata>;
+                if (const auto* use = matched_wire_use<Meta>(Mask)) {
+                    entries[written++] = Entry{
+                        use->name.empty() ? Meta::name.string_view()
+                                          : static_cast<std::string_view>(use->name),
+                        use->order,
+                        static_cast<std::uint8_t>(I)
+                    };
+                }
+            }(),
+            ...);
+    }(std::make_index_sequence<total>{});
+
+    for (std::size_t i = 1; i < count; ++i) {
+        Entry key = entries[i];
+        std::size_t j = i;
+        while (j > 0 && (key.order < entries[j - 1].order ||
+                         (key.order == entries[j - 1].order &&
+                          key.declaration < entries[j - 1].declaration))) {
+            entries[j] = entries[j - 1];
+            --j;
+        }
+        entries[j] = key;
+    }
+
+    std::array<std::string_view, count> result{};
+    for (std::size_t i = 0; i < count; ++i) {
+        result[i] = entries[i].name;
+    }
+    return result;
+}
+
+/** @brief True for descriptors backed by a public data-member pointer. */
+template<typename Fd>
+concept IDataFieldDesc = requires {
+    Fd::member;
+    typename Fd::ValueType;
+};
+
+/** @brief Either legacy getter/setter FieldDesc or data-member DataFieldDesc. */
+template<typename Fd>
+concept IFieldDescriptor = requires {
+    Fd::name;
+    Fd::options;
+    Fd::normalize;
+    typename Fd::ClassType;
+    typename Fd::ValueType;
+} && (IDataFieldDesc<Fd> || requires {
+                               Fd::getter;
+                               Fd::setter;
+                           });
+
+/** @brief Reads (and normalizes) a field through either descriptor kind. */
+template<IFieldDescriptor Fd, typename T>
+[[nodiscard]] constexpr decltype(auto) field_value(const T& object)
+{
+    if constexpr (IDataFieldDesc<Fd>) {
+        return Fd::normalize(object.*Fd::member);
+    } else {
+        return Fd::normalize((object.*Fd::getter)());
+    }
+}
+
+/** @brief Writes a field through either descriptor kind. */
+template<IFieldDescriptor Fd, typename T, typename V>
+constexpr void set_field_value(T& object, V&& value)
+{
+    if constexpr (IDataFieldDesc<Fd>) {
+        object.*Fd::member = std::forward<V>(value);
+    } else {
+        (object.*Fd::setter)(std::forward<V>(value));
+    }
+}
 
 // ─── Serializable<T> + concepts ───────────────────────────────────────────────
 
@@ -672,6 +1104,25 @@ private:
     std::string m_id;
 };
 
+// Minimal metadata-only fixture for generated_fields<T>() and data-member descriptors.
+class GeneratedTestRecord
+{
+public:
+    std::string code{};
+    std::int64_t count{};
+
+    static constexpr auto field_metadata()
+    {
+        return std::tuple{
+            FieldMeta<"code", &GeneratedTestRecord::code, FieldOptions::init().required()>{},
+            FieldMeta<
+                "count",
+                &GeneratedTestRecord::count,
+                FieldOptions::init().only({WireOp::create, WireOp::read})>{},
+        };
+    }
+};
+
 } // namespace serde::tests
 
 template<>
@@ -823,6 +1274,54 @@ suite<"FieldOptions"> field_options_suite = []
         expect(FieldOptions::init().query_offset().m_query_role == QueryRole::offset);
         expect(FieldOptions::init().query_order_by().m_query_role == QueryRole::order);
         expect(FieldOptions::init().query_ignore().m_query_role == QueryRole::ignore);
+    };
+};
+
+suite<"wire options"> wire_options_suite = []
+{
+    "defaults enable every wire op and carry no pattern"_test = []
+    {
+        constexpr auto options = FieldOptions::init();
+
+        expect(options.m_wire_ops == 0xFF);
+        expect(options.m_pattern.empty());
+    };
+
+    "only/not_on/none_on_wire compose without mutating the original"_test = []
+    {
+        using Descriptor = DataFieldDesc<
+            "count",
+            &GeneratedTestRecord::count,
+            FieldOptions::init().only({WireOp::create, WireOp::read})>;
+
+        constexpr auto base = FieldOptions::init();
+        constexpr auto enabled = base.only({WireOp::create, WireOp::read});
+        constexpr auto narrowed = enabled.not_on({WireOp::create});
+
+        expect(enabled_on_wire<Descriptor>(WireOp::create));
+        expect(enabled_on_wire<Descriptor>(WireOp::read));
+        expect(not enabled_on_wire<Descriptor>(WireOp::update));
+        expect(narrowed.m_wire_ops == wire_op_bit(WireOp::read));
+        expect(base.m_wire_ops == 0xFF);
+        expect(FieldOptions::init().none_on_wire().m_wire_ops == 0);
+    };
+};
+
+suite<"generated_fields"> generated_fields_suite = []
+{
+    "metadata rows become data-member descriptors usable by generic accessors"_test = []
+    {
+        using Fields = decltype(generated_fields<GeneratedTestRecord>());
+        using First = std::tuple_element_t<0, Fields>;
+        using Second = std::tuple_element_t<1, Fields>;
+
+        static_assert(std::same_as<First::ValueType, std::string>);
+        static_assert(std::same_as<Second::ValueType, std::int64_t>);
+
+        GeneratedTestRecord record{"ok", 7};
+        expect(field_value<First>(record) == "ok");
+        set_field_value<First>(record, std::string{"changed"});
+        expect(record.code == "changed");
     };
 };
 

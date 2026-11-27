@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_list_by_filter;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,7 +39,7 @@ public:
     // ───────────────────────── Core: list_by_filter ─────────────────────────
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list_by_filter(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list_by_filter(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsListByFilterData{dto, ctx};
         const auto filters = m_support.list_filters_from_dto(input.request, input.query);
@@ -49,8 +50,8 @@ public:
                 "limit should be in between 1 and 20"
             )};
         }
-        m_context.metrics().record_flow("payout_list_by_filter");
-        m_context.metrics().counter("payouts_list_by_filter_total").increment();
+        m_context.logger().record_flow("payout_list_by_filter");
+        m_context.logger().counter("payouts_list_by_filter_total").increment();
 
         auto response =
             m_support.list_response(filters, "", m_support.time_range_from_body(input.body));

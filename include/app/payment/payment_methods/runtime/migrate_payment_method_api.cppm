@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_migrate_payment_method_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodMigrateResponse>
-        migrate_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodMigrateResponse>
+    migrate_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = MigratePaymentMethodApiData{dto, ctx};
         if (auto mca_error = m_support.check_merchant_connector(input.merchant_id)) {
@@ -90,8 +92,8 @@ public:
                 "payment method already exists"
             )};
         }
-        m_context.metrics().record_flow("migrate_payment_method_api");
-        m_context.metrics().counter("PAYMENT_METHOD_MIGRATE_PAYMENT_METHOD_API").increment();
+        m_context.logger().record_flow("migrate_payment_method_api");
+        m_context.logger().counter("PAYMENT_METHOD_MIGRATE_PAYMENT_METHOD_API").increment();
         auto migrated = m_support.response_from_record(*stored);
         if (input.request.get_payment_method_type()) {
             migrated.set_payment_method_type(*input.request.get_payment_method_type());

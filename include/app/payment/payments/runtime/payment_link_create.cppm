@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_payment_link_create;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,7 +33,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkResponse>
-    payment_link_create(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    payment_link_create(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         const std::string new_payment_id = m_context.ids().payment_id();
@@ -41,7 +45,7 @@ public:
         record.set_merchant_id(input.merchant_id);
         record.set_status("requires_payment_method");
         m_context.repository().save_payment(std::move(record));
-        m_context.metrics().counter("payments.created").increment();
+        m_context.logger().counter("payments.created").increment();
         ::app::model::payments::PaymentLinkResponse response{};
         response.set_link(input.body);
         response.set_payment_link_id(new_payment_id);

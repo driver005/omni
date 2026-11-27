@@ -23,6 +23,7 @@ import app_locking;
 import app_services;
 
 import :context;
+
 export namespace app::handlers::disputes {
 
 using Error = core::error::AppError;
@@ -120,7 +121,7 @@ public:
         if (allowed) {
             return std::nullopt;
         }
-        m_context.metrics().counter("disputes_auth_merchant_type_denied").increment();
+        m_context.logger().counter("disputes_auth_merchant_type_denied").increment();
         const std::string message =
             type == AccountType::CONNECTED
                 ? "Connected Merchant is not authorized to access the resource"
@@ -228,7 +229,7 @@ public:
         // Local mirror of `platform.get_provider().get_account().is_platform_account()`
         // (core/disputes.rs:299-305,345-352): the provider account must be a platform.
         if (account_type_of(scope) != AccountType::PLATFORM && scope.org_id.empty()) {
-            m_context.metrics().counter("disputes_platform_guard_denied").increment();
+            m_context.logger().counter("disputes_platform_guard_denied").increment();
             return core::error::AppErrorBuilder{}(Kind::UNAUTHORIZED, "Unauthorized");
         }
         return std::nullopt;
@@ -542,10 +543,12 @@ public:
     std::int32_t file_size{};
     std::optional<std::string> file_type{};
 };
+
 struct RetrieveDisputeData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeRetrieveRequest request{};
+
     template<class Dto>
     explicit RetrieveDisputeData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -553,11 +556,13 @@ struct RetrieveDisputeData
     {
     }
 };
+
 struct FetchDisputesData
 {
     DisputeScope scope{};
     std::string connector_id{};
     ::app::model::disputes::DisputeFetchQueryData payload{};
+
     template<class Dto>
     explicit FetchDisputesData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -566,71 +571,99 @@ struct FetchDisputesData
     {
     }
 };
+
 struct RetrieveDisputesListData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeListGetConstraints constraints{};
+
     template<class Dto>
     explicit RetrieveDisputesListData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
-        constraints{::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)}
+        constraints{
+            ::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)
+        }
     {
     }
 };
+
 struct RetrieveDisputesListProfileData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeListGetConstraints constraints{};
     std::optional<std::vector<std::string>> profile_id_list{};
+
     template<class Dto>
-    explicit RetrieveDisputesListProfileData(const Dto& dto, const core::behavior::CallContext& ctx) :
+    explicit RetrieveDisputesListProfileData(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) :
         scope{},
-        constraints{::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)},
+        constraints{
+            ::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)
+        },
         profile_id_list{}
     {
     }
 };
+
 struct RetrieveDisputesListForPlatformData
 {
     DisputeScope scope{};
     ::app::model::disputes::PlatformDisputeListConstraints constraints{};
+
     template<class Dto>
-    explicit RetrieveDisputesListForPlatformData(const Dto& dto, const core::behavior::CallContext& ctx) :
+    explicit RetrieveDisputesListForPlatformData(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) :
         scope{},
-        constraints{::app::payment::detail::as_dto<::app::model::disputes::PlatformDisputeListConstraints>(dto)}
+        constraints{
+            ::app::payment::detail::as_dto<::app::model::disputes::PlatformDisputeListConstraints>(
+                dto
+            )
+        }
     {
     }
 };
+
 struct GetDisputesFiltersData
 {
     DisputeScope scope{};
+
     explicit GetDisputesFiltersData(const core::behavior::CallContext& ctx) :
         scope{}
     {
     }
 };
+
 struct GetDisputesFiltersProfileData
 {
     DisputeScope scope{};
     std::optional<std::vector<std::string>> profile_id_list{};
+
     explicit GetDisputesFiltersProfileData(const core::behavior::CallContext& ctx) :
         scope{},
         profile_id_list{}
     {
     }
 };
+
 struct GetPlatformDisputesFiltersData
 {
     DisputeScope scope{};
+
     explicit GetPlatformDisputesFiltersData(const core::behavior::CallContext& ctx) :
         scope{}
     {
     }
 };
+
 struct AcceptDisputeData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeId dispute_id{};
+
     template<class Dto>
     explicit AcceptDisputeData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -638,10 +671,12 @@ struct AcceptDisputeData
     {
     }
 };
+
 struct SubmitDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::SubmitEvidenceRequest request{};
+
     template<class Dto>
     explicit SubmitDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -649,10 +684,12 @@ struct SubmitDisputeEvidenceData
     {
     }
 };
+
 struct AttachDisputeEvidenceData
 {
     DisputeScope scope{};
     EvidenceUploadWire request{};
+
     template<class Dto>
     explicit AttachDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -660,10 +697,12 @@ struct AttachDisputeEvidenceData
     {
     }
 };
+
 struct RetrieveDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeId dispute_id{};
+
     template<class Dto>
     explicit RetrieveDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -671,10 +710,12 @@ struct RetrieveDisputeEvidenceData
     {
     }
 };
+
 struct DeleteDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::DeleteEvidenceRequest request{};
+
     template<class Dto>
     explicit DeleteDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
         scope{},
@@ -682,21 +723,25 @@ struct DeleteDisputeEvidenceData
     {
     }
 };
+
 struct GetDisputesAggregateData
 {
     DisputeScope scope{};
     ::app::model::disputes::TimeRange time_range{};
+
     explicit GetDisputesAggregateData(const core::behavior::CallContext& ctx) :
         scope{},
         time_range{}
     {
     }
 };
+
 struct GetDisputesAggregateProfileData
 {
     DisputeScope scope{};
     ::app::model::disputes::TimeRange time_range{};
     std::optional<std::vector<std::string>> profile_id_list{};
+
     explicit GetDisputesAggregateProfileData(const core::behavior::CallContext& ctx) :
         scope{},
         time_range{},
@@ -704,7 +749,6 @@ struct GetDisputesAggregateProfileData
     {
     }
 };
-
 
 /** @brief Request policy for the disputes domain: wraps the domain auth rules. */
 class DisputesPolicy

@@ -1,4 +1,5 @@
 export module app_payment:cards_info_runtime_update;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -29,20 +30,20 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = UpdateCardsInfoData{dto, ctx};
         auto repository = m_context.repository();
         auto stored = repository.find_card_info_by_string(input.request.get_card_iin());
         if (!stored) {
-            m_context.metrics().record_flow("CardsInfoUpdate");
+            m_context.logger().record_flow("CardsInfoUpdate");
             return std::unexpected{m_support.generic_not_found_error(
                 "Card info with given key does not exist in our records"
             )};
         }
         m_support.apply_update(*stored, input.request); // last_updated = now()
         if (!repository.update_card_info(*stored)) {
-            m_context.metrics().record_flow("CardsInfoUpdate");
+            m_context.logger().record_flow("CardsInfoUpdate");
             return std::unexpected{
                 m_support.internal_server_error("Failed while updating card info")
             };
@@ -50,8 +51,8 @@ public:
         auto response = m_support.build_response(input.request);
         m_support.cache_response(stored->get_iin(), response);
 
-        m_context.metrics().record_flow("CardsInfoUpdate");
-        m_context.metrics().counter("CARDS_INFO_UPDATED").increment();
+        m_context.logger().record_flow("CardsInfoUpdate");
+        m_context.logger().counter("CARDS_INFO_UPDATED").increment();
         return ::app::model::cards_info::CardInfoResponse{
             m_support.response_from_store_enriched(*stored, std::move(response))
         };

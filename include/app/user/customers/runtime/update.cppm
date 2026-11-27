@@ -22,8 +22,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update(const CustomerUpdateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    update(const CustomerUpdateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         auto value = update_core(request, ctx);
         if (!value) {
@@ -33,8 +32,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update_v2(const CustomerUpdateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_v2(const CustomerUpdateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         auto value = update_core(request, ctx);
         if (!value) {
@@ -45,13 +43,16 @@ public:
 
 private:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update_core(const CustomerUpdateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_core(const CustomerUpdateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
         auto existing = ctx_version(ctx) == ApiVersion::V1
-                            ? m_support.locate_customer(repo, ctx_string(ctx,"merchant_id"), ctx_string(ctx,"id"))
-                            : m_support.locate_global_customer(repo, ctx_string(ctx,"id"));
+                            ? m_support.locate_customer(
+                                  repo,
+                                  ctx_string(ctx, "merchant_id"),
+                                  ctx_string(ctx, "id")
+                              )
+                            : m_support.locate_global_customer(repo, ctx_string(ctx, "id"));
         if (!existing) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")
@@ -60,9 +61,10 @@ private:
 
         // VerifyIdForUpdateCustomer::verify_id_and_get_customer_object
         // (core/customers.rs:1385-1424).
-        if (ctx_version(ctx) == ApiVersion::V1 && !m_support.is_global_customer_id_format(ctx_string(ctx,"id")) &&
+        if (ctx_version(ctx) == ApiVersion::V1 &&
+            !m_support.is_global_customer_id_format(ctx_string(ctx, "id")) &&
             !existing->record.get_customer_id().empty() &&
-            existing->record.get_customer_id() != ctx_string(ctx,"id")) {
+            existing->record.get_customer_id() != ctx_string(ctx, "id")) {
             return std::unexpected{
                 m_support.upstream_error("InvalidRequestData", "customer id mismatch")
             };
@@ -103,9 +105,7 @@ private:
             );
         }
         if (request.default_payment_method_id) {
-            existing->extension.set_default_payment_method_id(
-                *request.default_payment_method_id
-            );
+            existing->extension.set_default_payment_method_id(*request.default_payment_method_id);
         }
         // AddressStructForDbUpdate::update_address_if_sent (core/customers.rs:1287-1365).
         if (ctx_version(ctx) == ApiVersion::V1 && effective.address) {
@@ -122,8 +122,8 @@ private:
 
         serde::Value document =
             m_support.customer_document(*existing, std::nullopt, request, ctx_version(ctx));
-        m_context.metrics().record_flow("customers.update");
-        m_context.metrics().counter("customers_update").increment();
+        m_context.logger().record_flow("customers.update");
+        m_context.logger().counter("customers_update").increment();
         return document;
     }
 

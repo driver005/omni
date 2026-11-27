@@ -1,4 +1,5 @@
 export module app_payment:telephone_order_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -945,7 +946,7 @@ public:
      */
     template<class Dto>
     [[nodiscard]] AuthenticationData
-        authentication_data(const Dto& dto, const core::behavior::CallContext& ctx) const
+    authentication_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = TelephoneOrderChargeData{dto, ctx};
         AuthenticationData auth{};

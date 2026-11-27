@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_tokenize_card_using_pm_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::TokenizedCardValue1>
-        tokenize_card_using_pm_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    tokenize_card_using_pm_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = TokenizeCardUsingPmApiData{dto, ctx};
         const auto& record = input.record;
@@ -54,8 +55,8 @@ public:
             "payment_methods.token:" + token,
             core::cache::to_cache_value(input.payment_method_id)
         );
-        m_context.metrics().record_flow("tokenize_card_using_pm_api");
-        m_context.metrics().counter("PAYMENT_METHOD_TOKENIZE_CARD_USING_PM_API").increment();
+        m_context.logger().record_flow("tokenize_card_using_pm_api");
+        m_context.logger().counter("PAYMENT_METHOD_TOKENIZE_CARD_USING_PM_API").increment();
         ::app::model::payment_methods::TokenizedCardValue1 response{};
         response.set_card_number("************" + record.get_last4());
         response.set_exp_year("");

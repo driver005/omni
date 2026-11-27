@@ -66,11 +66,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_create");
-        m_context.metrics().counter("payments.payments_create").increment();
+        m_context.logger().record_flow("payments.payments_create");
+        m_context.logger().counter("payments.payments_create").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_create(dto, m_request_support->context(req)).handle(sink);
     }
@@ -89,11 +92,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payment_link_create");
-        m_context.metrics().counter("payments.payment_link_create").increment();
+        m_context.logger().record_flow("payments.payment_link_create");
+        m_context.logger().counter("payments.payment_link_create").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payment_link_create(dto, m_request_support->context(req)).handle(sink);
     }
@@ -111,11 +117,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_update");
-        m_context.metrics().counter("payments.payments_update").increment();
+        m_context.logger().record_flow("payments.payments_update");
+        m_context.logger().counter("payments.payments_update").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_update(dto, m_request_support->context(req)).handle(sink);
     }
@@ -136,11 +145,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_update_metadata");
-        m_context.metrics().counter("payments.payments_update_metadata").increment();
+        m_context.logger().record_flow("payments.payments_update_metadata");
+        m_context.logger().counter("payments.payments_update_metadata").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_update_metadata(dto, m_request_support->context(req)).handle(sink);
     }
@@ -161,11 +173,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_manual_update");
-        m_context.metrics().counter("payments.payments_manual_update").increment();
+        m_context.logger().record_flow("payments.payments_manual_update");
+        m_context.logger().counter("payments.payments_manual_update").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_manual_update(dto, m_request_support->context(req)).handle(sink);
     }
@@ -185,7 +200,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_manual_update(req, res, std::move(send));
                         }
@@ -209,7 +224,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_create(req, res, std::move(send));
                     }
@@ -232,7 +247,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payment_link_create(req, res, std::move(send));
                     }
@@ -255,7 +270,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_update(req, res, std::move(send));
                     }
@@ -279,7 +294,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_update_metadata(req, res, std::move(send));
                         }

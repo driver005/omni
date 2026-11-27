@@ -63,8 +63,8 @@ public:
         const auto response = m_support.response_from_domain(persisted ? *persisted : domain);
 
         m_context.events().publish("gsm.rule.created", m_support.audit_payload("created", key));
-        m_context.metrics().record_flow("GsmRuleCreate");
-        m_context.metrics().counter("GSM_RULE_CREATED").increment();
+        m_context.logger().record_flow("GsmRuleCreate");
+        m_context.logger().counter("GSM_RULE_CREATED").increment();
         return std::move(response);
     }
 

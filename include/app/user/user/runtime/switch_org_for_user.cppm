@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    switch_org_for_user(const ::app::model::user::SwitchOrganizationRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> switch_org_for_user(
+        const ::app::model::user::SwitchOrganizationRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -59,8 +60,8 @@ public:
         set_cookie = "user_token=" + switched_token + "; HttpOnly; Path=/";
         m_support.publish_identity_event("user.org_switched", owner);
 
-        m_context.metrics().record_flow("switch_org_for_user");
-        m_context.metrics().counter("user.switch_org_for_user").increment();
+        m_context.logger().record_flow("switch_org_for_user");
+        m_context.logger().counter("user.switch_org_for_user").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

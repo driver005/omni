@@ -23,10 +23,7 @@ public:
     // Upstream POST /webhooks/network_token_requestor/ref, NoAuth
     // (routes/webhooks.rs:172-194, app.rs:2346-2351).
     [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    receive_network_token(
-        const std::string& body,
-        const ::core::behavior::CallContext& ctx
-    ) const
+    receive_network_token(const std::string& body, const ::core::behavior::CallContext& ctx) const
     {
         (void)m_context;
         auto ack = m_support.network_token_incoming_webhooks_wrapper(body, ctx);

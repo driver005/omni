@@ -298,7 +298,7 @@ public:
             "raw",
             ::app::crypto::SecretString{std::string{raw_payload}}
         );
-        m_context.metrics().counter("payouts_method_data_stored").increment();
+        m_context.logger().counter("payouts_method_data_stored").increment();
     }
 
     [[nodiscard]] ConnectorChoice make_connector_decision(
@@ -328,21 +328,21 @@ public:
             if (last.has_value() && last->get_message() != "no connector registered") {
                 choice.error = *last;
             } else {
-                m_context.metrics().counter("payouts_connector_unavailable").increment();
+                m_context.logger().counter("payouts_connector_unavailable").increment();
             }
             return choice;
         }
         if (!requested_connector.empty() && connector->name() != requested_connector) {
             // Upstream restricts the decision to the merchant-supplied eligible connector
             // list (`PayoutCreateRequest.connector`, `core/payouts.rs:758`).
-            m_context.metrics().counter("payouts_connector_unavailable").increment();
+            m_context.logger().counter("payouts_connector_unavailable").increment();
             return choice;
         }
         choice.decision_action = "allow";
         choice.decision_connector = std::string{connector->name()};
         choice.connector = std::move(connector);
-        m_context.metrics().record_flow("payout.connector.decision");
-        m_context.metrics().counter("payouts_connector_decision").increment();
+        m_context.logger().record_flow("payout.connector.decision");
+        m_context.logger().counter("payouts_connector_decision").increment();
         return choice;
     }
 
@@ -797,8 +797,8 @@ public:
             event_id,
             std::format("merchant://{}/webhooks", record.get_merchant_id())
         );
-        m_context.metrics().record_flow("payout.webhook");
-        m_context.metrics().counter("payouts_webhook_emitted").increment();
+        m_context.logger().record_flow("payout.webhook");
+        m_context.logger().counter("payouts_webhook_emitted").increment();
     }
 
     [[nodiscard]] std::optional<::app::store::payouts::PayoutRecord>

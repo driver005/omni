@@ -1,4 +1,5 @@
 export module app_payment:payout_link_runtime;
+import core_behavior;
 
 import std;
 import core_serde;

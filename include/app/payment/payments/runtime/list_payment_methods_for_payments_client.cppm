@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_list_payment_methods_for_payments_client;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,7 +33,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsClientMethodsResponse>
-        list_payment_methods_for_payments_client(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    list_payment_methods_for_payments_client(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         auto text = m_support.client_payment_methods_response(input);

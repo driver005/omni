@@ -37,13 +37,16 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     list_users_in_lineage(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
             };
         }
-        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx, "entity_type"));
         if (const auto err = m_support.get_min_entity(requestor->entity_type, entity_type)) {
             return std::unexpected{*err};
         }
@@ -57,7 +60,8 @@ public:
             if (!m_support.lineage_matches_entity(assignment, min_entity)) {
                 continue;
             }
-            const auto role = m_support.role_info_from_id(identity_from_context(ctx), assignment.get_role_id());
+            const auto role =
+                m_support.role_info_from_id(identity_from_context(ctx), assignment.get_role_id());
             if (!role) {
                 continue;
             }

@@ -158,8 +158,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::ReInviteUserRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::ReInviteUserRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.resend_invite(*parsed, ctx).handle(sink);
     }
@@ -171,16 +174,21 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "accept_invite_from_email", {})) {
+        if (const auto auth_error = m_support.authorize(req, "accept_invite_from_email", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::AcceptInviteFromEmailRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::AcceptInviteFromEmailRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.accept_invite_from_email(*parsed, ctx).handle(sink);
     }
@@ -192,8 +200,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "terminate_accept_invite", {})) {
+        if (const auto auth_error = m_support.authorize(req, "terminate_accept_invite", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();

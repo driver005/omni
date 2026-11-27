@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    create_tenant_user(const ::app::model::user::CreateTenantUserRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> create_tenant_user(
+        const ::app::model::user::CreateTenantUserRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -62,16 +63,16 @@ public:
         m_support.publish_identity_event("user.tenant_created", tenant_user_id);
 
         const auto key = std::string{"user.create_tenant_user:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("create_tenant_user");
-        m_context.metrics().counter("user.create_tenant_user").increment();
+        m_context.logger().record_flow("create_tenant_user");
+        m_context.logger().counter("user.create_tenant_user").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

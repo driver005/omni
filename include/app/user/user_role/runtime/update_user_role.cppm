@@ -34,9 +34,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
-    update_user_role(const ::app::dto::user_role::UpdateUserRoleRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire> update_user_role(
+        const ::app::dto::user_role::UpdateUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         const ::app::crypto::SecretString email_secret{request.get_email().get_value()};
         const auto& role_id = request.get_role_id();
@@ -70,7 +71,10 @@ public:
                 "User Changing their own role"
             )};
         }
-        const auto updator = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto updator = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!updator) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")

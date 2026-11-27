@@ -49,8 +49,8 @@ public:
     /** Local substitute for the upstream `#[instrument(flow = ?Flow::...)]` tracing span. */
     void record_flow(std::string_view flow) const
     {
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(flow).increment();
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(flow).increment();
     }
 
     /**
@@ -59,8 +59,7 @@ public:
      */
     [[nodiscard]] static std::string config_key(const core::behavior::CallContext& ctx)
     {
-        const bool is_v2 =
-            !ctx.path_segments.empty() && ctx.path_segments.front() == "v2";
+        const bool is_v2 = !ctx.path_segments.empty() && ctx.path_segments.front() == "v2";
         const std::size_t index{is_v2 ? 2U : 1U};
         return ctx.path_segments.size() > index ? ctx.path_segments[index] : std::string{};
     }

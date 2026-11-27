@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_get_platform_disputes_filters;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -41,7 +42,7 @@ public:
     get_platform_disputes_filters(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetPlatformDisputesFiltersData{ctx};
-        m_context.metrics().record_flow("dispute_platform_filters");
+        m_context.logger().record_flow("dispute_platform_filters");
         auto result = m_support.get_platform_disputes_filters(input.scope);
         if (!result) {
             return std::unexpected{result.error()};

@@ -46,15 +46,20 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "toggle_connector_agnostic_mit", {})) {
+        if (const auto auth_error = m_support.authorize(req, "toggle_connector_agnostic_mit", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::dto::admin::ConnectorAgnosticMitChoice>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::ConnectorAgnosticMitChoice>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         const std::string profile_id = m_input_support.profile_id_from_request(req, 1);
         if (profile_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
@@ -65,7 +70,10 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
         m_runtime.toggle_connector_agnostic_mit(*parsed, ctx).handle(sink);
     }
@@ -77,14 +85,16 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "toggle_extended_card_info", {})) {
+        if (const auto auth_error = m_support.authorize(req, "toggle_extended_card_info", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::dto::admin::ExtendedCardInfoChoice>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::ExtendedCardInfoChoice>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const std::string profile_id = m_input_support.profile_id_from_request(req, 1);
         if (profile_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
@@ -95,7 +105,10 @@ public:
             return;
         }
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
         m_runtime.toggle_extended_card_info(*parsed, ctx).handle(sink);
     }

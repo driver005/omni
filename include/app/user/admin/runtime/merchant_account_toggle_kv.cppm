@@ -40,7 +40,7 @@ public:
     toggle(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx, "merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -50,26 +50,31 @@ public:
         if (const auto blocked = m_support.kv_soft_kill_guard()) {
             return std::unexpected{*blocked};
         }
-        if (const auto duplicate =
-                m_support.acquire_operation_lock("merchant_account_toggle_kv", ctx_string(ctx,"merchant_id"))) {
+        if (const auto duplicate = m_support.acquire_operation_lock(
+                "merchant_account_toggle_kv",
+                ctx_string(ctx, "merchant_id")
+            )) {
             return std::unexpected{*duplicate};
         }
-        const std::string target_scheme{ctx_bool(ctx,"kv_enabled") ? "kv" : "database"};
+        const std::string target_scheme{ctx_bool(ctx, "kv_enabled") ? "kv" : "database"};
         const bool was_enabled = m_context.config_store()
                                      .get_value("merchant_kv_scheme", found->get_merchant_id())
                                      .value_or("database") == "kv";
-        if (was_enabled != ctx_bool(ctx,"kv_enabled")) {
+        if (was_enabled != ctx_bool(ctx, "kv_enabled")) {
             m_context.config_store()
                 .put("merchant_kv_scheme", found->get_merchant_id(), target_scheme);
         }
-        m_support.release_operation_lock("merchant_account_toggle_kv", ctx_string(ctx,"merchant_id"));
+        m_support.release_operation_lock(
+            "merchant_account_toggle_kv",
+            ctx_string(ctx, "merchant_id")
+        );
 
         ::app::dto::admin::ToggleKVResponse response;
         response.set_merchant_id(m_support.merchant_id_value(found->get_merchant_id()));
-        response.set_kv_enabled(ctx_bool(ctx,"kv_enabled"));
+        response.set_kv_enabled(ctx_bool(ctx, "kv_enabled"));
 
-        m_context.metrics().record_flow("merchant_account_toggle_kv");
-        m_context.metrics().counter("admin.merchant_account_toggle_kv").increment();
+        m_context.logger().record_flow("merchant_account_toggle_kv");
+        m_context.logger().counter("admin.merchant_account_toggle_kv").increment();
         m_context.events().publish(
             "merchant_account.kv_toggled",
             serde::Ser::encode_json(response)

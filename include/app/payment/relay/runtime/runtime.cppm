@@ -1,4 +1,5 @@
 export module app_payment:relay_runtime;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -28,8 +29,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::unreferenced_refund::UnreferencedRefundResponse>
-        unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::unreferenced_refund::UnreferencedRefundResponse>
+    unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_unreferenced_refund.unreferenced_refund(dto, ctx);
     }

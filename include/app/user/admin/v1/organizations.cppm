@@ -47,8 +47,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::organization::OrganizationCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::organization::OrganizationCreateRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.create_organization(*parsed, ctx).handle(sink);
     }
@@ -66,9 +72,7 @@ public:
             sink.send();
             return;
         }
-        const std::string organization_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string organization_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -95,9 +99,7 @@ public:
             sink.send();
             return;
         }
-        const std::string organization_id{
-            m_support.path(req, AdminPolicy::path_index(req, 1))
-        };
+        const std::string organization_id{m_support.path(req, AdminPolicy::path_index(req, 1))};
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -107,8 +109,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::organization::OrganizationUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::organization::OrganizationUpdateRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
         m_runtime.update_organization(*parsed, ctx).handle(sink);
@@ -121,16 +129,13 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto error =
-                m_support.authorize(req, "convert_organization_to_platform", {})) {
+        if (const auto error = m_support.authorize(req, "convert_organization_to_platform", {})) {
             sink.set_status(error->get_status());
             sink.set_body(serde::Ser::serialize("application/json", *error));
             sink.send();
             return;
         }
-        const std::string organization_id{
-            m_support.path(req, AdminPolicy::path_index(req, 2))
-        };
+        const std::string organization_id{m_support.path(req, AdminPolicy::path_index(req, 2))};
         if (organization_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -139,8 +144,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::organization::ConvertOrganizationToPlatformRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::organization::ConvertOrganizationToPlatformRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
         m_runtime.convert_organization_to_platform(*parsed, ctx).handle(sink);

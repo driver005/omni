@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_filter_list;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -21,18 +22,18 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListMetaData>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     filter_list(const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsFilterListData{ctx};
-        m_context.metrics().record_flow("refund_filter_list");
-        m_context.metrics().counter("refunds_filter_list_total").increment();
+        m_context.logger().record_flow("refund_filter_list");
+        m_context.logger().counter("refunds_filter_list_total").increment();
 
         // core/refunds.rs:2132-2148 — filter_refund_by_meta_constraints(merchant, time_range).
         const auto records = m_support.merchant_records(input.facts, /*profile_scoped=*/false);
-        return ::app::model::refunds::RefundListMetaData{m_support.filter_list_metadata(
+        return m_support.filter_list_metadata(
             m_support.apply_time_range(records, input.start_time, input.end_time)
-        )};
+        );
     }
 
 private:

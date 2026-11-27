@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_status;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -41,8 +42,8 @@ public:
     status(const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkStatusData{ctx};
-        m_context.metrics().record_flow("payment_link.status");
-        m_context.metrics().counter("payment_link.status").increment();
+        m_context.logger().record_flow("payment_link.status");
+        m_context.logger().counter("payment_link.status").increment();
 
         auto page = m_support.build_status_page_data(input.merchant_id, input.payment_id);
         if (!page) {

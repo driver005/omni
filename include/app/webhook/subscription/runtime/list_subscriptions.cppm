@@ -17,6 +17,23 @@ import :subscription_runtime_common;
 
 export namespace app::handlers::subscription {
 
+[[nodiscard]] inline std::uint32_t query_number(
+    const std::unordered_map<std::string, std::string>& query,
+    std::string_view key,
+    std::uint32_t fallback
+)
+{
+    const auto it = query.find(std::string{key});
+    if (it == query.end()) {
+        return fallback;
+    }
+    try {
+        return static_cast<std::uint32_t>(std::stoul(it->second));
+    } catch (...) {
+        return fallback;
+    }
+}
+
 class SubscriptionListSubscriptionsRuntime
 {
 public:
@@ -30,11 +47,10 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     list_subscriptions(const ::core::behavior::CallContext& ctx) const
     {
-        const auto limit = m_support.query_number(ctx.query, "limit", kMaxListCount);
-        const auto offset = m_support.query_number(ctx.query, "offset", 0);
+        const auto limit = query_number(ctx.query, "limit", kMaxListCount);
+        const auto offset = query_number(ctx.query, "offset", 0);
 
-        if (const auto failure =
-                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
 
@@ -45,8 +61,7 @@ public:
             }
         }
         const std::size_t begin =
-            offset > 0 ? std::min(static_cast<std::size_t>(offset), records.size())
-                             : 0U;
+            offset > 0 ? std::min(static_cast<std::size_t>(offset), records.size()) : 0U;
         const std::size_t count = limit > 0 ? static_cast<std::size_t>(limit) : 0U;
         const std::size_t stop = std::min(begin + count, records.size());
 

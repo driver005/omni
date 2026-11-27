@@ -71,8 +71,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
 
         const auto header_merchant_id = m_input_support.header_merchant_id(req);
         const auto auth_merchant_id = m_input_support.auth_merchant_id(req);
@@ -157,8 +160,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
 
         const auto path_id = m_input_support.payout_id_from_path(req);
         if (!path_id.has_value()) {
@@ -297,7 +303,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_create(req, res, std::move(send));
                         }
@@ -313,7 +319,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_retrieve(req, res, std::move(send));
                         }
@@ -329,7 +335,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_update(req, res, std::move(send));
                         }
@@ -346,7 +352,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_confirm(req, res, std::move(send));
                             }
@@ -364,7 +370,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_cancel(req, res, std::move(send));
                             }
@@ -382,7 +388,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_fulfill(req, res, std::move(send));
                             }

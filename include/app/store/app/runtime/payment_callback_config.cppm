@@ -70,8 +70,8 @@ public:
         const bool issues_tokens = mode != "legacy";
         const bool allows_legacy = mode != "enforced";
 
-        m_context.metrics().record_flow("PaymentCallbackConfigLoad");
-        m_context.metrics().counter("PAYMENT_CALLBACK_CONFIG_LOADED").increment();
+        m_context.logger().record_flow("PaymentCallbackConfigLoad");
+        m_context.logger().counter("PAYMENT_CALLBACK_CONFIG_LOADED").increment();
 
         serde::Value::Object document{};
         document.insert(

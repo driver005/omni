@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_delete_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodDeleteResponse>
-        payment_method_delete_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodDeleteResponse>
+    payment_method_delete_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodDeleteApiData{dto, ctx};
         const auto& record = input.record;
@@ -56,8 +58,8 @@ public:
         m_context.cache().erase("payment_methods.client_secret:" + input.payment_method_id);
         m_context.cache().erase("payment_methods.card:" + input.payment_method_id);
         m_support.publish_pm_event("payment_method.delete", input.payment_method_id);
-        m_context.metrics().record_flow("payment_method_delete_api");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_DELETE_API").increment();
+        m_context.logger().record_flow("payment_method_delete_api");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHOD_DELETE_API").increment();
         ::app::model::payment_methods::PaymentMethodDeleteResponse response{};
         response.set_payment_method_id(input.payment_method_id);
         response.set_deleted(true);

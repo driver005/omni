@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime_complete_payment;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -52,8 +53,8 @@ public:
         }
 
         // core.rs:127-152 - JsonForRedirection(RedirectionResponse): 302 + Location.
-        m_context.metrics().record_flow("DummyPaymentComplete");
-        m_context.metrics().counter("DUMMY_CONNECTOR_COMPLETE").increment();
+        m_context.logger().record_flow("DummyPaymentComplete");
+        m_context.logger().counter("DUMMY_CONNECTOR_COMPLETE").increment();
         return std::pair<serde::Value, std::string>{
             m_support.redirect_response(return_url),
             return_url

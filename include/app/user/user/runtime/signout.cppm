@@ -39,8 +39,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    signout(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    signout(const interfaces::Value& generic, const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -54,16 +53,16 @@ public:
         }
 
         const auto key =
-            std::string{"user.signout:"} + std::to_string(ctx_string(ctx,"body").size());
+            std::string{"user.signout:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("signout");
-        m_context.metrics().counter("user.signout").increment();
+        m_context.logger().record_flow("signout");
+        m_context.logger().counter("user.signout").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

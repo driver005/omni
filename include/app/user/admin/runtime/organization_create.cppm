@@ -36,9 +36,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        create(const ::app::model::organization::OrganizationCreateRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse> create(
+        const ::app::model::organization::OrganizationCreateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         for (const auto& existing: m_context.repository().list_organizations()) {
             if (existing.get_organization_name() == request.get_organization_name()) {
@@ -58,19 +59,15 @@ public:
         record.set_organization_id("org_" + m_support.uuid_simple());
         record.set_organization_name(request.get_organization_name());
         record.set_organization_details(
-            request.get_organization_details()
-                ? request.get_organization_details()->get_value()
-                : std::string{}
+            request.get_organization_details() ? request.get_organization_details()->get_value()
+                                               : std::string{}
         );
         record.set_metadata(
             request.get_metadata() ? request.get_metadata()->get_value() : std::string{}
         );
         record.set_organization_type("merchant");
         const auto saved = m_context.repository().save_organization(std::move(record));
-        m_support.release_operation_lock(
-            "organization_create",
-            request.get_organization_name()
-        );
+        m_support.release_operation_lock("organization_create", request.get_organization_name());
 
         ::app::model::organization::OrganizationResponse response;
         ::app::model::organization::OrganizationIdValue id;
@@ -91,8 +88,8 @@ public:
         type.set_value(saved.get_organization_type());
         response.set_organization_type(std::move(type));
 
-        m_context.metrics().record_flow("organization_create");
-        m_context.metrics().counter("admin.organization_create").increment();
+        m_context.logger().record_flow("organization_create");
+        m_context.logger().counter("admin.organization_create").increment();
         m_context.events().publish("organization.created", serde::Ser::encode_json(response));
         return std::move(response);
     }

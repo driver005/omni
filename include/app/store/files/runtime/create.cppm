@@ -28,14 +28,11 @@ public:
      *  validate -> generate_id -> insert(available=false) -> upload -> update(available=true).
      */
     [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
-    create(
-        const CreateFileRequestData& request,
-        const core::behavior::CallContext& ctx
-    ) const
+    create(const CreateFileRequestData& request, const core::behavior::CallContext& ctx) const
     {
         // Upstream: files.rs:39 — server_wrap records the flow and route counter.
-        m_context.metrics().record_flow("files.create");
-        m_context.metrics().counter("files_create_total").increment();
+        m_context.logger().record_flow("files.create");
+        m_context.logger().counter("files_create_total").increment();
 
         const auto& processor_merchant_id = ctx.merchant_id;
         const auto provider_merchant_id = m_support.provider_merchant_id(ctx);

@@ -107,7 +107,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_payouts_aggregates(req, res, std::move(send));
                         }
@@ -124,7 +124,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_get_payouts_aggregates_profile(req, res, std::move(send));
                             }

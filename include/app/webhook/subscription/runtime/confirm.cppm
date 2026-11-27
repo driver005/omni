@@ -32,8 +32,7 @@ public:
         const std::string subscription_id =
             ctx.path_segments.size() > 1 ? ctx.path_segments.at(1) : std::string{};
 
-        if (const auto failure =
-                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
         if (!ctx.client_secret.empty()) {
@@ -44,9 +43,9 @@ public:
         }
         auto found = m_support.find_subscription(subscription_id);
         if (!found) {
-            return std::unexpected{m_support.generic_not_found(
-                "subscription not found for id: " + subscription_id
-            )};
+            return std::unexpected{
+                m_support.generic_not_found("subscription not found for id: " + subscription_id)
+            };
         }
 
         InvoiceView invoice = m_support.latest_invoice(found->subscription_id);
@@ -72,10 +71,8 @@ public:
         if (const auto failure = m_support.find_customer(found->customer_id, found->merchant_id)) {
             return std::unexpected{*failure};
         }
-        m_support.create_connector_customer(
-            *found,
-            payload.doc
-        ); // create_customer_on_connector
+        m_support.create_connector_customer(*found,
+                                            payload.doc); // create_customer_on_connector
 
         ConnectorResponse connector = m_support.call_billing(
             "create_subscription_on_connector",

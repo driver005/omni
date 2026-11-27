@@ -1,4 +1,5 @@
 export module app_payment:card_issuer_runtime_update;
+import core_behavior;
 
 import std;
 import core_error;
@@ -25,7 +26,7 @@ public:
     // core/card_issuer.rs:41-61 `update_card_issuer`.
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = CardIssuerUpdateData{dto, ctx};
         const std::string& id = input.id;
@@ -64,8 +65,8 @@ public:
         auto response = m_support.response_from(record);
 
         // `#[instrument(skip_all, fields(flow = Flow::UpdateCardIssuer))]` substitute.
-        m_context.metrics().record_flow("UpdateCardIssuer");
-        m_context.metrics().counter("CARD_ISSUER_UPDATED").increment();
+        m_context.logger().record_flow("UpdateCardIssuer");
+        m_context.logger().counter("CARD_ISSUER_UPDATED").increment();
 
         return ::app::dto::card_issuer::CardIssuerResponse{std::move(response)};
     }

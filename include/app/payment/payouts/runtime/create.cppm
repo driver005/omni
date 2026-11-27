@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_create;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,11 +39,11 @@ public:
     // ───────────────────────── Core: create ─────────────────────────
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
-        create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsCreateData{dto, ctx};
-        m_context.metrics().record_flow("payout_create");
-        m_context.metrics().counter("payouts_create_total").increment();
+        m_context.logger().record_flow("payout_create");
+        m_context.logger().counter("payouts_create_total").increment();
 
         if (const auto invalid =
                 m_support.validate_create_input(input.request, input.header_merchant_id)) {
@@ -158,7 +159,7 @@ public:
                 );
                 connector_name = std::string{choice.connector->name()};
                 if (outcome.shadow_killed) {
-                    m_context.metrics().counter("payouts_shadow_killed").increment();
+                    m_context.logger().counter("payouts_shadow_killed").increment();
                 }
                 if (!outcome.reference_id.empty()) {
                     note = note.empty() ? std::string{"connector_ref="} + outcome.reference_id

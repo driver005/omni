@@ -1,4 +1,5 @@
 export module app_payment:tokenization_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;

@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_update_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodUpdateResponse>
-        payment_method_update_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodUpdateResponse>
+    payment_method_update_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodUpdateApiData{dto, ctx};
         auto record = input.record;
@@ -65,8 +67,8 @@ public:
             };
         }
         m_support.publish_pm_event("payment_method.update", input.payment_method_id);
-        m_context.metrics().record_flow("payment_method_update_api");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_UPDATE_API").increment();
+        m_context.logger().record_flow("payment_method_update_api");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHOD_UPDATE_API").increment();
         ::app::model::payment_methods::PaymentMethodUpdateResponse response{};
         response.set_payment_method_id(input.payment_method_id);
         ::app::model::payment_methods::PaymentMethodStatusValue status{};

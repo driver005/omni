@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_get_profile_payment_list_from_opensearch;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,7 +33,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsAdvancedListResponse>
-        get_profile_payment_list_from_opensearch(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    get_profile_payment_list_from_opensearch(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         auto text = m_support.advanced_list_response(input, true);

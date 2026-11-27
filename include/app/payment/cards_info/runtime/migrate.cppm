@@ -1,4 +1,5 @@
 export module app_payment:cards_info_runtime_migrate;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -28,7 +29,8 @@ public:
     // api::server_wrap(Flow::CardsInfoMigrate, ...). No counter in server_wrap;
     // CARDS_INFO_MIGRATED is incremented by the core itself.
 
-    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
     migrate(const core::behavior::CallContext& ctx) const
     {
         const auto input = MigrateCardsInfoData{ctx};
@@ -42,10 +44,10 @@ public:
             }
             result.push_back(migration_response_from(std::move(flow), record));
         }
-        m_context.metrics()
+        m_context.logger()
             .counter("CARDS_INFO_MIGRATED")
             .increment(static_cast<std::uint64_t>(migrated));
-        m_context.metrics().record_flow("CardsInfoMigrate");
+        m_context.logger().record_flow("CardsInfoMigrate");
         return std::vector<::app::model::cards_info::CardInfoMigrationResponse>{std::move(result)};
     }
 

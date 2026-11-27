@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    terminate_auth_select(const ::app::model::user::AuthSelectRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    terminate_auth_select(
+        const ::app::model::user::AuthSelectRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -68,8 +70,8 @@ public:
         set_cookie = "user_token=" + token + "; HttpOnly; Path=/";
         m_context.cache().put("user.token_email:" + token, core::cache::to_cache_value(owner));
 
-        m_context.metrics().record_flow("terminate_auth_select");
-        m_context.metrics().counter("user.terminate_auth_select").increment();
+        m_context.logger().record_flow("terminate_auth_select");
+        m_context.logger().counter("user.terminate_auth_select").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

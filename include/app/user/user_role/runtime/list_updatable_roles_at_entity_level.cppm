@@ -37,13 +37,16 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     list_updatable_roles_at_entity_level(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
             };
         }
-        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx, "entity_type"));
         if (entity_type.empty()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::VALIDATION_FAILED,
@@ -59,14 +62,19 @@ public:
         }
         std::string product_type{};
         if (entity_type == "merchant" || entity_type == "profile") {
-            const auto merchant =
-                m_context.repository().find_merchant_account_by_string(identity_from_context(ctx).merchant_id);
+            const auto merchant = m_context.repository().find_merchant_account_by_string(
+                identity_from_context(ctx).merchant_id
+            );
             if (merchant) {
                 product_type = m_support.merchant_product_type(*merchant);
             }
         }
-        auto roles =
-            m_support.roles_for_entity(identity_from_context(ctx), requestor->entity_type, entity_type, true);
+        auto roles = m_support.roles_for_entity(
+            identity_from_context(ctx),
+            requestor->entity_type,
+            entity_type,
+            true
+        );
         std::vector<MinimalRoleInfoWire> response{};
         for (const auto& role: roles) {
             if (role.entity_type != entity_type || !role.is_updatable) {

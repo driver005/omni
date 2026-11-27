@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_manual_update;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,7 +39,7 @@ public:
     // ───────────────────────── Core: manual_update ─────────────────────────
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsManualUpdateResponse>
-        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsManualUpdateData{dto, ctx};
         // `PayoutsManualUpdateRequest::is_update_parameter_present`
@@ -65,8 +66,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("payout_manual_update");
-        m_context.metrics().counter("payouts_manual_update_total").increment();
+        m_context.logger().record_flow("payout_manual_update");
+        m_context.logger().counter("payouts_manual_update_total").increment();
 
         auto found = m_support.find_payout_record(input.payout_id);
         if (!found.has_value()) {

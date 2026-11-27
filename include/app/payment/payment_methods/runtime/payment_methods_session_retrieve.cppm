@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_methods_session_retrieve;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,13 +37,14 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
-        payment_methods_session_retrieve(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodSessionResponse>
+    payment_methods_session_retrieve(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodsSessionRetrieveData{dto, ctx};
         const auto& record = input.record;
-        m_context.metrics().record_flow("payment_methods_session_retrieve");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHODS_SESSION_RETRIEVE").increment();
+        m_context.logger().record_flow("payment_methods_session_retrieve");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHODS_SESSION_RETRIEVE").increment();
         ::app::model::payment_methods::PaymentMethodSessionResponse response{};
         ::app::model::payment_methods::GlobalPaymentMethodSessionIdValue id{};
         id.set_value(input.session_id);

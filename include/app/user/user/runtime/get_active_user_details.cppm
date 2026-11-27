@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    get_active_user_details(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    get_active_user_details(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -65,8 +67,8 @@ public:
         std::string effective_org_id = org_id.empty() ? auth_ctx.org_id() : org_id;
 
 
-        m_context.metrics().record_flow("get_active_user_details");
-        m_context.metrics().counter("user.get_active_user_details").increment();
+        m_context.logger().record_flow("get_active_user_details");
+        m_context.logger().counter("user.get_active_user_details").increment();
 
         std::string merchant_name{};
         if (!effective_merchant_id.empty()) {

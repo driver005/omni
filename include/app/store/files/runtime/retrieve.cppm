@@ -28,8 +28,8 @@ public:
     retrieve(const core::behavior::CallContext& ctx) const
     {
         // Upstream: files.rs:151-152 — server_wrap records the flow and route counter.
-        m_context.metrics().record_flow("files.retrieve");
-        m_context.metrics().counter("files_retrieve_total").increment();
+        m_context.logger().record_flow("files.retrieve");
+        m_context.logger().counter("files_retrieve_total").increment();
 
         const auto file_id = m_support.file_id_from(ctx);
         if (!file_id.has_value()) {

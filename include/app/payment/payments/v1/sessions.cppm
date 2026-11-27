@@ -69,11 +69,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_connector_session");
-        m_context.metrics().counter("payments.payments_connector_session").increment();
+        m_context.logger().record_flow("payments.payments_connector_session");
+        m_context.logger().counter("payments.payments_connector_session").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_connector_session(dto, m_request_support->context(req)).handle(sink);
     }
@@ -94,11 +97,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_post_session_tokens");
-        m_context.metrics().counter("payments.payments_post_session_tokens").increment();
+        m_context.logger().record_flow("payments.payments_post_session_tokens");
+        m_context.logger().counter("payments.payments_post_session_tokens").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_post_session_tokens(dto, m_request_support->context(req)).handle(sink);
     }
@@ -117,7 +123,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_connector_session(req, res, std::move(send));
                     }
@@ -141,7 +147,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_post_session_tokens(req, res, std::move(send));
                         }

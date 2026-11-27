@@ -1,4 +1,8 @@
+module;
+#include <uuid.h>
+
 export module app_payment:relay_runtime_relay_retrieve;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -60,14 +64,14 @@ public:
             selected = m_context.repository().find_relay_record_by_string(relay_id);
         }
         // Legacy mirrors written before the relay table existed remain readable.
-        std::optional<::app::store::refunds::RefundRecord> refund{};
+        std::optional<::app::model::Refund> refund{};
         if (!selected) {
             if (ec == std::errc{}) {
-                refund = m_context.repository().find_refund(numeric_id);
+                refund = m_context.refunds().find_refund(numeric_id);
             }
             if (!refund) {
-                for (const auto& candidate: m_context.repository().list_refunds()) {
-                    if (candidate.get_refund_id() == relay_id) {
+                for (const auto& candidate: m_context.refunds().list_refunds()) {
+                    if (candidate.refund_id == relay_id) {
                         refund = candidate;
                         break;
                     }
@@ -79,12 +83,12 @@ public:
                 };
             }
             ::app::store::relay_records::RelayRecord migrated{};
-            migrated.set_relay_id(refund->get_refund_id());
+            migrated.set_relay_id(refund->refund_id);
             migrated.set_merchant_id(scope.merchant_id);
             migrated.set_profile_id(scope.profile_id);
-            migrated.set_payment_id(refund->get_payment_id());
-            migrated.set_status(refund->get_status());
-            migrated.set_payload(refund->get_reason());
+            migrated.set_payment_id(uuids::to_string(refund->payment_id));
+            migrated.set_status(refund->status);
+            migrated.set_payload(refund->reason);
             migrated.set_created_at(m_support.now_string());
             selected = migrated;
         }
@@ -126,8 +130,8 @@ public:
                         (void)m_context.repository().update_relay_record(record);
                     }
                     if (refund.has_value()) {
-                        refund->set_status(sync_response.get_status());
-                        (void)m_context.repository().update_refund(*refund);
+                        refund->status = sync_response.get_status();
+                        (void)m_context.refunds().update_refund(*refund);
                     }
                 }
             }

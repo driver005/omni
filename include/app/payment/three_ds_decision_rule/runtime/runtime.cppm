@@ -1,4 +1,5 @@
 export module app_payment:three_ds_decision_rule_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -20,8 +21,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse>
-        execute_decision_rule(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse>
+    execute_decision_rule(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_execute_decision_rule.execute_decision_rule(dto, ctx);
     }

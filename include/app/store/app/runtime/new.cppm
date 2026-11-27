@@ -50,8 +50,8 @@ public:
         m_context.cache().put("app.new:" + session_id, core::cache::to_cache_value(storage_impl));
 
         const bool storage_ok = m_support.storage_available();
-        m_context.metrics().record_flow("AppStateNew");
-        m_context.metrics().counter("APP_STATE_NEW").increment();
+        m_context.logger().record_flow("AppStateNew");
+        m_context.logger().counter("APP_STATE_NEW").increment();
 
         serde::Value::Object document{};
         document.insert(std::string{new_wire_fields()[0]}, serde::Value{std::string{"app"}});

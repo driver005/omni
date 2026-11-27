@@ -24,13 +24,14 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ExtendedCardInfoChoice>
-    toggle(const ::app::dto::admin::ExtendedCardInfoChoice& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ExtendedCardInfoChoice> toggle(
+        const ::app::dto::admin::ExtendedCardInfoChoice& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         // core/admin.rs:4906-4912 — key store by merchant id.
         if (!m_support.get_merchant_key_store_by_merchant_id(
-                ctx_string(ctx,"merchant_id"),
+                ctx_string(ctx, "merchant_id"),
                 m_support.master_key()
             )) {
             return std::unexpected(m_support.make_error(
@@ -39,24 +40,25 @@ public:
             ));
         }
         // core/admin.rs:4914-4920 — find_business_profile_by_profile_id.
-        const auto stored = m_support.find_business_profile_by_profile_id(ctx_string(ctx,"profile_id"));
+        const auto stored =
+            m_support.find_business_profile_by_profile_id(ctx_string(ctx, "profile_id"));
         if (!stored) {
-            return std::unexpected(m_support.profile_not_found(ctx_string(ctx,"profile_id")));
+            return std::unexpected(m_support.profile_not_found(ctx_string(ctx, "profile_id")));
         }
         // core/admin.rs:4922-4938 — conditional ExtendedCardInfoUpdate. The
         // upstream domain flag has no ProfileResponse field on the wire either
         // (admin.rs:2838-3062), so the persisted scoped config row is its
         // in-process representation; the profile-owned wire type keeps only
         // the upstream-exposed `extended_card_info_config` field.
-        const auto key = m_support.card_config_key(ctx_string(ctx,"profile_id"));
+        const auto key = m_support.card_config_key(ctx_string(ctx, "profile_id"));
         const auto current = m_context.repository().get_config(key);
         if (!current || *current != (request.get_enabled() ? "true" : "false")) {
             m_context.repository().set_config(key, request.get_enabled() ? "true" : "false");
             m_support.emit_event("toggle_extended_card_info", serde::Ser::encode_json(*stored));
         }
-        m_context.metrics().record_flow("profiles.toggle_extended_card_info");
-        m_context.metrics().record_flow("Flow::ToggleExtendedCardInfo");
-        m_context.metrics().counter("profiles_toggle_extended_card_info").increment();
+        m_context.logger().record_flow("profiles.toggle_extended_card_info");
+        m_context.logger().record_flow("Flow::ToggleExtendedCardInfo");
+        m_context.logger().counter("profiles_toggle_extended_card_info").increment();
         return request;
     }
 

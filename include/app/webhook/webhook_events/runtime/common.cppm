@@ -83,7 +83,7 @@ public:
         }
         const auto stored = m_context.config_store().get_value("business_profile", profile_id);
         if (!stored) {
-            m_context.metrics().counter("WEBHOOK_EVENT_PROFILE_UNRESOLVED").increment();
+            m_context.logger().counter("WEBHOOK_EVENT_PROFILE_UNRESOLVED").increment();
             return std::nullopt;
         }
         if (!merchant_id.empty() && *stored != merchant_id) {
@@ -503,8 +503,7 @@ public:
     }
 
     // Port of finalize_event_types (core:481-524).
-    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>>
-    finalize_event_types(
+    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>> finalize_event_types(
         const std::vector<std::string>& event_classes,
         std::vector<std::string> event_types
     ) const
@@ -556,8 +555,7 @@ public:
     }
 
     // Port of list_initial_delivery_attempts (core:20-259).
-    [[nodiscard]] core::behavior::Outcome<EventListResult>
-    list_initial_delivery_attempts(
+    [[nodiscard]] core::behavior::Outcome<EventListResult> list_initial_delivery_attempts(
         const std::string& merchant_id,
         const std::string& profile_id,
         const Constraints& constraints
@@ -808,14 +806,13 @@ public:
         return result;
     }
 
-    [[nodiscard]] core::behavior::
-        Outcome<::app::dto::webhook_events::EventListItemResponse>
-        to_list_item(
-            const Record& record,
-            std::string_view payload,
-            DeliverySource source,
-            std::string_view fallback_profile_id
-        ) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::webhook_events::EventListItemResponse>
+    to_list_item(
+        const Record& record,
+        std::string_view payload,
+        DeliverySource source,
+        std::string_view fallback_profile_id
+    ) const
     {
         // Upstream requires merchant_id, business_profile_id and initial_attempt_id
         // to be populated (transformers.rs:2285-2300).

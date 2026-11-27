@@ -37,10 +37,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        retrieve(const ::core::behavior::CallContext& ctx) const
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
+            m_context.repository().find_organization_by_string(ctx_string(ctx, "organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -73,8 +73,8 @@ public:
             response.set_created_at(std::move(created));
         }
 
-        m_context.metrics().record_flow("organization_retrieve");
-        m_context.metrics().counter("admin.organization_retrieve").increment();
+        m_context.logger().record_flow("organization_retrieve");
+        m_context.logger().counter("admin.organization_retrieve").increment();
         return std::move(response);
     }
 

@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module app_payment:refunds_handlers_v2_create_retrieve;
 
 import std;
@@ -8,6 +11,7 @@ import core_serde;
 import utils_openapi;
 import app_model;
 import app_context;
+import app_context_core;
 import core_error;
 import app_auth;
 import app_http;
@@ -69,15 +73,18 @@ public:
 
         const auto payment_id = m_input_support.json_string(body, "payment_id");
         if (v2) {
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsCreateRequest>::pass(req, sink);
-        if (!parsed) return;
+            auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+            if (!parsed) {
+                return;
+            }
+            m_runtime.create(*parsed, m_request_support->context(req)).handle(sink);
         } else {
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundRequest>::pass(req, sink);
-        if (!parsed) return;
+            auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+            if (!parsed) {
+                return;
+            }
+            m_runtime.create(*parsed, m_request_support->context(req)).handle(sink);
         }
-
-        auto result = m_runtime.create(dto, m_request_support->context(req));
-        result.handle(sink);
     }
 
     /** @brief refunds_retrieve — routes/refunds.rs:191-241 (v1), :245-292 (v2). */
@@ -98,11 +105,9 @@ public:
             error.send(sink);
             return;
         }
-        const auto path_id = m_input_support.refund_id_from_path(req);
+        const auto path_id = m_input_support.refund_uuid_from_path(req);
         if (!path_id.has_value()) {
-            const auto error =
-                core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(sink);
+            path_id.error().send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -111,13 +116,14 @@ public:
         const bool include_raw =
             query.get("return_raw_connector_response").value_or("false") == "true";
 
-        ::app::model::refunds::RefundsRetrieveRequest request{};
-        request.set_refund_id(*path_id);
-        request.set_force_sync(force_sync);
-        request.set_all_keys_required(all_keys);
+        ::app::model::Refund request{};
+        request.id = *path_id;
+        request.refund_id = uuids::to_string(*path_id);
+        request.force_sync = force_sync;
+        request.all_keys_required = all_keys;
         const auto& dto = request;
 
-        auto result = m_runtime.retrieve(m_request_support->context(req)));
+        auto result = m_runtime.retrieve(dto, m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -142,26 +148,25 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsRetrievePayload>::pass(req, sink);
-        if (!parsed) return;
-
-        const auto path_id = m_input_support.refund_id_from_path(req);
-        if (!path_id.has_value()) {
-            const auto error =
-                core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(sink);
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
             return;
         }
-        ::app::model::refunds::RefundsRetrieveRequest request{};
-        request.set_refund_id(*path_id);
-        request.set_force_sync(parsed->get_force_sync());
-        request.set_all_keys_required(std::nullopt);
-        if (parsed->get_merchant_connector_details()) {
-            ::app::model::refunds::MerchantConnectorDetailsWrapValue wrap{};
-            wrap.set_value(parsed->get_merchant_connector_details()->get_value());
-            request.set_merchant_connector_details(wrap);
+
+        const auto path_id = m_input_support.refund_uuid_from_path(req);
+        if (!path_id.has_value()) {
+            path_id.error().send(sink);
+            return;
         }
-        const bool include_raw = parsed->get_return_raw_connector_response().value_or(false);
+        ::app::model::Refund request{};
+        request.id = *path_id;
+        request.refund_id = uuids::to_string(*path_id);
+        request.force_sync = parsed->force_sync;
+        request.all_keys_required = std::nullopt;
+        if (!parsed->merchant_connector_details.empty()) {
+            request.merchant_connector_details = parsed->merchant_connector_details;
+        }
+        const bool include_raw = parsed->return_raw_connector_response.value_or(false);
         const auto& dto = request;
 
         auto result = m_runtime.retrieve_gateway(dto, m_request_support->context(req));

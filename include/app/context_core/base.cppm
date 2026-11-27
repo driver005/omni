@@ -20,7 +20,6 @@ export import :store_organizations;
 export import :store_payment_records;
 export import :store_payments;
 export import :store_payouts;
-export import :store_refunds;
 export import :store_repository;
 export import :store_risk_records;
 export import :store_routing;

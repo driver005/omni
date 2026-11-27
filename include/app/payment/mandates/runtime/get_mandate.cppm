@@ -1,4 +1,5 @@
 export module app_payment:mandates_runtime_get_mandate;
+import core_behavior;
 
 import std;
 import core_error;

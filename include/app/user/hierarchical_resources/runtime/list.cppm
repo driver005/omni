@@ -39,13 +39,13 @@ public:
     /** @brief core:728-820 list_hierarchical_resources. */
     [[nodiscard]] core::behavior::Outcome<
         ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse>
-    list(const ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    list(
+        const ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        m_context.metrics().record_flow("HierarchicalResourcesList");
-        m_context.metrics().counter("hierarchical_resources_list_total").increment();
-
-        const auto& request = request;
+        m_context.logger().record_flow("HierarchicalResourcesList");
+        m_context.logger().counter("hierarchical_resources_list_total").increment();
 
         // core:750-775 — effective id resolves only when BOTH scope_type and
         // scope_id are present; otherwise it is None.
@@ -55,7 +55,7 @@ public:
             const auto account = m_support.fetch_requestor_account(
                 request.get_scope_type()->get_value(),
                 *request.get_scope_id(),
-                ctx_string(ctx,"merchant_id")
+                ctx_string(ctx, "merchant_id")
             );
             if (!account) {
                 return std::unexpected{std::move(account.error())};
@@ -69,15 +69,16 @@ public:
             if (record.get_resource_type() != resource_type) {
                 continue;
             }
-            if (!ctx_string(ctx,"organization_id").empty() && record.get_scope_id() != ctx_string(ctx,"organization_id")) {
+            if (!ctx_string(ctx, "organization_id").empty() &&
+                record.get_scope_id() != ctx_string(ctx, "organization_id")) {
                 continue;
             }
             const auto payload = m_support.decode_resource_data(record.get_data());
             if (!m_support.hierarchical_resource_is_linkable(payload)) {
                 continue;
             }
-            if (!ctx_string(ctx,"merchant_id").empty() && !payload.merchant_id.empty() &&
-                payload.merchant_id != ctx_string(ctx,"merchant_id")) {
+            if (!ctx_string(ctx, "merchant_id").empty() && !payload.merchant_id.empty() &&
+                payload.merchant_id != ctx_string(ctx, "merchant_id")) {
                 continue;
             }
 

@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -32,7 +33,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::RetrievePaymentLinkResponse>
-        retrieve(const core::behavior::CallContext& ctx) const
+    retrieve(const core::behavior::CallContext& ctx) const
     {
         return m_retrieve.retrieve(ctx);
     }
@@ -49,14 +50,14 @@ public:
         return m_initiate_secure.initiate_secure(ctx);
     }
 
-        template<class Dto>
+    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
     list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list.list(dto, ctx);
     }
 
-        template<class Dto>
+    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
     profile_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {

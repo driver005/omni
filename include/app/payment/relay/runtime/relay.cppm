@@ -1,4 +1,8 @@
+module;
+#include <uuid.h>
+
 export module app_payment:relay_runtime_relay;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -203,15 +207,16 @@ public:
         }
         relay = std::move(*stored);
 
-        ::app::store::refunds::RefundRecord refund{};
-        refund.set_refund_id(relay_id);
-        refund.set_payment_id(resource_id);
-        refund.set_merchant_id(connector_id);
-        refund.set_amount(amount);
-        refund.set_currency(currency);
-        refund.set_reason(*relay_type);
-        refund.set_status("pending");
-        refund = m_context.repository().save_refund(refund);
+        ::app::model::Refund refund{};
+        refund.id = uuids::uuid::from_string(m_context.ids().uuid_v4()).value_or(uuids::uuid{});
+        refund.refund_id = relay_id;
+        refund.payment_id = uuids::uuid::from_string(resource_id).value_or(uuids::uuid{});
+        refund.merchant_id = connector_id;
+        refund.amount = amount;
+        refund.currency = currency;
+        refund.reason = *relay_type;
+        refund.status = "pending";
+        refund = m_context.refunds().save_refund(refund);
 
         ::app::connector::ConnectorResponse connector_response{};
         {
@@ -229,13 +234,13 @@ public:
             if (!connector_response.get_reference_id().empty()) {
                 relay.set_refund_id(connector_response.get_reference_id());
             }
-            refund.set_connector(connector_name);
+            refund.connector = connector_name;
             if (!connector_response.get_status().empty()) {
                 relay.set_status(connector_response.get_status());
-                refund.set_status(connector_response.get_status());
+                refund.status = connector_response.get_status();
             }
             (void)m_context.repository().update_relay_record(relay);
-            (void)m_context.repository().update_refund(refund);
+            (void)m_context.refunds().update_refund(refund);
         }
 
         (void)m_context.events().publish(

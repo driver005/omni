@@ -1608,10 +1608,10 @@ public:
     // ApiEventMetric analogue: paired named flow/counter on every success.
     void track_flow(std::string_view flow, std::string_view counter) const
     {
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(counter).increment();
-        m_context.metrics().record_flow(std::string{"api_event."} + std::string{flow});
-        m_context.metrics().counter(std::string{"api_event."} + std::string{counter}).increment();
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(counter).increment();
+        m_context.logger().record_flow(std::string{"api_event."} + std::string{flow});
+        m_context.logger().counter(std::string{"api_event."} + std::string{counter}).increment();
     }
 
 private:

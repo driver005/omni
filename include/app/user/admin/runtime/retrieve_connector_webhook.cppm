@@ -39,8 +39,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
     fetch(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found =
-            m_context.repository().find_connector_webhook_by_string(ctx_string(ctx,"connector_id"));
+        const auto found = m_context.repository().find_connector_webhook_by_string(
+            ctx_string(ctx, "connector_id")
+        );
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -49,7 +50,8 @@ public:
         }
         const std::string decrypted{::app::crypto::AesWrap{}.decrypt(
             found->get_secret(),
-            m_support.connector_encryption_key(found->get_merchant_id(), ctx_string(ctx,"connector_id"))
+            m_support
+                .connector_encryption_key(found->get_merchant_id(), ctx_string(ctx, "connector_id"))
         )};
         ::app::dto::admin::WebhookDetailsResponse response;
         if (!found->get_event_type().empty()) {
@@ -62,8 +64,8 @@ public:
             response.set_webhook_password(decrypted);
         }
 
-        m_context.metrics().record_flow("retrieve_connector_webhook");
-        m_context.metrics().counter("admin.retrieve_connector_webhook").increment();
+        m_context.logger().record_flow("retrieve_connector_webhook");
+        m_context.logger().counter("admin.retrieve_connector_webhook").increment();
         return std::move(response);
     }
 

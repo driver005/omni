@@ -38,15 +38,16 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    list_orgs_for_user(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> list_orgs_for_user(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
 
-        m_context.metrics().record_flow("list_orgs_for_user");
-        m_context.metrics().counter("user.list_orgs_for_user").increment();
+        m_context.logger().record_flow("list_orgs_for_user");
+        m_context.logger().counter("user.list_orgs_for_user").increment();
 
         using Response = std::vector<::app::model::user::ListOrgsForUserResponse>;
         Response response{};

@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_confirm_intent_with_external_vault_proxy;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,7 +33,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse>
-    confirm_intent_with_external_vault_proxy(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    confirm_intent_with_external_vault_proxy(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         if (const auto err = m_support.ensure_payment_exists(input)) {

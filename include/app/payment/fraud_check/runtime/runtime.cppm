@@ -1,4 +1,5 @@
 export module app_payment:fraud_check_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -22,7 +23,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<FulfillmentResponseWire>
-        frm_fulfillment(const Dto& dto, const core::behavior::CallContext& ctx) const
+    frm_fulfillment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_frm_fulfillment.frm_fulfillment(dto, ctx);
     }

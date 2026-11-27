@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_payments_update;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -31,16 +32,16 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse>
-    payments_update(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse> payments_update(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         if (const auto err = m_support.ensure_payment_exists(input)) {
             return std::unexpected{*err};
         }
-        return ::app::model::payments::PaymentsResponse{
-            m_support.payment_response_view(input)
-        };
+        return ::app::model::payments::PaymentsResponse{m_support.payment_response_view(input)};
     }
 
 private:

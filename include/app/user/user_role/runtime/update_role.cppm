@@ -35,16 +35,19 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
-    update_role(const UpdateRoleInputWire& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_role(const UpdateRoleInputWire& request, const ::core::behavior::CallContext& ctx) const
     {
-        if (ctx_string(ctx,"role_id").empty()) {
+        if (ctx_string(ctx, "role_id").empty()) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
             };
         }
-        const auto role = m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx,"role_id"));
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto role =
+            m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx, "role_id"));
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!role || !requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
@@ -98,7 +101,7 @@ public:
             }
             updated_groups = *request.get_groups();
         }
-        auto record = m_context.repository().find_role_by_string(ctx_string(ctx,"role_id"));
+        auto record = m_context.repository().find_role_by_string(ctx_string(ctx, "role_id"));
         if (!record) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")

@@ -40,8 +40,7 @@ public:
 
     // Upstream core::reset_tracking_id (core/connector_onboarding.rs:122-138):
     // no is_enabled gate and no connector-type match; just upsert the tracking id.
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    reset_tracking_id(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> reset_tracking_id(
         const ::app::dto::connector_onboarding::ResetTrackingIdRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -60,8 +59,8 @@ public:
             return std::unexpected{*guard};
         }
 
-        m_context.metrics().record_flow("ResetTrackingId");
-        m_context.metrics().counter("connector_onboarding.reset_tracking_id").increment();
+        m_context.logger().record_flow("ResetTrackingId");
+        m_context.logger().counter("connector_onboarding.reset_tracking_id").increment();
         // Upstream returns ApplicationResponse::StatusOk (no body).
         return ResponseDocument::empty();
     }

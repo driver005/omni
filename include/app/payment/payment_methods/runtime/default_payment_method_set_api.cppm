@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_default_payment_method_set_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::CustomerDefaultPaymentMethodResponse>
-        default_payment_method_set_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse>
+    default_payment_method_set_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = DefaultPaymentMethodSetApiData{dto, ctx};
         m_context.cache().put(
@@ -45,8 +47,8 @@ public:
             core::cache::to_cache_value(input.payment_method_id)
         );
         m_support.publish_pm_event("payment_method.set_default", input.payment_method_id);
-        m_context.metrics().record_flow("default_payment_method_set_api");
-        m_context.metrics().counter("PAYMENT_METHOD_DEFAULT_PAYMENT_METHOD_SET_API").increment();
+        m_context.logger().record_flow("default_payment_method_set_api");
+        m_context.logger().counter("PAYMENT_METHOD_DEFAULT_PAYMENT_METHOD_SET_API").increment();
         ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse response{};
         response.set_default_payment_method_id(input.payment_method_id);
         ::app::model::payment_methods::CustomerIdValue customer{};

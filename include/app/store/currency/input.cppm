@@ -107,12 +107,10 @@ public:
             auto tail = raw.substr(question + 1);
             while (!tail.empty()) {
                 const auto amp = tail.find('&');
-                const auto pair =
-                    tail.substr(0, amp == std::string_view::npos ? tail.size() : amp);
+                const auto pair = tail.substr(0, amp == std::string_view::npos ? tail.size() : amp);
                 const auto eq = pair.find('=');
-                ctx.query[std::string{
-                    eq == std::string_view::npos ? pair : pair.substr(0, eq)
-                }] = eq == std::string_view::npos ? std::string{} : std::string{pair.substr(eq + 1)};
+                ctx.query[std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)}] =
+                    eq == std::string_view::npos ? std::string{} : std::string{pair.substr(eq + 1)};
                 if (amp == std::string_view::npos) {
                     break;
                 }

@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_render_pm_collect_link;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest>
     render_pm_collect_link(const core::behavior::CallContext& ctx) const
     {
         const auto input = RenderPmCollectLinkData{ctx};
-        m_context.metrics().record_flow("render_pm_collect_link");
-        m_context.metrics().counter("PAYMENT_METHOD_RENDER_PM_COLLECT_LINK").increment();
+        m_context.logger().record_flow("render_pm_collect_link");
+        m_context.logger().counter("PAYMENT_METHOD_RENDER_PM_COLLECT_LINK").increment();
         ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest response{};
         ::app::model::payment_methods::MerchantIdValue response_merchant{};
         response_merchant.set_value(input.merchant_id);

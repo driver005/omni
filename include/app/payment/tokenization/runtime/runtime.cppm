@@ -1,4 +1,5 @@
 export module app_payment:tokenization_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -22,7 +23,7 @@ public:
     {
     }
 
-        template<class Dto>
+    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::GenericTokenizationResponse>
     create_token_vault(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
@@ -30,7 +31,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::DeleteTokenDataResponse>
-        delete_tokenized_data(const core::behavior::CallContext& ctx) const
+    delete_tokenized_data(const core::behavior::CallContext& ctx) const
     {
         return m_delete.delete_tokenized_data(ctx);
     }

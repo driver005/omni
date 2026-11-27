@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_retrieve_dispute;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,10 +39,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
-        retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RetrieveDisputeData{dto, ctx};
-        m_context.metrics().record_flow("dispute_retrieve");
+        m_context.logger().record_flow("dispute_retrieve");
         const auto& scope = input.scope;
         const auto& request = input.request;
         const auto& db = m_context.repository();
@@ -80,9 +81,9 @@ public:
                     serde::Ser::encode_json(request)
                 );
                 m_support.update_dispute_data(scope, *dispute, "dispute.retrieve.force_sync");
-                m_context.metrics().counter("disputes_force_sync_total").increment();
+                m_context.logger().counter("disputes_force_sync_total").increment();
             } else {
-                m_context.metrics().counter("disputes_force_sync_deduped").increment();
+                m_context.logger().counter("disputes_force_sync_deduped").increment();
             }
         }
         response = m_support.to_response(*dispute);

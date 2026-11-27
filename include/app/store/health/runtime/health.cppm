@@ -24,8 +24,8 @@ public:
     health(const core::behavior::CallContext& ctx) const
     {
         (void)ctx;
-        m_context.metrics().record_flow("health");
-        m_context.metrics().counter("health").increment();
+        m_context.logger().record_flow("health");
+        m_context.logger().counter("health").increment();
         return serde::Value{std::string{"health is good"}};
     }
 

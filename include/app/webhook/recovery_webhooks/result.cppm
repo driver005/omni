@@ -63,9 +63,8 @@ class core::behavior::Outcome<app::handlers::recovery_webhooks::WebhookResponse>
     public std::expected<app::handlers::recovery_webhooks::WebhookResponse, core::error::AppError>
 {
 public:
-    using std::expected<
-        app::handlers::recovery_webhooks::WebhookResponse,
-        core::error::AppError>::expected;
+    using std::expected<app::handlers::recovery_webhooks::WebhookResponse, core::error::AppError>::
+        expected;
 
     void handle(interfaces::io::ResponseSink& sink)
     {

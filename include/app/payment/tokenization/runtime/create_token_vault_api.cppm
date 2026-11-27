@@ -1,4 +1,5 @@
 export module app_payment:tokenization_runtime_create_token_vault_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,7 +39,7 @@ public:
     /** Port of core::tokenization::create_vault_token_core (core/tokenization.rs:34-96). */
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::GenericTokenizationResponse>
-        create_token_vault(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create_token_vault(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = CreateTokenVaultData{dto, ctx};
         // core:40 — VaultId::generate(generate_uuid_v7().to_string()).

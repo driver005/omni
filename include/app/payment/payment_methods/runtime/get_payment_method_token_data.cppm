@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_get_payment_method_token_data;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::TokenDataResponse>
-        get_payment_method_token_data(const Dto& dto, const core::behavior::CallContext& ctx) const
+    get_payment_method_token_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = GetPaymentMethodTokenDataData{dto, ctx};
         const auto& record = input.record;
@@ -49,8 +50,8 @@ public:
         );
         const std::string token =
             vault.get_reference_id().empty() ? record.get_vault_id() : vault.get_reference_id();
-        m_context.metrics().record_flow("get_payment_method_token_data");
-        m_context.metrics().counter("PAYMENT_METHOD_GET_PAYMENT_METHOD_TOKEN_DATA").increment();
+        m_context.logger().record_flow("get_payment_method_token_data");
+        m_context.logger().counter("PAYMENT_METHOD_GET_PAYMENT_METHOD_TOKEN_DATA").increment();
         ::app::model::payment_methods::TokenDataResponse response{};
         ::app::model::payment_methods::GlobalPaymentMethodIdValue id{};
         id.set_value(input.payment_method_id);

@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_redis_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -20,7 +21,8 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
     get_revenue_recovery_redis_data(const core::behavior::CallContext& ctx) const
     {
         return m_get_revenue_recovery_redis_data.get_revenue_recovery_redis_data(ctx);

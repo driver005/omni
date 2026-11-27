@@ -5,4 +5,4 @@ export import :configs_result;
 export import :configs_runtime;
 export import :configs_handlers_v1;
 export import :configs_handlers_v2;
-export import :configs_handler;
+export import :configs_router;

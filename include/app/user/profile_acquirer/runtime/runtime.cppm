@@ -1,4 +1,5 @@
 export module app_user:profile_acquirer_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -23,15 +24,19 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::profile_acquirer::ProfileAcquirerResponse>
-        create(const ::app::dto::profile_acquirer::ProfileAcquirerCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    create(
+        const ::app::dto::profile_acquirer::ProfileAcquirerCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_create.create(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::profile_acquirer::ProfileAcquirerResponse>
-        update(const ::app::dto::profile_acquirer::ProfileAcquirerUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    update(
+        const ::app::dto::profile_acquirer::ProfileAcquirerUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_update.update(request, ctx);
     }

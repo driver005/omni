@@ -25,8 +25,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    receive_incoming_webhook(
+    [[nodiscard]] core::behavior::Outcome<WebhookAck> receive_incoming_webhook(
         const std::string& body,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -34,8 +33,7 @@ public:
         return m_receive_incoming_webhook.receive_incoming_webhook(body, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    receive_incoming_webhook_v2(
+    [[nodiscard]] core::behavior::Outcome<WebhookAck> receive_incoming_webhook_v2(
         const std::string& body,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -44,10 +42,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    receive_network_token(
-        const std::string& body,
-        const ::core::behavior::CallContext& ctx
-    ) const
+    receive_network_token(const std::string& body, const ::core::behavior::CallContext& ctx) const
     {
         return m_receive_network_token.receive_network_token(body, ctx);
     }

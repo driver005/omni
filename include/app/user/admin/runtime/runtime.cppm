@@ -62,36 +62,44 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        create_organization(const ::app::model::organization::OrganizationCreateRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_organization(
+        const ::app::model::organization::OrganizationCreateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_organization_create.create(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        update_organization(const ::app::model::organization::OrganizationUpdateRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_organization(
+        const ::app::model::organization::OrganizationUpdateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_organization_update.update(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        retrieve_organization(const ::core::behavior::CallContext& ctx) const
+    retrieve_organization(const ::core::behavior::CallContext& ctx) const
     {
         return m_organization_retrieve.retrieve(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<
         ::app::model::organization::ConvertOrganizationToPlatformResponse>
-    convert_organization_to_platform(const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    convert_organization_to_platform(
+        const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_convert_organization_to_platform.convert(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
-    create_merchant_account(const ::app::dto::admin::MerchantAccountCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_merchant_account(
+        const ::app::dto::admin::MerchantAccountCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_merchant_account_create.create(request, ctx);
     }
@@ -103,27 +111,31 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        list_merchant_accounts(const ::core::behavior::CallContext& ctx) const
+    list_merchant_accounts(const ::core::behavior::CallContext& ctx) const
     {
         return m_merchant_account_list.list(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
-    update_merchant_account(const ::app::dto::admin::MerchantAccountUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_merchant_account(
+        const ::app::dto::admin::MerchantAccountUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_update_merchant_account.update(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountDeleteResponse>
-        delete_merchant_account(const ::core::behavior::CallContext& ctx) const
+    delete_merchant_account(const ::core::behavior::CallContext& ctx) const
     {
         return m_delete_merchant_account.remove(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
-    create_connector(const ::app::dto::admin::MerchantConnectorCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_connector(
+        const ::app::dto::admin::MerchantConnectorCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_connector_create.create(request, ctx);
     }
@@ -149,14 +161,16 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
-    update_connector(const ::app::dto::admin::MerchantConnectorUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_connector(
+        const ::app::dto::admin::MerchantConnectorUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_connector_update.update(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorDeleteResponse>
-        delete_connector(const ::core::behavior::CallContext& ctx) const
+    delete_connector(const ::core::behavior::CallContext& ctx) const
     {
         return m_connector_delete.remove(ctx);
     }
@@ -186,8 +200,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
-    register_webhook(const ::app::dto::admin::WebhookDetailsRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    register_webhook(
+        const ::app::dto::admin::WebhookDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_connector_webhook_register.register_webhook(request, ctx);
     }

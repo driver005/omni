@@ -38,8 +38,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create(const CustomerCreateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    create(const CustomerCreateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_create.create(request, ctx);
     }
@@ -63,8 +62,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update(const CustomerUpdateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    update(const CustomerUpdateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_update.update(request, ctx);
     }
@@ -82,8 +80,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create_v2(const CustomerCreateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_v2(const CustomerCreateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_create.create_v2(request, ctx);
     }
@@ -113,8 +110,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update_v2(const CustomerUpdateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_v2(const CustomerUpdateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_update.update_v2(request, ctx);
     }
@@ -125,9 +121,10 @@ public:
         return m_delete.delete_customer_v2(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    migrate_global_id(const std::vector<MigrationOutcome>& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> migrate_global_id(
+        const std::vector<MigrationOutcome>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_migrate.migrate_global_id(request, ctx);
     }

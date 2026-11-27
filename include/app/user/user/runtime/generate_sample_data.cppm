@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    generate_sample_data(const ::app::model::user::SampleDataRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    generate_sample_data(
+        const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -64,8 +66,8 @@ public:
             std::to_string(count)
         );
 
-        m_context.metrics().record_flow("generate_sample_data");
-        m_context.metrics().counter("user.generate_sample_data").increment();
+        m_context.logger().record_flow("generate_sample_data");
+        m_context.logger().counter("user.generate_sample_data").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

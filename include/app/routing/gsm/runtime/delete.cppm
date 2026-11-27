@@ -69,8 +69,8 @@ public:
         response.set_code(in.get_code());
 
         m_context.events().publish("gsm.rule.deleted", m_support.audit_payload("deleted", key));
-        m_context.metrics().record_flow("GsmRuleDelete");
-        m_context.metrics().counter("GSM_RULE_DELETED").increment();
+        m_context.logger().record_flow("GsmRuleDelete");
+        m_context.logger().counter("GSM_RULE_DELETED").increment();
         return std::move(response);
     }
 

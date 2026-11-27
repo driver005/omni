@@ -37,7 +37,6 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     get_role_information(const ::core::behavior::CallContext& ctx) const
     {
-        (void)input;
         auto parents = m_support.parent_authorization_info();
         m_support.track_flow("get_role_information", "user_role.get_role_information");
         return to_document_array(parents, kParentInfoWireFields);

@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module app_payment:refunds_handlers_v2_metadata_update;
 
 import std;
@@ -8,6 +11,7 @@ import core_serde;
 import utils_openapi;
 import app_model;
 import app_context;
+import app_context_core;
 import core_error;
 import app_auth;
 import app_http;
@@ -61,16 +65,18 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundMetadataUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
-        const auto path_id = m_input_support.refund_id_from_path(req);
-        if (!path_id.has_value()) {
-            const auto error =
-                core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(sink);
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
             return;
         }
-        const auto& dto = *path_id;
+        const auto path_id = m_input_support.refund_uuid_from_path(req);
+        if (!path_id.has_value()) {
+            path_id.error().send(sink);
+            return;
+        }
+        parsed->id = *path_id;
+        parsed->refund_id = uuids::to_string(*path_id);
+        const auto& dto = *parsed;
 
         auto result = m_runtime.metadata_update(dto, m_request_support->context(req));
         result.handle(sink);

@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    list_users_internal(const ::app::model::user::ListUsersInternalRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> list_users_internal(
+        const ::app::model::user::ListUsersInternalRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -48,8 +49,8 @@ public:
         const auto limit = ctx_query(ctx).get("limit");
         (void)limit;
 
-        m_context.metrics().record_flow("list_users_internal");
-        m_context.metrics().counter("user.list_users_internal").increment();
+        m_context.logger().record_flow("list_users_internal");
+        m_context.logger().counter("user.list_users_internal").increment();
 
         using Response = ::app::model::user::ListUsersInternalResponse;
         Response response{};

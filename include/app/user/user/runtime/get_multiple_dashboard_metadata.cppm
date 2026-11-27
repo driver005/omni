@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    get_multiple_dashboard_metadata(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    get_multiple_dashboard_metadata(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -49,8 +51,8 @@ public:
         const auto merchant_id = ctx.merchant_id;
         const auto stored = m_context.repository().get_config("dashboard_metadata." + merchant_id);
 
-        m_context.metrics().record_flow("get_multiple_dashboard_metadata");
-        m_context.metrics().counter("user.get_multiple_dashboard_metadata").increment();
+        m_context.logger().record_flow("get_multiple_dashboard_metadata");
+        m_context.logger().counter("user.get_multiple_dashboard_metadata").increment();
 
         // DB-backed metadata envelope; `keys` is recorded as the projection filter.
         // Fall back to a typed data envelope when no metadata is stored or the

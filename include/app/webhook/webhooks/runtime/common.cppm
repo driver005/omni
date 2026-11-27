@@ -741,15 +741,15 @@ public:
         const std::string& merchant_id
     ) const
     {
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(counter).increment();
-        m_context.metrics().counter("WEBHOOK_INCOMING_COUNT").increment();
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(counter).increment();
+        m_context.logger().counter("WEBHOOK_INCOMING_COUNT").increment();
         // Upstream labels the counter by merchant (incoming.rs:194-200); local
         // counters have no labels, so the dimension is a keyed-hash suffix.
         const ::app::crypto::KeyedHasher hasher{std::string{"webhook-metric"}};
         const std::string merchant_tag{hasher.hash(merchant_id)};
-        m_context.metrics().counter("WEBHOOK_INCOMING_COUNT.merchant." + merchant_tag).increment();
-        m_context.metrics().record_flow(std::string{"webhook.incoming."} + merchant_tag);
+        m_context.logger().counter("WEBHOOK_INCOMING_COUNT.merchant." + merchant_tag).increment();
+        m_context.logger().record_flow(std::string{"webhook.incoming."} + merchant_tag);
     }
 
     // ---- core: incoming_webhooks_wrapper + incoming_webhooks_core ---------
@@ -758,8 +758,7 @@ public:
     // Connector decoders, 3DS/UAS/UCS plugins and business-effect handlers are
     // replaced by the local substitutes above; the control flow, error shapes,
     // source-verification policy and wire acknowledgement stay upstream-shaped.
-    [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    incoming_webhooks_wrapper(
+    [[nodiscard]] core::behavior::Outcome<WebhookAck> incoming_webhooks_wrapper(
         const std::string& body,
         const ::core::behavior::CallContext& ctx,
         bool is_relay,
@@ -861,7 +860,7 @@ public:
             source_verified = network.resolve_source_verified(connector_source_verified);
 
             if (source_verified) {
-                m_context.metrics().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
+                m_context.logger().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
             } else if (webhook_source_mandatory(account.connector_name)) {
                 // incoming_v2.rs:305-318 -> WebhookAuthenticationFailed.
                 return std::unexpected{
@@ -915,8 +914,7 @@ public:
     // Port of incoming.rs:121-158 / :863-934. Upstream NoAuth at the transport
     // layer; source verification is an exact Authorization-header comparison
     // against the network-tokenization service secret.
-    [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    network_token_incoming_webhooks_wrapper(
+    [[nodiscard]] core::behavior::Outcome<WebhookAck> network_token_incoming_webhooks_wrapper(
         const std::string& body,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -983,7 +981,7 @@ public:
             )};
         }
 
-        m_context.metrics().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
+        m_context.logger().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
         record_metrics(flow, counter, merchant_id);
 
         ObjectRef ref;

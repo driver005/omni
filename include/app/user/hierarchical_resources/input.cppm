@@ -9,6 +9,7 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import app_crypto;
 import core_cache;
 import core_error;
 import app_auth;
@@ -134,6 +135,11 @@ public:
         return raw;
     }
 
+    [[nodiscard]] std::string base64_encode(std::string_view input) const
+    {
+        return ::app::crypto::Base64Url{}.encode(std::string{input});
+    }
+
     [[nodiscard]] bool valid_resource_type(std::string_view value) const
     {
         // common_enums::ResourceType has exactly one snake_case variant.
@@ -191,20 +197,33 @@ private:
         return true;
     }
 
-    /** @brief Request snapshot shared by every hierarchical_resources runtime method. */
+    ::app::context::AppContext& m_context;
+};
+
+/** @brief Request snapshot shared by every hierarchical_resources runtime method. */
 [[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
 {
     ::core::behavior::CallContext ctx{};
     const auto auth = ::app::auth::AuthContextBuilder{}(req);
     ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
-    if (ctx.merchant_id.empty()) ctx.merchant_id = auth.merchant_id();
+    if (ctx.merchant_id.empty()) {
+        ctx.merchant_id = auth.merchant_id();
+    }
     ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
-    if (ctx.org_id.empty()) ctx.org_id = auth.org_id();
+    if (ctx.org_id.empty()) {
+        ctx.org_id = auth.org_id();
+    }
     ctx.profile_id = auth.profile_id();
-    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) ctx.connected_merchant_id = std::string{*c};
-    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) ctx.client_secret = std::string{*s};
+    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) {
+        ctx.connected_merchant_id = std::string{*c};
+    }
+    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) {
+        ctx.client_secret = std::string{*s};
+    }
     const auto segments = ::app::http::RequestPath{}(req);
-    for (std::size_t i{0}; i < segments.count(); ++i) ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    for (std::size_t i{0}; i < segments.count(); ++i) {
+        ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    }
     const auto raw = req.get_path();
     if (const auto q = raw.find('?'); q != std::string_view::npos) {
         const std::string_view tail = raw.substr(q + 1);
@@ -217,29 +236,45 @@ private:
             if (!pair.empty()) {
                 ctx.query.insert_or_assign(
                     std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)},
-                    std::string{eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)}
+                    std::string{
+                        eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)
+                    }
                 );
             }
-            if (amp == std::string_view::npos) break;
+            if (amp == std::string_view::npos) {
+                break;
+            }
             start = amp + 1;
         }
     }
     constexpr std::string_view kHeaders[] = {
-        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
-        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+        "x-merchant-id",
+        "x-org-id",
+        "x-organization-id",
+        "x-profile-id",
+        "authorization",
+        "x-client-secret",
+        "x-api-key",
+        "x-connected-merchant-id",
+        "x-forwarded-for"
     };
     for (const auto name: kHeaders) {
         const auto value = req.find_header(name);
-        if (!value.empty()) ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+        if (!value.empty()) {
+            ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+        }
     }
-    for (const auto& [key, value]: auth.claims()) ctx.claims.insert_or_assign(key, value);
+    for (const auto& [key, value]: auth.claims()) {
+        ctx.claims.insert_or_assign(key, value);
+    }
     ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
     ctx.claims.insert_or_assign("org_id", ctx.org_id);
     ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
     return ctx;
 }
 
-[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
+[[nodiscard]] inline std::string
+ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
     const auto it = ctx.claims.find(std::string{key});
     return it == ctx.claims.end() ? std::string{} : it->second;
@@ -288,8 +323,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] ::core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         return make_call_context(req);
     }

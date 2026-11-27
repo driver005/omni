@@ -56,8 +56,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("list_user_authentication_methods");
-        m_context.metrics().counter("user.list_user_authentication_methods").increment();
+        m_context.logger().record_flow("list_user_authentication_methods");
+        m_context.logger().counter("user.list_user_authentication_methods").increment();
 
         using Response = std::vector<::app::model::user::UserAuthenticationMethodResponse>;
         Response response{};

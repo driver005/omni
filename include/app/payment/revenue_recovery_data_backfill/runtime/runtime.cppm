@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_data_backfill_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -27,29 +28,33 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
-        backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
+    backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_backfill.backfill(dto, ctx);
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse>
-        retry_stats_migration(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse>
+    retry_stats_migration(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retry_stats_migration.retry_stats_migration(dto, ctx);
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse>
-        update_redis_data(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse>
+    update_redis_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_update_redis_data.update_redis_data(dto, ctx);
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
-        unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
+    unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_unlock_status.unlock_status(dto, ctx);
     }

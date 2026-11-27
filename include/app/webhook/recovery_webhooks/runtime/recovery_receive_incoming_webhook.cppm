@@ -273,8 +273,7 @@ public:
     }
 
     // routes/recovery_webhooks.rs:11-49 -> incoming_v2.rs:52-426.
-    [[nodiscard]] core::behavior::Outcome<WebhookResponse>
-    receive_incoming_webhook(
+    [[nodiscard]] core::behavior::Outcome<WebhookResponse> receive_incoming_webhook(
         const IncomingWebhookRequestDetails& request,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -398,8 +397,7 @@ private:
         return found ? &found.value().get() : nullptr;
     }
 
-    [[nodiscard]] static std::string
-    query_param(std::string_view query, std::string_view key)
+    [[nodiscard]] static std::string query_param(std::string_view query, std::string_view key)
     {
         const std::string prefix{std::string{key} + "="};
         const auto found = query.find(prefix);
@@ -821,7 +819,7 @@ private:
     [[nodiscard]] CoreResult incoming_webhooks_core(RequestScope& scope) const
     {
         CoreResult result{};
-        m_context.metrics().counter("WEBHOOK_INCOMING_COUNT").increment();
+        m_context.logger().counter("WEBHOOK_INCOMING_COUNT").increment();
         record_flow(scope, "IncomingWebhookReceive");
 
         const FetchedMca fetched = fetch_mca_and_connector(scope);
@@ -881,7 +879,7 @@ private:
             source_verified = network_verification || source_verified;
             scope.source_verified = source_verified;
             if (source_verified) {
-                m_context.metrics().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
+                m_context.logger().counter("WEBHOOK_SOURCE_VERIFIED_COUNT").increment();
             }
             if (!source_verified) {
                 result.error = upstream_error(
@@ -905,7 +903,7 @@ private:
                 result.tracker = WebhookResponseTracker{};
             }
         } else {
-            m_context.metrics().counter("WEBHOOK_INCOMING_FILTERED_COUNT").increment();
+            m_context.logger().counter("WEBHOOK_INCOMING_FILTERED_COUNT").increment();
             record_flow(scope, "WebhookRecoveryEventFiltered");
             result.tracker = WebhookResponseTracker{};
         }
@@ -1843,11 +1841,11 @@ private:
 
     void record_flow(const RequestScope& scope, std::string_view name) const
     {
-        m_context.metrics().record_flow(name);
+        m_context.logger().record_flow(name);
         const std::string dimensioned =
             std::string{name} + ":merchant:" + scope.ids.merchant_id + ":" + scope.connector_key;
-        m_context.metrics().record_flow(dimensioned);
-        m_context.metrics().counter(dimensioned).increment();
+        m_context.logger().record_flow(dimensioned);
+        m_context.logger().counter(dimensioned).increment();
     }
 
     void record_event_metadata(
@@ -1862,7 +1860,7 @@ private:
             metadata.refund_id,
             metadata.webhook_tracker_data
         );
-        m_context.metrics().record_flow(event);
+        m_context.logger().record_flow(event);
         (void)scope;
     }
 

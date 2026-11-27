@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_save_payment_method_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
-        save_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    save_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = SavePaymentMethodApiData{dto, ctx};
         auto repository = m_context.repository();
@@ -90,8 +91,8 @@ public:
         record->set_status("active");
         repository.update_payment_method(*record);
         m_support.publish_pm_event("payment_method.save", input.payment_method_id);
-        m_context.metrics().record_flow("save_payment_method_api");
-        m_context.metrics().counter("PAYMENT_METHOD_SAVE_PAYMENT_METHOD_API").increment();
+        m_context.logger().record_flow("save_payment_method_api");
+        m_context.logger().counter("PAYMENT_METHOD_SAVE_PAYMENT_METHOD_API").increment();
         return ::app::model::payment_methods::PaymentMethodResponse{
             m_support.response_from_record(*record)
         };

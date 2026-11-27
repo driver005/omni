@@ -67,8 +67,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payment_filters");
-        m_context.metrics().counter("payments.get_payment_filters").increment();
+        m_context.logger().record_flow("payments.get_payment_filters");
+        m_context.logger().counter("payments.get_payment_filters").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.get_payment_filters(dto, m_request_support->context(req)).handle(sink);
@@ -90,8 +90,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payment_filters_profile");
-        m_context.metrics().counter("payments.get_payment_filters_profile").increment();
+        m_context.logger().record_flow("payments.get_payment_filters_profile");
+        m_context.logger().counter("payments.get_payment_filters_profile").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.get_payment_filters_profile(dto, m_request_support->context(req)).handle(sink);
@@ -113,8 +113,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payments_aggregates");
-        m_context.metrics().counter("payments.get_payments_aggregates").increment();
+        m_context.logger().record_flow("payments.get_payments_aggregates");
+        m_context.logger().counter("payments.get_payments_aggregates").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.get_payments_aggregates(dto, m_request_support->context(req)).handle(sink);
@@ -136,11 +136,12 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payments_aggregates_profile");
-        m_context.metrics().counter("payments.get_payments_aggregates_profile").increment();
+        m_context.logger().record_flow("payments.get_payments_aggregates_profile");
+        m_context.logger().counter("payments.get_payments_aggregates_profile").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
-        m_runtime.get_payments_aggregates_profile(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.get_payments_aggregates_profile(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #1
@@ -157,7 +158,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_get_payment_filters(req, res, std::move(send));
                     }
@@ -181,7 +182,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_payment_filters_profile(req, res, std::move(send));
                         }
@@ -205,7 +206,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_get_payments_aggregates(req, res, std::move(send));
                     }
@@ -229,7 +230,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_payments_aggregates_profile(req, res, std::move(send));
                         }

@@ -1,13 +1,19 @@
+module;
+#include <rfl/to_generic.hpp>
+#include <uuid.h>
+
 export module app_payment:refunds_runtime_common;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import app_context_core;
 import core_cache;
 import core_error;
 import app_auth;
@@ -25,6 +31,44 @@ import :refunds_input;
 import :refunds_result;
 
 export namespace app::handlers::refunds {
+
+/** @brief Ordered dynamic-document builders for the retired aggregate wire shapes. */
+[[nodiscard]] inline serde::Value wire_text(std::string value)
+{
+    return serde::Value{std::move(value)};
+}
+
+[[nodiscard]] inline serde::Value wire_number(std::int64_t value)
+{
+    return serde::Value{rfl::to_generic(value)};
+}
+
+[[nodiscard]] inline serde::Value
+wire_list(std::vector<serde::Value> values, std::string_view wrapper_key = {})
+{
+    serde::Value::Array array{};
+    array.reserve(values.size());
+    for (auto& value: values) {
+        if (wrapper_key.empty()) {
+            array.emplace_back(std::move(value));
+            continue;
+        }
+        serde::Value::Object object{};
+        object.insert(std::string{wrapper_key}, std::move(value));
+        array.emplace_back(serde::Value{std::move(object)});
+    }
+    return serde::Value{std::move(array)};
+}
+
+[[nodiscard]] inline serde::Value
+wire_document(std::vector<std::pair<std::string, serde::Value>> fields)
+{
+    serde::Value::Object object{};
+    for (auto& [name, value]: fields) {
+        object.insert(std::move(name), std::move(value));
+    }
+    return serde::Value{std::move(object)};
+}
 
 // Upstream consts.rs values used by the error/status state machine.
 inline constexpr std::string_view kUnifiedErrorCode{"UE_9000"};
@@ -142,11 +186,11 @@ public:
         std::int64_t refund_amount,
         std::string_view creds_identifier,
         std::optional<std::string> requested_refund_id,
-        std::optional<::app::model::refunds::MerchantIdValue> req_merchant_id,
+        std::optional<std::string> req_merchant_id,
         std::optional<std::string> reason,
         std::optional<std::string> metadata,
         std::optional<std::string> split_refunds,
-        std::optional<::app::model::refunds::RefundType> refund_type,
+        std::optional<std::string> refund_type,
         std::optional<std::string> feature_metadata,
         std::optional<bool> all_keys_required,
         std::optional<std::string> payment_method_data,
@@ -154,9 +198,7 @@ public:
     ) const
     {
         // core/refunds.rs:1696-1705 — scheduled refund cannot carry payment method data.
-        if (refund_type.value_or(::app::model::refunds::RefundType::Instant) ==
-                ::app::model::refunds::RefundType::Scheduled &&
-            payment_method_data.has_value()) {
+        if (refund_type.value_or("Instant") == "Scheduled" && payment_method_data.has_value()) {
             return std::unexpected(
                 err(Kind::INVALID_REQUEST,
                     "payment_method_data is not supported for scheduled refunds")
@@ -168,15 +210,15 @@ public:
 
         // core/refunds.rs:1711-1722 — merchant_id in request must equal processor merchant.
         const std::string processor_merchant = actor_merchant(facts);
-        if (req_merchant_id && !req_merchant_id->get_value().empty() &&
-            req_merchant_id->get_value() != processor_merchant) {
+        if (req_merchant_id && !req_merchant_id->empty() &&
+            *req_merchant_id != processor_merchant) {
             return std::unexpected(err(Kind::INVALID_REQUEST, "invalid merchant_id in request"));
         }
         // core/refunds.rs:1724-1740, :1870-1887 — duplicate refund request.
         if (find_refund_record(refund_id)) {
             return std::unexpected(err(Kind::DUPLICATE_REQUEST, "DuplicateRefundRequest"));
         }
-        const auto all_refunds = m_context.repository().find_refunds_by_payment_id(payment_id);
+        const auto all_refunds = m_context.refunds().find_refunds_by_payment_id(payment_id);
         // core/refunds.rs:1744-1751 — validate_payment_order_age.
         if (const auto e = validate_payment_order_age(intent)) {
             return std::unexpected(*e);
@@ -196,18 +238,19 @@ public:
         }
 
         Record record{};
-        record.set_refund_id(refund_id);
-        record.set_payment_id(std::string{payment_id});
-        record.set_merchant_id(processor_merchant);
-        record.set_amount(refund_amount);
-        record.set_currency(
-            attempt.get_currency().empty() ? intent.get_currency() : attempt.get_currency()
-        );
-        record.set_status("Pending");
+        record.id = uuids::uuid::from_string(m_context.ids().uuid_v4()).value_or(uuids::uuid{});
+        record.refund_id = refund_id;
+        record.payment_id =
+            uuids::uuid::from_string(std::string{payment_id}).value_or(uuids::uuid{});
+        record.merchant_id = processor_merchant;
+        record.amount = refund_amount;
+        record.currency =
+            attempt.get_currency().empty() ? intent.get_currency() : attempt.get_currency();
+        record.status = "Pending";
         if (reason) {
-            record.set_reason(*reason);
+            record.reason = *reason;
         }
-        record = m_context.repository().save_refund(record);
+        record = m_context.refunds().save_refund(record);
 
         RefundExt ext{};
         ext.internal_reference_id = m_context.ids().payment_id("refid_");
@@ -217,10 +260,7 @@ public:
         ext.profile_id =
             ext_of(intent).profile_id.empty() ? actor_profile(facts) : ext_of(intent).profile_id;
         ext.merchant_connector_id = attempt.get_connector();
-        ext.refund_type = refund_type.value_or(::app::model::refunds::RefundType::Instant) ==
-                                  ::app::model::refunds::RefundType::Scheduled
-                              ? "Scheduled"
-                              : "Instant";
+        ext.refund_type = refund_type.value_or("Instant") == "Scheduled" ? "Scheduled" : "Instant";
         ext.description = reason.value_or(std::string{});
         if (metadata) {
             ext.metadata = *metadata;
@@ -267,18 +307,18 @@ public:
     ) const
     {
         const auto routed = routed_connector(record);
-        m_context.metrics().counter("REFUND_COUNT").increment();
+        m_context.logger().counter("REFUND_COUNT").increment();
 
         ::app::connector::ConnectorRequest request{};
         request.set_operation("refund");
-        request.set_merchant_id(record.get_merchant_id());
-        request.set_amount(record.get_amount());
-        request.set_currency(record.get_currency());
-        request.set_resource_id(record.get_payment_id());
+        request.set_merchant_id(record.merchant_id);
+        request.set_amount(record.amount);
+        request.set_currency(record.currency);
+        request.set_resource_id(uuids::to_string(record.payment_id));
         std::string raw = std::format(
             "{{\"flow\":\"refund\",\"refund_id\":\"{}\",\"connector\":\"{}\",\"all_keys_required\":"
             "{}}}",
-            record.get_refund_id(),
+            record.refund_id,
             routed,
             all_keys_required.value_or(false) ? "true" : "false"
         );
@@ -292,24 +332,20 @@ public:
 
         auto connector = m_context.connector_router().select_for(request);
         if (!connector) {
-            connector = m_context.connector_router().select(record.get_merchant_id());
+            connector = m_context.connector_router().select(record.merchant_id);
         }
         if (!connector) {
-            m_context.metrics().record_flow("refund.execute.no_connector");
-            m_context.metrics().counter("refunds_execute_no_connector").increment();
+            m_context.logger().record_flow("refund.execute.no_connector");
+            m_context.logger().counter("refunds_execute_no_connector").increment();
             return {};
         }
-        record.set_connector(std::string{connector->name()});
+        record.connector = std::string{connector->name()};
         const std::string name{connector->name()};
         apply_gateway_decision(name, creds_identifier, /*flow=*/"refund");
 
         const auto tracker = m_context.process_trackers().schedule(
             std::string{"refund_refund"},
-            std::format(
-                "{{\"refund_id\":\"{}\",\"connector\":\"{}\"}}",
-                record.get_refund_id(),
-                name
-            ),
+            std::format("{{\"refund_id\":\"{}\",\"connector\":\"{}\"}}", record.refund_id, name),
             "0"
         );
         const auto response = connector->refund(request);
@@ -317,7 +353,7 @@ public:
             tracker,
             build_refund_update_for_response(response, /*sync=*/false).status.value_or("Pending")
         );
-        m_context.metrics().record_flow("refund.execute.refund");
+        m_context.logger().record_flow("refund.execute.refund");
         return build_refund_update_for_response(response, /*sync=*/false);
     }
 
@@ -365,7 +401,7 @@ public:
                 response.get_reference_id().empty()
                     ? std::nullopt
                     : std::optional<std::string>{response.get_reference_id()};
-            m_context.metrics().counter("INTEGRITY_CHECK_FAILED").increment();
+            m_context.logger().counter("INTEGRITY_CHECK_FAILED").increment();
             return update;
         }
 
@@ -376,7 +412,7 @@ public:
                                          : std::optional<std::string>{response.get_reference_id()};
         update.sent_to_gateway = true;
         if (status_from_text(response.get_status()) == Status::Succeeded) {
-            m_context.metrics().counter("SUCCESSFUL_REFUND").increment();
+            m_context.logger().counter("SUCCESSFUL_REFUND").increment();
         }
         return update;
     }
@@ -385,7 +421,7 @@ public:
     void apply_refund_update(Record& record, RefundExt& ext, const RefundUpdate& update) const
     {
         if (update.status) {
-            record.set_status(*update.status);
+            record.status = *update.status;
         }
         if (update.connector_refund_id) {
             ext.connector_refund_id = *update.connector_refund_id;
@@ -411,18 +447,18 @@ public:
         if (update.sent_to_gateway) {
             ext.sent_to_gateway = true;
         }
-        m_context.repository().update_refund(record);
-        save_ext(record.get_refund_id(), ext);
+        m_context.refunds().update_refund(record);
+        save_ext(record.refund_id, ext);
 
         trigger_refund_outgoing_webhook(record, ext);
-        if (status_from_text(record.get_status()) == Status::Succeeded) {
+        if (status_from_text(record.status) == Status::Succeeded) {
             const std::string payload = std::format(
                 "{{\"refund_id\":\"{}\",\"payment_id\":\"{}\"}}",
-                record.get_refund_id(),
-                record.get_payment_id()
+                record.refund_id,
+                uuids::to_string(record.payment_id)
             );
             (void)m_context.events().publish("offer_engine.refund_notification", payload);
-            m_context.metrics().counter("refunds_offer_engine_notified").increment();
+            m_context.logger().counter("refunds_offer_engine_notified").increment();
         }
     }
 
@@ -432,10 +468,10 @@ public:
 
     std::expected<RetrieveOutcome, Error> refund_retrieve_core_with_refund_id(
         const RefundRequestFacts& facts,
-        const ::app::model::refunds::RefundsRetrieveRequest& request
+        const ::app::model::Refund& request
     ) const
     {
-        const auto found = find_refund_record(request.get_refund_id());
+        const auto found = find_refund_record(request.refund_id);
         if (!found) {
             return std::unexpected(err(Kind::NOT_FOUND, "RefundNotFound"));
         }
@@ -444,30 +480,30 @@ public:
 
     std::expected<RetrieveOutcome, Error> refund_retrieve_core(
         const RefundRequestFacts& facts,
-        const ::app::model::refunds::RefundsRetrieveRequest& request,
+        const ::app::model::Refund& request,
         const Record& refund
     ) const
     {
         // core/refunds.rs:1112 — validate_profile_id_from_auth_layer.
-        auto ext = load_ext(refund.get_refund_id());
+        auto ext = load_ext(refund.refund_id);
         if (const auto e = validate_profile_id_from_auth_layer(facts.ctx_profile_id, ext)) {
             return std::unexpected(*e);
         }
-        const auto intent = find_payment_intent(refund.get_payment_id());
+        const auto intent = find_payment_intent(uuids::to_string(refund.payment_id));
         if (!intent) {
             return std::unexpected(err(Kind::NOT_FOUND, "PaymentNotFound"));
         }
-        auto attempt = find_attempt_by_id(refund.get_payment_id(), ext.attempt_id);
+        auto attempt = find_attempt_by_id(uuids::to_string(refund.payment_id), ext.attempt_id);
         if (!attempt) {
-            attempt = find_last_successful_attempt(refund.get_payment_id());
+            attempt = find_last_successful_attempt(uuids::to_string(refund.payment_id));
         }
         if (!attempt) {
             return std::unexpected(err(Kind::INTERNAL, "InternalServerError"));
         }
 
         std::string creds_identifier{};
-        if (request.get_merchant_connector_details()) {
-            const auto value = request.get_merchant_connector_details()->get_value();
+        if (!request.merchant_connector_details.empty()) {
+            const auto& value = request.merchant_connector_details;
             creds_identifier = extract_creds_identifier(value);
             insert_merchant_connector_creds_to_config(value);
         }
@@ -477,8 +513,8 @@ public:
         std::optional<std::string> raw{};
         if (should_call_refund(
                 record,
-                request.get_force_sync().value_or(false),
-                request.get_all_keys_required().value_or(false)
+                request.force_sync.value_or(false),
+                request.all_keys_required.value_or(false)
             )) {
             auto synced = sync_refund_with_gateway(
                 record,
@@ -487,7 +523,7 @@ public:
                 *attempt,
                 creds_identifier,
                 ext.split_refunds,
-                request.get_all_keys_required()
+                request.all_keys_required
             );
             if (!synced) {
                 return std::unexpected(synced.error());
@@ -502,9 +538,8 @@ public:
     /** @brief core/refunds.rs:1199-1212 — exact force_sync/all_keys gating. */
     bool should_call_refund(const Record& record, bool force_sync, bool all_keys_required) const
     {
-        const bool terminal = record.get_status() == "Success" ||
-                              record.get_status() == "Failure" ||
-                              record.get_status() == "succeeded" || record.get_status() == "failed";
+        const bool terminal = record.status == "Success" || record.status == "Failure" ||
+                              record.status == "succeeded" || record.status == "failed";
         return all_keys_required || (force_sync && !terminal);
     }
 
@@ -524,14 +559,14 @@ public:
         const auto routed = routed_connector(record);
         ::app::connector::ConnectorRequest request{};
         request.set_operation("sync");
-        request.set_merchant_id(record.get_merchant_id());
-        request.set_amount(record.get_amount());
-        request.set_currency(record.get_currency());
-        request.set_resource_id(record.get_payment_id());
+        request.set_merchant_id(record.merchant_id);
+        request.set_amount(record.amount);
+        request.set_currency(record.currency);
+        request.set_resource_id(uuids::to_string(record.payment_id));
         std::string raw = std::format(
             "{{\"flow\":\"RSync\",\"refund_id\":\"{}\",\"connector\":\"{}\",\"all_keys_required\":{"
             "}}}",
-            record.get_refund_id(),
+            record.refund_id,
             routed,
             all_keys_required.value_or(false) ? "true" : "false"
         );
@@ -545,7 +580,7 @@ public:
 
         auto connector = m_context.connector_router().select_for(request);
         if (!connector) {
-            connector = m_context.connector_router().select(record.get_merchant_id());
+            connector = m_context.connector_router().select(record.merchant_id);
         }
         if (!connector) {
             return std::unexpected(err(Kind::INTERNAL, "Failed to get the connector"));
@@ -555,17 +590,14 @@ public:
             std::string{"refund_sync"},
             std::format(
                 "{{\"refund_id\":\"{}\",\"connector\":\"{}\"}}",
-                record.get_refund_id(),
+                record.refund_id,
                 connector->name()
             ),
             "0"
         );
         const auto response = connector->sync(request);
         const auto update = build_refund_update_for_response(response, /*sync=*/true);
-        m_context.process_trackers().mark_terminal(
-            tracker,
-            update.status.value_or(record.get_status())
-        );
+        m_context.process_trackers().mark_terminal(tracker, update.status.value_or(record.status));
         apply_refund_update(record, ext, update);
         if (!response.get_raw_json().empty()) {
             ext.raw_connector_response = response.get_raw_json();
@@ -582,156 +614,150 @@ public:
     // CORE UPDATE / REVERSE / MANUAL / METADATA.
     // =================================================================================
 
-    std::expected<Record, Error>
-    refund_update_core(const ::app::model::refunds::RefundUpdateRequest& req) const
+    std::expected<Record, Error> refund_update_core(const ::app::model::Refund& req) const
     {
-        const auto found = find_refund_record(req.get_refund_id());
+        const auto found = find_refund_record(req.refund_id);
         if (!found) {
             return std::unexpected(err(Kind::NOT_FOUND, "RefundNotFound"));
         }
         Record record = *found;
-        auto ext = load_ext(record.get_refund_id());
-        if (req.get_reason()) {
-            record.set_reason(*req.get_reason());
-            ext.description = *req.get_reason();
+        auto ext = load_ext(record.refund_id);
+        if (!req.reason.empty()) {
+            record.reason = req.reason;
+            ext.description = req.reason;
         }
-        if (req.get_metadata()) {
-            ext.metadata = req.get_metadata()->get_value();
+        if (!req.metadata.empty()) {
+            ext.metadata = req.metadata;
         }
-        m_context.repository().update_refund(record);
-        save_ext(record.get_refund_id(), ext);
+        m_context.refunds().update_refund(record);
+        save_ext(record.refund_id, ext);
         return record;
     }
 
-    std::expected<Record, Error>
-    refund_reverse_core(const ::app::model::refunds::RefundReverseRequest& payload) const
+    std::expected<Record, Error> refund_reverse_core(const ::app::model::Refund& payload) const
     {
-        const auto found = find_refund_record(payload.get_refund_id());
+        const auto found = find_refund_record(payload.refund_id);
         if (!found) {
             return std::unexpected(err(Kind::NOT_FOUND, "RefundNotFound"));
         }
         Record record = *found;
-        if (status_from_text(record.get_status()) != Status::Succeeded) {
+        if (status_from_text(record.status) != Status::Succeeded) {
             return std::unexpected(
                 err(Kind::PRECONDITION_FAILED,
                     "refund reverse is only supported for successful refunds (refund_status)")
             );
         }
-        const auto intent = find_payment_intent(record.get_payment_id());
+        const auto intent = find_payment_intent(uuids::to_string(record.payment_id));
         if (!intent) {
             return std::unexpected(err(Kind::NOT_FOUND, "PaymentNotFound"));
         }
-        const auto attempt = find_last_successful_attempt(record.get_payment_id());
+        const auto attempt = find_last_successful_attempt(uuids::to_string(record.payment_id));
         if (!attempt) {
             return std::unexpected(err(Kind::NOT_FOUND, "SuccessfulPaymentNotFound"));
         }
         (void)intent;
         (void)attempt;
-        auto ext = load_ext(record.get_refund_id());
+        auto ext = load_ext(record.refund_id);
 
         ::app::connector::ConnectorRequest request{};
         request.set_operation("cancel");
-        request.set_merchant_id(record.get_merchant_id());
-        request.set_amount(record.get_amount());
-        request.set_currency(record.get_currency());
-        request.set_resource_id(record.get_payment_id());
+        request.set_merchant_id(record.merchant_id);
+        request.set_amount(record.amount);
+        request.set_currency(record.currency);
+        request.set_resource_id(uuids::to_string(record.payment_id));
         request.set_raw_payload(
             std::format(
                 "{{\"flow\":\"void_post_refund\",\"refund_id\":\"{}\",\"reason\":\"{}\"}}",
-                record.get_refund_id(),
-                payload.get_cancellation_reason().value_or(std::string{})
+                record.refund_id,
+                payload.cancellation_reason
             )
         );
 
         apply_gateway_decision(
-            record.get_connector(),
+            record.connector,
             ext.merchant_connector_id,
             /*flow=*/"reverse"
         );
 
-        auto connector = m_context.connector_router().select(record.get_merchant_id());
+        auto connector = m_context.connector_router().select(record.merchant_id);
         if (!connector) {
             return std::unexpected(err(Kind::INTERNAL, "Failed to get the connector"));
         }
         const auto response = connector->cancel(request);
 
         ext.metadata = build_void_post_refund_metadata(ext.metadata, response);
-        if (payload.get_cancellation_reason()) {
-            record.set_reason(*payload.get_cancellation_reason());
+        if (!payload.cancellation_reason.empty()) {
+            record.reason = payload.cancellation_reason;
         }
 
         if (const auto failure = parse_connector_error(response)) {
             ext.error_code = failure->code;
             ext.error_message = failure->message;
-            m_context.repository().update_refund(record);
-            save_ext(record.get_refund_id(), ext);
+            m_context.refunds().update_refund(record);
+            save_ext(record.refund_id, ext);
             return std::unexpected(err(Kind::CONNECTOR_ERROR, failure->message));
         }
         if (!response.get_reference_id().empty()) {
             ext.connector_refund_id = response.get_reference_id();
         }
-        m_context.repository().update_refund(record);
-        save_ext(record.get_refund_id(), ext);
+        m_context.refunds().update_refund(record);
+        save_ext(record.refund_id, ext);
         return record;
     }
 
     /** @brief core/refunds_v2.rs:662-698 — metadata-only state update. */
-    std::expected<Record, Error> refund_metadata_update_core(
-        std::string_view refund_id,
-        const ::app::model::refunds::RefundMetadataUpdateRequest& payload
-    ) const
+    std::expected<Record, Error>
+    refund_metadata_update_core(const ::app::model::Refund& payload) const
     {
-        const auto found = find_refund_record(refund_id);
+        const auto found = find_refund_record(payload.refund_id);
         if (!found) {
             return std::unexpected(err(Kind::NOT_FOUND, "RefundNotFound"));
         }
         Record record = *found;
-        auto ext = load_ext(record.get_refund_id());
-        if (payload.get_reason()) {
-            record.set_reason(*payload.get_reason());
-            ext.description = *payload.get_reason();
+        auto ext = load_ext(record.refund_id);
+        if (!payload.reason.empty()) {
+            record.reason = payload.reason;
+            ext.description = payload.reason;
         }
-        if (payload.get_metadata()) {
-            ext.metadata = payload.get_metadata()->get_value();
+        if (!payload.metadata.empty()) {
+            ext.metadata = payload.metadata;
         }
-        m_context.repository().update_refund(record);
-        save_ext(record.get_refund_id(), ext);
+        m_context.refunds().update_refund(record);
+        save_ext(record.refund_id, ext);
         return record;
     }
 
     /** @brief core/refunds.rs:2223-2278 — admin ManualUpdate (SetOrUnset semantics). */
-    std::optional<Error>
-    refund_manual_update(const ::app::model::refunds::RefundManualUpdateRequest& req) const
+    std::optional<Error> refund_manual_update(const ::app::model::Refund& req) const
     {
-        const std::string merchant = req.get_merchant_id().get_value().empty()
-                                         ? actor_merchant_hint()
-                                         : req.get_merchant_id().get_value();
+        const std::string merchant =
+            req.merchant_id.empty() ? actor_merchant_hint() : req.merchant_id;
         const auto account = m_context.repository().find_merchant_account_by_string(merchant);
         if (!account) {
             return err(Kind::NOT_FOUND, "MerchantAccountNotFound");
         }
-        const auto found = find_refund_record(req.get_refund_id());
+        const auto found = find_refund_record(req.refund_id);
         if (!found) {
             return err(Kind::NOT_FOUND, "RefundNotFound");
         }
         Record record = *found;
-        auto ext = load_ext(record.get_refund_id());
-        if (req.get_connector_refund_id()) {
-            ext.connector_refund_id = *req.get_connector_refund_id();
+        auto ext = load_ext(record.refund_id);
+        if (!req.connector_refund_id.empty()) {
+            ext.connector_refund_id = req.connector_refund_id;
         }
-        if (req.get_status()) {
-            record.set_status(std::string{status_to_text(*req.get_status())});
+        if (!req.status.empty()) {
+            record.status = req.status;
         }
-        if (req.get_error_code()) {
-            const auto& code = *req.get_error_code();
+        if (!req.error_code.empty()) {
+            const auto& code = req.error_code;
             ext.error_code = (code == "Unset") ? std::string{} : code;
         }
-        if (req.get_error_message()) {
-            const auto& msg = *req.get_error_message();
+        if (!req.error_message.empty()) {
+            const auto& msg = req.error_message;
             ext.error_message = (msg == "Unset") ? std::string{} : msg;
         }
-        m_context.repository().update_refund(record);
-        save_ext(record.get_refund_id(), ext);
+        m_context.refunds().update_refund(record);
+        save_ext(record.refund_id, ext);
         return std::nullopt;
     }
 
@@ -739,60 +765,48 @@ public:
     // LIST / FILTER / AGGREGATE — core/refunds.rs:1953-2353.
     // =================================================================================
 
-    std::expected<::app::model::refunds::RefundListResponse, Error> refund_list(
+    std::expected<serde::Value, Error> refund_list(
         const RefundRequestFacts& facts,
-        const ::app::model::refunds::RefundListRequest& payload,
+        const ::app::model::Refund& payload,
         bool profile_scoped
     ) const
     {
         const auto limit = validate_refund_list(
-            payload.get_limit()
-                ? std::optional<std::int64_t>{parse_i64(payload.get_limit()->get_value())}
-                : std::nullopt
+            payload.limit ? std::optional<std::int64_t>{parse_i64(*payload.limit)} : std::nullopt
         );
         if (!limit) {
             return std::unexpected(
                 err(Kind::INVALID_REQUEST, "limit should be in between 1 and 100")
             );
         }
-        const std::size_t offset = parse_usize(payload.get_offset().get_value());
+        const std::size_t offset = parse_usize(payload.offset.value_or(std::string{}));
 
         RefundFilter filter{};
-        if (payload.get_payment_id()) {
-            filter.payment_id = payload.get_payment_id()->get_value();
+        if (payload.payment_id != uuids::uuid{}) {
+            filter.payment_id = uuids::to_string(payload.payment_id);
         }
-        if (payload.get_refund_id()) {
-            filter.refund_id = *payload.get_refund_id();
+        if (!payload.refund_id.empty()) {
+            filter.refund_id = payload.refund_id;
         }
-        if (payload.get_connector() && !payload.get_connector()->empty()) {
-            filter.connector = payload.get_connector()->front();
+        if (!payload.connector.empty()) {
+            filter.connector = payload.connector;
         }
-        if (payload.get_currency() && !payload.get_currency()->empty()) {
-            filter.currency = payload.get_currency()->front().get_value();
+        if (!payload.currency.empty()) {
+            filter.currency = payload.currency;
         }
-        if (payload.get_refund_status() && !payload.get_refund_status()->empty()) {
-            filter.status = payload.get_refund_status()->front().get_value();
+        if (payload.refund_status && !payload.refund_status->empty()) {
+            filter.status = *payload.refund_status;
         }
 
         const auto all = merchant_records(facts, profile_scoped);
         const auto matched = apply_refund_filter(all, filter);
         const auto paged = paginate(matched, *limit, offset);
-        ::app::model::refunds::RefundListResponse response{};
-        std::vector<Response> data{};
-        data.reserve(paged.size());
-        for (const auto& record: paged) {
-            data.push_back(to_refund_response(record));
-        }
-        response.set_count(data.size());
-        response.set_total_count(static_cast<std::int64_t>(matched.size()));
-        response.set_data(std::move(data));
-        return response;
+        return list_document(paged, matched.size());
     }
 
-    std::expected<::app::model::refunds::PlatformRefundListResponse, Error>
-    refund_list_for_platform(
+    std::expected<serde::Value, Error> refund_list_for_platform(
         const RefundRequestFacts& facts,
-        const ::app::model::refunds::PlatformRefundListRequest& payload
+        const ::app::model::Refund& payload
     ) const
     {
         const std::string merchant = actor_merchant(facts);
@@ -802,24 +816,23 @@ public:
                     "Platform refunds list is only accessible to platform merchants")
             );
         }
-        const std::int64_t limit =
-            payload.get_limit() ? parse_i64(payload.get_limit()->get_value()) : 10;
-        const std::size_t offset = parse_usize(payload.get_offset().get_value());
+        const std::int64_t limit = payload.limit ? parse_i64(*payload.limit) : 10;
+        const std::size_t offset = parse_usize(payload.offset.value_or(std::string{}));
         RefundFilter filter{};
-        if (payload.get_payment_id()) {
-            filter.payment_id = payload.get_payment_id()->get_value();
+        if (payload.payment_id != uuids::uuid{}) {
+            filter.payment_id = uuids::to_string(payload.payment_id);
         }
-        if (payload.get_refund_id()) {
-            filter.refund_id = *payload.get_refund_id();
+        if (!payload.refund_id.empty()) {
+            filter.refund_id = payload.refund_id;
         }
-        if (payload.get_connector() && !payload.get_connector()->empty()) {
-            filter.connector = payload.get_connector()->front();
+        if (!payload.connector.empty()) {
+            filter.connector = payload.connector;
         }
-        if (payload.get_currency() && !payload.get_currency()->empty()) {
-            filter.currency = payload.get_currency()->front().get_value();
+        if (!payload.currency.empty()) {
+            filter.currency = payload.currency;
         }
-        if (payload.get_refund_status() && !payload.get_refund_status()->empty()) {
-            filter.status = payload.get_refund_status()->front().get_value();
+        if (payload.refund_status && !payload.refund_status->empty()) {
+            filter.status = *payload.refund_status;
         }
 
         std::vector<Record> records{};
@@ -828,8 +841,8 @@ public:
                 account.get_merchant_id() != merchant) {
                 continue;
             }
-            for (const auto& r: m_context.repository().list_refunds()) {
-                if (r.get_merchant_id() == account.get_merchant_id()) {
+            for (const auto& r: m_context.refunds().list_refunds()) {
+                if (r.merchant_id == account.get_merchant_id()) {
                     records.push_back(r);
                 }
             }
@@ -837,19 +850,10 @@ public:
         const auto matched = apply_refund_filter(records, filter);
         const auto paged =
             paginate(matched, limit < 1 ? 10 : static_cast<std::size_t>(limit), offset);
-        std::vector<::app::model::refunds::PlatformRefundListItem> data{};
-        data.reserve(paged.size());
-        for (const auto& r: paged) {
-            data.push_back(to_platform_item(r));
-        }
-        ::app::model::refunds::PlatformRefundListResponse response{};
-        response.set_count(data.size());
-        response.set_total_count(static_cast<std::int64_t>(matched.size()));
-        response.set_data(std::move(data));
-        return response;
+        return platform_list_document(paged, matched.size());
     }
 
-    std::expected<::app::model::refunds::PlatformRefundListFilters, Error>
+    std::expected<serde::Value, Error>
     get_platform_refund_filters(const RefundRequestFacts& facts) const
     {
         const std::string merchant = actor_merchant(facts);
@@ -859,31 +863,22 @@ public:
                     "Platform refund filters are only accessible to platform merchants")
             );
         }
-        ::app::model::refunds::PlatformRefundListFilters filters{};
-        filters.set_connector(
+        return filters_document(
             connector_filter_map(merchant, true, /*platform=*/true, facts.ctx_profile_id)
         );
-        filters.set_currency(all_currencies());
-        filters.set_refund_status(all_refund_status_values());
-        return filters;
     }
 
-    ::app::model::refunds::RefundListFilters
-    get_filters_for_refunds(const RefundRequestFacts& facts, bool profile_scoped) const
+    serde::Value get_filters_for_refunds(const RefundRequestFacts& facts, bool profile_scoped) const
     {
-        ::app::model::refunds::RefundListFilters filters{};
-        filters.set_connector(connector_filter_map(
+        return filters_document(connector_filter_map(
             actor_merchant(facts),
             profile_scoped,
             /*platform=*/false,
             facts.ctx_profile_id
         ));
-        filters.set_currency(all_currencies());
-        filters.set_refund_status(all_refund_status_values());
-        return filters;
     }
 
-    ::app::model::refunds::RefundAggregateResponse get_aggregates_for_refunds(
+    serde::Value get_aggregates_for_refunds(
         const RefundRequestFacts& facts,
         std::optional<std::string> start_time,
         std::optional<std::string> end_time,
@@ -898,12 +893,15 @@ public:
             if (!in_time_range(record, start_time, end_time)) {
                 continue;
             }
-            const std::string canonical = canonical_status(record.get_status());
+            const std::string canonical = canonical_status(record.status);
             ++counts[canonical];
         }
-        ::app::model::refunds::RefundAggregateResponse response{};
-        response.set_status_with_count(std::move(counts));
-        return response;
+        serde::Value::Object status_counts{};
+        for (const auto status: kAllRefundStatuses) {
+            const auto key = std::string{status};
+            status_counts.insert(key, wire_number(counts[key]));
+        }
+        return wire_document({{"status_with_count", serde::Value{std::move(status_counts)}}});
     }
 
     // =================================================================================
@@ -991,9 +989,9 @@ public:
     {
         std::int64_t already{0};
         for (const auto& r: all_refunds) {
-            const auto status = status_from_text(r.get_status());
+            const auto status = status_from_text(r.status);
             if (status != Status::Failed) {
-                already += r.get_amount();
+                already += r.amount;
             }
         }
         if (already + amount > captured) {
@@ -1121,15 +1119,15 @@ public:
         std::string_view flow
     ) const
     {
-        m_context.metrics().record_flow(std::format("refund.{}.gateway_decision", flow));
+        m_context.logger().record_flow(std::format("refund.{}.gateway_decision", flow));
         if (m_context.config_store().is_killed(connector)) {
-            m_context.metrics().counter("refunds_connector_killed").increment();
+            m_context.logger().counter("refunds_connector_killed").increment();
         }
         if (m_context.config_store().is_shadow_killed(connector)) {
-            m_context.metrics().counter("refunds_connector_shadow_killed").increment();
+            m_context.logger().counter("refunds_connector_shadow_killed").increment();
         }
         if (!creds_identifier.empty()) {
-            m_context.metrics().counter("refunds_gateway_creds_used").increment();
+            m_context.logger().counter("refunds_gateway_creds_used").increment();
         }
     }
 
@@ -1156,20 +1154,20 @@ public:
     void trigger_refund_outgoing_webhook(const Record& record, const RefundExt& ext) const
     {
         const std::string topic =
-            std::format("refund.{}", lowercase(canonical_status(record.get_status())));
+            std::format("refund.{}", lowercase(canonical_status(record.status)));
         const std::string payload = std::format(
             "{{\"refund_id\":\"{}\",\"payment_id\":\"{}\",\"status\":\"{}\"}}",
-            record.get_refund_id(),
-            record.get_payment_id(),
-            canonical_status(record.get_status())
+            record.refund_id,
+            uuids::to_string(record.payment_id),
+            canonical_status(record.status)
         );
         const std::string id = m_context.events().publish(topic, payload);
         const std::string endpoint =
             m_context.config_store()
-                .get_value("refund_webhook_endpoint", record.get_merchant_id())
-                .value_or(std::string{"local://refund-webhook/"} + record.get_merchant_id());
+                .get_value("refund_webhook_endpoint", record.merchant_id)
+                .value_or(std::string{"local://refund-webhook/"} + record.merchant_id);
         m_context.webhook_delivery().enqueue(id, endpoint);
-        m_context.metrics().counter("refunds_webhook_notified").increment();
+        m_context.logger().counter("refunds_webhook_notified").increment();
         (void)ext;
     }
 
@@ -1236,15 +1234,15 @@ public:
         if (refund_id.empty()) {
             return std::nullopt;
         }
-        return m_context.repository().find_refund_by_string(refund_id);
+        return m_context.refunds().find_refund_by_string(refund_id);
     }
 
     std::string routed_connector(const Record& record) const
     {
-        if (!record.get_connector().empty()) {
-            return record.get_connector();
+        if (!record.connector.empty()) {
+            return record.connector;
         }
-        const auto attempt = find_last_successful_attempt(record.get_payment_id());
+        const auto attempt = find_last_successful_attempt(uuids::to_string(record.payment_id));
         return attempt ? attempt->get_connector() : std::string{};
     }
 
@@ -1324,139 +1322,166 @@ public:
     // RESPONSE MAPPING — core/refunds.rs:2355-2466.
     // =================================================================================
 
-    Response to_refund_response(const Record& record, bool include_raw = false) const
+    Refund to_refund_response(const Record& record, bool include_raw = false) const
     {
-        const auto ext = load_ext(record.get_refund_id());
-        Response response{};
-        response.set_refund_id(record.get_refund_id());
-        ::app::model::refunds::PaymentIdValue payment{};
-        payment.set_value(record.get_payment_id());
-        response.set_payment_id(payment);
-        ::app::model::refunds::MinorUnitValue amount{};
-        amount.set_value(std::to_string(record.get_amount()));
-        response.set_amount(amount);
-        response.set_currency(record.get_currency());
-        response.set_status(status_from_text(record.get_status()));
-        if (!record.get_reason().empty()) {
-            response.set_reason(record.get_reason());
+        const auto ext = load_ext(record.refund_id);
+        Refund response{};
+        response.refund_id = record.refund_id;
+        response.payment_id = record.payment_id;
+        response.amount = record.amount;
+        response.currency = record.currency;
+        response.status = std::string{status_to_text(status_from_text(record.status))};
+        if (!record.reason.empty()) {
+            response.reason = record.reason;
         }
         if (!ext.metadata.empty()) {
-            ::app::model::refunds::SecretSerdeValueValue meta{};
-            meta.set_value(ext.metadata);
-            response.set_metadata(meta);
+            response.metadata = ext.metadata;
         }
         if (!ext.feature_metadata.empty()) {
-            ::app::model::refunds::RefundFeatureMetadataValue feature{};
-            feature.set_value(ext.feature_metadata);
-            response.set_feature_metadata(feature);
+            response.feature_metadata = ext.feature_metadata;
         }
         if (!ext.error_message.empty()) {
-            response.set_error_message(ext.error_message);
+            response.error_message = ext.error_message;
         }
         if (!ext.error_code.empty()) {
-            response.set_error_code(ext.error_code);
+            response.error_code = ext.error_code;
         }
         if (!ext.unified_code.empty()) {
-            response.set_unified_code(ext.unified_code);
+            response.unified_code = ext.unified_code;
         }
         if (!ext.unified_message.empty()) {
-            response.set_unified_message(ext.unified_message);
+            response.unified_message = ext.unified_message;
         }
         if (!ext.issuer_error_code.empty()) {
-            response.set_issuer_error_code(ext.issuer_error_code);
+            response.issuer_error_code = ext.issuer_error_code;
         }
         if (!ext.issuer_error_message.empty()) {
-            response.set_issuer_error_message(ext.issuer_error_message);
+            response.issuer_error_message = ext.issuer_error_message;
         }
         if (!ext.net_amount.empty()) {
-            ::app::model::refunds::MinorUnitValue net{};
-            net.set_value(ext.net_amount);
-            response.set_net_amount(net);
+            response.net_amount = parse_i64(ext.net_amount);
         }
         if (!ext.surcharge_amount.empty()) {
-            ::app::model::refunds::MinorUnitValue surcharge{};
-            surcharge.set_value(ext.surcharge_amount);
-            response.set_surcharge_refund_amount(surcharge);
+            response.surcharge_refund_amount = parse_i64(ext.surcharge_amount);
         }
-        ::app::model::refunds::PrimitiveDateTimeValue created{};
-        created.set_value(record.get_created_at());
-        response.set_created_at(created);
-        ::app::model::refunds::PrimitiveDateTimeValue updated{};
-        updated.set_value(
-            record.get_updated_at().empty() ? record.get_created_at() : record.get_updated_at()
-        );
-        response.set_updated_at(updated);
-        response.set_connector(record.get_connector());
+        response.created_at = record.created_at;
+        response.updated_at = record.updated_at.empty() ? record.created_at : record.updated_at;
+        response.connector = record.connector;
         if (!ext.profile_id.empty()) {
-            ::app::model::refunds::ProfileIdValue profile{};
-            profile.set_value(ext.profile_id);
-            response.set_profile_id(profile);
+            response.profile_id = ext.profile_id;
         }
         if (!ext.merchant_connector_id.empty()) {
-            ::app::model::refunds::MerchantConnectorAccountIdValue mca{};
-            mca.set_value(ext.merchant_connector_id);
-            response.set_merchant_connector_id(mca);
+            response.merchant_connector_id = ext.merchant_connector_id;
         }
         if (!ext.split_refunds.empty()) {
-            ::app::model::refunds::SplitRefundValue split{};
-            split.set_value(ext.split_refunds);
-            response.set_split_refunds(split);
+            response.split_refunds = ext.split_refunds;
         }
         if (!ext.connector_refund_id.empty()) {
-            response.set_connector_refund_id(ext.connector_refund_id);
+            response.connector_refund_id = ext.connector_refund_id;
         }
         if (include_raw && !ext.raw_connector_response.empty()) {
-            response.set_raw_connector_response(ext.raw_connector_response);
+            response.raw_connector_response = ext.raw_connector_response;
         }
         return response;
     }
 
-    ::app::model::refunds::PlatformRefundListItem to_platform_item(const Record& record) const
+    /** @brief Platform list rows stay a dynamic document: the row shape is distinct
+     *         from the single-refund shape and is no longer a separate model. */
+    serde::Value platform_item_document(const Record& record) const
     {
-        const auto ext = load_ext(record.get_refund_id());
-        ::app::model::refunds::PlatformRefundListItem item{};
-        item.set_refund_id(record.get_refund_id());
-        ::app::model::refunds::PaymentIdValue payment{};
-        payment.set_value(record.get_payment_id());
-        item.set_payment_id(payment);
-        ::app::model::refunds::MerchantIdValue merchant{};
-        merchant.set_value(record.get_merchant_id());
-        item.set_merchant_id(merchant);
-        if (!ext.merchant_connector_id.empty()) {
-            item.set_merchant_connector_id(
-                ::app::model::refunds::MerchantConnectorAccountIdValue{}
+        const auto ext = load_ext(record.refund_id);
+        return wire_document(
+            {{"refund_id", wire_text(record.refund_id)},
+             {"payment_id", wire_text(uuids::to_string(record.payment_id))},
+             {"merchant_id", wire_text(record.merchant_id)},
+             {"processor_merchant_id", wire_text(external_merchant_id(record.merchant_id))},
+             {"profile_id", wire_text(ext.profile_id)},
+             {"connector", wire_text(record.connector)},
+             {"merchant_connector_id", wire_text(ext.merchant_connector_id)},
+             {"connector_refund_id", wire_text(ext.connector_refund_id)},
+             {"attempt_id", wire_text(ext.attempt_id)},
+             {"refund_amount", wire_text(std::to_string(record.amount))},
+             {"total_amount", wire_text(std::to_string(record.amount))},
+             {"currency", wire_text(record.currency)},
+             {"refund_status", wire_text(record.status)},
+             {"refund_reason", wire_text(record.reason)},
+             {"description", wire_text(ext.description)},
+             {"created_at", wire_text(record.created_at)},
+             {"modified_at", wire_text(record.updated_at)}}
+        );
+    }
+
+    serde::Value list_document(const std::vector<Record>& page, std::size_t total) const
+    {
+        serde::Value::Array items{};
+        items.reserve(page.size());
+        for (const auto& record: page) {
+            items.emplace_back(
+                core::behavior::Serializer<Refund>::build_value(
+                    to_refund_response(record),
+                    serde::wire_fields<Refund, serde::WireView::get>()
+                )
             );
         }
-        item.set_connector(record.get_connector());
-        if (!ext.connector_refund_id.empty()) {
-            item.set_connector_refund_id(ext.connector_refund_id);
+        return wire_document(
+            {{"count", wire_number(static_cast<std::int64_t>(items.size()))},
+             {"total_count", wire_number(static_cast<std::int64_t>(total))},
+             {"data", serde::Value{std::move(items)}}}
+        );
+    }
+
+    serde::Value platform_list_document(const std::vector<Record>& page, std::size_t total) const
+    {
+        serde::Value::Array items{};
+        items.reserve(page.size());
+        for (const auto& record: page) {
+            items.emplace_back(platform_item_document(record));
         }
-        item.set_attempt_id(ext.attempt_id);
-        ::app::model::refunds::MinorUnitValue amount{};
-        amount.set_value(std::to_string(record.get_amount()));
-        item.set_refund_amount(amount);
-        ::app::model::refunds::MinorUnitValue total{};
-        total.set_value(std::to_string(record.get_amount()));
-        item.set_total_amount(total);
-        ::app::model::refunds::CurrencyValue currency{};
-        currency.set_value(record.get_currency());
-        item.set_currency(currency);
-        ::app::model::refunds::RefundStatusValue status{};
-        status.set_value(record.get_status());
-        item.set_refund_status(status);
-        if (!record.get_reason().empty()) {
-            item.set_refund_reason(record.get_reason());
+        return wire_document(
+            {{"count", wire_number(static_cast<std::int64_t>(items.size()))},
+             {"total_count", wire_number(static_cast<std::int64_t>(total))},
+             {"data", serde::Value{std::move(items)}}}
+        );
+    }
+
+    serde::Value filters_document(
+        const std::unordered_map<std::string, std::vector<std::string>>& connector_map
+    ) const
+    {
+        serde::Value::Object connectors{};
+        for (const auto& [name, labels]: connector_map) {
+            connectors.insert(name, wire_list(wire_text_vector(labels), "value"));
         }
-        if (!ext.description.empty()) {
-            item.set_description(ext.description);
+        std::vector<serde::Value> currency_values{};
+        for (const auto code: kAllCurrencies) {
+            currency_values.emplace_back(wire_text(std::string{code}));
         }
-        ::app::model::refunds::PrimitiveDateTimeValue created{};
-        created.set_value(record.get_created_at());
-        item.set_created_at(created);
-        ::app::model::refunds::PrimitiveDateTimeValue modified{};
-        modified.set_value(record.get_updated_at());
-        item.set_modified_at(modified);
-        return item;
+        std::vector<serde::Value> status_values{};
+        for (const auto status: kAllRefundStatuses) {
+            status_values.emplace_back(wire_text(std::string{status}));
+        }
+        return wire_document(
+            {{"connector", serde::Value{std::move(connectors)}},
+             {"currency", wire_list(std::move(currency_values), "value")},
+             {"refund_status", wire_list(std::move(status_values), "value")}}
+        );
+    }
+
+    [[nodiscard]] static std::vector<serde::Value>
+    wire_text_vector(const std::vector<std::string>& values)
+    {
+        std::vector<serde::Value> out{};
+        out.reserve(values.size());
+        for (const auto& value: values) {
+            out.emplace_back(wire_text(value));
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::string external_merchant_id(std::string_view merchant) const
+    {
+        const auto account = m_context.repository().find_merchant_account_by_string(merchant);
+        return account ? account->get_merchant_id() : std::string{merchant};
     }
 
     // =================================================================================
@@ -1468,23 +1493,23 @@ public:
     {
         std::vector<Record> selected{};
         for (const auto& r: records) {
-            if (!filter.refund_id.empty() && filter.refund_id != r.get_refund_id()) {
+            if (!filter.refund_id.empty() && filter.refund_id != r.refund_id) {
                 continue;
             }
-            if (!filter.payment_id.empty() && filter.payment_id != r.get_payment_id()) {
+            if (!filter.payment_id.empty() && filter.payment_id != uuids::to_string(r.payment_id)) {
                 continue;
             }
-            if (!filter.merchant_id.empty() && filter.merchant_id != r.get_merchant_id()) {
+            if (!filter.merchant_id.empty() && filter.merchant_id != r.merchant_id) {
                 continue;
             }
-            if (!filter.connector.empty() && filter.connector != r.get_connector()) {
+            if (!filter.connector.empty() && filter.connector != r.connector) {
                 continue;
             }
-            if (!filter.currency.empty() && filter.currency != r.get_currency()) {
+            if (!filter.currency.empty() && filter.currency != r.currency) {
                 continue;
             }
-            if (!filter.status.empty() && filter.status != r.get_status() &&
-                filter.status != canonical_status(r.get_status())) {
+            if (!filter.status.empty() && filter.status != r.status &&
+                filter.status != canonical_status(r.status)) {
                 continue;
             }
             selected.push_back(r);
@@ -1521,27 +1546,22 @@ public:
                            .value_or(merchant);
         }
         std::vector<Record> out{};
-        for (const auto& r: m_context.repository().list_refunds()) {
-            if (merchant.empty() || r.get_merchant_id().empty() ||
-                r.get_merchant_id() == merchant) {
+        for (const auto& r: m_context.refunds().list_refunds()) {
+            if (merchant.empty() || r.merchant_id.empty() || r.merchant_id == merchant) {
                 out.push_back(r);
             }
         }
         return out;
     }
 
-    std::unordered_map<std::string, std::vector<::app::model::refunds::MerchantConnectorInfoValue>>
-    connector_filter_map(
+    std::unordered_map<std::string, std::vector<std::string>> connector_filter_map(
         std::string_view merchant,
         bool profile_scoped,
         bool platform,
         std::string_view profile_id
     ) const
     {
-        std::unordered_map<
-            std::string,
-            std::vector<::app::model::refunds::MerchantConnectorInfoValue>>
-            map{};
+        std::unordered_map<std::string, std::vector<std::string>> map{};
         std::vector<std::string> allowed_merchants{};
         if (platform) {
             for (const auto& account: m_context.repository().list_merchant_accounts()) {
@@ -1574,9 +1594,9 @@ public:
             ) {
                 continue;
             }
-            ::app::model::refunds::MerchantConnectorInfoValue info{};
-            info.set_value(connector.get_connector_label());
-            map[connector.get_connector_name()].push_back(std::move(info));
+            map[connector.get_connector_name()].push_back(
+                std::string{connector.get_connector_label()}
+            );
         }
         return map;
     }
@@ -1587,58 +1607,29 @@ public:
         return account ? account->get_organization_id() : std::string{};
     }
 
-    std::vector<::app::model::refunds::CurrencyValue> all_currencies() const
-    {
-        std::vector<::app::model::refunds::CurrencyValue> out{};
-        out.reserve(kAllCurrencies.size());
-        for (const auto code: kAllCurrencies) {
-            ::app::model::refunds::CurrencyValue value{};
-            value.set_value(std::string{code});
-            out.push_back(std::move(value));
-        }
-        return out;
-    }
-
-    std::vector<::app::model::refunds::RefundStatusValue> all_refund_status_values() const
-    {
-        std::vector<::app::model::refunds::RefundStatusValue> out{};
-        out.reserve(kAllRefundStatuses.size());
-        for (const auto status: kAllRefundStatuses) {
-            ::app::model::refunds::RefundStatusValue value{};
-            value.set_value(std::string{status});
-            out.push_back(std::move(value));
-        }
-        return out;
-    }
-
-    ::app::model::refunds::RefundListMetaData
-    filter_list_metadata(const std::vector<Record>& records) const
+    serde::Value filter_list_metadata(const std::vector<Record>& records) const
     {
         std::vector<std::string> connectors{};
-        std::vector<::app::model::refunds::CurrencyValue> currencies{};
-        std::vector<::app::model::refunds::RefundStatusValue> statuses{};
+        std::vector<std::string> currencies{};
+        std::vector<std::string> statuses{};
         std::unordered_set<std::string> seen_connector, seen_currency, seen_status{};
         for (const auto& r: records) {
-            if (seen_connector.insert(r.get_connector()).second) {
-                connectors.push_back(r.get_connector());
+            if (seen_connector.insert(r.connector).second) {
+                connectors.push_back(r.connector);
             }
-            if (seen_currency.insert(r.get_currency()).second) {
-                ::app::model::refunds::CurrencyValue value{};
-                value.set_value(r.get_currency());
-                currencies.push_back(std::move(value));
+            if (seen_currency.insert(r.currency).second) {
+                currencies.push_back(r.currency);
             }
-            const auto canonical = canonical_status(r.get_status());
+            const auto canonical = canonical_status(r.status);
             if (seen_status.insert(canonical).second) {
-                ::app::model::refunds::RefundStatusValue value{};
-                value.set_value(canonical);
-                statuses.push_back(std::move(value));
+                statuses.push_back(canonical);
             }
         }
-        ::app::model::refunds::RefundListMetaData response{};
-        response.set_connector(std::move(connectors));
-        response.set_currency(std::move(currencies));
-        response.set_refund_status(std::move(statuses));
-        return response;
+        return wire_document(
+            {{"connector", wire_list(wire_text_vector(connectors))},
+             {"currency", wire_list(wire_text_vector(currencies), "value")},
+             {"refund_status", wire_list(wire_text_vector(statuses), "value")}}
+        );
     }
 
     std::vector<Record> apply_time_range(
@@ -1649,7 +1640,7 @@ public:
     {
         std::vector<Record> out{};
         for (const auto& r: records) {
-            const auto& created = r.get_created_at();
+            const auto& created = r.created_at;
             if (!start.empty() && !created.empty() && created < start) {
                 continue;
             }
@@ -1670,7 +1661,7 @@ public:
         if (!start && !end) {
             return true;
         }
-        const auto& created = record.get_created_at();
+        const auto& created = record.created_at;
         if (created.empty()) {
             return true;
         }

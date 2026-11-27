@@ -81,8 +81,8 @@ public:
 
                     // routes/external_service_auth.rs:16-26 — Flow::ExternalServiceValidateToken,
                     // LockAction::NotApplicable (no lock acquired). Local metrics substitute.
-                    m_context.metrics().record_flow("ExternalServiceValidateToken");
-                    m_context.metrics().counter("EXTERNAL_SERVICE_TOKEN_VALIDATED").increment();
+                    m_context.logger().record_flow("ExternalServiceValidateToken");
+                    m_context.logger().counter("EXTERNAL_SERVICE_TOKEN_VALIDATED").increment();
 
                     // Typed OfferEngine arm of the untagged upstream response enum; the
                     // DTO's Serializable emits the exact field order from api_models:40-45.

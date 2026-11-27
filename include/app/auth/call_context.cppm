@@ -22,7 +22,7 @@ make_call_context(interfaces::io::IRequest& req, std::string_view operation = {}
 
     const auto auth = ::app::auth::AuthContextBuilder{}(req);
     ctx.merchant_id = auth.merchant_id().empty() ? ::app::http::merchant_id_from_header{}(req)
-                                               : std::string{auth.merchant_id()};
+                                                 : std::string{auth.merchant_id()};
     ctx.profile_id = auth.profile_id();
     ctx.org_id = auth.org_id();
     if (const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId)) {
@@ -59,7 +59,8 @@ make_call_context(interfaces::io::IRequest& req, std::string_view operation = {}
             const auto pair = raw.substr(start, end - start);
             const auto equal = pair.find('=');
             const auto key = equal == std::string_view::npos ? pair : pair.substr(0, equal);
-            const auto value = equal == std::string_view::npos ? std::string_view{} : pair.substr(equal + 1);
+            const auto value =
+                equal == std::string_view::npos ? std::string_view{} : pair.substr(equal + 1);
             if (!key.empty()) {
                 ctx.query.insert_or_assign(std::string{key}, std::string{value});
             }
@@ -109,7 +110,8 @@ claim_value(const core::behavior::CallContext& ctx, std::string_view key)
 }
 
 /** @brief Connected merchant scope when present, otherwise the plain merchant id. */
-[[nodiscard]] inline const std::string& effective_merchant_id(const core::behavior::CallContext& ctx)
+[[nodiscard]] inline const std::string&
+effective_merchant_id(const core::behavior::CallContext& ctx)
 {
     return ctx.connected_merchant_id.empty() ? ctx.merchant_id : ctx.connected_merchant_id;
 }

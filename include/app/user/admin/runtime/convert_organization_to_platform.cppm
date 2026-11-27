@@ -38,8 +38,10 @@ public:
 
     [[nodiscard]] core::behavior::Outcome<
         ::app::model::organization::ConvertOrganizationToPlatformResponse>
-    convert(const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    convert(
+        const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         if (m_context.config_store().get_value("platform", "enabled").value_or("true") == "false") {
             return std::unexpected{core::error::AppErrorBuilder{}(
@@ -47,7 +49,8 @@ public:
                 "Platform feature is not enabled"
             )};
         }
-        auto found = m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
+        auto found =
+            m_context.repository().find_organization_by_string(ctx_string(ctx, "organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -63,7 +66,7 @@ public:
         }
         if (const auto duplicate = m_support.acquire_operation_lock(
                 "convert_organization_to_platform",
-                ctx_string(ctx,"organization_id")
+                ctx_string(ctx, "organization_id")
             )) {
             return std::unexpected{*duplicate};
         }
@@ -92,7 +95,10 @@ public:
                 record.get_organization_id()
             )
         );
-        m_support.release_operation_lock("convert_organization_to_platform", ctx_string(ctx,"organization_id"));
+        m_support.release_operation_lock(
+            "convert_organization_to_platform",
+            ctx_string(ctx, "organization_id")
+        );
 
         ::app::model::organization::ConvertOrganizationToPlatformResponse response;
         ::app::model::organization::OrganizationIdValue id;
@@ -105,8 +111,8 @@ public:
         platform_id.set_value(record.get_platform_merchant_id());
         response.set_platform_merchant_id(std::move(platform_id));
 
-        m_context.metrics().record_flow("convert_organization_to_platform");
-        m_context.metrics().counter("admin.convert_organization_to_platform").increment();
+        m_context.logger().record_flow("convert_organization_to_platform");
+        m_context.logger().counter("admin.convert_organization_to_platform").increment();
         m_context.events().publish(
             "organization.converted_to_platform",
             serde::Ser::encode_json(response)

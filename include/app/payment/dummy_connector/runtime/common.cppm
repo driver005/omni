@@ -1,6 +1,7 @@
 module;
 #include <time.h>
 export module app_payment:dummy_connector_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;

@@ -64,7 +64,8 @@ public:
                     [&](auto field)
                     {
                         if constexpr (decltype(field)::options.m_db.m_primary_key) {
-                            result = field_value_to_string((value.*decltype(field)::getter)());
+                            result =
+                                field_value_to_string(serde::field_value<decltype(field)>(value));
                         }
                     }(fields),
                     ...);

@@ -63,16 +63,10 @@ public:
             )};
         }
         m_support.track_record_fetch("retrieve_eligibility_check", authentication_id);
-        const auto tracker_id = m_support.schedule_auth_tracker(
-            "retrieve_eligibility_check",
-            authentication_id,
-            flow
-        );
-        m_context.process_trackers().mark_terminal(
-            tracker_id,
-            std::string{authentication_id}
-        );
-        m_context.metrics().record_flow("AuthenticationRetrieveEligibilityCheck");
+        const auto tracker_id =
+            m_support.schedule_auth_tracker("retrieve_eligibility_check", authentication_id, flow);
+        m_context.process_trackers().mark_terminal(tracker_id, std::string{authentication_id});
+        m_context.logger().record_flow("AuthenticationRetrieveEligibilityCheck");
 
         // :1770-1788 ClickToPayEligibilityCheckResponseData { visa, mastercard consumer_present }.
         const std::string visa = data->first.empty() ? "null" : data->first;

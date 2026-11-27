@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_get_disputes_aggregate;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,7 +41,7 @@ public:
     get_disputes_aggregate(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetDisputesAggregateData{ctx};
-        m_context.metrics().record_flow("dispute_aggregate");
+        m_context.logger().record_flow("dispute_aggregate");
         auto result =
             m_support.get_aggregates_for_disputes(input.scope, input.time_range, std::nullopt);
         if (!result) {

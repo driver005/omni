@@ -57,7 +57,9 @@ public:
             return;
         }
         auto parsed = core::behavior::Serializer<CreateRoleInputWire>::pass(req, sink);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.create_role_v2(*parsed, ctx).handle(sink);
     }
@@ -70,8 +72,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "get_parent_info_for_role", {})) {
+        if (const auto auth_error = m_support.authorize(req, "get_parent_info_for_role", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;

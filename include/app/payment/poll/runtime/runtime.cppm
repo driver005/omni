@@ -1,4 +1,5 @@
 export module app_payment:poll_runtime;
+import core_behavior;
 
 import std;
 import core_error;

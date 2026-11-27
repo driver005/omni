@@ -1,4 +1,5 @@
 export module app_payment:relay_runtime_incoming_relay_webhook;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -144,7 +145,7 @@ public:
             relay->set_status(status);
             (void)m_context.repository().update_relay_record(*relay);
             if (!relay->get_refund_id().empty()) {
-                (void)m_context.repository().update_refund_status(relay->get_refund_id(), status);
+                (void)m_context.refunds().update_refund_status(relay->get_refund_id(), status);
             }
         } else {
             // Upstream: unverified webhooks trigger relay force-sync

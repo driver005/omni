@@ -37,9 +37,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::JwksResponse>
     jwks(const core::behavior::CallContext& /*ctx*/) const
     {
-        m_context.metrics().record_flow("jwks_endpoint");
-        m_context.metrics().counter("oidc.jwks_endpoint").increment();
-        m_context.metrics().counter("oidc.api_event.Oidc").increment();
+        m_context.logger().record_flow("jwks_endpoint");
+        m_context.logger().counter("oidc.jwks_endpoint").increment();
+        m_context.logger().counter("oidc.api_event.Oidc").increment();
 
         m_support.ensure_oidc_config();
 

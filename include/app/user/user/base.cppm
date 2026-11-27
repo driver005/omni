@@ -17,4 +17,4 @@ export import :user_handlers_v1_connector;
 export import :user_handlers_v1_internal;
 export import :user_handlers_v1;
 export import :user_handlers_v2;
-export import :user_handler;
+export import :user_router;

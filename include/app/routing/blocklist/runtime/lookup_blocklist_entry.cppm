@@ -39,8 +39,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistLookupResponse>
     lookup_blocklist_entry(const ::core::behavior::CallContext& ctx) const
     {
-        const std::string data = query_value(ctx, "data").value_or("");
-        const std::string transaction_type = query_value(ctx, "transaction_type").value_or("");
+        const std::string data = m_support.query_value(ctx, "data").value_or("");
+        const std::string transaction_type =
+            m_support.query_value(ctx, "transaction_type").value_or("");
         std::vector<std::string> distinct;
         for (const auto& record: m_support.list_entries()) {
             if (!m_support.matches_merchant(record, ctx.merchant_id) ||

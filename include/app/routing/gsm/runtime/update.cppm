@@ -74,8 +74,8 @@ public:
         const auto response = m_support.response_from_domain(updated);
 
         m_context.events().publish("gsm.rule.updated", m_support.audit_payload("updated", key));
-        m_context.metrics().record_flow("GsmRuleUpdate");
-        m_context.metrics().counter("GSM_RULE_UPDATED").increment();
+        m_context.logger().record_flow("GsmRuleUpdate");
+        m_context.logger().counter("GSM_RULE_UPDATED").increment();
         return std::move(response);
     }
 

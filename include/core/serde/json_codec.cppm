@@ -203,6 +203,14 @@ class Ser
 
 public:
     /**
+     * @brief Runs every FieldOptions validation rule on `value`.
+     * @note Declared with a deduced return type: the definition lives in :serializer so this
+     * partition need not import :error (which already imports :json_codec).
+     */
+    template<typename T>
+    [[nodiscard]] static auto validate(const T& value);
+
+    /**
      * @brief Serializes a single value, dispatching to whichever format plugin is registered
      * in `SerdeFormatRegistry` for `accept`.
      * @note Any `T` works here, not just `ISerializable` ones — `rfl::to_generic` reduces it
@@ -307,7 +315,7 @@ public:
                             );
                             return;
                         }
-                        (value.*Fd::setter)(std::move(*parsed));
+                        serde::set_field_value<Fd>(value, std::move(*parsed));
                     }(),
                     ...);
             },

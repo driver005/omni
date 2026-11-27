@@ -59,7 +59,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_disputes_filters(req, res, std::move(send));
                         }
@@ -76,7 +76,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_get_disputes_filters_profile(req, res, std::move(send));
                             }
@@ -100,7 +100,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_platform_disputes_filters(req, res, std::move(send));
                         }
@@ -124,7 +124,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_disputes_aggregate(req, res, std::move(send));
                         }
@@ -141,7 +141,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_get_disputes_aggregate_profile(req, res, std::move(send));
                             }

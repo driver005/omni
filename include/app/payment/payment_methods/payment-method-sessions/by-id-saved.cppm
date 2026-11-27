@@ -62,7 +62,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_session_delete_saved_payment_method(
                                     req,
@@ -85,7 +85,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_payment_method_session_list_payment_methods(
                                         req,
@@ -109,7 +109,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_payment_method_session_update_saved_payment_method(
                                         req,
@@ -134,7 +134,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_session_list_payment_methods(
                                     req,
@@ -157,7 +157,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_session_delete_saved_payment_method(
                                 req,
@@ -180,7 +180,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_session_list_payment_methods(
                                     req,
@@ -204,7 +204,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_session_update_saved_payment_method(
                                     req,
@@ -230,7 +230,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_session_list_payment_methods(
                                 req,
@@ -281,8 +281,12 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionDeleteSavedPaymentMethod>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodSessionDeleteSavedPaymentMethod>::
+            pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const std::string token = parsed->get_payment_method_token();
         if (token.empty()) {
             const auto error = m_input_support.error(
@@ -302,7 +306,10 @@ public:
             return;
         }
         const auto& dto = token;
-        auto result = m_runtime.payment_method_session_delete_saved_payment_method(dto, m_request_support->context(req));
+        auto result = m_runtime.payment_method_session_delete_saved_payment_method(
+            dto,
+            m_request_support->context(req)
+        );
         result.handle(sink);
     }
 
@@ -345,7 +352,10 @@ public:
         const std::string customer_id =
             ::app::http::RequestQuery{}(req).get("customer_id").value_or("");
         const auto& dto = *session;
-        auto result = m_runtime.payment_method_session_list_payment_methods(dto, m_request_support->context(req));
+        auto result = m_runtime.payment_method_session_list_payment_methods(
+            dto,
+            m_request_support->context(req)
+        );
         result.handle(sink);
     }
 
@@ -392,8 +402,12 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod>::
+            pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const std::string token = parsed->get_payment_method_token().value_or("");
         if (token.empty()) {
             const auto error = m_input_support.error(
@@ -421,7 +435,10 @@ public:
             return;
         }
         const auto& dto = *parsed;
-        auto result = m_runtime.payment_method_session_update_saved_payment_method(dto, m_request_support->context(req));
+        auto result = m_runtime.payment_method_session_update_saved_payment_method(
+            dto,
+            m_request_support->context(req)
+        );
         result.handle(sink);
     }
 

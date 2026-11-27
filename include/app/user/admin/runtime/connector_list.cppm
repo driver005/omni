@@ -41,15 +41,18 @@ public:
     list(const ::core::behavior::CallContext& ctx) const
     {
         std::vector<::app::dto::admin::MerchantConnectorListResponse> response;
-        if (ctx_bool(ctx,"for_profile")) {
-            response = m_support.list_connectors_for_a_profile(ctx_string(ctx,"profile_id_filter"));
-        } else {
+        if (ctx_bool(ctx, "for_profile")) {
             response =
-                m_support.list_payment_connectors(ctx_string(ctx,"merchant_id"), ctx_string(ctx,"profile_id_filter"));
+                m_support.list_connectors_for_a_profile(ctx_string(ctx, "profile_id_filter"));
+        } else {
+            response = m_support.list_payment_connectors(
+                ctx_string(ctx, "merchant_id"),
+                ctx_string(ctx, "profile_id_filter")
+            );
         }
 
-        m_context.metrics().record_flow("connector_list");
-        m_context.metrics().counter("admin.connector_list").increment();
+        m_context.logger().record_flow("connector_list");
+        m_context.logger().counter("admin.connector_list").increment();
         return std::move(response);
     }
 

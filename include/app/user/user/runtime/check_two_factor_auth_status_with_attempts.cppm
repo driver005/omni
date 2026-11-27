@@ -59,8 +59,8 @@ public:
             }
         }
 
-        m_context.metrics().record_flow("check_two_factor_auth_status_with_attempts");
-        m_context.metrics().counter("user.check_two_factor_auth_status_with_attempts").increment();
+        m_context.logger().record_flow("check_two_factor_auth_status_with_attempts");
+        m_context.logger().counter("user.check_two_factor_auth_status_with_attempts").increment();
 
         using Response = ::app::model::user::TwoFactorStatus;
         Response response{};

@@ -80,7 +80,7 @@ public:
         }
 
         const auto& dto = *constraints;
-        auto result = m_runtime.list(m_request_support->context(req)));
+        auto result = m_runtime.list(dto, m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -149,8 +149,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
 
         const auto query = m_input_support.query(req);
         PayoutListQuery query_values{};
@@ -191,8 +197,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
 
         const auto query = m_input_support.query(req);
         PayoutListQuery query_values{};
@@ -234,7 +246,8 @@ public:
             return;
         }
 
-        auto result = m_runtime.list_available_filters_for_merchant(m_request_support->context(req));
+        auto result =
+            m_runtime.list_available_filters_for_merchant(m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -285,7 +298,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_list(req, res, std::move(send));
                         }
@@ -302,7 +315,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_list_profile(req, res, std::move(send));
                             }
@@ -319,7 +332,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_list_by_filter(req, res, std::move(send));
                         }
@@ -336,7 +349,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_list_by_filter_profile(req, res, std::move(send));
                             }
@@ -353,7 +366,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payouts_list_available_filters_for_merchant(
                                 req,
@@ -374,7 +387,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payouts_list_available_filters_for_profile(
                                     req,

@@ -39,8 +39,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    totp_reset(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    totp_reset(const interfaces::Value& generic, const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -58,8 +57,8 @@ public:
             }
         }
 
-        m_context.metrics().record_flow("totp_reset");
-        m_context.metrics().counter("user.totp_reset").increment();
+        m_context.logger().record_flow("totp_reset");
+        m_context.logger().counter("user.totp_reset").increment();
 
         ::app::model::user::TotpSecret totp_secret{};
         totp_secret.set_secret(new_secret);

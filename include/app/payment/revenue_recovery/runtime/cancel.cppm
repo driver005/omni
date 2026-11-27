@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_runtime_cancel;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -42,7 +43,7 @@ public:
     // PaymentNotFound (:590-598), cancel_invoice_workflows (:600-613, refusal ->
     // PreconditionFailed), then RecoveryPaymentsResponse from the cancelled intent (:615-619).
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::RecoveryPaymentsResponse>
-        cancel(const core::behavior::CallContext& ctx) const
+    cancel(const core::behavior::CallContext& ctx) const
     {
         const auto input = RevenueRecoveryCancelData{ctx};
         // find_payment_intent_by_merchant_reference_id_profile_id
@@ -57,7 +58,7 @@ public:
             input.merchant_reference_id
         );
         if (!found.has_value()) {
-            m_context.metrics().counter("revenue_recovery_cancel_not_found").increment();
+            m_context.logger().counter("revenue_recovery_cancel_not_found").increment();
             // PaymentNotFound wire message (hyperswitch_domain_models errors:
             // api_error_response.rs:100,459-461).
             return std::unexpected{make_not_found("Payment does not exist in our records")};
@@ -68,13 +69,13 @@ public:
             if (outcome.error().internal) {
                 return std::unexpected{make_internal_error(outcome.error().message)};
             }
-            m_context.metrics().counter("revenue_recovery_cancel_refused").increment();
+            m_context.logger().counter("revenue_recovery_cancel_refused").increment();
             // PreconditionFailed { message: refusal.to_string() } (api.rs:609-613;
             // api_error_response.rs:226-227,626-628).
             return std::unexpected{make_bad_request(outcome.error().message)};
         }
 
-        m_context.metrics().counter("revenue_recovery_cancel_completed").increment();
+        m_context.logger().counter("revenue_recovery_cancel_completed").increment();
 
         Response response{};
         ::app::model::payments::GlobalPaymentIdValue id;

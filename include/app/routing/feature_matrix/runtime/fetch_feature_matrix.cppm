@@ -43,8 +43,8 @@ public:
         // api::server_wrap(..., &auth::NoAuth, LockAction::NotApplicable) (:30-38). The NO_AUTH
         // rule is a pass-through; no lock is acquired because the request is a read-only GET.
         // Auth runs in the handler; these metrics ran there too, ahead of body validation.
-        m_context.metrics().record_flow("feature_matrix.fetch_feature_matrix");
-        m_context.metrics().counter("feature_matrix_fetch").increment();
+        m_context.logger().record_flow("feature_matrix.fetch_feature_matrix");
+        m_context.logger().counter("feature_matrix_fetch").increment();
 
         // `json_payload.map(into_inner).unwrap_or_else(|| FeatureMatrixRequest { connectors: None
         // })` (routes/feature_matrix.rs:26-28). web::Json deserializes `Vec<Connector>` as

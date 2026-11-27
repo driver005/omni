@@ -61,8 +61,8 @@ public:
 
         // Flow::UnifiedConnectorServiceKillSwitchReset instrumentation
         // (routes/unified_connector_service.rs:36,42).
-        m_context.metrics().record_flow("UnifiedConnectorServiceKillSwitchReset");
-        m_context.metrics().counter("unified_connector_service.kill_switch_reset").increment();
+        m_context.logger().record_flow("UnifiedConnectorServiceKillSwitchReset");
+        m_context.logger().counter("unified_connector_service.kill_switch_reset").increment();
 
         // kill_switch.rs:562-569: ApplicationResponse::StatusOk, no JSON body.
         return serde::Value{serde::Value::Object{}};

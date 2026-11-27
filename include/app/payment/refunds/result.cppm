@@ -1,8 +1,11 @@
 export module app_payment:refunds_result;
 
 import std;
+import interfaces;
+import core_behavior;
 import core_serde;
 import app_model;
+import app_context_core;
 
 export namespace app::handlers::refunds {
 
@@ -75,3 +78,30 @@ serialize_wire(const std::vector<T>& value, std::span<const std::string_view> fi
 }
 
 } // namespace app::handlers::refunds
+
+/** @brief Publish the single refund model using its captured response wire fields. */
+export template<>
+class core::behavior::Outcome<::app::model::Refund> :
+    public std::expected<::app::model::Refund, core::error::AppError>
+{
+public:
+    using std::expected<::app::model::Refund, core::error::AppError>::expected;
+
+    Outcome(std::expected<::app::model::Refund, core::error::AppError>&& value) :
+        std::expected<::app::model::Refund, core::error::AppError>{std::move(value)}
+    {
+    }
+
+    void handle(interfaces::io::ResponseSink& sink)
+    {
+        if (!has_value()) {
+            error().send(sink);
+            return;
+        }
+        constexpr auto fields = serde::wire_fields<::app::model::Refund, serde::WireView::get>();
+        const auto bytes = ::app::handlers::refunds::serialize_wire(value(), fields);
+        sink.set_status(interfaces::io::types::Status::OK);
+        sink.set_body(bytes);
+        sink.send();
+    }
+};

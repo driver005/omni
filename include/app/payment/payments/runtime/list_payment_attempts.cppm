@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_list_payment_attempts;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,12 +33,14 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentListResponseV2>
-        list_payment_attempts(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    list_payment_attempts(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         auto records = m_support.list_payments_scoped(input);
-        if (const auto status_filter = m_support.query(input, "status");
-            !status_filter.empty()) {
+        if (const auto status_filter = m_support.query(input, "status"); !status_filter.empty()) {
             std::vector<::app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record: records) {
                 if (record.get_status() == status_filter) {

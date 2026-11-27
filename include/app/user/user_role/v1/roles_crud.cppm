@@ -58,7 +58,9 @@ public:
             return;
         }
         auto parsed = core::behavior::Serializer<CreateRoleInputWire>::pass(req, sink);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.create_role(*parsed, ctx).handle(sink);
     }
@@ -110,7 +112,9 @@ public:
         }
         const auto body = req.body_as_string();
         auto parsed = core::behavior::Serializer<UpdateRoleInputWire>::pass(req, sink);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("role_id", std::string{*role_id});
         m_runtime.update_role(*parsed, ctx).handle(sink);

@@ -46,8 +46,8 @@ public:
         return m_list_initial.list_initial(constraints, ctx);
     }
 
-    [[nodiscard]] core::behavior::
-        Outcome<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
     list_attempts(const ::core::behavior::CallContext& ctx) const
     {
         return m_list_attempts.list_attempts(ctx);

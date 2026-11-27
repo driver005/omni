@@ -57,10 +57,12 @@ public:
             return;
         }
 
-        auto parsed = core::behavior::Serializer<::app::dto::api_keys::CreateApiKeyRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::api_keys::CreateApiKeyRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         m_runtime.create(*parsed, m_support.context(req)).handle(sink);
-
     }
 
     void handle_api_key_retrieve(
@@ -77,7 +79,6 @@ public:
         }
 
         m_runtime.retrieve(m_support.context(req)).handle(sink);
-
     }
 
     void handle_api_key_update(
@@ -93,10 +94,12 @@ public:
             return;
         }
 
-        auto parsed = core::behavior::Serializer<::app::dto::api_keys::UpdateApiKeyRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::api_keys::UpdateApiKeyRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         m_runtime.update(*parsed, m_support.context(req)).handle(sink);
-
     }
 
     void handle_api_key_revoke(
@@ -113,7 +116,6 @@ public:
         }
 
         m_runtime.revoke(m_support.context(req)).handle(sink);
-
     }
 
     void handle_api_key_list(
@@ -131,7 +133,6 @@ public:
 
         auto constraints = m_input_support.parse_constraints(req);
         m_runtime.list(constraints, m_support.context(req)).handle(sink);
-
     }
 
     void install(core::router::RouterContext<>& router)

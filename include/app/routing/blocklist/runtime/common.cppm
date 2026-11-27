@@ -553,8 +553,8 @@ public:
     void track(std::string_view flow) const
     {
         const auto metric = std::string{"blocklist."} + std::string{flow};
-        m_context.metrics().counter(metric).increment();
-        m_context.metrics().record_flow(metric);
+        m_context.logger().counter(metric).increment();
+        m_context.logger().record_flow(metric);
     }
 
 private:

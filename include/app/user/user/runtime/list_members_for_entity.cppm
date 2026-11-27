@@ -39,16 +39,18 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    list_members_for_entity(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    list_members_for_entity(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
 
         const auto org_id = ctx.org_id;
         const auto merchant_id = ctx.merchant_id;
-        m_context.metrics().record_flow("list_members_for_entity");
-        m_context.metrics().counter("user.list_members_for_entity").increment();
+        m_context.logger().record_flow("list_members_for_entity");
+        m_context.logger().counter("user.list_members_for_entity").increment();
 
         using Response = ::app::dto::user_role::ListUsersInEntityResponse;
         Response response{};

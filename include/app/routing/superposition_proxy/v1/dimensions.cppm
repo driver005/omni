@@ -1,4 +1,5 @@
 export module app_routing:superposition_proxy_handlers_v1_dimensions;
+import core_behavior;
 
 import std;
 import interfaces;

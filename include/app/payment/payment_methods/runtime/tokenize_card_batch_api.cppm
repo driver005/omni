@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_tokenize_card_batch_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,7 +36,8 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::payment_methods::TokenizedCardValue1>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::payment_methods::TokenizedCardValue1>>
     tokenize_card_batch_api(const core::behavior::CallContext& ctx) const
     {
         const auto input = TokenizeCardBatchApiData{ctx};
@@ -61,8 +63,8 @@ public:
             item.set_card_token(token);
             results.push_back(std::move(item));
         }
-        m_context.metrics().record_flow("tokenize_card_batch_api");
-        m_context.metrics().counter("PAYMENT_METHOD_TOKENIZE_CARD_BATCH_API").increment();
+        m_context.logger().record_flow("tokenize_card_batch_api");
+        m_context.logger().counter("PAYMENT_METHOD_TOKENIZE_CARD_BATCH_API").increment();
         return std::vector<::app::model::payment_methods::TokenizedCardValue1>{std::move(results)};
     }
 

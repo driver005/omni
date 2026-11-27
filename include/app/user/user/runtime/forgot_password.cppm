@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    forgot_password(const ::app::model::user::ForgotPasswordRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> forgot_password(
+        const ::app::model::user::ForgotPasswordRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -53,17 +54,17 @@ public:
             core::cache::to_cache_value(reset_token)
         );
 
-        const auto key = std::string{"user.forgot_password:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+        const auto key =
+            std::string{"user.forgot_password:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("forgot_password");
-        m_context.metrics().counter("user.forgot_password").increment();
+        m_context.logger().record_flow("forgot_password");
+        m_context.logger().counter("user.forgot_password").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

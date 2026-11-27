@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    sso_sign(const ::app::model::user::SsoSignInRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> sso_sign(
+        const ::app::model::user::SsoSignInRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -54,15 +55,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST
             )};
         }
-        const auto sso_payload = std::format(
-            R"({{"code":"{}","state":"{}"}})",
-            request.get_code(),
-            request.get_state()
-        );
+        const auto sso_payload =
+            std::format(R"({{"code":"{}","state":"{}"}})", request.get_code(), request.get_state());
         const auto sso_token = m_support.user_signer().sign(sso_payload);
 
-        m_context.metrics().record_flow("sso_sign");
-        m_context.metrics().counter("user.sso_sign").increment();
+        m_context.logger().record_flow("sso_sign");
+        m_context.logger().counter("user.sso_sign").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

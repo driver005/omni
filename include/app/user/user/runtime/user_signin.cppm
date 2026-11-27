@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    user_signin(const ::app::model::user::SignInRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> user_signin(
+        const ::app::model::user::SignInRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -82,8 +83,8 @@ public:
         );
         set_cookie = "user_token=" + signin_token + "; HttpOnly; Path=/";
 
-        m_context.metrics().record_flow("user_signin");
-        m_context.metrics().counter("user.user_signin").increment();
+        m_context.logger().record_flow("user_signin");
+        m_context.logger().counter("user.user_signin").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

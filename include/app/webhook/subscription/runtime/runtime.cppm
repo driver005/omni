@@ -42,16 +42,12 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create(
-        const ParsedPayload& payload,
-        const ::core::behavior::CallContext& ctx
-    ) const
+    create(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
         return m_create.create(payload, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    pause(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> pause(
         const std::optional<ParsedPayload>& payload,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -59,8 +55,7 @@ public:
         return m_pause.pause(payload, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    resume(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> resume(
         const std::optional<ParsedPayload>& payload,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -68,8 +63,7 @@ public:
         return m_resume.resume(payload, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    cancel(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> cancel(
         const std::optional<ParsedPayload>& payload,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -78,10 +72,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    confirm(
-        const ParsedPayload& payload,
-        const ::core::behavior::CallContext& ctx
-    ) const
+    confirm(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
         return m_confirm.confirm(payload, ctx);
     }
@@ -99,10 +90,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create_and_confirm(
-        const ParsedPayload& payload,
-        const ::core::behavior::CallContext& ctx
-    ) const
+    create_and_confirm(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
         return m_create_and_confirm.create_and_confirm(payload, ctx);
     }
@@ -113,8 +101,7 @@ public:
         return m_get_estimate.get_estimate(payload, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    update_subscription(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> update_subscription(
         const ParsedPayload& payload,
         const ::core::behavior::CallContext& ctx
     ) const

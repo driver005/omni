@@ -62,7 +62,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_methods_session_retrieve(req, res, std::move(send));
                             }
@@ -80,7 +80,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_methods_session_update(req, res, std::move(send));
                             }
@@ -99,7 +99,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_payment_method_session_confirm(
                                         req,
@@ -123,7 +123,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_methods_session_retrieve(req, res, std::move(send));
                         }
@@ -139,7 +139,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_methods_session_update(req, res, std::move(send));
                         }
@@ -156,7 +156,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_session_confirm(req, res, std::move(send));
                             }
@@ -211,7 +211,8 @@ public:
             }
         }
         const auto& dto = session_id;
-        auto result = m_runtime.payment_methods_session_retrieve(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.payment_methods_session_retrieve(dto, m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -258,10 +259,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodsSessionUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodsSessionUpdateRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const auto& dto = *parsed;
-        auto result = m_runtime.payment_methods_session_update(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.payment_methods_session_update(dto, m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -316,8 +321,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionConfirmRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodSessionConfirmRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const auto presented = ::app::http::RequestQuery{}(req).get("client_secret");
         if (presented) {
             if (const auto e = m_input_support.check_client_secret(session_id, *presented)) {
@@ -336,7 +344,8 @@ public:
             return;
         }
         const auto& dto = *parsed;
-        auto result = m_runtime.payment_method_session_confirm(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.payment_method_session_confirm(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    clone_connector(const ::app::model::user::CloneConnectorRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> clone_connector(
+        const ::app::model::user::CloneConnectorRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -73,8 +74,8 @@ public:
         m_context.repository().save_merchant_connector(std::move(clone));
         m_support.publish_identity_event("user.connector_cloned", source_id);
 
-        m_context.metrics().record_flow("clone_connector");
-        m_context.metrics().counter("user.clone_connector").increment();
+        m_context.logger().record_flow("clone_connector");
+        m_context.logger().counter("user.clone_connector").increment();
 
         // Upstream api_models::admin::MerchantConnectorResponse wire shape,
         // built as a typed document with insertion order matching the wire order.

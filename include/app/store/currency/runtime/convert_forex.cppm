@@ -27,10 +27,10 @@ public:
 
     // ── routes/currency.rs:36-72 / core/currency.rs:28-54 ───────────────────
     [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
-        convert_forex(
-            const ::app::dto::currency::CurrencyConversionParams& params,
-            const core::behavior::CallContext& ctx
-        ) const
+    convert_forex(
+        const ::app::dto::currency::CurrencyConversionParams& params,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         (void)ctx;
         m_support.record_forex_flow();
@@ -46,14 +46,14 @@ public:
         }
 
         // ApplicationResponse::Json(CurrencyConversionResponse) (:34-36).
-        m_context.metrics().counter("FOREX_CONVERTED").increment();
+        m_context.logger().counter("FOREX_CONVERTED").increment();
         return *response;
     }
 
 private:
     // ── core/currency.rs:28-54 — convert_forex ───────────────────────────────
     [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
-        convert_forex_core(std::int64_t amount, std::string_view to, std::string_view from) const
+    convert_forex_core(std::int64_t amount, std::string_view to, std::string_view from) const
     {
         auto result = convert_currency(amount, to, from);
         if (!result) {

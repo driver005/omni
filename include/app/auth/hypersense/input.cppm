@@ -41,8 +41,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] core::behavior::CallContext
-    context(interfaces::io::IRequest& req) const
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
     {
         return detail::make_call_context(req);
     }

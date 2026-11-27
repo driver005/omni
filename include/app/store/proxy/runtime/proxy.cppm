@@ -72,11 +72,8 @@ public:
                     m_support.make_error(m_support.invalid_body(result.error()))
                 };
             }
-            auto resolved = m_support.get_proxy_record(
-                request.token_type,
-                request.token,
-                ctx.merchant_id
-            );
+            auto resolved =
+                m_support.get_proxy_record(request.token_type, request.token, ctx.merchant_id);
             if (!resolved) {
                 return std::unexpected{m_support.make_error(std::move(resolved.error()))};
             }
@@ -94,11 +91,8 @@ public:
         } else {
             // Upstream GET/DELETE: fetch and validate the token but send no body and
             // never read the vault; attach default headers plus the caller's headers.
-            auto resolved = m_support.get_proxy_record(
-                request.token_type,
-                request.token,
-                ctx.merchant_id
-            );
+            auto resolved =
+                m_support.get_proxy_record(request.token_type, request.token, ctx.merchant_id);
             if (!resolved) {
                 return std::unexpected{m_support.make_error(std::move(resolved.error()))};
             }
@@ -131,8 +125,8 @@ public:
             return std::unexpected{m_support.make_error(std::move(document.error()))};
         }
 
-        m_context.metrics().record_flow("proxy");
-        m_context.metrics().counter("proxy.proxy").increment();
+        m_context.logger().record_flow("proxy");
+        m_context.logger().counter("proxy.proxy").increment();
         return std::move(*document);
     }
 

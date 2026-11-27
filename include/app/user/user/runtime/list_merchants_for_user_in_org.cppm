@@ -39,15 +39,17 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    list_merchants_for_user_in_org(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    list_merchants_for_user_in_org(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
 
         const auto org_id = ctx.org_id;
-        m_context.metrics().record_flow("list_merchants_for_user_in_org");
-        m_context.metrics().counter("user.list_merchants_for_user_in_org").increment();
+        m_context.logger().record_flow("list_merchants_for_user_in_org");
+        m_context.logger().counter("user.list_merchants_for_user_in_org").increment();
 
         using Response = std::vector<::app::model::user::UserMerchantAccountResponse>;
         Response response{};

@@ -1,4 +1,5 @@
 export module app_payment:cards_info_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -28,26 +29,27 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
-        card_iin_info(const Dto& dto, const core::behavior::CallContext& ctx) const
+    card_iin_info(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_card_iin_info.card_iin_info(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
-        create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_create.create(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
     migrate(const core::behavior::CallContext& ctx) const
     {
         return m_migrate.migrate(ctx);

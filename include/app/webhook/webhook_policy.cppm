@@ -35,17 +35,17 @@ using AppError = ::core::error::AppError;
  * Builds the HTTP-free request snapshot handed to runtime methods. Headers, query
  * and path segments are copied once here; the runtime never sees IRequest.
  */
-[[nodiscard]] inline CallContext make_call_context(
-    interfaces::io::IRequest& req,
-    const Scope& scope
-) {
+[[nodiscard]] inline CallContext
+make_call_context(interfaces::io::IRequest& req, const Scope& scope)
+{
     CallContext ctx;
     ctx.merchant_id = scope.merchant_id;
     ctx.profile_id = scope.profile_id;
     ctx.org_id = scope.org_id;
     ctx.connected_merchant_id = scope.connected_merchant_id;
 
-    const auto lower = [](std::string_view value) {
+    const auto lower = [](std::string_view value)
+    {
         std::string out;
         out.reserve(value.size());
         for (const char ch: value) {
@@ -368,11 +368,7 @@ public:
     using InputSupport = ::app::handlers::subscription::SubscriptionInputSupport;
 
     [[nodiscard]] std::optional<AppError>
-    authorize(
-        interfaces::io::IRequest& req,
-        std::string_view operation,
-        const AuthSpec& spec
-    ) const
+    authorize(interfaces::io::IRequest& req, std::string_view operation, const AuthSpec& spec) const
     {
         using ::app::auth::AuthContextBuilder;
 

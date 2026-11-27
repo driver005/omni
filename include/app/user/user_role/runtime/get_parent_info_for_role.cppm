@@ -37,12 +37,13 @@ public:
     [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
     get_parent_info_for_role(const ::core::behavior::CallContext& ctx) const
     {
-        if (ctx_string(ctx,"role_id").empty()) {
+        if (ctx_string(ctx, "role_id").empty()) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
             };
         }
-        const auto role = m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx,"role_id"));
+        const auto role =
+            m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx, "role_id"));
         if (!role || role->is_internal) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")

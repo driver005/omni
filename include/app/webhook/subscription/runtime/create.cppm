@@ -82,8 +82,7 @@ public:
         );
 
         // create_payment_with_confirm_false (invoice_handler.rs:116-143)
-        PaymentView payment =
-            m_support.create_payment(record, estimate, false, payload, false);
+        PaymentView payment = m_support.create_payment(record, estimate, false, payload, false);
 
         // create_invoice_entry (invoice_handler.rs:41-79), status = InvoiceCreated ->
         // "invoice_created"

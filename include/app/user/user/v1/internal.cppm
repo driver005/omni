@@ -121,8 +121,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "get_user_details_internal", {})) {
+        if (const auto auth_error = m_support.authorize(req, "get_user_details_internal", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -166,8 +165,14 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::ListUsersInternalRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::ListUsersInternalRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.list_users_internal(*parsed, ctx).handle(sink);
     }
@@ -179,8 +184,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "list_members_for_entity", {})) {
+        if (const auto auth_error = m_support.authorize(req, "list_members_for_entity", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -223,8 +227,11 @@ public:
             sink.send();
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::user::AuthorizeTokenRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::AuthorizeTokenRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.authorize_token(*parsed, ctx).handle(sink);
     }

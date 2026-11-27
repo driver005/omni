@@ -44,6 +44,7 @@ congelado_module_library(
         "repository_base.cppm",
     ],
     deps = [
+        "@stduuid//:stduuid",
         "//include/core/serde:core_serde",],
 
     visibility = ["//visibility:public"],

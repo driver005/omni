@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_migrate_payment_methods;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::ModularPaymentMethodMigrationResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse>
     migrate_payment_methods(const core::behavior::CallContext& ctx) const
     {
         const auto input = MigratePaymentMethodsData{ctx};
-        m_context.metrics().record_flow("migrate_payment_methods");
-        m_context.metrics().counter("PAYMENT_METHOD_MIGRATE_PAYMENT_METHODS").increment();
+        m_context.logger().record_flow("migrate_payment_methods");
+        m_context.logger().counter("PAYMENT_METHOD_MIGRATE_PAYMENT_METHODS").increment();
         ::app::model::payment_methods::ModularPaymentMethodMigrationResponse response{};
         response.set_total_rows(input.rows.size());
         std::vector<::app::model::payment_methods::ModularPaymentMethodMigrationRowResult>

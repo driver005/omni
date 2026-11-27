@@ -36,11 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
-        update(const ::app::model::organization::OrganizationUpdateRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse> update(
+        const ::app::model::organization::OrganizationUpdateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        auto found = m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
+        auto found =
+            m_context.repository().find_organization_by_string(ctx_string(ctx, "organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -60,12 +62,14 @@ public:
         if (request.get_platform_merchant_id().has_value()) {
             record.set_platform_merchant_id(request.get_platform_merchant_id()->get_value());
         }
-        if (const auto duplicate =
-                m_support.acquire_operation_lock("organization_update", ctx_string(ctx,"organization_id"))) {
+        if (const auto duplicate = m_support.acquire_operation_lock(
+                "organization_update",
+                ctx_string(ctx, "organization_id")
+            )) {
             return std::unexpected{*duplicate};
         }
         m_context.repository().update_organization(record);
-        m_support.release_operation_lock("organization_update", ctx_string(ctx,"organization_id"));
+        m_support.release_operation_lock("organization_update", ctx_string(ctx, "organization_id"));
 
         ::app::model::organization::OrganizationResponse response;
         ::app::model::organization::OrganizationIdValue id;
@@ -83,8 +87,8 @@ public:
             response.set_metadata(std::move(metadata));
         }
 
-        m_context.metrics().record_flow("organization_update");
-        m_context.metrics().counter("admin.organization_update").increment();
+        m_context.logger().record_flow("organization_update");
+        m_context.logger().counter("admin.organization_update").increment();
         m_context.events().publish("organization.updated", serde::Ser::encode_json(response));
         return std::move(response);
     }

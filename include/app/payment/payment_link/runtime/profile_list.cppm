@@ -1,4 +1,5 @@
 export module app_payment:payment_link_runtime_profile_list;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,11 +38,11 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
-        profile_list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    profile_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentLinkListData{dto, ctx};
-        m_context.metrics().record_flow("payment_link.profile_list");
-        m_context.metrics().counter("payment_link.profile_list").increment();
+        m_context.logger().record_flow("payment_link.profile_list");
+        m_context.logger().counter("payment_link.profile_list").increment();
 
         auto response = m_support.build_list_response(dto, ctx);
         if (!response) {

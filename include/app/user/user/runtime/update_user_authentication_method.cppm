@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    update_user_authentication_method(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    update_user_authentication_method(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -95,8 +97,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("update_user_authentication_method");
-        m_context.metrics().counter("user.update_user_authentication_method").increment();
+        m_context.logger().record_flow("update_user_authentication_method");
+        m_context.logger().counter("user.update_user_authentication_method").increment();
 
         // Upstream StatusOk -> bare empty 200 body (services/api.rs:499,730-732).
         return std::pair{ResponseDocument::empty(), set_cookie};

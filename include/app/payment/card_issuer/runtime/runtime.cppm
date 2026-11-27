@@ -1,4 +1,5 @@
 export module app_payment:card_issuer_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -28,26 +29,26 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
-        add(const Dto& dto, const core::behavior::CallContext& ctx) const
+    add(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_add.add(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_update.update(dto, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerDeleteResponse>
-        remove(const core::behavior::CallContext& ctx) const
+    remove(const core::behavior::CallContext& ctx) const
     {
         return m_delete.remove(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerListResponse>
-        list(const core::behavior::CallContext& ctx) const
+    list(const core::behavior::CallContext& ctx) const
     {
         return m_list.list(ctx);
     }

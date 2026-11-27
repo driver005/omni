@@ -52,7 +52,7 @@ public:
         interfaces::io::ResponseSink sink{res, std::move(send)};
         // server_wrap begins by recording the flow, before auth/body handling
         // (routes/apple_pay_certificates_migration.rs:17-28).
-        m_context.metrics().record_flow("ApplePayCertificatesMigration");
+        m_context.logger().record_flow("ApplePayCertificatesMigration");
 
         // AdminApiAuth is modeled by the PLATFORM_ADMIN/ADMIN rule registered for
         // this operation (app/auth/registry.cppm:38); upstream
@@ -66,7 +66,7 @@ public:
         }
 
         // ApiEventMetric on the request type (api_models/apple_pay_certificates_migration.rs:12).
-        m_context.metrics().counter("api_event.APPLE_PAY_CERTIFICATES_MIGRATION").increment();
+        m_context.logger().counter("api_event.APPLE_PAY_CERTIFICATES_MIGRATION").increment();
 
         // web::Json<ApplePayCertificatesMigrationRequest> (routes:13-15). Vec<MerchantId>
         // is a plain JSON string array. No generic-tree / wrapper fallback.

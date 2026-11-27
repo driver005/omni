@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    delete_sample_data(const ::app::model::user::SampleDataRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> delete_sample_data(
+        const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -49,7 +50,7 @@ public:
         // tracked job + event; upstream returns StatusOk (empty 200).
         const auto tracker_id = m_context.process_trackers().schedule(
             "sample_data_delete",
-            ctx_string(ctx,"body"),
+            ctx_string(ctx, "body"),
             m_support.now_string()
         );
         m_context.process_trackers().mark_terminal(tracker_id, "queued");
@@ -62,8 +63,8 @@ public:
             std::to_string(request.get_record().value_or(0U))
         );
 
-        m_context.metrics().record_flow("delete_sample_data");
-        m_context.metrics().counter("user.delete_sample_data").increment();
+        m_context.logger().record_flow("delete_sample_data");
+        m_context.logger().counter("user.delete_sample_data").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

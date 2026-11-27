@@ -10,6 +10,7 @@ import app_http;
 import app_dto;
 
 import :context;
+
 export namespace app::handlers::card_issuer {
 
 /**
@@ -75,42 +76,87 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct CardIssuerAddData
 {
     ::app::dto::card_issuer::CardIssuerRequest request{};
+
     template<class Dto>
     explicit CardIssuerAddData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<::app::dto::card_issuer::CardIssuerRequest>(dto)}
     {
     }
 };
+
 struct CardIssuerUpdateData
 {
     std::string id{};
     ::app::dto::card_issuer::CardIssuerUpdateRequest request{};
+
     template<class Dto>
     explicit CardIssuerUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
         id{::app::payment::detail::last_path(ctx)},
-        request{::app::payment::detail::as_dto<::app::dto::card_issuer::CardIssuerUpdateRequest>(dto)}
+        request{
+            ::app::payment::detail::as_dto<::app::dto::card_issuer::CardIssuerUpdateRequest>(dto)
+        }
     {
     }
 };
+
 struct CardIssuerDeleteData
 {
     std::string id{};
+
     explicit CardIssuerDeleteData(const core::behavior::CallContext& ctx) :
         id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct CardIssuerListData
 {
-    explicit CardIssuerListData(const core::behavior::CallContext& ctx) 
+    explicit CardIssuerListData(const core::behavior::CallContext& ctx)
     {
         (void)ctx;
     }
 };
 
+class CardIssuerPolicy
+{
+public:
+    CardIssuerPolicy(::app::context::AppContext&, CardIssuerInputSupport& support) noexcept :
+        m_support{support}
+    {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return m_support.context(req);
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError> authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const core::behavior::AuthSpec&
+    ) const
+    {
+        return m_support.authorize(req, operation);
+    }
+
+    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest&) const
+    {
+        return {};
+    }
+
+    [[nodiscard]] std::optional<core::error::AppError>
+    scope_error(const core::behavior::Scope&) const
+    {
+        return std::nullopt;
+    }
+
+private:
+    CardIssuerInputSupport& m_support;
+};
 
 using CardIssuerRequestSupport = core::behavior::RequestSupport<CardIssuerPolicy>;
 using CardIssuerPolicySpec = core::behavior::AuthSpec;

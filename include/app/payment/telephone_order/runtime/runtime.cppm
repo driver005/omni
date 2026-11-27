@@ -1,4 +1,5 @@
 export module app_payment:telephone_order_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -22,7 +23,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<TwilioGenericPayResponse>
-        telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
+    telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_telephone_order_charge.telephone_order_charge(dto, ctx);
     }

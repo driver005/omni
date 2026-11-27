@@ -35,8 +35,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<TokenResponseWire, std::string>>
-    accept_invitations_pre_auth(const std::vector<AcceptEntityWire>& request,
-        const ::core::behavior::CallContext& ctx) const
+    accept_invitations_pre_auth(
+        const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         const auto lineages = m_support.lineages_for_accept(identity_from_context(ctx), request);
         std::vector<std::string> activated{};
@@ -63,8 +65,11 @@ public:
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "UserNotFound")
             };
         }
-        const auto token =
-            m_support.issue_flow_token(identity_from_context(ctx).user_id, "MerchantSelect", activated);
+        const auto token = m_support.issue_flow_token(
+            identity_from_context(ctx).user_id,
+            "MerchantSelect",
+            activated
+        );
         const auto cookie = std::format("token={}; HttpOnly; Path=/; SameSite=Lax", token);
         TokenResponseWire response{};
         response.set_token(token);

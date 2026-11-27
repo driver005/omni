@@ -1,4 +1,5 @@
 export module app_payment:pm_auth_runtime_exchange_token;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
+    exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = ExchangeTokenData{dto, ctx};
         const auto& request = input.request;
@@ -168,8 +169,8 @@ public:
             core::cache::to_cache_value(m_support.encrypt_secret(token_secret.value()))
         );
 
-        m_context.metrics().record_flow("PmAuthExchangeToken");
-        m_context.metrics().counter("PM_AUTH_EXCHANGE_TOKEN").increment();
+        m_context.logger().record_flow("PmAuthExchangeToken");
+        m_context.logger().counter("PM_AUTH_EXCHANGE_TOKEN").increment();
 
         // core/pm_auth.rs:244,311 — exchange_token_core returns RouterResponse<()> /
         // ApplicationResponse::StatusOk: HTTP 200 with an empty body. No access_token is

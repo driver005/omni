@@ -49,7 +49,7 @@ public:
         if (request.get_profile_id().has_value()) {
             profile_id = request.get_profile_id()->get_value();
             if (!m_context.repository().find_profile_by_string(profile_id).has_value()) {
-                m_context.metrics().counter("authentication_profile_missing").increment();
+                m_context.logger().counter("authentication_profile_missing").increment();
             }
         } else if (!ctx.profile_id.empty()) {
             profile_id = ctx.profile_id;
@@ -57,7 +57,7 @@ public:
         if (profile_id.empty()) {
             profile_id = std::string{"pro_"} + ctx.merchant_id;
         }
-        m_context.metrics().counter("authentication_profile_resolved").increment();
+        m_context.logger().counter("authentication_profile_resolved").increment();
 
         // :734-736 AuthenticationId::generate_authentication_id(AUTHENTICATION_ID_PREFIX).
         const auto authentication_id = m_context.ids().payment_id("authn_");
@@ -76,8 +76,7 @@ public:
                 acquirer_bin = *request.get_acquirer_details()->get_acquirer_bin();
             }
             if (request.get_acquirer_details()->get_acquirer_merchant_id()) {
-                acquirer_merchant_id =
-                    *request.get_acquirer_details()->get_acquirer_merchant_id();
+                acquirer_merchant_id = *request.get_acquirer_details()->get_acquirer_merchant_id();
             }
             if (request.get_acquirer_details()->get_merchant_country_code()) {
                 acquirer_country_code =
@@ -103,9 +102,7 @@ public:
         record.set_currency(request.get_currency().get_value());
         record.set_force_3ds(force_3ds);
         if (request.get_psd2_sca_exemption_type().has_value()) {
-            record.set_psd2_sca_exemption_type(
-                request.get_psd2_sca_exemption_type()->get_value()
-            );
+            record.set_psd2_sca_exemption_type(request.get_psd2_sca_exemption_type()->get_value());
         }
         record.set_acquirer_bin(acquirer_bin);
         record.set_acquirer_merchant_id(acquirer_merchant_id);
@@ -149,8 +146,8 @@ public:
         );
 
         // routes/authentication.rs:27-45 wraps the core in Flow::AuthenticationCreate.
-        m_context.metrics().record_flow("AuthenticationCreate");
-        m_context.metrics().counter("authentication_create").increment();
+        m_context.logger().record_flow("AuthenticationCreate");
+        m_context.logger().counter("authentication_create").increment();
 
         // :861-870 AuthenticationResponse::foreign_try_from (round-trip decrypt of
         // customer_details via crypto_operation DecryptOptional, :835-859).

@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_methods_session_create;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
-        payment_methods_session_create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodSessionResponse>
+    payment_methods_session_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodsSessionCreateData{dto, ctx};
         const auto& parsed = input.request;
@@ -82,8 +84,8 @@ public:
             );
         }
         m_support.publish_pm_event("payment_method_session.create", session_id);
-        m_context.metrics().record_flow("payment_methods_session_create");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHODS_SESSION_CREATE").increment();
+        m_context.logger().record_flow("payment_methods_session_create");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHODS_SESSION_CREATE").increment();
         ::app::model::payment_methods::PaymentMethodSessionResponse response{};
         ::app::model::payment_methods::GlobalPaymentMethodSessionIdValue id{};
         id.set_value(session_id);

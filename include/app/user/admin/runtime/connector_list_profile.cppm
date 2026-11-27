@@ -40,10 +40,10 @@ public:
         std::vector<::app::dto::admin::MerchantConnectorListResponse>>
     list(const ::core::behavior::CallContext& ctx) const
     {
-        auto response = m_support.list_payment_connectors(ctx_string(ctx,"merchant_id"), "");
+        auto response = m_support.list_payment_connectors(ctx_string(ctx, "merchant_id"), "");
 
-        m_context.metrics().record_flow("connector_list_profile");
-        m_context.metrics().counter("admin.connector_list_profile").increment();
+        m_context.logger().record_flow("connector_list_profile");
+        m_context.logger().counter("admin.connector_list_profile").increment();
         return std::move(response);
     }
 

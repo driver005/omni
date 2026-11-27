@@ -1,4 +1,5 @@
 export module app_payment:tokenization_runtime_delete_tokenized_data_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     /** Port of core::tokenization::delete_tokenized_data_core (core/tokenization.rs:100-163). */
     [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::DeleteTokenDataResponse>
-        delete_tokenized_data(const core::behavior::CallContext& ctx) const
+    delete_tokenized_data(const core::behavior::CallContext& ctx) const
     {
         const auto input = DeleteTokenizedDataData{ctx};
         // core:109-115 — get_entity_id_vault_id_by_token_id -> TokenizationRecordNotFound.

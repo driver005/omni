@@ -1,4 +1,5 @@
 export module app_payment:revenue_recovery_data_backfill_runtime_backfill;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,8 +39,9 @@ public:
      * core/revenue_recovery_data_backfill.rs:23-64.
      */
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
-        backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
+    backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RevenueRecoveryDataBackfillData{dto, ctx};
         std::size_t processed_records{0};

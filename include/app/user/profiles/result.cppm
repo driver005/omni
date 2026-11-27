@@ -2,6 +2,7 @@ export module app_user:profiles_result;
 
 import std;
 import core_serde;
+import interfaces;
 import app_dto;
 
 export namespace app::handlers::profiles {
@@ -14,6 +15,11 @@ public:
     // ProfileResponse brings its own Serializer<ProfileResponse>::serialize; pin this
     // type's overload so the profile wire fields win at every call site.
     using serde::Serializer<ProfileWireResponse>::serialize;
+
+    void to_response(interfaces::io::ResponseSink& sink) const
+    {
+        serde::Serializer<ProfileWireResponse>::to_response(sink);
+    }
 
     void set_merchant_id(std::string value)
     {

@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_get_total_payment_method_count;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::TotalPaymentMethodCountResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::TotalPaymentMethodCountResponse>
     get_total_payment_method_count(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetTotalPaymentMethodCountData{ctx};
-        m_context.metrics().record_flow("get_total_payment_method_count");
-        m_context.metrics().counter("PAYMENT_METHOD_GET_TOTAL_PAYMENT_METHOD_COUNT").increment();
+        m_context.logger().record_flow("get_total_payment_method_count");
+        m_context.logger().counter("PAYMENT_METHOD_GET_TOTAL_PAYMENT_METHOD_COUNT").increment();
         std::int64_t count{0};
         for (const auto& record: m_context.repository().list_payment_methods()) {
             if (!input.customer_id.empty() && record.get_customer_id() != input.customer_id) {

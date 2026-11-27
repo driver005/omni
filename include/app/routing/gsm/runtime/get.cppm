@@ -63,8 +63,8 @@ public:
         const auto response = m_support.response_from_domain(*domain);
 
         m_context.events().publish("gsm.rule.retrieved", m_support.audit_payload("retrieved", key));
-        m_context.metrics().record_flow("GsmRuleRetrieve");
-        m_context.metrics().counter("GSM_RULE_RETRIEVED").increment();
+        m_context.logger().record_flow("GsmRuleRetrieve");
+        m_context.logger().counter("GSM_RULE_RETRIEVED").increment();
         return std::move(response);
     }
 

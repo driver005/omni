@@ -39,11 +39,11 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBlocklistResponse>
     list_blocked_payment_methods(const ::core::behavior::CallContext& ctx) const
     {
-        const std::string kind = query_value(ctx, "data_kind").value_or("");
+        const std::string kind = m_support.query_value(ctx, "data_kind").value_or("");
         const std::string transaction_type =
-            query_value(ctx, "transaction_type").value_or("payment");
-        const std::uint16_t limit = query_number<std::uint16_t>(ctx, "limit", 10);
-        const std::uint16_t offset = query_number<std::uint16_t>(ctx, "offset", 0);
+            m_support.query_value(ctx, "transaction_type").value_or("payment");
+        const std::uint16_t limit = m_support.query_number<std::uint16_t>(ctx, "limit", 10);
+        const std::uint16_t offset = m_support.query_number<std::uint16_t>(ctx, "offset", 0);
         std::vector<EntryRecord> selected;
         for (const auto& record: m_support.list_entries()) {
             if (!m_support.matches_scope(

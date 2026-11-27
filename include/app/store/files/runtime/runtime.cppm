@@ -28,10 +28,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
-    create(
-        const CreateFileRequestData& request,
-        const core::behavior::CallContext& ctx
-    ) const
+    create(const CreateFileRequestData& request, const core::behavior::CallContext& ctx) const
     {
         return m_create.create(request, ctx);
     }

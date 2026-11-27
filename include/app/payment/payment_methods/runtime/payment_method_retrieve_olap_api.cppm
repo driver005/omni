@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_retrieve_olap_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,13 +37,14 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodDetailsResponse>
-        payment_method_retrieve_olap_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodDetailsResponse>
+    payment_method_retrieve_olap_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodRetrieveOlapApiData{dto, ctx};
         const auto& record = input.record;
-        m_context.metrics().record_flow("payment_method_retrieve_olap_api");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_OLAP_API").increment();
+        m_context.logger().record_flow("payment_method_retrieve_olap_api");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_OLAP_API").increment();
         ::app::model::payment_methods::PaymentMethodDetailsResponse response{};
         ::app::model::payment_methods::GlobalPaymentMethodIdValue id{};
         id.set_value(record.get_payment_method_id());

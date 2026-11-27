@@ -38,20 +38,21 @@ public:
 
     // routes/profile_acquirer.rs:11-50 -> core/profile_acquirer.rs:12-102.
     [[nodiscard]] core::behavior::Outcome<::app::dto::profile_acquirer::ProfileAcquirerResponse>
-        create(const ::app::dto::profile_acquirer::ProfileAcquirerCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    create(
+        const ::app::dto::profile_acquirer::ProfileAcquirerCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         // core:20-26 — find_business_profile_by_profile_id -> ProfileNotFound.
-        if (!m_support.profile_exists(ctx_string(ctx,"profile_id"))) {
-            return std::unexpected{m_support.profile_not_found(ctx_string(ctx,"profile_id"))};
+        if (!m_support.profile_exists(ctx_string(ctx, "profile_id"))) {
+            return std::unexpected{m_support.profile_not_found(ctx_string(ctx, "profile_id"))};
         }
 
         // core:28-38 — has_existing_default / is_default.
-        auto bucket = m_support.load_bucket(ctx_string(ctx,"profile_id"));
+        auto bucket = m_support.load_bucket(ctx_string(ctx, "profile_id"));
         const bool has_existing_default =
             bucket.has_value() && bucket->default_acquirer_config.has_value();
-        const bool is_default =
-            !has_existing_default || request.get_is_default().value_or(false);
+        const bool is_default = !has_existing_default || request.get_is_default().value_or(false);
 
         // core:17 — generate_profile_acquirer_id_of_default_length().
         const std::string profile_acquirer_id =
@@ -74,10 +75,10 @@ public:
         }
 
         // core:71-79 — ProfileUpdate::AcquirerConfigBucketUpdate persistence.
-        m_support.save_bucket(ctx_string(ctx,"profile_id"), *bucket);
+        m_support.save_bucket(ctx_string(ctx, "profile_id"), *bucket);
 
         // core:81-92 — re-read and find the slot matching `network`.
-        const auto stored = m_support.load_bucket(ctx_string(ctx,"profile_id"));
+        const auto stored = m_support.load_bucket(ctx_string(ctx, "profile_id"));
         const AcquirerConfig* updated = m_support.find_config_in_bucket(
             stored ? &*stored : nullptr,
             profile_acquirer_id,
@@ -89,11 +90,15 @@ public:
         }
 
         // core:94-99 — ProfileAcquirerResponse::from((id, &profile_id, Some(cfg), is_default)).
-        auto response =
-            m_support.build_response(profile_acquirer_id, ctx_string(ctx,"profile_id"), updated, is_default);
+        auto response = m_support.build_response(
+            profile_acquirer_id,
+            ctx_string(ctx, "profile_id"),
+            updated,
+            is_default
+        );
 
-        m_context.metrics().record_flow("ProfileAcquirerCreate");
-        m_context.metrics().counter("profile_acquirer_create").increment();
+        m_context.logger().record_flow("ProfileAcquirerCreate");
+        m_context.logger().counter("profile_acquirer_create").increment();
 
         return std::move(response);
     }

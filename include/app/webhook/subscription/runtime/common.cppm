@@ -443,7 +443,7 @@ public:
         if (!connector) {
             return std::nullopt;
         }
-        m_context.metrics().record_flow(std::format("subscription.connector.{}", operation));
+        m_context.logger().record_flow(std::format("subscription.connector.{}", operation));
         if (operation == "billing_customer_create" || operation == "create_customer_on_connector") {
             return connector->create_link(request);
         }
@@ -722,8 +722,8 @@ public:
 
     void metrics_for(std::string_view name) const
     {
-        m_context.metrics().record_flow(name);
-        m_context.metrics().counter(name).increment();
+        m_context.logger().record_flow(name);
+        m_context.logger().counter(name).increment();
     }
 
     // ── Response document builders (exact upstream field order / Option handling) ──

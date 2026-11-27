@@ -85,8 +85,8 @@ public:
 
     void record_retrieve_metrics(std::string_view request_poll_id) const
     {
-        m_context.metrics().counter("poll_retrieve_total").increment();
-        m_context.metrics().counter(std::format("poll_response.{}", request_poll_id)).increment();
+        m_context.logger().counter("poll_retrieve_total").increment();
+        m_context.logger().counter(std::format("poll_response.{}", request_poll_id)).increment();
     }
 
 private:

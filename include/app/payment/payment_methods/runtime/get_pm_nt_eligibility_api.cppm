@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_get_pm_nt_eligibility_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,7 +36,8 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::GetNetworkTokenEiligibilityResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse>
     get_pm_nt_eligibility_api(const core::behavior::CallContext& ctx) const
     {
         const auto input = GetPmNtEligibilityApiData{ctx};
@@ -53,8 +55,8 @@ public:
         }
         const auto connector_response =
             m_support.call_connector(input.org_id, "eligibility", input.card_bin, input.card_bin);
-        m_context.metrics().record_flow("get_pm_nt_eligibility_api");
-        m_context.metrics().counter("PAYMENT_METHOD_GET_PM_NT_ELIGIBILITY_API").increment();
+        m_context.logger().record_flow("get_pm_nt_eligibility_api");
+        m_context.logger().counter("PAYMENT_METHOD_GET_PM_NT_ELIGIBILITY_API").increment();
         bool eligible = false;
         const std::string raw = connector_response.get_raw_json();
         if (const auto document = serde::Ser::decode_generic("application/json", raw)) {

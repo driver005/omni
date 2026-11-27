@@ -35,10 +35,7 @@ public:
 
     // Upstream create_email_client() is a free helper (app.rs:477-495), no HTTP auth.
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create_email_client(
-        const serde::Value& payload,
-        const core::behavior::CallContext& ctx
-    ) const
+    create_email_client(const serde::Value& payload, const core::behavior::CallContext& ctx) const
     {
         // Upstream create_email_client(): choose from EmailClientConfigs
         // (ses / smtp / no_email_client). Credentials are secrets and must not
@@ -59,17 +56,16 @@ public:
         }
 
         const auto query_proxy = ctx.query.find("proxy_url");
-        const auto proxy_url = query_proxy != ctx.query.end() && !query_proxy->second.empty()
-            ? query_proxy->second
-            : m_context.config_store().get_value("email_client", "proxy_url").value_or("");
+        const auto proxy_url =
+            query_proxy != ctx.query.end() && !query_proxy->second.empty()
+                ? query_proxy->second
+                : m_context.config_store().get_value("email_client", "proxy_url").value_or("");
         const auto client_id = m_context.ids().key_id();
 
         // Deterministic substitute for upstream secret fetch (fetch_raw_secrets): a caller may
         // pass a key-store id; the active value is resolved through the injected KeyStore and
         // never echoed. The literal field is only a fallback for callers without a managed key.
-        ::app::crypto::SecretString secret{
-            m_support.field_string(payload, "secret").value_or("")
-        };
+        ::app::crypto::SecretString secret{m_support.field_string(payload, "secret").value_or("")};
         bool key_configured{false};
         const auto secret_id = m_support.field_string(payload, "secret_id").value_or("");
         if (!secret_id.empty()) {
@@ -96,8 +92,8 @@ public:
             m_support.serialize_document(serde::Value{std::move(event_body)});
         const auto event_id = m_context.events().publish("email_client.created", event_payload);
 
-        m_context.metrics().record_flow("CreateEmailClient");
-        m_context.metrics().counter("EMAIL_CLIENT_CREATED").increment();
+        m_context.logger().record_flow("CreateEmailClient");
+        m_context.logger().counter("EMAIL_CLIENT_CREATED").increment();
 
         serde::Value::Object document{};
         document.insert(

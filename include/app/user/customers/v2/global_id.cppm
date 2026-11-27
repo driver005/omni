@@ -1,4 +1,5 @@
 export module app_user:customers_handlers_v2_global_id;
+import core_behavior;
 
 import std;
 import interfaces;

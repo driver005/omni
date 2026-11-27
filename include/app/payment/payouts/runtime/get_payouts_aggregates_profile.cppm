@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_get_payouts_aggregates_profile;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,11 +39,11 @@ public:
 
     // ───────────────────────── Core: get_payouts_aggregates_profile ─────────────────────────
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
-        get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
+    get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsAggregatesProfileData{ctx};
-        m_context.metrics().record_flow("get_payouts_aggregates_profile");
-        m_context.metrics().counter("payouts_aggregates_profile_total").increment();
+        m_context.logger().record_flow("get_payouts_aggregates_profile");
+        m_context.logger().counter("payouts_aggregates_profile_total").increment();
         if (const auto invalid = m_support.require_time_range(input.range)) {
             return std::unexpected{*invalid};
         }

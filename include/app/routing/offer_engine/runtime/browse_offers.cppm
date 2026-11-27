@@ -39,8 +39,8 @@ public:
         const ::core::behavior::CallContext& ctx
     ) const
     {
-        m_context.metrics().record_flow("OfferEngineBrowseOffers");
-        m_context.metrics().counter("OFFER_ENGINE_BROWSE_OFFERS").increment();
+        m_context.logger().record_flow("OfferEngineBrowseOffers");
+        m_context.logger().counter("OFFER_ENGINE_BROWSE_OFFERS").increment();
 
         // Upstream `auth.platform` supplies the dimensions (browse.rs:22-28).
         OfferEngineDimensions dimensions{};
@@ -105,8 +105,8 @@ public:
         }
         typed_response.set_offers(std::move(offers));
 
-        m_context.metrics().record_flow("OfferEngineEligibilityFilter");
-        m_context.metrics().counter("OFFER_ENGINE_ELIGIBILITY_FILTER").increment();
+        m_context.logger().record_flow("OfferEngineEligibilityFilter");
+        m_context.logger().counter("OFFER_ENGINE_ELIGIBILITY_FILTER").increment();
 
         return std::move(typed_response);
     }

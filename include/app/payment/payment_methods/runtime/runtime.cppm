@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -88,19 +89,113 @@ public:
     {
     }
 
-#define OMNI_PM_FORWARD(method, result_type)                                           \
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodListResponse>
+    list_payment_method_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_list_payment_method_api.list_payment_method_api(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::CustomerPaymentMethodsListResponse>
+    list_customer_payment_method_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_list_customer_payment_method_api.list_customer_payment_method_api(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ClientPaymentMethodsListResponse>
+    list_customer_payment_method_api_client(const core::behavior::CallContext& ctx) const
+    {
+        return m_list_customer_payment_method_api_client.list_customer_payment_method_api_client(
+            ctx
+        );
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>>
+    payment_methods_batch_retrieve_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_payment_methods_batch_retrieve_api.payment_methods_batch_retrieve_api(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::TotalPaymentMethodCountResponse>
+    get_total_payment_method_count(const core::behavior::CallContext& ctx) const
+    {
+        return m_get_total_payment_method_count.get_total_payment_method_count(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ListCountriesCurrenciesResponse>
+    list_countries_currencies_for_connector_payment_method(
+        const core::behavior::CallContext& ctx
+    ) const
+    {
+        return m_list_countries_currencies_for_connector_payment_method
+            .list_countries_currencies_for_connector_payment_method(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsClientMethodsResponse>
+    list_payment_methods_for_payments_client(const core::behavior::CallContext& ctx) const
+    {
+        return m_list_payment_methods_for_payments_client.list_payment_methods_for_payments_client(
+            ctx
+        );
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse>
+    migrate_payment_methods(const core::behavior::CallContext& ctx) const
+    {
+        return m_migrate_payment_methods.migrate_payment_methods(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse>
+    update_payment_methods(const core::behavior::CallContext& ctx) const
+    {
+        return m_update_payment_methods.update_payment_methods(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse>
+    modular_migrate_payment_methods(const core::behavior::CallContext& ctx) const
+    {
+        return m_modular_migrate_payment_methods.modular_migrate_payment_methods(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse>
+    get_pm_nt_eligibility_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_get_pm_nt_eligibility_api.get_pm_nt_eligibility_api(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::model::payment_methods::TokenizedCardValue1>>
+    tokenize_card_batch_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_tokenize_card_batch_api.tokenize_card_batch_api(ctx);
+    }
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse>
+    payment_method_get_token_details_api(const core::behavior::CallContext& ctx) const
+    {
+        return m_payment_method_get_token_details_api.payment_method_get_token_details_api(ctx);
+    }
+
+#define OMNI_PM_FORWARD(method, result_type)                                                       \
     template<class Dto>                                                                            \
     [[nodiscard]] core::behavior::Outcome<result_type> method(                                     \
-        const Dto& dto, const core::behavior::CallContext& ctx                                     \
+        const Dto& dto,                                                                            \
+        const core::behavior::CallContext& ctx                                                     \
     ) const                                                                                        \
     {                                                                                              \
         return m_##method.method(dto, ctx);                                                        \
     }
 
-    OMNI_PM_FORWARD(
-        create_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodResponse
-    )
+    OMNI_PM_FORWARD(create_payment_method_api, ::app::model::payment_methods::PaymentMethodResponse)
     OMNI_PM_FORWARD(
         get_pm_nt_eligibility_api,
         ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse
@@ -137,10 +232,7 @@ public:
         payment_methods_batch_retrieve_api,
         std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>
     )
-    OMNI_PM_FORWARD(
-        save_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodResponse
-    )
+    OMNI_PM_FORWARD(save_payment_method_api, ::app::model::payment_methods::PaymentMethodResponse)
     OMNI_PM_FORWARD(
         list_payment_method_api,
         ::app::model::payment_methods::PaymentMethodListResponse
@@ -161,18 +253,18 @@ public:
         payment_method_retrieve_olap_api,
         ::app::model::payment_methods::PaymentMethodDetailsResponse
     )
-    OMNI_PM_FORWARD(
-        get_payment_method_token_data,
-        ::app::model::payment_methods::TokenDataResponse
-    )
+    OMNI_PM_FORWARD(get_payment_method_token_data, ::app::model::payment_methods::TokenDataResponse)
     OMNI_PM_FORWARD(
         get_total_payment_method_count,
         ::app::model::payment_methods::TotalPaymentMethodCountResponse
     )
-    OMNI_PM_FORWARD(
-        render_pm_collect_link,
-        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest
-    )
+
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest>
+    render_pm_collect_link(const core::behavior::CallContext& ctx) const
+    {
+        return m_render_pm_collect_link.render_pm_collect_link(ctx);
+    }
     OMNI_PM_FORWARD(
         list_countries_currencies_for_connector_payment_method,
         ::app::model::payment_methods::ListCountriesCurrenciesResponse
@@ -181,14 +273,8 @@ public:
         default_payment_method_set_api,
         ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse
     )
-    OMNI_PM_FORWARD(
-        tokenize_card_api,
-        ::app::model::payment_methods::CardNetworkTokenizeResponse
-    )
-    OMNI_PM_FORWARD(
-        tokenize_card_using_pm_api,
-        ::app::model::payment_methods::TokenizedCardValue1
-    )
+    OMNI_PM_FORWARD(tokenize_card_api, ::app::model::payment_methods::CardNetworkTokenizeResponse)
+    OMNI_PM_FORWARD(tokenize_card_using_pm_api, ::app::model::payment_methods::TokenizedCardValue1)
     OMNI_PM_FORWARD(
         tokenize_card_batch_api,
         std::vector<::app::model::payment_methods::TokenizedCardValue1>

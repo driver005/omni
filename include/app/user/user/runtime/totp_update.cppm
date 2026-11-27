@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    totp_update(const ::app::model::user::VerifyTotpRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> totp_update(
+        const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -63,12 +64,8 @@ public:
             std::from_chars(step_param->data(), step_param->data() + step_param->size(), step);
         }
         ::app::crypto::TotpGenerator generator{m_context.one_time_store()};
-        if (!generator.verify(
-                pending->value(),
-                step,
-                request.get_totp(),
-                m_support.now_seconds()
-            )) {
+        if (!generator
+                 .verify(pending->value(), step, request.get_totp(), m_support.now_seconds())) {
             return std::unexpected{m_support.wire_error(
                 "UR_37",
                 "Invalid TOTP",
@@ -95,8 +92,8 @@ public:
             core::cache::to_cache_value(std::string{"ok"})
         );
 
-        m_context.metrics().record_flow("totp_update");
-        m_context.metrics().counter("user.totp_update").increment();
+        m_context.logger().record_flow("totp_update");
+        m_context.logger().counter("user.totp_update").increment();
 
         // Upstream ApplicationResponse::StatusOk -> HttpResponse::Ok().finish()
         // (services/api.rs:499,730-732): bare empty 200 body.

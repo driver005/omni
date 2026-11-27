@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module core_database:db_value;
 
 import std;
@@ -45,6 +48,8 @@ template<typename T>
         return DbValue{std::string{std::string_view{value}}};
     } else if constexpr (std::same_as<U, Null>) {
         return DbValue{Null{}};
+    } else if constexpr (std::same_as<U, uuids::uuid>) {
+        return DbValue{uuids::to_string(value)};
     } else {
         return DbValue{std::forward<T>(value)};
     }

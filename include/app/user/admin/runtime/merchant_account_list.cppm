@@ -37,25 +37,25 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        list(const ::core::behavior::CallContext& ctx) const
+    list(const ::core::behavior::CallContext& ctx) const
     {
         std::vector<::app::dto::admin::MerchantAccountResponse> response;
         const auto accounts = m_context.repository().list_merchant_accounts();
         std::size_t emitted{0};
         for (const auto& account: accounts) {
-            if (!ctx_string(ctx,"organization_id").empty() &&
-                account.get_organization_id() != ctx_string(ctx,"organization_id")) {
+            if (!ctx_string(ctx, "organization_id").empty() &&
+                account.get_organization_id() != ctx_string(ctx, "organization_id")) {
                 continue;
             }
-            if (!ctx_string(ctx,"merchant_filter").empty() &&
-                account.get_merchant_id() != ctx_string(ctx,"merchant_filter")) {
+            if (!ctx_string(ctx, "merchant_filter").empty() &&
+                account.get_merchant_id() != ctx_string(ctx, "merchant_filter")) {
                 continue;
             }
-            if (emitted < ctx_size(ctx,"offset")) {
+            if (emitted < ctx_size(ctx, "offset")) {
                 ++emitted;
                 continue;
             }
-            if (ctx_size(ctx,"limit") != 0 && response.size() >= ctx_size(ctx,"limit")) {
+            if (ctx_size(ctx, "limit") != 0 && response.size() >= ctx_size(ctx, "limit")) {
                 break;
             }
             ::app::dto::admin::MerchantAccountResponse item;
@@ -70,12 +70,16 @@ public:
             response.push_back(std::move(item));
         }
 
-        m_context.metrics().record_flow("merchant_account_list");
-        m_context.metrics().counter("admin.merchant_account_list").increment();
+        m_context.logger().record_flow("merchant_account_list");
+        m_context.logger().counter("admin.merchant_account_list").increment();
         serde::Value::Array array{};
         for (const auto& item: response) {
-            array.push_back(serde::Serializer<::app::dto::admin::MerchantAccountResponse>::
-                                build_value(item, kMerchantAccountResponseWireFields));
+            array.push_back(
+                serde::Serializer<::app::dto::admin::MerchantAccountResponse>::build_value(
+                    item,
+                    kMerchantAccountResponseWireFields
+                )
+            );
         }
         return serde::Value{std::move(array)};
     }

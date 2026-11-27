@@ -22,8 +22,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    payment_connector_verify(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> payment_connector_verify(
         const ::app::dto::verify_connector::VerifyConnectorRequest& request,
         const core::behavior::CallContext& ctx
     ) const

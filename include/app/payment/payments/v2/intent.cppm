@@ -69,8 +69,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payment_get_intent_using_merchant_reference_id");
-        m_context.metrics()
+        m_context.logger().record_flow("payments.payment_get_intent_using_merchant_reference_id");
+        m_context.logger()
             .counter("payments.payment_get_intent_using_merchant_reference_id")
             .increment();
 
@@ -85,10 +85,15 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payment_get_intent_using_merchant_reference_id(dto, m_request_support->context(req)).handle(sink);
+        m_runtime
+            .payment_get_intent_using_merchant_reference_id(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_payments_get_intent(
@@ -105,8 +110,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_get_intent");
-        m_context.metrics().counter("payments.payments_get_intent").increment();
+        m_context.logger().record_flow("payments.payments_get_intent");
+        m_context.logger().counter("payments.payments_get_intent").increment();
 
         const auto body =
             m_input_support.path_body({{"payment_id", m_input_support.payment_id_from_path(req)}});
@@ -118,8 +123,11 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_get_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -140,8 +148,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.revenue_recovery_get_intent");
-        m_context.metrics().counter("payments.revenue_recovery_get_intent").increment();
+        m_context.logger().record_flow("payments.revenue_recovery_get_intent");
+        m_context.logger().counter("payments.revenue_recovery_get_intent").increment();
 
         const auto body =
             m_input_support.path_body({{"payment_id", m_input_support.payment_id_from_path(req)}});
@@ -153,8 +161,11 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.revenue_recovery_get_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -173,8 +184,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.list_payment_attempts");
-        m_context.metrics().counter("payments.list_payment_attempts").increment();
+        m_context.logger().record_flow("payments.list_payment_attempts");
+        m_context.logger().counter("payments.list_payment_attempts").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.list_payment_attempts(dto, m_request_support->context(req)).handle(sink);
@@ -194,8 +205,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.list_payment_methods");
-        m_context.metrics().counter("payments.list_payment_methods").increment();
+        m_context.logger().record_flow("payments.list_payment_methods");
+        m_context.logger().counter("payments.list_payment_methods").increment();
 
         const auto body =
             m_input_support.path_body({{"payment_id", m_input_support.payment_id_from_path(req)}});
@@ -207,8 +218,11 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.list_payment_methods(dto, m_request_support->context(req)).handle(sink);
     }
@@ -228,7 +242,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_get_intent_using_merchant_reference_id(
                                 req,
@@ -257,7 +271,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_attempts(req, res, std::move(send));
                         }
@@ -282,7 +296,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_attempts(req, res, std::move(send));
                         }
@@ -307,7 +321,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_get_intent(req, res, std::move(send));
                         }
@@ -332,7 +346,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_revenue_recovery_get_intent(req, res, std::move(send));
                         }
@@ -357,7 +371,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_methods(req, res, std::move(send));
                         }

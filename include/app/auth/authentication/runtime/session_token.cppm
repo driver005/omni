@@ -39,8 +39,7 @@ public:
 
     // ───────────────────────── Core: session token ─────────────────────────
     // unified_authentication_service.rs:2516-2583 authentication_session_core.
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    session_token(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> session_token(
         const ::app::dto::authentication::AuthenticationSessionTokenRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -57,16 +56,10 @@ public:
             return std::unexpected{*err};
         }
         m_support.track_record_fetch("session_token", authentication_id);
-        const auto tracker_id = m_support.schedule_auth_tracker(
-            "session_token",
-            authentication_id,
-            flow
-        );
-        m_context.process_trackers().mark_terminal(
-            tracker_id,
-            std::string{authentication_id}
-        );
-        m_context.metrics().record_flow("AuthenticationSessionToken");
+        const auto tracker_id =
+            m_support.schedule_auth_tracker("session_token", authentication_id, flow);
+        m_context.process_trackers().mark_terminal(tracker_id, std::string{authentication_id});
+        m_context.logger().record_flow("AuthenticationSessionToken");
 
         // :2562-2573 is_click_to_pay_enabled && authentication_product_ids ->
         // get_session_token_for_click_to_pay (:2586-2680), else session_tokens stays empty.

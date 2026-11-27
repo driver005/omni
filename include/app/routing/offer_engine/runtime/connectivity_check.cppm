@@ -35,8 +35,8 @@ public:
     [[nodiscard]] core::behavior::Outcome<ConnectivityCheckResponse>
     connectivity_check(const ::core::behavior::CallContext&) const
     {
-        m_context.metrics().record_flow("OfferEngineConnectivityCheck");
-        m_context.metrics().counter("OFFER_ENGINE_CONNECTIVITY_CHECK").increment();
+        m_context.logger().record_flow("OfferEngineConnectivityCheck");
+        m_context.logger().counter("OFFER_ENGINE_CONNECTIVITY_CHECK").increment();
 
         // Global dimensions, so no merchant/profile context is folded in.
         const OfferEngineDimensions global{};

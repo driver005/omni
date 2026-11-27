@@ -22,8 +22,7 @@ public:
 
     // Upstream POST/GET/PUT /webhooks/{merchant_id}/{connector_id_or_name},
     // MerchantIdAuth(path) (routes/webhooks.rs:11-44, app.rs:2352-2357).
-    [[nodiscard]] core::behavior::Outcome<WebhookAck>
-    receive_incoming_webhook(
+    [[nodiscard]] core::behavior::Outcome<WebhookAck> receive_incoming_webhook(
         const std::string& body,
         const ::core::behavior::CallContext& ctx
     ) const

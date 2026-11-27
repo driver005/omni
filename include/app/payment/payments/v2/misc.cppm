@@ -69,11 +69,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.recovery_payments_create");
-        m_context.metrics().counter("payments.recovery_payments_create").increment();
+        m_context.logger().record_flow("payments.recovery_payments_create");
+        m_context.logger().counter("payments.recovery_payments_create").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.recovery_payments_create(dto, m_request_support->context(req)).handle(sink);
     }
@@ -92,7 +95,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_recovery_payments_create(req, res, std::move(send));
                     }

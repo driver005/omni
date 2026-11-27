@@ -3,6 +3,7 @@ export module app_payment:mandates_runtime_common;
 import std;
 import core_serde;
 import core_error;
+import core_behavior;
 import app_context;
 import app_model;
 import app_store;
@@ -60,8 +61,8 @@ public:
     void record_flow(std::string_view flow) const
     {
         // router_env::instrument(Flow::Mandates*) + metrics.
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(flow).increment();
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(flow).increment();
     }
 
     /**
@@ -112,8 +113,7 @@ public:
     }
 
     /** @brief get_mandate_type (core/mandate/helpers.rs:46-85), retained as a local validator. */
-    [[maybe_unused]]
-    [[nodiscard]] core::behavior::Outcome<std::optional<std::string_view>>
+    [[maybe_unused]] [[nodiscard]] core::behavior::Outcome<std::optional<std::string_view>>
     get_mandate_type(
         bool has_mandate_data,
         bool has_off_session,

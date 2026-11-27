@@ -44,7 +44,8 @@ public:
         const ::core::behavior::CallContext& ctx
     ) const
     {
-        const std::string override_type = query_value(ctx, "transaction_type").value_or("");
+        const std::string override_type =
+            m_support.query_value(ctx, "transaction_type").value_or("");
         const auto job_id = m_context.ids().payment_id("blkbatch");
         const auto stamp = m_support.now_iso8601();
         // in-process substitute for batch.rs:512-551 process_chunk (the worker is not present).

@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_retrieve_disputes_list;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,10 +39,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
-        retrieve_disputes_list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_disputes_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RetrieveDisputesListData{dto, ctx};
-        m_context.metrics().record_flow("dispute_list");
+        m_context.logger().record_flow("dispute_list");
         auto result =
             m_support.retrieve_disputes_list(input.scope, input.constraints, std::nullopt);
         if (!result) {

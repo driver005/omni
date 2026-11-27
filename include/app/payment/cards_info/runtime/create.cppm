@@ -1,4 +1,5 @@
 export module app_payment:cards_info_runtime_create;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -29,13 +30,13 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
-        create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = CreateCardsInfoData{dto, ctx};
         auto repository = m_context.repository();
         auto created = repository.create_card_info(m_support.to_store_record(input.request));
         if (!created) {
-            m_context.metrics().record_flow("CardsInfoCreate");
+            m_context.logger().record_flow("CardsInfoCreate");
             return std::unexpected{m_support.generic_duplicate_error(
                 "CardInfo with given key already exists in our records"
             )};
@@ -43,8 +44,8 @@ public:
         auto response = m_support.build_response(input.request);
         m_support.cache_response(created->get_iin(), response);
 
-        m_context.metrics().record_flow("CardsInfoCreate");
-        m_context.metrics().counter("CARDS_INFO_CREATED").increment();
+        m_context.logger().record_flow("CardsInfoCreate");
+        m_context.logger().counter("CARDS_INFO_CREATED").increment();
         return ::app::model::cards_info::CardInfoResponse{
             m_support.response_from_store_enriched(*created, std::move(response))
         };

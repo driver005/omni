@@ -9,6 +9,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::revenue_recovery_redis {
 
 /**
@@ -82,17 +83,18 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct GetRevenueRecoveryRedisDataData
 {
     std::string connector_customer_id{};
     bool is_tokens{};
+
     explicit GetRevenueRecoveryRedisDataData(const core::behavior::CallContext& ctx) :
         connector_customer_id{::app::payment::detail::last_path(ctx)},
         is_tokens{}
     {
     }
 };
-
 
 /** @brief Request policy for the revenue_recovery_redis domain: wraps the domain auth rules. */
 class RevenueRecoveryRedisPolicy

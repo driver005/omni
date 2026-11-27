@@ -52,8 +52,7 @@ public:
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_support
-                    .authorize(req, "get_groups_and_resources_for_role_from_token", {})) {
+                m_support.authorize(req, "get_groups_and_resources_for_role_from_token", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;
@@ -71,8 +70,7 @@ public:
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_support
-                    .authorize(req, "get_parent_groups_info_for_role_from_token", {})) {
+                m_support.authorize(req, "get_parent_groups_info_for_role_from_token", {})) {
             const auto& error = *auth_error;
             error.send(sink);
             return;

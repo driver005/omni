@@ -141,11 +141,11 @@ public:
         std::optional<::app::model::routing::RoutingActivatePayload> activate{};
         const auto body = req.body_as_string();
         if (!body.empty()) {
-            link = serde::Ser::deserialize<::app::model::routing::RoutingLinkWrapper>(
+            link = *serde::Ser::deserialize<::app::model::routing::RoutingLinkWrapper>(
                 "application/json",
                 body
             );
-            activate = serde::Ser::deserialize<::app::model::routing::RoutingActivatePayload>(
+            activate = *serde::Ser::deserialize<::app::model::routing::RoutingActivatePayload>(
                 "application/json",
                 body
             );
@@ -177,7 +177,7 @@ public:
         std::optional<::app::model::routing::RoutingConfigRequest> config_request{};
         const auto body = req.body_as_string();
         if (!body.empty()) {
-            config_request = serde::Ser::deserialize<::app::model::routing::RoutingConfigRequest>(
+            config_request = *serde::Ser::deserialize<::app::model::routing::RoutingConfigRequest>(
                 "application/json",
                 body
             );

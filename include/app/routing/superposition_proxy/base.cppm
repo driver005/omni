@@ -17,5 +17,4 @@ export import :superposition_proxy_handlers_v1_default_configs;
 export import :superposition_proxy_handlers_v1_dimensions;
 export import :superposition_proxy_handlers_v1_resolve;
 export import :superposition_proxy_handlers_v1_audit;
-export import :superposition_proxy_handlers_v1;
-export import :superposition_proxy_handler;
+export import :superposition_proxy_router;

@@ -868,9 +868,9 @@ auto build_named_tuple(const T& object, std::tuple<Fds...> field_descriptors)
         {
             return rfl::NamedTuple(
                 rfl::make_field<decltype(fields)::name>(
-                    FieldConverter<std::remove_cvref_t<decltype(decltype(fields)::normalize(
-                        (object.*decltype(fields)::getter)()
-                    ))>>::to_rfl(decltype(fields)::normalize((object.*decltype(fields)::getter)()))
+                    FieldConverter<std::remove_cvref_t<
+                        decltype(serde::field_value<decltype(fields)>(object))>>::
+                        to_rfl(serde::field_value<decltype(fields)>(object))
                 )...
             );
         },
@@ -895,7 +895,8 @@ void apply_named_tuple_to(T& object, const NT& named_tuple, std::tuple<Fds...> f
     std::apply(
         [&](auto... fields)
         {
-            ((object.*decltype(fields)::setter)(
+            (serde::set_field_value<decltype(fields)>(
+                 object,
                  FieldConverter<typename decltype(fields)::ValueType>::from_rfl(
                      rfl::get<decltype(fields)::name>(named_tuple)
                  )
@@ -1222,7 +1223,7 @@ simdjson::error_code extract_simdjson_field(
         inner_error_code) {
         return inner_error_code;
     }
-    (out.*Fd::setter)(std::move(value));
+    serde::set_field_value<Fd>(out, std::move(value));
     return simdjson::SUCCESS;
 }
 
@@ -1249,7 +1250,7 @@ extract_toml_field(const toml::table& table, typename Fd::ClassType& out, Fd fie
     if (!result) {
         return std::unexpected{result.error()};
     }
-    (out.*Fd::setter)(std::move(*result));
+    serde::set_field_value<Fd>(out, std::move(*result));
     return {};
 }
 

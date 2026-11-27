@@ -69,8 +69,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.post_3ds_payments_authorize");
-        m_context.metrics().counter("payments.post_3ds_payments_authorize").increment();
+        m_context.logger().record_flow("payments.post_3ds_payments_authorize");
+        m_context.logger().counter("payments.post_3ds_payments_authorize").increment();
 
         const auto body =
             m_input_support.path_body({{"connector", m_input_support.last_path_segment(req)}});
@@ -82,8 +82,11 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.post_3ds_payments_authorize(dto, m_request_support->context(req)).handle(sink);
     }
@@ -108,7 +111,10 @@ public:
                                                 std::function<void()> send
                                             )
                                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                interfaces::io::ResponseSink sink{
+                                                    res,
+                                                    std::move(send)
+                                                };
 
                                                 handle_post_3ds_payments_authorize(
                                                     req,
@@ -147,7 +153,10 @@ public:
                                                 std::function<void()> send
                                             )
                                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                interfaces::io::ResponseSink sink{
+                                                    res,
+                                                    std::move(send)
+                                                };
 
                                                 handle_post_3ds_payments_authorize(
                                                     req,
@@ -183,7 +192,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_post_3ds_payments_authorize(req, res, std::move(send));
                                 }
@@ -195,7 +204,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_post_3ds_payments_authorize(req, res, std::move(send));
                                 }

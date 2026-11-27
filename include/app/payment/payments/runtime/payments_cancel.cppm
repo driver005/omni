@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_payments_cancel;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -31,8 +32,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse>
-    payments_cancel(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse> payments_cancel(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         if (const auto err = m_support.ensure_payment_exists(input)) {

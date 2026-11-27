@@ -41,12 +41,13 @@ public:
         ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse>
     link(const ::core::behavior::CallContext& ctx) const
     {
-        m_context.metrics().record_flow("HierarchicalResourcesLink");
-        m_context.metrics().counter("hierarchical_resources_link_total").increment();
+        m_context.logger().record_flow("HierarchicalResourcesLink");
+        m_context.logger().counter("hierarchical_resources_link_total").increment();
 
         // core:832-839 — find_resource_scope_id + org authorization.
-        const auto stored =
-            m_context.repository().find_hierarchical_resource_by_string(ctx_string(ctx,"resource_id"));
+        const auto stored = m_context.repository().find_hierarchical_resource_by_string(
+            ctx_string(ctx, "resource_id")
+        );
         if (!stored.has_value()) {
             return std::unexpected{
                 m_support.make_error(core::error::AppErrorKind::NOT_FOUND, "resource not found")
@@ -54,7 +55,7 @@ public:
         }
         if (!m_support.authorize_scope_id_belongs_to_org(
                 stored->get_scope_id(),
-                ctx_string(ctx,"organization_id")
+                ctx_string(ctx, "organization_id")
             )) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::FORBIDDEN,
@@ -64,9 +65,9 @@ public:
 
         // core:841-847 — fetch_requestor_account (V1, merchant scoped).
         const auto account = m_support.fetch_requestor_account(
-            ctx_string(ctx,"requestor_type"),
-            ctx_string(ctx,"requestor_id"),
-            ctx_string(ctx,"merchant_id")
+            ctx_string(ctx, "requestor_type"),
+            ctx_string(ctx, "requestor_id"),
+            ctx_string(ctx, "merchant_id")
         );
         if (!account) {
             return std::unexpected{std::move(account.error())};
@@ -81,8 +82,8 @@ public:
                 "resource is not active"
             )};
         }
-        if (!ctx_string(ctx,"merchant_id").empty() && !payload.merchant_id.empty() &&
-            payload.merchant_id != ctx_string(ctx,"merchant_id")) {
+        if (!ctx_string(ctx, "merchant_id").empty() && !payload.merchant_id.empty() &&
+            payload.merchant_id != ctx_string(ctx, "merchant_id")) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::FORBIDDEN,
                 "resource belongs to a different merchant"
@@ -91,20 +92,20 @@ public:
 
         // core:238-301 on_link — re-encrypt the private key under the requestor's
         // key store and mirror the account attachment (local config/event substitute).
-        const auto requestor_key = m_support.ensure_requestor_key(ctx_string(ctx,"requestor_id"));
+        const auto requestor_key = m_support.ensure_requestor_key(ctx_string(ctx, "requestor_id"));
         const auto rewrapped =
             ::app::crypto::AesWrap{}.encrypt(payload.encrypted_data, requestor_key);
-        const auto link_id = m_support.link_resource_id(ctx_string(ctx,"requestor_id"));
+        const auto link_id = m_support.link_resource_id(ctx_string(ctx, "requestor_id"));
         const auto link_data =
-            "{\"resource_id\":" + serde::Ser::encode_json(ctx_string(ctx,"resource_id")) +
-            ",\"requestor_id\":" + serde::Ser::encode_json(ctx_string(ctx,"requestor_id")) +
-            ",\"requestor_type\":" + serde::Ser::encode_json(ctx_string(ctx,"requestor_type")) +
+            "{\"resource_id\":" + serde::Ser::encode_json(ctx_string(ctx, "resource_id")) +
+            ",\"requestor_id\":" + serde::Ser::encode_json(ctx_string(ctx, "requestor_id")) +
+            ",\"requestor_type\":" + serde::Ser::encode_json(ctx_string(ctx, "requestor_type")) +
             ",\"encrypted_data\":" + serde::Ser::encode_json(rewrapped) + "}";
         auto link_record = m_context.repository().find_hierarchical_resource_by_string(link_id);
         if (!link_record.has_value()) {
             ::app::store::hierarchical_resources::HierarchicalResourceRecord fresh{};
             fresh.set_resource_id(link_id);
-            fresh.set_scope_id(std::string{ctx_string(ctx,"resource_id")});
+            fresh.set_scope_id(std::string{ctx_string(ctx, "resource_id")});
             fresh.set_resource_type("link");
             fresh.set_data(link_data);
             fresh.set_status(m_support.status_active());
@@ -115,7 +116,7 @@ public:
                 return std::unexpected{created.error()};
             }
         } else {
-            link_record->set_scope_id(std::string{ctx_string(ctx,"resource_id")});
+            link_record->set_scope_id(std::string{ctx_string(ctx, "resource_id")});
             link_record->set_data(link_data);
             if (!m_context.repository().update_hierarchical_resource(*link_record)) {
                 return std::unexpected{m_support.make_error(
@@ -126,17 +127,17 @@ public:
         }
         m_context.config_store().put(
             "hierarchical_resources.account_links",
-            ctx_string(ctx,"requestor_id"),
-            ctx_string(ctx,"resource_id"),
-            ctx_string(ctx,"requestor_type")
+            ctx_string(ctx, "requestor_id"),
+            ctx_string(ctx, "resource_id"),
+            ctx_string(ctx, "requestor_type")
         );
         m_context.events().publish(
             "hierarchical_resources.linked",
-            "{\"resource_id\":\"" + ctx_string(ctx,"resource_id") + "\",\"requestor_id\":\"" +
-                ctx_string(ctx,"requestor_id") + "\"}"
+            "{\"resource_id\":\"" + ctx_string(ctx, "resource_id") + "\",\"requestor_id\":\"" +
+                ctx_string(ctx, "requestor_id") + "\"}"
         );
         ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse response;
-        response.set_id(m_support.resource_id_value(std::string{ctx_string(ctx,"resource_id")}));
+        response.set_id(m_support.resource_id_value(std::string{ctx_string(ctx, "resource_id")}));
         return std::move(response);
     }
 

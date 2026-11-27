@@ -38,8 +38,7 @@ public:
     }
 
     /** @brief core::api_keys::create_api_key (112-189). */
-    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse>
-    create(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse> create(
         const ::app::dto::api_keys::CreateApiKeyRequest& request,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -55,8 +54,7 @@ public:
         const HashedApiKey hashed = m_support.keyed_hash(plaintext, hash_key->value());
         const std::int64_t created_epoch = m_support.now_epoch();
         const std::string created_at = m_support.iso_utc(created_epoch);
-        const std::optional<std::string> expires =
-            m_support.expires_at(request.get_expiration());
+        const std::optional<std::string> expires = m_support.expires_at(request.get_expiration());
 
         ::app::store::api_keys::ApiKeyRecord record;
         record.set_key_id(key_id);
@@ -86,8 +84,8 @@ public:
         );
 
         // metrics::API_KEY_CREATED.add(1, merchant attribute) (core:162-165).
-        m_context.metrics().record_flow("ApiKeyCreate");
-        m_context.metrics().counter("API_KEY_CREATED").increment();
+        m_context.logger().record_flow("ApiKeyCreate");
+        m_context.logger().counter("API_KEY_CREATED").increment();
 
         if constexpr (kEmail) {
             if (expires) {

@@ -859,6 +859,7 @@ private:
     ::app::context::AppContext& m_context;
     PaymentsScopeState& m_scope;
 };
+
 /** @brief Request policy for the payments domain: wraps the domain auth rules. */
 class PaymentsPolicy
 {

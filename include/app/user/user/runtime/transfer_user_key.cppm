@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    transfer_user_key(const ::app::model::user::UserKeyTransferRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> transfer_user_key(
+        const ::app::model::user::UserKeyTransferRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -54,17 +55,17 @@ public:
         }
         m_support.publish_identity_event("user.key_transferred", transferred_key_id);
 
-        const auto key = std::string{"user.transfer_user_key:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+        const auto key =
+            std::string{"user.transfer_user_key:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("transfer_user_key");
-        m_context.metrics().counter("user.transfer_user_key").increment();
+        m_context.logger().record_flow("transfer_user_key");
+        m_context.logger().counter("user.transfer_user_key").increment();
 
         using Response = ::app::model::user::UserTransferKeyResponse;
         Response response{};

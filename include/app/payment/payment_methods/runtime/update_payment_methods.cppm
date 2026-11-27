@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_update_payment_methods;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodRecordUpdateResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse>
     update_payment_methods(const core::behavior::CallContext& ctx) const
     {
         const auto input = UpdatePaymentMethodsData{ctx};
-        m_context.metrics().record_flow("update_payment_methods");
-        m_context.metrics().counter("PAYMENT_METHOD_UPDATE_PAYMENT_METHODS").increment();
+        m_context.logger().record_flow("update_payment_methods");
+        m_context.logger().counter("PAYMENT_METHOD_UPDATE_PAYMENT_METHODS").increment();
         auto repository = m_context.repository();
         for (const auto& update: input.rows) {
             auto record = repository.find_payment_method_by_string(update.get_payment_method_id());

@@ -1,4 +1,5 @@
 export module app_webhook:subscription_input;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -477,7 +478,7 @@ public:
         const auto& raw = found->second;
         const auto converted = std::from_chars(raw.data(), raw.data() + raw.size(), value);
         return converted.ec == std::errc{} && converted.ptr == raw.data() + raw.size() ? value
-                                                                                        : fallback;
+                                                                                       : fallback;
     }
 
     [[nodiscard]] std::uint64_t query_unsigned(
@@ -494,7 +495,7 @@ public:
         const auto& raw = found->second;
         const auto converted = std::from_chars(raw.data(), raw.data() + raw.size(), value);
         return converted.ec == std::errc{} && converted.ptr == raw.data() + raw.size() ? value
-                                                                                        : fallback;
+                                                                                       : fallback;
     }
 };
 

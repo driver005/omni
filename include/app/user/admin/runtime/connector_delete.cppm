@@ -37,22 +37,24 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorDeleteResponse>
-        remove(const ::core::behavior::CallContext& ctx) const
+    remove(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found =
-            m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
+        const auto found = m_context.repository().find_merchant_connector_by_string(
+            ctx_string(ctx, "connector_id")
+        );
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
                 "Merchant connector account does not exist in our records"
             )};
         }
-        if (!ctx_string(ctx,"merchant_id").empty() && found->get_merchant_id() != ctx_string(ctx,"merchant_id")) {
+        if (!ctx_string(ctx, "merchant_id").empty() &&
+            found->get_merchant_id() != ctx_string(ctx, "merchant_id")) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 std::format(
                     "Invalid merchant_id {} provided for merchant_connector_account",
-                    ctx_string(ctx,"merchant_id")
+                    ctx_string(ctx, "merchant_id")
                 )
             )};
         }
@@ -64,8 +66,8 @@ public:
         );
         response.set_deleted(deleted);
 
-        m_context.metrics().record_flow("connector_delete");
-        m_context.metrics().counter("admin.connector_delete").increment();
+        m_context.logger().record_flow("connector_delete");
+        m_context.logger().counter("admin.connector_delete").increment();
         return std::move(response);
     }
 

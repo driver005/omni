@@ -1,4 +1,5 @@
 export module app_payment:card_issuer_runtime_delete;
+import core_behavior;
 
 import std;
 import core_error;
@@ -24,7 +25,7 @@ public:
 
     // core/card_issuer.rs:63-82 `delete_card_issuer`.
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerDeleteResponse>
-        remove(const core::behavior::CallContext& ctx) const
+    remove(const core::behavior::CallContext& ctx) const
     {
         const auto input = CardIssuerDeleteData{ctx};
         const std::string& id = input.id;
@@ -64,8 +65,8 @@ public:
         response.set_deleted(is_deleted);
 
         // `#[instrument(skip_all, fields(flow = Flow::DeleteCardIssuer))]` substitute.
-        m_context.metrics().record_flow("DeleteCardIssuer");
-        m_context.metrics().counter("CARD_ISSUER_DELETED").increment();
+        m_context.logger().record_flow("DeleteCardIssuer");
+        m_context.logger().counter("CARD_ISSUER_DELETED").increment();
 
         return ::app::dto::card_issuer::CardIssuerDeleteResponse{std::move(response)};
     }

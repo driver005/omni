@@ -41,14 +41,13 @@ public:
 
         // ApplicationResponse::Json(FxExchangeRatesCacheEntry): typed document.
         auto document = m_support.forex_entry_document(*entry);
-        m_context.metrics().counter("FOREX_RATES_RETRIEVED").increment();
+        m_context.logger().counter("FOREX_RATES_RETRIEVED").increment();
         return document;
     }
 
 private:
     // ── core/currency.rs:15-26 — retrieve_forex ─────────────────────────────
-    [[nodiscard]] core::behavior::Outcome<FxExchangeRatesCacheEntry>
-    retrieve_forex_core() const
+    [[nodiscard]] core::behavior::Outcome<FxExchangeRatesCacheEntry> retrieve_forex_core() const
     {
         // conf.forex_api.get_inner().data_expiration_delay_in_seconds (:18).
         const auto ttl = m_support.data_expiration_delay_seconds();

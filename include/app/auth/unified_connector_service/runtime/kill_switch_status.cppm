@@ -92,8 +92,8 @@ public:
 
         // Flow::UnifiedConnectorServiceKillSwitchStatus instrumentation
         // (routes/unified_connector_service.rs:14,20).
-        m_context.metrics().record_flow("UnifiedConnectorServiceKillSwitchStatus");
-        m_context.metrics().counter("unified_connector_service.kill_switch_status").increment();
+        m_context.logger().record_flow("UnifiedConnectorServiceKillSwitchStatus");
+        m_context.logger().counter("unified_connector_service.kill_switch_status").increment();
 
         // Upstream KillSwitchStatusResponse (kill_switch.rs:524-538): serde emits
         // Option<u64> thresholds as JSON null when absent. Field order matches.

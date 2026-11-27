@@ -34,11 +34,15 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
-    create_role_v2(const CreateRoleInputWire& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire> create_role_v2(
+        const CreateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
@@ -48,16 +52,16 @@ public:
                 m_support.validate_create_role(request, identity_from_context(ctx), *requestor)) {
             return std::unexpected{*err};
         }
-        const auto groups = m_support.parent_group_info_request_to_permission_groups(
-            request.get_parent_groups()
-        );
+        const auto groups =
+            m_support.parent_group_info_request_to_permission_groups(request.get_parent_groups());
         if (!groups) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INVALID_REQUEST, "InvalidRoleOperation")
             };
         }
-        const auto merchant =
-            m_context.repository().find_merchant_account_by_string(identity_from_context(ctx).merchant_id);
+        const auto merchant = m_context.repository().find_merchant_account_by_string(
+            identity_from_context(ctx).merchant_id
+        );
         if (!merchant) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "MerchantIdNotFound")
@@ -83,11 +87,14 @@ public:
         record.set_role_name(role_tables::lowercased(request.get_role_name()));
         record.set_entity_type(role_entity);
         record.set_merchant_id(
-            role_entity == "merchant" || role_entity == "profile" ? identity_from_context(ctx).merchant_id
-                                                                  : std::string{}
+            role_entity == "merchant" || role_entity == "profile"
+                ? identity_from_context(ctx).merchant_id
+                : std::string{}
         );
         record.set_organization_id(identity_from_context(ctx).org_id);
-        record.set_profile_id(role_entity == "profile" ? identity_from_context(ctx).profile_id : std::string{});
+        record.set_profile_id(
+            role_entity == "profile" ? identity_from_context(ctx).profile_id : std::string{}
+        );
         record.set_is_internal(0);
         record.set_status("active");
         record.set_created_at(m_support.now_string());

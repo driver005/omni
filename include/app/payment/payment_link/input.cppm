@@ -11,6 +11,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::payment_link {
 
 /** @brief Header values the secure-render validator needs (no HTTP types in runtime). */
@@ -169,6 +170,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct PaymentLinkRetrieveData
 {
     std::optional<::app::model::payments::RetrievePaymentLinkRequest> request{};
@@ -176,6 +178,7 @@ struct PaymentLinkRetrieveData
     std::optional<std::string> secret_claim{};
     std::string payment_link_id{};
     std::string merchant_from_credential{};
+
     explicit PaymentLinkRetrieveData(const core::behavior::CallContext& ctx) :
         request{},
         client_secret{std::optional<std::string>{ctx.client_secret}},
@@ -185,21 +188,25 @@ struct PaymentLinkRetrieveData
     {
     }
 };
+
 struct PaymentLinkInitiateData
 {
     std::string merchant_id{};
     std::string payment_id{};
+
     explicit PaymentLinkInitiateData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         payment_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct PaymentLinkInitiateSecureData
 {
     std::string merchant_id{};
     std::string payment_id{};
     SecureLinkHeaders headers{};
+
     explicit PaymentLinkInitiateSecureData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         payment_id{::app::payment::detail::last_path(ctx)},
@@ -207,6 +214,7 @@ struct PaymentLinkInitiateSecureData
     {
     }
 };
+
 struct PaymentLinkListData
 {
     ::app::model::payments::PaymentLinkListConstraints request{};
@@ -218,9 +226,12 @@ struct PaymentLinkListData
     std::string auth_merchant_id{};
     std::string auth_profile_id{};
     bool profile_scoped{};
+
     template<class Dto>
     explicit PaymentLinkListData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::payments::PaymentLinkListConstraints>(dto)},
+        request{
+            ::app::payment::detail::as_dto<::app::model::payments::PaymentLinkListConstraints>(dto)
+        },
         query_limit{std::nullopt},
         query_offset{std::nullopt},
         query_time_range{std::nullopt},
@@ -232,17 +243,18 @@ struct PaymentLinkListData
     {
     }
 };
+
 struct PaymentLinkStatusData
 {
     std::string merchant_id{};
     std::string payment_id{};
+
     explicit PaymentLinkStatusData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         payment_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
-
 
 /** @brief Request policy for the payment_link domain: wraps the domain auth rules. */
 class PaymentLinkPolicy

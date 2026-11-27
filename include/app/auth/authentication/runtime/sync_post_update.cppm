@@ -57,13 +57,13 @@ public:
         m_support.update_trackers_from_outcome(*record, outcome);
         m_support.save_authentication(*record);
         m_support.update_authentication_status(authentication_id, record->get_status());
-        m_context.metrics().record_flow("AuthenticationSyncPostUpdate");
+        m_context.logger().record_flow("AuthenticationSyncPostUpdate");
 
         // :2481-2495 get_handle_response_url_for_modular_authentication -> JsonForRedirection.
         // Wire shape: HTTP 302 + RedirectionResponse JSON (api_models/payments.rs:10344-10350).
         const std::string return_url = record->get_return_url().empty()
-                                           ? std::string{"/authentication/"} + merchant_id +
-                                                 "/" + authentication_id + "/redirect"
+                                           ? std::string{"/authentication/"} + merchant_id + "/" +
+                                                 authentication_id + "/redirect"
                                            : record->get_return_url();
         const std::string status{m_support.trans_status_wire(record->get_trans_status())};
         // Vec<(String, Secret<String>)> wire shape:

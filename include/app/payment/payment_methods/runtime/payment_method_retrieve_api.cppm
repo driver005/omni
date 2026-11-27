@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_retrieve_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
-        payment_method_retrieve_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    payment_method_retrieve_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodRetrieveApiData{dto, ctx};
         auto record = input.record;
@@ -53,8 +54,8 @@ public:
                 m_context.repository().update_payment_method(record);
             }
         }
-        m_context.metrics().record_flow("payment_method_retrieve_api");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_API").increment();
+        m_context.logger().record_flow("payment_method_retrieve_api");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_API").increment();
         return ::app::model::payment_methods::PaymentMethodResponse{
             m_support.response_from_record(record)
         };

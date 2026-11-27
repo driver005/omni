@@ -31,10 +31,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
-        convert_forex(
-            const ::app::dto::currency::CurrencyConversionParams& params,
-            const core::behavior::CallContext& ctx
-        ) const
+    convert_forex(
+        const ::app::dto::currency::CurrencyConversionParams& params,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         return m_convert_forex.convert_forex(params, ctx);
     }

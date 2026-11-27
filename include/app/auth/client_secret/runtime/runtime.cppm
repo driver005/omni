@@ -24,8 +24,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::client_secret::ClientSecretResponse>
-    create(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::client_secret::ClientSecretResponse> create(
         const ::app::dto::client_secret::ClientSecretCreateRequest& request,
         const core::behavior::CallContext& ctx
     ) const

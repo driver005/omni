@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -327,7 +328,7 @@ public:
         const std::string lock_key = std::format("payment:{}", id);
         auto lock = m_context.locks().acquire(lock_key, std::int64_t{30}, std::string{operation});
         if (!lock) {
-            m_context.metrics().counter("payments.lock_contended").increment();
+            m_context.logger().counter("payments.lock_contended").increment();
             return result;
         }
         result.locked = true;
@@ -343,7 +344,7 @@ public:
         if (invalid_transition) {
             result.status = current;
             result.decision_rejected = true;
-            m_context.metrics().counter("payments.invalid_transition").increment();
+            m_context.logger().counter("payments.invalid_transition").increment();
             m_context.locks().release(lock_key);
             return result;
         }
@@ -351,7 +352,7 @@ public:
         (void)m_context.config_store().get_value("payments_surcharge", result.merchant_id);
         (void)m_context.config_store().get_value("payments_installments", result.merchant_id);
         (void)m_context.config_store().get_value("payments_multi_currency", result.merchant_id);
-        m_context.metrics().counter("payments.pricing_config_consulted").increment();
+        m_context.logger().counter("payments.pricing_config_consulted").increment();
 
         constexpr std::string_view routing_program =
             R"({"rules":[{"if_condition":{"field":"currency","op":"in","value":"USD,EUR,GBP"},"action":"route","connector":""}],"default_action":"route","default_connector":""})";
@@ -363,11 +364,11 @@ public:
         const auto decision = m_context.decision_engine().evaluate(routing_program, context_json);
         if (!decision.get_error_kind().empty()) {
             result.decision_rejected = true;
-            m_context.metrics().counter("payments.decision_rejected").increment();
+            m_context.logger().counter("payments.decision_rejected").increment();
             m_context.locks().release(lock_key);
             return result;
         }
-        m_context.metrics().counter("payments.decision_evaluated").increment();
+        m_context.logger().counter("payments.decision_evaluated").increment();
 
         auto connector_request = ::app::connector::ConnectorRequestBuilder{}
                                      .operation(std::string{connector_operation})
@@ -393,7 +394,7 @@ public:
                 }
             } else {
                 const auto error = m_context.connector_router().last_error();
-                m_context.metrics().counter("payments.connector_unavailable").increment();
+                m_context.logger().counter("payments.connector_unavailable").increment();
                 (void)error;
             }
         }
@@ -401,10 +402,10 @@ public:
         result.status = connector_response.get_status().empty() ? std::string{fallback_status}
                                                                 : connector_response.get_status();
         if (connector_response.get_retryable()) {
-            m_context.metrics().counter("payments.connector_retryable").increment();
+            m_context.logger().counter("payments.connector_retryable").increment();
         }
         if (connector_response.get_shadow_killed()) {
-            m_context.metrics().counter("payments.connector_shadow_killed").increment();
+            m_context.logger().counter("payments.connector_shadow_killed").increment();
         }
 
         if (!data.profile_id.empty()) {
@@ -435,7 +436,7 @@ public:
         } else {
             m_context.repository().save_payment(std::move(record));
         }
-        m_context.metrics().counter("payments.payment_intent_persisted").increment();
+        m_context.logger().counter("payments.payment_intent_persisted").increment();
 
         ::app::store::payment_attempts::PaymentAttemptRecord attempt{};
         attempt.set_attempt_id(m_context.ids().uuid_v4());
@@ -448,7 +449,7 @@ public:
         attempt.set_error_code(result.reference_id);
         attempt.set_created_at(now_string());
         m_context.repository().save_payment_attempt(std::move(attempt));
-        m_context.metrics().counter("payments.payment_attempt_persisted").increment();
+        m_context.logger().counter("payments.payment_attempt_persisted").increment();
 
         const std::string event_id = m_context.events().publish(
             std::format("payment.{}", operation),
@@ -601,7 +602,7 @@ public:
         const std::string session_key = session_hasher.hash(data.payment_id);
         ::app::crypto::JwtSigner session_signer{std::string{session_secret.value()}};
         const std::string session_token = session_signer.sign(session_key);
-        m_context.metrics().record_flow("payments.session_token_issued");
+        m_context.logger().record_flow("payments.session_token_issued");
         m_context.cache().put(
             "payments.session:" + data.payment_id,
             core::cache::to_cache_value(session_token)

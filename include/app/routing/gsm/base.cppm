@@ -5,4 +5,4 @@ export import :gsm_result;
 export import :gsm_runtime;
 export import :gsm_handlers_v1;
 export import :gsm_handlers_v2;
-export import :gsm_handler;
+export import :gsm_router;

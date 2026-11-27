@@ -120,8 +120,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::SignInRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::SignInRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.user_signin(*parsed, ctx).handle(sink);
     }
@@ -140,8 +143,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::VerifyEmailRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::VerifyEmailRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.verify_email(*parsed, ctx).handle(sink);
     }
@@ -153,16 +159,21 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "list_user_roles_details", {})) {
+        if (const auto auth_error = m_support.authorize(req, "list_user_roles_details", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::model::user::GetUserRoleDetailsRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::user::GetUserRoleDetailsRequest>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         m_runtime.list_user_roles_details(*parsed, ctx).handle(sink);
     }

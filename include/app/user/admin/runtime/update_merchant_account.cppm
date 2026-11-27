@@ -36,11 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
-    update(const ::app::dto::admin::MerchantAccountUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse> update(
+        const ::app::dto::admin::MerchantAccountUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        auto found = m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
+        auto found =
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx, "merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -64,9 +66,7 @@ public:
             record.set_sub_merchants_enabled(*request.get_sub_merchants_enabled());
         }
         if (request.get_enable_payment_response_hash().has_value()) {
-            record.set_enable_payment_response_hash(
-                *request.get_enable_payment_response_hash()
-            );
+            record.set_enable_payment_response_hash(*request.get_enable_payment_response_hash());
         }
         if (request.get_redirect_to_merchant_with_http_post().has_value()) {
             record.set_redirect_to_merchant_with_http_post(
@@ -76,12 +76,14 @@ public:
         if (request.get_payment_response_hash_key().has_value()) {
             record.set_payment_response_hash_key(*request.get_payment_response_hash_key());
         }
-        if (const auto duplicate =
-                m_support.acquire_operation_lock("update_merchant_account", ctx_string(ctx,"merchant_id"))) {
+        if (const auto duplicate = m_support.acquire_operation_lock(
+                "update_merchant_account",
+                ctx_string(ctx, "merchant_id")
+            )) {
             return std::unexpected{*duplicate};
         }
         m_context.repository().update_merchant_account(record);
-        m_support.release_operation_lock("update_merchant_account", ctx_string(ctx,"merchant_id"));
+        m_support.release_operation_lock("update_merchant_account", ctx_string(ctx, "merchant_id"));
 
         ::app::dto::admin::MerchantAccountResponse response;
         response.set_merchant_id(m_support.merchant_id_value(record.get_merchant_id()));
@@ -98,8 +100,8 @@ public:
         }
         response.set_sub_merchants_enabled(record.get_sub_merchants_enabled());
 
-        m_context.metrics().record_flow("update_merchant_account");
-        m_context.metrics().counter("admin.update_merchant_account").increment();
+        m_context.logger().record_flow("update_merchant_account");
+        m_context.logger().counter("admin.update_merchant_account").increment();
         m_context.events().publish("merchant_account.updated", serde::Ser::encode_json(response));
         return std::move(response);
     }

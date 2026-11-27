@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_tokenize_card_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::CardNetworkTokenizeResponse>
-        tokenize_card_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::CardNetworkTokenizeResponse>
+    tokenize_card_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = TokenizeCardApiData{dto, ctx};
         const auto payload = serde::Ser::encode_json(input.request);
@@ -51,8 +53,8 @@ public:
             "payment_methods.card:" + token,
             core::cache::to_cache_value(m_support.encrypt_data(payload))
         );
-        m_context.metrics().record_flow("tokenize_card_api");
-        m_context.metrics().counter("PAYMENT_METHOD_TOKENIZE_CARD_API").increment();
+        m_context.logger().record_flow("tokenize_card_api");
+        m_context.logger().counter("PAYMENT_METHOD_TOKENIZE_CARD_API").increment();
         ::app::model::payment_methods::CardNetworkTokenizeResponse response{};
         response.set_card_tokenized(true);
         ::app::model::payment_methods::PaymentMethodResponse card_response =

@@ -39,8 +39,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    launch_sage(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    launch_sage(const interfaces::Value& generic, const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -55,8 +54,8 @@ public:
             std::format(R"({{"session_id":"{}","tracker_id":{}}})", session_id, tracker_id)
         );
 
-        m_context.metrics().record_flow("launch_sage");
-        m_context.metrics().counter("user.launch_sage").increment();
+        m_context.logger().record_flow("launch_sage");
+        m_context.logger().counter("user.launch_sage").increment();
 
         using Response = ::app::dto::launch_sage::LaunchSageResponse;
         Response response{};

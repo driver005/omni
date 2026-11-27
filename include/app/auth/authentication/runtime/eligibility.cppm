@@ -39,8 +39,7 @@ public:
 
     // ───────────────────────── Core: eligibility ─────────────────────────
     // unified_authentication_service.rs:1032-1351 authentication_eligibility_core.
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    eligibility(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> eligibility(
         const ::app::dto::authentication::AuthenticationEligibilityRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -80,7 +79,7 @@ public:
         // :1316-1331 external_authentication_update_trackers.
         m_support.update_trackers_from_outcome(*record, outcome);
         m_support.save_authentication(*record);
-        m_context.metrics().record_flow("AuthenticationEligibility");
+        m_context.logger().record_flow("AuthenticationEligibility");
 
         // :1333-1346 foreign_try_from with req.get_next_action_api(base_url, auth_id).
         // :1342-1345 echoes the request's billing / shipping / browser / email back verbatim.

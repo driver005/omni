@@ -1,4 +1,5 @@
 export module app_payment:payout_link_runtime_common;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -205,7 +206,7 @@ public:
         // is derived from the customer metadata / config as a local substitute.
         const std::string address = address_for_payout(*customer);
         const bool has_address = !address.empty();
-        m_context.metrics().counter("payout_link_customer_loaded").increment();
+        m_context.logger().counter("payout_link_customer_loaded").increment();
 
         // core:177-220 filter_payout_methods + required fields.
         const auto methods = filter_payout_methods(payout, has_address);
@@ -316,7 +317,7 @@ public:
                                            .str("sdk_url", sdk_url)
                                            .str("html_meta_tags", std::string{})
                                            .done();
-        m_context.metrics().counter("payout_link_methods_filtered").increment();
+        m_context.logger().counter("payout_link_methods_filtered").increment();
         return generic_links(allowed_domains, form_data, locale);
     }
 
@@ -538,7 +539,7 @@ public:
             entry.payment_method_types.assign(types.begin(), types.end());
             result.enabled.push_back(std::move(entry));
         }
-        m_context.metrics().counter("payout_link_methods_filtered").increment();
+        m_context.logger().counter("payout_link_methods_filtered").increment();
         return result;
     }
 

@@ -66,8 +66,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_list");
-        m_context.metrics().counter("payments.payments_list").increment();
+        m_context.logger().record_flow("payments.payments_list");
+        m_context.logger().counter("payments.payments_list").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.payments_list(dto, m_request_support->context(req)).handle(sink);
@@ -89,11 +89,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_list_by_filter");
-        m_context.metrics().counter("payments.payments_list_by_filter").increment();
+        m_context.logger().record_flow("payments.payments_list_by_filter");
+        m_context.logger().counter("payments.payments_list_by_filter").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payments_list_by_filter(dto, m_request_support->context(req)).handle(sink);
     }
@@ -114,8 +117,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_list_for_platform");
-        m_context.metrics().counter("payments.payments_list_for_platform").increment();
+        m_context.logger().record_flow("payments.payments_list_for_platform");
+        m_context.logger().counter("payments.payments_list_for_platform").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.payments_list_for_platform(dto, m_request_support->context(req)).handle(sink);
@@ -137,11 +140,12 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_list_for_platform_filters");
-        m_context.metrics().counter("payments.payments_list_for_platform_filters").increment();
+        m_context.logger().record_flow("payments.payments_list_for_platform_filters");
+        m_context.logger().counter("payments.payments_list_for_platform_filters").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
-        m_runtime.payments_list_for_platform_filters(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.payments_list_for_platform_filters(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_profile_payments_list(
@@ -158,8 +162,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.profile_payments_list");
-        m_context.metrics().counter("payments.profile_payments_list").increment();
+        m_context.logger().record_flow("payments.profile_payments_list");
+        m_context.logger().counter("payments.profile_payments_list").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.profile_payments_list(dto, m_request_support->context(req)).handle(sink);
@@ -181,13 +185,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.profile_payments_list_by_filter");
-        m_context.metrics().counter("payments.profile_payments_list_by_filter").increment();
+        m_context.logger().record_flow("payments.profile_payments_list_by_filter");
+        m_context.logger().counter("payments.profile_payments_list_by_filter").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.profile_payments_list_by_filter(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.profile_payments_list_by_filter(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #28
@@ -204,7 +212,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_list(req, res, std::move(send));
                     }
@@ -227,7 +235,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_payments_list_by_filter(req, res, std::move(send));
                     }
@@ -251,7 +259,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_list_for_platform(req, res, std::move(send));
                         }
@@ -276,7 +284,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payments_list_for_platform_filters(req, res, std::move(send));
                         }
@@ -301,7 +309,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_profile_payments_list(req, res, std::move(send));
                         }
@@ -326,7 +334,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_profile_payments_list_by_filter(req, res, std::move(send));
                         }

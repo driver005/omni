@@ -1,4 +1,5 @@
 export module app_payment:payout_link_runtime_render_payout_link;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -41,8 +42,8 @@ public:
         const auto input = PayoutLinkRenderData{ctx};
         // routes/payout_link.rs:37-38 flow/counter (previously recorded by the
         // route handler just before calling the core).
-        m_context.metrics().record_flow("PayoutLinkInitiate");
-        m_context.metrics().counter("payout_link_render_total").increment();
+        m_context.logger().record_flow("PayoutLinkInitiate");
+        m_context.logger().counter("payout_link_render_total").increment();
 
         const std::string merchant_id = input.merchant_id;
         const std::string payout_id = input.payout_id;

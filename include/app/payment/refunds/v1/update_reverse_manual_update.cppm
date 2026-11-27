@@ -1,3 +1,6 @@
+module;
+#include <uuid.h>
+
 export module app_payment:refunds_handlers_v1_update_reverse_manual_update;
 
 import std;
@@ -8,6 +11,7 @@ import core_serde;
 import utils_openapi;
 import app_model;
 import app_context;
+import app_context_core;
 import core_error;
 import app_auth;
 import app_http;
@@ -61,12 +65,18 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
 
         // routes/refunds.rs:408 — path wins over body.
-        if (const auto id = m_input_support.refund_id_from_path(req)) {
-            parsed->set_refund_id(*id);
+        if (const auto id = m_input_support.refund_uuid_from_path(req)) {
+            parsed->id = *id;
+            parsed->refund_id = uuids::to_string(*id);
+        } else {
+            id.error().send(sink);
+            return;
         }
         const auto& dto = *parsed;
 
@@ -95,10 +105,16 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundReverseRequest>::pass(req, sink);
-        if (!parsed) return;
-        if (const auto id = m_input_support.refund_id_from_path(req)) {
-            parsed->set_refund_id(*id);
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
+        if (const auto id = m_input_support.refund_uuid_from_path(req)) {
+            parsed->id = *id;
+            parsed->refund_id = uuids::to_string(*id);
+        } else {
+            id.error().send(sink);
+            return;
         }
         const auto& dto = *parsed;
 
@@ -126,10 +142,16 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundManualUpdateRequest>::pass(req, sink);
-        if (!parsed) return;
-        if (const auto id = m_input_support.refund_id_from_path(req)) {
-            parsed->set_refund_id(*id);
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
+        if (const auto id = m_input_support.refund_uuid_from_path(req)) {
+            parsed->id = *id;
+            parsed->refund_id = uuids::to_string(*id);
+        } else {
+            id.error().send(sink);
+            return;
         }
         const auto& dto = *parsed;
 

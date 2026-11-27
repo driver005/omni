@@ -39,23 +39,25 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    set_dashboard_metadata(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    set_dashboard_metadata(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
 
         const auto merchant_id = ctx.merchant_id;
-        const auto client_ip = ctx_string(ctx,"client_ip");
+        const auto client_ip = ctx_string(ctx, "client_ip");
         const auto normalized = std::format(
             R"({{"ip":"{}","data":{}}})",
             std::string{client_ip.empty() ? std::string_view{"unknown"} : client_ip},
-            ctx_string(ctx,"body")
+            ctx_string(ctx, "body")
         );
         m_context.repository().set_config("dashboard_metadata." + merchant_id, normalized);
 
-        m_context.metrics().record_flow("set_dashboard_metadata");
-        m_context.metrics().counter("user.set_dashboard_metadata").increment();
+        m_context.logger().record_flow("set_dashboard_metadata");
+        m_context.logger().counter("user.set_dashboard_metadata").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

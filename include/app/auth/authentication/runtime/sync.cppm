@@ -67,15 +67,10 @@ public:
             record->set_cavv(m_support.cavv_from(record->get_threeds_server_transaction_id()));
         }
         m_support.save_authentication(*record);
-        m_context.metrics().record_flow("AuthenticationSync");
+        m_context.logger().record_flow("AuthenticationSync");
 
         // :2331-2379 AuthenticationSyncResponse built entirely from the updated record.
-        return m_support.build_sync_response(
-            *record,
-            detail::path_segment(ctx, 1),
-            flow,
-            outcome
-        );
+        return m_support.build_sync_response(*record, detail::path_segment(ctx, 1), flow, outcome);
     }
 
 private:

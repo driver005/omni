@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    user_signup(const ::app::model::user::SignUpRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> user_signup(
+        const ::app::model::user::SignUpRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -122,8 +123,8 @@ public:
         );
         m_support.publish_identity_event("user.signed_up", user_id);
 
-        m_context.metrics().record_flow("user_signup");
-        m_context.metrics().counter("user.user_signup").increment();
+        m_context.logger().record_flow("user_signup");
+        m_context.logger().counter("user.user_signup").increment();
 
         const auto flow = ctx_query(ctx).get("flow").value_or(
             ctx_query(ctx).get("origin").value_or(std::string{"SIGNIN"})

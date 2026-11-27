@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_get_payouts_aggregates;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,12 +38,12 @@ public:
 
     // ───────────────────────── Core: get_payouts_aggregates ─────────────────────────
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
-        get_payouts_aggregates(const core::behavior::CallContext& ctx) const
+    get_payouts_aggregates(const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsAggregatesData{ctx};
         // Upstream input is `web::Query<TimeRange>` (`payouts.rs:708`); no body is read.
-        m_context.metrics().record_flow("get_payouts_aggregates");
-        m_context.metrics().counter("payouts_aggregates_total").increment();
+        m_context.logger().record_flow("get_payouts_aggregates");
+        m_context.logger().counter("payouts_aggregates_total").increment();
         if (const auto invalid = m_support.require_time_range(input.range)) {
             return std::unexpected{*invalid};
         }

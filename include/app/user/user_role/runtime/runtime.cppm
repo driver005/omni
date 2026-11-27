@@ -85,33 +85,29 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<GroupsAndResourcesWire>
-    get_groups_and_resources_for_role_from_token(
-        const ::core::behavior::CallContext& ctx
-    ) const
+    get_groups_and_resources_for_role_from_token(const ::core::behavior::CallContext& ctx) const
     {
         return m_get_groups_and_resources_for_role_from_token
-            .get_groups_and_resources_for_role_from_token(request, ctx);
+            .get_groups_and_resources_for_role_from_token(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    get_parent_groups_info_for_role_from_token(
-        const ::core::behavior::CallContext& ctx
-    ) const
+    get_parent_groups_info_for_role_from_token(const ::core::behavior::CallContext& ctx) const
     {
         return m_get_parent_groups_info_for_role_from_token
-            .get_parent_groups_info_for_role_from_token(request, ctx);
+            .get_parent_groups_info_for_role_from_token(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
-    create_role(const CreateRoleInputWire& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_role(const CreateRoleInputWire& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_create_role.create_role(request, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
-    create_role_v2(const CreateRoleInputWire& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire> create_role_v2(
+        const CreateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_create_role_v2.create_role_v2(request, ctx);
     }
@@ -129,36 +125,41 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
-    update_role(const UpdateRoleInputWire& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_role(const UpdateRoleInputWire& request, const ::core::behavior::CallContext& ctx) const
     {
         return m_update_role.update_role(request, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
-    update_user_role(const ::app::dto::user_role::UpdateUserRoleRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire> update_user_role(
+        const ::app::dto::user_role::UpdateUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_update_user_role.update_user_role(request, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
-    accept_invitations_v2(const std::vector<AcceptEntityWire>& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire> accept_invitations_v2(
+        const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_accept_invitations_v2.accept_invitations_v2(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<TokenResponseWire, std::string>>
-    accept_invitations_pre_auth(const std::vector<AcceptEntityWire>& request,
-        const ::core::behavior::CallContext& ctx) const
+    accept_invitations_pre_auth(
+        const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_accept_invitations_pre_auth.accept_invitations_pre_auth(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::user_role::DeleteUserRoleResponse>
-        delete_user_role(const ::app::dto::user_role::DeleteUserRoleRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    delete_user_role(
+        const ::app::dto::user_role::DeleteUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_delete_user_role.delete_user_role(request, ctx);
     }

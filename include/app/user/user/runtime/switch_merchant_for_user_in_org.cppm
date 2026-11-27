@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    switch_merchant_for_user_in_org(const ::app::model::user::SwitchMerchantRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    switch_merchant_for_user_in_org(
+        const ::app::model::user::SwitchMerchantRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -59,8 +61,8 @@ public:
         set_cookie = "user_token=" + switched_token + "; HttpOnly; Path=/";
         m_support.publish_identity_event("user.merchant_switched", owner);
 
-        m_context.metrics().record_flow("switch_merchant_for_user_in_org");
-        m_context.metrics().counter("user.switch_merchant_for_user_in_org").increment();
+        m_context.logger().record_flow("switch_merchant_for_user_in_org");
+        m_context.logger().counter("user.switch_merchant_for_user_in_org").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

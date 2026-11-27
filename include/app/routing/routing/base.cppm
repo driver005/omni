@@ -6,4 +6,4 @@ export import :routing_runtime;
 export import :routing_handlers_v1;
 export import :routing_handlers_v2;
 export import :routing_handlers_common;
-export import :routing_handler;
+export import :routing_router;

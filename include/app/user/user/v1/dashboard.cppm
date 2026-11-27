@@ -105,8 +105,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "get_active_user_details", {})) {
+        if (const auto auth_error = m_support.authorize(req, "get_active_user_details", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();
@@ -180,8 +179,7 @@ public:
     )
     {
         interfaces::io::ResponseSink sink{res, std::move(send)};
-        if (const auto auth_error =
-                m_support.authorize(req, "set_dashboard_metadata", {})) {
+        if (const auto auth_error = m_support.authorize(req, "set_dashboard_metadata", {})) {
             sink.set_status((*auth_error).get_status());
             sink.set_body(serde::Ser::serialize("application/json", *auth_error));
             sink.send();

@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    list_user_roles_details(const ::app::model::user::GetUserRoleDetailsRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    list_user_roles_details(
+        const ::app::model::user::GetUserRoleDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -108,8 +110,8 @@ public:
         }
         (void)profile_id;
 
-        m_context.metrics().record_flow("list_user_roles_details");
-        m_context.metrics().counter("user.list_user_roles_details").increment();
+        m_context.logger().record_flow("list_user_roles_details");
+        m_context.logger().counter("user.list_user_roles_details").increment();
 
         auto document = ResponseDocument::from(response);
         return std::pair{document, set_cookie};

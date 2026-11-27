@@ -40,8 +40,7 @@ public:
     }
 
     // Upstream core::sync_onboarding_status (core/connector_onboarding.rs:60-120).
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    sync_onboarding_status(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> sync_onboarding_status(
         const ::app::dto::connector_onboarding::OnboardingSyncRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -64,12 +63,14 @@ public:
         if (!tracking) {
             return std::unexpected{std::move(tracking.error())};
         }
-        if (!enabled.has_value() || !*enabled ||
-            !m_support.is_paypal(request.get_connector())) {
+        if (!enabled.has_value() || !*enabled || !m_support.is_paypal(request.get_connector())) {
             return std::unexpected{m_support.flow_not_supported(request.get_connector())};
         }
 
-        auto status = m_support.sync_merchant_onboarding_status(*tracking, detail::effective_merchant_id(ctx));
+        auto status = m_support.sync_merchant_onboarding_status(
+            *tracking,
+            detail::effective_merchant_id(ctx)
+        );
         if (!status) {
             return std::unexpected{std::move(status.error())};
         }
@@ -102,8 +103,8 @@ public:
             document = serde::Value{std::move(envelope)};
         }
 
-        m_context.metrics().record_flow("SyncOnboardingStatus");
-        m_context.metrics().counter("connector_onboarding.sync_onboarding_status").increment();
+        m_context.logger().record_flow("SyncOnboardingStatus");
+        m_context.logger().counter("connector_onboarding.sync_onboarding_status").increment();
         return std::move(document);
     }
 

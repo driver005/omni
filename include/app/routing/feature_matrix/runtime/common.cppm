@@ -6005,7 +6005,7 @@ public:
                 static_cast<int>(name.size()),
                 name.data()
             );
-            m_context.metrics().counter("feature_matrix.convert_connector.failed").increment();
+            m_context.logger().counter("feature_matrix.convert_connector.failed").increment();
             return false;
         }
         return true;

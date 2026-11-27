@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_get_payout_filters;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,8 +41,8 @@ public:
     get_payout_filters(const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsGetFiltersData{ctx};
-        m_context.metrics().record_flow("get_payout_filters");
-        m_context.metrics().counter("payouts_get_filters_total").increment();
+        m_context.logger().record_flow("get_payout_filters");
+        m_context.logger().counter("payouts_get_filters_total").increment();
 
         return ::app::model::payouts::PayoutListFiltersV2{
             m_support.filters_v2_from_mcas("", input.merchant_id)

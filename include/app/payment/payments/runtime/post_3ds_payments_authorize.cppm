@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_post_3ds_payments_authorize;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -32,7 +33,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsRedirectionResponse>
-        post_3ds_payments_authorize(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    post_3ds_payments_authorize(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         std::string service_status{"pending"};

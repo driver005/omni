@@ -1,9 +1,12 @@
 export module app_payment:refunds_runtime;
+import core_behavior;
 
 import std;
 import core_serde;
 import core_error;
 import app_context;
+import app_context_core;
+import app_model;
 
 import :refunds_input;
 import :refunds_result;
@@ -53,114 +56,104 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-    create(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    create(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_create.create(ctx);
+        return m_create.create(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        retrieve(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    retrieve(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve.retrieve(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        retrieve_gateway(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    retrieve_gateway(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_gateway.retrieve_gateway(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        retrieve_body(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    retrieve_body(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_body.retrieve_body(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    update(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_update.update(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        reverse(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    reverse(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_reverse.reverse(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
-        metadata_update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::Refund>
+    metadata_update(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_metadata_update.metadata_update(dto, ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
-        list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list.list(dto, ctx);
     }
 
-        template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListResponse>
-    list_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_platform(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list_platform.list_platform(dto, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListFilters>
-        filter_platform(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    filter_platform(const core::behavior::CallContext& ctx) const
     {
         return m_filter_platform.filter_platform(ctx);
     }
 
-    template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
-        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_profile(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list_profile.list_profile(dto, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListMetaData>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     filter_list(const core::behavior::CallContext& ctx) const
     {
         return m_filter_list.filter_list(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     filters(const core::behavior::CallContext& ctx) const
     {
         return m_filters.filters(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     filters_profile(const core::behavior::CallContext& ctx) const
     {
         return m_filters_profile.filters_profile(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
-        aggregates(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    aggregates(const core::behavior::CallContext& ctx) const
     {
         return m_aggregates.aggregates(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
-        aggregates_profile(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    aggregates_profile(const core::behavior::CallContext& ctx) const
     {
         return m_aggregates_profile.aggregates_profile(ctx);
     }
 
-    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    manual_update(const ::app::model::Refund& dto, const core::behavior::CallContext& ctx) const
     {
         return m_manual_update.manual_update(dto, ctx);
     }

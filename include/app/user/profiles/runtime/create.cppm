@@ -24,12 +24,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
-    create(const ::app::dto::admin::ProfileCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse> create(
+        const ::app::dto::admin::ProfileCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto repository = m_context.repository();
-        auto account = repository.find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
+        auto account = repository.find_merchant_account_by_string(ctx_string(ctx, "merchant_id"));
         const std::string account_type =
             account ? account->get_merchant_account_type() : std::string{};
 
@@ -43,7 +44,8 @@ public:
         }
 
         // core/admin.rs:4072-4084 — create_domain_model_from_request.
-        auto domain = m_support.create_domain_model_from_request(ctx_string(ctx,"merchant_id"), request);
+        auto domain =
+            m_support.create_domain_model_from_request(ctx_string(ctx, "merchant_id"), request);
         if (!domain) {
             return std::unexpected(domain.error());
         }
@@ -59,7 +61,7 @@ public:
         }
         if (const auto insert_error = m_support.insert_business_profile(
                 profile_id,
-                ctx_string(ctx,"merchant_id"),
+                ctx_string(ctx, "merchant_id"),
                 domain->get_profile_name(),
                 *domain
             )) {
@@ -67,7 +69,7 @@ public:
         }
 
         // core/admin.rs:4100-4112 (v1) — unset an existing default profile.
-        if (!ctx_bool(ctx,"v2_route") && account && !account->get_default_profile().empty() &&
+        if (!ctx_bool(ctx, "v2_route") && account && !account->get_default_profile().empty() &&
             account->get_default_profile() != profile_id) {
             account->set_default_profile({});
             (void)repository.update_merchant_account(*account);
@@ -75,9 +77,9 @@ public:
 
         const auto payload = serde::Ser::encode_json(*domain);
         m_support.emit_event("create", payload);
-        m_context.metrics().record_flow("profiles.create");
-        m_context.metrics().record_flow("Flow::ProfileCreate");
-        m_context.metrics().counter("profiles_create").increment();
+        m_context.logger().record_flow("profiles.create");
+        m_context.logger().record_flow("Flow::ProfileCreate");
+        m_context.logger().counter("profiles_create").increment();
         return std::move(*domain);
     }
 

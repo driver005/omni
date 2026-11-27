@@ -83,7 +83,7 @@ public:
                 auto apple_pay_metadata =
                     m_support.get_applepay_metadata(connector_account.get_metadata());
                 if (!apple_pay_metadata) {
-                    m_context.metrics()
+                    m_context.logger()
                         .counter(
                             "apple_pay_certificates_migration.metadata_parse_failed." +
                             connector_account.get_connector_name()
@@ -117,7 +117,7 @@ public:
                 m_support.update_multiple_merchant_connector_accounts(mca_to_update);
             if (updated) {
                 migration_successful_merchant_ids.push_back(merchant_id);
-                m_context.metrics().counter("APPLE_PAY_CERTIFICATES_MIGRATED").increment();
+                m_context.logger().counter("APPLE_PAY_CERTIFICATES_MIGRATED").increment();
             } else {
                 migration_failed_merchant_ids.push_back(merchant_id);
             }

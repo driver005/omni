@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_list_customer_payment_method_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::CustomerPaymentMethodsListResponse>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::CustomerPaymentMethodsListResponse>
     list_customer_payment_method_api(const core::behavior::CallContext& ctx) const
     {
         const auto input = ListCustomerPaymentMethodApiData{ctx};
-        m_context.metrics().record_flow("list_customer_payment_method_api");
-        m_context.metrics().counter("PAYMENT_METHOD_LIST_CUSTOMER_PAYMENT_METHOD_API").increment();
+        m_context.logger().record_flow("list_customer_payment_method_api");
+        m_context.logger().counter("PAYMENT_METHOD_LIST_CUSTOMER_PAYMENT_METHOD_API").increment();
         ::app::model::payment_methods::CustomerPaymentMethodsListResponse response{};
         std::vector<::app::model::payment_methods::CustomerPaymentMethod> items{};
         const auto default_key = "payment_methods.default:" + input.customer_id;

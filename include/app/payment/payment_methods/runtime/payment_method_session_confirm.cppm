@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_session_confirm;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
-        payment_method_session_confirm(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::PaymentMethodSessionResponse>
+    payment_method_session_confirm(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = PaymentMethodSessionConfirmData{dto, ctx};
         const auto& parsed = input.request;
@@ -167,8 +169,8 @@ public:
         session.set_status("confirmed");
         repository.update_payment_method_session(session);
         m_support.publish_pm_event("payment_method_session.confirm", payment_method_id);
-        m_context.metrics().record_flow("payment_method_session_confirm");
-        m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_CONFIRM").increment();
+        m_context.logger().record_flow("payment_method_session_confirm");
+        m_context.logger().counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_CONFIRM").increment();
         ::app::model::payment_methods::PaymentMethodSessionResponse response{};
         ::app::model::payment_methods::GlobalPaymentMethodSessionIdValue id{};
         id.set_value(input.session_id);

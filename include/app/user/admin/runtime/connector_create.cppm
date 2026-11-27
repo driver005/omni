@@ -36,13 +36,16 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
-    create(const ::app::dto::admin::MerchantConnectorCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse> create(
+        const ::app::dto::admin::MerchantConnectorCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         const std::string connector_name{request.get_connector_name().get_value()};
-        if (const auto invalid =
-                m_support.validate_connector_create(ctx_string(ctx,"merchant_id"), connector_name)) {
+        if (const auto invalid = m_support.validate_connector_create(
+                ctx_string(ctx, "merchant_id"),
+                connector_name
+            )) {
             return std::unexpected{*invalid};
         }
         const std::string connector_id{"mca_" + m_support.uuid_simple()};
@@ -72,12 +75,12 @@ public:
         };
         const std::string account_ciphertext{::app::crypto::AesWrap{}.encrypt(
             account_plaintext,
-            m_support.connector_encryption_key(ctx_string(ctx,"merchant_id"), connector_id)
+            m_support.connector_encryption_key(ctx_string(ctx, "merchant_id"), connector_id)
         )};
 
         ::app::store::merchant_connectors::MerchantConnectorRecord record;
         record.set_merchant_connector_id(connector_id);
-        record.set_merchant_id(std::string{ctx_string(ctx,"merchant_id")});
+        record.set_merchant_id(std::string{ctx_string(ctx, "merchant_id")});
         record.set_connector_name(connector_name);
         record.set_connector_type(connector_type);
         record.set_connector_label(request.get_connector_label().value_or(""));
@@ -86,9 +89,7 @@ public:
         record.set_metadata(
             request.get_metadata() ? request.get_metadata()->get_value() : std::string{}
         );
-        record.set_status(
-            request.get_status() ? request.get_status()->get_value() : std::string{}
-        );
+        record.set_status(request.get_status() ? request.get_status()->get_value() : std::string{});
         record.set_disabled(request.get_disabled().value_or(false));
         const auto saved = m_context.repository().save_merchant_connector(std::move(record));
         m_support.release_operation_lock("connector_create", connector_id);
@@ -116,8 +117,8 @@ public:
             response.set_payment_methods_enabled(*request.get_payment_methods_enabled());
         }
 
-        m_context.metrics().record_flow("connector_create");
-        m_context.metrics().counter("admin.connector_create").increment();
+        m_context.logger().record_flow("connector_create");
+        m_context.logger().counter("admin.connector_create").increment();
         m_context.events().publish("merchant_connector.created", serde::Ser::encode_json(response));
         return std::move(response);
     }

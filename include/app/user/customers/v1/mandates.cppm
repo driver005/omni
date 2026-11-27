@@ -66,7 +66,10 @@ public:
         }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("id", std::string{id});
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.request_merchant_id(req)}
+        );
         m_runtime.get_customer_mandates(ctx).handle(sink);
     }
 

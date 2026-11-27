@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    terminate_accept_invite(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    terminate_accept_invite(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -60,8 +62,8 @@ public:
             m_support.publish_identity_event("user.invite_terminated", email);
         }
 
-        m_context.metrics().record_flow("terminate_accept_invite");
-        m_context.metrics().counter("user.terminate_accept_invite").increment();
+        m_context.logger().record_flow("terminate_accept_invite");
+        m_context.logger().counter("user.terminate_accept_invite").increment();
 
         auto document = ResponseDocument::from(generic);
         return std::pair{document, set_cookie};

@@ -69,11 +69,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payment_confirm_intent");
-        m_context.metrics().counter("payments.payment_confirm_intent").increment();
+        m_context.logger().record_flow("payments.payment_confirm_intent");
+        m_context.logger().counter("payments.payment_confirm_intent").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.payment_confirm_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -92,11 +95,14 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.proxy_confirm_intent");
-        m_context.metrics().counter("payments.proxy_confirm_intent").increment();
+        m_context.logger().record_flow("payments.proxy_confirm_intent");
+        m_context.logger().counter("payments.proxy_confirm_intent").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
         m_runtime.proxy_confirm_intent(dto, m_request_support->context(req)).handle(sink);
     }
@@ -117,15 +123,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.confirm_intent_with_external_vault_proxy");
-        m_context.metrics()
-            .counter("payments.confirm_intent_with_external_vault_proxy")
-            .increment();
+        m_context.logger().record_flow("payments.confirm_intent_with_external_vault_proxy");
+        m_context.logger().counter("payments.confirm_intent_with_external_vault_proxy").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.confirm_intent_with_external_vault_proxy(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.confirm_intent_with_external_vault_proxy(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #11
@@ -143,7 +151,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_confirm_intent(req, res, std::move(send));
                         }
@@ -168,7 +176,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_proxy_confirm_intent(req, res, std::move(send));
                         }
@@ -194,7 +202,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_confirm_intent_with_external_vault_proxy(
                                     req,

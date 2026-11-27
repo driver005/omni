@@ -69,8 +69,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payments_aggregates");
-        m_context.metrics().counter("payments.get_payments_aggregates").increment();
+        m_context.logger().record_flow("payments.get_payments_aggregates");
+        m_context.logger().counter("payments.get_payments_aggregates").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
         m_runtime.get_payments_aggregates(dto, m_request_support->context(req)).handle(sink);
@@ -92,11 +92,12 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payments_aggregates_profile");
-        m_context.metrics().counter("payments.get_payments_aggregates_profile").increment();
+        m_context.logger().record_flow("payments.get_payments_aggregates_profile");
+        m_context.logger().counter("payments.get_payments_aggregates_profile").increment();
 
         const ::app::model::payments::PaymentsRequest dto{};
-        m_runtime.get_payments_aggregates_profile(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.get_payments_aggregates_profile(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_get_payment_list_from_opensearch(
@@ -115,13 +116,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_payment_list_from_opensearch");
-        m_context.metrics().counter("payments.get_payment_list_from_opensearch").increment();
+        m_context.logger().record_flow("payments.get_payment_list_from_opensearch");
+        m_context.logger().counter("payments.get_payment_list_from_opensearch").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.get_payment_list_from_opensearch(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.get_payment_list_from_opensearch(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_get_profile_payment_list_from_opensearch(
@@ -140,15 +145,17 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.get_profile_payment_list_from_opensearch");
-        m_context.metrics()
-            .counter("payments.get_profile_payment_list_from_opensearch")
-            .increment();
+        m_context.logger().record_flow("payments.get_profile_payment_list_from_opensearch");
+        m_context.logger().counter("payments.get_profile_payment_list_from_opensearch").increment();
 
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.get_profile_payment_list_from_opensearch(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.get_profile_payment_list_from_opensearch(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     // original install() route #36
@@ -165,7 +172,7 @@ public:
                         std::function<void()> send
                     )
                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                         handle_get_payments_aggregates(req, res, std::move(send));
                     }
@@ -189,7 +196,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_payments_aggregates_profile(req, res, std::move(send));
                         }
@@ -214,7 +221,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_get_payment_list_from_opensearch(req, res, std::move(send));
                         }
@@ -240,7 +247,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_get_profile_payment_list_from_opensearch(
                                     req,

@@ -22,8 +22,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create(const CustomerCreateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    create(const CustomerCreateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         auto value = create_core(request, ctx);
         if (!value) {
@@ -33,8 +32,7 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create_v2(const CustomerCreateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_v2(const CustomerCreateDto& request, const ::core::behavior::CallContext& ctx) const
     {
         auto value = create_core(request, ctx);
         if (!value) {
@@ -45,10 +43,9 @@ public:
 
 private:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-    create_core(const CustomerCreateDto& request,
-        const ::core::behavior::CallContext& ctx) const
+    create_core(const CustomerCreateDto& request, const ::core::behavior::CallContext& ctx) const
     {
-        const std::string merchant_id = ctx_string(ctx,"merchant_id");
+        const std::string merchant_id = ctx_string(ctx, "merchant_id");
         // MerchantReferenceIdForCustomer::verify_if_merchant_reference_not_present*
         // (core/customers.rs:89-104 / 472-569).
         const std::string reference =
@@ -72,7 +69,9 @@ private:
         // CustomerCreateBridge::create_domain_model_from_request (core/customers.rs:152-421).
         CustomerAggregate aggregate{};
         const std::string global_id = m_support.generate_global_customer_id();
-        aggregate.record.set_customer_id(ctx_version(ctx) == ApiVersion::V1 ? reference : global_id);
+        aggregate.record.set_customer_id(
+            ctx_version(ctx) == ApiVersion::V1 ? reference : global_id
+        );
         aggregate.record.set_merchant_id(merchant_id);
         aggregate.record.set_created_at(m_support.now_iso8601());
         if (request.name) {
@@ -112,17 +111,13 @@ private:
             );
         }
         if (request.default_payment_method_id) {
-            aggregate.extension.set_default_payment_method_id(
-                *request.default_payment_method_id
-            );
+            aggregate.extension.set_default_payment_method_id(*request.default_payment_method_id);
         }
 
         // AddressStructForDbEntry::encrypt_customer_address_and_set_to_db
         // (core/customers.rs:423-470).
         if (ctx_version(ctx) == ApiVersion::V1 && request.address) {
-            aggregate.addresses.push_back(
-                m_support.to_address_record(*request.address, "v1")
-            );
+            aggregate.addresses.push_back(m_support.to_address_record(*request.address, "v1"));
         } else if (ctx_version(ctx) == ApiVersion::V2) {
             if (request.billing_address) {
                 aggregate.addresses.push_back(
@@ -139,8 +134,8 @@ private:
 
         serde::Value document =
             m_support.customer_document(aggregate, request, std::nullopt, ctx_version(ctx));
-        m_context.metrics().record_flow("customers.create");
-        m_context.metrics().counter("customers_create").increment();
+        m_context.logger().record_flow("customers.create");
+        m_context.logger().counter("customers_create").increment();
         return document;
     }
 

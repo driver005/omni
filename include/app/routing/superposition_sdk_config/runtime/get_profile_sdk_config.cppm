@@ -9,6 +9,7 @@ import app_auth;
 import app_metrics;
 import core_behavior;
 
+import :superposition_sdk_config_input;
 import :superposition_sdk_config_result;
 import :superposition_sdk_config_runtime_common;
 
@@ -69,8 +70,8 @@ public:
             m_support.build_account_config(*profile, profile_id, merchant_id, ctx)
         );
 
-        m_context.metrics().record_flow("GetSuperpositionSdkConfig");
-        m_context.metrics().counter("get_profile_superposition_sdk_config").increment();
+        m_context.logger().record_flow("GetSuperpositionSdkConfig");
+        m_context.logger().counter("get_profile_superposition_sdk_config").increment();
 
         return std::move(response);
     }

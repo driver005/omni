@@ -35,8 +35,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::user_role::DeleteUserRoleResponse>
-        delete_user_role(const ::app::dto::user_role::DeleteUserRoleRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    delete_user_role(
+        const ::app::dto::user_role::DeleteUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         const ::app::crypto::SecretString email_secret{request.get_email().get_value()};
         const auto user = m_support.active_user_by_email(email_secret.value());
@@ -51,7 +53,10 @@ public:
                 "User deleting himself"
             )};
         }
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")

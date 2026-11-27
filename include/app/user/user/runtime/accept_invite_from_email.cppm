@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    accept_invite_from_email(const ::app::model::user::AcceptInviteFromEmailRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    accept_invite_from_email(
+        const ::app::model::user::AcceptInviteFromEmailRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -61,8 +63,8 @@ public:
             m_support.publish_identity_event("user.invite_accepted", email);
         }
 
-        m_context.metrics().record_flow("accept_invite_from_email");
-        m_context.metrics().counter("user.accept_invite_from_email").increment();
+        m_context.logger().record_flow("accept_invite_from_email");
+        m_context.logger().counter("user.accept_invite_from_email").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

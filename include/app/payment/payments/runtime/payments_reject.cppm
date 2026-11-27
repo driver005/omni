@@ -1,4 +1,5 @@
 export module app_payment:payments_runtime_payments_reject;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -31,19 +32,18 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse>
-    payments_reject(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse> payments_reject(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const PaymentsRequestData input = m_support.request_data(dto, ctx);
         if (const auto err = m_support.ensure_payment_exists(input)) {
             return std::unexpected{*err};
         }
-        const auto pipeline = m_support.run_payment_pipeline(
-            input,
-            "payments_reject",
-            "authorize",
-            "requires_capture"
-        );
+        const auto pipeline =
+            m_support
+                .run_payment_pipeline(input, "payments_reject", "authorize", "requires_capture");
         if (!pipeline.locked) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::DUPLICATE_REQUEST,

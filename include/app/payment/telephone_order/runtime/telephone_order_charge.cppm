@@ -1,4 +1,5 @@
 export module app_payment:telephone_order_runtime_telephone_order_charge;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,14 +41,14 @@ public:
      * charge_with<TwilioGenericPay>. */
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<TwilioGenericPayResponse>
-        telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
+    telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = TelephoneOrderChargeData{dto, ctx};
         const auto& request = input.request;
         const std::string& transaction_reference = input.transaction_reference;
 
-        m_context.metrics().record_flow("TelephoneOrderCharge");
-        m_context.metrics().counter("telephone_order_charge_total").increment();
+        m_context.logger().record_flow("TelephoneOrderCharge");
+        m_context.logger().counter("telephone_order_charge_total").increment();
 
         // The route resolves the id once — span + lock.
         auto resolved_id = TelephoneOrderCore::resolve_payment_id(request);
@@ -56,7 +57,7 @@ public:
             payment_id = std::move(resolved_id.value);
         }
         if (payment_id) {
-            m_context.metrics().counter("telephone_order_charge_payment_id_resolved").increment();
+            m_context.logger().counter("telephone_order_charge_payment_id_resolved").increment();
         }
 
         const auto action = TelephoneOrderCore::locking_action(payment_id);
@@ -65,7 +66,7 @@ public:
             lock =
                 m_context.locks().acquire(action.key, std::int64_t{30}, "telephone_order_charge");
             if (!lock) {
-                m_context.metrics().counter("telephone_order_charge_lock_contended").increment();
+                m_context.logger().counter("telephone_order_charge_lock_contended").increment();
                 TwilioGenericPayResponse response = TwilioGenericPay::failure_response(
                     Failure::make(
                         error_codes::PAYMENT_PENDING,
@@ -164,8 +165,8 @@ private:
         // own outcome instead of charging the card again (core/telephone_order.rs:263-274).
         const auto existing = m_context.repository().find_payment_by_string(payment_id);
         if (existing) {
-            m_context.metrics().counter("telephone_order_charge_duplicate_replay").increment();
-            m_context.metrics().record_flow("TelephoneOrderChargeDuplicateReplay");
+            m_context.logger().counter("telephone_order_charge_duplicate_replay").increment();
+            m_context.logger().record_flow("TelephoneOrderChargeDuplicateReplay");
             return answer(transaction_reference, retrieve_payment(payment_id, *existing));
         }
 
@@ -186,7 +187,7 @@ private:
                                            : core::error::AppErrorKind::CONNECTOR_ERROR;
             const std::string message =
                 router_error ? router_error->get_message() : "no connector available";
-            m_context.metrics().counter("telephone_order_charge_processing_error").increment();
+            m_context.logger().counter("telephone_order_charge_processing_error").increment();
             return TwilioGenericPay::report_failure(
                 m_context,
                 transaction_reference,
@@ -195,7 +196,7 @@ private:
             );
         }
 
-        m_context.metrics().counter("telephone_order_charge_connector_authorize").increment();
+        m_context.logger().counter("telephone_order_charge_connector_authorize").increment();
         const auto connector_response = connector->authorize(connector_request);
         PaymentView payment{};
         payment.payment_id = payment_id;
@@ -223,13 +224,13 @@ private:
         const Outcome outcome = TelephoneOrderCore::payment_outcome(payment);
         switch (outcome.kind) {
             case OutcomeKind::Paid:
-                m_context.metrics().counter("telephone_order_charge_paid").increment();
+                m_context.logger().counter("telephone_order_charge_paid").increment();
                 return TwilioGenericPay::success_response(
                     payment,
                     TelephoneOrderCore::outcome_parameters(payment)
                 );
             case OutcomeKind::Declined:
-                m_context.metrics().counter("telephone_order_charge_declined").increment();
+                m_context.logger().counter("telephone_order_charge_declined").increment();
                 return TwilioGenericPay::report_failure(
                     m_context,
                     transaction_reference,
@@ -238,8 +239,8 @@ private:
                 );
             case OutcomeKind::Indeterminate:
             default:
-                m_context.metrics().counter("telephone_order_charge_pending").increment();
-                m_context.metrics().record_flow("TelephoneOrderChargeIndeterminate");
+                m_context.logger().counter("telephone_order_charge_pending").increment();
+                m_context.logger().record_flow("TelephoneOrderChargeIndeterminate");
                 return TwilioGenericPay::report_failure(
                     m_context,
                     transaction_reference,

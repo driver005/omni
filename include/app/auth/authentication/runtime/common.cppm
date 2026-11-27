@@ -327,7 +327,7 @@ public:
                 tracker_id,
                 std::string{response.get_reference_id()}
             );
-            m_context.metrics().counter("authentication_connector_call").increment();
+            m_context.logger().counter("authentication_connector_call").increment();
             ConnectorOutcome outcome{};
             outcome.trans_status = response.get_status().empty() ? "Y" : response.get_status();
             outcome.reference_id = response.get_reference_id();
@@ -341,7 +341,7 @@ public:
             std::string{operation} + ":" + std::string{resource_id}
         );
         m_context.process_trackers().mark_terminal(tracker_id, std::string{digest});
-        m_context.metrics().counter("authentication_connector_unavailable").increment();
+        m_context.logger().counter("authentication_connector_unavailable").increment();
         ConnectorOutcome outcome{};
         outcome.reference_id = "authn_" + digest;
         outcome.cavv = cavv_from(outcome.reference_id);
@@ -517,12 +517,12 @@ public:
         auto record =
             m_context.repository().find_authentication_record_by_string(authentication_id);
         if (!record.has_value()) {
-            m_context.metrics().counter("authentication_status_record_missing").increment();
+            m_context.logger().counter("authentication_status_record_missing").increment();
             return;
         }
         record->set_status(std::string{status});
         m_context.repository().update_authentication_record(*record);
-        m_context.metrics().counter("authentication_status_updated").increment();
+        m_context.logger().counter("authentication_status_updated").increment();
     }
 
     // Eligibility-check data store (local in-process substitute for Redis,
@@ -1101,11 +1101,11 @@ public:
     void track_record_fetch(std::string_view operation, std::string_view authentication_id) const
     {
         if (find_authentication(authentication_id).has_value()) {
-            m_context.metrics()
+            m_context.logger()
                 .counter(std::string{"authentication_record_found."} + std::string{operation})
                 .increment();
         } else {
-            m_context.metrics()
+            m_context.logger()
                 .counter(std::string{"authentication_record_missing."} + std::string{operation})
                 .increment();
         }

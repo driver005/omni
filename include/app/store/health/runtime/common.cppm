@@ -149,7 +149,7 @@ public:
         // Upstream analytics providers are databases (Sqlx/Clickhouse). The
         // repository read over a distinct table is the real local DB substitute.
         try {
-            (void)m_context.repository().list_refunds();
+            (void)m_context.refunds().list_refunds();
             return {State::Running, {}};
         } catch (const std::exception& error) {
             return {State::Error, error.what()};

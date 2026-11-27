@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -54,7 +55,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
-        create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_create.create(dto, ctx);
     }
@@ -67,7 +68,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
-        update(const Dto& dto, const core::behavior::CallContext& ctx) const
+    update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_update.update(dto, ctx);
     }
@@ -92,28 +93,28 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list.list(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list_profile.list_profile(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list_by_filter(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list_by_filter(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list_by_filter.list_by_filter(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
-        list_by_filter_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
+    list_by_filter_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_list_by_filter_profile.list_by_filter_profile(dto, ctx);
     }
@@ -143,18 +144,18 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
-        get_payouts_aggregates(const core::behavior::CallContext& ctx) const
+    get_payouts_aggregates(const core::behavior::CallContext& ctx) const
     {
         return m_get_payouts_aggregates.get_payouts_aggregates(ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
-        get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
+    get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
     {
         return m_get_payouts_aggregates_profile.get_payouts_aggregates_profile(ctx);
     }
 
-        template<class Dto>
+    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsManualUpdateResponse>
     manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {

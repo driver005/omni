@@ -54,7 +54,10 @@ public:
         }
         // profiles.rs:402-406 (v1) / :438 (v2) — list_profile(merchant, None).
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         ctx.claims.insert_or_assign("profile_id_list", encode_ids(std::nullopt));
         m_runtime.list(ctx).handle(sink);
     }
@@ -75,8 +78,14 @@ public:
         // profiles.rs:471-476 — list_profile(merchant,
         // auth.profile.map(|p| vec![p.get_id().clone()])).
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
-        ctx.claims.insert_or_assign("profile_id_list", encode_ids(m_input_support.profile_filter_from_auth(req)));
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
+        ctx.claims.insert_or_assign(
+            "profile_id_list",
+            encode_ids(m_input_support.profile_filter_from_auth(req))
+        );
         m_runtime.list_at_profile_level(ctx).handle(sink);
     }
 

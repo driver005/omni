@@ -1,4 +1,5 @@
 export module app_payment:refunds_runtime_filter_platform;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -21,18 +22,18 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListFilters>
-        filter_platform(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    filter_platform(const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundsFilterPlatformData{ctx};
-        m_context.metrics().record_flow("refund_platform_filter");
-        m_context.metrics().counter("refunds_platform_filter_total").increment();
+        m_context.logger().record_flow("refund_platform_filter");
+        m_context.logger().counter("refunds_platform_filter_total").increment();
 
         const auto result = m_support.get_platform_refund_filters(input.facts);
         if (!result) {
             return std::unexpected{result.error()};
         }
-        return ::app::model::refunds::PlatformRefundListFilters{*result};
+        return *result;
     }
 
 private:

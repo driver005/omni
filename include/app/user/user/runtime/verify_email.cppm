@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    verify_email(const ::app::model::user::VerifyEmailRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> verify_email(
+        const ::app::model::user::VerifyEmailRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -66,8 +67,8 @@ public:
             core::cache::to_cache_value(email)
         );
 
-        m_context.metrics().record_flow("verify_email");
-        m_context.metrics().counter("user.verify_email").increment();
+        m_context.logger().record_flow("verify_email");
+        m_context.logger().counter("user.verify_email").increment();
 
         using Response = ::app::model::user::TokenResponse;
         Response response{};

@@ -39,8 +39,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistCountResponse>
     get_blocklist_count(const ::core::behavior::CallContext& ctx) const
     {
-        const std::string kind = query_value(ctx, "data_kind").value_or("");
-        const std::string transaction_type = query_value(ctx, "transaction_type").value_or("");
+        const std::string kind = m_support.query_value(ctx, "data_kind").value_or("");
+        const std::string transaction_type =
+            m_support.query_value(ctx, "transaction_type").value_or("");
         std::size_t total{0};
         std::map<std::string, std::size_t> by_length;
         for (const auto& record: m_support.list_entries()) {

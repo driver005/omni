@@ -48,10 +48,12 @@ private:
         auto repo = m_context.repository();
         std::vector<CustomerAggregate> filtered{};
         for (const auto& record: repo.list_customers()) {
-            if (!ctx_string(ctx,"merchant_id").empty() && record.get_merchant_id() != ctx_string(ctx,"merchant_id")) {
+            if (!ctx_string(ctx, "merchant_id").empty() &&
+                record.get_merchant_id() != ctx_string(ctx, "merchant_id")) {
                 continue;
             }
-            if (ctx_optional_string(ctx,"customer_id") && record.get_customer_id() != *ctx_optional_string(ctx,"customer_id")) {
+            if (ctx_optional_string(ctx, "customer_id") &&
+                record.get_customer_id() != *ctx_optional_string(ctx, "customer_id")) {
                 continue;
             }
             if (ctx_time_range(ctx) &&
@@ -66,11 +68,11 @@ private:
         serde::Value::Array data{};
         std::size_t position{0};
         for (const auto& aggregate: filtered) {
-            if (position < ctx_size(ctx,"offset")) {
+            if (position < ctx_size(ctx, "offset")) {
                 ++position;
                 continue;
             }
-            if (position - ctx_size(ctx,"offset") >= ctx_size(ctx,"limit")) {
+            if (position - ctx_size(ctx, "offset") >= ctx_size(ctx, "limit")) {
                 break;
             }
             data.push_back(
@@ -81,8 +83,8 @@ private:
         serde::Value::Object response{};
         response["data"] = serde::Value{std::move(data)};
         response["total_count"] = serde::Value{static_cast<std::int64_t>(total)};
-        m_context.metrics().record_flow("customers.list_with_count");
-        m_context.metrics().counter("customers_list_with_count").increment();
+        m_context.logger().record_flow("customers.list_with_count");
+        m_context.logger().counter("customers_list_with_count").increment();
         return serde::Value{std::move(response)};
     }
 

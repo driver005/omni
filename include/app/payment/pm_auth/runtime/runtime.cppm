@@ -1,4 +1,5 @@
 export module app_payment:pm_auth_runtime;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -25,14 +26,14 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::pm_auth::LinkTokenCreateResponse>
-        link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
+    link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_link_token_create.link_token_create(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
+    exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_exchange_token.exchange_token(dto, ctx);
     }

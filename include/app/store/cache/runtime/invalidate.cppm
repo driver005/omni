@@ -30,7 +30,7 @@ public:
         // Flow::CacheInvalidate instrumentation: upstream records this through
         // server_wrap (routes/cache.rs:16,20-28). The handler owns the auth gate;
         // this runtime only performs the cache invalidation itself.
-        m_context.metrics().record_flow("CacheInvalidate");
+        m_context.logger().record_flow("CacheInvalidate");
 
         // web::Path<String> (/cache/invalidate/:key). Longer mount prefixes fall
         // back to the last non-empty segment, matching the original helper.
@@ -55,7 +55,7 @@ public:
             return std::unexpected{std::move(error)};
         }
 
-        m_context.metrics().counter("CACHE_INVALIDATED").increment();
+        m_context.logger().counter("CACHE_INVALIDATED").increment();
 
         // ApplicationResponse::StatusOk has no body (core/cache.rs:20;
         // services/api.rs:499 -> http_response_ok()).

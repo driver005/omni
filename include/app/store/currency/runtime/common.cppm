@@ -266,8 +266,7 @@ public:
     }
 
     // ── core/currency.rs:56-101 — get_forex_exchange_rates (analytics helper) ─
-    [[nodiscard]] core::behavior::Outcome<ExchangeRates>
-    get_forex_exchange_rates() const
+    [[nodiscard]] core::behavior::Outcome<ExchangeRates> get_forex_exchange_rates() const
     {
         constexpr int kAttempts{3}; // DEFAULT_ANALYTICS_FOREX_RETRY_ATTEMPTS
         const auto ttl = data_expiration_delay_seconds();
@@ -479,14 +478,14 @@ public:
 
     void record_forex_flow() const
     {
-        m_context.metrics().record_flow("RetrieveForexFlow");
+        m_context.logger().record_flow("RetrieveForexFlow");
     }
 
     /** @brief Backoff is recorded as data; upstream sleeps attempt*2 seconds. */
     void record_backoff(int attempt) const
     {
-        m_context.metrics().record_flow(std::format("ForexFetchBackoff:{}s", attempt * 2));
-        m_context.metrics().counter("FOREX_FETCH_RETRY").increment();
+        m_context.logger().record_flow(std::format("ForexFetchBackoff:{}s", attempt * 2));
+        m_context.logger().counter("FOREX_FETCH_RETRY").increment();
     }
 
     // ── AppError mappings (core/currency.rs error taxonomy) ─────────────────

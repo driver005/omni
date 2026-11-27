@@ -22,9 +22,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    migrate_global_id(const std::vector<MigrationOutcome>& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> migrate_global_id(
+        const std::vector<MigrationOutcome>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto repo = m_context.repository();
         std::vector<::app::model::customers::CustomerGlobalIdMigrationRowResult> results{};
@@ -61,8 +62,8 @@ public:
         response["failed_count"] =
             serde::Value{static_cast<std::int64_t>(total - updated - skipped)};
         response["results"] = serde::Value{std::move(data)};
-        m_context.metrics().record_flow("customers.migrate_global_id");
-        m_context.metrics().counter("customers_migrate_global_id").increment();
+        m_context.logger().record_flow("customers.migrate_global_id");
+        m_context.logger().counter("customers_migrate_global_id").increment();
         return serde::Value{std::move(response)};
     }
 

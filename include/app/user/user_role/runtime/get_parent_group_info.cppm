@@ -37,13 +37,16 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     get_parent_group_info(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
+        const auto requestor = m_support.role_info_from_id(
+            identity_from_context(ctx),
+            identity_from_context(ctx).role_id
+        );
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
             };
         }
-        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx, "entity_type"));
         const auto effective_entity = entity_type.empty() ? requestor->entity_type : entity_type;
         if (role_tables::entity_rank(requestor->entity_type) <
             role_tables::entity_rank(effective_entity)) {
@@ -53,8 +56,9 @@ public:
             )};
         }
         std::vector<std::string> groups{};
-        if (!ctx_string(ctx,"product_type").empty()) {
-            const auto categories = role_tables::accessible_product_categories(ctx_string(ctx,"product_type"));
+        if (!ctx_string(ctx, "product_type").empty()) {
+            const auto categories =
+                role_tables::accessible_product_categories(ctx_string(ctx, "product_type"));
             for (const auto& def: role_tables::perm_groups()) {
                 if (std::find(categories.begin(), categories.end(), std::string{def.category}) !=
                     categories.end()) {

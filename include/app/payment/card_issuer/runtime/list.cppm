@@ -1,4 +1,5 @@
 export module app_payment:card_issuer_runtime_list;
+import core_behavior;
 
 import std;
 import core_error;
@@ -24,7 +25,7 @@ public:
 
     // core/card_issuer.rs:84-119 `list_card_issuers`.
     [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerListResponse>
-        list(const core::behavior::CallContext& ctx) const
+    list(const core::behavior::CallContext& ctx) const
     {
         (void)ctx;
         const std::size_t limit = m_support.configured_list_limit();
@@ -36,7 +37,7 @@ public:
         // No tracing sink is injected locally; a named counter is the deterministic
         // in-process substitute.
         if (records.size() >= limit) {
-            m_context.metrics().counter("CARD_ISSUER_LIST_LIMIT_REACHED").increment();
+            m_context.logger().counter("CARD_ISSUER_LIST_LIMIT_REACHED").increment();
         }
 
         std::vector<::app::dto::card_issuer::CardIssuerResponse> issuers;
@@ -63,8 +64,8 @@ public:
         response.set_issuers(std::move(issuers));
 
         // `#[instrument(skip_all, fields(flow = Flow::ListCardIssuers))]` substitute.
-        m_context.metrics().record_flow("ListCardIssuers");
-        m_context.metrics().counter("CARD_ISSUERS_LISTED").increment();
+        m_context.logger().record_flow("ListCardIssuers");
+        m_context.logger().counter("CARD_ISSUERS_LISTED").increment();
 
         return ::app::dto::card_issuer::CardIssuerListResponse{std::move(response)};
     }

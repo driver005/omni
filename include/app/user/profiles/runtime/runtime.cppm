@@ -35,9 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
-    create(const ::app::dto::admin::ProfileCreate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse> create(
+        const ::app::dto::admin::ProfileCreate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_create.create(request, ctx);
     }
@@ -48,14 +49,16 @@ public:
         return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
-    update(const ::app::dto::admin::ProfileUpdate& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse> update(
+        const ::app::dto::admin::ProfileUpdate& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_update.update(request, ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value> remove(const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    remove(const ::core::behavior::CallContext& ctx) const
     {
         return m_delete.remove(ctx);
     }
@@ -73,15 +76,19 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ConnectorAgnosticMitChoice>
-        toggle_connector_agnostic_mit(const ::app::dto::admin::ConnectorAgnosticMitChoice& request,
-        const ::core::behavior::CallContext& ctx) const
+    toggle_connector_agnostic_mit(
+        const ::app::dto::admin::ConnectorAgnosticMitChoice& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_toggle_connector_agnostic_mit.toggle(request, ctx);
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ExtendedCardInfoChoice>
-    toggle_extended_card_info(const ::app::dto::admin::ExtendedCardInfoChoice& request,
-        const ::core::behavior::CallContext& ctx) const
+    toggle_extended_card_info(
+        const ::app::dto::admin::ExtendedCardInfoChoice& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         return m_toggle_extended_card_info.toggle(request, ctx);
     }

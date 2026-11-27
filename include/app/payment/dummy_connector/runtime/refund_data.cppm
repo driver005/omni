@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime_refund_data;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -23,8 +24,9 @@ public:
     }
 
     // routes/dummy_connector.rs:132-150 -> core.rs:210-234 (refund_data).
-    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
-        refund_data(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::handlers::dummy_connector::DummyConnectorRefundWire>
+    refund_data(const core::behavior::CallContext& ctx) const
     {
         const auto input = RefundDataData{ctx};
         const auto stored = m_context.cache().get(input.refund_id);
@@ -36,8 +38,8 @@ public:
         if (!refund) {
             return std::unexpected{m_support.values().dc_internal()};
         }
-        m_context.metrics().record_flow("DummyRefundRetrieve");
-        m_context.metrics().counter("DUMMY_CONNECTOR_REFUND_DATA").increment();
+        m_context.logger().record_flow("DummyRefundRetrieve");
+        m_context.logger().counter("DUMMY_CONNECTOR_REFUND_DATA").increment();
         return m_support.refund_data_response(*refund);
     }
 

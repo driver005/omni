@@ -1,4 +1,5 @@
 module;
+#include <regex>
 #include <rfl.hpp>
 #include <rfl/to_generic.hpp>
 
@@ -36,8 +37,7 @@ struct field_value<V>
 template<class Field, class Other, bool WantMany>
 [[nodiscard]] consteval bool field_matches()
 {
-    using getter_type = std::remove_cvref_t<decltype(Field::getter)>;
-    using value_type = typename serde::MFPTraits<getter_type>::value_t;
+    using value_type = typename Field::ValueType;
     using inner_type = typename field_value<value_type>::type;
     constexpr bool is_other = std::same_as<std::remove_cvref_t<inner_type>, Other>;
     constexpr bool is_many = std::ranges::range<value_type> &&
@@ -59,8 +59,8 @@ template<class Side, class Other, bool WantMany>
 }
 
 template<class Fields, std::size_t... I>
-auto field_types_of(std::index_sequence<I...>) -> std::tuple<typename serde::MFPTraits<
-    std::remove_cvref_t<decltype(std::tuple_element_t<I, Fields>::getter)>>::value_t...>;
+auto field_types_of(std::index_sequence<I...>)
+    -> std::tuple<typename std::tuple_element_t<I, Fields>::ValueType...>;
 
 /**
  * @brief Detects a model-owned `validate()` returning something bool-testable.
@@ -98,6 +98,36 @@ template<class V>
     } else {
         (void)value;
         return false;
+    }
+}
+
+/**
+ * @brief `pattern` rule: a string-like value must fully match the configured regex.
+ * @note Non-string fields (numbers, UUIDs) are left alone — `required`/`with_validator`
+ * cover those. A malformed pattern is a validation failure, never an exception.
+ */
+template<class V>
+[[nodiscard]] bool matches_pattern(std::string_view pattern, const V& value)
+{
+    if constexpr (requires { value.has_value(); }) {
+        if (!value.has_value()) {
+            return true;
+        }
+        return matches_pattern(pattern, *value);
+    } else if constexpr (std::convertible_to<V, std::string_view>) {
+        if (pattern.empty()) {
+            return true;
+        }
+        try {
+            const std::regex expression{std::string{pattern}, std::regex::ECMAScript};
+            return std::regex_match(std::string{std::string_view{value}}, expression);
+        } catch (const std::regex_error&) {
+            return false;
+        }
+    } else {
+        (void)pattern;
+        (void)value;
+        return true;
     }
 }
 
@@ -180,8 +210,11 @@ public:
      * order. Matching uses `FieldDesc::name`; emitted keys honour `FieldOptions::wire_name`.
      * @return a typed `serde::Value::Object` document, ready for `Ser::serialize`.
      */
-    [[nodiscard]] static serde::Value
-    build_value(const T& object, std::span<const std::string_view> fields = {})
+    [[nodiscard]] static serde::Value build_value(
+        const T& object,
+        std::span<const std::string_view> fields = {},
+        std::optional<WireOp> op = std::nullopt
+    )
     {
         serde::Value::Object document{};
         const auto wanted = [fields](std::string_view name)
@@ -202,11 +235,14 @@ public:
                         if (!wanted(Fd::name.string_view())) {
                             return;
                         }
+                        if (op.has_value() && !serde::enabled_on_wire<Fd>(*op)) {
+                            return;
+                        }
                         // Keep the whole normalize -> FieldConverter -> rfl::to_generic chain in
                         // one full-expression: getters may return temporaries.
                         auto converted = FieldConverter<
-                            std::remove_cvref_t<decltype(Fd::normalize((object.*Fd::getter)()))>>::
-                            to_rfl(Fd::normalize((object.*Fd::getter)()));
+                            std::remove_cvref_t<decltype(serde::field_value<Fd>(object))>>::
+                            to_rfl(serde::field_value<Fd>(object));
                         document.insert(
                             std::string{serializer_detail::wire_key<Fd>()},
                             serde::Value{rfl::to_generic(converted)}
@@ -229,6 +265,19 @@ public:
     {
         const auto bytes =
             Ser::serialize(content_type, build_value(static_cast<const T&>(*this), fields));
+        return std::string{reinterpret_cast<const char*>(bytes.data()), bytes.size()};
+    }
+
+    /**
+     * @brief Serializes only fields enabled for `op` by their FieldOptions wire mask.
+     * @param op the wire operation being served.
+     * @param fields additional declared-name filter; empty means every eligible field.
+     */
+    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    serialize_for(WireOp op, std::span<const std::string_view> fields = {}) const
+    {
+        const auto bytes =
+            Ser::serialize(content_type, build_value(static_cast<const T&>(*this), fields, op));
         return std::string{reinterpret_cast<const char*>(bytes.data()), bytes.size()};
     }
 
@@ -282,6 +331,17 @@ public:
                                 )};
                                 return;
                             }
+                            if (!Fd::options.m_pattern.empty() &&
+                                !serializer_detail::matches_pattern(
+                                    Fd::options.m_pattern.view(),
+                                    value
+                                )) {
+                                outcome = std::unexpected{core::error::AppErrorBuilder{}(
+                                    core::error::AppErrorKind::VALIDATION_FAILED,
+                                    std::format("field '{}' failed pattern validation", name)
+                                )};
+                                return;
+                            }
                             if (Fd::options.m_validator != nullptr &&
                                 !Fd::options.m_validator(
                                     static_cast<const void*>(std::addressof(value))
@@ -292,7 +352,7 @@ public:
                                 )};
                             }
                         };
-                        check((object.*Fd::getter)());
+                        check(serde::field_value<Fd>(object));
                     }(),
                     ...);
             },
@@ -362,7 +422,7 @@ public:
         res.set_status(interfaces::io::types::Status::OK);
         std::vector<std::byte> body_bytes{};
         body_bytes.reserve(text->size());
-        for (const char ch : *text) {
+        for (const char ch: *text) {
             body_bytes.push_back(static_cast<std::byte>(ch));
         }
         res.set_body(std::move(body_bytes));
@@ -384,7 +444,7 @@ public:
         sink.set_status(interfaces::io::types::Status::OK);
         std::vector<std::byte> body_bytes{};
         body_bytes.reserve(text->size());
-        for (const char ch : *text) {
+        for (const char ch: *text) {
             body_bytes.push_back(static_cast<std::byte>(ch));
         }
         sink.set_body(std::move(body_bytes));
@@ -429,18 +489,59 @@ public:
         return serialize_values(static_cast<const std::vector<T>&>(*this), fields);
     }
 
-    [[nodiscard]] static std::expected<std::string, core::error::AppError>
-    serialize_values(const std::vector<T>& elements, std::span<const std::string_view> fields = {})
+    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    serialize_for(WireOp op, std::span<const std::string_view> fields = {}) const
+    {
+        return serialize_values(static_cast<const std::vector<T>&>(*this), fields, op);
+    }
+
+    [[nodiscard]] static std::optional<std::vector<T>>
+    pass(interfaces::io::IRequest& req, interfaces::io::ResponseSink& sink)
+    {
+        const auto body = req.body_as_string();
+        if (body.empty()) {
+            core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::EMPTY_REQUEST,
+                "empty request"
+            )
+                .send(sink);
+            return std::nullopt;
+        }
+        const auto ct = req.get_content_type();
+        auto parsed = Ser::deserialize<std::vector<T>>(ct.empty() ? content_type : ct, body);
+        if (!parsed) {
+            core::error::AppErrorBuilder{}(core::error::AppErrorKind::INVALID_JSON, parsed.error())
+                .send(sink);
+            return std::nullopt;
+        }
+        return std::move(*parsed);
+    }
+
+    [[nodiscard]] static std::expected<std::string, core::error::AppError> serialize_values(
+        const std::vector<T>& elements,
+        std::span<const std::string_view> fields = {},
+        std::optional<WireOp> op = std::nullopt
+    )
     {
         serde::Value::Array array{};
         for (const auto& element: elements) {
             // Per-element field-filtered serialization, kept as a Value so no extra wire
             // round-trip is needed before the whole array is encoded.
-            array.emplace_back(Serializer<T>::build_value(element, fields));
+            array.emplace_back(Serializer<T>::build_value(element, fields, op));
         }
         const auto bytes = Ser::serialize(content_type, serde::Value{std::move(array)});
         return std::string{reinterpret_cast<const char*>(bytes.data()), bytes.size()};
     }
 };
+
+// ─── Ser facade validation ────────────────────────────────────────────────────
+// Declared in :json_codec with a deduced return type (that partition cannot import
+// :error without a cycle); defined here where AppError is reachable.
+
+template<typename T>
+auto Ser::validate(const T& object)
+{
+    return Serializer<T>::validate_value(object);
+}
 
 } // namespace serde

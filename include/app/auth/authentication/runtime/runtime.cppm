@@ -55,7 +55,8 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<
-        ::app::dto::authentication::AuthenticationAuthenticateResponse> authenticate(
+        ::app::dto::authentication::AuthenticationAuthenticateResponse>
+    authenticate(
         const ::app::dto::authentication::AuthenticationAuthenticateRequest& request,
         const core::behavior::CallContext& ctx
     ) const

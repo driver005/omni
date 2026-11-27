@@ -58,7 +58,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_initiate_pm_collect_link_flow(req, res, std::move(send));
                         }
@@ -76,7 +76,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_render_pm_collect_link(req, res, std::move(send));
                                 }
@@ -95,7 +95,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                             }
@@ -114,7 +114,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                         }
@@ -149,8 +149,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCollectLinkRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodCollectLinkRequest>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) {
             const auto error = m_input_support.error(
@@ -259,7 +262,8 @@ public:
             return;
         }
         const auto& dto = *record;
-        auto result = m_runtime.payment_method_retrieve_olap_api(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.payment_method_retrieve_olap_api(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

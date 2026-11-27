@@ -25,7 +25,6 @@ public:
     set_dynamic_routing_volume_split(const ::core::behavior::CallContext& ctx) const
     {
         const auto split = ctx_query_number<std::uint8_t>(ctx, "split");
-        const auto split = split;
         if (!split) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INVALID_REQUEST, "split")

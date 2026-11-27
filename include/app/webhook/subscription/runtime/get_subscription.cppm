@@ -32,15 +32,14 @@ public:
         const std::string subscription_id =
             ctx.path_segments.size() > 1 ? ctx.path_segments.at(1) : std::string{};
 
-        if (const auto failure =
-                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
         auto found = m_support.find_subscription(subscription_id);
         if (!found) {
-            return std::unexpected{m_support.generic_not_found(
-                "subscription not found for id: " + subscription_id
-            )};
+            return std::unexpected{
+                m_support.generic_not_found("subscription not found for id: " + subscription_id)
+            };
         }
         m_support.metrics_for("subscription.get");
         // to_subscription_response(subscription, None, None) — no payment/invoice on this route.

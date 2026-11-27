@@ -9,20 +9,28 @@ import app_dto;
 import app_auth;
 
 import :context;
+
 export namespace app::handlers::three_ds_decision_rule {
 
 namespace Dto = ::app::dto::three_ds_decision_rule;
+
 struct ExecuteDecisionRuleAuthorizedData
 {
     std::optional<core::error::AppError> error{};
     std::string merchant_id{};
+
+    ExecuteDecisionRuleAuthorizedData(std::optional<core::error::AppError> denied, std::string id) :
+        error{std::move(denied)},
+        merchant_id{std::move(id)}
+    {
+    }
+
     explicit ExecuteDecisionRuleAuthorizedData(const core::behavior::CallContext& ctx) :
         error{},
         merchant_id{ctx.merchant_id}
     {
     }
 };
-
 
 /**
  * @brief Parse/auth support for the three_ds_decision_rule handler.
@@ -38,7 +46,7 @@ public:
     {
     }
 
-    [[nodiscard]] ExecuteDecisionRuleAuthorizedInput
+    [[nodiscard]] ExecuteDecisionRuleAuthorizedData
     authorize_execute_decision_rule(interfaces::io::IRequest& req) const
     {
         const auto rule = m_context.auth_rules().rule_for("execute_decision_rule");
@@ -47,7 +55,7 @@ public:
         // Upstream passes auth.platform.get_processor().get_account().get_id() as the
         // processor merchant id (core:29-34); locally the authenticated AuthContext is
         // the single identity source used by authorization.
-        return ExecuteDecisionRuleAuthorizedInput{
+        return ExecuteDecisionRuleAuthorizedData{
             std::move(denied),
             std::string{auth_context.merchant_id()}
         };
@@ -56,18 +64,20 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct ExecuteDecisionRuleData
 {
-    Dto::ThreeDsDecisionRuleExecuteRequest request{};
+    ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteRequest request{};
     std::string processor_merchant_id{};
+
     template<class Dto>
     explicit ExecuteDecisionRuleData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<Dto::ThreeDsDecisionRuleExecuteRequest>(dto)},
+        request{::app::payment::detail::as_dto<
+            ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteRequest>(dto)},
         processor_merchant_id{ctx.merchant_id}
     {
     }
 };
-
 
 /** @brief Request policy for the three_ds_decision_rule domain: wraps the domain auth rules. */
 class ThreeDsDecisionRulePolicy
@@ -115,14 +125,14 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] const ExecuteDecisionRuleAuthorizedInput& last() const noexcept
+    [[nodiscard]] const ExecuteDecisionRuleAuthorizedData& last() const noexcept
     {
         return *m_last;
     }
 
 private:
     ThreeDsDecisionRuleInputSupport& m_support;
-    mutable std::optional<ExecuteDecisionRuleAuthorizedInput> m_last{};
+    mutable std::optional<ExecuteDecisionRuleAuthorizedData> m_last{};
 };
 
 using ThreeDsDecisionRuleRequestSupport = core::behavior::RequestSupport<ThreeDsDecisionRulePolicy>;

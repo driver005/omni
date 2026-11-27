@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_create_payment_method_intent_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -37,7 +38,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
-        create_payment_method_intent_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    create_payment_method_intent_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = CreatePaymentMethodIntentApiData{dto, ctx};
         const std::string& customer_id = input.request.get_customer_id().get_value();
@@ -65,8 +66,8 @@ public:
         const std::string client_secret = m_support.issued_token(payment_method_id);
         m_support.remember_client_secret(payment_method_id, client_secret);
         m_support.publish_pm_event("payment_method_intent.create", payment_method_id);
-        m_context.metrics().record_flow("create_payment_method_intent_api");
-        m_context.metrics().counter("PAYMENT_METHOD_CREATE_PAYMENT_METHOD_INTENT_API").increment();
+        m_context.logger().record_flow("create_payment_method_intent_api");
+        m_context.logger().counter("PAYMENT_METHOD_CREATE_PAYMENT_METHOD_INTENT_API").increment();
         auto response = m_support.response_from_record(*stored);
         if (input.request.get_metadata()) {
             response.set_metadata(*input.request.get_metadata());

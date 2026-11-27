@@ -79,8 +79,11 @@ public:
             return;
         }
         const auto body = req.body_as_string();
-        auto parsed = core::behavior::Serializer<::app::dto::admin::MerchantAccountCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::MerchantAccountCreate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         std::string organization_id{::app::http::org_id_from_header{}(req)};
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("organization_id", std::string{std::move(organization_id)});
@@ -136,8 +139,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::dto::admin::MerchantAccountUpdate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::dto::admin::MerchantAccountUpdate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
         m_runtime.update_merchant_account(*parsed, ctx).handle(sink);

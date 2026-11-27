@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -45,7 +46,7 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        payment(const Dto& dto, const core::behavior::CallContext& ctx) const
+    payment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_payment.payment(dto, ctx);
     }
@@ -56,14 +57,16 @@ public:
         return m_payment_data.payment_data(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
-        refund(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::handlers::dummy_connector::DummyConnectorRefundWire>
+    refund(const core::behavior::CallContext& ctx) const
     {
         return m_refund.refund(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
-        refund_data(const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::handlers::dummy_connector::DummyConnectorRefundWire>
+    refund_data(const core::behavior::CallContext& ctx) const
     {
         return m_refund_data.refund_data(ctx);
     }

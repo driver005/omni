@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    issue_embedded_token(const interfaces::Value& generic,
-        const ::core::behavior::CallContext& ctx) const
+    issue_embedded_token(
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -59,16 +61,16 @@ public:
         const auto embedded_token = m_support.user_signer().sign(embedded_payload);
 
         const auto key = std::string{"user.issue_embedded_token:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("issue_embedded_token");
-        m_context.metrics().counter("user.issue_embedded_token").increment();
+        m_context.logger().record_flow("issue_embedded_token");
+        m_context.logger().counter("user.issue_embedded_token").increment();
 
         using Response = ::app::model::user::IssueEmbeddedTokenResponse;
         Response response{};

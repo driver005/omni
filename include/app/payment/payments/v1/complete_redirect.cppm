@@ -69,8 +69,8 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow("payments.payments_complete_authorize_redirect");
-        m_context.metrics().counter("payments.payments_complete_authorize_redirect").increment();
+        m_context.logger().record_flow("payments.payments_complete_authorize_redirect");
+        m_context.logger().counter("payments.payments_complete_authorize_redirect").increment();
 
         const auto body =
             m_input_support.path_body({{"connector", m_input_support.last_path_segment(req)}});
@@ -82,10 +82,14 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payments_complete_authorize_redirect(dto, m_request_support->context(req)).handle(sink);
+        m_runtime.payments_complete_authorize_redirect(dto, m_request_support->context(req))
+            .handle(sink);
     }
 
     void handle_payments_complete_authorize_redirect_with_creds_identifier(
@@ -104,10 +108,10 @@ public:
             auth_error->send(sink);
             return;
         }
-        m_context.metrics().record_flow(
+        m_context.logger().record_flow(
             "payments.payments_complete_authorize_redirect_with_creds_identifier"
         );
-        m_context.metrics()
+        m_context.logger()
             .counter("payments.payments_complete_authorize_redirect_with_creds_identifier")
             .increment();
 
@@ -123,10 +127,18 @@ public:
             err.send(sink);
             return;
         }
-        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
-        if (!parsed_dto) return;
+        auto parsed_dto =
+            core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) {
+            return;
+        }
         const auto& dto = *parsed_dto;
-        m_runtime.payments_complete_authorize_redirect_with_creds_identifier(dto, m_request_support->context(req)).handle(sink);
+        m_runtime
+            .payments_complete_authorize_redirect_with_creds_identifier(
+                dto,
+                m_request_support->context(req)
+            )
+            .handle(sink);
     }
 
     // original install() route #72
@@ -149,7 +161,10 @@ public:
                                                 std::function<void()> send
                                             )
                                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                interfaces::io::ResponseSink sink{
+                                                    res,
+                                                    std::move(send)
+                                                };
 
                                                 handle_payments_complete_authorize_redirect(
                                                     req,
@@ -188,7 +203,10 @@ public:
                                                 std::function<void()> send
                                             )
                                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                interfaces::io::ResponseSink sink{
+                                                    res,
+                                                    std::move(send)
+                                                };
 
                                                 handle_payments_complete_authorize_redirect(
                                                     req,
@@ -228,7 +246,10 @@ public:
                                                     std::function<void()> send
                                                 )
                                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                    interfaces::io::ResponseSink sink{
+                                                        res,
+                                                        std::move(send)
+                                                    };
 
                                                     handle_payments_complete_authorize_redirect_with_creds_identifier(
                                                         req,
@@ -273,7 +294,10 @@ public:
                                                     std::function<void()> send
                                                 )
                                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                                    interfaces::io::ResponseSink sink{
+                                                        res,
+                                                        std::move(send)
+                                                    };
 
                                                     handle_payments_complete_authorize_redirect_with_creds_identifier(
                                                         req,
@@ -315,7 +339,7 @@ public:
                                         std::function<void()> send
                                     )
                                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                         handle_payments_complete_authorize_redirect(
                                             req,
@@ -331,7 +355,7 @@ public:
                                         std::function<void()> send
                                     )
                                     {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                        interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                         handle_payments_complete_authorize_redirect(
                                             req,
@@ -367,7 +391,7 @@ public:
                                             std::function<void()> send
                                         )
                                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                             handle_payments_complete_authorize_redirect_with_creds_identifier(
                                                 req,
@@ -383,7 +407,7 @@ public:
                                             std::function<void()> send
                                         )
                                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                             handle_payments_complete_authorize_redirect_with_creds_identifier(
                                                 req,

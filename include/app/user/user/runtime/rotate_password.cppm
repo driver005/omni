@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    rotate_password(const ::app::model::user::RotatePasswordRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> rotate_password(
+        const ::app::model::user::RotatePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -63,17 +64,17 @@ public:
             ::app::crypto::SecretString{rotate_hash}
         );
 
-        const auto key = std::string{"user.rotate_password:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+        const auto key =
+            std::string{"user.rotate_password:"} + std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("rotate_password");
-        m_context.metrics().counter("user.rotate_password").increment();
+        m_context.logger().record_flow("rotate_password");
+        m_context.logger().counter("user.rotate_password").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

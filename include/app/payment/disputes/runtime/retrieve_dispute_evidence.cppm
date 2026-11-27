@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime_retrieve_dispute_evidence;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -38,10 +39,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeEvidenceBlock>>
-        retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RetrieveDisputeEvidenceData{dto, ctx};
-        m_context.metrics().record_flow("dispute_retrieve_evidence");
+        m_context.logger().record_flow("dispute_retrieve_evidence");
         const auto& scope = input.scope;
         const auto& req = input.dispute_id;
         auto dispute =

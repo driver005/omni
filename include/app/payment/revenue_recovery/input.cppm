@@ -9,6 +9,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::revenue_recovery {
 
 /**
@@ -100,17 +101,18 @@ private:
 
     ::app::context::AppContext& m_context;
 };
+
 struct RevenueRecoveryCancelData
 {
     std::string merchant_reference_id{};
     ::app::auth::AuthContext auth{};
+
     explicit RevenueRecoveryCancelData(const core::behavior::CallContext& ctx) :
         merchant_reference_id{::app::payment::detail::last_path(ctx)},
         auth{}
     {
     }
 };
-
 
 /** @brief Request policy for the revenue_recovery domain: wraps the domain auth rules. */
 class RevenueRecoveryPolicy

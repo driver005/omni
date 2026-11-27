@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_network_token_status_check_api;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -36,8 +37,9 @@ public:
     }
 
     template<class Dto>
-    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse>
-        network_token_status_check_api(const Dto& dto, const core::behavior::CallContext& ctx) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse>
+    network_token_status_check_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = NetworkTokenStatusCheckApiData{dto, ctx};
         const auto& record = input.record;
@@ -50,8 +52,8 @@ public:
         const std::string status = status_response.get_status().empty()
                                        ? record.get_status()
                                        : status_response.get_status();
-        m_context.metrics().record_flow("network_token_status_check_api");
-        m_context.metrics().counter("PAYMENT_METHOD_NETWORK_TOKEN_STATUS_CHECK_API").increment();
+        m_context.logger().record_flow("network_token_status_check_api");
+        m_context.logger().counter("PAYMENT_METHOD_NETWORK_TOKEN_STATUS_CHECK_API").increment();
         ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse response{};
         ::app::model::payment_methods::TokenStatusValue value{};
         value.set_value(status.empty() ? std::string{"active"} : status);

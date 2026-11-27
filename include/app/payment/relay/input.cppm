@@ -10,6 +10,7 @@ import app_auth;
 import app_http;
 
 import :context;
+
 export namespace app::handlers::relay {
 
 /** @brief Identity scope carried by the authenticated headers on relay routes. */
@@ -129,34 +130,41 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
+
 struct RelayUnreferencedRefundData
 {
     ::app::dto::unreferenced_refund::UnreferencedRefundRequest request{};
     std::string body{};
     RelayScope scope{};
+
     template<class Dto>
     explicit RelayUnreferencedRefundData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::dto::unreferenced_refund::UnreferencedRefundRequest>(dto)},
-        body{::app::payment::detail::body_of(dto)},
+        request{::app::payment::detail::as_dto<
+            ::app::dto::unreferenced_refund::UnreferencedRefundRequest>(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         scope{}
     {
     }
 };
+
 struct RelayCreateData
 {
     std::string body{};
     RelayScope scope{};
+
     explicit RelayCreateData(const core::behavior::CallContext& ctx) :
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         scope{}
     {
     }
 };
+
 struct RelayRetrieveData
 {
     std::string relay_id{};
     bool force_sync{};
     RelayScope scope{};
+
     explicit RelayRetrieveData(const core::behavior::CallContext& ctx) :
         relay_id{::app::payment::detail::last_path(ctx)},
         force_sync{},
@@ -164,21 +172,22 @@ struct RelayRetrieveData
     {
     }
 };
+
 struct RelayIncomingWebhookData
 {
     std::string merchant_id{};
     std::string connector_id{};
     std::string body{};
     std::string signature{};
+
     explicit RelayIncomingWebhookData(const core::behavior::CallContext& ctx) :
         merchant_id{ctx.merchant_id},
         connector_id{},
-        body{::app::payment::detail::body_of(dto)},
+        body{::app::payment::detail::body_of(ctx)},
         signature{::app::payment::detail::header_of(ctx, "signature")}
     {
     }
 };
-
 
 /** @brief Request policy for the relay domain: wraps the domain auth rules. */
 class RelayPolicy

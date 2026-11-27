@@ -29,8 +29,7 @@ public:
     {
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse>
-    create(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse> create(
         const ::app::dto::api_keys::CreateApiKeyRequest& request,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -44,8 +43,7 @@ public:
         return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
-    update(
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse> update(
         const ::app::dto::api_keys::UpdateApiKeyRequest& request,
         const ::core::behavior::CallContext& ctx
     ) const
@@ -59,8 +57,7 @@ public:
         return m_revoke.revoke(ctx);
     }
 
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    list(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> list(
         const ::app::dto::api_keys::ListApiKeyConstraints& constraints,
         const ::core::behavior::CallContext& ctx
     ) const

@@ -61,7 +61,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_create_payment_method_api(req, res, std::move(send));
                         }
@@ -77,7 +77,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_create_payment_method_intent_api(req, res, std::move(send));
                         }
@@ -93,7 +93,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_retrieve_api(req, res, std::move(send));
                         }
@@ -109,7 +109,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_delete_api(req, res, std::move(send));
                         }
@@ -127,7 +127,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_create_payment_method_api(req, res, std::move(send));
                         }
@@ -143,7 +143,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_retrieve_api(req, res, std::move(send));
                         }
@@ -159,7 +159,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_method_delete_api(req, res, std::move(send));
                         }
@@ -212,8 +212,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCreate>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         if (!parsed->get_client_secret()) {
             if (const auto secret = ::app::http::RequestQuery{}(req).get("client_secret")) {
                 parsed->set_client_secret(*secret);
@@ -267,8 +273,11 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodIntentCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<
+            ::app::model::payment_methods::PaymentMethodIntentCreate>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) {
             const auto error = m_input_support.error(
@@ -279,7 +288,8 @@ public:
             return;
         }
         const auto& dto = *parsed;
-        auto result = m_runtime.create_payment_method_intent_api(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.create_payment_method_intent_api(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

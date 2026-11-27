@@ -39,7 +39,7 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ToggleBlocklistResponse>
     toggle_blocklist_guard(const ::core::behavior::CallContext& ctx) const
     {
-        const bool status = query_value(ctx, "status").value_or("false") == "true";
+        const bool status = m_support.query_value(ctx, "status").value_or("false") == "true";
         // common_utils/id_type/merchant.rs:126-128: guard_blocklist_for_{merchant}.
         const auto key = "guard_blocklist_for_" + ctx.merchant_id;
         m_context.config_store().put("configs", key, status ? "true" : "false");

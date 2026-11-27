@@ -39,7 +39,8 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistExportResponse>
     create_blocklist_export(const ::core::behavior::CallContext& ctx) const
     {
-        const std::string transaction_type = query_value(ctx, "transaction_type").value_or("");
+        const std::string transaction_type =
+            m_support.query_value(ctx, "transaction_type").value_or("");
         const auto export_id = m_context.ids().payment_id("blkexp");
         const auto stamp = m_support.now_iso8601();
         // export.rs:32-42: blocklist_export_YYYYMMDD_HHMMSS.csv.

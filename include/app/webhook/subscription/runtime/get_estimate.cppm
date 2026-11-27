@@ -29,9 +29,7 @@ public:
     [[nodiscard]] core::behavior::Outcome<serde::Value>
     get_estimate(const Json& payload, const ::core::behavior::CallContext& ctx) const
     {
-
-        if (const auto failure =
-                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
         if (!ctx.client_secret.empty()) {

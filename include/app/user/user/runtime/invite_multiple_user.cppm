@@ -39,23 +39,25 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    invite_multiple_user(const std::vector<::app::model::user::InviteUserRequest>& request,
-        const ::core::behavior::CallContext& ctx) const
+    invite_multiple_user(
+        const std::vector<::app::model::user::InviteUserRequest>& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
 
         const auto key = std::string{"user.invite_multiple_user:"} +
-                         std::to_string(ctx_string(ctx,"body").size());
+                         std::to_string(ctx_string(ctx, "body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
+            core::cache::to_cache_value(std::string{ctx_string(ctx, "body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
 
-        m_context.metrics().record_flow("invite_multiple_user");
-        m_context.metrics().counter("user.invite_multiple_user").increment();
+        m_context.logger().record_flow("invite_multiple_user");
+        m_context.logger().counter("user.invite_multiple_user").increment();
 
         using Response = std::vector<::app::model::user::InviteMultipleUserResponse>;
         Response response{};

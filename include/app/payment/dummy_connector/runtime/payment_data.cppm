@@ -1,4 +1,5 @@
 export module app_payment:dummy_connector_runtime_payment_data;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -33,8 +34,8 @@ public:
             // core.rs:54 -> utils.rs:67 - PaymentNotFound (DC_01).
             return std::unexpected{m_support.values().dc_payment_not_found()};
         }
-        m_context.metrics().record_flow("DummyPaymentRetrieve");
-        m_context.metrics().counter("DUMMY_CONNECTOR_PAYMENT_DATA").increment();
+        m_context.logger().record_flow("DummyPaymentRetrieve");
+        m_context.logger().counter("DUMMY_CONNECTOR_PAYMENT_DATA").increment();
         return serde::Value{m_support.payment_response(*payment)};
     }
 

@@ -53,7 +53,9 @@ public:
             return;
         }
         auto parsed = core::behavior::Serializer<::app::dto::admin::ProfileCreate>::pass(req, sink);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         // profiles.rs:22-45 (v1) / :79-90 (v2) — route-layer request validation.
         if (const auto error = m_input_support.validate_profile_create_request(*parsed)) {
             const auto& e = *error;
@@ -62,7 +64,10 @@ public:
         }
         // profiles.rs:21 / :76 — merchant id from route (v1) or header (v2).
         auto ctx = m_support.context(req);
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         ctx.claims.insert_or_assign("v2_route", m_input_support.is_v2(req) ? "true" : "false");
         m_runtime.create(*parsed, ctx).handle(sink);
     }
@@ -92,7 +97,10 @@ public:
         // authenticated processor merchant (route for v1, header for v2).
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         m_runtime.retrieve(ctx).handle(sink);
     }
 
@@ -118,7 +126,9 @@ public:
             return;
         }
         auto parsed = core::behavior::Serializer<::app::dto::admin::ProfileUpdate>::pass(req, sink);
-        if (!parsed) return;
+        if (!parsed) {
+            return;
+        }
         // profiles.rs:235-259 (v1) / :314-325 (v2) — route-layer validation.
         if (const auto error = m_input_support.validate_profile_update_request(*parsed)) {
             const auto& e = *error;
@@ -127,7 +137,10 @@ public:
         }
         auto ctx = m_support.context(req);
         ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
-        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign(
+            "merchant_id",
+            std::string{m_input_support.merchant_from_request(req)}
+        );
         m_runtime.update(*parsed, ctx).handle(sink);
     }
 

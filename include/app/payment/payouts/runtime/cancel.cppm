@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_cancel;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -52,8 +53,8 @@ public:
             )};
         }
 
-        m_context.metrics().record_flow("payout_cancel");
-        m_context.metrics().counter("payouts_cancel_total").increment();
+        m_context.logger().record_flow("payout_cancel");
+        m_context.logger().counter("payouts_cancel_total").increment();
 
         auto found = m_support.find_payout_record(input.payout_id);
         if (!found.has_value()) {

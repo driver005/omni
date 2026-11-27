@@ -19,6 +19,7 @@ import app_http;
 // that keeps the same keys, values and TTLs.
 // ---------------------------------------------------------------------------
 import :context;
+
 export namespace app::handlers::dummy_connector {
 
 /** @brief `DummyConnectorStatus` (types.rs:58-67), lowercase wire form. */
@@ -151,60 +152,71 @@ inline constexpr std::string_view UPI_SUCCESS_VPA{"success@upi"};     // consts.
 
 // -- JSON tree navigation ------------------------------------------------------
 using Object = interfaces::Value::Object;
+
 struct AuthorizePaymentData
 {
     std::string attempt_id{};
+
     explicit AuthorizePaymentData(const core::behavior::CallContext& ctx) :
         attempt_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
+
 struct CompletePaymentData
 {
     std::string attempt_id{};
     bool confirm{};
+
     explicit CompletePaymentData(const core::behavior::CallContext& ctx) :
         attempt_id{::app::payment::detail::last_path(ctx)},
         confirm{}
     {
     }
 };
-struct PaymentData
+
+struct PaymentInputData
 {
     PaymentRequest request{};
+
     template<class Dto>
-    explicit PaymentData(const Dto& dto, const core::behavior::CallContext& ctx) :
+    explicit PaymentInputData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<PaymentRequest>(dto)}
     {
     }
 };
+
 struct PaymentDataData
 {
     std::string payment_id{};
+
     explicit PaymentDataData(const core::behavior::CallContext& ctx) :
         payment_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
-struct RefundData
+
+struct RefundInputData
 {
     std::string payment_id{};
     std::int64_t amount{};
-    explicit RefundData(const core::behavior::CallContext& ctx) :
+
+    explicit RefundInputData(const core::behavior::CallContext& ctx) :
         payment_id{::app::payment::detail::last_path(ctx)},
         amount{}
     {
     }
 };
+
 struct RefundDataData
 {
     std::string refund_id{};
+
     explicit RefundDataData(const core::behavior::CallContext& ctx) :
         refund_id{::app::payment::detail::last_path(ctx)}
     {
     }
 };
-
 
 /**
  * @brief Parse/auth/path/query support for the dummy-connector handlers.

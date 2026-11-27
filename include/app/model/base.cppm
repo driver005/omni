@@ -16,7 +16,7 @@ export import :organization;
 export import :payment_methods;
 export import :payments;
 export import :payouts;
-export import :refunds;
+export import :refund;
 export import :routing;
 export import :subscription;
 export import :user;

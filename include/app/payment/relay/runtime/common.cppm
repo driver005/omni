@@ -477,8 +477,8 @@ public:
         // Upstream server_wrap declares LockAction::NotApplicable for the relay scope;
         // no lock is acquired. The registry is consulted so a stale relay lock is observable.
         (void)m_context.locks().is_held(std::string{"relay:"} + std::string{flow});
-        m_context.metrics().record_flow(flow);
-        m_context.metrics().counter(counter).increment();
+        m_context.logger().record_flow(flow);
+        m_context.logger().counter(counter).increment();
     }
 
     [[nodiscard]] std::shared_ptr<::app::connector::IConnector>
@@ -807,7 +807,7 @@ public:
                     (void)m_context.repository().update_relay_record(record);
                 }
                 if (!record.get_refund_id().empty()) {
-                    (void)m_context.repository().update_refund_status(
+                    (void)m_context.refunds().update_refund_status(
                         record.get_refund_id(),
                         sync_response.get_status()
                     );

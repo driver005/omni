@@ -60,7 +60,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_update_api(req, res, std::move(send));
                             }
@@ -78,7 +78,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_save_payment_method_api(req, res, std::move(send));
                             }
@@ -96,7 +96,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_update_api(req, res, std::move(send));
                             }
@@ -117,7 +117,7 @@ public:
                                             std::function<void()> send
                                         )
                                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                             handle_default_payment_method_set_api(
                                                 req,
@@ -144,7 +144,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_payment_method_update_api(req, res, std::move(send));
                             }
@@ -162,7 +162,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_save_payment_method_api(req, res, std::move(send));
                             }
@@ -223,8 +223,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodUpdate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payment_methods::PaymentMethodUpdate>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         if (const auto secret_error = m_input_support.check_client_secret(
                 payment_method_id,
                 parsed->get_client_secret()
@@ -289,8 +295,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCreate>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCreate>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         if (!parsed->get_client_secret()) {
             if (const auto secret = ::app::http::RequestQuery{}(req).get("client_secret")) {
                 parsed->set_client_secret(*secret);
@@ -345,8 +357,14 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::payment_methods::DefaultPaymentMethod>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed =
+            core::behavior::Serializer<::app::model::payment_methods::DefaultPaymentMethod>::pass(
+                req,
+                sink
+            );
+        if (!parsed) {
+            return;
+        }
         const std::string payment_method_id = path_payment_method_id.empty()
                                                   ? parsed->get_payment_method_id()
                                                   : path_payment_method_id;
@@ -368,7 +386,8 @@ public:
             return;
         }
         const auto& dto = *parsed;
-        auto result = m_runtime.default_payment_method_set_api(dto, m_request_support->context(req));
+        auto result =
+            m_runtime.default_payment_method_set_api(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

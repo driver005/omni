@@ -38,8 +38,8 @@ public:
 
     // Upstream: GET /events/{merchant_id}/{initial_attempt_id}/attempts
     // routes/webhook_events.rs:105-140 -> core list_delivery_attempts.
-    [[nodiscard]] core::behavior::
-        Outcome<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
     list_attempts(const ::core::behavior::CallContext& ctx) const
     {
         const std::string event_id = ctx.path_segments.size() > 2 ? ctx.path_segments.at(2) : "";
@@ -83,8 +83,8 @@ public:
             events.push_back(m_support.to_retrieve(*item, record, payload, sensitive));
         }
 
-        m_context.metrics().record_flow("WebhookEventDeliveryAttemptList");
-        m_context.metrics().counter("WEBHOOK_EVENT_DELIVERY_ATTEMPTS_LIST").increment();
+        m_context.logger().record_flow("WebhookEventDeliveryAttemptList");
+        m_context.logger().counter("WEBHOOK_EVENT_DELIVERY_ATTEMPTS_LIST").increment();
         return std::move(events);
     }
 

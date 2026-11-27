@@ -8,6 +8,7 @@ import core_serde;
 import utils_openapi;
 import app_model;
 import app_context;
+import app_context_core;
 import core_error;
 import app_auth;
 import app_http;
@@ -64,14 +65,16 @@ public:
             error.send(sink);
             return;
         }
-        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundListRequest>::pass(req, sink);
-        if (!parsed) return;
+        auto parsed = core::behavior::Serializer<::app::model::Refund>::pass(req, sink);
+        if (!parsed) {
+            return;
+        }
 
         const bool profile_scoped = m_input_support.is_v2(req) ||
                                     req.get_path().find("/profile/list") != std::string_view::npos;
         const auto& dto = *parsed;
 
-        auto result = m_runtime.list(m_request_support->context(req)));
+        auto result = m_runtime.list(dto, m_request_support->context(req));
         result.handle(sink);
     }
 

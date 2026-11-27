@@ -1,4 +1,5 @@
 export module app_payment:payouts_runtime_retrieve;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -40,8 +41,8 @@ public:
     retrieve(const core::behavior::CallContext& ctx) const
     {
         const auto input = PayoutsRetrieveData{ctx};
-        m_context.metrics().record_flow("payout_retrieve");
-        m_context.metrics().counter("payouts_retrieve_total").increment();
+        m_context.logger().record_flow("payout_retrieve");
+        m_context.logger().counter("payouts_retrieve_total").increment();
 
         auto found = m_support.find_payout_record(input.payout_id);
         if (!found.has_value()) {
@@ -79,7 +80,7 @@ public:
                     .update_latest_attempt(record.get_payout_id(), record.get_status(), {}, {});
                 m_support.emit_payout_webhook("synced", record);
             } else {
-                m_context.metrics().counter("payouts_connector_unavailable").increment();
+                m_context.logger().counter("payouts_connector_unavailable").increment();
             }
         }
 

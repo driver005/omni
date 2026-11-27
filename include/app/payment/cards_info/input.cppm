@@ -12,43 +12,54 @@ import app_http;
 import app_metrics;
 
 import :context;
+
 export namespace app::handlers::cards_info {
 struct CardIinInfoData
 {
     ::app::model::cards_info::CardsInfoRequest payload{};
+
     template<class Dto>
     explicit CardIinInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
         payload{::app::payment::detail::as_dto<::app::model::cards_info::CardsInfoRequest>(dto)}
     {
     }
 };
+
 struct CreateCardsInfoData
 {
     ::app::model::cards_info::CardInfoCreateRequest request{};
+
     template<class Dto>
     explicit CreateCardsInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::cards_info::CardInfoCreateRequest>(dto)}
+        request{
+            ::app::payment::detail::as_dto<::app::model::cards_info::CardInfoCreateRequest>(dto)
+        }
     {
     }
 };
+
 struct UpdateCardsInfoData
 {
     ::app::model::cards_info::CardInfoUpdateRequest request{};
+
     template<class Dto>
     explicit UpdateCardsInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::model::cards_info::CardInfoUpdateRequest>(dto)}
+        request{
+            ::app::payment::detail::as_dto<::app::model::cards_info::CardInfoUpdateRequest>(dto)
+        }
     {
     }
 };
+
 struct MigrateCardsInfoData
 {
     std::vector<::app::model::cards_info::CardInfoUpdateRequest> records{};
+
     explicit MigrateCardsInfoData(const core::behavior::CallContext& ctx) :
         records{}
     {
     }
 };
-
 
 /**
  * @brief Parse/auth/path/query support for the cards-info handlers.
@@ -99,12 +110,12 @@ public:
     // Flow/counter instrumentation used to live in the handler's server_wrap.
     void record_flow(std::string_view flow) const
     {
-        m_context.metrics().record_flow(flow);
+        m_context.logger().record_flow(flow);
     }
 
     void increment_counter(std::string_view counter) const
     {
-        m_context.metrics().counter(counter).increment();
+        m_context.logger().counter(counter).increment();
     }
 
     // ── /cards/:bin path segment ─────────────────────────────────────────────

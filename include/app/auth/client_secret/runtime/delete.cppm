@@ -28,8 +28,8 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::dto::client_secret::ClientSecretResponse>
     delete_client_secret(const core::behavior::CallContext& ctx) const
     {
-        m_context.metrics().record_flow("ClientSecretDelete");
-        m_context.metrics().counter("client_secret_delete").increment();
+        m_context.logger().record_flow("ClientSecretDelete");
+        m_context.logger().counter("client_secret_delete").increment();
 
         const auto& client_secret_id = detail::path_segment_after(ctx, "client-secret");
         ::app::dto::client_secret::ClientSecretResponse response{};

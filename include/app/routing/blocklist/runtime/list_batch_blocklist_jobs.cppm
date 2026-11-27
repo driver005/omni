@@ -40,9 +40,9 @@ public:
     [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBatchBlocklistJobsResponse>
     list_batch_blocklist_jobs(const ::core::behavior::CallContext& ctx) const
     {
-        const std::string job_type = query_value(ctx, "job_type").value_or("");
-        const std::uint32_t limit = query_number<std::uint32_t>(ctx, "limit", 10);
-        const std::uint32_t offset = query_number<std::uint32_t>(ctx, "offset", 0);
+        const std::string job_type = m_support.query_value(ctx, "job_type").value_or("");
+        const std::uint32_t limit = m_support.query_number<std::uint32_t>(ctx, "limit", 10);
+        const std::uint32_t offset = m_support.query_number<std::uint32_t>(ctx, "offset", 0);
         std::vector<JobRecord> selected;
         for (auto& record: m_support.list_jobs("blocklist.job:")) {
             const bool merchant_ok = ctx.merchant_id.empty() || record.get_merchant_id().empty() ||

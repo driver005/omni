@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    user_signup_with_merchant_id(const ::app::model::user::SignUpWithMerchantIdRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    user_signup_with_merchant_id(
+        const ::app::model::user::SignUpWithMerchantIdRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -53,8 +55,8 @@ public:
 
         m_support.store_password(email, password_hash);
 
-        m_context.metrics().record_flow("user_signup_with_merchant_id");
-        m_context.metrics().counter("user.user_signup_with_merchant_id").increment();
+        m_context.logger().record_flow("user_signup_with_merchant_id");
+        m_context.logger().counter("user.user_signup_with_merchant_id").increment();
 
         const auto company_name = request.get_company_name();
         if (!company_name.empty()) {

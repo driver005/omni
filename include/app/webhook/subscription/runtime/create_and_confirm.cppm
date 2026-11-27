@@ -73,12 +73,9 @@ public:
         m_support.create_connector_customer(record, payload.doc);
 
         // create_subscription_on_connector (core.rs:242-249)
-        ConnectorResponse connector = m_support.call_billing(
-            "create_subscription_on_connector",
-            record,
-            payload.doc,
-            merchant
-        );
+        ConnectorResponse connector =
+            m_support
+                .call_billing("create_subscription_on_connector", record, payload.doc, merchant);
         record.connector_subscription_id =
             m_support.connector_reference(connector, "bpsub_" + subscription_id);
 

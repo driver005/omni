@@ -1,4 +1,5 @@
 export module app_payment:disputes_runtime;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -67,35 +68,38 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
-        retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_dispute.retrieve_dispute(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
-        fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
+    fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_fetch_disputes.fetch_disputes(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
-        retrieve_disputes_list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_disputes_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_disputes_list.retrieve_disputes_list(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
-        retrieve_disputes_list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_disputes_list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_disputes_list_profile.retrieve_disputes_list_profile(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListResponse>
-        retrieve_disputes_list_for_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_disputes_list_for_platform(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         return m_retrieve_disputes_list_for_platform.retrieve_disputes_list_for_platform(dto, ctx);
     }
@@ -120,35 +124,35 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
-        accept_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
+    accept_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_accept_dispute.accept_dispute(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
-        submit_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    submit_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_submit_dispute_evidence.submit_dispute_evidence(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
-        attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_attach_dispute_evidence.attach_dispute_evidence(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeEvidenceBlock>>
-        retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_retrieve_dispute_evidence.retrieve_dispute_evidence(dto, ctx);
     }
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<serde::Value>
-        delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
+    delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         return m_delete_dispute_evidence.delete_dispute_evidence(dto, ctx);
     }

@@ -1,4 +1,5 @@
 export module app_payment:mandates_runtime;
+import core_behavior;
 
 import std;
 import core_error;
@@ -31,12 +32,12 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateRevokedResponse>
-        revoke_mandate(const core::behavior::CallContext& ctx) const
+    revoke_mandate(const core::behavior::CallContext& ctx) const
     {
         return m_revoke_mandate.revoke_mandate(ctx);
     }
 
-        template<class Dto>
+    template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::mandates::MandateResponse>>
     retrieve_mandates_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {

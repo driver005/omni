@@ -58,7 +58,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_method_api(req, res, std::move(send));
                         }
@@ -74,7 +74,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_countries_currencies_for_connector_payment_method(
                                 req,
@@ -94,7 +94,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_payment_methods_batch_retrieve_api(req, res, std::move(send));
                         }
@@ -111,7 +111,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_get_total_payment_method_count(req, res, std::move(send));
                             }
@@ -129,7 +129,7 @@ public:
                                 std::function<void()> send
                             )
                             {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                 handle_list_customer_payment_method_api_client(
                                     req,
@@ -152,7 +152,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_list_customer_payment_method_api(
                                         req,
@@ -176,7 +176,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_list_customer_payment_method_api(
                                         req,
@@ -200,7 +200,7 @@ public:
                                     std::function<void()> send
                                 )
                                 {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                                    interfaces::io::ResponseSink sink{res, std::move(send)};
 
                                     handle_list_payment_methods_for_payments_client(
                                         req,
@@ -224,7 +224,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_payment_method_api(req, res, std::move(send));
                         }
@@ -240,7 +240,7 @@ public:
                             std::function<void()> send
                         )
                         {
-        interfaces::io::ResponseSink sink{res, std::move(send)};
+                            interfaces::io::ResponseSink sink{res, std::move(send)};
 
                             handle_list_countries_currencies_for_connector_payment_method(
                                 req,
@@ -404,7 +404,8 @@ public:
             error.send(sink);
             return;
         }
-        auto result = m_runtime.list_customer_payment_method_api_client(m_request_support->context(req));
+        auto result =
+            m_runtime.list_customer_payment_method_api_client(m_request_support->context(req));
         result.handle(sink);
     }
 
@@ -462,7 +463,9 @@ public:
         const auto query = ::app::http::RequestQuery{}(req);
         const std::string connector = query.get("connector").value_or("");
         const std::string payment_method_type = query.get("payment_method_type").value_or("");
-        auto result = m_runtime.list_countries_currencies_for_connector_payment_method(m_request_support->context(req));
+        auto result = m_runtime.list_countries_currencies_for_connector_payment_method(
+            m_request_support->context(req)
+        );
         result.handle(sink);
     }
 
@@ -558,7 +561,8 @@ public:
             error.send(sink);
             return;
         }
-        auto result = m_runtime.list_payment_methods_for_payments_client(m_request_support->context(req));
+        auto result =
+            m_runtime.list_payment_methods_for_payments_client(m_request_support->context(req));
         result.handle(sink);
     }
 

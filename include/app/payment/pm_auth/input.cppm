@@ -11,6 +11,7 @@ import app_dto;
 import app_context;
 
 import :context;
+
 export namespace app::handlers::pm_auth {
 
 struct AuthResult
@@ -254,6 +255,7 @@ private:
 
     ::app::context::AppContext& m_context;
 };
+
 struct LinkTokenCreateData
 {
     ::app::dto::pm_auth::LinkTokenCreateRequest request{};
@@ -262,6 +264,7 @@ struct LinkTokenCreateData
     std::string client_platform{};
     std::string app_id{};
     std::string redirect_uri{};
+
     template<class Dto>
     explicit LinkTokenCreateData(const Dto& dto, const core::behavior::CallContext& ctx) :
         request{::app::payment::detail::as_dto<::app::dto::pm_auth::LinkTokenCreateRequest>(dto)},
@@ -273,22 +276,25 @@ struct LinkTokenCreateData
     {
     }
 };
+
 struct ExchangeTokenData
 {
     ::app::dto::pm_auth::ExchangeTokenCreateRequest request{};
     std::string merchant_id{};
     AuthResult auth{};
     std::string body{};
+
     template<class Dto>
     explicit ExchangeTokenData(const Dto& dto, const core::behavior::CallContext& ctx) :
-        request{::app::payment::detail::as_dto<::app::dto::pm_auth::ExchangeTokenCreateRequest>(dto)},
+        request{
+            ::app::payment::detail::as_dto<::app::dto::pm_auth::ExchangeTokenCreateRequest>(dto)
+        },
         merchant_id{ctx.merchant_id},
         auth{},
         body{::app::payment::detail::body_of(dto)}
     {
     }
 };
-
 
 /** @brief Request policy for the pm_auth domain: wraps the domain auth rules. */
 class PmAuthPolicy

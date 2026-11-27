@@ -1,4 +1,5 @@
 export module app_payment:mandates_runtime_retrieve_mandates_list;
+import core_behavior;
 
 import std;
 import core_serde;
@@ -26,7 +27,7 @@ public:
     // core/mandate.rs:403-426.
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::mandates::MandateResponse>>
-        retrieve_mandates_list(const Dto& dto, const core::behavior::CallContext& ctx) const
+    retrieve_mandates_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
         const auto input = RetrieveMandatesListData{dto, ctx};
         m_support.record_flow("MandatesList"); // LockAction::NotApplicable (routes/mandates.rs:98)

@@ -47,8 +47,12 @@ private:
     {
         auto repo = m_context.repository();
         const auto aggregate = ctx_version(ctx) == ApiVersion::V1
-                                   ? m_support.locate_customer(repo, ctx_string(ctx,"merchant_id"), ctx_string(ctx,"id"))
-                                   : m_support.locate_global_customer(repo, ctx_string(ctx,"id"));
+                                   ? m_support.locate_customer(
+                                         repo,
+                                         ctx_string(ctx, "merchant_id"),
+                                         ctx_string(ctx, "id")
+                                     )
+                                   : m_support.locate_global_customer(repo, ctx_string(ctx, "id"));
         if (!aggregate) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")
@@ -56,8 +60,8 @@ private:
         }
         serde::Value document =
             m_support.customer_document(*aggregate, std::nullopt, std::nullopt, ctx_version(ctx));
-        m_context.metrics().record_flow("customers.retrieve");
-        m_context.metrics().counter("customers_retrieve").increment();
+        m_context.logger().record_flow("customers.retrieve");
+        m_context.logger().counter("customers_retrieve").increment();
         return document;
     }
 

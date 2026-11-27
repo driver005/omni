@@ -39,8 +39,10 @@ public:
     }
 
     [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
-    update_user_account_details(const ::app::model::user::UpdateUserAccountDetailsRequest& request,
-        const ::core::behavior::CallContext& ctx) const
+    update_user_account_details(
+        const ::app::model::user::UpdateUserAccountDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         std::string set_cookie{};
 
@@ -61,8 +63,8 @@ public:
             m_support.publish_identity_event("user.details_updated", user_id);
         }
 
-        m_context.metrics().record_flow("update_user_account_details");
-        m_context.metrics().counter("user.update_user_account_details").increment();
+        m_context.logger().record_flow("update_user_account_details");
+        m_context.logger().counter("user.update_user_account_details").increment();
 
         return std::pair{ResponseDocument::empty(), set_cookie};
     }

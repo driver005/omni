@@ -1,4 +1,5 @@
 export module app_payment:payment_methods_runtime_payment_method_session_update_saved_payment_method;
+import core_behavior;
 
 import std;
 import interfaces;
@@ -39,7 +40,10 @@ public:
 
     template<class Dto>
     [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
-        payment_method_session_update_saved_payment_method(const Dto& dto, const core::behavior::CallContext& ctx) const
+    payment_method_session_update_saved_payment_method(
+        const Dto& dto,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         const auto input = PaymentMethodSessionUpdateSavedPaymentMethodData{dto, ctx};
         auto record = input.record;
@@ -57,8 +61,8 @@ public:
             "payment_method_session.update_saved",
             record.get_payment_method_id()
         );
-        m_context.metrics().record_flow("payment_method_session_update_saved_payment_method");
-        m_context.metrics()
+        m_context.logger().record_flow("payment_method_session_update_saved_payment_method");
+        m_context.logger()
             .counter("PAYMENT_METHOD_PAYMENT_METHOD_SESSION_UPDATE_SAVED_PAYMENT_METHOD")
             .increment();
         return ::app::model::payment_methods::PaymentMethodResponse{

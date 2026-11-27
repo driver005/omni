@@ -39,8 +39,7 @@ public:
 
     // ───────────────────────── Core: eligibility-check ─────────────────────────
     // unified_authentication_service.rs:1685-1734 authentication_eligibility_check_core.
-    [[nodiscard]] core::behavior::Outcome<serde::Value>
-    eligibility_check(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> eligibility_check(
         const ::app::dto::authentication::AuthenticationEligibilityCheckRequest& request,
         const core::behavior::CallContext& ctx
     ) const
@@ -71,7 +70,7 @@ public:
             );
         }
         m_support.update_eligibility_check_trackers(authentication_id, flow);
-        m_context.metrics().record_flow("AuthenticationEligibilityCheck");
+        m_context.logger().record_flow("AuthenticationEligibilityCheck");
         const char* action = should_store ? "await_merchant_callback" : "proceed";
         JsonObject sdk_next_action{};
         sdk_next_action.val(action, serde::Value{serde::Value::Object{}});

@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_migrate;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_migrate_payment_method_api(req, res, std::move(send));
                         }
                     )
@@ -71,6 +74,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_migrate_payment_methods(req, res, std::move(send));
                         }
                     )
@@ -85,6 +90,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_update_payment_methods(req, res, std::move(send));
                         }
                     )
@@ -100,6 +107,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_modular_migrate_payment_methods(req, res, std::move(send));
                             }
                         )
@@ -117,6 +126,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_modular_migrate_payment_methods(req, res, std::move(send));
                         }
                     )
@@ -131,6 +142,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "migrate_payment_method_api",
@@ -138,24 +151,18 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodMigrate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodMigrate>::pass(req, sink);
+        if (!parsed) return;
         std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) {
             merchant_id = parsed->get_merchant_id().get_value();
@@ -165,19 +172,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        MigratePaymentMethodApiInput input{*parsed, merchant_id};
-        auto result = m_runtime.migrate_payment_method_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.migrate_payment_method_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_migrate_payment_methods(
@@ -186,6 +186,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "migrate_payment_methods",
@@ -193,31 +195,31 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = std::vector<::app::model::payment_methods::PaymentMethodMigrate>;
-        auto parsed = serde::Ser::deserialize<Input>(
+        auto parsed = core::behavior::Serializer<std::vector<::app::model::payment_methods::PaymentMethodMigrate>>::pass(req, sink);
+        if (!parsed) return;
             "application/json",
             m_input_support.parse_batch_rows(body)
         );
         if (!parsed) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_REQUEST, "no rows");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->size() > 200) {
@@ -225,19 +227,11 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "batch limit is 200"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        MigratePaymentMethodsInput input{std::move(*parsed)};
-        auto result = m_runtime.migrate_payment_methods(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.migrate_payment_methods(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_update_payment_methods(
@@ -246,6 +240,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "update_payment_methods",
@@ -253,31 +249,31 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = std::vector<::app::model::payment_methods::UpdatePaymentMethodRecord>;
-        auto parsed = serde::Ser::deserialize<Input>(
+        auto parsed = core::behavior::Serializer<std::vector<::app::model::payment_methods::UpdatePaymentMethodRecord>>::pass(req, sink);
+        if (!parsed) return;
             "application/json",
             m_input_support.parse_batch_rows(body)
         );
         if (!parsed) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_REQUEST, "no records");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->size() > 200) {
@@ -285,19 +281,11 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "batch limit is 200"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        UpdatePaymentMethodsInput input{std::move(*parsed)};
-        auto result = m_runtime.update_payment_methods(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.update_payment_methods(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_modular_migrate_payment_methods(
@@ -306,6 +294,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "modular_migrate_payment_methods",
@@ -313,31 +303,31 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = std::vector<::app::model::payment_methods::PaymentMethodMigrate>;
-        auto parsed = serde::Ser::deserialize<Input>(
+        auto parsed = core::behavior::Serializer<std::vector<::app::model::payment_methods::PaymentMethodMigrate>>::pass(req, sink);
+        if (!parsed) return;
             "application/json",
             m_input_support.parse_batch_rows(body)
         );
         if (!parsed) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_REQUEST, "no rows");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->size() > 200) {
@@ -345,19 +335,11 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "batch limit is 200"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ModularMigratePaymentMethodsInput input{std::move(*parsed)};
-        auto result = m_runtime.modular_migrate_payment_methods(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.modular_migrate_payment_methods(m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

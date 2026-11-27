@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_merchant_account_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,26 +38,27 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_merchant_account_create(const UserMerchantAccountCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_merchant_account_create(const ::app::model::user::UserMerchantCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto merchant_id_str = m_context.ids().payment_id("merchant_");
-        const auto company_name = input.request.get_company_name();
+        const auto company_name = request.get_company_name();
         ::app::store::merchant_accounts::MerchantAccountRecord merchant{};
         merchant.set_merchant_id(merchant_id_str);
         merchant.set_merchant_name(company_name);
-        merchant.set_organization_id(input.request_context.org_id);
+        merchant.set_organization_id(ctx.org_id);
         merchant.set_merchant_account_type("orchestration");
         m_context.repository().save_merchant_account(std::move(merchant));
 
         const auto key = std::string{"user.user_merchant_account_create:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

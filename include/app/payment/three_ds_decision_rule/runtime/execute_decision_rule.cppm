@@ -25,11 +25,11 @@ public:
 
     // Port of core::three_ds_decision_rule::execute_three_ds_decision_rule
     // (core/three_ds_decision_rule.rs:23-39).
-    [[nodiscard]] std::expected<
-        ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse,
-        core::error::AppError>
-    execute_decision_rule(const ExecuteDecisionRuleInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse>
+        execute_decision_rule(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = ExecuteDecisionRuleData{dto, ctx};
         auto decision =
             get_three_ds_decision_rule_output(input.request, input.processor_merchant_id);
         if (!decision) {
@@ -43,7 +43,7 @@ public:
 private:
     // Port of core::three_ds_decision_rule::get_three_ds_decision_rule_output
     // (core/three_ds_decision_rule.rs:41-85).
-    [[nodiscard]] std::expected<Decision, core::error::AppError> get_three_ds_decision_rule_output(
+    [[nodiscard]] core::behavior::Outcome<Decision> get_three_ds_decision_rule_output(
         const Request& request,
         std::string_view processor_merchant_id
     ) const

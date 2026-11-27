@@ -23,10 +23,10 @@ public:
     }
 
     // core/card_issuer.rs:84-119 `list_card_issuers`.
-    [[nodiscard]] std::
-        expected<::app::dto::card_issuer::CardIssuerListResponse, core::error::AppError>
-        list(const CardIssuerListInput&) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerListResponse>
+        list(const core::behavior::CallContext& ctx) const
     {
+        (void)ctx;
         const std::size_t limit = m_support.configured_list_limit();
 
         auto repository = m_context.repository();

@@ -9,6 +9,8 @@ import app_dto;
 import app_context_core;
 import app_http;
 
+import :call_context;
+
 export namespace app::handlers::verify_connector {
 
 /**
@@ -74,6 +76,12 @@ public:
         return out;
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req, "payment_connector_verify");
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -83,17 +91,6 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
-};
-
-// ───────────────────────── Plain input ─────────────────────────
-// Carries exactly what the old core call received.
-
-struct PaymentConnectorVerifyInput
-{
-    ::app::dto::verify_connector::VerifyConnectorRequest request{};
-    ::app::dto::verify_connector::Connector connector{};
-    std::string connector_name{};
-    std::string merchant_id{};
 };
 
 } // namespace app::handlers::verify_connector

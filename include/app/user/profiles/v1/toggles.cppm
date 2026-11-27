@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -34,7 +35,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -44,59 +45,29 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "toggle_connector_agnostic_mit", {})) {
+                m_support.authorize(req, "toggle_connector_agnostic_mit", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::admin::ConnectorAgnosticMitChoice;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::admin::ConnectorAgnosticMitChoice>::pass(req, sink);
+        if (!parsed) return;
         const std::string profile_id = m_input_support.profile_id_from_request(req, 1);
         if (profile_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing profile id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ToggleConnectorAgnosticMitInput input{
-            m_input_support.merchant_from_request(req),
-            profile_id,
-            *parsed
-        };
-        auto result = m_runtime.toggle_connector_agnostic_mit(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kConnectorAgnosticMitChoiceWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
+        m_runtime.toggle_connector_agnostic_mit(*parsed, ctx).handle(sink);
     }
 
     void handle_toggle_extended_card_info(
@@ -105,66 +76,35 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "toggle_extended_card_info", {})) {
+                m_support.authorize(req, "toggle_extended_card_info", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::admin::ExtendedCardInfoChoice;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::admin::ExtendedCardInfoChoice>::pass(req, sink);
+        if (!parsed) return;
         const std::string profile_id = m_input_support.profile_id_from_request(req, 1);
         if (profile_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing profile id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ToggleExtendedCardInfoInput input{
-            m_input_support.merchant_from_request(req),
-            profile_id,
-            *parsed
-        };
-        auto result = m_runtime.toggle_extended_card_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kExtendedCardInfoChoiceWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
+        m_runtime.toggle_extended_card_info(*parsed, ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     ProfilesRuntime& m_runtime;
     ProfilesInputSupport& m_input_support;
-    ProfilesRequestSupport& m_request_support;
+    ProfilesRequestSupport& m_support;
 };
 
 } // namespace app::handlers::profiles

@@ -1,6 +1,7 @@
 export module app_webhook:recovery_webhooks_runtime_recovery_receive_incoming_webhook;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -272,17 +273,23 @@ public:
     }
 
     // routes/recovery_webhooks.rs:11-49 -> incoming_v2.rs:52-426.
-    [[nodiscard]] std::expected<WebhookResponse, core::error::AppError>
-    receive_incoming_webhook(const RecoveryReceiveIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookResponse>
+    receive_incoming_webhook(
+        const IncomingWebhookRequestDetails& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         // Request-scoped state: local equivalent of upstream `server_wrap` state.
         RequestScope scope{};
-        scope.ids = input.ids;
-        scope.body = input.body;
-        scope.request = input.request;
-        scope.org_id = input.org_id;
-        scope.lock_action = input.lock_action;
-        scope.network_verification = input.network_verification;
+        scope.ids.merchant_id = ctx.merchant_id;
+        scope.ids.profile_id = ctx.profile_id;
+        scope.ids.connector_id =
+            ctx.path_segments.empty() ? std::string{} : ctx.path_segments.back();
+        scope.body = request.body;
+        scope.request = request;
+        scope.org_id = ctx.org_id;
+        scope.lock_action = "NotApplicable";
+        scope.network_verification = ctx.headers.contains("x-webhook-signature");
 
         // incoming_webhooks_wrapper (incoming_v2.rs:52-99) -> core (:103-426).
         const WrappedIncoming wrapped = incoming_webhooks_wrapper(scope);
@@ -389,6 +396,19 @@ private:
         }
         const auto found = object->get(std::string{key});
         return found ? &found.value().get() : nullptr;
+    }
+
+    [[nodiscard]] static std::string
+    query_param(std::string_view query, std::string_view key)
+    {
+        const std::string prefix{std::string{key} + "="};
+        const auto found = query.find(prefix);
+        if (found == std::string_view::npos) {
+            return {};
+        }
+        const auto start = found + prefix.size();
+        const auto end = query.find('&', start);
+        return std::string{query.substr(start, end == std::string_view::npos ? end : end - start)};
     }
 
     [[nodiscard]] std::string
@@ -927,8 +947,7 @@ private:
             raw = json_string(decoded, "event");
         }
         if (raw.empty()) {
-            raw =
-                ::app::http::QueryParams{scope.request.query_params}.get("event_type").value_or("");
+            raw = query_param(scope.request.query_params, "event_type");
         }
         if (raw.empty()) {
             return std::nullopt;

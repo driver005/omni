@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v1_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,46 +59,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support->authorize(req, "payments_create", spec_for("payments_create"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_create");
         m_context.metrics().counter("payments.payments_create").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsCreateInput input{std::move(data)};
-        auto result = m_runtime.payments_create(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_create(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payment_link_create(
@@ -106,47 +81,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     ->authorize(req, "payment_link_create", spec_for("payment_link_create"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payment_link_create");
         m_context.metrics().counter("payments.payment_link_create").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentLinkInitiateRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentLinkCreateInput input{std::move(data)};
-        auto result = m_runtime.payment_link_create(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payment_link_create(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_update(
@@ -155,46 +104,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support->authorize(req, "payments_update", spec_for("payments_update"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_update");
         m_context.metrics().counter("payments.payments_update").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsUpdateInput input{std::move(data)};
-        auto result = m_runtime.payments_update(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_update(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_update_metadata(
@@ -203,49 +126,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_update_metadata",
                 spec_for("payments_update_metadata")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_update_metadata");
         m_context.metrics().counter("payments.payments_update_metadata").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsUpdateMetadataRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsUpdateMetadataInput input{std::move(data)};
-        auto result = m_runtime.payments_update_metadata(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_update_metadata(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_manual_update(
@@ -254,49 +151,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_manual_update",
                 spec_for("payments_manual_update")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_manual_update");
         m_context.metrics().counter("payments.payments_manual_update").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsManualUpdateRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsManualUpdateInput input{std::move(data)};
-        auto result = m_runtime.payments_manual_update(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_manual_update(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #42
@@ -314,6 +185,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_manual_update(req, res, std::move(send));
                         }
                     )
@@ -336,6 +209,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_create(req, res, std::move(send));
                     }
                 )
@@ -357,6 +232,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payment_link_create(req, res, std::move(send));
                     }
                 )
@@ -378,6 +255,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_update(req, res, std::move(send));
                     }
                 )
@@ -400,6 +279,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_update_metadata(req, res, std::move(send));
                         }
                     )

@@ -1,6 +1,7 @@
 export module app_auth:unified_connector_service_runtime_kill_switch_status;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -32,10 +33,10 @@ public:
 
     // Upstream kill_switch::trip_status (kill_switch.rs:580-671). Auth and scope
     // resolution stay in the handler; everything below is the old core block.
-    [[nodiscard]] std::expected<KillSwitchStatusResponse, core::error::AppError>
-    status(const KillSwitchStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<KillSwitchStatusResponse>
+    status(const core::behavior::CallContext& ctx) const
     {
-        const auto& resolved = input.scope;
+        const auto resolved = resolve_scope(ctx);
 
         // A closed local cache is the in-process equivalent of a failed
         // `get_redis_conn`. Upstream fails the request with InternalServerError

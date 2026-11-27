@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,15 +21,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_linked_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_linked_config(const ::core::behavior::CallContext& ctx) const
     {
-        const auto merchant = input.merchant_id;
-        const auto txn = input.txn;
-        const auto profile = input.profile_id;
+        const auto merchant = ctx.merchant_id;
+        const auto txn = ctx_transaction_type(ctx);
+        const auto profile = ctx.profile_id;
         if (!profile.empty()) {
             if (const auto validation_error =
-                    m_support.profile_validation_error(input.auth_profile, profile)) {
+                    m_support.profile_validation_error(ctx_auth_profile(ctx), profile)) {
                 return std::unexpected{m_support.error(
                     core::error::AppErrorKind::PRECONDITION_FAILED,
                     *validation_error
@@ -38,7 +38,7 @@ public:
         }
 
         std::vector<DictionaryRecord> active;
-        const auto active_id = m_support.active_id_for(input.active_id, profile, txn);
+        const auto active_id = m_support.active_id_for(ctx_query(ctx, "active_id"), profile, txn);
         for (auto& record: m_context.repository().list_routing_configs()) {
             if (!merchant.empty() && record.get_merchant_id() != merchant) {
                 continue;
@@ -46,7 +46,7 @@ public:
             if (!profile.empty() && record.get_profile_id() != profile) {
                 continue;
             }
-            if (!input.is_v2) {
+            if (!ctx_is_v2(ctx)) {
                 if (active_id && record.get_config_id() == *active_id) {
                     active.push_back(m_support.dictionary_record(record));
                 }

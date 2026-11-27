@@ -25,10 +25,10 @@ public:
 
     // ───────────────────────── Core: revoke_mandate ─────────────────────────
     // core/mandate.rs:60-165.
-    [[nodiscard]] std::
-        expected<::app::model::mandates::MandateRevokedResponse, core::error::AppError>
-        revoke_mandate(const RevokeMandateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateRevokedResponse>
+        revoke_mandate(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RevokeMandateData{ctx};
         m_support.record_flow(
             "MandatesRevoke"
         ); // LockAction::NotApplicable (routes/mandates.rs:65)

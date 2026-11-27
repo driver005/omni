@@ -36,10 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: get_payouts_aggregates ─────────────────────────
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
-        get_payouts_aggregates(const PayoutsAggregatesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
+        get_payouts_aggregates(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsAggregatesData{ctx};
         // Upstream input is `web::Query<TimeRange>` (`payouts.rs:708`); no body is read.
         m_context.metrics().record_flow("get_payouts_aggregates");
         m_context.metrics().counter("payouts_aggregates_total").increment();

@@ -37,9 +37,10 @@ public:
 
     // payment_link_status (routes:217-249) -> get_payment_link_status
     // (core:892-1073). Always renders an IntentStatus page with redirect=true.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    status(const PaymentLinkStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    status(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkStatusData{ctx};
         m_context.metrics().record_flow("payment_link.status");
         m_context.metrics().counter("payment_link.status").increment();
 

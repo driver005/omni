@@ -1,6 +1,7 @@
 export module app_webhook:webhooks_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import app_dto;
@@ -18,6 +19,27 @@ import :webhooks_input;
 import :webhooks_result;
 
 export namespace app::handlers::webhooks {
+
+/** Header lookup against the HTTP-free request snapshot. */
+[[nodiscard]] inline std::string
+ctx_header(const ::core::behavior::CallContext& ctx, std::string_view name)
+{
+    const auto found = ctx.headers.find(std::string{name});
+    return found == ctx.headers.end() ? std::string{} : found->second;
+}
+
+/** Flow/counter labels formerly supplied by each route handler. */
+[[nodiscard]] inline std::pair<std::string_view, std::string_view>
+flow_counter(std::string_view operation)
+{
+    if (operation == "receive_incoming_webhook_v2") {
+        return {"IncomingWebhookReceive", "WEBHOOK_V2_RECEIVED"};
+    }
+    if (operation == "receive_network_token_requestor_incoming_webhook") {
+        return {"IncomingNetworkTokenWebhookReceive", "WEBHOOK_NETWORK_TOKEN_RECEIVED"};
+    }
+    return {"IncomingWebhookReceive", "WEBHOOK_INCOMING_RECEIVED"};
+}
 
 /** Local mirror of upstream `ApiErrorResponse` -> `ErrorResponse` ids. */
 enum class ErrorId : std::uint8_t
@@ -306,7 +328,7 @@ public:
     // Port of source_verification.rs:161-247 with the local header/config
     // substitute for the trusted-ingress mTLS signal.
     [[nodiscard]] std::optional<core::error::AppError> verify_mtls(
-        const HeaderReaderFn& header,
+        const ::core::behavior::CallContext& ctx,
         const std::string& connector_name,
         VerificationStatus& status
     ) const
@@ -321,7 +343,7 @@ public:
         }
         const std::string header_name = config("incoming_webhooks", "mtls_verified_header")
                                             .value_or(std::string{"x-webhook-mtls-verified"});
-        const std::string value = header(header_name);
+        const std::string value = ctx_header(ctx, header_name);
         if (value != "true") {
             return make_error(
                 ErrorId::WEBHOOK_AUTH_FAILED,
@@ -337,7 +359,7 @@ public:
     // connector's allowed-range policy; CIDR prefixes are matched on their
     // network portion (local in-process substitute for the Rust IpAddr parser).
     [[nodiscard]] std::optional<core::error::AppError> verify_source_ip(
-        const HeaderReaderFn& header,
+        const ::core::behavior::CallContext& ctx,
         const std::string& connector_name,
         VerificationStatus& status
     ) const
@@ -359,7 +381,7 @@ public:
         }
         const std::string header_name = config("incoming_webhooks", "source_ip_header")
                                             .value_or(std::string{"x-forwarded-for"});
-        const std::string source_ip = header(header_name);
+        const std::string source_ip = ctx_header(ctx, header_name);
         if (source_ip.empty()) {
             return make_error(
                 ErrorId::WEBHOOK_AUTH_FAILED,
@@ -397,19 +419,19 @@ public:
     }
 
     [[nodiscard]] std::optional<core::error::AppError> verify_network_source(
-        const HeaderReaderFn& header,
+        const ::core::behavior::CallContext& ctx,
         const std::string& connector_name,
         NetworkVerification& verification
     ) const
     {
-        if (const auto failure = verify_mtls(header, connector_name, verification.mtls)) {
+        if (const auto failure = verify_mtls(ctx, connector_name, verification.mtls)) {
             return failure;
         }
-        return verify_source_ip(header, connector_name, verification.source_ip);
+        return verify_source_ip(ctx, connector_name, verification.source_ip);
     }
 
     [[nodiscard]] std::string
-    webhook_secret(const HeaderReaderFn& header, const ConnectorAccount& account) const
+    webhook_secret(const ::core::behavior::CallContext& ctx, const ConnectorAccount& account) const
     {
         if (account.mca) {
             const auto details = account.mca->get_connector_webhook_details();
@@ -424,14 +446,14 @@ public:
                 m_context.key_store().get("webhook_signature", account.connector_name)) {
             return stored->value();
         }
-        return header("x-webhook-secret");
+        return ctx_header(ctx, "x-webhook-secret");
     }
 
     // Local connector-level verify_webhook_source (incoming_v2.rs:246-290):
     // HMAC signature over the raw body, or the connector source-verification
     // call when configured for this connector.
     [[nodiscard]] bool verify_webhook_source_call(
-        const HeaderReaderFn& header,
+        const ::core::behavior::CallContext& ctx,
         std::string_view body,
         const ConnectorAccount& account,
         ExecutionPath path
@@ -464,7 +486,7 @@ public:
         };
         std::string signature;
         for (const auto header_name: signature_headers) {
-            signature = header(header_name);
+            signature = ctx_header(ctx, header_name);
             if (!signature.empty()) {
                 break;
             }
@@ -472,7 +494,7 @@ public:
         if (signature.empty()) {
             return false;
         }
-        const std::string secret = webhook_secret(header, account);
+        const std::string secret = webhook_secret(ctx, account);
         if (secret.empty()) {
             return false;
         }
@@ -736,19 +758,27 @@ public:
     // Connector decoders, 3DS/UAS/UCS plugins and business-effect handlers are
     // replaced by the local substitutes above; the control flow, error shapes,
     // source-verification policy and wire acknowledgement stay upstream-shaped.
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError> incoming_webhooks_wrapper(
-        const PathIds& ids,
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
+    incoming_webhooks_wrapper(
         const std::string& body,
-        const HeaderReaderFn& header,
-        std::string_view operation,
-        std::string_view flow,
-        std::string_view counter,
+        const ::core::behavior::CallContext& ctx,
         bool is_relay,
         bool with_profile
     ) const
     {
-        const std::string merchant_id =
-            ids.merchant_id.empty() ? header("x-merchant-id") : ids.merchant_id;
+        const auto header = [&ctx](std::string_view name)
+        {
+            return ctx_header(ctx, name);
+        };
+        const std::string_view operation{ctx.operation};
+        const auto [flow, counter] = flow_counter(ctx.operation);
+
+        PathIds ids;
+        ids.merchant_id = ctx.merchant_id.empty() ? header("x-merchant-id") : ctx.merchant_id;
+        ids.profile_id = ctx.profile_id;
+        ids.connector_id = ctx.path_segments.empty() ? std::string{} : ctx.path_segments.back();
+
+        const std::string merchant_id = ids.merchant_id;
         if (merchant_id.empty() || ids.connector_id.empty()) {
             return std::unexpected{
                 make_error(ErrorId::WEBHOOK_BAD_REQUEST, "Bad request body received")
@@ -764,7 +794,7 @@ public:
         const ExecutionPath path = fetch_execution_path(merchant_id, account.connector_name);
 
         NetworkVerification network;
-        if (const auto failure = verify_network_source(header, account.connector_name, network)) {
+        if (const auto failure = verify_network_source(ctx, account.connector_name, network)) {
             return std::unexpected{*failure};
         }
 
@@ -827,7 +857,7 @@ public:
         if (process_further) {
             object_ref = get_webhook_object_reference_id(body, event_type);
             const bool connector_source_verified =
-                verify_webhook_source_call(header, body, account, path);
+                verify_webhook_source_call(ctx, body, account, path);
             source_verified = network.resolve_source_verified(connector_source_verified);
 
             if (source_verified) {
@@ -885,16 +915,20 @@ public:
     // Port of incoming.rs:121-158 / :863-934. Upstream NoAuth at the transport
     // layer; source verification is an exact Authorization-header comparison
     // against the network-tokenization service secret.
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
     network_token_incoming_webhooks_wrapper(
-        const PathIds& ids,
         const std::string& body,
-        const HeaderReaderFn& header,
-        std::string_view operation,
-        std::string_view flow,
-        std::string_view counter
+        const ::core::behavior::CallContext& ctx
     ) const
     {
+        const std::string_view operation{ctx.operation};
+        const auto [flow, counter] = flow_counter(ctx.operation);
+        const auto header = [&ctx](std::string_view name)
+        {
+            return ctx_header(ctx, name);
+        };
+        PathIds ids;
+        ids.merchant_id = ctx.merchant_id;
         // get_network_token_resource_object (incoming.rs:872-878): deserialization
         // failure is InternalServerError.
         if (!serde::Ser::decode_generic("application/json", body)) {

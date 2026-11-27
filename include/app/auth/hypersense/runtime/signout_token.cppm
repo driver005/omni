@@ -1,6 +1,7 @@
 export module app_auth:hypersense_runtime_signout_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,15 +38,18 @@ public:
     }
 
     // routes/hypersense.rs:51 -> core/external_service_auth.rs:55-63. NoAuth.
-    [[nodiscard]] std::expected<void, core::error::AppError>
-    signout_token(const SignoutTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<void> signout_token(
+        const ::app::dto::external_service_auth::ExternalSignoutTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
+        (void)ctx;
         m_support.record_flow("HypersenseSignoutToken", LockActionNotApplicable{});
         m_context.metrics().counter("hypersense.signout_token").increment();
 
         // core/external_service_auth.rs:55-57 — decode_jwt::<ExternalToken> ->
         // Unauthorized.
-        const auto claims = m_support.decode_jwt_external(input.request.get_token());
+        const auto claims = m_support.decode_jwt_external(request.get_token());
         if (!claims) {
             return std::unexpected{
                 m_support.make_error(core::error::AppErrorKind::UNAUTHORIZED, "Unauthorized")

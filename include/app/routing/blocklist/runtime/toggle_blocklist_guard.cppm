@@ -19,8 +19,8 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
-import :blocklist_input;
 import :blocklist_result;
 import :blocklist_runtime_common;
 
@@ -36,16 +36,16 @@ public:
     }
 
     // utils.rs:76-118. Merchant-wide, no profile.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ToggleBlocklistResponse, core::error::AppError>
-        toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ToggleBlocklistResponse>
+    toggle_blocklist_guard(const ::core::behavior::CallContext& ctx) const
     {
+        const bool status = query_value(ctx, "status").value_or("false") == "true";
         // common_utils/id_type/merchant.rs:126-128: guard_blocklist_for_{merchant}.
-        const auto key = "guard_blocklist_for_" + input.merchant;
-        m_context.config_store().put("configs", key, input.status ? "true" : "false");
+        const auto key = "guard_blocklist_for_" + ctx.merchant_id;
+        m_context.config_store().put("configs", key, status ? "true" : "false");
 
         ::app::model::blocklist::ToggleBlocklistResponse response;
-        response.set_blocklist_guard_status(input.status ? "enabled" : "disabled");
+        response.set_blocklist_guard_status(status ? "enabled" : "disabled");
         m_support.emit("blocklist.guard.toggled", response);
         m_support.track("toggle_blocklist_guard");
         return response;

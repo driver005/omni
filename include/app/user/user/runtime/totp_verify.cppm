@@ -1,6 +1,7 @@
 export module app_user:user_runtime_totp_verify;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,17 +38,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_verify(const TotpVerifyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    totp_verify(const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         std::uint64_t step{0};
-        if (const auto step_param = input.request_context.query.get("step")) {
+        if (const auto step_param = ctx_query(ctx).get("step")) {
             std::from_chars(step_param->data(), step_param->data() + step_param->size(), step);
         }
-        const auto verify_token = input.request_context.token;
+        const auto verify_token = ctx_token(ctx);
         const auto secret_entry = m_context.key_store().get("totp-secret", verify_token.value());
         const auto secret = secret_entry ? secret_entry->value() : std::string{};
         ::app::crypto::TotpGenerator generator{m_context.one_time_store()};
@@ -55,7 +57,7 @@ public:
                              std::chrono::system_clock::now().time_since_epoch()
         )
                              .count();
-        if (!generator.verify(secret, step, input.request.get_totp(), now)) {
+        if (!generator.verify(secret, step, request.get_totp(), now)) {
             return std::unexpected{m_support.wire_error(
                 "UR_37",
                 "Invalid TOTP",
@@ -70,10 +72,10 @@ public:
         }
 
         const auto key =
-            std::string{"user.totp_verify:"} + std::to_string(input.request_context.body.size());
+            std::string{"user.totp_verify:"} + std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

@@ -21,10 +21,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::PlatformRefundListResponse, core::error::AppError>
-        list_platform(const RefundsListPlatformInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListResponse>
+        list_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsListPlatformData{dto, ctx};
         m_context.metrics().record_flow("refund_platform_list");
         m_context.metrics().counter("refunds_platform_list_total").increment();
 

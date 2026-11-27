@@ -21,10 +21,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
-        aggregates_profile(const RefundsAggregatesProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
+        aggregates_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsAggregatesProfileData{ctx};
         m_context.metrics().record_flow("refund_profile_aggregates");
         m_context.metrics().counter("refunds_profile_aggregates_total").increment();
 

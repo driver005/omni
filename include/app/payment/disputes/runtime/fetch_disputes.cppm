@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
-    fetch_disputes(const FetchDisputesInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
+        fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = FetchDisputesData{dto, ctx};
         m_context.metrics().record_flow("dispute_fetch");
         m_context.metrics().counter("disputes_fetch_total").increment();
         const auto& scope = input.scope;

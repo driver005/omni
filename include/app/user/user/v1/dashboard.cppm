@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_context;
@@ -26,7 +27,7 @@ public:
         m_context{ctx},
         m_runtime{runtime},
         m_input_support{input},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -103,11 +104,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "get_active_user_details", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "get_active_user_details", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"get_active_user_details"})"};
@@ -117,7 +119,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -127,26 +129,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        GetActiveUserDetailsInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"get_active_user_details"})"}),
-            *parsed
-        };
-        auto result = m_runtime.get_active_user_details(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_active_user_details(*parsed, ctx).handle(sink);
     }
 
     void handle_launch_sage(
@@ -155,10 +142,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "launch_sage", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "launch_sage", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"launch_sage"})"};
@@ -168,7 +156,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -178,26 +166,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        LaunchSageInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"launch_sage"})"}),
-            *parsed
-        };
-        auto result = m_runtime.launch_sage(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.launch_sage(*parsed, ctx).handle(sink);
     }
 
     void handle_set_dashboard_metadata(
@@ -206,11 +179,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "set_dashboard_metadata", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "set_dashboard_metadata", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
@@ -220,7 +194,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -230,26 +204,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        SetDashboardMetadataInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.set_dashboard_metadata(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.set_dashboard_metadata(*parsed, ctx).handle(sink);
     }
 
     void handle_get_multiple_dashboard_metadata(
@@ -258,11 +217,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "get_multiple_dashboard_metadata", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "get_multiple_dashboard_metadata", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"get_multiple_dashboard_metadata"})"};
@@ -272,7 +232,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -282,34 +242,18 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        GetMultipleDashboardMetadataInput input{
-            m_input_support
-                .request_data(req, std::string{R"({"op":"get_multiple_dashboard_metadata"})"}),
-            *parsed
-        };
-        auto result = m_runtime.get_multiple_dashboard_metadata(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_multiple_dashboard_metadata(*parsed, ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     UserRuntime& m_runtime;
     UserInputSupport& m_input_support;
-    UserRequestSupport& m_request_support;
+    UserRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user

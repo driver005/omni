@@ -27,29 +27,29 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::unreferenced_refund::UnreferencedRefundResponse, core::error::AppError>
-        unreferenced_refund(const RelayUnreferencedRefundInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::unreferenced_refund::UnreferencedRefundResponse>
+        unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_unreferenced_refund.unreferenced_refund(input);
+        return m_unreferenced_refund.unreferenced_refund(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
-    relay(const RelayCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::relay::RelayResponse>
+    relay(const core::behavior::CallContext& ctx) const
     {
-        return m_relay.relay(input);
+        return m_relay.relay(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
-    retrieve(const RelayRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::relay::RelayResponse>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    incoming_webhook(const RelayIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    incoming_webhook(const core::behavior::CallContext& ctx) const
     {
-        return m_incoming_webhook.incoming_webhook(input);
+        return m_incoming_webhook.incoming_webhook(ctx);
     }
 
 private:

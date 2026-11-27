@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_connect_account;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,15 +38,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_connect_account(const UserConnectAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_connect_account(const ::app::model::user::ConnectAccountRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto user_id = m_context.ids().uuid_v4();
         const auto temp_password = m_context.ids().uuid_v4();
-        const auto email = input.request.get_email().get_value();
+        const auto email = request.get_email().get_value();
         const ::app::crypto::SecretString password_secret{temp_password};
         const auto password_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(password_secret.value());
@@ -56,7 +58,7 @@ public:
             email,
             email,
             "active",
-            input.request_context.merchant_id,
+            ctx.merchant_id,
             "admin"
         );
         m_support.publish_identity_event("user.account_connected", user_id);

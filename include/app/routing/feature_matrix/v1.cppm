@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -55,33 +56,31 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // `#[instrument(skip_all)]` + Flow::FeatureMatrix (routes/feature_matrix.rs:19,25) and
         // api::server_wrap(..., &auth::NoAuth, LockAction::NotApplicable) (:30-38). The NO_AUTH
         // rule is a pass-through; no lock is acquired because the request is a read-only GET.
         const auto auth = m_request_support.authorize(req, "fetch_feature_matrix", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        FetchFeatureMatrixInput input{req.body_as_string()};
-        auto result = m_runtime.fetch_feature_matrix(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
+        // Upstream treats a missing body as FeatureMatrixRequest::default (routes:26-28).
+        ::app::dto::feature_matrix::FeatureMatrixRequest request{};
+        if (!req.body_as_string().empty()) {
+            auto parsed =
+                core::behavior::Serializer<::app::dto::feature_matrix::FeatureMatrixRequest>::pass(
+                    req,
+                    sink
+                );
+            if (!parsed) {
+                return;
+            }
+            request = std::move(*parsed);
         }
-
-        auto wire =
-            result->serialize(wire_fields<::app::dto::feature_matrix::FeatureMatrixListResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.fetch_feature_matrix(request, m_request_support.context(req)).handle(sink);
     }
 
     /** @brief Installs the single upstream v1 route.

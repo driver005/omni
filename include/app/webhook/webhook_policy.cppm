@@ -27,8 +27,87 @@ import :subscription_input;
 export namespace app::webhook::policy {
 
 using ::core::behavior::AuthSpec;
+using ::core::behavior::CallContext;
 using ::core::behavior::Scope;
 using AppError = ::core::error::AppError;
+
+/**
+ * Builds the HTTP-free request snapshot handed to runtime methods. Headers, query
+ * and path segments are copied once here; the runtime never sees IRequest.
+ */
+[[nodiscard]] inline CallContext make_call_context(
+    interfaces::io::IRequest& req,
+    const Scope& scope
+) {
+    CallContext ctx;
+    ctx.merchant_id = scope.merchant_id;
+    ctx.profile_id = scope.profile_id;
+    ctx.org_id = scope.org_id;
+    ctx.connected_merchant_id = scope.connected_merchant_id;
+
+    const auto lower = [](std::string_view value) {
+        std::string out;
+        out.reserve(value.size());
+        for (const char ch: value) {
+            out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+        }
+        return out;
+    };
+
+    const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
+    for (std::size_t index = 0; index < segments.count(); ++index) {
+        ctx.path_segments.emplace_back(segments.at(index).value_or(""));
+    }
+
+    const auto raw = req.get_path();
+    if (const auto question = raw.find('?'); question != std::string_view::npos) {
+        auto tail = raw.substr(question + 1);
+        while (!tail.empty()) {
+            const auto amp = tail.find('&');
+            const auto pair = tail.substr(0, amp == std::string_view::npos ? tail.size() : amp);
+            if (const auto eq = pair.find('='); eq != std::string_view::npos) {
+                ctx.query[std::string{pair.substr(0, eq)}] = std::string{pair.substr(eq + 1)};
+            } else if (!pair.empty()) {
+                ctx.query[std::string{pair}] = std::string{};
+            }
+            if (amp == std::string_view::npos) {
+                break;
+            }
+            tail = tail.substr(amp + 1);
+        }
+    }
+
+    for (const auto& entry: req.get_headers()) {
+        std::visit(
+            [&](const auto& field)
+            {
+                if (!field) {
+                    return;
+                }
+                std::string name;
+                using Name = std::remove_cvref_t<decltype(field->get_name())>;
+                if constexpr (std::same_as<Name, std::string>) {
+                    name = field->get_name();
+                } else {
+                    name = std::string{interfaces::io::types::token_to_string(field->get_name())};
+                }
+                if (!name.empty()) {
+                    ctx.headers[lower(name)] = field->get_value();
+                }
+            },
+            entry
+        );
+    }
+
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    for (const auto& [key, value]: auth.claims()) {
+        ctx.claims.emplace(key, value);
+    }
+    if (const auto secret = auth.claim(::app::auth::kClaimClientSecret)) {
+        ctx.client_secret = std::string{*secret};
+    }
+    return ctx;
+}
 
 // ───────────────────────────── webhooks ─────────────────────────────
 
@@ -90,6 +169,15 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = make_call_context(req, scope(req));
+        if (ctx.merchant_id.empty()) {
+            ctx.merchant_id = ::app::http::merchant_id_from_header{}(req);
+        }
+        return ctx;
+    }
+
 private:
     InputSupport& m_input;
 };
@@ -130,6 +218,11 @@ public:
     [[nodiscard]] std::optional<AppError> scope_error(const Scope&) const
     {
         return std::nullopt;
+    }
+
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req, scope(req));
     }
 
 private:
@@ -184,6 +277,16 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = make_call_context(req, scope(req));
+        if (ctx.merchant_id.empty()) {
+            const auto auth = ::app::auth::AuthContextBuilder{}(req);
+            ctx.merchant_id = m_input.merchant_from_identity(auth);
+        }
+        return ctx;
+    }
+
 private:
     InputSupport& m_input;
 };
@@ -235,6 +338,11 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req, scope(req));
+    }
+
 private:
     InputSupport& m_input;
 };
@@ -260,7 +368,11 @@ public:
     using InputSupport = ::app::handlers::subscription::SubscriptionInputSupport;
 
     [[nodiscard]] std::optional<AppError>
-    authorize(interfaces::io::IRequest& req, std::string_view operation, const AuthSpec& spec) const
+    authorize(
+        interfaces::io::IRequest& req,
+        std::string_view operation,
+        const AuthSpec& spec
+    ) const
     {
         using ::app::auth::AuthContextBuilder;
 
@@ -310,6 +422,18 @@ public:
     [[nodiscard]] std::optional<AppError> scope_error(const Scope&) const
     {
         return std::nullopt;
+    }
+
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = make_call_context(req, scope(req));
+        if (ctx.client_secret.empty()) {
+            if (const auto payload = m_input.parse_json_body_optional(req)) {
+                ctx.client_secret =
+                    m_input.json_string(payload->root, "client_secret").value_or("");
+            }
+        }
+        return ctx;
     }
 
 private:

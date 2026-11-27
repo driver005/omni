@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v1_sessions;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,49 +59,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_connector_session",
                 spec_for("payments_connector_session")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_connector_session");
         m_context.metrics().counter("payments.payments_connector_session").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsSessionRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsConnectorSessionInput input{std::move(data)};
-        auto result = m_runtime.payments_connector_session(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_connector_session(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_post_session_tokens(
@@ -109,49 +84,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_post_session_tokens",
                 spec_for("payments_post_session_tokens")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_post_session_tokens");
         m_context.metrics().counter("payments.payments_post_session_tokens").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsPostSessionTokensRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsPostSessionTokensInput input{std::move(data)};
-        auto result = m_runtime.payments_post_session_tokens(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_post_session_tokens(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #47
@@ -168,6 +117,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_connector_session(req, res, std::move(send));
                     }
                 )
@@ -190,6 +141,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_post_session_tokens(req, res, std::move(send));
                         }
                     )

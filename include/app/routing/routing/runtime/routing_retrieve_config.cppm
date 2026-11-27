@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,17 +21,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_config(const ::core::behavior::CallContext& ctx) const
     {
-        const auto existing = m_support.find_config_by_algorithm(input.algorithm_id);
+        const auto existing = m_support.find_config_by_algorithm(ctx_algorithm(ctx));
         if (!existing) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "routing algorithm not found")
             };
         }
         if (const auto validation_error = m_support.profile_validation_error(
-                input.auth_profile,
+                ctx_auth_profile(ctx),
                 existing->get_profile_id()
             )) {
             return std::unexpected{

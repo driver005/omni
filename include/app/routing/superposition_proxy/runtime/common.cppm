@@ -16,6 +16,7 @@ import app_dto;
 import app_model;
 import app_services;
 import utils_openapi;
+import core_behavior;
 
 import :superposition_proxy_input;
 
@@ -52,7 +53,7 @@ struct SdkError
     std::string message{};
 };
 
-struct ListContextsSdkInput
+struct ListContextsSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
@@ -67,7 +68,7 @@ struct ListContextsSdkInput
     std::vector<std::pair<std::string, std::string>> dimension_params{};
 };
 
-struct ListDefaultConfigsSdkInput
+struct ListDefaultConfigsSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
@@ -75,42 +76,42 @@ struct ListDefaultConfigsSdkInput
     std::optional<std::string> name{};
 };
 
-struct ListDimensionsSdkInput
+struct ListDimensionsSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
     Pagination pagination{};
 };
 
-struct GetDimensionSdkInput
+struct GetDimensionSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
     std::string dimension{};
 };
 
-struct GetDefaultConfigSdkInput
+struct GetDefaultConfigSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
     std::string key{};
 };
 
-struct CreateContextSdkInput
+struct CreateContextSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
     ContextPutRequest request{};
 };
 
-struct GetDetailedResolvedConfigSdkInput
+struct GetDetailedResolvedConfigSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
     std::vector<std::pair<std::string, Doc>> context{};
 };
 
-struct GetResolvedConfigExplanationSdkInput
+struct GetResolvedConfigExplanationSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
@@ -118,7 +119,7 @@ struct GetResolvedConfigExplanationSdkInput
     std::vector<std::pair<std::string, Doc>> context{};
 };
 
-struct ListAuditLogsSdkInput
+struct ListAuditLogsSdkRequest
 {
     std::string org_id{};
     std::string workspace_id{};
@@ -277,8 +278,14 @@ public:
     {
     }
 
+    [[nodiscard]] static std::string workspace_id(const ::core::behavior::CallContext& ctx)
+    {
+        const auto it = ctx.headers.find("x-workspace");
+        return it == ctx.headers.end() ? std::string{} : it->second;
+    }
+
     // ── Response completion: expected wire/error -> typed document ────────
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError> finish(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> finish(
         std::expected<serde::Value, ApiError> result,
         std::string_view flow,
         std::string_view counter
@@ -292,17 +299,13 @@ public:
     }
 
     // ── handle_superposition_proxy_flow dispatch (core:344-355) ───────────
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const ListContextsQuery& request,
-        const ::app::auth::AuthContext& auth,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const ListContextsQuery& request, const ::core::behavior::CallContext& ctx) const
     {
-        if (const auto error = validate_superposition_params(request.dimension_params, auth)) {
+        if (const auto error = validate_superposition_params(request.dimension_params, ctx)) {
             return std::unexpected{*error};
         }
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{
                 map_superposition_err(output.error(), "Failed to list contexts from Superposition")
@@ -311,14 +314,10 @@ public:
         return wire_paginated(list_contexts_to_response(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const ListDefaultConfigsQuery& request,
-        const ::app::auth::AuthContext&,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const ListDefaultConfigsQuery& request, const ::core::behavior::CallContext& ctx) const
     {
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{map_superposition_err(
                 output.error(),
@@ -328,14 +327,10 @@ public:
         return wire_paginated(list_default_configs_to_response(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const ListDimensionsQuery& request,
-        const ::app::auth::AuthContext&,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const ListDimensionsQuery& request, const ::core::behavior::CallContext& ctx) const
     {
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{map_superposition_err(
                 output.error(),
@@ -345,14 +340,10 @@ public:
         return wire_paginated(list_dimensions_to_response(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const GetDimensionRequest& request,
-        const ::app::auth::AuthContext&,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const GetDimensionRequest& request, const ::core::behavior::CallContext& ctx) const
     {
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{
                 map_superposition_err(output.error(), "Failed to get dimension from Superposition")
@@ -361,14 +352,10 @@ public:
         return wire_of(get_dimension_output_to_struct(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const GetDefaultConfigRequest& request,
-        const ::app::auth::AuthContext&,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const GetDefaultConfigRequest& request, const ::core::behavior::CallContext& ctx) const
     {
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{map_superposition_err(
                 output.error(),
@@ -378,14 +365,10 @@ public:
         return wire_of(get_default_config_output_to_struct(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const ContextPutRequest& request,
-        const ::app::auth::AuthContext& auth,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const ContextPutRequest& request, const ::core::behavior::CallContext& ctx) const
     {
-        auto input = into_input(request, org_id, workspace_id);
+        auto input = into_input(request, ctx.org_id, workspace_id(ctx));
         if (!input) {
             return std::unexpected{
                 map_superposition_err(input.error(), "Invalid context request body")
@@ -396,7 +379,7 @@ public:
         for (const auto& [key, value]: input->request.context) {
             context_docs.emplace_back(key, value);
         }
-        if (const auto error = validate_superposition_context_body(context_docs, auth)) {
+        if (const auto error = validate_superposition_context_body(context_docs, ctx)) {
             return std::unexpected{*error};
         }
         auto output = send_with(*input);
@@ -410,15 +393,13 @@ public:
 
     [[nodiscard]] std::expected<serde::Value, ApiError> execute(
         const ResolveDetailedConfigRequest& request,
-        const ::app::auth::AuthContext& auth,
-        std::string_view org_id,
-        std::string_view workspace_id
+        const ::core::behavior::CallContext& ctx
     ) const
     {
-        if (const auto error = validate_superposition_context_body(request.context, auth)) {
+        if (const auto error = validate_superposition_context_body(request.context, ctx)) {
             return std::unexpected{*error};
         }
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{
                 map_superposition_err(output.error(), "Failed to resolve config from Superposition")
@@ -430,15 +411,13 @@ public:
 
     [[nodiscard]] std::expected<serde::Value, ApiError> execute(
         const ResolveConfigExplanationRequest& request,
-        const ::app::auth::AuthContext& auth,
-        std::string_view org_id,
-        std::string_view workspace_id
+        const ::core::behavior::CallContext& ctx
     ) const
     {
-        if (const auto error = validate_superposition_context_body(request.context, auth)) {
+        if (const auto error = validate_superposition_context_body(request.context, ctx)) {
             return std::unexpected{*error};
         }
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{map_superposition_err(
                 output.error(),
@@ -448,17 +427,13 @@ public:
         return wire_of(resolve_config_explanation_to_response(*output));
     }
 
-    [[nodiscard]] std::expected<serde::Value, ApiError> execute(
-        const ListAuditLogsQuery& request,
-        const ::app::auth::AuthContext& auth,
-        std::string_view org_id,
-        std::string_view workspace_id
-    ) const
+    [[nodiscard]] std::expected<serde::Value, ApiError>
+    execute(const ListAuditLogsQuery& request, const ::core::behavior::CallContext& ctx) const
     {
-        if (const auto error = validate_superposition_params(request.dimension_params, auth)) {
+        if (const auto error = validate_superposition_params(request.dimension_params, ctx)) {
             return std::unexpected{*error};
         }
-        auto output = send_with(into_input(request, org_id, workspace_id));
+        auto output = send_with(into_input(request, ctx.org_id, workspace_id(ctx)));
         if (!output) {
             return std::unexpected{map_superposition_err(
                 output.error(),
@@ -471,7 +446,7 @@ public:
     // ── Scope validation ──────────────────────────────────────────────────
     [[nodiscard]] std::optional<ApiError> validate_superposition_params(
         const std::vector<std::pair<std::string, std::string>>& params,
-        const ::app::auth::AuthContext& auth
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::vector<std::pair<ScopingDimension, std::optional<std::string_view>>> dimensions{};
@@ -480,12 +455,12 @@ public:
                 dimensions.emplace_back(*dimension, std::optional<std::string_view>{value});
             }
         }
-        return validate_scope(dimensions, auth);
+        return validate_scope(dimensions, ctx);
     }
 
     [[nodiscard]] std::optional<ApiError> validate_superposition_context_body(
         const std::vector<std::pair<std::string, Doc>>& context,
-        const ::app::auth::AuthContext& auth
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::vector<std::pair<ScopingDimension, std::optional<std::string_view>>> dimensions{};
@@ -501,12 +476,12 @@ public:
                 dimensions.emplace_back(*dimension, std::nullopt);
             }
         }
-        return validate_scope(dimensions, auth);
+        return validate_scope(dimensions, ctx);
     }
 
     [[nodiscard]] std::optional<ApiError> validate_scope(
         const std::vector<std::pair<ScopingDimension, std::optional<std::string_view>>>& dimensions,
-        const ::app::auth::AuthContext& auth
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::vector<std::string> missing{};
@@ -528,10 +503,10 @@ public:
 
         const bool out_of_scope = std::ranges::any_of(
             dimensions,
-            [this, &auth](const auto& entry)
+            [this, &ctx](const auto& entry)
             {
                 return entry.second !=
-                       std::optional<std::string_view>{expected_value(entry.first, auth)};
+                       std::optional<std::string_view>{expected_value(entry.first, ctx)};
             }
         );
         if (out_of_scope) {
@@ -569,13 +544,13 @@ public:
     }
 
     // ── Input builders (external_services SDK builders) ───────────────────
-    [[nodiscard]] ListContextsSdkInput into_input(
+    [[nodiscard]] ListContextsSdkRequest into_input(
         const ListContextsQuery& request,
         std::string_view org_id,
         std::string_view workspace_id
     ) const
     {
-        ListContextsSdkInput input{};
+        ListContextsSdkRequest input{};
         input.org_id = org_id;
         input.workspace_id = workspace_id;
         input.pagination = request.pagination;
@@ -590,7 +565,7 @@ public:
         return input;
     }
 
-    [[nodiscard]] ListDefaultConfigsSdkInput into_input(
+    [[nodiscard]] ListDefaultConfigsSdkRequest into_input(
         const ListDefaultConfigsQuery& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -599,7 +574,7 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.pagination, request.name};
     }
 
-    [[nodiscard]] ListDimensionsSdkInput into_input(
+    [[nodiscard]] ListDimensionsSdkRequest into_input(
         const ListDimensionsQuery& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -608,7 +583,7 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.pagination};
     }
 
-    [[nodiscard]] GetDimensionSdkInput into_input(
+    [[nodiscard]] GetDimensionSdkRequest into_input(
         const GetDimensionRequest& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -617,7 +592,7 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.dimension};
     }
 
-    [[nodiscard]] GetDefaultConfigSdkInput into_input(
+    [[nodiscard]] GetDefaultConfigSdkRequest into_input(
         const GetDefaultConfigRequest& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -626,7 +601,7 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.key};
     }
 
-    [[nodiscard]] std::expected<CreateContextSdkInput, SdkError> into_input(
+    [[nodiscard]] std::expected<CreateContextSdkRequest, SdkError> into_input(
         const ContextPutRequest& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -639,14 +614,14 @@ public:
                 SdkError{SdkErrorKind::ClientError, "Failed to build ContextPut"}
             };
         }
-        return CreateContextSdkInput{
+        return CreateContextSdkRequest{
             std::string{org_id},
             std::string{workspace_id},
             std::move(*context_put)
         };
     }
 
-    [[nodiscard]] GetDetailedResolvedConfigSdkInput into_input(
+    [[nodiscard]] GetDetailedResolvedConfigSdkRequest into_input(
         const ResolveDetailedConfigRequest& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -655,7 +630,7 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.context};
     }
 
-    [[nodiscard]] GetResolvedConfigExplanationSdkInput into_input(
+    [[nodiscard]] GetResolvedConfigExplanationSdkRequest into_input(
         const ResolveConfigExplanationRequest& request,
         std::string_view org_id,
         std::string_view workspace_id
@@ -664,13 +639,13 @@ public:
         return {std::string{org_id}, std::string{workspace_id}, request.key, request.context};
     }
 
-    [[nodiscard]] ListAuditLogsSdkInput into_input(
+    [[nodiscard]] ListAuditLogsSdkRequest into_input(
         const ListAuditLogsQuery& request,
         std::string_view org_id,
         std::string_view workspace_id
     ) const
     {
-        ListAuditLogsSdkInput input{};
+        ListAuditLogsSdkRequest input{};
         input.org_id = org_id;
         input.workspace_id = workspace_id;
         input.pagination = request.pagination;
@@ -686,7 +661,7 @@ public:
 
     // ── send_with: in-process substitute for the external SDK ─────────────
     [[nodiscard]] std::expected<ListContextsOutput, SdkError>
-    send_with(const ListContextsSdkInput& input) const
+    send_with(const ListContextsSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -765,7 +740,7 @@ public:
     }
 
     [[nodiscard]] std::expected<ListDefaultConfigsOutput, SdkError>
-    send_with(const ListDefaultConfigsSdkInput& input) const
+    send_with(const ListDefaultConfigsSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -800,7 +775,7 @@ public:
     }
 
     [[nodiscard]] std::expected<ListDimensionsOutput, SdkError>
-    send_with(const ListDimensionsSdkInput& input) const
+    send_with(const ListDimensionsSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -816,7 +791,7 @@ public:
     }
 
     [[nodiscard]] std::expected<GetDimensionOutput, SdkError>
-    send_with(const GetDimensionSdkInput& input) const
+    send_with(const GetDimensionSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -835,7 +810,7 @@ public:
     }
 
     [[nodiscard]] std::expected<GetDefaultConfigOutput, SdkError>
-    send_with(const GetDefaultConfigSdkInput& input) const
+    send_with(const GetDefaultConfigSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -854,7 +829,7 @@ public:
     }
 
     [[nodiscard]] std::expected<CreateContextOutput, SdkError>
-    send_with(const CreateContextSdkInput& input) const
+    send_with(const CreateContextSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -890,7 +865,7 @@ public:
     }
 
     [[nodiscard]] std::expected<GetDetailedResolvedConfigOutput, SdkError>
-    send_with(const GetDetailedResolvedConfigSdkInput& input) const
+    send_with(const GetDetailedResolvedConfigSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -935,7 +910,7 @@ public:
     }
 
     [[nodiscard]] std::expected<GetResolvedConfigExplanationOutput, SdkError>
-    send_with(const GetResolvedConfigExplanationSdkInput& input) const
+    send_with(const GetResolvedConfigExplanationSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -964,7 +939,7 @@ public:
     }
 
     [[nodiscard]] std::expected<ListAuditLogsOutput, SdkError>
-    send_with(const ListAuditLogsSdkInput& input) const
+    send_with(const ListAuditLogsSdkRequest& input) const
     {
         (void)input.org_id;
         (void)input.workspace_id;
@@ -1688,18 +1663,20 @@ private:
         return {};
     }
 
-    [[nodiscard]] std::string_view
-    expected_value(ScopingDimension dimension, const ::app::auth::AuthContext& auth) const noexcept
+    [[nodiscard]] std::string_view expected_value(
+        ScopingDimension dimension,
+        const ::core::behavior::CallContext& ctx
+    ) const noexcept
     {
         switch (dimension) {
             case ScopingDimension::OrganizationId:
-                return auth.org_id();
+                return ctx.org_id;
             case ScopingDimension::ProfileId:
-                return auth.profile_id();
+                return ctx.profile_id;
             case ScopingDimension::MerchantId:
             case ScopingDimension::ProviderMerchantId:
             case ScopingDimension::ProcessorMerchantId:
-                return auth.merchant_id();
+                return ctx.merchant_id;
         }
         return {};
     }

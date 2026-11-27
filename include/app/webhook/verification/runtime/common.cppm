@@ -1,6 +1,7 @@
 export module app_webhook:verification_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -185,7 +186,7 @@ public:
 
     /** @brief Port of `get_apple_pay_merchant_connector_account`
      *  (core/verification/utils.rs:18-63). */
-    [[nodiscard]] std::expected<ApplePayMerchantConnector, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<ApplePayMerchantConnector>
     get_apple_pay_merchant_connector_account(
         std::string_view merchant_id,
         std::string_view merchant_connector_id,
@@ -236,7 +237,7 @@ public:
 
     /** @brief Port of `add_domain_to_apple_pay_merchant_connector_account`
      *  (core/verification/utils.rs:65-136). */
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>>
     add_domain_to_apple_pay_merchant_connector_account(
         ApplePayMerchantConnector& resolved,
         const std::vector<std::string>& domain_from_req

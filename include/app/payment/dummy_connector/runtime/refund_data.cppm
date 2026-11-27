@@ -23,10 +23,10 @@ public:
     }
 
     // routes/dummy_connector.rs:132-150 -> core.rs:210-234 (refund_data).
-    [[nodiscard]] std::
-        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
-        refund_data(const RefundDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
+        refund_data(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundDataData{ctx};
         const auto stored = m_context.cache().get(input.refund_id);
         if (!stored.hit) {
             // core.rs:226-232 - RefundNotFound (DC_05).

@@ -21,10 +21,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    render_payout_link(const PayoutLinkRenderInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    render_payout_link(const core::behavior::CallContext& ctx) const
     {
-        return m_render.render(input);
+        return m_render.render(ctx);
     }
 
 private:

@@ -21,11 +21,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse,
-        core::error::AppError>
-    get_revenue_recovery_redis_data(const GetRevenueRecoveryRedisDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
+    get_revenue_recovery_redis_data(const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetRevenueRecoveryRedisDataData{ctx};
         // Upstream key construction (revenue_recovery_redis_operation.rs:139-145,
         // :1086-1089): Status -> customer:{id}:status, Tokens -> customer:{id}:tokens.
         // The in-process cache is the local substitute for the Redis instance; the

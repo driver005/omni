@@ -1,6 +1,7 @@
 export module app_auth:connector_onboarding_runtime_get_action_url;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -20,6 +21,7 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
+import :call_context;
 import :connector_onboarding_input;
 import :connector_onboarding_result;
 import :connector_onboarding_runtime_common;
@@ -36,33 +38,36 @@ public:
     }
 
     // Upstream core::get_action_url (core/connector_onboarding.rs:20-58).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_action_url(const GetActionUrlInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_action_url(
+        const ::app::dto::connector_onboarding::ActionUrlRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         if (const auto guard = m_support.check_if_connector_exists(
-                input.request.get_connector_id(),
-                input.merchant_id,
+                request.get_connector_id(),
+                detail::effective_merchant_id(ctx),
                 std::nullopt
             )) {
             return std::unexpected{*guard};
         }
         const auto conf = m_support.connector_onboarding_conf();
-        const auto enabled = m_support.is_enabled(input.request.get_connector(), conf);
+        const auto enabled = m_support.is_enabled(request.get_connector(), conf);
         auto tracking = m_support.get_tracking_id_from_configs(
-            input.request.get_connector_id(),
-            input.request.get_connector()
+            request.get_connector_id(),
+            request.get_connector()
         );
         if (!tracking) {
             return std::unexpected{std::move(tracking.error())};
         }
         if (!enabled.has_value() || !*enabled ||
-            !m_support.is_paypal(input.request.get_connector())) {
-            return std::unexpected{m_support.flow_not_supported(input.request.get_connector())};
+            !m_support.is_paypal(request.get_connector())) {
+            return std::unexpected{m_support.flow_not_supported(request.get_connector())};
         }
         auto action_url = m_support.get_action_url_from_paypal(
             *tracking,
-            input.request.get_return_url(),
-            input.merchant_id
+            request.get_return_url(),
+            detail::effective_merchant_id(ctx)
         );
         if (!action_url) {
             return std::unexpected{std::move(action_url.error())};

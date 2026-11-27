@@ -1,6 +1,7 @@
 export module app_payment:poll_handlers_v1;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -69,6 +70,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // 1. request -> Input.
         // routes/poll.rs:37-50 — dynamic auth extractor selection + registration gate.
         const auto auth_error = m_request_support->authorize(
@@ -78,7 +81,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -86,7 +89,7 @@ public:
         const auto poll_id = m_input_support.poll_id_from_path(req);
         if (!poll_id.has_value()) {
             const auto& error = poll_id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string& request_poll_id = *poll_id;
@@ -95,20 +98,10 @@ public:
         // the processor passed to core::poll::retrieve_poll_status.
         const auto processor_merchant_id =
             m_input_support.resolve_processor_account_id(req, m_policy->last().context);
-        RetrievePollStatusInput input{request_poll_id, processor_merchant_id};
 
         // 2. Input -> Result.
-        auto result = m_runtime.retrieve_poll_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.retrieve_poll_status(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -130,6 +123,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_retrieve_poll_status(req, res, std::move(send));
                             }
                         )

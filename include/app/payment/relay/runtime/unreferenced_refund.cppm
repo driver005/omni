@@ -38,10 +38,11 @@ public:
     }
 
     // Upstream: process_relay_unreferenced_refund (core/relay.rs:46-95).
-    [[nodiscard]] std::
-        expected<::app::dto::unreferenced_refund::UnreferencedRefundResponse, core::error::AppError>
-        unreferenced_refund(const RelayUnreferencedRefundInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::unreferenced_refund::UnreferencedRefundResponse>
+        unreferenced_refund(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RelayUnreferencedRefundData{dto, ctx};
         const auto amount = m_support.parse_amount(input.request.get_amount().get_value());
         if (!amount.has_value() || *amount <= 0) {
             return std::unexpected{m_support.make_error(

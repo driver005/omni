@@ -37,13 +37,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::PaymentMethodListResponseForSession,
-        core::error::AppError>
-    payment_method_session_list_payment_methods(
-        const PaymentMethodSessionListPaymentMethodsInput& input
-    ) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodListResponseForSession>
+        payment_method_session_list_payment_methods(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodSessionListPaymentMethodsData{dto, ctx};
         const auto& session = input.session;
         m_context.metrics().record_flow("payment_method_session_list_payment_methods");
         m_context.metrics()

@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -33,24 +34,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::user_role::DeleteUserRoleResponse, core::error::AppError>
-        delete_user_role(const DeleteUserRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::user_role::DeleteUserRoleResponse>
+        delete_user_role(const ::app::dto::user_role::DeleteUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        const ::app::crypto::SecretString email_secret{input.request.get_email().get_value()};
+        const ::app::crypto::SecretString email_secret{request.get_email().get_value()};
         const auto user = m_support.active_user_by_email(email_secret.value());
         if (!user) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
             };
         }
-        if (input.identity.user_id == user->get_user_id()) {
+        if (identity_from_context(ctx).user_id == user->get_user_id()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::PRECONDITION_FAILED,
                 "User deleting himself"
             )};
         }
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
@@ -60,11 +61,11 @@ public:
         std::vector<std::string> removed{};
         for (const auto& assignment: m_context.repository().list_user_roles()) {
             if (assignment.get_user_id() != user->get_user_id() ||
-                !m_support.assignment_in_scope(assignment, input.identity)) {
+                !m_support.assignment_in_scope(assignment, identity_from_context(ctx))) {
                 continue;
             }
             const auto target =
-                m_support.role_info_from_id(input.identity, assignment.get_role_id());
+                m_support.role_info_from_id(identity_from_context(ctx), assignment.get_role_id());
             if (!target || target->is_internal || !target->is_deletable) {
                 return std::unexpected{m_support.error(
                     core::error::AppErrorKind::PRECONDITION_FAILED,
@@ -93,7 +94,7 @@ public:
         const auto payload = std::format(
             R"({{"email":"{}","merchant_id":"{}","role_id":"{}"}})",
             email_secret.value(),
-            input.identity.merchant_id,
+            identity_from_context(ctx).merchant_id,
             deleted_role->role_id
         );
         const auto event_id = m_context.events().publish("user_role.deleted", payload);

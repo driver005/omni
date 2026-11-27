@@ -1,9 +1,11 @@
 export module app_auth:verify_connector_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
+import app_dto;
 
 import :verify_connector_input;
 import :verify_connector_runtime_common;
@@ -20,10 +22,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment_connector_verify(const PaymentConnectorVerifyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    payment_connector_verify(
+        const ::app::dto::verify_connector::VerifyConnectorRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_payment_connector_verify.payment_connector_verify(input);
+        return m_payment_connector_verify.payment_connector_verify(request, ctx);
     }
 
 private:

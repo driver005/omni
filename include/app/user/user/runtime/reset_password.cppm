@@ -1,6 +1,7 @@
 export module app_user:user_runtime_reset_password;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,34 +38,35 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    reset_password(const ResetPasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    reset_password(const ::app::model::user::ResetPasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        if (!m_support.user_signer().verify(input.request.get_token())) {
+        if (!m_support.user_signer().verify(request.get_token())) {
             return std::unexpected{m_support.wire_error(
                 "UR_04",
                 "Invalid or expired link",
                 core::error::AppErrorKind::UNAUTHORIZED
             )};
         }
-        const ::app::crypto::SecretString reset_secret{input.request.get_password()};
+        const ::app::crypto::SecretString reset_secret{request.get_password()};
         const auto reset_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(reset_secret.value());
         m_context.key_store().put(
             "user-password-reset",
-            input.request.get_token(),
+            request.get_token(),
             "FNV1a",
             ::app::crypto::SecretString{reset_hash}
         );
 
         const auto key =
-            std::string{"user.reset_password:"} + std::to_string(input.request_context.body.size());
+            std::string{"user.reset_password:"} + std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

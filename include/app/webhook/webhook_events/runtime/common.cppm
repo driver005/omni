@@ -1,6 +1,7 @@
 export module app_webhook:webhook_events_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -351,7 +352,7 @@ public:
 
     // Port of EventListConstraintsInternal::foreign_try_from
     // (transformers.rs:2224-2269).
-    [[nodiscard]] std::expected<InternalConstraints, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<InternalConstraints>
     to_internal(const Constraints& constraints) const
     {
         const bool has_object = constraints.get_object_id().has_value();
@@ -502,7 +503,7 @@ public:
     }
 
     // Port of finalize_event_types (core:481-524).
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>>
     finalize_event_types(
         const std::vector<std::string>& event_classes,
         std::vector<std::string> event_types
@@ -555,7 +556,7 @@ public:
     }
 
     // Port of list_initial_delivery_attempts (core:20-259).
-    [[nodiscard]] std::expected<EventListResult, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<EventListResult>
     list_initial_delivery_attempts(
         const std::string& merchant_id,
         const std::string& profile_id,
@@ -672,7 +673,7 @@ public:
         return stored == requested;
     }
 
-    [[nodiscard]] std::expected<EventListResult, core::error::AppError> list_generic(
+    [[nodiscard]] core::behavior::Outcome<EventListResult> list_generic(
         const std::string& merchant_id,
         const std::string& profile_id,
         const InternalConstraints& internal
@@ -807,8 +808,8 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::webhook_events::EventListItemResponse, core::error::AppError>
+    [[nodiscard]] core::behavior::
+        Outcome<::app::dto::webhook_events::EventListItemResponse>
         to_list_item(
             const Record& record,
             std::string_view payload,

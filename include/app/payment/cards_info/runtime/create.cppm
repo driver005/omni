@@ -27,9 +27,11 @@ public:
     // core/cards_info.rs:56-67 create_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfoCreate, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    create(const CreateCardsInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CreateCardsInfoData{dto, ctx};
         auto repository = m_context.repository();
         auto created = repository.create_card_info(m_support.to_store_record(input.request));
         if (!created) {

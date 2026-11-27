@@ -1,6 +1,7 @@
 export module app_payment:pm_auth_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,13 +36,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const std::string body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -52,32 +55,24 @@ public:
             m_request_support.authorize(req, "link_token_create", spec_for("link_token_create"));
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto merchant = m_input_support.merchant_from_request(req);
         if (!merchant) {
             const auto& error = merchant.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto normalized = m_input_support.normalize_link_token_body(body);
         if (!normalized) {
             const auto& error = normalized.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::dto::pm_auth::LinkTokenCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", *normalized);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::pm_auth::LinkTokenCreateRequest>::pass(req, sink);
+        if (!parsed) return;
         // routes/pm_auth.rs:62-64 — auth.client_secret overwrites payload.client_secret.
         if (const auto authenticated_secret =
                 m_policy.last().context.claim(::app::auth::kClaimClientSecret);
@@ -92,24 +87,16 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "payment_id, payment_method and payment_method_type are required"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto client_platform = ::app::http::HeaderReader{}.get(req, "x-client-platform");
         const auto app_id = ::app::http::HeaderReader{}.get(req, "x-app-id");
         const auto redirect_uri = ::app::http::HeaderReader{}.get(req, "x-redirect-uri");
-        LinkTokenCreateInput
-            input{*parsed, *merchant, m_policy.last(), client_platform, app_id, redirect_uri};
-        auto result = m_runtime.link_token_create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.link_token_create(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_exchange_token(
@@ -118,13 +105,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const std::string body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -132,32 +121,24 @@ public:
             m_request_support.authorize(req, "exchange_token", spec_for("exchange_token"));
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto merchant = m_input_support.merchant_from_request(req);
         if (!merchant) {
             const auto& error = merchant.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto normalized = m_input_support.normalize_exchange_body(body);
         if (!normalized) {
             const auto& error = normalized.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::dto::pm_auth::ExchangeTokenCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", *normalized);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::pm_auth::ExchangeTokenCreateRequest>::pass(req, sink);
+        if (!parsed) return;
         // routes/pm_auth.rs:119-121 — auth.client_secret overwrites payload.client_secret.
         if (const auto authenticated_secret =
                 m_policy.last().context.claim(::app::auth::kClaimClientSecret);
@@ -174,20 +155,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "public_token, payment_id, payment_method and payment_method_type are required"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        ExchangeTokenInput input{*parsed, *merchant, m_policy.last(), body};
-        auto result = m_runtime.exchange_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.exchange_token(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -205,6 +179,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_link_token_create(req, res, std::move(send));
                             }
                         )
@@ -221,6 +197,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_exchange_token(req, res, std::move(send));
                             }
                         )

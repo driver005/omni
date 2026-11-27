@@ -1,6 +1,7 @@
 export module app_user:customers_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -36,94 +37,99 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create(const CustomersCreateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create(const CustomerCreateDto& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve(const CustomersRetrieveRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list(const CustomersListRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_with_count(const CustomersListWithCountRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_with_count(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_with_count.list_with_count(input);
+        return m_list_with_count.list_with_count(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update(const CustomersUpdateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update(const CustomerUpdateDto& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_customer(const CustomersDeleteRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_customer(const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete.delete_customer(input);
+        return m_delete.delete_customer(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_customer_mandates(const CustomersMandatesRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_customer_mandates(const ::core::behavior::CallContext& ctx) const
     {
-        return m_mandates.get_customer_mandates(input);
+        return m_mandates.get_customer_mandates(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_v2(const CustomersCreateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_v2(const CustomerCreateDto& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create.create_v2(input);
+        return m_create.create_v2(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_v2(const CustomersRetrieveRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_v2(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve_v2(input);
+        return m_retrieve.retrieve_v2(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_by_merchant_reference_id(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_by_reference.retrieve_by_merchant_reference_id(input);
+        return m_retrieve_by_reference.retrieve_by_merchant_reference_id(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_v2(const CustomersListRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_v2(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list.list_v2(input);
+        return m_list.list_v2(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_with_count_v2(const CustomersListWithCountRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_with_count_v2(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_with_count.list_with_count_v2(input);
+        return m_list_with_count.list_with_count_v2(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update_v2(const CustomersUpdateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update_v2(const CustomerUpdateDto& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update.update_v2(input);
+        return m_update.update_v2(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_customer_v2(const CustomersDeleteRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_customer_v2(const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete.delete_customer_v2(input);
+        return m_delete.delete_customer_v2(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    migrate_global_id(const CustomersMigrateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    migrate_global_id(const std::vector<MigrationOutcome>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_migrate.migrate_global_id(input);
+        return m_migrate.migrate_global_id(request, ctx);
     }
 
 private:

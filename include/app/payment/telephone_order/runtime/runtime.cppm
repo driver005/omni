@@ -20,10 +20,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<TwilioGenericPayResponse, core::error::AppError>
-    telephone_order_charge(const TelephoneOrderChargeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<TwilioGenericPayResponse>
+        telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_telephone_order_charge.telephone_order_charge(input);
+        return m_telephone_order_charge.telephone_order_charge(dto, ctx);
     }
 
 private:

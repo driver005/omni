@@ -1,6 +1,7 @@
 export module app_user:user_runtime_signout;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    signout(const SignoutInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    signout(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto token = input.request_context.token;
+        const auto token = ctx_token(ctx);
         if (!token.value().empty()) {
             m_context.cache().put(
                 "user.blacklist:" + token.value(),
@@ -52,10 +54,10 @@ public:
         }
 
         const auto key =
-            std::string{"user.signout:"} + std::to_string(input.request_context.body.size());
+            std::string{"user.signout:"} + std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_data_backfill_handlers_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -44,6 +45,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream parses cutoff_time and the multipart form BEFORE server_wrap
         // applies V2AdminApiAuth (routes:29-71); keep that order so malformed input
         // is rejected by the route regardless of the caller's permissions.
@@ -53,7 +56,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 cutoff.error()
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -63,7 +66,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -77,7 +80,7 @@ public:
                     core::error::AppErrorKind::INVALID_JSON,
                     "invalid JSON"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             parsed = std::move(*decoded);
@@ -94,7 +97,7 @@ public:
                     "CSV parsing error: " +
                         (parse_error.empty() ? std::string{"invalid CSV file"} : parse_error)
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
@@ -107,20 +110,13 @@ public:
                 spec_for("revenue_recovery_data_backfill")
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        RevenueRecoveryDataBackfillInput input{std::move(*parsed), *cutoff};
-        auto result = m_runtime.backfill(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.backfill(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /**
@@ -133,6 +129,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream validates the multipart CSV before server_wrap applies auth
         // (routes:83-95); keep that order for malformed uploads.
         const auto body = req.body_as_string();
@@ -141,7 +139,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -155,7 +153,7 @@ public:
                     core::error::AppErrorKind::INVALID_JSON,
                     "invalid JSON"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             parsed = std::move(*decoded);
@@ -171,7 +169,7 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "failed to parse the retry stats migration CSV file: " + parse_error
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
@@ -182,20 +180,13 @@ public:
                 spec_for("revenue_recovery_retry_stats_migration")
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        RetryStatsMigrationInput input{std::move(*parsed)};
-        auto result = m_runtime.retry_stats_migration(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.retry_stats_migration(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /**
@@ -208,13 +199,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "update_revenue_recovery_additional_redis_data",
                 spec_for("update_revenue_recovery_additional_redis_data")
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -224,7 +217,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -238,7 +231,7 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::optional<ScheduledUpdate> scheduled_update{};
@@ -249,7 +242,7 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     parsed_schedule.error()
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             scheduled_update = std::move(*parsed_schedule);
@@ -262,20 +255,13 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        UpdateRedisDataInput input{*parsed, std::move(scheduled_update)};
-        auto result = m_runtime.update_redis_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.update_redis_data(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /**
@@ -290,33 +276,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "revenue_recovery_data_backfill_status",
                 spec_for("revenue_recovery_data_backfill_status")
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto request = m_input_support.status_request_from_path(req);
         if (!request) {
             const auto& error = request.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        UnlockStatusInput input{*request};
-        auto result = m_runtime.unlock_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *request;
+        auto result = m_runtime.unlock_status(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -333,6 +314,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_revenue_recovery_data_backfill(req, res, std::move(send));
                         }
                     )
@@ -349,6 +332,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_revenue_recovery_data_backfill_status(
                                         req,
                                         res,
@@ -369,6 +354,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_update_revenue_recovery_additional_redis_data(
                                 req,
                                 res,
@@ -387,6 +374,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_revenue_recovery_retry_stats_migration(
                                 req,
                                 res,

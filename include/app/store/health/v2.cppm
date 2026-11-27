@@ -41,31 +41,18 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input. Upstream routes::health::health() has no server_wrap
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext. Upstream routes::health::health() has no server_wrap
         // and no auth at all; the registry resolves "health" to NO_AUTH, so this
         // authorize_route call is an exact no-op (kept for the error path).
         if (const auto auth_error = m_request_support.authorize(req, "health", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const HealthInput input{};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.health(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response. HttpResponse::Ok().body("health is good") is
-        // plain text: the typed string value is encoded through Ser and the
-        // text/plain content type is kept on the response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.add_content_type("text/plain");
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // HttpResponse::Ok().body("health is good") is published through the
+        // typed Outcome handle.
+        m_runtime.health(m_request_support.context(req)).handle(sink);
     }
 
     void handle_deep_health_check(
@@ -74,32 +61,17 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input. Upstream uses &auth::NoAuth via server_wrap
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext. Upstream uses &auth::NoAuth via server_wrap
         // (routes/health.rs:38); "deep_health_check" resolves to NO_AUTH.
         if (const auto auth_error = m_request_support.authorize(req, "deep_health_check", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const DeepHealthCheckInput input{};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.deep_health_check(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            // HE_00 stays in AppError::kind_name; the human-readable component
-            // failure is in AppError::message. Both are serialized as typed fields.
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
-
-        // 3. Result -> response. The RouterHealthCheckResponse document omits
-        // None Option fields and carries dynamic gRPC keys as typed values.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // RouterHealthCheckResponse / HealthCheckError are published by the
+        // typed Outcome handle; HE_00 stays in AppError::kind_name.
+        m_runtime.deep_health_check(m_request_support.context(req)).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)

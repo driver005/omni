@@ -4,6 +4,7 @@ import std;
 import app_model;
 import core_error;
 import app_context;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -41,79 +42,80 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
-    add_entry(const AddEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistResponse>
+    add_entry(const EntryWire& entry, const ::core::behavior::CallContext& ctx) const
     {
-        return m_add_entry.add_entry(input);
+        return m_add_entry.add_entry(entry, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
-    remove_entry(const RemoveEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistResponse>
+    remove_entry(const EntryWire& entry, const ::core::behavior::CallContext& ctx) const
     {
-        return m_remove_entry.remove_entry(input);
+        return m_remove_entry.remove_entry(entry, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ListBlocklistResponse, core::error::AppError>
-        list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBlocklistResponse>
+    list_blocked_payment_methods(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_blocked_payment_methods.list_blocked_payment_methods(input);
+        return m_list_blocked_payment_methods.list_blocked_payment_methods(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BlocklistCountResponse, core::error::AppError>
-        get_blocklist_count(const GetBlocklistCountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistCountResponse>
+    get_blocklist_count(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_blocklist_count.get_blocklist_count(input);
+        return m_get_blocklist_count.get_blocklist_count(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BlocklistLookupResponse, core::error::AppError>
-        lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistLookupResponse>
+    lookup_blocklist_entry(const ::core::behavior::CallContext& ctx) const
     {
-        return m_lookup_blocklist_entry.lookup_blocklist_entry(input);
+        return m_lookup_blocklist_entry.lookup_blocklist_entry(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ToggleBlocklistResponse, core::error::AppError>
-        toggle_blocklist_guard(const ToggleBlocklistGuardInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ToggleBlocklistResponse>
+    toggle_blocklist_guard(const ::core::behavior::CallContext& ctx) const
     {
-        return m_toggle_blocklist_guard.toggle_blocklist_guard(input);
+        return m_toggle_blocklist_guard.toggle_blocklist_guard(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BatchBlocklistUploadResponse, core::error::AppError>
-        upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BatchBlocklistUploadResponse>
+    upload_batch_blocklist(
+        const std::vector<CsvRow>& rows,
+        std::string_view file_name,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_upload_batch_blocklist.upload_batch_blocklist(input);
+        return m_upload_batch_blocklist.upload_batch_blocklist(rows, file_name, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BatchBlocklistJobStatusResponse, core::error::AppError>
-        get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BatchBlocklistJobStatusResponse>
+    get_batch_blocklist_job_status(
+        const JobRecord& stored,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_get_batch_blocklist_job_status.get_batch_blocklist_job_status(input);
+        return m_get_batch_blocklist_job_status.get_batch_blocklist_job_status(stored, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ListBatchBlocklistJobsResponse, core::error::AppError>
-        list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBatchBlocklistJobsResponse>
+    list_batch_blocklist_jobs(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_batch_blocklist_jobs.list_batch_blocklist_jobs(input);
+        return m_list_batch_blocklist_jobs.list_batch_blocklist_jobs(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BlocklistExportResponse, core::error::AppError>
-        create_blocklist_export(const CreateBlocklistExportInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistExportResponse>
+    create_blocklist_export(const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_blocklist_export.create_blocklist_export(input);
+        return m_create_blocklist_export.create_blocklist_export(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::CloneBlocklistEntriesResponse, core::error::AppError>
-        clone_blocklist_entries(const CloneBlocklistEntriesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::CloneBlocklistEntriesResponse>
+    clone_blocklist_entries(
+        const ::app::model::blocklist::CloneBlocklistEntriesRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_clone_blocklist_entries.clone_blocklist_entries(input);
+        return m_clone_blocklist_entries.clone_blocklist_entries(request, ctx);
     }
 
 private:

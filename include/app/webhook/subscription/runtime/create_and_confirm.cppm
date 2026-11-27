@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_create_and_confirm;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -26,18 +27,23 @@ public:
     }
 
     // core::create_and_confirm_subscription (core.rs:176-307)
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_and_confirm(const CreateAndConfirmSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_and_confirm(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
-        const auto merchant = input.merchant_id;
-        if (const auto failure = m_support.find_business_profile(input.profile_id, merchant)) {
+        const std::string customer_id =
+            m_support.json_string(payload.root, "customer_id").value_or("");
+        const std::string item_price_id =
+            m_support.json_string(payload.root, "item_price_id").value_or("");
+
+        const auto merchant = ctx.merchant_id;
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, merchant)) {
             return std::unexpected{*failure};
         }
-        if (const auto failure = m_support.find_customer(input.customer_id, merchant)) {
+        if (const auto failure = m_support.find_customer(customer_id, merchant)) {
             return std::unexpected{*failure};
         }
         BillingProcessor billing{m_context};
-        if (const auto failure = billing.create(input.profile_id, merchant)) {
+        if (const auto failure = billing.create(ctx.profile_id, merchant)) {
             return std::unexpected{*failure};
         }
 
@@ -45,14 +51,14 @@ public:
         SubscriptionRecord record{};
         record.subscription_id = subscription_id;
         record.merchant_id = merchant;
-        record.profile_id = input.profile_id;
-        record.customer_id = input.customer_id;
+        record.profile_id = ctx.profile_id;
+        record.customer_id = customer_id;
         record.status = "created";
-        record.plan_id = m_support.json_string(input.payload.root, "plan_id").value_or("");
-        record.item_price_id = input.item_price_id;
-        record.coupon = m_support.json_string(input.payload.root, "coupon_code").value_or("");
+        record.plan_id = m_support.json_string(payload.root, "plan_id").value_or("");
+        record.item_price_id = item_price_id;
+        record.coupon = m_support.json_string(payload.root, "coupon_code").value_or("");
         record.merchant_reference_id =
-            m_support.json_string(input.payload.root, "merchant_reference_id").value_or("");
+            m_support.json_string(payload.root, "merchant_reference_id").value_or("");
         record.created_at = m_support.now_value();
         record.modified_at = record.created_at;
         record.client_secret = m_support.generate_client_secret(subscription_id);
@@ -64,13 +70,13 @@ public:
         record.id = stored->get_id();
 
         // create_customer_on_connector + update_connector_customer_id_in_customer (core.rs:219-240)
-        m_support.create_connector_customer(record, input.payload.doc);
+        m_support.create_connector_customer(record, payload.doc);
 
         // create_subscription_on_connector (core.rs:242-249)
         ConnectorResponse connector = m_support.call_billing(
             "create_subscription_on_connector",
             record,
-            input.payload.doc,
+            payload.doc,
             merchant
         );
         record.connector_subscription_id =
@@ -81,7 +87,7 @@ public:
             m_support.estimate_from_connector(connector, record.plan_id, record.item_price_id);
 
         // create_and_confirm_payment (invoice_handler.rs:159-201)
-        PaymentView payment = m_support.create_payment(record, estimate, true, input.payload, true);
+        PaymentView payment = m_support.create_payment(record, estimate, true, payload, true);
 
         // create_invoice_entry + create_invoice_sync_job (core.rs:259-283)
         InvoiceView invoice = m_support.create_invoice(

@@ -38,9 +38,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
-    get_disputes_aggregate_profile(const GetDisputesAggregateProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputesAggregateResponse>
+    get_disputes_aggregate_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetDisputesAggregateProfileData{ctx};
         m_context.metrics().record_flow("dispute_profile_aggregate");
         auto result = m_support.get_aggregates_for_disputes(
             input.scope,

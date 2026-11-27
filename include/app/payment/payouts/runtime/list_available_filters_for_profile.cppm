@@ -38,11 +38,10 @@ public:
     }
 
     // ───────────────────────── Core: list_available_filters_for_profile ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
-    list_available_filters_for_profile(
-        const PayoutsListAvailableFiltersForProfileInput& input
-    ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFilters>
+    list_available_filters_for_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsListAvailableFiltersForProfileData{ctx};
         // Upstream input is `web::Json<TimeRange>` (`payouts.rs:533`).
         const auto range = m_support.time_range_from_body(input.body);
         if (const auto invalid = m_support.require_time_range(range)) {

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_context;
@@ -26,7 +27,7 @@ public:
         m_context{ctx},
         m_runtime{runtime},
         m_input_support{input},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -219,10 +220,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "totp_begin", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "totp_begin", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"totp_begin"})"};
@@ -232,7 +234,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -242,26 +244,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        TotpBeginInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"totp_begin"})"}),
-            *parsed
-        };
-        auto result = m_runtime.totp_begin(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.totp_begin(*parsed, ctx).handle(sink);
     }
 
     void handle_totp_reset(
@@ -270,10 +257,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "totp_reset", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "totp_reset", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"totp_reset"})"};
@@ -283,7 +271,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -293,26 +281,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        TotpResetInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"totp_reset"})"}),
-            *parsed
-        };
-        auto result = m_runtime.totp_reset(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.totp_reset(*parsed, ctx).handle(sink);
     }
 
     void handle_totp_verify(
@@ -321,47 +294,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "totp_verify", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "totp_verify", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::VerifyTotpRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        TotpVerifyInput input{m_input_support.request_data(req, req.body_as_string()), *parsed};
-        auto result = m_runtime.totp_verify(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.totp_verify(*parsed, ctx).handle(sink);
     }
 
     void handle_verify_recovery_code(
@@ -370,50 +314,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "verify_recovery_code", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "verify_recovery_code", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::VerifyRecoveryCodeRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        VerifyRecoveryCodeInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.verify_recovery_code(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::VerifyRecoveryCodeRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.verify_recovery_code(*parsed, ctx).handle(sink);
     }
 
     void handle_totp_update(
@@ -422,47 +334,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "totp_update", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "totp_update", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::VerifyTotpRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        TotpUpdateInput input{m_input_support.request_data(req, req.body_as_string()), *parsed};
-        auto result = m_runtime.totp_update(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::VerifyTotpRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.totp_update(*parsed, ctx).handle(sink);
     }
 
     void handle_generate_recovery_codes(
@@ -471,11 +354,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "generate_recovery_codes", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "generate_recovery_codes", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"generate_recovery_codes"})"};
@@ -485,7 +369,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -495,26 +379,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        GenerateRecoveryCodesInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"generate_recovery_codes"})"}),
-            *parsed
-        };
-        auto result = m_runtime.generate_recovery_codes(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.generate_recovery_codes(*parsed, ctx).handle(sink);
     }
 
     void handle_terminate_two_factor_auth(
@@ -523,11 +392,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "terminate_two_factor_auth", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "terminate_two_factor_auth", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"terminate_two_factor_auth"})"};
@@ -537,7 +407,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -547,26 +417,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        TerminateTwoFactorAuthInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"terminate_two_factor_auth"})"}),
-            *parsed
-        };
-        auto result = m_runtime.terminate_two_factor_auth(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.terminate_two_factor_auth(*parsed, ctx).handle(sink);
     }
 
     void handle_check_two_factor_auth_status(
@@ -575,11 +430,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "check_two_factor_auth_status", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "check_two_factor_auth_status", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"check_two_factor_auth_status"})"};
@@ -589,7 +445,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -599,27 +455,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        CheckTwoFactorAuthStatusInput input{
-            m_input_support
-                .request_data(req, std::string{R"({"op":"check_two_factor_auth_status"})"}),
-            *parsed
-        };
-        auto result = m_runtime.check_two_factor_auth_status(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.check_two_factor_auth_status(*parsed, ctx).handle(sink);
     }
 
     void handle_check_two_factor_auth_status_with_attempts(
@@ -628,12 +468,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support
+                m_support
                     .authorize(req, "check_two_factor_auth_status_with_attempts", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"check_two_factor_auth_status_with_attempts"})"};
@@ -643,7 +484,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -653,36 +494,18 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        CheckTwoFactorAuthStatusWithAttemptsInput input{
-            m_input_support.request_data(
-                req,
-                std::string{R"({"op":"check_two_factor_auth_status_with_attempts"})"}
-            ),
-            *parsed
-        };
-        auto result = m_runtime.check_two_factor_auth_status_with_attempts(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.check_two_factor_auth_status_with_attempts(*parsed, ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     UserRuntime& m_runtime;
     UserInputSupport& m_input_support;
-    UserRequestSupport& m_request_support;
+    UserRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user

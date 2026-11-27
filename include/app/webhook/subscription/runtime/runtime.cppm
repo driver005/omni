@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -40,70 +41,91 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create(const CreateSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create(
+        const ParsedPayload& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    pause(const PauseSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    pause(
+        const std::optional<ParsedPayload>& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_pause.pause(input);
+        return m_pause.pause(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    resume(const ResumeSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    resume(
+        const std::optional<ParsedPayload>& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_resume.resume(input);
+        return m_resume.resume(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    cancel(const CancelSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    cancel(
+        const std::optional<ParsedPayload>& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_cancel.cancel(input);
+        return m_cancel.cancel(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    confirm(const ConfirmSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    confirm(
+        const ParsedPayload& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_confirm.confirm(input);
+        return m_confirm.confirm(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_subscription_items(const GetSubscriptionItemsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_subscription_items(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_subscription_items.get_subscription_items(input);
+        return m_get_subscription_items.get_subscription_items(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_subscription(const GetSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_subscription(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_subscription.get_subscription(input);
+        return m_get_subscription.get_subscription(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_and_confirm(const CreateAndConfirmSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_and_confirm(
+        const ParsedPayload& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create_and_confirm.create_and_confirm(input);
+        return m_create_and_confirm.create_and_confirm(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_estimate(const GetEstimateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_estimate(const Json& payload, const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_estimate.get_estimate(input);
+        return m_get_estimate.get_estimate(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update_subscription(const UpdateSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update_subscription(
+        const ParsedPayload& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_update_subscription.update_subscription(input);
+        return m_update_subscription.update_subscription(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_subscriptions(const ListSubscriptionsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_subscriptions(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_subscriptions.list_subscriptions(input);
+        return m_list_subscriptions.list_subscriptions(ctx);
     }
 
 private:

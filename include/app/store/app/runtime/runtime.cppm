@@ -1,11 +1,11 @@
 export module app_store:app_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 import :app_runtime_payment_callback_config;
@@ -29,34 +29,34 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment_callback_config(const PaymentCallbackConfigInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    payment_callback_config(const core::behavior::CallContext& ctx) const
     {
-        return m_payment_callback_config.payment_callback_config(input);
+        return m_payment_callback_config.payment_callback_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_email_client(const CreateEmailClientInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_email_client(const serde::Value& payload, const core::behavior::CallContext& ctx) const
     {
-        return m_create_email_client.create_email_client(input);
+        return m_create_email_client.create_email_client(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    with_storage(const WithStorageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    with_storage(const core::behavior::CallContext& ctx) const
     {
-        return m_with_storage.with_storage(input);
+        return m_with_storage.with_storage(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_store_interface(const GetStoreInterfaceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_store_interface(const core::behavior::CallContext& ctx) const
     {
-        return m_get_store_interface.get_store_interface(input);
+        return m_get_store_interface.get_store_interface(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    app_new(const NewInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    app_new(const core::behavior::CallContext& ctx) const
     {
-        return m_new.app_new(input);
+        return m_new.app_new(ctx);
     }
 
 private:

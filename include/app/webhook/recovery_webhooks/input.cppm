@@ -27,18 +27,6 @@ struct RecoveryWebhookIds
     std::string connector_id{};
 };
 
-/** Plain input: everything the old handle_recovery_receive_incoming_webhook read off the request.
- */
-struct RecoveryReceiveIncomingWebhookInput
-{
-    RecoveryWebhookIds ids{};
-    std::string body{};
-    IncomingWebhookRequestDetails request{};
-    std::string org_id{};
-    std::string lock_action{};
-    bool network_verification{};
-};
-
 /**
  * @brief Parse/auth/path/query support for the recovery webhook handler.
  *

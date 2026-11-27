@@ -19,8 +19,8 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
-import :blocklist_input;
 import :blocklist_result;
 import :blocklist_runtime_common;
 
@@ -36,21 +36,21 @@ public:
     }
 
     // utils.rs:271-314 lookup_blocklist_entry.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BlocklistLookupResponse, core::error::AppError>
-        lookup_blocklist_entry(const LookupBlocklistEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistLookupResponse>
+    lookup_blocklist_entry(const ::core::behavior::CallContext& ctx) const
     {
+        const std::string data = query_value(ctx, "data").value_or("");
+        const std::string transaction_type = query_value(ctx, "transaction_type").value_or("");
         std::vector<std::string> distinct;
         for (const auto& record: m_support.list_entries()) {
-            if (!m_support.matches_merchant(record, input.merchant) ||
-                !m_support.matches_profile(record, input.profile)) {
+            if (!m_support.matches_merchant(record, ctx.merchant_id) ||
+                !m_support.matches_profile(record, ctx.profile_id)) {
                 continue;
             }
-            if (record.get_fingerprint() != input.data) {
+            if (record.get_fingerprint() != data) {
                 continue;
             }
-            if (!input.transaction_type.empty() &&
-                !m_support.tt_matches(record, input.transaction_type)) {
+            if (!transaction_type.empty() && !m_support.tt_matches(record, transaction_type)) {
                 continue;
             }
             const auto tt = m_support.legacy_transaction_type(record);
@@ -67,7 +67,7 @@ public:
             );
         }
         ::app::model::blocklist::BlocklistLookupResponse response;
-        response.set_data(input.data);
+        response.set_data(data);
         response.set_blocked(!types.empty());
         response.set_transaction_types(std::move(types));
         m_support.emit("blocklist.lookup", response);

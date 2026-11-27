@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_update_user_role;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,18 +34,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
-    update_user_role(const UpdateUserRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
+    update_user_role(const ::app::dto::user_role::UpdateUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        const ::app::crypto::SecretString email_secret{input.request.get_email().get_value()};
-        const auto& role_id = input.request.get_role_id();
+        const ::app::crypto::SecretString email_secret{request.get_email().get_value()};
+        const auto& role_id = request.get_role_id();
         if (email_secret.value().empty() || role_id.empty()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::PRECONDITION_FAILED,
                 "InvalidRoleOperation"
             )};
         }
-        const auto target_role = m_support.role_info_from_id(input.identity, role_id);
+        const auto target_role = m_support.role_info_from_id(identity_from_context(ctx), role_id);
         if (!target_role) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
@@ -62,13 +64,13 @@ public:
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
             };
         }
-        if (input.identity.user_id == user->get_user_id()) {
+        if (identity_from_context(ctx).user_id == user->get_user_id()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::PRECONDITION_FAILED,
                 "User Changing their own role"
             )};
         }
-        const auto updator = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto updator = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!updator) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
@@ -77,11 +79,11 @@ public:
         bool updated{false};
         for (auto assignment: m_context.repository().list_user_roles()) {
             if (assignment.get_user_id() != user->get_user_id() ||
-                !m_support.assignment_in_scope(assignment, input.identity)) {
+                !m_support.assignment_in_scope(assignment, identity_from_context(ctx))) {
                 continue;
             }
             const auto current =
-                m_support.role_info_from_id(input.identity, assignment.get_role_id());
+                m_support.role_info_from_id(identity_from_context(ctx), assignment.get_role_id());
             if (!current || !current->is_updatable) {
                 return std::unexpected{m_support.error(
                     core::error::AppErrorKind::PRECONDITION_FAILED,

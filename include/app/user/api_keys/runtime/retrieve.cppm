@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime_retrieve;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,10 +38,11 @@ public:
     }
 
     /** @brief core::api_keys::retrieve_api_key (261-275). */
-    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
-    retrieve(const ApiKeyRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
+        const auto key_id = ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{};
+        const auto found = m_support.find_api_key(ctx.merchant_id, key_id);
         if (!found) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }

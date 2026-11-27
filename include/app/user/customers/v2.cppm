@@ -34,7 +34,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support},
+        m_support{request_support},
         m_global_id{context, runtime, input_support, request_support}
     {
     }
@@ -45,7 +45,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_create_v2",
                 ::core::behavior::AuthSpec{
@@ -55,56 +56,46 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
             const auto error = m_input_support.upstream_error("InvalidRequestData", "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const CustomerCreateInput request =
+        const CustomerCreateDto request =
             m_input_support.parse_create_input(JsonValueView{*parsed}, ApiVersion::V2);
         if (const auto invalid =
                 m_input_support.validate_document_details(request.document_details)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto invalid =
                 m_input_support.validate_phone_country_code(request.phone_country_code)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!request.name || !request.email) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "name and email are required");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersCreateRouteInput input{
-            request,
-            ApiVersion::V2,
-            m_input_support.request_merchant_id(req)
-        };
-        auto result = m_runtime.create_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.create_v2(request, ctx).handle(sink);
     }
 
     void handle_customers_retrieve_v2(
@@ -113,7 +104,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_retrieve_v2",
                 ::core::behavior::AuthSpec{
@@ -123,30 +115,21 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
+        const std::string id = m_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersRetrieveRouteInput input{
-            id,
-            ApiVersion::V2,
-            m_input_support.request_merchant_id(req)
-        };
-        auto result = m_runtime.retrieve_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("id", std::string{id});
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.retrieve_v2(ctx).handle(sink);
     }
 
     void handle_customers_retrieve_by_merchant_reference_id(
@@ -155,7 +138,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_retrieve_by_merchant_reference_id",
                 ::core::behavior::AuthSpec{
@@ -165,32 +149,23 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string reference =
-            m_request_support.path(req, CustomersPolicy::path_index(req, 0));
+            m_support.path(req, CustomersPolicy::path_index(req, 0));
         if (reference.empty()) {
             const auto error = m_input_support.upstream_error(
                 "InvalidRequestData",
                 "missing merchant reference id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersRetrieveByReferenceRouteInput input{
-            reference,
-            m_input_support.request_merchant_id(req)
-        };
-        auto result = m_runtime.retrieve_by_merchant_reference_id(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("reference", std::string{reference});
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.retrieve_by_merchant_reference_id(ctx).handle(sink);
     }
 
     void handle_customers_list_v2(
@@ -199,7 +174,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_list_v2",
                 ::core::behavior::AuthSpec{
@@ -209,7 +185,7 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -225,22 +201,13 @@ public:
         if (const auto value = query.get("customer_id")) {
             customer_id = *value;
         }
-        CustomersListRouteInput input{
-            ApiVersion::V2,
-            m_input_support.request_merchant_id(req),
-            offset,
-            limit,
-            customer_id
-        };
-        auto result = m_runtime.list_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign("offset", encode_optional<std::uint32_t>(offset));
+        ctx.claims.insert_or_assign("limit", encode_optional<std::uint16_t>(limit));
+        ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<std::string>{customer_id}));
+        m_runtime.list_v2(ctx).handle(sink);
     }
 
     void handle_customers_list_with_count_v2(
@@ -249,7 +216,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_list_with_count_v2",
                 ::core::behavior::AuthSpec{
@@ -259,7 +227,7 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -291,23 +259,16 @@ public:
             }
             time_range = std::move(range);
         }
-        CustomersListWithCountRouteInput input{
-            ApiVersion::V2,
-            m_input_support.request_merchant_id(req),
-            off,
-            lim,
-            customer_id,
-            std::move(time_range)
-        };
-        auto result = m_runtime.list_with_count_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        ctx.claims.insert_or_assign("customer_id", encode_optional_string(std::optional<std::string>{customer_id}));
+        ctx.claims.insert_or_assign("offset", std::to_string(off));
+        ctx.claims.insert_or_assign("limit", std::to_string(lim));
+        auto customers_time_range = std::move(time_range);
+        ctx.claims.insert_or_assign("start_time", encode_time_range(customers_time_range));
+        ctx.claims.insert_or_assign("end_time", encode_time_range_end(customers_time_range));
+        m_runtime.list_with_count_v2(ctx).handle(sink);
     }
 
     void handle_customers_update_v2(
@@ -316,7 +277,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_update_v2",
                 ::core::behavior::AuthSpec{
@@ -326,54 +288,48 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
+        const std::string id = m_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
             const auto error = m_input_support.upstream_error("InvalidRequestData", "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const CustomerUpdateInput request =
+        const CustomerUpdateDto request =
             m_input_support.parse_update_input(JsonValueView{*parsed});
         if (const auto invalid =
                 m_input_support.validate_document_details(request.document_details)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto invalid =
                 m_input_support.validate_phone_country_code(request.phone_country_code)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersUpdateRouteInput
-            input{request, id, ApiVersion::V2, m_input_support.request_merchant_id(req)};
-        auto result = m_runtime.update_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("id", std::string{id});
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.update_v2(request, ctx).handle(sink);
     }
 
     void handle_customers_delete_v2(
@@ -382,7 +338,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "customers_delete_v2",
                 ::core::behavior::AuthSpec{
@@ -392,30 +349,21 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 0));
+        const std::string id = m_support.path(req, CustomersPolicy::path_index(req, 0));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersDeleteRouteInput input{
-            id,
-            ApiVersion::V2,
-            m_input_support.request_merchant_id(req)
-        };
-        auto result = m_runtime.delete_customer_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("id", std::string{id});
+        ctx.claims.insert_or_assign("version", ApiVersion::V2 == ApiVersion::V1 ? "v1" : "v2");
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.delete_customer_v2(ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router, std::string_view base)
@@ -508,7 +456,7 @@ private:
     ::app::context::AppContext& m_context;
     CustomersRuntime& m_runtime;
     CustomersInputSupport& m_input_support;
-    CustomersRequestSupport& m_request_support;
+    CustomersRequestSupport& m_support;
     CustomersHandlersV2GlobalId m_global_id;
 };
 

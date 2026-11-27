@@ -38,40 +38,25 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // 1. request -> Input (body-less: admin auth + final path segment only).
         if (const auto auth = m_request_support.authorize(req, "kill_switch_status", {})) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto resolved = m_input_support.resolve_scope(req);
-        if (resolved.listed_key.empty()) {
+        const auto ctx = m_request_support.context(req);
+        if (ctx.path_segments.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "scope is required"
             );
-            error.send(res, send);
-            return;
-        }
-        KillSwitchStatusInput input{resolved};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // 3. Model -> response (direct writes).
-        auto encoded = result->serialize(KillSwitchStatusResponse::wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        // 2. Context -> Result.
+        m_runtime.status(ctx).handle(sink);
     }
 
     // Upstream kill_switch::reset (kill_switch.rs:543-577).
@@ -81,36 +66,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // 1. request -> Input (body-less: admin auth + final path segment only).
         if (const auto auth = m_request_support.authorize(req, "reset_kill_switch", {})) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto resolved = m_input_support.resolve_scope(req);
-        if (resolved.listed_key.empty()) {
+        const auto ctx = m_request_support.context(req);
+        if (ctx.path_segments.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "scope is required"
             );
-            error.send(res, send);
-            return;
-        }
-        ResetKillSwitchInput input{resolved};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.reset(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // 3. Document -> response (direct writes). Upstream StatusOk is bodyless;
-        // the typed empty-object document serializes as "{}".
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // 2. Context -> Result. Upstream StatusOk is bodyless; the empty-object
+        // document serializes as "{}" through Outcome::handle.
+        m_runtime.reset(ctx).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -160,8 +135,7 @@ public:
     explicit UnifiedConnectorServiceRouteHandlers(::app::context::AppContext& context) noexcept :
         m_runtime{context},
         m_policy{context},
-        m_request_support{m_policy},
-        m_input_support{context}
+        m_request_support{m_policy}
     {
     }
 
@@ -169,7 +143,6 @@ private:
     UnifiedConnectorServiceRuntime m_runtime;
     UnifiedConnectorServicePolicy m_policy;
     core::behavior::RequestSupport<UnifiedConnectorServicePolicy> m_request_support;
-    UnifiedConnectorServiceInputSupport m_input_support;
 };
 
 } // namespace app::handlers::unified_connector_service

@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_get_parent_info_for_role;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,15 +34,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
-    get_parent_info_for_role(const GetParentInfoForRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
+    get_parent_info_for_role(const ::core::behavior::CallContext& ctx) const
     {
-        if (input.role_id.empty()) {
+        if (ctx_string(ctx,"role_id").empty()) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
             };
         }
-        const auto role = m_support.role_info_from_id(input.identity, input.role_id);
+        const auto role = m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx,"role_id"));
         if (!role || role->is_internal) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")

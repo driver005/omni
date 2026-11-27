@@ -49,6 +49,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // server_wrap begins by recording the flow, before auth/body handling
         // (routes/apple_pay_certificates_migration.rs:17-28).
         m_context.metrics().record_flow("ApplePayCertificatesMigration");
@@ -60,7 +61,7 @@ public:
         if (const auto auth =
                 m_request_support.authorize(req, "apple_pay_certificates_migration", {})) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -69,43 +70,13 @@ public:
 
         // web::Json<ApplePayCertificatesMigrationRequest> (routes:13-15). Vec<MerchantId>
         // is a plain JSON string array. No generic-tree / wrapper fallback.
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input =
+        using Dto =
             ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed = core::behavior::Serializer<Dto>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        ApplePayCertificatesMigrationInput input{*parsed};
-
-        auto result = m_runtime.migrate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto encoded = result->serialize(wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.migrate(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     /** @brief Installs the single upstream route.

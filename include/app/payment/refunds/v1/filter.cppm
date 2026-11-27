@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v1_filter;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,23 +47,17 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "Platform", spec_for("Platform"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RefundsFilterPlatformInput input{m_input_support.request_facts(req)};
 
-        auto result = m_runtime.filter_platform(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.filter_platform(m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief refunds_filter_list — routes/refunds.rs:689-718 (TimeRange -> RefundListMetaData). */
@@ -72,15 +67,17 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(req, "Filter", spec_for("Filter"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // Upstream payload is common_utils::types::TimeRange { start_time, end_time }.
@@ -88,20 +85,12 @@ public:
         const auto end = m_input_support.json_string(body, "end_time");
         if (body.find('{') == std::string::npos) {
             const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RefundsFilterListInput input{start, end, m_input_support.request_facts(req)};
 
-        auto result = m_runtime.filter_list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.filter_list(m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief get_refunds_filters — routes/refunds.rs:725-750 (RefundListFilters). */
@@ -111,22 +100,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(req, "Filters", spec_for("Filters"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RefundsFiltersInput input{m_input_support.request_facts(req)};
 
-        auto result = m_runtime.filters(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.filters(m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief get_refunds_filters_profile — routes/refunds.rs:757-790 (profile-scoped). */
@@ -136,23 +119,17 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "FiltersProfile", spec_for("FiltersProfile"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RefundsFiltersProfileInput input{m_input_support.request_facts(req)};
 
-        auto result = m_runtime.filters_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.filters_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // original install() route #8

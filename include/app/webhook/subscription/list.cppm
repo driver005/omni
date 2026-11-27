@@ -76,37 +76,32 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure =
                 m_request_support
                     .authorize(req, "api_key_or_jwt", ::app::webhook::policy::kSubscriptionRead)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetSubscriptionInput input{profile.value(), m_input_support.merchant_id(req, auth), id};
-        auto result = m_runtime.get_subscription(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.get_subscription(ctx).handle(sink);
     }
 
     // ── GET /subscriptions/list — list_subscriptions ────────────────────────────
@@ -116,36 +111,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure =
                 m_request_support
                     .authorize(req, "api_key_or_jwt", ::app::webhook::policy::kSubscriptionRead)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto query = ::app::http::RequestQuery{}(req);
-        const std::int64_t limit = m_input_support.query_number(query, "limit", kMaxListCount);
-        const std::int64_t offset = m_input_support.query_number(query, "offset", 0);
-
-        ListSubscriptionsInput
-            input{profile.value(), m_input_support.merchant_id(req, auth), limit, offset};
-        auto result = m_runtime.list_subscriptions(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.list_subscriptions(ctx).handle(sink);
     }
 
 private:

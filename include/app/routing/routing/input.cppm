@@ -40,45 +40,6 @@ struct AuthSpec
 };
 
 /**
- * Plain request-derived state. Every field is everything an old routing_core block
- * received from the route layer; no HTTP types and no AppContext live in here.
- */
-struct RoutingInput
-{
-    ~RoutingInput();
-    std::string body{};
-    std::string merchant_id{};
-    std::string org_id{};
-    std::string profile_id{};
-    std::string algorithm_id{};
-    std::string txn{};             // app.rs passes a TransactionType into every v1 route
-    std::string auth_profile{};    // AuthContextBuilder(req).profile_id()
-    std::string enable{"metrics"}; // ?enable= query default
-    bool is_v2{false};
-
-    std::optional<std::string> target{};
-    std::optional<std::string> active_id{};
-    std::optional<std::string> query_txn{};
-    std::optional<std::uint16_t> list_limit{};
-    std::optional<std::uint8_t> list_offset{};
-    std::uint32_t migration_limit{20};
-    std::uint32_t migration_offset{0};
-    std::optional<std::uint8_t> split{};
-
-    std::optional<::app::model::routing::RoutingConfigRequest> config_request{};
-    std::optional<::app::model::routing::RoutingLinkWrapper> link{};
-    std::optional<::app::model::routing::RoutingActivatePayload> activate{};
-    std::optional<Connectors> connectors{};
-    std::optional<::app::dto::surcharge_decision_configs::SurchargeDecisionConfigReq>
-        surcharge_request{};
-    std::string decision_name{};
-    std::string decision_program{};
-    std::optional<::app::model::routing::RuleMigrationRequest> migration_request{};
-};
-
-RoutingInput::~RoutingInput() = default;
-
-/**
  * @brief Parse/auth/path/query support for the routing handlers.
  *
  * No business logic lives here: it turns request data into the plain RoutingInput
@@ -291,27 +252,6 @@ public:
         return ::app::auth::AuthContextBuilder{}(req).profile_id();
     }
 
-    template<typename T>
-    [[nodiscard]] std::optional<T>
-    query_number(interfaces::io::IRequest& req, std::string_view key) const
-    {
-        const auto raw = ::app::http::RequestQuery{}(req).get(key);
-        if (!raw) {
-            return std::nullopt;
-        }
-        T value{};
-        const auto [end, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), value);
-        (void)end;
-        return ec == std::errc{} ? std::optional<T>{value} : std::nullopt;
-    }
-
-    [[nodiscard]] std::optional<std::string>
-    query_string(interfaces::io::IRequest& req, std::string_view key) const
-    {
-        const auto raw = ::app::http::RequestQuery{}(req).get(key);
-        return raw ? std::optional<std::string>{*raw} : std::nullopt;
-    }
-
     /** core/utils.rs:2889-2912 validate_profile_id_from_auth_layer (pure given auth_profile). */
     [[nodiscard]] std::optional<std::string>
     profile_validation_error(interfaces::io::IRequest& req, std::string_view profile) const
@@ -404,50 +344,6 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] std::string generic_string(
-        const serde::Value& value,
-        std::string_view key,
-        std::string_view fallback_key = {}
-    ) const
-    {
-        const auto* object = std::get_if<serde::Value::Object>(&value.get());
-        if (object == nullptr) {
-            return {};
-        }
-        auto field = object->get(std::string{key});
-        if (!field && !fallback_key.empty()) {
-            field = object->get(std::string{fallback_key});
-        }
-        if (!field) {
-            return {};
-        }
-        if (const auto* text = std::get_if<std::string>(&field->get())) {
-            return *text;
-        }
-        return {};
-    }
-
-    /** Request-derived fields shared by every route. */
-    void fill_common(interfaces::io::IRequest& req, RoutingInput& input) const
-    {
-        input.merchant_id = merchant_id_of(req);
-        input.org_id = org_id_of(req);
-        input.profile_id = profile_id_of(req);
-        input.algorithm_id = algorithm_id_of(req);
-        input.txn = transaction_type_of(req);
-        input.auth_profile = auth_profile_of(req);
-        input.is_v2 = is_v2_route(req);
-        if (const auto enable = query_string(req, "enable")) {
-            input.enable = *enable;
-        }
-        if (const auto active_id = query_string(req, "active_id")) {
-            input.active_id = active_id;
-        }
-        if (const auto query_txn = query_string(req, "transaction_type")) {
-            input.query_txn = query_txn;
-        }
-    }
-
 private:
     ::app::context::AppContext& m_context;
 };
@@ -477,6 +373,15 @@ public:
     [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
     {
         return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = ::app::routing::policy::context_of(req);
+        ctx.merchant_id = m_support.merchant_id_of(req);
+        ctx.org_id = m_support.org_id_of(req);
+        ctx.profile_id = m_support.profile_id_of(req);
+        return ctx;
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

@@ -360,8 +360,55 @@ public:
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(Ser::serialize(content_type, *text));
+        std::vector<std::byte> body_bytes{};
+        body_bytes.reserve(text->size());
+        for (const char ch : *text) {
+            body_bytes.push_back(static_cast<std::byte>(ch));
+        }
+        res.set_body(std::move(body_bytes));
         send();
+    }
+
+    void to_response(interfaces::io::ResponseSink& sink) const
+    {
+        auto validated = validate_value(static_cast<const T&>(*this));
+        if (!validated) {
+            validated.error().send(sink);
+            return;
+        }
+        auto text = from_model(content_type);
+        if (!text) {
+            text.error().send(sink);
+            return;
+        }
+        sink.set_status(interfaces::io::types::Status::OK);
+        std::vector<std::byte> body_bytes{};
+        body_bytes.reserve(text->size());
+        for (const char ch : *text) {
+            body_bytes.push_back(static_cast<std::byte>(ch));
+        }
+        sink.set_body(std::move(body_bytes));
+        sink.send();
+    }
+
+    /**
+     * @brief Parses and validates a request into T; on failure writes the error to `sink` and
+     * returns nullopt so the caller can bail out before routing.
+     */
+    [[nodiscard]] static std::optional<T>
+    pass(interfaces::io::IRequest& req, interfaces::io::ResponseSink& sink)
+    {
+        auto parsed = from_request(req);
+        if (!parsed) {
+            parsed.error().send(sink);
+            return std::nullopt;
+        }
+        auto validated = validate_value(*parsed);
+        if (!validated) {
+            validated.error().send(sink);
+            return std::nullopt;
+        }
+        return std::move(*parsed);
     }
 };
 

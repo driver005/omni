@@ -5,41 +5,11 @@ import interfaces;
 import core_error;
 import core_behavior;
 import app_context;
-import app_dto;
 import app_auth;
 
 import :policy;
 
 export namespace app::handlers::offer_engine {
-
-/** @brief Local mirror of `core::configs::dimension_state::Dimensions`. */
-struct OfferEngineDimensions
-{
-    std::string processor_merchant_id{};
-    std::string organization_id{};
-    std::optional<std::string> profile_id{};
-
-    [[nodiscard]] std::string context() const
-    {
-        std::string out{};
-        if (!processor_merchant_id.empty()) {
-            out += "merchant:" + processor_merchant_id;
-        }
-        if (!organization_id.empty()) {
-            if (!out.empty()) {
-                out += '/';
-            }
-            out += "org:" + organization_id;
-        }
-        if (profile_id.has_value() && !profile_id->empty()) {
-            if (!out.empty()) {
-                out += '/';
-            }
-            out += "profile:" + *profile_id;
-        }
-        return out;
-    }
-};
 
 /**
  * @brief Parse/auth/path/query support for the offer_engine handlers.
@@ -94,6 +64,11 @@ public:
         return ::app::routing::policy::scope_of(req);
     }
 
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const ::core::behavior::Scope& scope) const
     {
@@ -105,17 +80,5 @@ private:
 };
 
 using OfferEngineRequestSupport = ::core::behavior::RequestSupport<OfferEnginePolicy>;
-
-struct ConnectivityCheckInput
-{
-    ::app::auth::AuthContext auth{};
-};
-
-struct BrowseOffersInput
-{
-    ::app::dto::offer_engine::BrowseOffersRequest request{};
-    OfferEngineDimensions dimensions{};
-    ::app::auth::AuthContext auth{};
-};
 
 } // namespace app::handlers::offer_engine

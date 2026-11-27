@@ -37,9 +37,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
-    get_disputes_filters_profile(const GetDisputesFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeListFilters>
+    get_disputes_filters_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetDisputesFiltersProfileData{ctx};
         m_context.metrics().record_flow("dispute_profile_filters");
         auto result = m_support.get_filters_for_disputes(input.scope, input.profile_id_list);
         if (!result) {

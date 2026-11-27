@@ -35,14 +35,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
-        profile_list(const PaymentLinkListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
+        profile_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkListData{dto, ctx};
         m_context.metrics().record_flow("payment_link.profile_list");
         m_context.metrics().counter("payment_link.profile_list").increment();
 
-        auto response = m_support.build_list_response(input);
+        auto response = m_support.build_list_response(dto, ctx);
         if (!response) {
             return std::unexpected{response.error()};
         }

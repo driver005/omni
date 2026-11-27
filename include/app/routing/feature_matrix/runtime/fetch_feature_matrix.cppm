@@ -16,8 +16,8 @@ import app_connector;
 import app_metrics;
 import app_store;
 import app_services;
+import core_behavior;
 
-import :feature_matrix_input;
 import :feature_matrix_result;
 import :feature_matrix_runtime_common;
 
@@ -33,9 +33,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::feature_matrix::FeatureMatrixListResponse, core::error::AppError>
-        fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::feature_matrix::FeatureMatrixListResponse>
+    fetch_feature_matrix(
+        const ::app::dto::feature_matrix::FeatureMatrixRequest& request,
+        const ::core::behavior::CallContext&
+    ) const
     {
         // `#[instrument(skip_all)]` + Flow::FeatureMatrix (routes/feature_matrix.rs:19,25) and
         // api::server_wrap(..., &auth::NoAuth, LockAction::NotApplicable) (:30-38). The NO_AUTH
@@ -48,33 +50,16 @@ public:
         // })` (routes/feature_matrix.rs:26-28). web::Json deserializes `Vec<Connector>` as
         // snake_case strings; an unknown enum string is a 400 at the web layer, so reject it here
         // too.
-        const auto& body = input.body;
         std::vector<std::string> requested{};
-        if (!body.empty()) {
-            auto generic = serde::Ser::decode_generic("application/json", body);
-            if (!generic) {
-                return std::unexpected{core::error::AppErrorBuilder{}(
-                    core::error::AppErrorKind::INVALID_JSON,
-                    "invalid JSON"
-                )};
-            }
-            if (const auto* object = std::get_if<interfaces::Value::Object>(&generic->get())) {
-                if (const auto connectors_field = object->get("connectors")) {
-                    if (const auto* array = std::get_if<interfaces::Value::Array>(
-                            &connectors_field.value().get()
-                        )) {
-                        for (const auto& element: *array) {
-                            const auto* text = std::get_if<std::string>(&element.get());
-                            if (!text || !m_support.connector_iter_contains(*text)) {
-                                return std::unexpected{core::error::AppErrorBuilder{}(
-                                    core::error::AppErrorKind::INVALID_JSON,
-                                    "invalid connector name"
-                                )};
-                            }
-                            requested.push_back(*text);
-                        }
-                    }
+        if (request.get_connectors()) {
+            for (const auto& connector_name: *request.get_connectors()) {
+                if (!m_support.connector_iter_contains(connector_name)) {
+                    return std::unexpected{core::error::AppErrorBuilder{}(
+                        core::error::AppErrorKind::INVALID_JSON,
+                        "invalid connector name"
+                    )};
                 }
+                requested.push_back(connector_name);
             }
         }
 

@@ -29,6 +29,7 @@ congelado_module_library(
         "io/io.cppm",
         "io/request.cppm",
         "io/response.cppm",
+        "io/response_sink.cppm",
         "io/types.cppm",
         "plugin/bridge.cppm",
     ],

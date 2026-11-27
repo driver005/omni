@@ -647,6 +647,11 @@ public:
         return ::app::routing::policy::scope_of(req);
     }
 
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const ::core::behavior::Scope& scope) const
     {
@@ -658,100 +663,5 @@ private:
 };
 
 using BlocklistRequestSupport = ::core::behavior::RequestSupport<BlocklistPolicy>;
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old route logic handed to its core block.
-
-struct AddEntryInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string kind{};
-    std::string data{};
-    std::string transaction_type{};
-};
-
-struct RemoveEntryInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string kind{};
-    std::string data{};
-    std::string transaction_type{};
-};
-
-struct ListBlockedPaymentMethodsInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string kind{};
-    std::string transaction_type{};
-    std::uint16_t limit{10};
-    std::uint16_t offset{0};
-};
-
-struct GetBlocklistCountInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string kind{};
-    std::string transaction_type{};
-};
-
-struct LookupBlocklistEntryInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string data{};
-    std::string transaction_type{};
-};
-
-struct ToggleBlocklistGuardInput
-{
-    std::string merchant{};
-    bool status{false};
-};
-
-struct UploadBatchBlocklistInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string override_type{};
-    std::string content{};
-    std::string file_name{};
-    std::vector<CsvRow> rows{};
-};
-
-struct GetBatchBlocklistJobStatusInput
-{
-    std::string job_id{};
-    std::string merchant{};
-    std::string profile{};
-    JobRecord stored{};
-};
-
-struct ListBatchBlocklistJobsInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::uint32_t limit{10};
-    std::uint32_t offset{0};
-    std::string job_type{};
-};
-
-struct CreateBlocklistExportInput
-{
-    std::string merchant{};
-    std::string profile{};
-    std::string transaction_type{};
-};
-
-struct CloneBlocklistEntriesInput
-{
-    std::string merchant{};
-    std::string source{};
-    std::vector<::app::model::blocklist::ProfileIdValue> targets{};
-    std::string transaction_type{};
-};
 
 } // namespace app::handlers::blocklist

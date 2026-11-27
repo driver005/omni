@@ -1,6 +1,7 @@
 export module app_auth:authentication_runtime_sync_post_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -20,6 +21,7 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
+import :call_context;
 import :authentication_input;
 import :authentication_result;
 import :authentication_runtime_common;
@@ -37,12 +39,14 @@ public:
 
     // ───────────────────────── Core: post-sync ─────────────────────────
     // unified_authentication_service.rs:2386-2496 authentication_post_sync_core.
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    sync_post_update(const AuthenticationSyncPostUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    sync_post_update(const core::behavior::CallContext& ctx) const
     {
-        auto record = m_support.find_authentication(input.authentication_id);
+        const auto& authentication_id = detail::path_segment(ctx, 2);
+        const auto& merchant_id = detail::path_segment(ctx, 1);
+        auto record = m_support.find_authentication(authentication_id);
         if (!record.has_value()) {
-            return std::unexpected{m_support.not_found_error(input.authentication_id)};
+            return std::unexpected{m_support.not_found_error(authentication_id)};
         }
         // :2413 ensure_not_terminal_status(trans_status).
         if (const auto err = m_support.ensure_not_terminal_status(*record)) {
@@ -52,14 +56,14 @@ public:
         const auto outcome = m_support.perform_post_authentication(*record, AuthFlowKind::Merchant);
         m_support.update_trackers_from_outcome(*record, outcome);
         m_support.save_authentication(*record);
-        m_support.update_authentication_status(input.authentication_id, record->get_status());
+        m_support.update_authentication_status(authentication_id, record->get_status());
         m_context.metrics().record_flow("AuthenticationSyncPostUpdate");
 
         // :2481-2495 get_handle_response_url_for_modular_authentication -> JsonForRedirection.
         // Wire shape: HTTP 302 + RedirectionResponse JSON (api_models/payments.rs:10344-10350).
         const std::string return_url = record->get_return_url().empty()
-                                           ? std::string{"/authentication/"} + input.merchant_id +
-                                                 "/" + input.authentication_id + "/redirect"
+                                           ? std::string{"/authentication/"} + merchant_id +
+                                                 "/" + authentication_id + "/redirect"
                                            : record->get_return_url();
         const std::string status{m_support.trans_status_wire(record->get_trans_status())};
         // Vec<(String, Secret<String>)> wire shape:
@@ -73,7 +77,7 @@ public:
         };
         serde::Value::Array params{};
         params.push_back(pair_value("status", status));
-        params.push_back(pair_value("authentication_id", input.authentication_id));
+        params.push_back(pair_value("authentication_id", authentication_id));
         params.push_back(pair_value("authentication_client_secret", record->get_client_secret()));
         params.push_back(pair_value("amount", record->get_amount()));
         params.push_back(pair_value("manual_retry_allowed", "false"));
@@ -85,7 +89,7 @@ public:
             return_url + "?" +
                 m_support.query_from_params(
                     status,
-                    input.authentication_id,
+                    authentication_id,
                     record->get_client_secret(),
                     record->get_amount()
                 )
@@ -95,7 +99,7 @@ public:
         const std::string url_with_query = return_url + "?" +
                                            m_support.query_from_params(
                                                status,
-                                               input.authentication_id,
+                                               authentication_id,
                                                record->get_client_secret(),
                                                record->get_amount()
                                            );

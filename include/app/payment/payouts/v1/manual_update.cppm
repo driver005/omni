@@ -1,6 +1,7 @@
 export module app_payment:payouts_handlers_v1_manual_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -22,6 +23,7 @@ import app_keystore;
 import app_locking;
 
 import :payouts_input;
+import :context;
 import :payouts_result;
 import :payouts_runtime;
 
@@ -52,11 +54,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "payouts_manual_update", spec_for("payouts_manual_update"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -66,19 +70,11 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payouts::PayoutsManualUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutsManualUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
 
         const auto path_id = m_input_support.payout_id_from_path(req);
         if (!path_id.has_value()) {
@@ -86,20 +82,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsManualUpdateInput input{*parsed, *path_id};
-        auto result = m_runtime.manual_update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.manual_update(dto, ::app::payment::detail::make_call_context(req));
+        result.handle(sink);
     }
 
     using Route = utils::openapi::ApiRoute;
@@ -117,6 +106,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_manual_update(req, res, std::move(send));
                         }
                     )

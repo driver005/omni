@@ -1,6 +1,7 @@
 export module app_auth:oidc_runtime_authorize;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,8 +34,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    authorize(const OidcAuthorizeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    authorize(
+        const ::app::dto::oidc::OidcAuthorizeQuery& payload,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         m_context.metrics().record_flow("oidc_authorize");
         m_context.metrics().counter("oidc.oidc_authorize").increment();
@@ -42,7 +46,6 @@ public:
 
         m_support.ensure_oidc_config();
 
-        const auto& payload = input.payload;
         const auto& scopes = payload.get_scope();
         if (std::find(scopes.begin(), scopes.end(), ::app::dto::oidc::Scope::Openid) ==
             scopes.end()) {
@@ -64,7 +67,9 @@ public:
         }
 
         // Upstream: Option<UserFromToken>; missing session means AccessDenied.
-        const auto& user_id = input.user_id;
+        static const std::string no_user{};
+        const auto user_it = ctx.claims.find("x-user-id");
+        const auto& user_id = user_it == ctx.claims.end() ? no_user : user_it->second;
         if (user_id.empty()) {
             return std::unexpected{oidc_wire::oidc_error(oidc_wire::OidcErrorKind::AccessDenied)};
         }

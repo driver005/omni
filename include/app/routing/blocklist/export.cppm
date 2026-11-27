@@ -60,9 +60,10 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "create_blocklist_export", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -75,7 +76,7 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for transaction_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             transaction_type = *parsed;
@@ -84,33 +85,20 @@ public:
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.resolve_required_profile(req, merchant);
         if (profile.failure) {
             const auto& error = *profile.failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        CreateBlocklistExportInput input{merchant, profile.id, transaction_type};
-        auto result = m_runtime.create_blocklist_export(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::BlocklistExportResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile.id;
+        m_runtime.create_blocklist_export(ctx).handle(sink);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_payment:telephone_order_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -22,6 +23,7 @@ import app_workflow;
 import app_keystore;
 
 import :telephone_order_input;
+import :context;
 import :telephone_order_result;
 import :telephone_order_runtime;
 
@@ -40,12 +42,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // 1. request -> Input.
         const ChargePath path = m_input_support.charge_path(req);
         if (path.merchant_id.empty() || path.provider != "twilio") {
             m_context->metrics().counter("telephone_order_charge_invalid_request_url").increment();
             const auto error = invalid_request_url_error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -58,29 +62,15 @@ public:
         if (!parsed) {
             m_context->metrics().counter("telephone_order_charge_invalid_data_format").increment();
             const auto error = invalid_data_format_error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        TelephoneOrderChargeInput input{
-            *parsed,
-            path.merchant_id,
-            std::string{parsed->get_transaction_id()},
-            m_input_support.charge_auth_context(req, path.merchant_id)
-        };
+        const auto& dto = *parsed;
 
         // 2. Input -> Result.
-        auto result = m_runtime.telephone_order_charge(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.telephone_order_charge(dto, ::app::payment::detail::make_call_context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -97,6 +87,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_telephone_order_charge(req, res, std::move(send));
                         }
                     )

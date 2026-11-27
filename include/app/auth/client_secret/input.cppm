@@ -9,33 +9,9 @@ import app_dto;
 import app_context_core;
 import app_http;
 
+import :call_context;
+
 export namespace app::handlers::client_secret {
-
-struct AuthorizedRequest
-{
-    std::optional<core::error::AppError> error{};
-    ::app::auth::AuthContext context{};
-};
-
-/** @brief Path parsing for the delete route; auth and scope live in the policy below. */
-class ClientSecretInputSupport
-{
-public:
-    [[nodiscard]] std::string client_secret_id_from_request(interfaces::io::IRequest& req) const
-    {
-        const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
-        if (segments.count() == 0) {
-            return {};
-        }
-        for (std::size_t i = 0; i + 1 < segments.count(); ++i) {
-            const auto segment = segments.at(i);
-            if (segment && *segment == "client-secret") {
-                return std::string{segments.at(i + 1).value_or("")};
-            }
-        }
-        return std::string{segments.at(segments.count() - 1).value_or("")};
-    }
-};
 
 // Both routes use V2ApiKeyAuth { allow_connected_scope_operation: false,
 // allow_platform_self_operation: false } (routes/client_secret.rs:32-35, :56-59).
@@ -108,6 +84,12 @@ public:
         return out;
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -117,19 +99,6 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
-};
-
-struct ClientSecretCreateInput
-{
-    ::app::dto::client_secret::ClientSecretCreateRequest request{};
-    std::string merchant_id{};
-    AuthorizedRequest auth{};
-};
-
-struct ClientSecretDeleteInput
-{
-    std::string client_secret_id{};
-    AuthorizedRequest auth{};
 };
 
 } // namespace app::handlers::client_secret

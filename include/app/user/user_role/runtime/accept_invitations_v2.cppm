@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_accept_invitations_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,13 +34,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
-    accept_invitations_v2(const AcceptInvitationsV2Input& input) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
+    accept_invitations_v2(const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        const auto lineages = m_support.lineages_for_accept(input.identity, input.request);
+        const auto lineages = m_support.lineages_for_accept(identity_from_context(ctx), request);
         std::size_t accepted{0};
         for (auto assignment: m_context.repository().list_user_roles()) {
-            if (assignment.get_user_id() != input.identity.user_id ||
+            if (assignment.get_user_id() != identity_from_context(ctx).user_id ||
                 assignment.get_status() != "invitation_sent") {
                 continue;
             }

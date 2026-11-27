@@ -1,6 +1,7 @@
 export module app_user:profiles_runtime_common;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_cache;
 import core_error;
@@ -29,9 +30,9 @@ public:
     }
 
     using Response = ProfileWireResponse;
-    using ListResult = std::expected<std::vector<Response>, core::error::AppError>;
-    using CreateInput = ::app::dto::admin::ProfileCreate;
-    using UpdateInput = ::app::dto::admin::ProfileUpdate;
+    using ListResult = core::behavior::Outcome<std::vector<Response>>;
+    using CreateDto = ::app::dto::admin::ProfileCreate;
+    using UpdateDto = ::app::dto::admin::ProfileUpdate;
 
     // core/admin.rs:4122-4150 — list_profile.
     [[nodiscard]] ListResult list_profile(
@@ -56,8 +57,8 @@ public:
     }
 
     // core/admin.rs:3576-3826 (v1) / :3830+ (v2) — create_domain_model_from_request.
-    [[nodiscard]] std::expected<Response, core::error::AppError>
-    create_domain_model_from_request(std::string_view merchant_id, const CreateInput& request) const
+    [[nodiscard]] core::behavior::Outcome<Response>
+    create_domain_model_from_request(std::string_view merchant_id, const CreateDto& request) const
     {
         // core/admin.rs:3583-3589 + helpers.rs:8425,8549.
         if (const auto error = validate_session_expiry(request.get_session_expiry())) {
@@ -218,8 +219,8 @@ public:
     // Upstream converts the request into domain::ProfileGeneralUpdate whose
     // Option fields mean "no change"; applying them onto the stored domain
     // profile reproduces the upstream DB merge exactly.
-    [[nodiscard]] std::expected<Response, core::error::AppError>
-    get_update_profile_object(const Response& stored, const UpdateInput& request) const
+    [[nodiscard]] core::behavior::Outcome<Response>
+    get_update_profile_object(const Response& stored, const UpdateDto& request) const
     {
         // core/admin.rs:4218-4224.
         if (const auto error = validate_session_expiry(request.get_session_expiry())) {
@@ -281,7 +282,7 @@ public:
 
     // Apply only the Option fields that are present (domain::ProfileGeneralUpdate
     // semantics — core/admin.rs:4393-4469).
-    void apply_update_fields(Response& target, const UpdateInput& u) const
+    void apply_update_fields(Response& target, const UpdateDto& u) const
     {
         if (u.get_profile_name()) {
             target.set_profile_name(*u.get_profile_name());

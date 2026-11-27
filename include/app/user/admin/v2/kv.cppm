@@ -8,6 +8,7 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import core_behavior;
 import core_error;
 import app_http;
 import :admin_input;
@@ -28,7 +29,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -38,55 +39,29 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_request_support.authorize(req, "merchant_account_toggle_kv", {})) {
-            res.set_status(error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto error = m_support.authorize(req, "merchant_account_toggle_kv", {})) {
+            sink.set_status(error->get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *error));
+            sink.send();
             return;
         }
-        const std::string merchant_id{m_request_support.path(req, AdminPolicy::path_index(req, 2))};
+        const std::string merchant_id{m_support.path(req, AdminPolicy::path_index(req, 2))};
         if (merchant_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto parsed =
-            serde::Ser::deserialize<::app::dto::admin::ToggleKVRequest>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        MerchantAccountToggleKvInput input{merchant_id, parsed->get_kv_enabled()};
-        auto result = m_runtime.toggle_kv(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kToggleKVResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto parsed = core::behavior::Serializer<::app::dto::admin::ToggleKVRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
+        ctx.claims.insert_or_assign("kv_enabled", parsed->get_kv_enabled() ? "true" : "false");
+        m_runtime.toggle_kv(ctx).handle(sink);
     }
 
     void handle_merchant_account_kv_status(
@@ -95,36 +70,25 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_request_support.authorize(req, "merchant_account_kv_status", {})) {
-            res.set_status(error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto error = m_support.authorize(req, "merchant_account_kv_status", {})) {
+            sink.set_status(error->get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *error));
+            sink.send();
             return;
         }
-        const std::string merchant_id{m_request_support.path(req, AdminPolicy::path_index(req, 2))};
+        const std::string merchant_id{m_support.path(req, AdminPolicy::path_index(req, 2))};
         if (merchant_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        MerchantAccountKvStatusInput input{merchant_id};
-        auto result = m_runtime.kv_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kToggleKVResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
+        m_runtime.kv_status(ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -172,7 +136,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
-    AdminRequestSupport& m_request_support;
+    AdminRequestSupport& m_support;
 };
 
 } // namespace app::handlers::admin

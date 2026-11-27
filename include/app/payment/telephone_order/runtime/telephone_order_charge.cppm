@@ -38,9 +38,11 @@ public:
 
     /** @brief routes/telephone_order.rs:19-91 — telephone_order_charge /
      * charge_with<TwilioGenericPay>. */
-    [[nodiscard]] std::expected<TwilioGenericPayResponse, core::error::AppError>
-    telephone_order_charge(const TelephoneOrderChargeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<TwilioGenericPayResponse>
+        telephone_order_charge(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = TelephoneOrderChargeData{dto, ctx};
         const auto& request = input.request;
         const std::string& transaction_reference = input.transaction_reference;
 
@@ -85,7 +87,7 @@ public:
             )};
         }
 
-        const AuthenticationData auth = m_support.authentication_data(input);
+        const AuthenticationData auth = m_support.authentication_data(dto, ctx);
         TwilioGenericPayResponse response =
             charge(auth, request, payment_id, transaction_reference);
 

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_update_user_authentication_method;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    update_user_authentication_method(const UpdateUserAuthenticationMethodInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    update_user_authentication_method(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -49,7 +51,7 @@ public:
         std::string auth_id{};
         std::string owner_id{};
         std::string email_domain{};
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&input.generic.get())) {
+        if (const auto* object = std::get_if<interfaces::Value::Object>(&generic.get())) {
             const auto read_string = [object](std::string_view name)
             {
                 std::string out{};

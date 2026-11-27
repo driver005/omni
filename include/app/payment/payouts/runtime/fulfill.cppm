@@ -36,9 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: fulfill ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    fulfill(const PayoutsFulfillInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    fulfill(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsFulfillData{ctx};
         PayoutLockGuard lock{
             m_context.locks(),
             std::format("payout:{}", input.payout_id),

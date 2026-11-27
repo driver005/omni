@@ -35,9 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::pm_auth::LinkTokenCreateResponse, core::error::AppError>
-    link_token_create(const LinkTokenCreateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::pm_auth::LinkTokenCreateResponse>
+        link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = LinkTokenCreateData{dto, ctx};
         const auto& request = input.request;
         const std::string& payment_id = input.request.get_payment_id().get_value();
         const std::string& payment_method = input.request.get_payment_method().get_value();

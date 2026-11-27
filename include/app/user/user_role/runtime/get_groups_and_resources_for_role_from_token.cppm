@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_get_groups_and_resources_for_role_from_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,12 +36,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<GroupsAndResourcesWire, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<GroupsAndResourcesWire>
     get_groups_and_resources_for_role_from_token(
-        const GetGroupsAndResourcesForRoleFromTokenInput& input
+        const ::core::behavior::CallContext& ctx
     ) const
     {
-        const auto role = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto role = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!role) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")

@@ -22,6 +22,7 @@ import app_events;
 import app_locking;
 import app_services;
 
+import :context;
 export namespace app::handlers::disputes {
 
 using Error = core::error::AppError;
@@ -541,97 +542,169 @@ public:
     std::int32_t file_size{};
     std::optional<std::string> file_type{};
 };
-
-struct RetrieveDisputeInput
+struct RetrieveDisputeData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeRetrieveRequest request{};
+    template<class Dto>
+    explicit RetrieveDisputeData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        request{::app::payment::detail::as_dto<::app::model::disputes::DisputeRetrieveRequest>(dto)}
+    {
+    }
 };
-
-struct FetchDisputesInput
+struct FetchDisputesData
 {
     DisputeScope scope{};
     std::string connector_id{};
     ::app::model::disputes::DisputeFetchQueryData payload{};
+    template<class Dto>
+    explicit FetchDisputesData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        connector_id{},
+        payload{::app::payment::detail::as_dto<::app::model::disputes::DisputeFetchQueryData>(dto)}
+    {
+    }
 };
-
-struct RetrieveDisputesListInput
+struct RetrieveDisputesListData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeListGetConstraints constraints{};
+    template<class Dto>
+    explicit RetrieveDisputesListData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        constraints{::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)}
+    {
+    }
 };
-
-struct RetrieveDisputesListProfileInput
+struct RetrieveDisputesListProfileData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeListGetConstraints constraints{};
     std::optional<std::vector<std::string>> profile_id_list{};
+    template<class Dto>
+    explicit RetrieveDisputesListProfileData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        constraints{::app::payment::detail::as_dto<::app::model::disputes::DisputeListGetConstraints>(dto)},
+        profile_id_list{}
+    {
+    }
 };
-
-struct RetrieveDisputesListForPlatformInput
+struct RetrieveDisputesListForPlatformData
 {
     DisputeScope scope{};
     ::app::model::disputes::PlatformDisputeListConstraints constraints{};
+    template<class Dto>
+    explicit RetrieveDisputesListForPlatformData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        constraints{::app::payment::detail::as_dto<::app::model::disputes::PlatformDisputeListConstraints>(dto)}
+    {
+    }
 };
-
-struct GetDisputesFiltersInput
+struct GetDisputesFiltersData
 {
     DisputeScope scope{};
+    explicit GetDisputesFiltersData(const core::behavior::CallContext& ctx) :
+        scope{}
+    {
+    }
 };
-
-struct GetDisputesFiltersProfileInput
+struct GetDisputesFiltersProfileData
 {
     DisputeScope scope{};
     std::optional<std::vector<std::string>> profile_id_list{};
+    explicit GetDisputesFiltersProfileData(const core::behavior::CallContext& ctx) :
+        scope{},
+        profile_id_list{}
+    {
+    }
 };
-
-struct GetPlatformDisputesFiltersInput
+struct GetPlatformDisputesFiltersData
 {
     DisputeScope scope{};
+    explicit GetPlatformDisputesFiltersData(const core::behavior::CallContext& ctx) :
+        scope{}
+    {
+    }
 };
-
-struct AcceptDisputeInput
+struct AcceptDisputeData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeId dispute_id{};
+    template<class Dto>
+    explicit AcceptDisputeData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        dispute_id{::app::payment::detail::as_dto<::app::model::disputes::DisputeId>(dto)}
+    {
+    }
 };
-
-struct SubmitDisputeEvidenceInput
+struct SubmitDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::SubmitEvidenceRequest request{};
+    template<class Dto>
+    explicit SubmitDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        request{::app::payment::detail::as_dto<::app::model::disputes::SubmitEvidenceRequest>(dto)}
+    {
+    }
 };
-
-struct AttachDisputeEvidenceInput
+struct AttachDisputeEvidenceData
 {
     DisputeScope scope{};
     EvidenceUploadWire request{};
+    template<class Dto>
+    explicit AttachDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        request{::app::payment::detail::as_dto<EvidenceUploadWire>(dto)}
+    {
+    }
 };
-
-struct RetrieveDisputeEvidenceInput
+struct RetrieveDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::DisputeId dispute_id{};
+    template<class Dto>
+    explicit RetrieveDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        dispute_id{::app::payment::detail::as_dto<::app::model::disputes::DisputeId>(dto)}
+    {
+    }
 };
-
-struct DeleteDisputeEvidenceInput
+struct DeleteDisputeEvidenceData
 {
     DisputeScope scope{};
     ::app::model::disputes::DeleteEvidenceRequest request{};
+    template<class Dto>
+    explicit DeleteDisputeEvidenceData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        scope{},
+        request{::app::payment::detail::as_dto<::app::model::disputes::DeleteEvidenceRequest>(dto)}
+    {
+    }
 };
-
-struct GetDisputesAggregateInput
+struct GetDisputesAggregateData
 {
     DisputeScope scope{};
     ::app::model::disputes::TimeRange time_range{};
+    explicit GetDisputesAggregateData(const core::behavior::CallContext& ctx) :
+        scope{},
+        time_range{}
+    {
+    }
 };
-
-struct GetDisputesAggregateProfileInput
+struct GetDisputesAggregateProfileData
 {
     DisputeScope scope{};
     ::app::model::disputes::TimeRange time_range{};
     std::optional<std::vector<std::string>> profile_id_list{};
+    explicit GetDisputesAggregateProfileData(const core::behavior::CallContext& ctx) :
+        scope{},
+        time_range{},
+        profile_id_list{}
+    {
+    }
 };
+
 
 /** @brief Request policy for the disputes domain: wraps the domain auth rules. */
 class DisputesPolicy
@@ -641,6 +714,11 @@ public:
         :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

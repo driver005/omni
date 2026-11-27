@@ -70,52 +70,24 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "authentication_create", kAuthenticationCreateAuthSpec)) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
-        const auto authorized = m_policy.authorized();
-        const auto merchant_id = m_request_support.scope(req).merchant_id;
-        if (const auto scope_error = m_request_support.scope_error({merchant_id})) {
-            scope_error->send(res, send);
+        const auto ctx = m_request_support.context(req);
+        if (const auto scope_error = m_request_support.scope_error({ctx.merchant_id})) {
+            scope_error->send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        using Dto = ::app::dto::authentication::AuthenticationCreateRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        using Input = ::app::dto::authentication::AuthenticationCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        AuthenticationCreateInput input{*parsed, std::string{merchant_id}, authorized};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(create_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.create(*input, ctx).handle(sink);
     }
 
 private:

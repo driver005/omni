@@ -5,6 +5,7 @@ import core_router;
 import app_context;
 
 import :poll_input;
+import :context;
 import :poll_result;
 import :poll_runtime;
 import :poll_handlers_v1;

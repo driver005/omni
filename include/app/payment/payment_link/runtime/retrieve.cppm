@@ -35,10 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::RetrievePaymentLinkResponse, core::error::AppError>
-        retrieve(const PaymentLinkRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::RetrievePaymentLinkResponse>
+        retrieve(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkRetrieveData{ctx};
         m_context.metrics().record_flow("payment_link.retrieve");
         m_context.metrics().counter("payment_link.retrieve").increment();
 

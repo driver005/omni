@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_list_updatable_roles_at_entity_level;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,16 +34,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
-    list_updatable_roles_at_entity_level(const ListUpdatableRolesAtEntityLevelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_updatable_roles_at_entity_level(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
             };
         }
-        const auto entity_type = m_support.normalize_entity(input.entity_type);
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
         if (entity_type.empty()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::VALIDATION_FAILED,
@@ -59,13 +60,13 @@ public:
         std::string product_type{};
         if (entity_type == "merchant" || entity_type == "profile") {
             const auto merchant =
-                m_context.repository().find_merchant_account_by_string(input.identity.merchant_id);
+                m_context.repository().find_merchant_account_by_string(identity_from_context(ctx).merchant_id);
             if (merchant) {
                 product_type = m_support.merchant_product_type(*merchant);
             }
         }
         auto roles =
-            m_support.roles_for_entity(input.identity, requestor->entity_type, entity_type, true);
+            m_support.roles_for_entity(identity_from_context(ctx), requestor->entity_type, entity_type, true);
         std::vector<MinimalRoleInfoWire> response{};
         for (const auto& role: roles) {
             if (role.entity_type != entity_type || !role.is_updatable) {
@@ -84,7 +85,7 @@ public:
             "list_updatable_roles_at_entity_level",
             "user_role.list_updatable_roles_at_entity_level"
         );
-        return std::move(response);
+        return to_document_array(response, kMinimalRoleInfoWireFields);
     }
 
 private:

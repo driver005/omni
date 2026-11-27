@@ -4,6 +4,7 @@ export import :io_header;
 export import :io_types;
 export import :io_request;
 export import :io_response;
+export import :response_sink;
 export import :io_dispatch;
 
 import std;

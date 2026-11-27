@@ -6,7 +6,6 @@ import core_error;
 import core_behavior;
 import app_context;
 import app_auth;
-import app_dto;
 
 import :policy;
 
@@ -62,6 +61,11 @@ public:
         return ::app::routing::policy::scope_of(req);
     }
 
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const ::core::behavior::Scope& scope) const
     {
@@ -73,26 +77,5 @@ private:
 };
 
 using GsmRequestSupport = ::core::behavior::RequestSupport<GsmPolicy>;
-
-// Each input carries exactly what the old inline core block consumed.
-struct CreateGsmRuleInput
-{
-    ::app::dto::gsm::GsmCreateRequest request{};
-};
-
-struct GetGsmRuleInput
-{
-    ::app::dto::gsm::GsmRetrieveRequest request{};
-};
-
-struct UpdateGsmRuleInput
-{
-    ::app::dto::gsm::GsmUpdateRequest request{};
-};
-
-struct DeleteGsmRuleInput
-{
-    ::app::dto::gsm::GsmDeleteRequest request{};
-};
 
 } // namespace app::handlers::gsm

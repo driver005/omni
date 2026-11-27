@@ -1,6 +1,7 @@
 export module app_auth:oidc_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -28,28 +29,32 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::OidcDiscoveryResponse, core::error::AppError>
-    discovery(const OidcDiscoveryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcDiscoveryResponse>
+    discovery(const core::behavior::CallContext& ctx) const
     {
-        return m_discovery.discovery(input);
+        return m_discovery.discovery(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::JwksResponse, core::error::AppError>
-    jwks(const JwksEndpointInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::JwksResponse>
+    jwks(const core::behavior::CallContext& ctx) const
     {
-        return m_jwks.jwks(input);
+        return m_jwks.jwks(ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    authorize(const OidcAuthorizeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>> authorize(
+        const ::app::dto::oidc::OidcAuthorizeQuery& payload,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_authorize.authorize(input);
+        return m_authorize.authorize(payload, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::OidcTokenResponse, core::error::AppError>
-    token(const OidcTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcTokenResponse> token(
+        const ::app::dto::oidc::OidcTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_token.token(input);
+        return m_token.token(request, ctx);
     }
 
 private:

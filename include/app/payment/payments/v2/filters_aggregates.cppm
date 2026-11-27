@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v2_filters_aggregates;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,41 +59,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     ->authorize(req, "get_payment_filters", spec_for("get_payment_filters"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.get_payment_filters");
         m_context.metrics().counter("payments.get_payment_filters").increment();
 
-        using Input = ::app::model::payments::PaymentsFilterRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        GetPaymentFiltersInput input{std::move(data)};
-        auto result = m_runtime.get_payment_filters(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.get_payment_filters(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_get_payment_filters_profile(
@@ -101,43 +80,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "get_payment_filters_profile",
                 spec_for("get_payment_filters_profile")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.get_payment_filters_profile");
         m_context.metrics().counter("payments.get_payment_filters_profile").increment();
 
-        using Input = ::app::model::payments::PaymentsFilterRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        GetPaymentFiltersProfileInput input{std::move(data)};
-        auto result = m_runtime.get_payment_filters_profile(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.get_payment_filters_profile(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_get_payments_aggregates(
@@ -146,41 +103,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "get_payments_aggregates",
                 spec_for("get_payments_aggregates")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.get_payments_aggregates");
         m_context.metrics().counter("payments.get_payments_aggregates").increment();
 
-        using Input = ::app::model::payments::PaymentsAggregateRequest;
-        auto typed =
-            m_input_support.parse_query_as<Input>(req, {"start", "end", "status", "profile_id"});
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        GetPaymentsAggregatesInput input{std::move(data)};
-        auto result = m_runtime.get_payments_aggregates(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.get_payments_aggregates(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_get_payments_aggregates_profile(
@@ -189,41 +126,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "get_payments_aggregates_profile",
                 spec_for("get_payments_aggregates_profile")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.get_payments_aggregates_profile");
         m_context.metrics().counter("payments.get_payments_aggregates_profile").increment();
 
-        using Input = ::app::model::payments::PaymentsAggregateRequest;
-        auto typed =
-            m_input_support.parse_query_as<Input>(req, {"start", "end", "status", "profile_id"});
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        GetPaymentsAggregatesProfileInput input{std::move(data)};
-        auto result = m_runtime.get_payments_aggregates_profile(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.get_payments_aggregates_profile(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #1
@@ -240,6 +157,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_get_payment_filters(req, res, std::move(send));
                     }
                 )
@@ -262,6 +181,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_payment_filters_profile(req, res, std::move(send));
                         }
                     )
@@ -284,6 +205,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_get_payments_aggregates(req, res, std::move(send));
                     }
                 )
@@ -306,6 +229,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_payments_aggregates_profile(req, res, std::move(send));
                         }
                     )

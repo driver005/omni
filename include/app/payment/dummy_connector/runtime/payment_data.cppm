@@ -24,9 +24,10 @@ public:
     }
 
     // routes/dummy_connector.rs:87-105 -> core.rs:44-56 (payment_data).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment_data(const PaymentDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    payment_data(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentDataData{ctx};
         const auto payment = m_support.load_payment(input.payment_id);
         if (!payment) {
             // core.rs:54 -> utils.rs:67 - PaymentNotFound (DC_01).

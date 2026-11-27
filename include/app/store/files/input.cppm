@@ -85,6 +85,62 @@ public:
     }
 
     /**
+     * @brief HTTP-free view of the request for the files sub-runtimes.
+     *
+     * merchant_id is the processor scope; the authenticated identity's merchant
+     * id (when different) stays in claims under x-merchant-id. The file id and
+     * dispute id are read from path_segments / query by the runtimes.
+     */
+    [[nodiscard]] core::behavior::CallContext call_context(interfaces::io::IRequest& req) const
+    {
+        core::behavior::CallContext ctx{};
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        ctx.merchant_id = scope_merchant_id(req, auth);
+        if (!auth.merchant_id().empty()) {
+            ctx.claims["x-merchant-id"] = auth.merchant_id();
+        }
+        ctx.org_id = ::app::http::org_id_from_header{}(req);
+        if (ctx.org_id.empty()) {
+            ctx.org_id = auth.org_id();
+        }
+        ctx.profile_id = auth.profile_id();
+        if (const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId)) {
+            ctx.connected_merchant_id = std::string{*connected};
+        }
+        if (const auto secret = auth.claim(::app::auth::kClaimClientSecret)) {
+            ctx.client_secret = std::string{*secret};
+        }
+        const auto segments = ::app::http::RequestPath{}(req);
+        for (std::size_t i{0}; i < segments.count(); ++i) {
+            if (const auto segment = segments.at(i)) {
+                ctx.path_segments.emplace_back(*segment);
+            }
+        }
+        const std::string_view raw = req.get_path();
+        const auto question = raw.find('?');
+        if (question != std::string_view::npos) {
+            auto tail = raw.substr(question + 1);
+            while (!tail.empty()) {
+                const auto amp = tail.find('&');
+                const auto pair =
+                    tail.substr(0, amp == std::string_view::npos ? tail.size() : amp);
+                const auto eq = pair.find('=');
+                ctx.query[std::string{
+                    eq == std::string_view::npos ? pair : pair.substr(0, eq)
+                }] = eq == std::string_view::npos ? std::string{} : std::string{pair.substr(eq + 1)};
+                if (amp == std::string_view::npos) {
+                    break;
+                }
+                tail = tail.substr(amp + 1);
+            }
+        }
+        for (const auto& [key, value]: auth.claims()) {
+            ctx.claims[key] = value;
+        }
+        return ctx;
+    }
+
+    /**
      * @brief Port of `get_create_file_request` (`routes/files/transformers.rs:13-82`).
      */
     [[nodiscard]] std::expected<CreateFileRequestData, core::error::AppError>
@@ -416,6 +472,11 @@ public:
         return result;
     }
 
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return m_support.call_context(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope&) const noexcept
     {
@@ -424,29 +485,6 @@ public:
 
 private:
     FilesInputSupport& m_support;
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct FilesCreateInput
-{
-    CreateFileRequestData request{};
-    std::string processor_merchant_id{};
-    std::string provider_merchant_id{};
-};
-
-struct FilesDeleteInput
-{
-    std::string processor_merchant_id{};
-    std::string file_id{};
-};
-
-struct FilesRetrieveInput
-{
-    std::string processor_merchant_id{};
-    std::string file_id{};
-    std::optional<std::string> dispute_id{};
 };
 
 } // namespace app::handlers::files

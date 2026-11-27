@@ -1,6 +1,7 @@
 export module app_payment:dummy_connector_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -27,6 +28,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "dummy_connector_authorize_payment",
@@ -39,16 +42,8 @@ public:
             send();
             return;
         }
-        AuthorizePaymentInput input{m_input_support.last_segment(req)};
-        auto result = m_runtime.authorize_payment(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        auto result = m_runtime.authorize_payment(m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("text/html");
         res.set_status(interfaces::io::types::Status::OK);
         res.set_body(serialize_wire(*result));
@@ -64,6 +59,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "dummy_connector_complete_payment",
@@ -91,16 +88,8 @@ public:
         }
         const bool confirm = *confirm_value == "true";
 
-        CompletePaymentInput input{attempt_id, confirm};
-        auto result = m_runtime.complete_payment(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        auto result = m_runtime.complete_payment(m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::FOUND);
         res.set_header(interfaces::io::types::Token::LOCATION, result->second);
@@ -117,6 +106,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "dummy_connector_payment",
@@ -146,16 +137,9 @@ public:
             send();
             return;
         }
-        PaymentInput input{*parsed};
-        auto result = m_runtime.payment(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        const auto& dto = *parsed;
+        auto result = m_runtime.payment(dto, m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
         res.set_body(serialize_wire(*result));
@@ -171,6 +155,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "dummy_connector_payment_data",
@@ -194,16 +180,8 @@ public:
             "payment_retrieve_tolerance"
         );
 
-        PaymentDataInput input{m_input_support.last_segment(req)};
-        auto result = m_runtime.payment_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        auto result = m_runtime.payment_data(m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
         res.set_body(serialize_wire(*result));
@@ -219,6 +197,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "dummy_connector_refund", spec_for("dummy_connector_refund"))) {
@@ -266,16 +246,8 @@ public:
             send();
             return;
         }
-        RefundInput input{payment_id, parsed->amount};
-        auto result = m_runtime.refund(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        auto result = m_runtime.refund(m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
         res.set_body(serialize_wire(*result));
@@ -291,6 +263,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "dummy_connector_refund_data",
@@ -311,16 +285,8 @@ public:
         }
         m_input_support.apply_mock_latency("refund_retrieve_duration", "refund_retrieve_tolerance");
 
-        RefundDataInput input{m_input_support.last_segment(req)};
-        auto result = m_runtime.refund_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            res.set_status(error.get_status());
-            res.add_content_type("application/json");
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
+        auto result = m_runtime.refund_data(m_request_support.context(req));
+        result.handle(sink);
         res.add_content_type("application/json");
         res.set_status(interfaces::io::types::Status::OK);
         res.set_body(serialize_wire(*result));
@@ -342,6 +308,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_dummy_connector_authorize_payment(req, res, std::move(send));
                             }
                         )
@@ -358,6 +326,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_dummy_connector_complete_payment(req, res, std::move(send));
                             }
                         )
@@ -373,6 +343,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_dummy_connector_payment(req, res, std::move(send));
                         }
                     )
@@ -388,6 +360,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_dummy_connector_payment_data(req, res, std::move(send));
                             }
                         )
@@ -404,6 +378,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_dummy_connector_refund(req, res, std::move(send));
                             }
                         )
@@ -420,6 +396,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_dummy_connector_refund_data(req, res, std::move(send));
                             }
                         )

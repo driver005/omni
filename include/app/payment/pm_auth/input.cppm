@@ -10,6 +10,7 @@ import app_http;
 import app_dto;
 import app_context;
 
+import :context;
 export namespace app::handlers::pm_auth {
 
 struct AuthResult
@@ -117,7 +118,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     merchant_from_request(interfaces::io::IRequest& req) const
     {
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
@@ -137,7 +138,7 @@ public:
     }
 
     /** @brief Flatten the upstream {field: {"value": ...}} wrappers into the DTO shape. */
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     normalize_link_token_body(std::string_view body) const
     {
         const auto generic = serde::Ser::decode_generic("application/json", body);
@@ -186,7 +187,7 @@ public:
         return normalized;
     }
 
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     normalize_exchange_body(std::string_view body) const
     {
         const auto generic = serde::Ser::decode_generic("application/json", body);
@@ -253,11 +254,7 @@ private:
 
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct LinkTokenCreateInput
+struct LinkTokenCreateData
 {
     ::app::dto::pm_auth::LinkTokenCreateRequest request{};
     std::string merchant_id{};
@@ -265,15 +262,33 @@ struct LinkTokenCreateInput
     std::string client_platform{};
     std::string app_id{};
     std::string redirect_uri{};
+    template<class Dto>
+    explicit LinkTokenCreateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::dto::pm_auth::LinkTokenCreateRequest>(dto)},
+        merchant_id{ctx.merchant_id},
+        auth{},
+        client_platform{::app::payment::detail::last_path(ctx)},
+        app_id{::app::payment::detail::last_path(ctx)},
+        redirect_uri{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct ExchangeTokenInput
+struct ExchangeTokenData
 {
     ::app::dto::pm_auth::ExchangeTokenCreateRequest request{};
     std::string merchant_id{};
     AuthResult auth{};
     std::string body{};
+    template<class Dto>
+    explicit ExchangeTokenData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::dto::pm_auth::ExchangeTokenCreateRequest>(dto)},
+        merchant_id{ctx.merchant_id},
+        auth{},
+        body{::app::payment::detail::body_of(dto)}
+    {
+    }
 };
+
 
 /** @brief Request policy for the pm_auth domain: wraps the domain auth rules. */
 class PmAuthPolicy
@@ -282,6 +297,11 @@ public:
     PmAuthPolicy(::app::context::AppContext& /*context*/, PmAuthInputSupport& support) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

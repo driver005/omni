@@ -61,24 +61,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream SessionState::payment_callback_config() is an internal OnceCell load
         // (app.rs:207-212) with no HTTP auth. The registry row is NO_AUTH.
         const auto auth = m_request_support.authorize(req, "payment_callback_config", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentCallbackConfigInput input{};
-        auto result = m_runtime.payment_callback_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.payment_callback_config(m_request_support.context(req)).handle(sink);
     }
 
     void handle_create_email_client(
@@ -87,11 +79,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream create_email_client() is a free helper (app.rs:477-495), no HTTP auth.
         const auto auth = m_request_support.authorize(req, "create_email_client", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -101,7 +94,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -110,20 +103,10 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto proxy_url = m_request_support.query(req, "proxy_url");
-        CreateEmailClientInput input{*parsed, proxy_url};
-        auto result = m_runtime.create_email_client(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.create_email_client(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void handle_with_storage(
@@ -132,27 +115,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream AppState::with_storage() is an async constructor (app.rs:497-643), no auth.
         const auto auth = m_request_support.authorize(req, "with_storage", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto storage_impl =
-            m_request_support.query(req, "storage_impl").value_or("postgresql");
-        const auto service_name = m_request_support.query(req, "service_name").value_or("default");
-        WithStorageInput input{storage_impl, service_name};
-        auto result = m_runtime.with_storage(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.with_storage(m_request_support.context(req)).handle(sink);
     }
 
     void handle_get_store_interface(
@@ -161,28 +133,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream AppState::get_store_interface() is an async constructor (app.rs:648-727).
         const auto auth = m_request_support.authorize(req, "get_store_interface", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto storage_impl =
-            m_request_support.query(req, "storage_impl").value_or("postgresql");
-        const auto event_handler = m_request_support.query(req, "event_handler").value_or("logs");
-        const auto scope = m_request_support.scope(req);
-        GetStoreInterfaceInput input{storage_impl, event_handler, scope.org_id, scope.merchant_id};
-        auto result = m_runtime.get_store_interface(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.get_store_interface(m_request_support.context(req)).handle(sink);
     }
 
     void handle_new(
@@ -191,25 +151,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream AppState::new() delegates to with_storage(Postgresql) (app.rs:729-743).
         const auto auth = m_request_support.authorize(req, "new", {});
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto service_name = m_request_support.query(req, "service_name").value_or("default");
-        NewInput input{service_name};
-        auto result = m_runtime.app_new(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.app_new(m_request_support.context(req)).handle(sink);
     }
 
     // No HTTP routes are mounted. Upstream `app.rs` defines no `/app` scope: its ~50 `server()`

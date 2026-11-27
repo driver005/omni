@@ -1,6 +1,7 @@
 export module app_user:user_runtime_get_multiple_dashboard_metadata;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_multiple_dashboard_metadata(const GetMultipleDashboardMetadataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    get_multiple_dashboard_metadata(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto keys = input.request_context.query.get("keys");
-        const auto merchant_id = input.request_context.merchant_id;
+        const auto keys = ctx_query(ctx).get("keys");
+        const auto merchant_id = ctx.merchant_id;
         const auto stored = m_context.repository().get_config("dashboard_metadata." + merchant_id);
 
         m_context.metrics().record_flow("get_multiple_dashboard_metadata");

@@ -31,43 +31,42 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::RetrievePaymentLinkResponse, core::error::AppError>
-        retrieve(const PaymentLinkRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::RetrievePaymentLinkResponse>
+        retrieve(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    initiate(const PaymentLinkInitiateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    initiate(const core::behavior::CallContext& ctx) const
     {
-        return m_initiate.initiate(input);
+        return m_initiate.initiate(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    initiate_secure(const PaymentLinkInitiateSecureInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    initiate_secure(const core::behavior::CallContext& ctx) const
     {
-        return m_initiate_secure.initiate_secure(input);
+        return m_initiate_secure.initiate_secure(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
-        list(const PaymentLinkListInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
+    list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(dto, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
-        profile_list(const PaymentLinkListInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
+    profile_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_profile_list.profile_list(input);
+        return m_profile_list.profile_list(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    status(const PaymentLinkStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    status(const core::behavior::CallContext& ctx) const
     {
-        return m_status.status(input);
+        return m_status.status(ctx);
     }
 
 private:

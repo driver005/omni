@@ -7,11 +7,109 @@ import core_cache;
 import app_context;
 import app_model;
 import app_dto;
+import core_behavior;
 
 import :routing_input;
 import :routing_result;
 
 export namespace app::handlers::routing {
+
+// ── CallContext projections used by every routing sub-runtime ────────────────────────────
+// These replace the old RoutingInput's request-derived fields. They read only the context;
+// no request object reaches the runtime layer.
+
+[[nodiscard]] inline std::optional<std::string>
+ctx_query(const ::core::behavior::CallContext& ctx, std::string_view key)
+{
+    const auto it = ctx.query.find(std::string{key});
+    return it == ctx.query.end() ? std::nullopt : std::optional<std::string>{it->second};
+}
+
+template<class T>
+[[nodiscard]] inline std::optional<T>
+ctx_query_number(const ::core::behavior::CallContext& ctx, std::string_view key)
+{
+    const auto raw = ctx_query(ctx, key);
+    if (!raw) {
+        return std::nullopt;
+    }
+    T value{};
+    const auto [end, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), value);
+    (void)end;
+    return ec == std::errc{} ? std::optional<T>{value} : std::nullopt;
+}
+
+[[nodiscard]] inline bool
+ctx_has_segment(const ::core::behavior::CallContext& ctx, std::string_view segment)
+{
+    return std::ranges::find(ctx.path_segments, segment) != ctx.path_segments.end();
+}
+
+[[nodiscard]] inline std::string
+ctx_segment_after(const ::core::behavior::CallContext& ctx, std::string_view segment)
+{
+    for (std::size_t i{0}; i + 1 < ctx.path_segments.size(); ++i) {
+        if (ctx.path_segments[i] == segment) {
+            return ctx.path_segments[i + 1];
+        }
+    }
+    return {};
+}
+
+[[nodiscard]] inline std::string ctx_profile(const ::core::behavior::CallContext& ctx)
+{
+    auto profile = ctx_segment_after(ctx, "profiles");
+    if (profile.empty()) {
+        profile = ctx_segment_after(ctx, "business_profile");
+    }
+    if (!profile.empty()) {
+        return profile;
+    }
+    if (const auto from_query = ctx_query(ctx, "profile_id")) {
+        return *from_query;
+    }
+    const auto it = ctx.claims.find("x-profile-id");
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
+
+[[nodiscard]] inline std::string ctx_auth_profile(const ::core::behavior::CallContext& ctx)
+{
+    const auto it = ctx.claims.find("x-profile-id");
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
+
+[[nodiscard]] inline std::string ctx_algorithm(const ::core::behavior::CallContext& ctx)
+{
+    auto algorithm = ctx_segment_after(ctx, "routing-algorithms");
+    if (!algorithm.empty()) {
+        return algorithm;
+    }
+    for (std::size_t i{1}; i < ctx.path_segments.size(); ++i) {
+        if (ctx.path_segments[i] == "activate" &&
+            ctx.path_segments[i - 1] != "routing-algorithms") {
+            return ctx.path_segments[i - 1];
+        }
+    }
+    return ctx_query(ctx, "algorithm_id").value_or("");
+}
+
+[[nodiscard]] inline std::string ctx_transaction_type(const ::core::behavior::CallContext& ctx)
+{
+    if (ctx_has_segment(ctx, "payouts")) {
+        return "payout";
+    }
+    return ctx_query(ctx, "transaction_type").value_or("payment");
+}
+
+[[nodiscard]] inline bool ctx_is_v2(const ::core::behavior::CallContext& ctx)
+{
+    return ctx_has_segment(ctx, "v2");
+}
+
+[[nodiscard]] inline std::string ctx_enable(const ::core::behavior::CallContext& ctx)
+{
+    return ctx_query(ctx, "enable").value_or("metrics");
+}
 
 /**
  * @brief Shared business helpers for the routing sub-runtimes.
@@ -382,11 +480,11 @@ public:
     }
 
     // create_specific_dynamic_routing shared by success-based and elimination routes.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError> dynamic_create(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> dynamic_create(
         std::string_view merchant_id,
         std::string_view profile,
         std::string_view auth_profile,
-        std::string_view body,
+        const std::optional<serde::Value>& body,
         std::string_view feature,
         std::string_view operation,
         std::string_view name,
@@ -402,13 +500,7 @@ public:
             track(operation);
             return ResponseDocument::empty(); // StatusOk document
         }
-        if (body.empty()) {
-            return std::unexpected{core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            )};
-        }
-        if (!serde::Ser::decode_generic("application/json", body)) {
+        if (!body) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
@@ -421,8 +513,15 @@ public:
             )};
         }
         const auto algorithm_id = new_routing_id();
-        auto record =
-            config_record(merchant_id, algorithm_id, name, description, algorithm, profile, body);
+        auto record = config_record(
+            merchant_id,
+            algorithm_id,
+            name,
+            description,
+            algorithm,
+            profile,
+            serde::Ser::encode_json(*body)
+        );
         record.set_algorithm_id(algorithm_id);
         upsert_config(std::move(record));
         const auto key = algorithm == "success_rate_based" ? "success_based_algorithm"

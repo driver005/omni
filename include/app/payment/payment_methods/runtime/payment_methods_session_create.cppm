@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
-        payment_methods_session_create(const PaymentMethodsSessionCreateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
+        payment_methods_session_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodsSessionCreateData{dto, ctx};
         const auto& parsed = input.request;
         const std::string session_id =
             m_support.global_id("pms_", input.merchant_id + input.org_id);

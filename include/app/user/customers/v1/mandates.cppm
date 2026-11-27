@@ -33,7 +33,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -43,7 +43,8 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto denied = m_request_support.authorize(
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto denied = m_support.authorize(
                 req,
                 "get_customer_mandates",
                 ::core::behavior::AuthSpec{
@@ -53,26 +54,20 @@ public:
                 }
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const std::string id = m_request_support.path(req, CustomersPolicy::path_index(req, 1));
+        const std::string id = m_support.path(req, CustomersPolicy::path_index(req, 1));
         if (id.empty()) {
             const auto error =
                 m_input_support.upstream_error("InvalidRequestData", "missing customer id");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersMandatesRouteInput input{id, m_input_support.request_merchant_id(req)};
-        auto result = m_runtime.get_customer_mandates(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("id", std::string{id});
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.request_merchant_id(req)});
+        m_runtime.get_customer_mandates(ctx).handle(sink);
     }
 
     /** @brief Owns the `:customer_id/mandates` sub-router (v1-only route). */
@@ -96,7 +91,7 @@ private:
     ::app::context::AppContext& m_context;
     CustomersRuntime& m_runtime;
     CustomersInputSupport& m_input_support;
-    CustomersRequestSupport& m_request_support;
+    CustomersRequestSupport& m_support;
 };
 
 } // namespace app::handlers::customers

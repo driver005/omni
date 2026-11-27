@@ -1,6 +1,7 @@
 export module app_auth:oidc_runtime_jwks;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,8 +34,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::JwksResponse, core::error::AppError>
-    jwks(const JwksEndpointInput& /*input*/) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::JwksResponse>
+    jwks(const core::behavior::CallContext& /*ctx*/) const
     {
         m_context.metrics().record_flow("jwks_endpoint");
         m_context.metrics().counter("oidc.jwks_endpoint").increment();

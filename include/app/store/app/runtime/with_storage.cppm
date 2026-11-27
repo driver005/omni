@@ -1,8 +1,8 @@
 export module app_store:app_runtime_with_storage;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -20,7 +19,6 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 
@@ -36,11 +34,11 @@ public:
     }
 
     // Upstream AppState::with_storage() is an async constructor (app.rs:497-643), no auth.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    with_storage(const WithStorageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    with_storage(const core::behavior::CallContext& ctx) const
     {
-        const auto storage_impl = input.storage_impl;
-        const auto service_name = input.service_name;
+        const auto storage_impl = m_support.query_or(ctx, "storage_impl", "postgresql");
+        const auto service_name = m_support.query_or(ctx, "service_name", "default");
         if (!m_support.known_storage_impl(storage_impl)) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::VALIDATION_FAILED,

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -38,63 +39,24 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        // Upstream web::Json<ProfileAcquirerCreate> extraction (routes:16, api_models:4-32)
-        // deserializes `network: CardNetwork` and `acquirer_country_code: CountryAlpha2`,
-        // rejecting unknown enum strings with HTTP 400 before server_wrap/core run.
-        if (!m_input_support.payload_passes_serde_validation(body, false)) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::profile_acquirer::ProfileAcquirerCreate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::profile_acquirer::ProfileAcquirerCreate>::pass(req, sink);
+        if (!parsed) return;
 
         // Upstream extracts payload.profile_id before `server_wrap` and binds it to
         // JWTAuthProfileFromRoute (routes/profile_acquirer.rs:20,39-44).
         const std::string profile_id = std::string{parsed->get_profile_id().get_value()};
         m_policy.bind_profile_id(profile_id);
-        if (const auto denied = m_request_support.authorize(req, "create_profile_acquirer", {})) {
+        if (const auto denied = m_support.authorize(req, "create_profile_acquirer", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        CreateProfileAcquirerInput input{*parsed, profile_id};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kProfileAcquirerResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
+        m_runtime.create(*parsed, ctx).handle(sink);
     }
 
     // ---- route: POST /profile_acquirer/:profile_id/:profile_acquirer_id -----
@@ -106,72 +68,33 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Route ids come from the path, never from the request body.
         const auto ids = m_input_support.profile_and_acquirer_ids_from_path(req);
         if (!ids.has_value()) {
             const auto& error = ids.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string profile_id = ids->first;
         const std::string profile_acquirer_id = ids->second;
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        // Upstream web::Json<ProfileAcquirerUpdate> extraction (routes:61,
-        // api_models:154-174) applies `#[serde(deny_unknown_fields)]` plus the
-        // CardNetwork / CountryAlpha2 enum checks, all as HTTP 400 before core.
-        if (!m_input_support.payload_passes_serde_validation(body, true)) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::profile_acquirer::ProfileAcquirerUpdate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::profile_acquirer::ProfileAcquirerUpdate>::pass(req, sink);
+        if (!parsed) return;
 
         // Upstream binds the route profile_id to JWTAuthProfileFromRoute
         // (routes/profile_acquirer.rs:87-91).
         m_policy.bind_profile_id(profile_id);
-        if (const auto denied = m_request_support.authorize(req, "profile_acquirer_update", {})) {
+        if (const auto denied = m_support.authorize(req, "profile_acquirer_update", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        ProfileAcquirerUpdateInput input{*parsed, profile_id, profile_acquirer_id};
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kProfileAcquirerResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("profile_id", std::string{profile_id});
+        ctx.claims.insert_or_assign("profile_acquirer_id", std::string{profile_acquirer_id});
+        m_runtime.update(*parsed, ctx).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -223,7 +146,7 @@ private:
 
     ProfileAcquirerPolicy m_policy{m_input_support};
 
-    ProfileAcquirerRequestSupport m_request_support{m_policy};
+    ProfileAcquirerRequestSupport m_support{m_policy};
 };
 
 } // namespace app::handlers::profile_acquirer

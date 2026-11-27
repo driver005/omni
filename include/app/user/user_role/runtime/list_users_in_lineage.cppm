@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_list_users_in_lineage;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,16 +34,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<ListUsersInEntityWire>, core::error::AppError>
-    list_users_in_lineage(const ListUsersInLineageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_users_in_lineage(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::INTERNAL, "InvalidRoleId")
             };
         }
-        const auto entity_type = m_support.normalize_entity(input.entity_type);
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
         if (const auto err = m_support.get_min_entity(requestor->entity_type, entity_type)) {
             return std::unexpected{*err};
         }
@@ -50,13 +51,13 @@ public:
                                                     : std::min(requestor->entity_type, entity_type);
         std::map<std::string, std::vector<MinimalRoleInfoWire>> by_user{};
         for (const auto& assignment: m_context.repository().list_user_roles()) {
-            if (!m_support.assignment_in_scope(assignment, input.identity)) {
+            if (!m_support.assignment_in_scope(assignment, identity_from_context(ctx))) {
                 continue;
             }
             if (!m_support.lineage_matches_entity(assignment, min_entity)) {
                 continue;
             }
-            const auto role = m_support.role_info_from_id(input.identity, assignment.get_role_id());
+            const auto role = m_support.role_info_from_id(identity_from_context(ctx), assignment.get_role_id());
             if (!role) {
                 continue;
             }
@@ -81,7 +82,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track_flow("list_users_in_lineage", "user_role.list_users_in_lineage");
-        return std::move(response);
+        return to_document_array(response, kListUsersInEntityWireFields);
     }
 
 private:

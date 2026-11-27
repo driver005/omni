@@ -1,8 +1,8 @@
 export module app_store:app_runtime_get_store_interface;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -20,7 +19,6 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 
@@ -36,12 +34,12 @@ public:
     }
 
     // Upstream AppState::get_store_interface() is an async constructor (app.rs:648-727).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_store_interface(const GetStoreInterfaceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_store_interface(const core::behavior::CallContext& ctx) const
     {
         // Pick a storage interface from (storage_impl, event_handler) for the caller's tenant.
-        const auto storage_impl = input.storage_impl;
-        const auto event_handler = input.event_handler;
+        const auto storage_impl = m_support.query_or(ctx, "storage_impl", "postgresql");
+        const auto event_handler = m_support.query_or(ctx, "event_handler", "logs");
         if (!m_support.known_storage_impl(storage_impl)) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::VALIDATION_FAILED,
@@ -58,8 +56,8 @@ public:
         const std::string interface_name =
             storage_impl == "mock" ? "mock_db"
                                    : (event_handler == "kafka" ? "kafka_store" : "postgres_store");
-        const auto org_id = input.org_id;
-        const auto merchant_id = input.merchant_id;
+        const auto& org_id = ctx.org_id;
+        const auto& merchant_id = ctx.merchant_id;
         bool tenant_known = true;
         if (!merchant_id.empty()) {
             try {

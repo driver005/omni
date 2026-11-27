@@ -41,74 +41,45 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "list_initial_webhook_delivery_attempts_with_jwtauth", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto scope = m_request_support.scope(req);
-        const auto merchant_id = scope.merchant_id;
-        if (merchant_id.empty()) {
+        auto ctx = m_request_support.context(req);
+        if (ctx.merchant_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant_id"
             );
-            error.send(res, send);
-            return;
-        }
-
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         using Dto = ::app::dto::webhook_events::EventListConstraints;
-        auto parsed = serde::Ser::deserialize<Dto>("application/json", body);
-        if (!parsed || !m_input_support.is_generic_json(body)) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid constraints JSON"
-            );
-            error.send(res, send);
+        auto parsed = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!parsed) {
             return;
         }
 
         // Upstream validates constraints (foreign_try_from) before the profile lookup.
         if (const auto profile_error =
-                m_input_support.validate_profile(scope.profile_id, merchant_id)) {
+                m_input_support.validate_profile(ctx.profile_id, ctx.merchant_id)) {
             const auto& error = *profile_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // UserFromToken anchoring (routes/webhook_events.rs:80-85): override body profile.
         ::app::dto::webhook_events::ProfileIdValue anchored;
-        anchored.set_value(scope.profile_id);
+        anchored.set_value(ctx.profile_id);
         parsed->set_profile_id(std::move(anchored));
 
-        ListInitialWithJwtAuthInput input{*parsed, merchant_id, scope.profile_id};
-        auto result = m_runtime.list_initial_with_jwtauth(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(total_events_wire_fields());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
-        send();
+        m_runtime.list_initial_with_jwtauth(*parsed, ctx).handle(sink);
     }
 
     // Upstream: POST /events/{merchant_id}
@@ -120,72 +91,44 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto ids = m_input_support.path_ids(req);
         if (ids.merchant_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         if (const auto auth_error =
                 m_request_support.authorize(req, "list_initial_webhook_delivery_attempts", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = ids.merchant_id;
 
         using Dto = ::app::dto::webhook_events::EventListConstraints;
-        auto parsed = serde::Ser::deserialize<Dto>("application/json", body);
-        if (!parsed || !m_input_support.is_generic_json(body)) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid constraints JSON"
-            );
-            error.send(res, send);
+        auto parsed = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!parsed) {
             return;
         }
 
-        std::string profile_id = scope.profile_id;
         if (parsed->get_profile_id() && !parsed->get_profile_id()->get_value().empty()) {
-            profile_id = parsed->get_profile_id()->get_value();
+            ctx.profile_id = parsed->get_profile_id()->get_value();
         }
         // Upstream validates constraints (foreign_try_from) before the profile lookup.
         if (const auto profile_error =
-                m_input_support.validate_profile(profile_id, ids.merchant_id)) {
+                m_input_support.validate_profile(ctx.profile_id, ctx.merchant_id)) {
             const auto& error = *profile_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        ListInitialInput input{*parsed, ids.merchant_id, profile_id};
-        auto result = m_runtime.list_initial(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(total_events_wire_fields());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
-        send();
+        m_runtime.list_initial(*parsed, ctx).handle(sink);
     }
 
     // Upstream: GET /events/{merchant_id}/{initial_attempt_id}/attempts
@@ -196,41 +139,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto ids = m_input_support.path_ids(req);
         if (ids.merchant_id.empty() || ids.event_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant_id or initial_attempt_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         if (const auto auth_error =
                 m_request_support.authorize(req, "list_webhook_delivery_attempts", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-
-        ListAttemptsInput input{ids.merchant_id, ids.event_id, scope.profile_id};
-        auto result = m_runtime.list_attempts(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire =
-            serde::Serializer<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>::
-                serialize_values(*result, event_retrieve_wire_fields());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = ids.merchant_id;
+        m_runtime.list_attempts(ctx).handle(sink);
     }
 
     // Upstream: POST /events/{merchant_id}/{event_id}/retry (v1 only)
@@ -241,46 +169,33 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto ids = m_input_support.path_ids(req);
         if (ids.merchant_id.empty() || ids.event_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant_id or event_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         if (const auto auth_error =
                 m_request_support.authorize(req, "retry_webhook_delivery_attempt", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = ids.merchant_id;
         if (const auto profile_error =
-                m_input_support.validate_profile(scope.profile_id, ids.merchant_id)) {
+                m_input_support.validate_profile(ctx.profile_id, ctx.merchant_id)) {
             const auto& error = *profile_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        RetryInput input{ids.merchant_id, ids.event_id, scope.profile_id};
-        auto result = m_runtime.retry(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(event_retrieve_wire_fields());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{wire->data(), wire->size()}));
-        send();
+        m_runtime.retry(ctx).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

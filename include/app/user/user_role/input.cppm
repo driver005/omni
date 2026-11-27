@@ -1404,125 +1404,100 @@ private:
     ::app::context::AppContext& m_context;
 };
 
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old handler read from the request.
-
-struct GetAuthorizationInfoInput
+/** @brief Request snapshot shared by every user_role runtime method. */
+[[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
 {
-    RequestIdentity identity{};
-};
+    ::core::behavior::CallContext ctx{};
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+    if (ctx.merchant_id.empty()) ctx.merchant_id = auth.merchant_id();
+    ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
+    if (ctx.org_id.empty()) ctx.org_id = auth.org_id();
+    ctx.profile_id = auth.profile_id();
+    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) ctx.connected_merchant_id = std::string{*c};
+    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) ctx.client_secret = std::string{*s};
+    const auto segments = ::app::http::RequestPath{}(req);
+    for (std::size_t i{0}; i < segments.count(); ++i) ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    const auto raw = req.get_path();
+    if (const auto q = raw.find('?'); q != std::string_view::npos) {
+        const std::string_view tail = raw.substr(q + 1);
+        std::size_t start{0};
+        while (start <= tail.size()) {
+            const auto amp = tail.find('&', start);
+            const auto end = amp == std::string_view::npos ? tail.size() : amp;
+            const auto pair = tail.substr(start, end - start);
+            const auto eq = pair.find('=');
+            if (!pair.empty()) {
+                ctx.query.insert_or_assign(
+                    std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)},
+                    std::string{eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)}
+                );
+            }
+            if (amp == std::string_view::npos) break;
+            start = amp + 1;
+        }
+    }
+    constexpr std::string_view kHeaders[] = {
+        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
+        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+    };
+    for (const auto name: kHeaders) {
+        const auto value = req.find_header(name);
+        if (!value.empty()) ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+    }
+    for (const auto& [key, value]: auth.claims()) ctx.claims.insert_or_assign(key, value);
+    ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
+    ctx.claims.insert_or_assign("org_id", ctx.org_id);
+    ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
+    return ctx;
+}
 
-struct GetRoleInformationInput
+[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    RequestIdentity identity{};
-};
+    const auto it = ctx.claims.find(std::string{key});
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
 
-struct GetParentGroupInfoInput
+[[nodiscard]] inline bool ctx_bool(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    RequestIdentity identity{};
-    std::string entity_type{};
-    std::string product_type{};
-};
+    return ctx_string(ctx, key) == "true";
+}
 
-struct GetRoleFromTokenInput
+[[nodiscard]] inline RequestIdentity identity_from_context(const ::core::behavior::CallContext& ctx)
 {
-    RequestIdentity identity{};
-};
+    RequestIdentity out{};
+    out.merchant_id = ctx_string(ctx, "merchant_id");
+    out.org_id = ctx_string(ctx, "org_id");
+    out.profile_id = ctx_string(ctx, "profile_id");
+    out.user_id = ctx_string(ctx, "user_id");
+    out.role_id = ctx_string(ctx, "role_id");
+    out.tenant_id = ctx_string(ctx, "tenant_id");
+    return out;
+}
 
-struct GetGroupsAndResourcesForRoleFromTokenInput
-{
-    RequestIdentity identity{};
-};
 
-struct GetParentGroupsInfoForRoleFromTokenInput
+/** @brief Wraps a vector of wire records as one JSON document for Outcome::handle. */
+template<class T>
+[[nodiscard]] serde::Value
+to_document_array(const std::vector<T>& items, std::span<const std::string_view> fields)
 {
-    RequestIdentity identity{};
-};
+    serde::Value::Array array{};
+    array.reserve(items.size());
+    for (const auto& item: items) {
+        array.push_back(serde::Serializer<T>::build_value(item, fields));
+    }
+    return serde::Value{std::move(array)};
+}
 
-struct CreateRoleInput
+[[nodiscard]] inline serde::Value strings_to_document(const std::vector<std::string>& values)
 {
-    RequestIdentity identity{};
-    CreateRoleInputWire request{};
-};
-
-struct CreateRoleV2Input
-{
-    RequestIdentity identity{};
-    CreateRoleInputWire request{};
-};
-
-struct GetRoleInput
-{
-    RequestIdentity identity{};
-    std::string role_id{};
-};
-
-struct GetParentInfoForRoleInput
-{
-    RequestIdentity identity{};
-    std::string role_id{};
-};
-
-struct UpdateRoleInput
-{
-    RequestIdentity identity{};
-    std::string role_id{};
-    UpdateRoleInputWire request{};
-};
-
-struct UpdateUserRoleInput
-{
-    RequestIdentity identity{};
-    ::app::dto::user_role::UpdateUserRoleRequest request{};
-};
-
-struct AcceptInvitationsV2Input
-{
-    RequestIdentity identity{};
-    std::vector<AcceptEntityWire> request{};
-};
-
-struct AcceptInvitationsPreAuthInput
-{
-    RequestIdentity identity{};
-    std::vector<AcceptEntityWire> request{};
-};
-
-struct DeleteUserRoleInput
-{
-    RequestIdentity identity{};
-    ::app::dto::user_role::DeleteUserRoleRequest request{};
-};
-
-struct ListUsersInLineageInput
-{
-    RequestIdentity identity{};
-    std::string entity_type{};
-};
-
-struct ListRolesWithInfoInput
-{
-    RequestIdentity identity{};
-    std::string entity_type{};
-    bool groups{false};
-};
-
-struct ListInvitableRolesAtEntityLevelInput
-{
-    RequestIdentity identity{};
-    std::string entity_type{};
-};
-
-struct ListUpdatableRolesAtEntityLevelInput
-{
-    RequestIdentity identity{};
-    std::string entity_type{};
-};
-
-struct ListInvitationsForUserInput
-{
-    RequestIdentity identity{};
-};
+    serde::Value::Array array{};
+    array.reserve(values.size());
+    for (const auto& value: values) {
+        array.push_back(serde::Value{value});
+    }
+    return serde::Value{std::move(array)};
+}
 
 /**
  * @brief Domain authorization policy for UserRole.
@@ -1565,6 +1540,23 @@ public:
             out.connected_merchant_id = std::string{*connected};
         }
         return out;
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = make_call_context(req);
+        const auto identity = m_input.identity_from(req);
+        ctx.merchant_id = identity.merchant_id;
+        ctx.org_id = identity.org_id;
+        ctx.profile_id = identity.profile_id;
+        ctx.claims.insert_or_assign("merchant_id", identity.merchant_id);
+        ctx.claims.insert_or_assign("org_id", identity.org_id);
+        ctx.claims.insert_or_assign("profile_id", identity.profile_id);
+        ctx.claims.insert_or_assign("user_id", identity.user_id);
+        ctx.claims.insert_or_assign("role_id", identity.role_id);
+        ctx.claims.insert_or_assign("tenant_id", identity.tenant_id);
+        return ctx;
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

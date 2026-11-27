@@ -30,27 +30,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // server_wrap auth_type(ApiKeyAuth, DashboardNoPermissionAuth) OR-path.
-        const auto auth_error = m_request_support.authorize(req, "retrieve_forex", {});
-        const ForexAuth auth{auth_error, ::app::auth::AuthContextBuilder{}(req)};
-        if (auth.error) {
-            const auto& error = *auth.error;
-            error.send(res, send);
-            return;
-        }
-
-        RetrieveForexInput input{auth};
-        auto result = m_runtime.retrieve_forex(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+        if (const auto auth_error = m_request_support.authorize(req, "retrieve_forex", {})) {
+            auth_error->send(sink);
             return;
         }
 
         // ApplicationResponse::Json(FxExchangeRatesCacheEntry): typed document.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.retrieve_forex(m_request_support.context(req)).handle(sink);
     }
 
     // ── routes/currency.rs:36-72 — convert_forex ──────────────────────────────
@@ -60,44 +48,21 @@ public:
         std::function<void()> send
     )
     {
-        const auto auth_error = m_request_support.authorize(req, "convert_forex", {});
-        const ForexAuth auth{auth_error, ::app::auth::AuthContextBuilder{}(req)};
-        if (auth.error) {
-            const auto& error = *auth.error;
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_request_support.authorize(req, "convert_forex", {})) {
+            auth_error->send(sink);
             return;
         }
 
         // web::Query<CurrencyConversionParams> (routes/currency.rs:39).
         auto params = m_input_support.parse_conversion_params(req);
         if (!params) {
-            const auto& error = params.error();
-            error.send(res, send);
-            return;
-        }
-
-        ConvertForexInput input{auth, *params};
-        auto result = m_runtime.convert_forex(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+            params.error().send(sink);
             return;
         }
 
         // ApplicationResponse::Json(CurrencyConversionResponse) (:34-36).
-        auto encoded = result->serialize(convert_forex_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        std::vector<std::byte> body_bytes{};
-        body_bytes.reserve(encoded->size());
-        for (const char ch: *encoded) {
-            body_bytes.push_back(static_cast<std::byte>(ch));
-        }
-        res.set_body(std::move(body_bytes));
-        send();
+        m_runtime.convert_forex(*params, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

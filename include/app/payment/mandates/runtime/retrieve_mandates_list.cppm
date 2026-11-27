@@ -24,10 +24,11 @@ public:
 
     // ───────────────────────── Core: retrieve_mandates_list ─────────────────────────
     // core/mandate.rs:403-426.
-    [[nodiscard]] std::
-        expected<std::vector<::app::model::mandates::MandateResponse>, core::error::AppError>
-        retrieve_mandates_list(const RetrieveMandatesListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::mandates::MandateResponse>>
+        retrieve_mandates_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RetrieveMandatesListData{dto, ctx};
         m_support.record_flow("MandatesList"); // LockAction::NotApplicable (routes/mandates.rs:98)
 
         // find_mandates_by_merchant_id(merchant_id, constraints) (core/mandate.rs:409-415).

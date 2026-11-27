@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_dto;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,11 +21,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    upsert_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> upsert_decision_manager_config(
+        const serde::Value& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto name = input.decision_name;
-        const auto program = input.decision_program;
+        const auto name = m_support.generic_string(body, "name");
+        const auto program = m_support.generic_string(body, "program", "algorithm");
         if (program.empty()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -38,10 +40,10 @@ public:
             };
         }
 
-        const auto profile = input.profile_id;
-        if (input.is_v2) {
+        const auto profile = ctx.profile_id;
+        if (ctx_is_v2(ctx)) {
             if (const auto validation_error =
-                    m_support.profile_validation_error(input.auth_profile, profile)) {
+                    m_support.profile_validation_error(ctx_auth_profile(ctx), profile)) {
                 return std::unexpected{m_support.error(
                     core::error::AppErrorKind::PRECONDITION_FAILED,
                     *validation_error
@@ -77,7 +79,7 @@ public:
         record.set_program(m_support.wrap<::app::dto::conditional_configs::ProgramValue>(program));
 
         auto stored = m_support.config_record(
-            input.merchant_id,
+            ctx.merchant_id,
             key,
             record.get_name(),
             "decision manager",

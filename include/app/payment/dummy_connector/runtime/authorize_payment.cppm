@@ -23,9 +23,10 @@ public:
     }
 
     // routes/dummy_connector.rs:18-36 -> core.rs:59-85 (payment_authorize).
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
-    authorize_payment(const AuthorizePaymentInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::string>
+    authorize_payment(const core::behavior::CallContext& ctx) const
     {
+        const auto input = AuthorizePaymentData{ctx};
         // core.rs:63 - get_payment_data_by_attempt_id. No mock sleep in this flow.
         if (input.attempt_id.empty()) {
             return std::string{m_support.expired_page()};

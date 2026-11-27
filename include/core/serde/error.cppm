@@ -2,6 +2,7 @@ module;
 export module core_serde:error;
 
 import std;
+import interfaces;
 import :error_kind;
 import :core;
 import :json_codec;
@@ -55,6 +56,13 @@ public:
         res.set_status(get_status());
         res.set_body(serde::Ser::serialize(serde::json_content_type, *this));
         send();
+    }
+
+    void send(interfaces::io::ResponseSink& sink) const
+    {
+        sink.set_status(get_status());
+        sink.set_body(serde::Ser::serialize(serde::json_content_type, *this));
+        sink.send();
     }
 
     AppErrorKind kind{AppErrorKind::INTERNAL};

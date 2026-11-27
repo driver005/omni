@@ -8,6 +8,7 @@ import app_context;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::revenue_recovery_redis {
 
 /**
@@ -37,7 +38,7 @@ public:
     // Upstream route: /:connector_customer_id with web::Path<String>. The id is
     // the final non-empty path segment, read via RequestPath rather than a manual
     // rfind on get_path (which also failed to strip a trailing query string).
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     connector_customer_id_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -56,7 +57,7 @@ public:
     // RedisKeyType { Status, Tokens } (api_models:204-213). serde rejects a
     // missing or unknown variant, so do the same instead of silently defaulting
     // to Status. Returns true for Tokens, false for Status.
-    [[nodiscard]] std::expected<bool, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<bool>
     key_type_from_query(interfaces::io::IRequest& req) const
     {
         const auto key_type_raw = ::app::http::RequestQuery{}(req).get("key_type");
@@ -81,13 +82,17 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// Everything the old core block received after auth/path/query parsing.
-struct GetRevenueRecoveryRedisDataInput
+struct GetRevenueRecoveryRedisDataData
 {
     std::string connector_customer_id{};
-    bool is_tokens{false};
+    bool is_tokens{};
+    explicit GetRevenueRecoveryRedisDataData(const core::behavior::CallContext& ctx) :
+        connector_customer_id{::app::payment::detail::last_path(ctx)},
+        is_tokens{}
+    {
+    }
 };
+
 
 /** @brief Request policy for the revenue_recovery_redis domain: wraps the domain auth rules. */
 class RevenueRecoveryRedisPolicy
@@ -99,6 +104,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

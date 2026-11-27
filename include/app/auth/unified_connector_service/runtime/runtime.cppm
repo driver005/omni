@@ -1,6 +1,7 @@
 export module app_auth:unified_connector_service_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -23,16 +24,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<KillSwitchStatusResponse, core::error::AppError>
-    status(const KillSwitchStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<KillSwitchStatusResponse>
+    status(const core::behavior::CallContext& ctx) const
     {
-        return m_kill_switch_status.status(input);
+        return m_kill_switch_status.status(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    reset(const ResetKillSwitchInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    reset(const core::behavior::CallContext& ctx) const
     {
-        return m_reset_kill_switch.reset(input);
+        return m_reset_kill_switch.reset(ctx);
     }
 
 private:

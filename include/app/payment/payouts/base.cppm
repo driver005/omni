@@ -1,6 +1,7 @@
 export module app_payment:payouts_base;
 
 export import :payouts_input;
+import :context;
 export import :payouts_result;
 export import :payouts_runtime;
 export import :payouts_handlers_v1;

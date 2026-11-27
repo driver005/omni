@@ -1,6 +1,7 @@
 export module app_user:user_runtime_switch_merchant_for_user_in_org;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    switch_merchant_for_user_in_org(const SwitchMerchantForUserInOrgInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    switch_merchant_for_user_in_org(const ::app::model::user::SwitchMerchantRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto owner = input.request_context.token.value();
-        const auto new_merchant = input.request.get_merchant_id().get_value();
+        const auto owner = ctx_token(ctx).value();
+        const auto new_merchant = request.get_merchant_id().get_value();
         for (auto& role: m_context.repository().list_user_roles()) {
             if (role.get_user_id() == owner) {
                 role.set_merchant_id(new_merchant);

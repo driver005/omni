@@ -25,13 +25,6 @@ struct PathIds
 };
 
 /**
- * Deferred header lookup. The handler supplies a lambda that reads the live
- * request (`HeaderReader{}.get`), so the runtime can resolve config-named
- * headers without ever touching an HTTP type.
- */
-using HeaderReaderFn = std::function<std::string(std::string_view)>;
-
-/**
  * @brief Parse/auth/path/query support for the webhook handlers.
  *
  * Free of business logic: turns request data into the plain Input structs
@@ -45,14 +38,6 @@ public:
     explicit WebhooksInputSupport(::app::context::AppContext& context) noexcept :
         m_context{context}
     {
-    }
-
-    [[nodiscard]] HeaderReaderFn header_reader(interfaces::io::IRequest& req) const
-    {
-        return [&req](std::string_view name) -> std::string
-        {
-            return std::string{req.find_header(name)};
-        };
     }
 
     [[nodiscard]] std::size_t id_base(const ::app::http::PathSegments& segments) const
@@ -137,37 +122,6 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
-};
-
-/** Plain inputs — everything the old handle_* methods read off the request. */
-struct ReceiveIncomingWebhookInput
-{
-    PathIds ids{};
-    std::string body{};
-    HeaderReaderFn header{};
-    std::string operation{};
-    std::string flow{};
-    std::string counter{};
-};
-
-struct ReceiveIncomingWebhookV2Input
-{
-    PathIds ids{};
-    std::string body{};
-    HeaderReaderFn header{};
-    std::string operation{};
-    std::string flow{};
-    std::string counter{};
-};
-
-struct ReceiveNetworkTokenInput
-{
-    PathIds ids{};
-    std::string body{};
-    HeaderReaderFn header{};
-    std::string operation{};
-    std::string flow{};
-    std::string counter{};
 };
 
 } // namespace app::handlers::webhooks

@@ -20,12 +20,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::RedisDataResponse,
-        core::error::AppError>
-    get_revenue_recovery_redis_data(const GetRevenueRecoveryRedisDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RedisDataResponse>
+    get_revenue_recovery_redis_data(const core::behavior::CallContext& ctx) const
     {
-        return m_get_revenue_recovery_redis_data.get_revenue_recovery_redis_data(input);
+        return m_get_revenue_recovery_redis_data.get_revenue_recovery_redis_data(ctx);
     }
 
 private:

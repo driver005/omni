@@ -16,6 +16,8 @@ import app_http;
 import app_metrics;
 import app_services;
 
+import :call_context;
+
 export namespace app::handlers::unified_connector_service {
 
 // Constants mirrored verbatim from upstream consts.rs:389,393,399,405,407,409
@@ -75,32 +77,6 @@ public:
         return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    /** @brief Port of `rollout_scope_in` (kill_switch.rs:52-63). */
-    [[nodiscard]] ScopeInfo resolve_scope(interfaces::io::IRequest& req) const
-    {
-        ScopeInfo result{};
-        const auto segments = ::app::http::RequestPath{}(req);
-        if (segments.count() == 0) {
-            return result;
-        }
-        result.listed_key = std::string{segments.at(segments.count() - 1).value_or("")};
-        if (result.listed_key.empty()) {
-            return result;
-        }
-
-        // split_once(prefix): accept any leading tenant prefix, not just a key
-        // that starts with the prefix (kill_switch.rs:56-63).
-        result.scope = result.listed_key;
-        const auto prefix = std::string{kKillSwitchPrefix} + "_";
-        if (const auto pos = result.scope.find(prefix); pos != std::string::npos) {
-            result.scope.erase(0, pos + prefix.size());
-        }
-
-        // Shadow is decided from the *original* listed key (kill_switch.rs:545,584).
-        result.shadow = result.listed_key == kShadowKey;
-        return result;
-    }
-
 private:
     ::app::context::AppContext& m_context;
 };
@@ -130,6 +106,12 @@ public:
         return {};
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -139,20 +121,6 @@ public:
 
 private:
     UnifiedConnectorServiceInputSupport m_support;
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Both routes are body-less: each struct carries exactly the scope that the
-// old handler resolved before calling its logic block.
-
-struct KillSwitchStatusInput
-{
-    ScopeInfo scope{};
-};
-
-struct ResetKillSwitchInput
-{
-    ScopeInfo scope{};
 };
 
 } // namespace app::handlers::unified_connector_service

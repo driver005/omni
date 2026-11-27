@@ -1,6 +1,7 @@
 export module app_user:user_runtime_launch_sage;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    launch_sage(const LaunchSageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    launch_sage(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 

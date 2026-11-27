@@ -1,6 +1,7 @@
 export module app_payment:payouts_handlers_v2_list_filter;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -52,24 +53,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "get_payout_filters", spec_for("get_payout_filters"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsGetFiltersInput input{m_input_support.merchant_id(req)};
-        auto result = m_runtime.get_payout_filters(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_payout_filters(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_get_payout_filters_profile(
@@ -78,29 +73,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "get_payout_filters_profile",
                 spec_for("get_payout_filters_profile")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsGetFiltersProfileInput input{
-            m_input_support.merchant_id(req),
-            m_input_support.profile_id(req, std::nullopt)
-        };
-        auto result = m_runtime.get_payout_filters_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_payout_filters_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     using Route = utils::openapi::ApiRoute;
@@ -119,6 +105,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_payout_filters(req, res, std::move(send));
                             }
                         )
@@ -136,6 +124,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_get_payout_filters_profile(req, res, std::move(send));
                                 }
                             )

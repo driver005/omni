@@ -37,11 +37,11 @@ public:
      * Upstream: routes/revenue_recovery_data_backfill.rs:19-73 ->
      * core/revenue_recovery_data_backfill.rs:23-64.
      */
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse,
-        core::error::AppError>
-    backfill(const RevenueRecoveryDataBackfillInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
+        backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RevenueRecoveryDataBackfillData{dto, ctx};
         std::size_t processed_records{0};
         std::size_t failed_records{0};
         for (const auto& record: input.parsed.get_records()) {

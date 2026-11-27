@@ -1,6 +1,7 @@
 export module app_user:user_runtime_rotate_password;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,23 +38,24 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    rotate_password(const RotatePasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    rotate_password(const ::app::model::user::RotatePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        if (input.request.get_password().empty()) {
+        if (request.get_password().empty()) {
             return std::unexpected{m_support.wire_error(
                 "UR_09",
                 "Invalid Password",
                 core::error::AppErrorKind::INVALID_REQUEST
             )};
         }
-        const ::app::crypto::SecretString rotate_secret{input.request.get_password()};
+        const ::app::crypto::SecretString rotate_secret{request.get_password()};
         const auto rotate_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(rotate_secret.value());
-        const auto rotate_token = input.request_context.token;
+        const auto rotate_token = ctx_token(ctx);
         m_context.key_store().put(
             "user-password-rotate",
             rotate_token.value(),
@@ -62,10 +64,10 @@ public:
         );
 
         const auto key = std::string{"user.rotate_password:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

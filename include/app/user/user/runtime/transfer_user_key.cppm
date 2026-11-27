@@ -1,6 +1,7 @@
 export module app_user:user_runtime_transfer_user_key;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    transfer_user_key(const TransferUserKeyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    transfer_user_key(const ::app::model::user::UserKeyTransferRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -53,10 +55,10 @@ public:
         m_support.publish_identity_event("user.key_transferred", transferred_key_id);
 
         const auto key = std::string{"user.transfer_user_key:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

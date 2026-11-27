@@ -181,22 +181,6 @@ private:
     ::app::context::AppContext& m_context;
 };
 
-// Each struct carries exactly what the old core call received.
-
-struct ApplePayMerchantRegistrationInput
-{
-    VerificationRequestWire request{};
-    std::string merchant_id{};
-    std::string profile_id{};
-};
-
-struct RetrieveApplePayVerifiedDomainsInput
-{
-    std::string merchant_id{};
-    std::string profile_id{};
-    std::string merchant_connector_id{};
-};
-
 } // namespace app::handlers::verification
 
 // Serialization declared next to the wire type it describes.

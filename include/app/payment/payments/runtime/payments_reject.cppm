@@ -31,14 +31,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::payments::PaymentsResponse, core::error::AppError>
-    payments_reject(const PaymentsRejectInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsResponse>
+    payments_reject(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
     {
-        if (const auto err = m_support.ensure_payment_exists(input.data)) {
+        const PaymentsRequestData input = m_support.request_data(dto, ctx);
+        if (const auto err = m_support.ensure_payment_exists(input)) {
             return std::unexpected{*err};
         }
         const auto pipeline = m_support.run_payment_pipeline(
-            input.data,
+            input,
             "payments_reject",
             "authorize",
             "requires_capture"

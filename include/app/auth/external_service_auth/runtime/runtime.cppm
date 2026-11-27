@@ -1,6 +1,7 @@
 export module app_auth:external_service_auth_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_dto;
@@ -21,12 +22,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::external_service_auth::ExternalVerifyTokenResponse,
-        core::error::AppError>
-    validate_token(const ValidateTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::external_service_auth::ExternalVerifyTokenResponse>
+    validate_token(
+        const ::app::dto::external_service_auth::ValidateTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_validate_token.validate_token(input);
+        return m_validate_token.validate_token(request, ctx);
     }
 
 private:

@@ -4,8 +4,8 @@ import std;
 import app_dto;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :offer_engine_input;
 import :offer_engine_result;
 import :offer_engine_runtime_common;
 import :offer_engine_runtime_connectivity_check;
@@ -23,17 +23,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ConnectivityCheckResponse, core::error::AppError>
-    connectivity_check(const ConnectivityCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ConnectivityCheckResponse>
+    connectivity_check(const ::core::behavior::CallContext& ctx) const
     {
-        return m_connectivity_check.connectivity_check(input);
+        return m_connectivity_check.connectivity_check(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::offer_engine::BrowseOffersResponse, core::error::AppError>
-        browse_offers(const BrowseOffersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::offer_engine::BrowseOffersResponse>
+    browse_offers(
+        const ::app::dto::offer_engine::BrowseOffersRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_browse_offers.browse_offers(input);
+        return m_browse_offers.browse_offers(request, ctx);
     }
 
 private:

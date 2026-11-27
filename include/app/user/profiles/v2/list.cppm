@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -34,7 +35,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -44,37 +45,24 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "profiles_list", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "profiles_list", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // profiles.rs:402-406 (v1) / :438 (v2) — list_profile(merchant, None).
-        ProfilesListInput input{m_input_support.merchant_from_request(req), std::nullopt};
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ProfileWireResponse>>::serialize_values(
-            *result,
-            kProfileWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{m_input_support.merchant_from_request(req)});
+        ctx.claims.insert_or_assign("profile_id_list", encode_ids(std::nullopt));
+        m_runtime.list(ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     ProfilesRuntime& m_runtime;
     ProfilesInputSupport& m_input_support;
-    ProfilesRequestSupport& m_request_support;
+    ProfilesRequestSupport& m_support;
 };
 
 } // namespace app::handlers::profiles

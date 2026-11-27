@@ -47,62 +47,21 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input.
-        const auto ids = m_input_support.path_ids(req, false);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(
                 req,
                 "receive_incoming_webhook",
                 ::app::webhook::policy::kWebhooksMerchantAuth
             )) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
-            return;
-        }
-        ReceiveIncomingWebhookInput input{
-            ids,
-            req.body_as_string(),
-            m_input_support.header_reader(req),
-            "receive_incoming_webhook",
-            "IncomingWebhookReceive",
-            "WEBHOOK_INCOMING_RECEIVED"
-        };
-
-        // 2. Input -> WebhookAck envelope.
-        auto result = m_runtime.receive_incoming_webhook(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
+            auth_error->send(sink);
             return;
         }
 
-        // 3. Ack -> response (direct writes, original send_ack shape).
-        const auto& ack = *result;
-        if (ack.kind() == AckKind::STATUS_OK) {
-            res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(std::vector<std::byte>{});
-            send();
-        } else if (ack.kind() == AckKind::FILE_DATA) {
-            for (const auto& [name, value]: ack.headers()) {
-                res.add_header(name, value);
-            }
-            res.add_header("content-type", ack.mime());
-            res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
-            send();
-        } else if (ack.kind() == AckKind::JSON_WITH_HEADERS) {
-            for (const auto& [name, value]: ack.headers()) {
-                res.add_header(name, value);
-            }
-            res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
-            send();
-        } else {
-            res.set_status(interfaces::io::types::Status::OK);
-            res.set_body(serde::Ser::serialize("application/json", WebhookAckBody{ack}.value()));
-            send();
-        }
+        const auto body = req.body_as_string();
+        auto ctx = m_request_support.context(req);
+        ctx.operation = "receive_incoming_webhook";
+        ctx.profile_id.clear(); // v1 route is merchant-only
+        m_runtime.receive_incoming_webhook(body, ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)

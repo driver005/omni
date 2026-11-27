@@ -4,6 +4,7 @@ import std;
 import core_serde;
 import core_error;
 import app_context;
+import core_behavior;
 
 import :superposition_proxy_input;
 import :superposition_proxy_runtime_common;
@@ -36,58 +37,72 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_contexts(const ListContextsHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_contexts(const ListContextsQuery& request, const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_contexts.list_contexts(input);
+        return m_list_contexts.list_contexts(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_context(const CreateContextHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_context(const ContextPutRequest& request, const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_context.create_context(input);
+        return m_create_context.create_context(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_default_configs(const ListDefaultConfigsHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> list_default_configs(
+        const ListDefaultConfigsQuery& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list_default_configs.list_default_configs(input);
+        return m_list_default_configs.list_default_configs(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_default_config(const GetDefaultConfigHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> get_default_config(
+        const GetDefaultConfigRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_get_default_config.get_default_config(input);
+        return m_get_default_config.get_default_config(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_dimensions(const ListDimensionsHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> list_dimensions(
+        const ListDimensionsQuery& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list_dimensions.list_dimensions(input);
+        return m_list_dimensions.list_dimensions(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_dimension(const GetDimensionHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> get_dimension(
+        const GetDimensionRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_get_dimension.get_dimension(input);
+        return m_get_dimension.get_dimension(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    resolve_detailed_config(const ResolveDetailedConfigHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> resolve_detailed_config(
+        const ResolveDetailedConfigRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_resolve_detailed_config.resolve_detailed_config(input);
+        return m_resolve_detailed_config.resolve_detailed_config(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    resolve_config_explanation(const ResolveConfigExplanationHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> resolve_config_explanation(
+        const ResolveConfigExplanationRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_resolve_config_explanation.resolve_config_explanation(input);
+        return m_resolve_config_explanation.resolve_config_explanation(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_audit_logs(const ListAuditLogsHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> list_audit_logs(
+        const ListAuditLogsQuery& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list_audit_logs.list_audit_logs(input);
+        return m_list_audit_logs.list_audit_logs(request, ctx);
     }
 
 private:

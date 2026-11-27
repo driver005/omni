@@ -1,6 +1,7 @@
 export module app_auth:oidc_runtime_discovery;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,8 +34,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::OidcDiscoveryResponse, core::error::AppError>
-    discovery(const OidcDiscoveryInput& /*input*/) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcDiscoveryResponse>
+    discovery(const core::behavior::CallContext& /*ctx*/) const
     {
         m_context.metrics().record_flow("oidc_discovery");
         m_context.metrics().counter("oidc.oidc_discovery").increment();

@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v2_list;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,42 +47,32 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 m_input_support.is_v2(req) ? "V2List" : "V1List",
                 spec_for(m_input_support.is_v2(req) ? "V2List" : "V1List")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundListRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundListRequest>::pass(req, sink);
+        if (!parsed) return;
 
         const bool profile_scoped = m_input_support.is_v2(req) ||
                                     req.get_path().find("/profile/list") != std::string_view::npos;
-        RefundsListInput input{*parsed, profile_scoped, m_input_support.request_facts(req)};
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list(m_request_support->context(req)));
+        result.handle(sink);
     }
 
     // original install() route #20

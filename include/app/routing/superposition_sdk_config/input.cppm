@@ -360,11 +360,6 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] std::string provider_merchant_id(interfaces::io::IRequest& req) const
-    {
-        return ::app::http::HeaderReader{}.get(req, "x-provider-merchant-id");
-    }
-
     [[nodiscard]] std::string profile_id_from_path(interfaces::io::IRequest& req) const
     {
         const ::app::http::PathSegments segments{::app::http::RequestPath{}(req)};
@@ -442,6 +437,11 @@ public:
         return ::app::routing::policy::scope_of(req);
     }
 
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const ::core::behavior::Scope& scope) const
     {
@@ -454,23 +454,5 @@ private:
 
 using SuperpositionSdkConfigRequestSupport =
     ::core::behavior::RequestSupport<SuperpositionSdkConfigPolicy>;
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct GetSdkConfigInput
-{
-    std::string payment_id{};
-    std::string sdk_profile_id{};
-    std::string provider_merchant_id{};
-    ::app::auth::AuthContext auth{};
-};
-
-struct GetProfileSdkConfigInput
-{
-    std::string profile_id{};
-    std::string provider_merchant_id{};
-    ::app::auth::AuthContext auth{};
-};
 
 } // namespace app::handlers::superposition_sdk_config

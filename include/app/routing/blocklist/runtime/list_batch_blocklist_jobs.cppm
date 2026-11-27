@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -36,26 +37,28 @@ public:
     }
 
     // batch.rs:657-697 list_batch_blocklist_jobs.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ListBatchBlocklistJobsResponse, core::error::AppError>
-        list_batch_blocklist_jobs(const ListBatchBlocklistJobsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBatchBlocklistJobsResponse>
+    list_batch_blocklist_jobs(const ::core::behavior::CallContext& ctx) const
     {
+        const std::string job_type = query_value(ctx, "job_type").value_or("");
+        const std::uint32_t limit = query_number<std::uint32_t>(ctx, "limit", 10);
+        const std::uint32_t offset = query_number<std::uint32_t>(ctx, "offset", 0);
         std::vector<JobRecord> selected;
         for (auto& record: m_support.list_jobs("blocklist.job:")) {
-            const bool merchant_ok = input.merchant.empty() || record.get_merchant_id().empty() ||
-                                     record.get_merchant_id() == input.merchant;
-            const bool profile_ok = input.profile.empty() || record.get_profile_id().empty() ||
-                                    record.get_profile_id() == input.profile;
+            const bool merchant_ok = ctx.merchant_id.empty() || record.get_merchant_id().empty() ||
+                                     record.get_merchant_id() == ctx.merchant_id;
+            const bool profile_ok = ctx.profile_id.empty() || record.get_profile_id().empty() ||
+                                    record.get_profile_id() == ctx.profile_id;
             if (!merchant_ok || !profile_ok) {
                 continue;
             }
-            if (!input.job_type.empty() && record.get_name() != input.job_type) {
+            if (!job_type.empty() && record.get_name() != job_type) {
                 continue;
             }
             selected.push_back(std::move(record));
         }
         const std::size_t total = selected.size();
-        auto page = m_support.paginate(std::move(selected), input.offset, input.limit);
+        auto page = m_support.paginate(std::move(selected), offset, limit);
 
         std::vector<::app::model::blocklist::BatchBlocklistJobStatusResponse> data;
         data.reserve(page.size());

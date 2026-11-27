@@ -45,36 +45,21 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input.
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:31) -> registry PLATFORM_ADMIN.
         if (const auto auth_error = m_request_support.authorize(req, "config_key_create", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // web::Json<Config> (routes/configs.rs:20): both fields are required strings.
-        const auto body = req.body_as_string();
-        auto parsed = serde::Ser::deserialize<ConfigRequestWire>("application/json", body);
-        if (!parsed) {
-            const auto error = deserialization_error();
-            error.send(res, send);
+        // web::Json<Config> (routes/configs.rs:20): pass parses + validates the DTO.
+        auto dto = serde::Serializer<ConfigRequestWire>::pass(req, sink);
+        if (!dto) {
             return;
         }
-        ConfigKeyCreateInput input{*parsed};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.create(*dto, m_request_support.context(req)).handle(sink);
     }
 
     /** Upstream `config_key_retrieve` -> `read_config` (routes/configs.rs:36-55). */
@@ -84,32 +69,17 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input.
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext.
         // server_wrap auth: &InternalApiKeyAuth(ADMIN_API_AUTH) (routes/configs.rs:51).
         if (const auto auth_error = m_request_support.authorize(req, "config_key_retrieve", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // web::Path<String> key (routes/configs.rs:40); never read from the body.
-        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
-        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
-        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
-        ConfigKeyRetrieveInput input{config_key};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // web::Path<String> key (routes/configs.rs:40) is read from the context.
+        m_runtime.retrieve(m_request_support.context(req)).handle(sink);
     }
 
     /** Upstream `config_key_update` -> `update_config` (routes/configs.rs:56-78). */
@@ -119,41 +89,23 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input.
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:74) -> registry PLATFORM_ADMIN.
         if (const auto auth_error = m_request_support.authorize(req, "config_key_update", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // web::Json<ConfigUpdate> with key(skip_deserializing): decode only `value`.
-        const auto body = req.body_as_string();
-        auto parsed = serde::Ser::deserialize<ConfigUpdateRequestWire>("application/json", body);
-        if (!parsed) {
-            const auto error = deserialization_error();
-            error.send(res, send);
+        auto dto = serde::Serializer<ConfigUpdateRequestWire>::pass(req, sink);
+        if (!dto) {
             return;
         }
 
         // payload.key = path.into_inner() (routes/configs.rs:65-66) — the path wins.
-        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
-        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
-        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
-        ConfigKeyUpdateInput input{*parsed, config_key};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.update(*dto, m_request_support.context(req)).handle(sink);
     }
 
     /** Upstream `config_key_delete` -> `config_delete` (routes/configs.rs:80-99). */
@@ -163,32 +115,17 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input.
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // 1. request -> DTO + CallContext.
         // server_wrap auth: &ADMIN_API_AUTH (routes/configs.rs:95) -> registry PLATFORM_ADMIN.
         if (const auto auth_error = m_request_support.authorize(req, "config_key_delete", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // web::Path<String> key (routes/configs.rs:84).
-        // v1 scope is /configs/:key; v2 scope is /v2/configs/:key.
-        const bool is_v2 = m_request_support.path(req, 0U) == "v2";
-        const auto config_key = m_request_support.path(req, is_v2 ? 2U : 1U);
-        ConfigKeyDeleteInput input{config_key};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.remove(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // web::Path<String> key (routes/configs.rs:84) is read from the context.
+        m_runtime.remove(m_request_support.context(req)).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -256,17 +193,6 @@ public:
     }
 
 private:
-    /** Upstream IR_06 / invalid_request: message in `message`, code in `error`. */
-    [[nodiscard]] static core::error::AppError deserialization_error()
-    {
-        auto error = core::error::AppErrorBuilder{}(
-            core::error::AppErrorKind::INVALID_JSON,
-            "failed to deserialize json body"
-        );
-        error.set_kind_name("IR_06");
-        return error;
-    }
-
     ::app::context::AppContext& m_context;
     ConfigsRuntime& m_runtime;
     core::behavior::RequestSupport<ConfigsPolicy>& m_request_support;

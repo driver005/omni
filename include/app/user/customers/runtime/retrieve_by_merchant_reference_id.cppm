@@ -1,6 +1,7 @@
 export module app_user:customers_runtime_retrieve_by_merchant_reference_id;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -20,12 +21,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_by_merchant_reference_id(const CustomersRetrieveByReferenceRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_by_merchant_reference_id(const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
         const auto aggregate =
-            m_support.find_by_reference(repo, input.reference, input.merchant_id);
+            m_support.find_by_reference(repo, ctx_string(ctx,"reference"), ctx_string(ctx,"merchant_id"));
         if (!aggregate) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")

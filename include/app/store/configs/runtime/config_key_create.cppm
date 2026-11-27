@@ -1,6 +1,7 @@
 export module app_store:configs_runtime_config_key_create;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -22,14 +23,15 @@ public:
     }
 
     /** Upstream `config_key_create` -> `set_config` (core/configs.rs:22-34). */
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create(const ConfigKeyCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create(const ConfigRequestWire& dto, const core::behavior::CallContext& ctx) const
     {
+        (void)ctx;
         // set_config: store.insert_config(ConfigNew { key: config.key,
         // config: config.value }).to_duplicate_response(DuplicateConfig).
         ::app::store::configs::ConfigRecord record{};
-        record.set_config_key(input.request.get_key());
-        record.set_config_value(input.request.get_value());
+        record.set_config_key(dto.get_key());
+        record.set_config_value(dto.get_value());
         auto created = m_context.repository().create_config(record);
         if (!created) {
             return std::unexpected{m_support.duplicate_config_error()};

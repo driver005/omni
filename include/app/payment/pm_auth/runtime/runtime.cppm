@@ -23,16 +23,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::pm_auth::LinkTokenCreateResponse, core::error::AppError>
-    link_token_create(const LinkTokenCreateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::pm_auth::LinkTokenCreateResponse>
+        link_token_create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_link_token_create.link_token_create(input);
+        return m_link_token_create.link_token_create(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    exchange_token(const ExchangeTokenInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_exchange_token.exchange_token(input);
+        return m_exchange_token.exchange_token(dto, ctx);
     }
 
 private:

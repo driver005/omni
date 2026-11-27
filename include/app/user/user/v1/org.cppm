@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_context;
@@ -26,7 +27,7 @@ public:
         m_context{ctx},
         m_runtime{runtime},
         m_input_support{input},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -191,47 +192,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "user_org_create", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "user_org_create", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::UserOrgMerchantCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        UserOrgCreateInput input{m_input_support.request_data(req, req.body_as_string()), *parsed};
-        auto result = m_runtime.user_org_create(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::UserOrgMerchantCreateRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.user_org_create(*parsed, ctx).handle(sink);
     }
 
     void handle_user_merchant_account_create(
@@ -240,51 +212,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "user_merchant_account_create", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "user_merchant_account_create", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::UserMerchantCreate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        UserMerchantAccountCreateInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.user_merchant_account_create(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::UserMerchantCreate>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.user_merchant_account_create(*parsed, ctx).handle(sink);
     }
 
     void handle_list_orgs_for_user(
@@ -293,10 +233,11 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "list_orgs_for_user", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "list_orgs_for_user", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"list_orgs_for_user"})"};
@@ -306,7 +247,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -316,26 +257,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        ListOrgsForUserInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"list_orgs_for_user"})"}),
-            *parsed
-        };
-        auto result = m_runtime.list_orgs_for_user(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.list_orgs_for_user(*parsed, ctx).handle(sink);
     }
 
     void handle_list_merchants_for_user_in_org(
@@ -344,11 +270,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "list_merchants_for_user_in_org", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "list_merchants_for_user_in_org", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"list_merchants_for_user_in_org"})"};
@@ -358,7 +285,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -368,27 +295,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        ListMerchantsForUserInOrgInput input{
-            m_input_support
-                .request_data(req, std::string{R"({"op":"list_merchants_for_user_in_org"})"}),
-            *parsed
-        };
-        auto result = m_runtime.list_merchants_for_user_in_org(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.list_merchants_for_user_in_org(*parsed, ctx).handle(sink);
     }
 
     void handle_list_profiles_for_user_in_org_and_merchant(
@@ -397,12 +308,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support
+                m_support
                     .authorize(req, "list_profiles_for_user_in_org_and_merchant", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"list_profiles_for_user_in_org_and_merchant"})"};
@@ -412,7 +324,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -422,29 +334,11 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        ListProfilesForUserInOrgAndMerchantInput input{
-            m_input_support.request_data(
-                req,
-                std::string{R"({"op":"list_profiles_for_user_in_org_and_merchant"})"}
-            ),
-            *parsed
-        };
-        auto result = m_runtime.list_profiles_for_user_in_org_and_merchant(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.list_profiles_for_user_in_org_and_merchant(*parsed, ctx).handle(sink);
     }
 
     void handle_switch_org_for_user(
@@ -453,50 +347,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "switch_org_for_user", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "switch_org_for_user", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::SwitchOrganizationRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        SwitchOrgForUserInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.switch_org_for_user(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::SwitchOrganizationRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.switch_org_for_user(*parsed, ctx).handle(sink);
     }
 
     void handle_switch_merchant_for_user_in_org(
@@ -505,51 +367,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "switch_merchant_for_user_in_org", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "switch_merchant_for_user_in_org", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::SwitchMerchantRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        SwitchMerchantForUserInOrgInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.switch_merchant_for_user_in_org(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::SwitchMerchantRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.switch_merchant_for_user_in_org(*parsed, ctx).handle(sink);
     }
 
     void handle_switch_profile_for_user_in_org_and_merchant(
@@ -558,52 +388,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support
+                m_support
                     .authorize(req, "switch_profile_for_user_in_org_and_merchant", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::SwitchProfileRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        SwitchProfileForUserInOrgAndMerchantInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.switch_profile_for_user_in_org_and_merchant(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::SwitchProfileRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.switch_profile_for_user_in_org_and_merchant(*parsed, ctx).handle(sink);
     }
 
     void handle_get_user_merchant_details(
@@ -612,11 +410,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "get_user_merchant_details", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "get_user_merchant_details", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = std::string{R"({"op":"get_user_merchant_details"})"};
@@ -626,7 +425,7 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
@@ -636,33 +435,18 @@ public:
                 "Failed to deserialize the JSON body into the target type"
             );
             deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
+            deserialize_error.send(sink);
             return;
         }
-        GetUserMerchantDetailsInput input{
-            m_input_support.request_data(req, std::string{R"({"op":"get_user_merchant_details"})"}),
-            *parsed
-        };
-        auto result = m_runtime.get_user_merchant_details(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_user_merchant_details(*parsed, ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     UserRuntime& m_runtime;
     UserInputSupport& m_input_support;
-    UserRequestSupport& m_request_support;
+    UserRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user

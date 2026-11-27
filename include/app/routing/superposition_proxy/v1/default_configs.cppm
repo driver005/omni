@@ -51,35 +51,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "list_default_configs", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto scope = m_input_support.extract_proxy_headers(req);
         if (!scope) {
             const auto& error = scope.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         m_input_support.cache_scope(req, *scope);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = scope->org_id;
+        ctx.headers["x-workspace"] = scope->workspace_id;
 
-        ListDefaultConfigsHandlerInput input{
-            m_input_support.list_default_configs_query(m_input_support.query_pairs(req)),
-            ::app::auth::AuthContextBuilder{}(req),
-            scope->org_id,
-            scope->workspace_id
-        };
-        auto result = m_runtime.list_default_configs(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto request = m_input_support.list_default_configs_query(m_input_support.query_pairs(req));
+        m_runtime.list_default_configs(request, ctx).handle(sink);
     }
 
     // ── GET /v1/superposition/default-config/{key} ──────────────────────────────
@@ -89,37 +80,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "get_default_config", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto scope = m_input_support.extract_proxy_headers(req);
         if (!scope) {
             const auto& error = scope.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         m_input_support.cache_scope(req, *scope);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = scope->org_id;
+        ctx.headers["x-workspace"] = scope->workspace_id;
 
-        GetDefaultConfigHandlerInput input{
-            GetDefaultConfigRequest{
-                m_request_support.path(req, ::app::routing::policy::last_path_index(req))
-            },
-            ::app::auth::AuthContextBuilder{}(req),
-            scope->org_id,
-            scope->workspace_id
+        auto request = GetDefaultConfigRequest{
+            m_request_support.path(req, ::app::routing::policy::last_path_index(req))
         };
-        auto result = m_runtime.get_default_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.get_default_config(request, ctx).handle(sink);
     }
 
 private:

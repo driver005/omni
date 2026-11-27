@@ -1,6 +1,7 @@
 export module app_payment:mandates_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -48,11 +49,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto denied =
                 m_request_support.authorize(req, "get_mandate", spec_for("get_mandate"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -62,22 +65,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing mandate id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_scope(req, auth);
-        GetMandateInput input{merchant, *mandate_id};
-        auto result = m_runtime.get_mandate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_mandate(m_request_support.context(req));
+        result.handle(sink);
     }
 
     /** @brief Upstream revoke_mandate (core/mandate.rs:60-165). */
@@ -87,11 +81,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto denied =
                 m_request_support.authorize(req, "revoke_mandate", spec_for("revoke_mandate"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -101,22 +97,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing mandate id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_scope(req, auth);
-        RevokeMandateInput input{merchant, *mandate_id};
-        auto result = m_runtime.revoke_mandate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.revoke_mandate(m_request_support.context(req));
+        result.handle(sink);
     }
 
     /** @brief Upstream retrieve_mandates_list (core/mandate.rs:403-426). */
@@ -126,12 +113,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto denied =
                 m_request_support
                     .authorize(req, "retrieve_mandates_list", spec_for("retrieve_mandates_list"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -146,19 +135,9 @@ public:
             merchant_filter = merchant;
         }
 
-        RetrieveMandatesListInput input{constraints, merchant_filter};
-        auto result = m_runtime.retrieve_mandates_list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // ApplicationResponse::Json(mandates_list) -> bare array; the typed vector
-        // is serialized directly (same as the old send_json(..., true)).
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = constraints;
+        auto result = m_runtime.retrieve_mandates_list(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -175,6 +154,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_retrieve_mandates_list(req, res, std::move(send));
                         }
                     )
@@ -189,6 +170,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_mandate(req, res, std::move(send));
                         }
                     )
@@ -204,6 +187,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_revoke_mandate(req, res, std::move(send));
                             }
                         )

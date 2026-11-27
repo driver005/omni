@@ -1,6 +1,7 @@
 export module app_payment:payouts_handlers_v1_list_filter;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -52,10 +53,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_list", spec_for("payouts_list"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -72,20 +75,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid PayoutListConstraints query"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsListInput input{*constraints, m_input_support.time_range_from_query(query)};
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *constraints;
+        auto result = m_runtime.list(m_request_support->context(req)));
+        result.handle(sink);
     }
 
     void handle_payouts_list_profile(
@@ -94,11 +90,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "payouts_list_profile", spec_for("payouts_list_profile"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -115,24 +113,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid PayoutListConstraints query"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsListProfileInput input{
-            *constraints,
-            m_input_support.time_range_from_query(query),
-            m_input_support.profile_id(req, std::nullopt)
-        };
-        auto result = m_runtime.list_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *constraints;
+        auto result = m_runtime.list_profile(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_list_by_filter(
@@ -141,13 +128,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "payouts_list_by_filter",
                 spec_for("payouts_list_by_filter")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -157,19 +146,11 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payouts::PayoutListFilterConstraints;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(req, sink);
+        if (!parsed) return;
 
         const auto query = m_input_support.query(req);
         PayoutListQuery query_values{};
@@ -177,17 +158,10 @@ public:
         query_values.customer_id = query.get("customer_id").value_or("");
         query_values.offset = query.get("offset");
         query_values.limit = query.get("limit");
-        PayoutsListByFilterInput input{*parsed, std::string{body}, query_values};
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.list_by_filter(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_by_filter(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_list_by_filter_profile(
@@ -196,13 +170,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "payouts_list_by_filter_profile",
                 spec_for("payouts_list_by_filter_profile")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -212,19 +188,11 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payouts::PayoutListFilterConstraints;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutListFilterConstraints>::pass(req, sink);
+        if (!parsed) return;
 
         const auto query = m_input_support.query(req);
         PayoutListQuery query_values{};
@@ -232,22 +200,10 @@ public:
         query_values.customer_id = query.get("customer_id").value_or("");
         query_values.offset = query.get("offset");
         query_values.limit = query.get("limit");
-        PayoutsListByFilterProfileInput input{
-            *parsed,
-            std::string{body},
-            query_values,
-            m_input_support.profile_id(req, parsed->profile_id)
-        };
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.list_by_filter_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_by_filter_profile(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_list_available_filters_for_merchant(
@@ -256,13 +212,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "payouts_list_available_filters_for_merchant",
                 spec_for("payouts_list_available_filters_for_merchant")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -272,20 +230,12 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsListAvailableFiltersForMerchantInput input{std::string{body}};
-        auto result = m_runtime.list_available_filters_for_merchant(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_available_filters_for_merchant(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_list_available_filters_for_profile(
@@ -294,13 +244,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "payouts_list_available_filters_for_profile",
                 spec_for("payouts_list_available_filters_for_profile")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -310,23 +262,12 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsListAvailableFiltersForProfileInput input{
-            std::string{body},
-            m_input_support.profile_id(req, std::nullopt)
-        };
-        auto result = m_runtime.list_available_filters_for_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_available_filters_for_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     using Route = utils::openapi::ApiRoute;
@@ -344,6 +285,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_list(req, res, std::move(send));
                         }
                     )
@@ -359,6 +302,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_list_profile(req, res, std::move(send));
                             }
                         )
@@ -374,6 +319,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_list_by_filter(req, res, std::move(send));
                         }
                     )
@@ -389,6 +336,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_list_by_filter_profile(req, res, std::move(send));
                             }
                         )
@@ -404,6 +353,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_list_available_filters_for_merchant(
                                 req,
                                 res,
@@ -423,6 +374,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_list_available_filters_for_profile(
                                     req,
                                     res,

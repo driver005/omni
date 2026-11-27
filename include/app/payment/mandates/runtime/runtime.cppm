@@ -24,24 +24,23 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::mandates::MandateResponse, core::error::AppError>
-    get_mandate(const GetMandateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateResponse>
+    get_mandate(const core::behavior::CallContext& ctx) const
     {
-        return m_get_mandate.get_mandate(input);
+        return m_get_mandate.get_mandate(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::mandates::MandateRevokedResponse, core::error::AppError>
-        revoke_mandate(const RevokeMandateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateRevokedResponse>
+        revoke_mandate(const core::behavior::CallContext& ctx) const
     {
-        return m_revoke_mandate.revoke_mandate(input);
+        return m_revoke_mandate.revoke_mandate(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<std::vector<::app::model::mandates::MandateResponse>, core::error::AppError>
-        retrieve_mandates_list(const RetrieveMandatesListInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::mandates::MandateResponse>>
+    retrieve_mandates_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_mandates_list.retrieve_mandates_list(input);
+        return m_retrieve_mandates_list.retrieve_mandates_list(dto, ctx);
     }
 
 private:

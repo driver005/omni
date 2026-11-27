@@ -1,6 +1,7 @@
 export module app_user:hierarchical_resources_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -112,7 +113,7 @@ public:
 
     // ── Requestor resolution (core:412-483, V1) ───────────────────────────────
 
-    [[nodiscard]] std::expected<std::string, core::error::AppError> fetch_requestor_account(
+    [[nodiscard]] core::behavior::Outcome<std::string> fetch_requestor_account(
         std::string_view requestor_type,
         std::string_view requestor_id,
         std::string_view merchant_id
@@ -258,8 +259,7 @@ public:
     }
 
     /** @brief core:685-695 parse_certificate_from_base64_der (local substitute). */
-    [[nodiscard]] std::expected<ParsedCertificate, core::error::AppError>
-    parse_certificate_from_base64_der(
+    [[nodiscard]] core::behavior::Outcome<ParsedCertificate> parse_certificate_from_base64_der(
         std::string_view certificate_b64,
         std::string_view org_key
     ) const

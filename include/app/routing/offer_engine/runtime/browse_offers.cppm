@@ -15,8 +15,8 @@ import app_crypto;
 import app_metrics;
 import app_connector;
 import app_services;
+import core_behavior;
 
-import :offer_engine_input;
 import :offer_engine_result;
 import :offer_engine_runtime_common;
 
@@ -33,17 +33,27 @@ public:
 
     /** @brief Port of `browse_offers(state, auth.platform, profile_id, payload)` (browse.rs:22-85).
      */
-    [[nodiscard]] std::
-        expected<::app::dto::offer_engine::BrowseOffersResponse, core::error::AppError>
-        browse_offers(const BrowseOffersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::offer_engine::BrowseOffersResponse>
+    browse_offers(
+        const ::app::dto::offer_engine::BrowseOffersRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         m_context.metrics().record_flow("OfferEngineBrowseOffers");
         m_context.metrics().counter("OFFER_ENGINE_BROWSE_OFFERS").increment();
 
+        // Upstream `auth.platform` supplies the dimensions (browse.rs:22-28).
+        OfferEngineDimensions dimensions{};
+        dimensions.processor_merchant_id = ctx.merchant_id;
+        dimensions.organization_id = ctx.org_id;
+        if (!ctx.profile_id.empty()) {
+            dimensions.profile_id = ctx.profile_id;
+        }
+
         // resolve_offer_engine_credential_source + config resolution with the
         // AccessForbidden change_context (browse.rs:36-64).
         ResolvedOfferEngineConfig config{};
-        const auto source = m_support.resolve_offer_engine_credential_source(input.dimensions);
+        const auto source = m_support.resolve_offer_engine_credential_source(dimensions);
         switch (source) {
             case ::app::dto::offer_engine::OfferEngineCredentialSource::None:
                 return std::unexpected{forbidden()};
@@ -58,9 +68,8 @@ public:
                 }
             case ::app::dto::offer_engine::OfferEngineCredentialSource::Merchant:
                 {
-                    auto resolved = m_support.resolve_merchant_offer_config(
-                        input.dimensions.processor_merchant_id
-                    );
+                    auto resolved =
+                        m_support.resolve_merchant_offer_config(dimensions.processor_merchant_id);
                     if (!resolved) {
                         return std::unexpected{forbidden()};
                     }
@@ -72,8 +81,8 @@ public:
         // BrowseOfferListRequest { currency: request.offer_payment_info.map(|i| i.currency) }
         // (browse.rs:66-68).
         BrowseOfferListRequest list_request{};
-        if (input.request.get_offer_payment_info().has_value()) {
-            list_request.currency = input.request.get_offer_payment_info()->get_currency();
+        if (request.get_offer_payment_info().has_value()) {
+            list_request.currency = request.get_offer_payment_info()->get_currency();
         }
 
         OfferEngineClient client{m_context, std::move(config), m_support.trace_header_name()};

@@ -11,15 +11,6 @@ import :policy;
 
 export namespace app::handlers::feature_matrix {
 
-// The only request data this GET route consumes is its optional JSON body: an
-// object with an optional "connectors" array of snake_case connector names.
-// Body decoding stays in the runtime so the auth + metrics side effects recorded
-// by the original handler still run before any body validation error is produced.
-struct FetchFeatureMatrixInput
-{
-    std::string body{};
-};
-
 /**
  * @brief Domain policy for the single NO_AUTH feature-matrix route.
  *
@@ -47,6 +38,11 @@ public:
     [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
     {
         return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

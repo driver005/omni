@@ -1,6 +1,7 @@
 export module app_user:user_runtime_resend_invite;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    resend_invite(const ResendInviteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    resend_invite(const ::app::model::user::ReInviteUserRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto email = input.request.get_email().get_value();
+        const auto email = request.get_email().get_value();
         const auto resend_payload = std::string{R"({"email":")"} + email + R"("})";
         const auto resend_token = m_support.user_signer().sign(resend_payload);
         m_context.cache().put(
@@ -58,10 +60,10 @@ public:
         m_support.publish_identity_event("user.invite_resent", email);
 
         const auto key =
-            std::string{"user.resend_invite:"} + std::to_string(input.request_context.body.size());
+            std::string{"user.resend_invite:"} + std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

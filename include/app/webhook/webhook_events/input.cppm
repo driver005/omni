@@ -150,35 +150,4 @@ private:
     ::app::context::AppContext& m_context;
 };
 
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct ListInitialWithJwtAuthInput
-{
-    ::app::dto::webhook_events::EventListConstraints constraints{};
-    std::string merchant_id{};
-    std::string profile_id{};
-};
-
-struct ListInitialInput
-{
-    ::app::dto::webhook_events::EventListConstraints constraints{};
-    std::string merchant_id{};
-    std::string profile_id{};
-};
-
-struct ListAttemptsInput
-{
-    std::string merchant_id{};
-    std::string event_id{};
-    std::string profile_id{};
-};
-
-struct RetryInput
-{
-    std::string merchant_id{};
-    std::string event_id{};
-    std::string profile_id{};
-};
-
 } // namespace app::handlers::webhook_events

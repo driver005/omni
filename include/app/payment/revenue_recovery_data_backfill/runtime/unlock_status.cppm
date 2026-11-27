@@ -39,11 +39,11 @@ public:
      * RedisTokenManager::unlock_connector_customer_status
      * (types/storage/revenue_recovery_redis_operation.rs:232-286).
      */
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse,
-        core::error::AppError>
-    unlock_status(const UnlockStatusInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
+        unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = UnlockStatusData{dto, ctx};
         const auto& customer_id = input.parsed.get_connector_customer_id();
         const auto& expected_owner = input.parsed.get_payment_intent_id().get_value();
 

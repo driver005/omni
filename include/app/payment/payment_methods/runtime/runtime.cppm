@@ -88,188 +88,154 @@ public:
     {
     }
 
-#define OMNI_PM_FORWARD(method, result_type, input_type)                                           \
-    [[nodiscard]] std::expected<result_type, core::error::AppError> method(                        \
-        const input_type& input                                                                    \
+#define OMNI_PM_FORWARD(method, result_type)                                           \
+    template<class Dto>                                                                            \
+    [[nodiscard]] core::behavior::Outcome<result_type> method(                                     \
+        const Dto& dto, const core::behavior::CallContext& ctx                                     \
     ) const                                                                                        \
     {                                                                                              \
-        return m_##method.method(input);                                                           \
+        return m_##method.method(dto, ctx);                                                        \
     }
 
     OMNI_PM_FORWARD(
         create_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodResponse,
-        CreatePaymentMethodApiInput
+        ::app::model::payment_methods::PaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         get_pm_nt_eligibility_api,
-        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse,
-        GetPmNtEligibilityApiInput
+        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse
     )
     OMNI_PM_FORWARD(
         create_payment_method_intent_api,
-        ::app::model::payment_methods::PaymentMethodResponse,
-        CreatePaymentMethodIntentApiInput
+        ::app::model::payment_methods::PaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         payment_method_update_api,
-        ::app::model::payment_methods::PaymentMethodUpdateResponse,
-        PaymentMethodUpdateApiInput
+        ::app::model::payment_methods::PaymentMethodUpdateResponse
     )
     OMNI_PM_FORWARD(
         payment_method_retrieve_api,
-        ::app::model::payment_methods::PaymentMethodResponse,
-        PaymentMethodRetrieveApiInput
+        ::app::model::payment_methods::PaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         payment_method_delete_api,
-        ::app::model::payment_methods::PaymentMethodDeleteResponse,
-        PaymentMethodDeleteApiInput
+        ::app::model::payment_methods::PaymentMethodDeleteResponse
     )
     OMNI_PM_FORWARD(
         migrate_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodMigrateResponse,
-        MigratePaymentMethodApiInput
+        ::app::model::payment_methods::PaymentMethodMigrateResponse
     )
     OMNI_PM_FORWARD(
         migrate_payment_methods,
-        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse,
-        MigratePaymentMethodsInput
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse
     )
     OMNI_PM_FORWARD(
         update_payment_methods,
-        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse,
-        UpdatePaymentMethodsInput
+        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse
     )
     OMNI_PM_FORWARD(
         payment_methods_batch_retrieve_api,
-        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>,
-        PaymentMethodsBatchRetrieveApiInput
+        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>
     )
     OMNI_PM_FORWARD(
         save_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodResponse,
-        SavePaymentMethodApiInput
+        ::app::model::payment_methods::PaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         list_payment_method_api,
-        ::app::model::payment_methods::PaymentMethodListResponse,
-        ListPaymentMethodApiInput
+        ::app::model::payment_methods::PaymentMethodListResponse
     )
     OMNI_PM_FORWARD(
         list_customer_payment_method_api,
-        ::app::model::payment_methods::CustomerPaymentMethodsListResponse,
-        ListCustomerPaymentMethodApiInput
+        ::app::model::payment_methods::CustomerPaymentMethodsListResponse
     )
     OMNI_PM_FORWARD(
         list_customer_payment_method_api_client,
-        ::app::model::payment_methods::ClientPaymentMethodsListResponse,
-        ListCustomerPaymentMethodApiClientInput
+        ::app::model::payment_methods::ClientPaymentMethodsListResponse
     )
     OMNI_PM_FORWARD(
         initiate_pm_collect_link_flow,
-        ::app::model::payment_methods::PaymentMethodCollectLinkResponse,
-        InitiatePmCollectLinkFlowInput
+        ::app::model::payment_methods::PaymentMethodCollectLinkResponse
     )
     OMNI_PM_FORWARD(
         payment_method_retrieve_olap_api,
-        ::app::model::payment_methods::PaymentMethodDetailsResponse,
-        PaymentMethodRetrieveOlapApiInput
+        ::app::model::payment_methods::PaymentMethodDetailsResponse
     )
     OMNI_PM_FORWARD(
         get_payment_method_token_data,
-        ::app::model::payment_methods::TokenDataResponse,
-        GetPaymentMethodTokenDataInput
+        ::app::model::payment_methods::TokenDataResponse
     )
     OMNI_PM_FORWARD(
         get_total_payment_method_count,
-        ::app::model::payment_methods::TotalPaymentMethodCountResponse,
-        GetTotalPaymentMethodCountInput
+        ::app::model::payment_methods::TotalPaymentMethodCountResponse
     )
     OMNI_PM_FORWARD(
         render_pm_collect_link,
-        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest,
-        RenderPmCollectLinkInput
+        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest
     )
     OMNI_PM_FORWARD(
         list_countries_currencies_for_connector_payment_method,
-        ::app::model::payment_methods::ListCountriesCurrenciesResponse,
-        ListCountriesCurrenciesForConnectorPaymentMethodInput
+        ::app::model::payment_methods::ListCountriesCurrenciesResponse
     )
     OMNI_PM_FORWARD(
         default_payment_method_set_api,
-        ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse,
-        DefaultPaymentMethodSetApiInput
+        ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         tokenize_card_api,
-        ::app::model::payment_methods::CardNetworkTokenizeResponse,
-        TokenizeCardApiInput
+        ::app::model::payment_methods::CardNetworkTokenizeResponse
     )
     OMNI_PM_FORWARD(
         tokenize_card_using_pm_api,
-        ::app::model::payment_methods::TokenizedCardValue1,
-        TokenizeCardUsingPmApiInput
+        ::app::model::payment_methods::TokenizedCardValue1
     )
     OMNI_PM_FORWARD(
         tokenize_card_batch_api,
-        std::vector<::app::model::payment_methods::TokenizedCardValue1>,
-        TokenizeCardBatchApiInput
+        std::vector<::app::model::payment_methods::TokenizedCardValue1>
     )
     OMNI_PM_FORWARD(
         payment_methods_session_create,
-        ::app::model::payment_methods::PaymentMethodSessionResponse,
-        PaymentMethodsSessionCreateInput
+        ::app::model::payment_methods::PaymentMethodSessionResponse
     )
     OMNI_PM_FORWARD(
         payment_methods_session_update,
-        ::app::model::payment_methods::PaymentMethodSessionResponse,
-        PaymentMethodsSessionUpdateInput
+        ::app::model::payment_methods::PaymentMethodSessionResponse
     )
     OMNI_PM_FORWARD(
         payment_methods_session_retrieve,
-        ::app::model::payment_methods::PaymentMethodSessionResponse,
-        PaymentMethodsSessionRetrieveInput
+        ::app::model::payment_methods::PaymentMethodSessionResponse
     )
     OMNI_PM_FORWARD(
         payment_method_session_list_payment_methods,
-        ::app::model::payment_methods::PaymentMethodListResponseForSession,
-        PaymentMethodSessionListPaymentMethodsInput
+        ::app::model::payment_methods::PaymentMethodListResponseForSession
     )
     OMNI_PM_FORWARD(
         payment_method_session_confirm,
-        ::app::model::payment_methods::PaymentMethodSessionResponse,
-        PaymentMethodSessionConfirmInput
+        ::app::model::payment_methods::PaymentMethodSessionResponse
     )
     OMNI_PM_FORWARD(
         payment_method_session_update_saved_payment_method,
-        ::app::model::payment_methods::PaymentMethodResponse,
-        PaymentMethodSessionUpdateSavedPaymentMethodInput
+        ::app::model::payment_methods::PaymentMethodResponse
     )
     OMNI_PM_FORWARD(
         payment_method_session_delete_saved_payment_method,
-        ::app::model::payment_methods::PaymentMethodDeleteSessionResponse,
-        PaymentMethodSessionDeleteSavedPaymentMethodInput
+        ::app::model::payment_methods::PaymentMethodDeleteSessionResponse
     )
     OMNI_PM_FORWARD(
         network_token_status_check_api,
-        ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse,
-        NetworkTokenStatusCheckApiInput
+        ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse
     )
     OMNI_PM_FORWARD(
         payment_method_get_token_details_api,
-        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse,
-        PaymentMethodGetTokenDetailsApiInput
+        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse
     )
     OMNI_PM_FORWARD(
         list_payment_methods_for_payments_client,
-        ::app::model::payments::PaymentsClientMethodsResponse,
-        ListPaymentMethodsForPaymentsClientInput
+        ::app::model::payments::PaymentsClientMethodsResponse
     )
     OMNI_PM_FORWARD(
         modular_migrate_payment_methods,
-        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse,
-        ModularMigratePaymentMethodsInput
+        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse
     )
 
 #undef OMNI_PM_FORWARD

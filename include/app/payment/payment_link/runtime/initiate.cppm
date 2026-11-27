@@ -37,9 +37,10 @@ public:
 
     // initiate_payment_link (routes:66-98) -> initiate_payment_link_flow
     // (core:472-522). Renders either the payment form data or the status page.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    initiate(const PaymentLinkInitiateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    initiate(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkInitiateData{ctx};
         m_context.metrics().record_flow("payment_link.initiate");
         m_context.metrics().counter("payment_link.initiate").increment();
 

@@ -191,79 +191,6 @@ struct ContextPutRequest
     std::string change_reason{};
 };
 
-// ── One Input per handle_* method: everything the old flow call took ───────
-struct ListContextsHandlerInput
-{
-    ListContextsQuery request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct CreateContextHandlerInput
-{
-    ContextPutRequest request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct ListDefaultConfigsHandlerInput
-{
-    ListDefaultConfigsQuery request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct GetDefaultConfigHandlerInput
-{
-    GetDefaultConfigRequest request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct ListDimensionsHandlerInput
-{
-    ListDimensionsQuery request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct GetDimensionHandlerInput
-{
-    GetDimensionRequest request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct ResolveDetailedConfigHandlerInput
-{
-    ResolveDetailedConfigRequest request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct ResolveConfigExplanationHandlerInput
-{
-    ResolveConfigExplanationRequest request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
-struct ListAuditLogsHandlerInput
-{
-    ListAuditLogsQuery request{};
-    ::app::auth::AuthContext auth{};
-    std::string org_id{};
-    std::string workspace_id{};
-};
-
 /**
  * @brief Parse/auth/path/query support for the superposition_proxy handlers.
  *
@@ -700,6 +627,11 @@ public:
     [[nodiscard]] ::core::behavior::Scope scope(interfaces::io::IRequest& req) const
     {
         return ::app::routing::policy::scope_of(req);
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::routing::policy::context_of(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

@@ -171,7 +171,7 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
     // core:134-275 — Initiated flow
     // ─────────────────────────────────────────────────────────────────────────
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError> initiate_flow(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> initiate_flow(
         const ::app::store::payouts::PayoutRecord& payout,
         const PayoutLinkEntity& link,
         const std::vector<std::string>& allowed_domains,
@@ -323,7 +323,7 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
     // core:278-327 — Submitted flow
     // ─────────────────────────────────────────────────────────────────────────
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError> submitted_flow(
+    [[nodiscard]] core::behavior::Outcome<serde::Value> submitted_flow(
         const ::app::store::payouts::PayoutRecord& payout,
         const PayoutLinkEntity& link,
         const ::app::store::payout_attempts::PayoutAttemptRecord& attempt,
@@ -378,7 +378,7 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
     // core/payouts/validator.rs:622-723 — render request validation
     // ─────────────────────────────────────────────────────────────────────────
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>>
     validate_payout_link_render_request_and_get_allowed_domains(
         std::string_view sec_fetch_dest,
         std::string_view origin,

@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,40 +38,43 @@ public:
     }
 
     /** @brief core::api_keys::update_api_key (278-369). */
-    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
-    update(const ApiKeyUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
+    update(
+        const ::app::dto::api_keys::UpdateApiKeyRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
+        const auto found = m_support.find_api_key(ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}));
         if (!found) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }
 
         ::app::store::api_keys::ApiKeyRecord record = *found;
-        if (input.request.get_name()) {
-            record.set_name(*input.request.get_name());
+        if (request.get_name()) {
+            record.set_name(*request.get_name());
         }
-        if (input.request.get_description()) {
-            record.set_description(*input.request.get_description());
+        if (request.get_description()) {
+            record.set_description(*request.get_description());
         }
-        const bool expiration_changed = input.request.get_expiration().has_value();
+        const bool expiration_changed = request.get_expiration().has_value();
         if (expiration_changed) {
-            record.set_expiration(m_support.expiration_string(*input.request.get_expiration()));
+            record.set_expiration(m_support.expiration_string(*request.get_expiration()));
         }
-        record.set_key_id(input.key_id);
-        record.set_merchant_id(input.merchant_id);
+        record.set_key_id((ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}));
+        record.set_merchant_id(ctx.merchant_id);
         if (!m_context.repository().update_api_key(record)) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }
 
         const ::app::dto::api_keys::ApiKeyExpiration effective =
-            expiration_changed ? *input.request.get_expiration()
+            expiration_changed ? *request.get_expiration()
                                : m_support.expiration_enum(record.get_expiration());
         const std::optional<std::string> expires = m_support.expires_at(effective);
         m_support.upsert_expiry_record(record, expires);
 
         // decision ADD on update (core/api_keys.rs:300-312).
         m_support
-            .add_api_key_decision(record.get_api_key(), input.merchant_id, input.key_id, expires);
+            .add_api_key_decision(record.get_api_key(), ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}), expires);
 
         if constexpr (kEmail) {
             if (auto expiry_error = m_support.update_api_key_expiry_task(record, expires)) {

@@ -73,6 +73,36 @@ public:
         return core::error::AppErrorBuilder{}(kind, std::string{message});
     }
 
+    [[nodiscard]] PaymentsRequestData request_data(
+        const ::app::model::payments::PaymentsRequest& dto,
+        const core::behavior::CallContext& ctx
+    ) const
+    {
+        PaymentsRequestData data{};
+        data.body = ::app::payment::detail::body_of(dto);
+        data.merchant_id = ctx.merchant_id;
+        data.profile_id = ctx.profile_id;
+        data.path_segments = ctx.path_segments;
+        data.query = ctx.query;
+        for (const auto& segment: ctx.path_segments) {
+            if (segment.starts_with("pay_")) {
+                data.payment_id = segment;
+                break;
+            }
+        }
+        if (data.payment_id.empty()) {
+            data.payment_id = ::app::payment::detail::query_of(ctx, "payment_id");
+        }
+        for (std::size_t i = 0; i + 2 < ctx.path_segments.size(); ++i) {
+            if (ctx.path_segments[i] == "payments" &&
+                ctx.path_segments[i + 1].starts_with("pay_")) {
+                data.merchant_id_path = ctx.path_segments[i + 2];
+                break;
+            }
+        }
+        return data;
+    }
+
     [[nodiscard]] std::string query(
         const PaymentsRequestData& data,
         std::string_view key,

@@ -34,61 +34,33 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // JWTAuth { permission: MerchantConnectorWrite, allow_connected: true,
         // allow_platform: false }. The auth decision comes from the registry rule;
         // auth failures are written here with no runtime call.
         if (const auto auth_error =
                 m_request_support.authorize(req, "payment_connector_verify", {})) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
-        const auto merchant_id = m_request_support.scope(req).merchant_id;
-
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
-            return;
-        }
-
         // Typed upstream request (api_models/src/verify_connector.rs:5-9): `connector_name` is a
         // plain snake_case string validated into the Connector enum, and
         // `connector_account_details` is the internally-tagged ConnectorAuthType object.
         using Dto = ::app::dto::verify_connector::VerifyConnectorRequest;
-        auto parsed = serde::Ser::deserialize<Dto>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.invalid_request_data_error("invalid VerifyConnectorRequest");
-            error.send(res, send);
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
 
-        const auto connector =
-            ::app::dto::verify_connector::connector_from_wire(parsed->get_connector_name());
-        if (!connector) {
+        if (!::app::dto::verify_connector::connector_from_wire(input->get_connector_name())) {
             // Upstream serde rejects an unknown Connector enum value during web::Json extract.
             const auto error = m_input_support.incorrect_connector_name_given_error();
-            error.send(res, send);
-            return;
-        }
-        const std::string connector_name{
-            ::app::dto::verify_connector::connector_to_wire(*connector)
-        };
-
-        PaymentConnectorVerifyInput input{*parsed, *connector, connector_name, merchant_id};
-        auto result = m_runtime.payment_connector_verify(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        // StatusOk with no payload. The old send_json(res, send, {}, true) wrote an empty raw
-        // body; the runtime now returns that as an empty serde::Value document and the handler
-        // writes it through Ser::serialize.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        // StatusOk with no payload: the runtime returns an empty serde::Value document.
+        m_runtime.payment_connector_verify(*input, m_request_support.context(req)).handle(sink);
     }
 
     // routes/verify_connector.rs:36 uses api_locking::LockAction::NotApplicable: no lock is

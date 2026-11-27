@@ -36,9 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: create ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    create(const PayoutsCreateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+        create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsCreateData{dto, ctx};
         m_context.metrics().record_flow("payout_create");
         m_context.metrics().counter("payouts_create_total").increment();
 

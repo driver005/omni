@@ -10,6 +10,7 @@ import app_http;
 import app_auth;
 import app_metrics;
 
+import :context;
 export namespace app::handlers::telephone_order {
 
 using Parameters = std::unordered_map<std::string, std::string>;
@@ -165,13 +166,22 @@ public:
 };
 
 /** @brief Everything the old charge<Adapter> call received. */
-struct TelephoneOrderChargeInput
+struct TelephoneOrderChargeData
 {
     TwilioGenericPayRequest request{};
     std::string merchant_id{};
     std::string transaction_reference{};
     ::app::auth::AuthContext auth_context{};
+    template<class Dto>
+    explicit TelephoneOrderChargeData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<TwilioGenericPayRequest>(dto)},
+        merchant_id{ctx.merchant_id},
+        transaction_reference{::app::payment::detail::last_path(ctx)},
+        auth_context{}
+    {
+    }
 };
+
 
 struct ChargePath
 {
@@ -292,6 +302,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

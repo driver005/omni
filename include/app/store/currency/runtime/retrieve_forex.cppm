@@ -1,6 +1,7 @@
 export module app_store:currency_runtime_retrieve_forex;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import app_dto;
@@ -10,7 +11,6 @@ import core_error;
 import app_metrics;
 import app_locking;
 
-import :currency_input;
 import :currency_result;
 import :currency_runtime_common;
 
@@ -26,10 +26,10 @@ public:
     }
 
     // ── routes/currency.rs:11-33 / core/currency.rs:15-26 ───────────────────
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_forex(const RetrieveForexInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_forex(const core::behavior::CallContext& ctx) const
     {
-        (void)input;
+        (void)ctx;
         // Flow::RetrieveForexFlow + api_locking::LockAction::NotApplicable (server_wrap).
         m_support.record_forex_flow();
 
@@ -47,7 +47,7 @@ public:
 
 private:
     // ── core/currency.rs:15-26 — retrieve_forex ─────────────────────────────
-    [[nodiscard]] std::expected<FxExchangeRatesCacheEntry, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<FxExchangeRatesCacheEntry>
     retrieve_forex_core() const
     {
         // conf.forex_api.get_inner().data_expiration_delay_in_seconds (:18).

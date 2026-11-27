@@ -1,6 +1,7 @@
 export module app_auth:external_service_auth_runtime_validate_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import app_dto;
@@ -26,13 +27,16 @@ public:
 
     // routes/external_service_auth.rs:11-27 — validate_token.
     // core/external_service_auth.rs:111-196 validate_token_core.
-    [[nodiscard]] std::expected<
-        ::app::dto::external_service_auth::ExternalVerifyTokenResponse,
-        core::error::AppError>
-    validate_token(const ValidateTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::external_service_auth::ExternalVerifyTokenResponse>
+    validate_token(
+        const ::app::dto::external_service_auth::ValidateTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
+        (void)ctx;
         // core/external_service_auth.rs:111 — req.token.expose().
-        const ::app::crypto::SecretString token_secret{input.request.get_token()};
+        const ::app::crypto::SecretString token_secret{request.get_token()};
         const auto token = token_secret.value();
 
         // core/external_service_auth.rs:113 — decode_jwt::<AuthToken>(&token, &state).
@@ -66,7 +70,7 @@ public:
         }
 
         // core/external_service_auth.rs:123-136 — match ValidatingService::OfferEngine.
-        switch (input.request.get_service()) {
+        switch (request.get_service()) {
             case ::app::dto::external_service_auth::ValidatingService::OfferEngine:
                 {
                     // core:125 — resolve_offer_engine_merchant_id.

@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,11 +21,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_migration_status(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_migration_status(const ::core::behavior::CallContext& ctx) const
     {
-        const auto limit = input.migration_limit;
-        const auto offset = input.migration_offset;
+        const auto migration_limit = ctx_query_number<std::uint32_t>(ctx, "limit").value_or(20);
+        const auto migration_offset = ctx_query_number<std::uint32_t>(ctx, "offset").value_or(0);
+        const auto limit = migration_limit;
+        const auto offset = migration_offset;
 
         // list_routing_scope_page substitute: group persisted records by (profile, merchant).
         std::vector<std::pair<std::string, std::string>> scopes;
@@ -84,7 +86,7 @@ public:
             status.set_rules_hyperswitch(hs_count);
             status.set_rules_decision_engine(static_cast<std::int64_t>(de.size()));
             const auto source =
-                m_support.is_cutover(input.merchant_id, profile)
+                m_support.is_cutover(ctx.merchant_id, profile)
                     ? ::app::model::routing::RoutingResultSource::DecisionEngine
                     : ::app::model::routing::RoutingResultSource::HyperswitchRouting;
             status.set_routing_source(source);

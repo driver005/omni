@@ -1,6 +1,7 @@
 export module app_store:currency_runtime_convert_forex;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import app_dto;
@@ -10,7 +11,6 @@ import core_error;
 import app_metrics;
 import app_locking;
 
-import :currency_input;
 import :currency_result;
 import :currency_runtime_common;
 
@@ -26,17 +26,20 @@ public:
     }
 
     // ── routes/currency.rs:36-72 / core/currency.rs:28-54 ───────────────────
-    [[nodiscard]] std::
-        expected<::app::dto::currency::CurrencyConversionResponse, core::error::AppError>
-        convert_forex(const ConvertForexInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
+        convert_forex(
+            const ::app::dto::currency::CurrencyConversionParams& params,
+            const core::behavior::CallContext& ctx
+        ) const
     {
+        (void)ctx;
         m_support.record_forex_flow();
 
         // core::convert_forex (core/currency.rs:28-54); already applies the error taxonomy.
         auto response = convert_forex_core(
-            input.params.get_amount().get_amount_as_i64(),
-            input.params.get_to_currency(),
-            input.params.get_from_currency()
+            params.get_amount().get_amount_as_i64(),
+            params.get_to_currency(),
+            params.get_from_currency()
         );
         if (!response) {
             return std::unexpected{response.error()};
@@ -49,8 +52,7 @@ public:
 
 private:
     // ── core/currency.rs:28-54 — convert_forex ───────────────────────────────
-    [[nodiscard]] std::
-        expected<::app::dto::currency::CurrencyConversionResponse, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
         convert_forex_core(std::int64_t amount, std::string_view to, std::string_view from) const
     {
         auto result = convert_currency(amount, to, from);

@@ -1,6 +1,7 @@
 export module app_store:files_runtime_delete;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -23,16 +24,21 @@ public:
     }
 
     /** @brief Port of `files_delete_core` (`core/files.rs:92-109`). */
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_file(const FilesDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_file(const core::behavior::CallContext& ctx) const
     {
         // Upstream: files.rs:96-97 — server_wrap records the flow and route counter.
         m_context.metrics().record_flow("files.delete");
         m_context.metrics().counter("files_delete_total").increment();
 
+        const auto file_id = m_support.file_id_from(ctx);
+        if (!file_id.has_value()) {
+            return std::unexpected{Builder{}(Kind::INVALID_REQUEST, "missing file id in path")};
+        }
+
         // core/files.rs:97 — delete_file_using_file_id (guards + file-storage delete).
         const auto record =
-            m_support.delete_file_using_file_id(input.processor_merchant_id, input.file_id);
+            m_support.delete_file_using_file_id(ctx.merchant_id, *file_id);
         if (!record) {
             return std::unexpected{std::move(record.error())};
         }

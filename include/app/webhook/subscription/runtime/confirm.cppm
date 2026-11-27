@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_confirm;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -25,23 +26,26 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    confirm(const ConfirmSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    confirm(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
+        const std::string subscription_id =
+            ctx.path_segments.size() > 1 ? ctx.path_segments.at(1) : std::string{};
+
         if (const auto failure =
-                m_support.find_business_profile(input.profile_id, input.merchant_id)) {
+                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
-        if (!input.client_secret.empty()) {
+        if (!ctx.client_secret.empty()) {
             if (const auto failure =
-                    m_support.validate_client_secret(input.client_secret, input.merchant_id)) {
+                    m_support.validate_client_secret(ctx.client_secret, ctx.merchant_id)) {
                 return std::unexpected{*failure};
             }
         }
-        auto found = m_support.find_subscription(input.subscription_id);
+        auto found = m_support.find_subscription(subscription_id);
         if (!found) {
             return std::unexpected{m_support.generic_not_found(
-                "subscription not found for id: " + input.subscription_id
+                "subscription not found for id: " + subscription_id
             )};
         }
 
@@ -70,13 +74,13 @@ public:
         }
         m_support.create_connector_customer(
             *found,
-            input.payload.doc
+            payload.doc
         ); // create_customer_on_connector
 
         ConnectorResponse connector = m_support.call_billing(
             "create_subscription_on_connector",
             *found,
-            input.payload.doc,
+            payload.doc,
             found->merchant_id
         );
         const std::string connector_subscription_id =

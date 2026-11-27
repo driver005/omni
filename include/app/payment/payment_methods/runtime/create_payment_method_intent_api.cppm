@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
-        create_payment_method_intent_api(const CreatePaymentMethodIntentApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
+        create_payment_method_intent_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CreatePaymentMethodIntentApiData{dto, ctx};
         const std::string& customer_id = input.request.get_customer_id().get_value();
         if (!customer_id.empty() && !m_support.customer_exists(customer_id)) {
             return std::unexpected{m_support.error(

@@ -26,30 +26,31 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    card_iin_info(const CardIinInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        card_iin_info(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_card_iin_info.card_iin_info(input);
+        return m_card_iin_info.card_iin_info(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    create(const CreateCardsInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    update(const UpdateCardsInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::model::cards_info::CardInfoMigrationResponse>,
-        core::error::AppError>
-    migrate(const MigrateCardsInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
+    migrate(const core::behavior::CallContext& ctx) const
     {
-        return m_migrate.migrate(input);
+        return m_migrate.migrate(ctx);
     }
 
 private:

@@ -21,10 +21,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::PlatformRefundListFilters, core::error::AppError>
-        filter_platform(const RefundsFilterPlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListFilters>
+        filter_platform(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsFilterPlatformData{ctx};
         m_context.metrics().record_flow("refund_platform_filter");
         m_context.metrics().counter("refunds_platform_filter_total").increment();
 

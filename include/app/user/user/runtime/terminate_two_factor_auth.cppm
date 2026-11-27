@@ -1,6 +1,7 @@
 export module app_user:user_runtime_terminate_two_factor_auth;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_two_factor_auth(const TerminateTwoFactorAuthInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    terminate_two_factor_auth(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto owner = input.request_context.token.value();
+        const auto owner = ctx_token(ctx).value();
         for (auto& record: m_context.repository().list_authentication_records()) {
             if (record.get_user_id() == owner && record.get_method() == "TOTP") {
                 record.set_status("disabled");

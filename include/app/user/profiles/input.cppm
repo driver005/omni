@@ -25,15 +25,15 @@ public:
     {
     }
 
-    using CreateInput = ::app::dto::admin::ProfileCreate;
-    using UpdateInput = ::app::dto::admin::ProfileUpdate;
+    using CreateDto = ::app::dto::admin::ProfileCreate;
+    using UpdateDto = ::app::dto::admin::ProfileUpdate;
 
     // routes/profiles.rs:22-45 (create v1), :79-90 (create v2),
     // :235-259 (update v1), :314-325 (update v2) — WebhookDetailsRequest::validate
     // (api_models/admin.rs:1026-1052) and BusinessPaymentLinkConfig::validate
     // (api_models/admin.rs:3759-3795).
     [[nodiscard]] std::optional<core::error::AppError>
-    validate_profile_create_request(const CreateInput& request) const
+    validate_profile_create_request(const CreateDto& request) const
     {
         if (request.get_webhook_details()) {
             if (const auto error = validate_webhook_details(*request.get_webhook_details())) {
@@ -50,7 +50,7 @@ public:
     }
 
     [[nodiscard]] std::optional<core::error::AppError>
-    validate_profile_update_request(const UpdateInput& request) const
+    validate_profile_update_request(const UpdateDto& request) const
     {
         if (request.get_webhook_details()) {
             if (const auto error = validate_webhook_details(*request.get_webhook_details())) {
@@ -244,60 +244,93 @@ private:
     ::app::context::AppContext& m_context;
 };
 
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old handler passed into its core call.
-
-struct ProfileCreateInput
+/** @brief Request snapshot shared by every profiles runtime method. */
+[[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
 {
-    ::app::dto::admin::ProfileCreate request{};
-    std::string merchant_id{};
-    bool v2_route{};
-};
+    ::core::behavior::CallContext ctx{};
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+    if (ctx.merchant_id.empty()) ctx.merchant_id = auth.merchant_id();
+    ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
+    if (ctx.org_id.empty()) ctx.org_id = auth.org_id();
+    ctx.profile_id = auth.profile_id();
+    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) ctx.connected_merchant_id = std::string{*c};
+    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) ctx.client_secret = std::string{*s};
+    const auto segments = ::app::http::RequestPath{}(req);
+    for (std::size_t i{0}; i < segments.count(); ++i) ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    const auto raw = req.get_path();
+    if (const auto q = raw.find('?'); q != std::string_view::npos) {
+        const std::string_view tail = raw.substr(q + 1);
+        std::size_t start{0};
+        while (start <= tail.size()) {
+            const auto amp = tail.find('&', start);
+            const auto end = amp == std::string_view::npos ? tail.size() : amp;
+            const auto pair = tail.substr(start, end - start);
+            const auto eq = pair.find('=');
+            if (!pair.empty()) {
+                ctx.query.insert_or_assign(
+                    std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)},
+                    std::string{eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)}
+                );
+            }
+            if (amp == std::string_view::npos) break;
+            start = amp + 1;
+        }
+    }
+    constexpr std::string_view kHeaders[] = {
+        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
+        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+    };
+    for (const auto name: kHeaders) {
+        const auto value = req.find_header(name);
+        if (!value.empty()) ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+    }
+    for (const auto& [key, value]: auth.claims()) ctx.claims.insert_or_assign(key, value);
+    ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
+    ctx.claims.insert_or_assign("org_id", ctx.org_id);
+    ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
+    return ctx;
+}
 
-struct ProfileRetrieveInput
+[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string profile_id{};
-    std::string merchant_id{};
-};
+    const auto it = ctx.claims.find(std::string{key});
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
 
-struct ProfileUpdateInput
+[[nodiscard]] inline bool ctx_bool(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string profile_id{};
-    std::string merchant_id{};
-    ::app::dto::admin::ProfileUpdate request{};
-};
+    return ctx_string(ctx, key) == "true";
+}
 
-struct ProfileDeleteInput
+[[nodiscard]] inline std::string
+encode_ids(const std::optional<std::vector<std::string>>& ids)
 {
-    std::string profile_id{};
-    std::string merchant_id{};
-};
+    std::string out{};
+    if (!ids) return out;
+    for (const auto& id: *ids) {
+        if (!out.empty()) out.push_back(',');
+        out += id;
+    }
+    return out;
+}
 
-struct ProfilesListInput
+[[nodiscard]] inline std::optional<std::vector<std::string>>
+ctx_ids(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string merchant_id{};
-    std::optional<std::vector<std::string>> profile_id_list{};
-};
-
-struct ProfilesListAtProfileLevelInput
-{
-    std::string merchant_id{};
-    std::optional<std::vector<std::string>> profile_id_list{};
-};
-
-struct ToggleConnectorAgnosticMitInput
-{
-    std::string merchant_id{};
-    std::string profile_id{};
-    ::app::dto::admin::ConnectorAgnosticMitChoice choice{};
-};
-
-struct ToggleExtendedCardInfoInput
-{
-    std::string merchant_id{};
-    std::string profile_id{};
-    ::app::dto::admin::ExtendedCardInfoChoice choice{};
-};
+    const auto raw = ctx_string(ctx, key);
+    if (raw.empty()) return std::nullopt;
+    std::vector<std::string> out{};
+    std::size_t start{0};
+    while (start <= raw.size()) {
+        const auto comma = raw.find(',', start);
+        const auto end = comma == std::string::npos ? raw.size() : comma;
+        out.push_back(raw.substr(start, end - start));
+        if (comma == std::string::npos) break;
+        start = comma + 1;
+    }
+    return out;
+}
 
 /**
  * @brief Domain authorization policy for Profiles.
@@ -340,6 +373,12 @@ public:
             out.connected_merchant_id = std::string{*connected};
         }
         return out;
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

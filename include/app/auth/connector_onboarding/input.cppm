@@ -9,6 +9,8 @@ import app_dto;
 import app_context_core;
 import app_http;
 
+import :call_context;
+
 export namespace app::handlers::connector_onboarding {
 
 /**
@@ -89,6 +91,12 @@ public:
         return out;
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -98,27 +106,6 @@ public:
 
 private:
     ::app::context::AppContext& m_context;
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct GetActionUrlInput
-{
-    ::app::dto::connector_onboarding::ActionUrlRequest request{};
-    std::string merchant_id{};
-};
-
-struct SyncOnboardingStatusInput
-{
-    ::app::dto::connector_onboarding::OnboardingSyncRequest request{};
-    std::string merchant_id{};
-};
-
-struct ResetTrackingIdInput
-{
-    ::app::dto::connector_onboarding::ResetTrackingIdRequest request{};
-    std::string merchant_id{};
 };
 
 } // namespace app::handlers::connector_onboarding

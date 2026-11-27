@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -44,34 +45,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream: web::Json<GenerateHierarchicalResourceRequest> is decoded by the
         // framework before the handler (routes:77); a bad body is a 400.
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::hierarchical_resources::GenerateHierarchicalResourceRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::hierarchical_resources::GenerateHierarchicalResourceRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto resource_type = parsed->get_resource_type().get_value();
         if (!m_input_support.valid_resource_type(resource_type)) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid resource type"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -82,14 +67,14 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing X-Profile-Id header"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto auth_error =
-            m_request_support.authorize(req, "generate_hierarchical_resource", {});
+            m_support.authorize(req, "generate_hierarchical_resource", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -101,7 +86,7 @@ public:
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "profile not found for merchant"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto organization_id = m_input_support.resolve_scope_id(req, auth, merchant_id);
@@ -110,25 +95,15 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing organization scope"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GenerateHierarchicalResourceInput input{merchant_id, organization_id, resource_type};
-        auto result = m_runtime.generate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kGenerateHierarchicalResourceResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
+        ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
+        ctx.claims.insert_or_assign("resource_type", std::string{resource_type});
+        m_runtime.generate(ctx).handle(sink);
     }
 
     void handle_upload_hierarchical_resource(
@@ -137,6 +112,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // web::Path<ResourceId> is extracted by the framework (routes:117); the
         // local extractor validates the same alphanumeric/length shape.
         const auto resource_id =
@@ -146,107 +122,21 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing resource id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // routes:48-71 — content-type aware body parse: JSON object or raw DER
         // bytes that are base64-encoded into the request's `certificate` field.
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto parsed_body = m_input_support.parse_upload_certificate_body(req, body);
-        if (!parsed_body) {
-            const auto& error = parsed_body.error();
-            error.send(res, send);
-            return;
-        }
-
-        const auto profile_id = m_input_support.mandatory_profile_id_from_header(req);
-        if (!profile_id.has_value()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "missing X-Profile-Id header"
-            );
-            error.send(res, send);
-            return;
-        }
-        const auto auth_error =
-            m_request_support.authorize(req, "upload_hierarchical_resource", {});
-        if (auth_error) {
-            const auto& error = *auth_error;
-            error.send(res, send);
-            return;
-        }
-
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        const auto merchant_id = m_input_support.resolve_merchant_id(req, auth);
-        if (!m_input_support.resolve_profile_from_header(*profile_id, merchant_id).has_value()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED,
-                "profile not found for merchant"
-            );
-            error.send(res, send);
-            return;
-        }
-        const auto organization_id = m_input_support.resolve_scope_id(req, auth, merchant_id);
-
-        UploadHierarchicalResourceInput
-            input{*resource_id, parsed_body->get_certificate(), merchant_id, organization_id};
-        auto result = m_runtime.upload(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kUploadCertificateResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
-    }
-
-    void handle_list_hierarchical_resources(
-        interfaces::io::IRequest& req,
-        interfaces::io::IResponse& res,
-        std::function<void()> send
-    )
-    {
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto resource_type = parsed->get_resource_type().get_value();
         if (!m_input_support.valid_resource_type(resource_type)) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid resource type"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -256,13 +146,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing X-Profile-Id header"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto auth_error = m_request_support.authorize(req, "list_hierarchical_resources", {});
+        const auto auth_error = m_support.authorize(req, "list_hierarchical_resources", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -273,26 +163,15 @@ public:
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "profile not found for merchant"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto organization_id = m_input_support.resolve_scope_id(req, auth, merchant_id);
 
-        ListHierarchicalResourcesInput input{*parsed, merchant_id, organization_id};
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kListHierarchicalResourcesResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
+        ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
+        m_runtime.list(*parsed, ctx).handle(sink);
     }
 
     void handle_link_hierarchical_resource(
@@ -301,35 +180,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto resource_id = m_input_support.resource_id_from_path(req, "link");
         if (!resource_id.has_value() || resource_id->empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing resource id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::hierarchical_resources::LinkHierarchicalResourceRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::hierarchical_resources::LinkHierarchicalResourceRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto requestor_type = parsed->get_requestor_type().get_value();
         const auto& requestor_id = parsed->get_requestor_id();
         if (!m_input_support.valid_requestor_type(requestor_type) || requestor_id.empty()) {
@@ -337,7 +200,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "requestor_type and requestor_id are required"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -347,13 +210,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing X-Profile-Id header"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto auth_error = m_request_support.authorize(req, "link_hierarchical_resource", {});
+        const auto auth_error = m_support.authorize(req, "link_hierarchical_resource", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -364,27 +227,18 @@ public:
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "profile not found for merchant"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto organization_id = m_input_support.resolve_scope_id(req, auth, merchant_id);
 
-        LinkHierarchicalResourceInput
-            input{*resource_id, requestor_type, requestor_id, merchant_id, organization_id};
-        auto result = m_runtime.link(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kLinkHierarchicalResourceResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("resource_id", std::string{*resource_id});
+        ctx.claims.insert_or_assign("requestor_type", std::string{requestor_type});
+        ctx.claims.insert_or_assign("requestor_id", std::string{requestor_id});
+        ctx.claims.insert_or_assign("merchant_id", std::string{merchant_id});
+        ctx.claims.insert_or_assign("organization_id", std::string{organization_id});
+        m_runtime.link(ctx).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -462,7 +316,7 @@ private:
 
     HierarchicalResourcesPolicy m_policy{m_input_support};
 
-    HierarchicalResourcesRequestSupport m_request_support{m_policy};
+    HierarchicalResourcesRequestSupport m_support{m_policy};
 };
 
 } // namespace app::handlers::hierarchical_resources

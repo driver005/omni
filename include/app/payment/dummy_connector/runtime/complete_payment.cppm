@@ -24,9 +24,10 @@ public:
     }
 
     // routes/dummy_connector.rs:40-62 -> core.rs:88-153 (payment_complete).
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    complete_payment(const CompletePaymentInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    complete_payment(const core::behavior::CallContext& ctx) const
     {
+        const auto input = CompletePaymentData{ctx};
         // core.rs:98 - get_payment_data_by_attempt_id (result kept for the branch).
         const auto attempt = m_context.cache().get(input.attempt_id);
         const std::string payment_id =

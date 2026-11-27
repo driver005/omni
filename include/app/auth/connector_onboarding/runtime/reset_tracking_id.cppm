@@ -1,6 +1,7 @@
 export module app_auth:connector_onboarding_runtime_reset_tracking_id;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -20,6 +21,7 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
+import :call_context;
 import :connector_onboarding_input;
 import :connector_onboarding_result;
 import :connector_onboarding_runtime_common;
@@ -38,19 +40,22 @@ public:
 
     // Upstream core::reset_tracking_id (core/connector_onboarding.rs:122-138):
     // no is_enabled gate and no connector-type match; just upsert the tracking id.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    reset_tracking_id(const ResetTrackingIdInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    reset_tracking_id(
+        const ::app::dto::connector_onboarding::ResetTrackingIdRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         if (const auto guard = m_support.check_if_connector_exists(
-                input.request.get_connector_id(),
-                input.merchant_id,
+                request.get_connector_id(),
+                detail::effective_merchant_id(ctx),
                 std::nullopt
             )) {
             return std::unexpected{*guard};
         }
         if (const auto guard = m_support.set_tracking_id_in_configs(
-                input.request.get_connector_id(),
-                input.request.get_connector()
+                request.get_connector_id(),
+                request.get_connector()
             )) {
             return std::unexpected{*guard};
         }

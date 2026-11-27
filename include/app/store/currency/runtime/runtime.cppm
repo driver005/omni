@@ -1,12 +1,12 @@
 export module app_store:currency_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_dto;
 import app_context;
 
-import :currency_input;
 import :currency_result;
 import :currency_runtime_common;
 import :currency_runtime_retrieve_forex;
@@ -24,17 +24,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_forex(const RetrieveForexInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_forex(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_forex.retrieve_forex(input);
+        return m_retrieve_forex.retrieve_forex(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::currency::CurrencyConversionResponse, core::error::AppError>
-        convert_forex(const ConvertForexInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::currency::CurrencyConversionResponse>
+        convert_forex(
+            const ::app::dto::currency::CurrencyConversionParams& params,
+            const core::behavior::CallContext& ctx
+        ) const
     {
-        return m_convert_forex.convert_forex(input);
+        return m_convert_forex.convert_forex(params, ctx);
     }
 
 private:

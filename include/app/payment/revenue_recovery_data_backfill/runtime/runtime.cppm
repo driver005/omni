@@ -26,36 +26,32 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse,
-        core::error::AppError>
-    backfill(const RevenueRecoveryDataBackfillInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RevenueRecoveryDataBackfillResponse>
+        backfill(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_backfill.backfill(input);
+        return m_backfill.backfill(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse,
-        core::error::AppError>
-    retry_stats_migration(const RetryStatsMigrationInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationResponse>
+        retry_stats_migration(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retry_stats_migration.retry_stats_migration(input);
+        return m_retry_stats_migration.retry_stats_migration(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse,
-        core::error::AppError>
-    update_redis_data(const UpdateRedisDataInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse>
+        update_redis_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update_redis_data.update_redis_data(input);
+        return m_update_redis_data.update_redis_data(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse,
-        core::error::AppError>
-    unlock_status(const UnlockStatusInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UnlockStatusResponse>
+        unlock_status(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_unlock_status.unlock_status(input);
+        return m_unlock_status.unlock_status(dto, ctx);
     }
 
 private:

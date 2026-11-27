@@ -1,6 +1,7 @@
 export module app_payment:disputes_handlers_misc;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,6 +59,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_disputes_filters(req, res, std::move(send));
                         }
                     )
@@ -73,6 +76,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_disputes_filters_profile(req, res, std::move(send));
                             }
                         )
@@ -95,6 +100,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_platform_disputes_filters(req, res, std::move(send));
                         }
                     )
@@ -117,6 +124,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_disputes_aggregate(req, res, std::move(send));
                         }
                     )
@@ -132,6 +141,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_disputes_aggregate_profile(req, res, std::move(send));
                             }
                         )
@@ -147,32 +158,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "MerchantDisputeRead", kDisputeMerchantReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetDisputesFiltersInput input{scope};
-        auto result = m_runtime.get_disputes_filters(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_disputes_filters(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // ── routes/disputes.rs:390-422  get_disputes_filters_profile ──────────────
@@ -182,34 +187,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support->authorize(req, "ProfileDisputeRead", kDisputeProfileReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const std::vector<std::string> profiles = scope.profile_id.empty()
                                                       ? std::vector<std::string>{}
                                                       : std::vector<std::string>{scope.profile_id};
-        GetDisputesFiltersProfileInput input{scope, profiles};
-        auto result = m_runtime.get_disputes_filters_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_disputes_filters_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // ── routes/disputes.rs:244-272  get_platform_disputes_filters ─────────────
@@ -219,32 +218,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "MerchantDisputeRead", kDisputePlatformMerchantReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_policy->platform_scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetPlatformDisputesFiltersInput input{scope};
-        auto result = m_runtime.get_platform_disputes_filters(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_platform_disputes_filters(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // ── routes/disputes.rs:702-738  get_disputes_aggregate ────────────────────
@@ -254,32 +247,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "MerchantDisputeRead", kDisputeMerchantReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetDisputesAggregateInput input{scope, m_input_support.time_range_from(query)};
-        auto result = m_runtime.get_disputes_aggregate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_disputes_aggregate(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // ── routes/disputes.rs:742-778  get_disputes_aggregate_profile ────────────
@@ -289,38 +276,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support->authorize(req, "ProfileDisputeRead", kDisputeProfileReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const std::vector<std::string> profiles = scope.profile_id.empty()
                                                       ? std::vector<std::string>{}
                                                       : std::vector<std::string>{scope.profile_id};
-        GetDisputesAggregateProfileInput input{
-            scope,
-            m_input_support.time_range_from(query),
-            profiles
-        };
-        auto result = m_runtime.get_disputes_aggregate_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_disputes_aggregate_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_webhook:webhook_events_runtime_list_initial;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,16 @@ public:
 
     // Upstream: POST /events/{merchant_id}
     // routes/webhook_events.rs:18-55 -> core list_initial_delivery_attempts.
-    [[nodiscard]] std::
-        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
-        list_initial(const ListInitialInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::webhook_events::TotalEventsResponse>
+    list_initial(
+        const ::app::dto::webhook_events::EventListConstraints& constraints,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto listed = m_support.list_initial_delivery_attempts(
-            input.merchant_id,
-            input.profile_id,
-            input.constraints
+            ctx.merchant_id,
+            ctx.profile_id,
+            constraints
         );
         if (!listed) {
             return std::unexpected{std::move(listed.error())};

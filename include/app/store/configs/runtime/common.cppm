@@ -1,6 +1,7 @@
 export module app_store:configs_runtime_common;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_metrics;
@@ -50,6 +51,18 @@ public:
     {
         m_context.metrics().record_flow(flow);
         m_context.metrics().counter(flow).increment();
+    }
+
+    /**
+     * @brief web::Path<String> key: /configs/:key (index 1) or
+     * /v2/configs/:key (index 2 when a leading "v2" segment is present).
+     */
+    [[nodiscard]] static std::string config_key(const core::behavior::CallContext& ctx)
+    {
+        const bool is_v2 =
+            !ctx.path_segments.empty() && ctx.path_segments.front() == "v2";
+        const std::size_t index{is_v2 ? 2U : 1U};
+        return ctx.path_segments.size() > index ? ctx.path_segments[index] : std::string{};
     }
 
 private:

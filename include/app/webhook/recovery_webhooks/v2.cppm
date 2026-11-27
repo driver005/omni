@@ -59,13 +59,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // 1. request -> Input.
         const auto ids = m_input_support.recovery_ids(req);
         if (ids.merchant_id.empty() || ids.profile_id.empty() || ids.connector_id.empty()) {
             const auto error = m_input_support.invalid_request_data(
                 "missing merchant_id, profile_id or connector_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -73,7 +74,7 @@ public:
         if (const auto auth =
                 m_request_support.authorize(req, "recovery_receive_incoming_webhook", {})) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -81,48 +82,14 @@ public:
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = m_input_support.invalid_request_data("empty webhook body");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        RecoveryReceiveIncomingWebhookInput input{};
-        input.ids = ids;
-        input.body = body;
-        input.request = m_input_support.build_request_details(req, body);
-        input.org_id = ::app::http::org_id_from_header{}(req);
-        input.lock_action = "NotApplicable";
-        // Network-level verification hint (incoming_v2.rs:147-149).
-        input.network_verification =
-            !::app::http::HeaderReader{}.get(req, "x-webhook-signature").empty();
-
-        // 2. Input -> WebhookResponse envelope.
-        auto result = m_runtime.recovery_receive_incoming_webhook(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Envelope -> response. Typed WebhookResponse value encoded through Ser;
-        // no pre-built JSON/text string crosses this boundary.
-        const auto& response = *result;
-        switch (response.get_kind()) {
-            case WebhookResponse::Kind::Json:
-                res.set_status(interfaces::io::types::Status::OK);
-                res.set_body(serde::Ser::serialize("application/json", response.get_value()));
-                send();
-                return;
-            case WebhookResponse::Kind::TextPlain:
-                res.set_status(interfaces::io::types::Status::OK);
-                res.set_body(serde::Ser::serialize("application/json", response.get_value()));
-                break;
-            case WebhookResponse::Kind::StatusOk:
-            default:
-                res.set_status(interfaces::io::types::Status::OK);
-                res.set_body(std::vector<std::byte>{});
-                break;
-        }
-        send();
+        const auto request_details = m_input_support.build_request_details(req, body);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = ::app::http::org_id_from_header{}(req);
+        m_runtime.recovery_receive_incoming_webhook(request_details, ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)

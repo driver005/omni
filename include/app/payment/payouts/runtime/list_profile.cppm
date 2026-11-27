@@ -36,9 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: list_profile ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list_profile(const PayoutsListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsListProfileData{dto, ctx};
         m_context.metrics().record_flow("payout_list_profile");
         m_context.metrics().counter("payouts_list_profile_total").increment();
 

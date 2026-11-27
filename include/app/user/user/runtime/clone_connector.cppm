@@ -1,6 +1,7 @@
 export module app_user:user_runtime_clone_connector;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    clone_connector(const CloneConnectorInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    clone_connector(const ::app::model::user::CloneConnectorRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto source_id = input.request.get_source_mca_id().get_value();
+        const auto source_id = request.get_source_mca_id().get_value();
         const auto source = m_context.repository().find_merchant_connector_by_string(source_id);
         if (!source) {
             return std::unexpected{m_support.wire_error(
@@ -55,9 +57,9 @@ public:
         ::app::store::merchant_connectors::MerchantConnectorRecord clone = *source;
         clone.set_id(0);
         clone.set_merchant_connector_id(m_context.ids().payment_id("mca_"));
-        clone.set_profile_id(input.request.get_destination_profile_id().get_value());
-        if (input.request.get_connector_label()) {
-            clone.set_connector_label(*input.request.get_connector_label());
+        clone.set_profile_id(request.get_destination_profile_id().get_value());
+        if (request.get_connector_label()) {
+            clone.set_connector_label(*request.get_connector_label());
         }
         clone.set_created_at(m_support.now_string());
         // Capture the cloned row before moving it into the repository; upstream

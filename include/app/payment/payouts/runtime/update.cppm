@@ -36,9 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: update ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    update(const PayoutsUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsUpdateData{dto, ctx};
         PayoutLockGuard lock{
             m_context.locks(),
             std::format("payout:{}", input.payout_id),

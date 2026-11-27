@@ -8,8 +8,8 @@ import app_dto;
 import app_store;
 import app_events;
 import app_metrics;
+import core_behavior;
 
-import :gsm_input;
 import :gsm_result;
 import :gsm_runtime_common;
 
@@ -26,10 +26,9 @@ public:
 
     // ── Core: retrieve ─────────────────────────────────────────────────────
     // find_gsm_rule + to_not_found_response (core/gsm.rs:28-46).
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
-    get(const GetGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmResponse>
+    get(const ::app::dto::gsm::GsmRetrieveRequest& in, const ::core::behavior::CallContext&) const
     {
-        const auto& in = input.request;
         if (const auto error = m_support.validate_key_fields(
                 in.get_connector(),
                 in.get_flow(),

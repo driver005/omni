@@ -733,7 +733,7 @@ public:
     }
 
     [[nodiscard]] CustomerAddressRecord
-    to_address_record(const AddressInput& input, std::string_view kind) const
+    to_address_record(const CustomerAddressDto& input, std::string_view kind) const
     {
         CustomerAddressRecord record{};
         record.set_address_id(m_context.ids().payment_id("addr_"));
@@ -803,7 +803,7 @@ public:
     void upsert_address(
         ::app::store::AppRepository&,
         const CustomerAggregate& aggregate,
-        const AddressInput& input,
+        const CustomerAddressDto& input,
         std::string_view kind
     ) const
     {
@@ -878,8 +878,8 @@ public:
 
     [[nodiscard]] serde::Value customer_document(
         const CustomerAggregate& aggregate,
-        const std::optional<CustomerCreateInput>& create,
-        const std::optional<CustomerUpdateInput>& update,
+        const std::optional<CustomerCreateDto>& create,
+        const std::optional<CustomerUpdateDto>& update,
         ApiVersion version
     ) const
     {

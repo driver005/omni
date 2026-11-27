@@ -38,11 +38,10 @@ public:
     }
 
     // ───────────────────────── Core: list_available_filters_for_merchant ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
-    list_available_filters_for_merchant(
-        const PayoutsListAvailableFiltersForMerchantInput& input
-    ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFilters>
+    list_available_filters_for_merchant(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsListAvailableFiltersForMerchantData{ctx};
         // Upstream input is `web::Json<TimeRange>`, not a filters object (`payouts.rs:497`).
         const auto range = m_support.time_range_from_body(input.body);
         if (const auto invalid = m_support.require_time_range(range)) {

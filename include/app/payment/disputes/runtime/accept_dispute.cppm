@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    accept_dispute(const AcceptDisputeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        accept_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = AcceptDisputeData{dto, ctx};
         m_context.metrics().record_flow("dispute_accept");
         const auto& scope = input.scope;
         const auto& req = input.dispute_id;

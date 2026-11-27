@@ -1,6 +1,7 @@
 export module app_user:user_runtime_check_two_factor_auth_status_with_attempts;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -39,15 +40,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
     check_two_factor_auth_status_with_attempts(
-        const CheckTwoFactorAuthStatusWithAttemptsInput& input
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::string set_cookie{};
 
 
-        const auto owner = input.request_context.token.value();
+        const auto owner = ctx_token(ctx).value();
         bool totp_active{false};
         for (const auto& record: m_context.repository().list_authentication_records()) {
             if (record.get_user_id() == owner && record.get_method() == "TOTP" &&
@@ -68,7 +70,7 @@ public:
         totp.set_remaining_attempts(totp_active ? std::uint8_t{0} : std::uint8_t{3});
         status.set_totp(totp);
         response.set_status(status);
-        const auto skip_flag = input.request_context.query.get("skip_two_factor_auth");
+        const auto skip_flag = ctx_query(ctx).get("skip_two_factor_auth");
         response.set_is_skippable(
             !totp_active || (skip_flag && (*skip_flag == "true" || *skip_flag == "1"))
         );

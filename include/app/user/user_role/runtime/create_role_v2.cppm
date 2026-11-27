@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_create_role_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,21 +34,22 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
-    create_role_v2(const CreateRoleV2Input& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
+    create_role_v2(const CreateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
             };
         }
         if (const auto err =
-                m_support.validate_create_role(input.request, input.identity, *requestor)) {
+                m_support.validate_create_role(request, identity_from_context(ctx), *requestor)) {
             return std::unexpected{*err};
         }
         const auto groups = m_support.parent_group_info_request_to_permission_groups(
-            input.request.get_parent_groups()
+            request.get_parent_groups()
         );
         if (!groups) {
             return std::unexpected{
@@ -55,7 +57,7 @@ public:
             };
         }
         const auto merchant =
-            m_context.repository().find_merchant_account_by_string(input.identity.merchant_id);
+            m_context.repository().find_merchant_account_by_string(identity_from_context(ctx).merchant_id);
         if (!merchant) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "MerchantIdNotFound")
@@ -65,12 +67,12 @@ public:
         if (const auto err = role_tables::validate_role_groups(*groups, product_type)) {
             return std::unexpected{*err};
         }
-        const auto role_entity = m_support.normalize_entity(input.request.get_entity_type()).empty()
+        const auto role_entity = m_support.normalize_entity(request.get_entity_type()).empty()
                                      ? std::string{"merchant"}
-                                     : m_support.normalize_entity(input.request.get_entity_type());
+                                     : m_support.normalize_entity(request.get_entity_type());
         if (const auto err = m_support.validate_role_name(
-                role_tables::lowercased(input.request.get_role_name()),
-                input.identity,
+                role_tables::lowercased(request.get_role_name()),
+                identity_from_context(ctx),
                 role_entity
             )) {
             return std::unexpected{*err};
@@ -78,14 +80,14 @@ public:
 
         ::app::store::roles::RoleRecord record{};
         record.set_role_id(m_context.ids().payment_id("role_"));
-        record.set_role_name(role_tables::lowercased(input.request.get_role_name()));
+        record.set_role_name(role_tables::lowercased(request.get_role_name()));
         record.set_entity_type(role_entity);
         record.set_merchant_id(
-            role_entity == "merchant" || role_entity == "profile" ? input.identity.merchant_id
+            role_entity == "merchant" || role_entity == "profile" ? identity_from_context(ctx).merchant_id
                                                                   : std::string{}
         );
-        record.set_organization_id(input.identity.org_id);
-        record.set_profile_id(role_entity == "profile" ? input.identity.profile_id : std::string{});
+        record.set_organization_id(identity_from_context(ctx).org_id);
+        record.set_profile_id(role_entity == "profile" ? identity_from_context(ctx).profile_id : std::string{});
         record.set_is_internal(0);
         record.set_status("active");
         record.set_created_at(m_support.now_string());
@@ -96,14 +98,14 @@ public:
         m_support.store_role_metadata(
             saved->get_role_id(),
             *groups,
-            input.request.get_role_scope(),
+            request.get_role_scope(),
             product_type
         );
 
         RoleInfoWithParentsWire response{};
         response.set_role_id(saved->get_role_id());
         response.set_role_name(saved->get_role_name());
-        response.set_role_scope(input.request.get_role_scope());
+        response.set_role_scope(request.get_role_scope());
         response.set_parent_groups(
             m_support.parent_group_descriptions_from_groups(*groups, role_entity)
         );

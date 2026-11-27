@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,11 @@ public:
     }
 
     /** @brief core::api_keys::create_api_key (112-189). */
-    [[nodiscard]] std::expected<::app::dto::api_keys::CreateApiKeyResponse, core::error::AppError>
-    create(const ApiKeyCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse>
+    create(
+        const ::app::dto::api_keys::CreateApiKeyRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto hash_key = m_support.get_hash_key();
         if (!hash_key) {
@@ -52,16 +56,16 @@ public:
         const std::int64_t created_epoch = m_support.now_epoch();
         const std::string created_at = m_support.iso_utc(created_epoch);
         const std::optional<std::string> expires =
-            m_support.expires_at(input.request.get_expiration());
+            m_support.expires_at(request.get_expiration());
 
         ::app::store::api_keys::ApiKeyRecord record;
         record.set_key_id(key_id);
-        record.set_merchant_id(input.merchant_id);
-        record.set_name(input.request.get_name());
-        record.set_description(input.request.get_description().value_or(""));
+        record.set_merchant_id(ctx.merchant_id);
+        record.set_name(request.get_name());
+        record.set_description(request.get_description().value_or(""));
         record.set_prefix(plaintext.prefix());
         record.set_api_key(hashed.peek());
-        record.set_expiration(m_support.expiration_string(input.request.get_expiration()));
+        record.set_expiration(m_support.expiration_string(request.get_expiration()));
         record.set_created_at(created_at);
         record.set_revoked(false);
 
@@ -93,7 +97,7 @@ public:
             }
         }
 
-        return m_support.build_create_response(saved, plaintext, input.request);
+        return m_support.build_create_response(saved, plaintext, request);
     }
 
 private:

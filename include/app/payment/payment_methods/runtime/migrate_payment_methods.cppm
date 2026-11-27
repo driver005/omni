@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::ModularPaymentMethodMigrationResponse,
-        core::error::AppError>
-    migrate_payment_methods(const MigratePaymentMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::ModularPaymentMethodMigrationResponse>
+    migrate_payment_methods(const core::behavior::CallContext& ctx) const
     {
+        const auto input = MigratePaymentMethodsData{ctx};
         m_context.metrics().record_flow("migrate_payment_methods");
         m_context.metrics().counter("PAYMENT_METHOD_MIGRATE_PAYMENT_METHODS").increment();
         ::app::model::payment_methods::ModularPaymentMethodMigrationResponse response{};

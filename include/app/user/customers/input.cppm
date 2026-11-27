@@ -30,7 +30,7 @@ enum class ApiVersion : std::uint8_t
     V2
 };
 
-struct AddressInput
+struct CustomerAddressDto
 {
     std::optional<std::string> city{};
     std::optional<std::string> country{};
@@ -44,13 +44,13 @@ struct AddressInput
     std::optional<std::string> origin_zip{};
 };
 
-struct DocumentInput
+struct CustomerDocumentDto
 {
     std::optional<std::string> document_type{};
     std::optional<std::string> document_number{};
 };
 
-struct CustomerCreateInput
+struct CustomerCreateDto
 {
     std::optional<std::string> customer_id{};
     std::optional<std::string> merchant_reference_id{};
@@ -59,26 +59,26 @@ struct CustomerCreateInput
     std::optional<std::string> phone{};
     std::optional<std::string> description{};
     std::optional<std::string> phone_country_code{};
-    std::optional<AddressInput> address{};
-    std::optional<AddressInput> billing_address{};
-    std::optional<AddressInput> shipping_address{};
-    std::optional<DocumentInput> document_details{};
+    std::optional<CustomerAddressDto> address{};
+    std::optional<CustomerAddressDto> billing_address{};
+    std::optional<CustomerAddressDto> shipping_address{};
+    std::optional<CustomerDocumentDto> document_details{};
     std::optional<std::string> metadata_raw{};
     std::optional<std::string> tax_registration_id{};
     std::optional<std::string> default_payment_method_id{};
 };
 
-struct CustomerUpdateInput
+struct CustomerUpdateDto
 {
     std::optional<std::string> name{};
     std::optional<std::string> email{};
     std::optional<std::string> phone{};
     std::optional<std::string> description{};
     std::optional<std::string> phone_country_code{};
-    std::optional<AddressInput> address{};
-    std::optional<AddressInput> billing_address{};
-    std::optional<AddressInput> shipping_address{};
-    std::optional<DocumentInput> document_details{};
+    std::optional<CustomerAddressDto> address{};
+    std::optional<CustomerAddressDto> billing_address{};
+    std::optional<CustomerAddressDto> shipping_address{};
+    std::optional<CustomerDocumentDto> document_details{};
     std::optional<std::string> metadata_raw{};
     std::optional<std::string> tax_registration_id{};
     std::optional<std::string> default_payment_method_id{};
@@ -170,74 +170,123 @@ struct MigrationRow
 using MigrationOutcome =
     std::variant<MigrationRow, ::app::model::customers::CustomerGlobalIdMigrationRowResult>;
 
-// ───────────────────────── Plain route inputs ─────────────────────────
-// One struct per handle_* method, carrying exactly what the old core call
-// received after auth/path/query/body extraction.
-
-struct CustomersCreateRouteInput
+/** @brief Request snapshot shared by every customers runtime method. */
+[[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
 {
-    CustomerCreateInput request{};
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-};
+    ::core::behavior::CallContext ctx{};
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+    if (ctx.merchant_id.empty()) ctx.merchant_id = auth.merchant_id();
+    ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
+    if (ctx.org_id.empty()) ctx.org_id = auth.org_id();
+    ctx.profile_id = auth.profile_id();
+    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) ctx.connected_merchant_id = std::string{*c};
+    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) ctx.client_secret = std::string{*s};
+    const auto segments = ::app::http::RequestPath{}(req);
+    for (std::size_t i{0}; i < segments.count(); ++i) ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    const auto raw = req.get_path();
+    if (const auto q = raw.find('?'); q != std::string_view::npos) {
+        const std::string_view tail = raw.substr(q + 1);
+        std::size_t start{0};
+        while (start <= tail.size()) {
+            const auto amp = tail.find('&', start);
+            const auto end = amp == std::string_view::npos ? tail.size() : amp;
+            const auto pair = tail.substr(start, end - start);
+            const auto eq = pair.find('=');
+            if (!pair.empty()) {
+                ctx.query.insert_or_assign(
+                    std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)},
+                    std::string{eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)}
+                );
+            }
+            if (amp == std::string_view::npos) break;
+            start = amp + 1;
+        }
+    }
+    constexpr std::string_view kHeaders[] = {
+        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
+        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+    };
+    for (const auto name: kHeaders) {
+        const auto value = req.find_header(name);
+        if (!value.empty()) ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+    }
+    for (const auto& [key, value]: auth.claims()) ctx.claims.insert_or_assign(key, value);
+    ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
+    ctx.claims.insert_or_assign("org_id", ctx.org_id);
+    ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
+    return ctx;
+}
 
-struct CustomersRetrieveRouteInput
+[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string id{};
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-};
+    const auto it = ctx.claims.find(std::string{key});
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
 
-struct CustomersRetrieveByReferenceRouteInput
+[[nodiscard]] inline ApiVersion ctx_version(const ::core::behavior::CallContext& ctx)
 {
-    std::string reference{};
-    std::string merchant_id{};
-};
+    return ctx_string(ctx, "version") == "v2" ? ApiVersion::V2 : ApiVersion::V1;
+}
 
-struct CustomersListRouteInput
+[[nodiscard]] inline std::optional<std::string>
+ctx_optional_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-    std::optional<std::uint32_t> offset{};
-    std::optional<std::uint16_t> limit{};
-    std::optional<std::string> customer_id{};
-};
+    const auto raw = ctx_string(ctx, key);
+    return raw.empty() ? std::nullopt : std::optional<std::string>{raw};
+}
 
-struct CustomersListWithCountRouteInput
+template<class T>
+[[nodiscard]] std::optional<T> ctx_optional_number(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-    std::size_t offset{};
-    std::size_t limit{kDefaultCustomerListLimit};
-    std::optional<std::string> customer_id{};
-    std::optional<::app::model::customers::CustomerTimeRange> time_range{};
-};
+    const auto raw = ctx_string(ctx, key);
+    if (raw.empty()) return std::nullopt;
+    T value{};
+    const auto result = std::from_chars(raw.data(), raw.data() + raw.size(), value);
+    return result.ec == std::errc{} && result.ptr == raw.data() + raw.size()
+               ? std::optional<T>{value}
+               : std::nullopt;
+}
 
-struct CustomersUpdateRouteInput
+[[nodiscard]] inline std::size_t ctx_size(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    CustomerUpdateInput request{};
-    std::string id{};
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-};
+    return ctx_optional_number<std::size_t>(ctx, key).value_or(0U);
+}
 
-struct CustomersDeleteRouteInput
+[[nodiscard]] inline std::optional<::app::model::customers::CustomerTimeRange>
+ctx_time_range(const ::core::behavior::CallContext& ctx)
 {
-    std::string id{};
-    ApiVersion version{ApiVersion::V1};
-    std::string merchant_id{};
-};
+    const auto start = ctx_optional_string(ctx, "start_time");
+    const auto end = ctx_optional_string(ctx, "end_time");
+    if (!start && !end) return std::nullopt;
+    ::app::model::customers::CustomerTimeRange range{};
+    if (start) range.set_start_time(*start);
+    if (end) range.set_end_time(*end);
+    return range;
+}
 
-struct CustomersMandatesRouteInput
+template<class T>
+[[nodiscard]] std::string encode_optional(const std::optional<T>& value)
 {
-    std::string id{};
-    std::string merchant_id{};
-};
+    return value ? std::to_string(*value) : std::string{};
+}
 
-struct CustomersMigrateRouteInput
+[[nodiscard]] inline std::string
+encode_time_range(const std::optional<::app::model::customers::CustomerTimeRange>& range)
 {
-    std::vector<MigrationOutcome> rows{};
-};
+    return range && range->get_start_time().has_value() ? *range->get_start_time() : std::string{};
+}
+
+[[nodiscard]] inline std::string
+encode_time_range_end(const std::optional<::app::model::customers::CustomerTimeRange>& range)
+{
+    return range && range->get_end_time().has_value() ? *range->get_end_time() : std::string{};
+}
+
+[[nodiscard]] inline std::string encode_optional_string(const std::optional<std::string>& value)
+{
+    return value.value_or("");
+}
 
 /**
  * @brief Parse/auth/path/query support for the customers handlers.
@@ -484,10 +533,10 @@ public:
         return out;
     }
 
-    [[nodiscard]] CustomerCreateInput
+    [[nodiscard]] CustomerCreateDto
     parse_create_input(const JsonValueView& view, ApiVersion version) const
     {
-        CustomerCreateInput input{};
+        CustomerCreateDto input{};
         input.customer_id =
             view.string(version == ApiVersion::V1 ? "customer_id" : "merchant_reference_id");
         input.merchant_reference_id = view.string("merchant_reference_id");
@@ -509,7 +558,7 @@ public:
             input.shipping_address = parse_address(*address);
         }
         if (const auto document = view.object("document_details")) {
-            DocumentInput parsed{};
+            CustomerDocumentDto parsed{};
             parsed.document_type = document->string("document_type");
             parsed.document_number = document->string("document_number");
             input.document_details = std::move(parsed);
@@ -517,9 +566,9 @@ public:
         return input;
     }
 
-    [[nodiscard]] CustomerUpdateInput parse_update_input(const JsonValueView& view) const
+    [[nodiscard]] CustomerUpdateDto parse_update_input(const JsonValueView& view) const
     {
-        CustomerUpdateInput input{};
+        CustomerUpdateDto input{};
         input.name = view.string("name");
         input.email = view.string("email");
         input.phone = view.string("phone");
@@ -538,7 +587,7 @@ public:
             input.shipping_address = parse_address(*address);
         }
         if (const auto document = view.object("document_details")) {
-            DocumentInput parsed{};
+            CustomerDocumentDto parsed{};
             parsed.document_type = document->string("document_type");
             parsed.document_number = document->string("document_number");
             input.document_details = std::move(parsed);
@@ -546,9 +595,9 @@ public:
         return input;
     }
 
-    [[nodiscard]] AddressInput parse_address(const JsonValueView& view) const
+    [[nodiscard]] CustomerAddressDto parse_address(const JsonValueView& view) const
     {
-        AddressInput address{};
+        CustomerAddressDto address{};
         address.city = view.string("city");
         address.country = view.string("country");
         address.line1 = view.string("line1");
@@ -564,7 +613,7 @@ public:
 
     // DocumentKind::validate (common_types/customers.rs:65-122).
     [[nodiscard]] std::optional<::core::error::AppError>
-    validate_document_details(const std::optional<DocumentInput>& document) const
+    validate_document_details(const std::optional<CustomerDocumentDto>& document) const
     {
         if (!document) {
             return std::nullopt;
@@ -707,7 +756,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::expected<std::vector<MigrationOutcome>, ::core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::vector<MigrationOutcome>>
     parse_customer_global_id_migration_csv(std::string_view body) const
     {
         if (body.size() > kMigrationMaxFileSize) {
@@ -858,6 +907,12 @@ public:
             out.connected_merchant_id = std::string{*connected};
         }
         return out;
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

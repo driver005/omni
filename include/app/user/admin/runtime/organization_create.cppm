@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -35,12 +36,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        create(const OrganizationCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        create(const ::app::model::organization::OrganizationCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         for (const auto& existing: m_context.repository().list_organizations()) {
-            if (existing.get_organization_name() == input.request.get_organization_name()) {
+            if (existing.get_organization_name() == request.get_organization_name()) {
                 return std::unexpected{core::error::AppErrorBuilder{}(
                     core::error::AppErrorKind::ALREADY_EXISTS,
                     "Organization with the given organization_name already exists"
@@ -49,26 +50,26 @@ public:
         }
         if (const auto duplicate = m_support.acquire_operation_lock(
                 "organization_create",
-                input.request.get_organization_name()
+                request.get_organization_name()
             )) {
             return std::unexpected{*duplicate};
         }
         ::app::store::organizations::OrganizationRecord record;
         record.set_organization_id("org_" + m_support.uuid_simple());
-        record.set_organization_name(input.request.get_organization_name());
+        record.set_organization_name(request.get_organization_name());
         record.set_organization_details(
-            input.request.get_organization_details()
-                ? input.request.get_organization_details()->get_value()
+            request.get_organization_details()
+                ? request.get_organization_details()->get_value()
                 : std::string{}
         );
         record.set_metadata(
-            input.request.get_metadata() ? input.request.get_metadata()->get_value() : std::string{}
+            request.get_metadata() ? request.get_metadata()->get_value() : std::string{}
         );
         record.set_organization_type("merchant");
         const auto saved = m_context.repository().save_organization(std::move(record));
         m_support.release_operation_lock(
             "organization_create",
-            input.request.get_organization_name()
+            request.get_organization_name()
         );
 
         ::app::model::organization::OrganizationResponse response;

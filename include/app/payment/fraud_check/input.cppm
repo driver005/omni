@@ -9,6 +9,7 @@ import app_context;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::fraud_check {
 
 /**
@@ -488,15 +489,22 @@ private:
 
     ::app::context::AppContext& m_context;
 };
-
-// Each struct carries exactly what the old frm_fulfillment_core call received.
-struct FrmFulfillmentInput
+struct FrmFulfillmentData
 {
     FrmFulfillmentRequestWire request{};
     std::string raw_payload{};
     std::string header_merchant_id{};
     std::string org_id{};
+    template<class Dto>
+    explicit FrmFulfillmentData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<FrmFulfillmentRequestWire>(dto)},
+        raw_payload{::app::payment::detail::body_of(dto)},
+        header_merchant_id{ctx.merchant_id},
+        org_id{ctx.org_id}
+    {
+    }
 };
+
 
 /** @brief Request policy for the fraud_check domain: wraps the domain auth rules. */
 class FraudCheckPolicy
@@ -505,6 +513,11 @@ public:
     FraudCheckPolicy(::app::context::AppContext& /*context*/, FrmInputSupport& support) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

@@ -26,36 +26,22 @@ public:
         std::function<void()> send
     )
     {
-        // 1. request -> Input (auth/path; no body is read on this route).
-        const auto auth_error = m_request_support.authorize(req, "invalidate", {});
-        // Upstream takes the key from web::Path<String> (/cache/invalidate/:key).
-        auto key = m_request_support.path(req, 2U);
-        if (key.empty()) {
-            // Longer mount prefixes: fall back to the last segment, matching the
-            // old RequestPath-based helper.
-            for (std::size_t index{0};; ++index) {
-                const auto segment = m_request_support.path(req, index);
-                if (segment.empty()) {
-                    break;
-                }
-                key = segment;
-            }
-        }
-        CacheInvalidateInput input{auth_error, key};
-
-        // 2. Input -> Result.
-        auto result = m_runtime.invalidate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        // Auth denials map to 401 / IR_01: the status comes from
+        // AppErrorKind::UNAUTHORIZED and the upstream code lives in kind_name.
+        if (const auto auth_error = m_request_support.authorize(req, "invalidate", {})) {
+            auto error = core::error::AppErrorBuilder{}(
+                core::error::AppErrorKind::UNAUTHORIZED,
+                "API key not provided or invalid API key used"
+            );
+            error.set_kind_name("IR_01");
+            error.send(sink);
             return;
         }
 
-        // 3. Result -> response. StatusOk has an empty body; the typed result
-        // carries no fields, so no JSON document is written.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::vector<std::byte>{});
-        send();
+        // web::Path<String> (/cache/invalidate/:key) is read from the context by
+        // the runtime. StatusOk carries an empty body (Outcome<void>).
+        m_runtime.invalidate(m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

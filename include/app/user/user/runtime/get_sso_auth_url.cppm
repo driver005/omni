@@ -1,6 +1,7 @@
 export module app_user:user_runtime_get_sso_auth_url;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_sso_auth_url(const GetSsoAuthUrlInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    get_sso_auth_url(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -48,7 +50,7 @@ public:
         // Upstream uses web::Query<GetSsoAuthUrlRequest>: the `id` comes from the
         // query string, not the request body (routes/user.rs:852-865).
         ::app::model::user::GetSsoAuthUrlRequest request{};
-        const auto id_param = input.request_context.query.get("id");
+        const auto id_param = ctx_query(ctx).get("id");
         if (!id_param) {
             return std::unexpected{m_support.wire_error(
                 "UR_07",

@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
-        payment_method_session_confirm(const PaymentMethodSessionConfirmInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
+        payment_method_session_confirm(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodSessionConfirmData{dto, ctx};
         const auto& parsed = input.request;
         const auto& payload = input.payload;
         // Upstream core/payment_methods.rs:8256-8271 — storage_type follows the session's

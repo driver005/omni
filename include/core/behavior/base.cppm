@@ -6,3 +6,4 @@ export module core_behavior;
 export import :behavior;
 export import :serializer;
 export import :policy;
+export import :outcome;

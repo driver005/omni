@@ -92,9 +92,10 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "upload_batch_blocklist", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -107,7 +108,7 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for transaction_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             override_type = *parsed;
@@ -116,13 +117,13 @@ public:
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.resolve_required_profile(req, merchant);
         if (profile.failure) {
             const auto& error = *profile.failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -134,41 +135,21 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "file exceeds 5MiB limit"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         auto parsed = m_input_support.parse_blocklist_csv(upload.content, override_type);
         if (parsed.failure) {
             const auto& error = *parsed.failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        UploadBatchBlocklistInput input{
-            merchant,
-            profile.id,
-            override_type,
-            std::string{upload.content},
-            upload.file_name,
-            parsed.rows
-        };
-        auto result = m_runtime.upload_batch_blocklist(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::BatchBlocklistUploadResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile.id;
+        m_runtime.upload_batch_blocklist(parsed.rows, upload.file_name, ctx).handle(sink);
     }
 
     // routes/blocklist.rs:446-477 -> core/blocklist.rs:108-122 ->
@@ -179,10 +160,11 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "get_batch_blocklist_job_status", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -192,7 +174,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing job id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto stored = m_input_support.find_job(m_input_support.job_key(job_id));
@@ -201,13 +183,13 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Batch blocklist job `" + job_id + "` not found"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.explicit_profile_of(req);
@@ -216,28 +198,14 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Batch blocklist job `" + job_id + "` not found"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetBatchBlocklistJobStatusInput input{job_id, merchant, profile, *stored};
-        auto result = m_runtime.get_batch_blocklist_job_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire = result->serialize(
-            wire_fields<::app::model::blocklist::BatchBlocklistJobStatusResponse>()
-        );
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile;
+        m_runtime.get_batch_blocklist_job_status(*stored, ctx).handle(sink);
     }
 
     // routes/blocklist.rs:498-528 -> core/blocklist.rs:124-138 ->
@@ -248,16 +216,17 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "list_batch_blocklist_jobs", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.explicit_profile_of(req);
@@ -272,30 +241,16 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for job_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             job_type = *raw;
         }
 
-        ListBatchBlocklistJobsInput input{merchant, profile, limit, offset, job_type};
-        auto result = m_runtime.list_batch_blocklist_jobs(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire = result->serialize(
-            wire_fields<::app::model::blocklist::ListBatchBlocklistJobsResponse>()
-        );
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile;
+        m_runtime.list_batch_blocklist_jobs(ctx).handle(sink);
     }
 
 private:

@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodDetailsResponse, core::error::AppError>
-        payment_method_retrieve_olap_api(const PaymentMethodRetrieveOlapApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodDetailsResponse>
+        payment_method_retrieve_olap_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodRetrieveOlapApiData{dto, ctx};
         const auto& record = input.record;
         m_context.metrics().record_flow("payment_method_retrieve_olap_api");
         m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHOD_RETRIEVE_OLAP_API").increment();

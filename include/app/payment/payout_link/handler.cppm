@@ -1,6 +1,7 @@
 export module app_payment:payout_link_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,10 +36,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto path_ids = m_input_support.payout_link_ids_from_path(req);
         if (!path_ids.has_value()) {
             const auto& error = path_ids.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -48,7 +51,7 @@ public:
             m_request_support.authorize(req, "render_payout_link", spec_for("render_payout_link"));
         if (denied.has_value()) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -56,19 +59,11 @@ public:
         // here; validate_payout_link_render_request_and_get_allowed_domains and
         // locale_from_request consume the values inside the runtime.
         const ::app::http::HeaderReader read{};
-        PayoutLinkRenderInput input{
-            path_ids->first,
-            path_ids->second,
-            read.get(req, "sec-fetch-dest"),
-            read.get(req, "origin"),
-            read.get(req, "referer"),
-            read.get(req, "accept-language")
-        };
 
-        auto result = m_runtime.render_payout_link(input);
+        auto result = m_runtime.render_payout_link(m_request_support.context(req));
         if (!result.has_value()) {
             const auto& error = result.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         res.set_status(interfaces::io::types::Status::OK);
@@ -90,6 +85,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_render_payout_link(req, res, std::move(send));
                         }
                     )

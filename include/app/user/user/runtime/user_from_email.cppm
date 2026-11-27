@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_from_email;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,17 +38,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_from_email(const UserFromEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_from_email(const ::app::model::user::UserFromEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto key = std::string{"user.user_from_email:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
@@ -57,7 +59,7 @@ public:
 
         using Response = ::app::model::user::GetUserInternalDetailsResponse;
         Response response{};
-        const auto token = input.request.get_token();
+        const auto token = request.get_token();
         const auto cached_user = m_context.cache().get("user.internal_user:" + token);
         response.set_user_id(
             cached_user.hit ? core::cache::value_as<std::string>(cached_user.value, token) : token

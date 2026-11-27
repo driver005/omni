@@ -8,6 +8,7 @@ import app_context;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::revenue_recovery {
 
 /**
@@ -39,7 +40,7 @@ public:
     // PlatformAccountAuthNotSupported (BadRequest, "API does not support platform
     // account operation", :702-703). AuthContext has no merchant account type, so the
     // local signals are the connected-merchant and internal-api-key claims.
-    [[nodiscard]] std::expected<::app::auth::AuthContext, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<::app::auth::AuthContext>
     authorize_cancel(interfaces::io::IRequest& req) const
     {
         const auto base_rule = m_context.auth_rules().rule_for("revenue_recovery_cancel");
@@ -69,7 +70,7 @@ public:
     // :17; app.rs:3550-3551). The cancel route is /v2/recovery/{merchant_reference_id}/cancel,
     // so the segment immediately before "cancel" is the merchant_reference_id. No body is
     // read (upstream takes none).
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     merchant_reference_id_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -99,14 +100,17 @@ private:
 
     ::app::context::AppContext& m_context;
 };
-
-// Everything the old cancel_revenue_recovery_core call received: the path id and
-// the authenticated context (carrier of auth.platform and auth.profile).
-struct RevenueRecoveryCancelInput
+struct RevenueRecoveryCancelData
 {
     std::string merchant_reference_id{};
     ::app::auth::AuthContext auth{};
+    explicit RevenueRecoveryCancelData(const core::behavior::CallContext& ctx) :
+        merchant_reference_id{::app::payment::detail::last_path(ctx)},
+        auth{}
+    {
+    }
 };
+
 
 /** @brief Request policy for the revenue_recovery domain: wraps the domain auth rules. */
 class RevenueRecoveryPolicy
@@ -118,6 +122,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

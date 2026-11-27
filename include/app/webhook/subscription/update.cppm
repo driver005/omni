@@ -62,28 +62,29 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure = m_request_support.authorize(req, "api_key", {})) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body(req);
         if (!payload) {
             const auto& error = payload.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto plan_id = m_input_support.json_string(payload->root, "plan_id");
@@ -92,21 +93,14 @@ public:
             const auto error = m_input_support.json_body_error(
                 "missing field `plan_id` or `item_price_id` at line 1 column 2"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto merchant = m_input_support.merchant_id(req, auth);
-        UpdateSubscriptionInput input{profile.value(), merchant, id, *plan_id, *item_price_id};
-        auto result = m_runtime.update_subscription(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.update_subscription(*payload, ctx).handle(sink);
     }
 
 private:

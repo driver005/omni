@@ -32,7 +32,7 @@ public:
         m_context{&context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -42,6 +42,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream `V2AdminApiAuth` — local equivalent is the platform-admin rule.
         const auto rule = ::app::auth::RouteAuthRule{
             ::app::auth::AuthScheme::PLATFORM_ADMIN,
@@ -52,26 +53,18 @@ public:
                 rule
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string body = req.body_as_string();
         auto rows = m_input_support.parse_customer_global_id_migration_csv(body);
         if (!rows) {
             const auto& error = rows.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CustomersMigrateRouteInput input{std::move(*rows)};
-        auto result = m_runtime.migrate_global_id(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.migrate_global_id(std::move(*rows), ctx).handle(sink);
     }
 
     /** @brief Owns the `migrate/global-id` sub-router (admin-gated v2 route). */
@@ -95,7 +88,7 @@ private:
     ::app::context::AppContext* m_context{nullptr};
     CustomersRuntime& m_runtime;
     CustomersInputSupport& m_input_support;
-    CustomersRequestSupport& m_request_support;
+    CustomersRequestSupport& m_support;
 };
 
 } // namespace app::handlers::customers

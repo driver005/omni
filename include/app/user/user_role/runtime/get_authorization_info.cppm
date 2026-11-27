@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_get_authorization_info;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,13 +34,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<GroupInfoWire>, core::error::AppError>
-    get_authorization_info(const GetAuthorizationInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_authorization_info(const ::core::behavior::CallContext& ctx) const
     {
         (void)input;
         auto groups = m_support.group_authorization_info();
         m_support.track_flow("get_authorization_info", "user_role.get_authorization_info");
-        return std::move(groups);
+        return to_document_array(groups, kGroupInfoWireFields);
     }
 
 private:

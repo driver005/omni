@@ -1,6 +1,7 @@
 export module app_user:user_runtime_generate_recovery_codes;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,17 +38,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    generate_recovery_codes(const GenerateRecoveryCodesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    generate_recovery_codes(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         std::uint64_t seed{0};
-        if (const auto seed_param = input.request_context.query.get("seed")) {
+        if (const auto seed_param = ctx_query(ctx).get("seed")) {
             std::from_chars(seed_param->data(), seed_param->data() + seed_param->size(), seed);
         }
-        const auto codes_token = input.request_context.token;
+        const auto codes_token = ctx_token(ctx);
         ::app::crypto::RecoveryCodeGenerator generator{
             seed,
             codes_token.value(),
@@ -60,10 +62,10 @@ public:
         );
 
         const auto key = std::string{"user.generate_recovery_codes:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

@@ -38,20 +38,22 @@ public:
 
     /** @brief core::api_keys::list_api_keys (523-541): merchant-scoped query with
      * limit/offset pushed into the database query, not an in-memory filter. */
-    [[nodiscard]] std::
-        expected<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>, core::error::AppError>
-        list(const ApiKeyListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(
+        const ::app::dto::api_keys::ListApiKeyConstraints& constraints,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         using ApiKeyRecord = ::app::store::api_keys::ApiKeyRecord;
-        const std::int64_t limit = input.constraints.get_limit().value_or(-1);
-        const std::int64_t offset = input.constraints.get_skip().value_or(-1);
+        const std::int64_t limit = constraints.get_limit().value_or(-1);
+        const std::int64_t offset = constraints.get_skip().value_or(-1);
 
         core::db::QuerySpec spec = m_context.database().query<ApiKeyRecord>().spec();
         spec.predicates.push_back(
             core::db::Predicate{
                 .column = "merchant_id",
                 .comparison = core::db::Compare::EQ,
-                .value = core::db::DbValue{input.merchant_id}
+                .value = core::db::DbValue{ctx.merchant_id}
             }
         );
         if (limit >= 0) {
@@ -70,7 +72,12 @@ public:
 
         m_context.metrics().record_flow("ApiKeyList");
         m_context.metrics().counter("API_KEY_LISTED").increment();
-        return std::move(responses);
+        serde::Value::Array array{};
+        for (const auto& response: responses) {
+            array.push_back(serde::Serializer<::app::dto::api_keys::RetrieveApiKeyResponse>::
+                                build_value(response, kRetrieveApiKeyResponseWireFields));
+        }
+        return serde::Value{std::move(array)};
     }
 
 private:

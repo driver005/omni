@@ -37,11 +37,11 @@ public:
      * Upstream: routes/revenue_recovery_data_backfill.rs:106-128 ->
      * core/revenue_recovery_data_backfill.rs:157-261.
      */
-    [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse,
-        core::error::AppError>
-    update_redis_data(const UpdateRedisDataInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusResponse>
+        update_redis_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = UpdateRedisDataData{dto, ctx};
         // Secret<String, PhoneNumberStrategy> Debug is masked; local SecretString::masked()
         // is the in-process substitute for that presentation.
         const auto secret = ::app::crypto::SecretString{input.parsed.get_payment_processor_token()};

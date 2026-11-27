@@ -1,6 +1,7 @@
 export module app_user:user_runtime_switch_profile_for_user_in_org_and_merchant;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -39,16 +40,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
     switch_profile_for_user_in_org_and_merchant(
-        const SwitchProfileForUserInOrgAndMerchantInput& input
+        const ::app::model::user::SwitchProfileRequest& request,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::string set_cookie{};
 
 
-        const auto owner = input.request_context.token.value();
-        const auto new_profile = input.request.get_profile_id().get_value();
+        const auto owner = ctx_token(ctx).value();
+        const auto new_profile = request.get_profile_id().get_value();
         for (auto& role: m_context.repository().list_user_roles()) {
             if (role.get_user_id() == owner) {
                 role.set_profile_id(new_profile);

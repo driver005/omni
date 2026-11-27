@@ -1,6 +1,7 @@
 export module app_store:files_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_dto;
@@ -26,22 +27,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, core::error::AppError>
-    create(const FilesCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
+    create(
+        const CreateFileRequestData& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_file(const FilesDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_file(const core::behavior::CallContext& ctx) const
     {
-        return m_delete.delete_file(input);
+        return m_delete.delete_file(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve(const FilesRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
 private:

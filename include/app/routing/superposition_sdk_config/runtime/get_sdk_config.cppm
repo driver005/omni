@@ -7,8 +7,8 @@ import app_dto;
 import app_store;
 import app_auth;
 import app_metrics;
+import core_behavior;
 
-import :superposition_sdk_config_input;
 import :superposition_sdk_config_result;
 import :superposition_sdk_config_runtime_common;
 
@@ -25,16 +25,20 @@ public:
 
     // ───────────────────────── Core: get_sdk_config ─────────────────────────
     // Upstream core::get_superposition_sdk_config (core:353-462).
-    [[nodiscard]] std::expected<
-        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
-        core::error::AppError>
-    get_sdk_config(const GetSdkConfigInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse>
+    get_sdk_config(const ::core::behavior::CallContext& ctx) const
     {
         using Response = ::app::dto::superposition_sdk_config::SuperPositionConfigResponse;
+        const auto& payment_id = ctx.query.at("payment_id");
+        const auto& sdk_profile_id = ctx.profile_id;
+        const auto provider_merchant_id = ctx.headers.contains("x-provider-merchant-id")
+                                              ? ctx.headers.at("x-provider-merchant-id")
+                                              : std::string{};
 
         // find_payment_intent_by_payment_id_processor_merchant_id (core:360-368): the local
         // store has no processor-merchant composite key, so the id-scoped lookup is used.
-        const auto stored_payment = m_context.repository().find_payment_by_string(input.payment_id);
+        const auto stored_payment = m_context.repository().find_payment_by_string(payment_id);
         if (!stored_payment) {
             return std::unexpected{m_errors.payment_not_found()};
         }
@@ -42,14 +46,14 @@ public:
         const std::string merchant_id = payment.get_merchant_id();
 
         // Upstream get_payment_context (core:35-137) -> SdkPaymentContext.
-        const auto payment_context = m_support.get_payment_context(input.payment_id, payment);
+        const auto payment_context = m_support.get_payment_context(payment_id, payment);
 
         // Upstream payment_intent.profile_id.ok_or(GenericNotFoundError { "Profile id not found" })
         // (core:372-376). The local PaymentIntentRecord has no profile_id column, so the id is
         // taken from the SDK claim, the authenticated context, then the intent metadata.
-        std::string profile_id = input.sdk_profile_id;
+        std::string profile_id = sdk_profile_id;
         if (profile_id.empty()) {
-            profile_id = input.auth.profile_id();
+            profile_id = ctx.profile_id;
         }
         if (profile_id.empty()) {
             profile_id = m_support.json_string_field(
@@ -79,8 +83,8 @@ public:
         const auto filter = m_support.build_dimension_filter(
             profile_id,
             merchant_id,
-            input.provider_merchant_id,
-            m_support.organization_id(merchant_id, input.auth),
+            provider_merchant_id,
+            m_support.organization_id(merchant_id, ctx),
             pms_context.get_eligible_connectors()
         );
 
@@ -97,7 +101,7 @@ public:
             std::vector<::app::dto::superposition_sdk_config::SdkPaymentMethod>{payment_methods}
         );
         response.set_account_config(
-            m_support.build_account_config(*profile, profile_id, merchant_id, input.auth)
+            m_support.build_account_config(*profile, profile_id, merchant_id, ctx)
         );
 
         m_context.metrics().record_flow("GetSuperpositionSdkConfig");

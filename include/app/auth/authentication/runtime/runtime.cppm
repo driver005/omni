@@ -1,6 +1,7 @@
 export module app_auth:authentication_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -36,56 +37,67 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::authentication::AuthenticationResponse, core::error::AppError>
-        create(const AuthenticationCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::authentication::AuthenticationResponse>
+    create(
+        const ::app::dto::authentication::AuthenticationCreateRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    eligibility(const AuthenticationEligibilityInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> eligibility(
+        const ::app::dto::authentication::AuthenticationEligibilityRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_eligibility.eligibility(input);
+        return m_eligibility.eligibility(request, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::authentication::AuthenticationAuthenticateResponse,
-        core::error::AppError>
-    authenticate(const AuthenticationAuthenticateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::authentication::AuthenticationAuthenticateResponse> authenticate(
+        const ::app::dto::authentication::AuthenticationAuthenticateRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_authenticate.authenticate(input);
+        return m_authenticate.authenticate(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    eligibility_check(const AuthenticationEligibilityCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> eligibility_check(
+        const ::app::dto::authentication::AuthenticationEligibilityCheckRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_eligibility_check.eligibility_check(input);
+        return m_eligibility_check.eligibility_check(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_eligibility_check(const AuthenticationRetrieveEligibilityCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_eligibility_check(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_eligibility_check.retrieve_eligibility_check(input);
+        return m_retrieve_eligibility_check.retrieve_eligibility_check(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::authentication::AuthenticationSyncResponse, core::error::AppError>
-        sync(const AuthenticationSyncInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::authentication::AuthenticationSyncResponse>
+    sync(
+        const ::app::dto::authentication::AuthenticationSyncRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_sync.sync(input);
+        return m_sync.sync(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    sync_post_update(const AuthenticationSyncPostUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    sync_post_update(const core::behavior::CallContext& ctx) const
     {
-        return m_sync_post_update.sync_post_update(input);
+        return m_sync_post_update.sync_post_update(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    session_token(const AuthenticationSessionTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> session_token(
+        const ::app::dto::authentication::AuthenticationSessionTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_session_token.session_token(input);
+        return m_session_token.session_token(request, ctx);
     }
 
 private:

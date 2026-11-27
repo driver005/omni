@@ -36,10 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: manual_update ─────────────────────────
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsManualUpdateResponse, core::error::AppError>
-        manual_update(const PayoutsManualUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsManualUpdateResponse>
+        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsManualUpdateData{dto, ctx};
         // `PayoutsManualUpdateRequest::is_update_parameter_present`
         // (`api_models/payouts.rs:1931-1938`).
         if (!input.request.get_status().has_value() &&

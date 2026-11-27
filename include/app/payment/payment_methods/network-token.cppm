@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_network_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_pm_nt_eligibility_api(req, res, std::move(send));
                         }
                     )
@@ -73,6 +76,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_payment_method_get_token_details_api(
                                         req,
                                         res,
@@ -94,6 +99,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_network_token_status_check_api(req, res, std::move(send));
                             }
                         )
@@ -110,6 +117,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_payment_method_token_data(req, res, std::move(send));
                             }
                         )
@@ -128,6 +137,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_payment_method_token_data(req, res, std::move(send));
                             }
                         )
@@ -144,6 +155,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_network_token_status_check_api(req, res, std::move(send));
                             }
                         )
@@ -158,6 +171,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "get_pm_nt_eligibility_api",
@@ -165,7 +180,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -176,19 +191,11 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing card_bin"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetPmNtEligibilityApiInput input{card_bin, org_id};
-        auto result = m_runtime.get_pm_nt_eligibility_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_pm_nt_eligibility_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_network_token_status_check_api(
@@ -197,6 +204,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "network_token_status_check_api",
@@ -204,7 +213,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req, 1);
@@ -213,7 +222,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method(payment_method_id);
@@ -222,19 +231,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        NetworkTokenStatusCheckApiInput input{*record, payment_method_id};
-        auto result = m_runtime.network_token_status_check_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *record;
+        auto result = m_runtime.network_token_status_check_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_get_token_details_api(
@@ -243,6 +245,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_get_token_details_api",
@@ -250,32 +254,24 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string temporary_token = m_input_support.path_segment(req, 1);
         if (temporary_token.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_REQUEST, "missing token");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payment_method_id = m_input_support.token_payment_method(temporary_token);
         if (!payment_method_id) {
             const auto& error = payment_method_id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodGetTokenDetailsApiInput input{*payment_method_id, temporary_token};
-        auto result = m_runtime.payment_method_get_token_details_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.payment_method_get_token_details_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_get_payment_method_token_data(
@@ -284,6 +280,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "get_payment_method_token_data",
@@ -291,7 +289,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req, 1);
@@ -300,7 +298,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method(payment_method_id);
@@ -309,21 +307,14 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string token_type =
             ::app::http::RequestQuery{}(req).get("token_type").value_or("network_token");
-        GetPaymentMethodTokenDataInput input{*record, payment_method_id, token_type};
-        auto result = m_runtime.get_payment_method_token_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *record;
+        auto result = m_runtime.get_payment_method_token_data(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -28,35 +29,43 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::api_keys::CreateApiKeyResponse, core::error::AppError>
-    create(const ApiKeyCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::CreateApiKeyResponse>
+    create(
+        const ::app::dto::api_keys::CreateApiKeyRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
-    retrieve(const ApiKeyRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::api_keys::RetrieveApiKeyResponse, core::error::AppError>
-    update(const ApiKeyUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RetrieveApiKeyResponse>
+    update(
+        const ::app::dto::api_keys::UpdateApiKeyRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_update.update(input);
+        return m_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::api_keys::RevokeApiKeyResponse, core::error::AppError>
-    revoke(const ApiKeyRevokeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RevokeApiKeyResponse>
+    revoke(const ::core::behavior::CallContext& ctx) const
     {
-        return m_revoke.revoke(input);
+        return m_revoke.revoke(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>, core::error::AppError>
-        list(const ApiKeyListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(
+        const ::app::dto::api_keys::ListApiKeyConstraints& constraints,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list.list(input);
+        return m_list.list(constraints, ctx);
     }
 
 private:

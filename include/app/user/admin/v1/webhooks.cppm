@@ -8,6 +8,7 @@ import utils_openapi;
 import app_model;
 import app_dto;
 import app_context;
+import core_behavior;
 import core_error;
 import app_http;
 import :admin_input;
@@ -28,7 +29,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -38,63 +39,35 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_request_support.authorize(req, "connector_webhook_register", {})) {
-            res.set_status(error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto error = m_support.authorize(req, "connector_webhook_register", {})) {
+            sink.set_status(error->get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *error));
+            sink.send();
             return;
         }
         const std::string connector_id{
-            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+            m_support.path(req, AdminPolicy::path_index(req, 1))
         };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing connector id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 4));
+            merchant_id = m_support.path(req, AdminPolicy::path_index(req, 4));
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto parsed = serde::Ser::deserialize<::app::dto::admin::WebhookDetailsRequest>(
-            "application/json",
-            body
-        );
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        ConnectorWebhookRegisterInput input{std::move(merchant_id), connector_id, *parsed};
-        auto result = m_runtime.register_webhook(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kWebhookDetailsResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto parsed = core::behavior::Serializer<::app::dto::admin::WebhookDetailsRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{std::move(merchant_id)});
+        ctx.claims.insert_or_assign("connector_id", std::string{connector_id});
+        m_runtime.register_webhook(*parsed, ctx).handle(sink);
     }
 
     void handle_retrieve_connector_webhook(
@@ -103,42 +76,32 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto error = m_request_support.authorize(req, "retrieve_connector_webhook", {})) {
-            res.set_status(error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto error = m_support.authorize(req, "retrieve_connector_webhook", {})) {
+            sink.set_status(error->get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *error));
+            sink.send();
             return;
         }
         const std::string connector_id{
-            m_request_support.path(req, AdminPolicy::path_index(req, 1))
+            m_support.path(req, AdminPolicy::path_index(req, 1))
         };
         if (connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing connector id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::string merchant_id{::app::http::merchant_id_from_header{}(req)};
         if (merchant_id.empty() && m_input_support.path_has(req, "account")) {
-            merchant_id = m_request_support.path(req, AdminPolicy::path_index(req, 4));
+            merchant_id = m_support.path(req, AdminPolicy::path_index(req, 4));
         }
-        RetrieveConnectorWebhookInput input{std::move(merchant_id), connector_id};
-        auto result = m_runtime.fetch_webhook(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kWebhookDetailsResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("merchant_id", std::string{std::move(merchant_id)});
+        ctx.claims.insert_or_assign("connector_id", std::string{connector_id});
+        m_runtime.fetch_webhook(ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -202,7 +165,7 @@ private:
     ::app::context::AppContext& m_context;
     AdminRuntime& m_runtime;
     AdminInputSupport& m_input_support;
-    AdminRequestSupport& m_request_support;
+    AdminRequestSupport& m_support;
 };
 
 } // namespace app::handlers::admin

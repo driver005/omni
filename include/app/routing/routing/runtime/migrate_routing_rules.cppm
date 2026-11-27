@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,10 +21,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    migrate_routing_rules(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> migrate_routing_rules(
+        const ::app::model::routing::RuleMigrationRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto& typed = *input.migration_request;
+        const auto& typed = request;
         ::app::model::routing::RuleMigrationResult response;
         ::app::model::routing::RuleMigrationTotals totals;
         totals.set_profiles(typed.get_profile_ids().size());
@@ -65,7 +67,8 @@ public:
                 );
                 migrated.set_decision_engine_algorithm_id(algorithm_id);
                 migrated.set_is_active_rule(
-                    m_support.active_id_for(input.active_id, profile, "payment") == algorithm_id
+                    m_support.active_id_for(ctx_query(ctx, "active_id"), profile, "payment") ==
+                    algorithm_id
                 );
                 success.push_back(std::move(migrated));
             }

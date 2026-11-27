@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodMigrateResponse, core::error::AppError>
-        migrate_payment_method_api(const MigratePaymentMethodApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodMigrateResponse>
+        migrate_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = MigratePaymentMethodApiData{dto, ctx};
         if (auto mca_error = m_support.check_merchant_connector(input.merchant_id)) {
             return std::unexpected{*mca_error};
         }

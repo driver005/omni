@@ -1,6 +1,7 @@
 export module app_auth:unified_connector_service_runtime_reset_kill_switch;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -32,10 +33,10 @@ public:
 
     // Upstream kill_switch::reset (kill_switch.rs:543-577). Auth and scope
     // resolution stay in the handler; everything below is the old core block.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    reset(const ResetKillSwitchInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    reset(const core::behavior::CallContext& ctx) const
     {
-        const auto& resolved = input.scope;
+        const auto resolved = resolve_scope(ctx);
 
         // kill_switch.rs:553-559: connection failure -> InternalServerError.
         if (!m_context.cache().is_open()) {

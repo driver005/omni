@@ -23,10 +23,10 @@ public:
     }
 
     // routes/dummy_connector.rs:109-128 -> core.rs:156-207 (refund_payment).
-    [[nodiscard]] std::
-        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
-        refund(const RefundInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
+        refund(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundData{ctx};
         // core.rs:173-175 - get_payment_data_from_payment_id.
         auto payment = m_support.load_payment(input.payment_id);
         if (!payment) {

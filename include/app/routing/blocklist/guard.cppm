@@ -60,9 +60,10 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "toggle_blocklist_guard", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -73,7 +74,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing required param: status"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         bool status{false};
@@ -84,34 +85,21 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid bool value for status"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        ToggleBlocklistGuardInput input{merchant, status};
-        auto result = m_runtime.toggle_blocklist_guard(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::ToggleBlocklistResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.query["status"] = status ? "true" : "false";
+        m_runtime.toggle_blocklist_guard(ctx).handle(sink);
     }
 
 private:

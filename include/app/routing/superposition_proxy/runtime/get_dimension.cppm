@@ -4,6 +4,7 @@ import std;
 import core_serde;
 import core_error;
 import app_context;
+import core_behavior;
 
 import :superposition_proxy_input;
 import :superposition_proxy_runtime_common;
@@ -19,11 +20,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_dimension(const GetDimensionHandlerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> get_dimension(
+        const GetDimensionRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto wire = m_support.finish(
-            m_support.execute(input.request, input.auth, input.org_id, input.workspace_id),
+            m_support.execute(request, ctx),
             "SuperpositionGetDimension",
             "superposition.get_dimension"
         );

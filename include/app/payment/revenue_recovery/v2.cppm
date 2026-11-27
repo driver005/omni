@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_handlers_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -63,6 +64,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // 1. request -> Input: auth (incl. both check_merchant_access flags) + path.
         const auto auth_error = m_request_support->authorize(
             req,
@@ -71,7 +74,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -86,26 +89,16 @@ public:
         auto merchant_reference_id = m_input_support.merchant_reference_id_from_path(req);
         if (!merchant_reference_id) {
             const auto& error = merchant_reference_id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // Upstream closure passes auth.platform and auth.profile into the core
         // (routes/revenue_recovery.rs:24-31); AuthContext is the local carrier of both.
-        RevenueRecoveryCancelInput input{*merchant_reference_id, *auth};
 
         // 2. Input -> Result.
-        auto result = m_runtime.cancel(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. Result -> response (direct writes).
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.cancel(m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** Upstream scope /v2/recovery + resource /{merchant_reference_id}/cancel POST
@@ -126,6 +119,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_revenue_recovery_cancel(req, res, std::move(send));
                         }
                     )

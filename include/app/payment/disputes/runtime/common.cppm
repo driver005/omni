@@ -929,7 +929,7 @@ public:
             .value_or(std::string{});
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
     retrieve_disputes_list(
         const DisputeScope& scope,
         const ::app::model::disputes::DisputeListGetConstraints& constraints,
@@ -950,7 +950,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeListFilters>
     get_filters_for_disputes(
         const DisputeScope& scope,
         const std::optional<std::vector<std::string>>& profile_id_list
@@ -1002,7 +1002,7 @@ public:
         return filters;
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListFilters, Error>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListFilters>
     get_platform_disputes_filters(const DisputeScope& scope) const
     {
         ::app::model::disputes::PlatformDisputeListFilters filters{};
@@ -1056,7 +1056,7 @@ public:
         return filters;
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputesAggregateResponse>
     get_aggregates_for_disputes(
         const DisputeScope& scope,
         const ::app::model::disputes::TimeRange& time_range,

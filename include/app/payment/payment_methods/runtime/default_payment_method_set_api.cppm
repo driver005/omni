@@ -35,11 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::CustomerDefaultPaymentMethodResponse,
-        core::error::AppError>
-    default_payment_method_set_api(const DefaultPaymentMethodSetApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::CustomerDefaultPaymentMethodResponse>
+        default_payment_method_set_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = DefaultPaymentMethodSetApiData{dto, ctx};
         m_context.cache().put(
             "payment_methods.default:" + input.customer_id,
             core::cache::to_cache_value(input.payment_method_id)

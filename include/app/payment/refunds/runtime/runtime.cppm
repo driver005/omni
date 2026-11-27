@@ -53,110 +53,116 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    create(const RefundsCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+    create(const core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    retrieve(const RefundsRetrieveInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        retrieve(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    retrieve_gateway(const RefundsRetrieveGatewayInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        retrieve_gateway(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_gateway.retrieve_gateway(input);
+        return m_retrieve_gateway.retrieve_gateway(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    retrieve_body(const RefundsRetrieveBodyInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        retrieve_body(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_body.retrieve_body(input);
+        return m_retrieve_body.retrieve_body(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    update(const RefundsUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    reverse(const RefundsReverseInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        reverse(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_reverse.reverse(input);
+        return m_reverse.reverse(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    metadata_update(const RefundsMetadataUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        metadata_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_metadata_update.metadata_update(input);
+        return m_metadata_update.metadata_update(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
-    list(const RefundsListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
+        list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(dto, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::PlatformRefundListResponse, core::error::AppError>
-        list_platform(const RefundsListPlatformInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListResponse>
+    list_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list_platform.list_platform(input);
+        return m_list_platform.list_platform(dto, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::PlatformRefundListFilters, core::error::AppError>
-        filter_platform(const RefundsFilterPlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::PlatformRefundListFilters>
+        filter_platform(const core::behavior::CallContext& ctx) const
     {
-        return m_filter_platform.filter_platform(input);
+        return m_filter_platform.filter_platform(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
-    list_profile(const RefundsListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
+        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list_profile.list_profile(input);
+        return m_list_profile.list_profile(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListMetaData, core::error::AppError>
-    filter_list(const RefundsFilterListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListMetaData>
+    filter_list(const core::behavior::CallContext& ctx) const
     {
-        return m_filter_list.filter_list(input);
+        return m_filter_list.filter_list(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
-    filters(const RefundsFiltersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    filters(const core::behavior::CallContext& ctx) const
     {
-        return m_filters.filters(input);
+        return m_filters.filters(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
-    filters_profile(const RefundsFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    filters_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_filters_profile.filters_profile(input);
+        return m_filters_profile.filters_profile(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
-        aggregates(const RefundsAggregatesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
+        aggregates(const core::behavior::CallContext& ctx) const
     {
-        return m_aggregates.aggregates(input);
+        return m_aggregates.aggregates(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::refunds::RefundAggregateResponse, core::error::AppError>
-        aggregates_profile(const RefundsAggregatesProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundAggregateResponse>
+        aggregates_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_aggregates_profile.aggregates_profile(input);
+        return m_aggregates_profile.aggregates_profile(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    manual_update(const RefundsManualUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_manual_update.manual_update(input);
+        return m_manual_update.manual_update(dto, ctx);
     }
 
 private:

@@ -53,9 +53,10 @@ public:
      * external infra, replaced by deterministic local equivalents using the
      * connector registry and the relay record store.
      */
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    incoming_webhook(const RelayIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    incoming_webhook(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RelayIncomingWebhookData{ctx};
         // Upstream consumes `web::Bytes` verbatim; there is no JSON requirement
         // on the wire, so the raw body is kept for verification and decoding.
         // Upstream: validate_webhook_connector_account (incoming.rs:3557-3595).

@@ -35,11 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse,
-        core::error::AppError>
-    network_token_status_check_api(const NetworkTokenStatusCheckApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::NetworkTokenStatusCheckSuccessResponse>
+        network_token_status_check_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = NetworkTokenStatusCheckApiData{dto, ctx};
         const auto& record = input.record;
         const auto status_response = m_support.call_connector(
             record.get_merchant_id(),

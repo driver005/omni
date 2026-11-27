@@ -1,6 +1,7 @@
 export module app_webhook:webhook_events_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_dto;
@@ -27,33 +28,35 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
-        list_initial_with_jwtauth(const ListInitialWithJwtAuthInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::webhook_events::TotalEventsResponse>
+    list_initial_with_jwtauth(
+        const ::app::dto::webhook_events::EventListConstraints& constraints,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list_initial_with_jwtauth.list_initial_with_jwtauth(input);
+        return m_list_initial_with_jwtauth.list_initial_with_jwtauth(constraints, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::webhook_events::TotalEventsResponse, core::error::AppError>
-        list_initial(const ListInitialInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::webhook_events::TotalEventsResponse>
+    list_initial(
+        const ::app::dto::webhook_events::EventListConstraints& constraints,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_list_initial.list_initial(input);
+        return m_list_initial.list_initial(constraints, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::webhook_events::EventRetrieveResponse>,
-        core::error::AppError>
-    list_attempts(const ListAttemptsInput& input) const
+    [[nodiscard]] core::behavior::
+        Outcome<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
+    list_attempts(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_attempts.list_attempts(input);
+        return m_list_attempts.list_attempts(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::webhook_events::EventRetrieveResponse, core::error::AppError>
-        retry(const RetryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::webhook_events::EventRetrieveResponse>
+    retry(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retry.retry(input);
+        return m_retry.retry(ctx);
     }
 
 private:

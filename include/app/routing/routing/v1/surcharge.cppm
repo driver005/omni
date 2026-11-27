@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -47,48 +48,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "upsert_surcharge_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        auto parsed = core::behavior::Serializer<
+            ::app::dto::surcharge_decision_configs::SurchargeDecisionConfigReq>::pass(req, sink);
+        if (!parsed) {
             return;
         }
-        auto typed = serde::Ser::deserialize<
-            ::app::dto::surcharge_decision_configs::SurchargeDecisionConfigReq>(
-            "application/json",
-            body
-        );
-        if (!typed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.surcharge_request = *typed;
-
-        auto result = m_runtime.upsert_surcharge_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.upsert_surcharge_decision_manager_config(*parsed, m_request_support.context(req))
+            .handle(sink);
     }
 
     void handle_delete_surcharge_decision_manager_config(
@@ -97,24 +70,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "delete_surcharge_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.delete_surcharge_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.delete_surcharge_decision_manager_config(m_request_support.context(req))
+            .handle(sink);
     }
 
     void handle_retrieve_surcharge_decision_manager_config(
@@ -123,25 +87,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support
                     .authorize(req, "retrieve_surcharge_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.retrieve_surcharge_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.retrieve_surcharge_decision_manager_config(m_request_support.context(req))
+            .handle(sink);
     }
 
     void install_route_13(core::router::RouterContext<>& router)

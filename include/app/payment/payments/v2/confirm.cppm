@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v2_confirm;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,49 +59,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payment_confirm_intent",
                 spec_for("payment_confirm_intent")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payment_confirm_intent");
         m_context.metrics().counter("payments.payment_confirm_intent").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsConfirmIntentRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentConfirmIntentInput input{std::move(data)};
-        auto result = m_runtime.payment_confirm_intent(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payment_confirm_intent(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_proxy_confirm_intent(
@@ -109,47 +84,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     ->authorize(req, "proxy_confirm_intent", spec_for("proxy_confirm_intent"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.proxy_confirm_intent");
         m_context.metrics().counter("payments.proxy_confirm_intent").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::ProxyPaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        ProxyConfirmIntentInput input{std::move(data)};
-        auto result = m_runtime.proxy_confirm_intent(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.proxy_confirm_intent(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_confirm_intent_with_external_vault_proxy(
@@ -158,14 +107,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "confirm_intent_with_external_vault_proxy",
                 spec_for("confirm_intent_with_external_vault_proxy")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.confirm_intent_with_external_vault_proxy");
@@ -173,36 +122,10 @@ public:
             .counter("payments.confirm_intent_with_external_vault_proxy")
             .increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::ExternalVaultProxyPaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        ConfirmIntentWithExternalVaultProxyInput input{std::move(data)};
-        auto result = m_runtime.confirm_intent_with_external_vault_proxy(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.confirm_intent_with_external_vault_proxy(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #11
@@ -220,6 +143,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_confirm_intent(req, res, std::move(send));
                         }
                     )
@@ -243,6 +168,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_proxy_confirm_intent(req, res, std::move(send));
                         }
                     )
@@ -267,6 +194,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_confirm_intent_with_external_vault_proxy(
                                     req,
                                     res,

@@ -8,8 +8,8 @@ import app_dto;
 import app_store;
 import app_events;
 import app_metrics;
+import core_behavior;
 
-import :gsm_input;
 import :gsm_result;
 import :gsm_runtime_common;
 
@@ -26,10 +26,9 @@ public:
 
     // ── Core: delete ───────────────────────────────────────────────────────
     // delete_gsm_rule + to_not_found_response (core/gsm.rs:138-163).
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmDeleteResponse, core::error::AppError>
-    remove(const DeleteGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmDeleteResponse>
+    remove(const ::app::dto::gsm::GsmDeleteRequest& in, const ::core::behavior::CallContext&) const
     {
-        const auto& in = input.request;
         if (const auto error = m_support.validate_key_fields(
                 in.get_connector(),
                 in.get_flow(),

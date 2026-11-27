@@ -1,6 +1,7 @@
 export module app_user:user_runtime_get_user_details_internal;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_user_details_internal(const GetUserDetailsInternalInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    get_user_details_internal(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto segments = ::app::http::PathSegments{input.request_context.path};
+        const auto segments = ::app::http::PathSegments{ctx_path_string(ctx)};
         if (segments.count() == 0) {
             return std::unexpected{m_support.wire_error(
                 "api:HE_00",

@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    submit_dispute_evidence(const SubmitDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        submit_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = SubmitDisputeEvidenceData{dto, ctx};
         m_context.metrics().record_flow("dispute_submit_evidence");
         const auto& scope = input.scope;
         const auto& req = input.request;

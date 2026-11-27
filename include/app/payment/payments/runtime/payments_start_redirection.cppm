@@ -31,16 +31,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentsRedirectionResponse, core::error::AppError>
-        payments_start_redirection(const PaymentsStartRedirectionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsRedirectionResponse>
+        payments_start_redirection(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
     {
-        if (const auto err = m_support.ensure_payment_exists(input.data)) {
+        const PaymentsRequestData input = m_support.request_data(dto, ctx);
+        if (const auto err = m_support.ensure_payment_exists(input)) {
             return std::unexpected{*err};
         }
         std::string service_status{"pending"};
         ::app::model::payments::PaymentsRedirectionResponse response{};
-        response.set_redirect_url(m_support.local_redirect_url(input.data, service_status));
+        response.set_redirect_url(m_support.local_redirect_url(input, service_status));
         return ::app::model::payments::PaymentsRedirectionResponse{response};
     }
 

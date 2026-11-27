@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -38,7 +39,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -49,28 +50,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support
+                m_support
                     .authorize(req, "get_groups_and_resources_for_role_from_token", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetGroupsAndResourcesForRoleFromTokenInput input{m_input_support.identity_from(req)};
-        auto result = m_runtime.get_groups_and_resources_for_role_from_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kGroupsAndResourcesWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_groups_and_resources_for_role_from_token(ctx).handle(sink);
     }
 
     // ── GET /role/v3 — core::role::get_parent_groups_info_for_role_from_token ──
@@ -80,31 +69,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support
+                m_support
                     .authorize(req, "get_parent_groups_info_for_role_from_token", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetParentGroupsInfoForRoleFromTokenInput input{m_input_support.identity_from(req)};
-        auto result = m_runtime.get_parent_groups_info_for_role_from_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ParentGroupInfoWire>>::serialize_values(
-            *result,
-            kParentGroupInfoWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_parent_groups_info_for_role_from_token(ctx).handle(sink);
     }
 
     // original install() route #03
@@ -171,7 +145,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
-    UserRoleRequestSupport& m_request_support;
+    UserRoleRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user_role

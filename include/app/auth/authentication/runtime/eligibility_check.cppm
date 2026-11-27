@@ -1,6 +1,7 @@
 export module app_auth:authentication_runtime_eligibility_check;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -20,6 +21,7 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
+import :call_context;
 import :authentication_input;
 import :authentication_result;
 import :authentication_runtime_common;
@@ -37,15 +39,20 @@ public:
 
     // ───────────────────────── Core: eligibility-check ─────────────────────────
     // unified_authentication_service.rs:1685-1734 authentication_eligibility_check_core.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    eligibility_check(const AuthenticationEligibilityCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    eligibility_check(
+        const ::app::dto::authentication::AuthenticationEligibilityCheckRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        auto record = m_support.find_authentication(input.authentication_id);
+        const auto& authentication_id = detail::path_segment(ctx, 1);
+        const auto flow =
+            detail::is_client_flow(ctx) ? AuthFlowKind::Client : AuthFlowKind::Merchant;
+        auto record = m_support.find_authentication(authentication_id);
         if (!record.has_value()) {
-            return std::unexpected{m_support.not_found_error(input.authentication_id)};
+            return std::unexpected{m_support.not_found_error(authentication_id)};
         }
-        if (const auto err =
-                m_support.authenticate_client_secret(*record, input.auth.client_secret)) {
+        if (const auto err = m_support.authenticate_client_secret(*record, ctx.client_secret)) {
             return std::unexpected{*err};
         }
         // :1722-1727 EligibilityHandler::run_check(StoreEligibilityCheckData):
@@ -56,20 +63,20 @@ public:
         if (should_store) {
             m_support.store_eligibility_data(
                 record->get_merchant_id(),
-                input.authentication_id,
+                authentication_id,
                 m_support.eligibility_data_from_request(
-                    input.request.get_eligibility_check_data(),
-                    input.body
+                    request.get_eligibility_check_data(),
+                    detail::request_body(ctx)
                 )
             );
         }
-        m_support.update_eligibility_check_trackers(input.authentication_id, input.auth.flow);
+        m_support.update_eligibility_check_trackers(authentication_id, flow);
         m_context.metrics().record_flow("AuthenticationEligibilityCheck");
         const char* action = should_store ? "await_merchant_callback" : "proceed";
         JsonObject sdk_next_action{};
         sdk_next_action.val(action, serde::Value{serde::Value::Object{}});
         return JsonObject{}
-            .str("authentication_id", std::string{input.authentication_id})
+            .str("authentication_id", std::string{authentication_id})
             .val("sdk_next_action", sdk_next_action.done())
             .done();
     }

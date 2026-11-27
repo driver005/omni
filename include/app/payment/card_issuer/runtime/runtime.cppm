@@ -26,30 +26,30 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
-    add(const CardIssuerAddInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
+        add(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_add.add(input);
+        return m_add.add(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
-    update(const CardIssuerUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::card_issuer::CardIssuerDeleteResponse, core::error::AppError>
-        remove(const CardIssuerDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerDeleteResponse>
+        remove(const core::behavior::CallContext& ctx) const
     {
-        return m_delete.remove(input);
+        return m_delete.remove(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::card_issuer::CardIssuerListResponse, core::error::AppError>
-        list(const CardIssuerListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerListResponse>
+        list(const core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(ctx);
     }
 
 private:

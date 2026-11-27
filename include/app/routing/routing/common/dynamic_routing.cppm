@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -44,25 +45,27 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "create_success_based_routing", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = req.body_as_string();
-
-        auto result = m_runtime.create_success_based_routing(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
+        std::optional<serde::Value> body{};
+        const auto text = req.body_as_string();
+        if (!text.empty()) {
+            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            if (!body) {
+                const auto error = core::error::AppErrorBuilder{}(
+                    core::error::AppErrorKind::INVALID_JSON,
+                    "invalid JSON"
+                );
+                error.send(sink);
+                return;
+            }
         }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.create_success_based_routing(body, m_request_support.context(req)).handle(sink);
     }
 
     void handle_create_elimination_routing(
@@ -71,25 +74,27 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "create_elimination_routing", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = req.body_as_string();
-
-        auto result = m_runtime.create_elimination_routing(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
+        std::optional<serde::Value> body{};
+        const auto text = req.body_as_string();
+        if (!text.empty()) {
+            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            if (!body) {
+                const auto error = core::error::AppErrorBuilder{}(
+                    core::error::AppErrorKind::INVALID_JSON,
+                    "invalid JSON"
+                );
+                error.send(sink);
+                return;
+            }
         }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.create_elimination_routing(body, m_request_support.context(req)).handle(sink);
     }
 
     // ─── contract_based_dynamic_routing_setup (core:2717) ───────────────────────────
@@ -99,25 +104,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "contract_based_routing_setup_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = req.body_as_string();
-
-        auto result = m_runtime.contract_based_routing_setup_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
+        std::optional<serde::Value> body{};
+        const auto text = req.body_as_string();
+        if (!text.empty()) {
+            body = serde::Ser::decode_generic(req.get_content_type(), text);
+            if (!body) {
+                const auto error = core::error::AppErrorBuilder{}(
+                    core::error::AppErrorKind::INVALID_JSON,
+                    "invalid JSON"
+                );
+                error.send(sink);
+                return;
+            }
         }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.contract_based_routing_setup_config(body, m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_embedded_token_info;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    embedded_token_info(const EmbeddedTokenInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    embedded_token_info(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto embedded_info_token = input.request_context.token;
+        const auto embedded_info_token = ctx_token(ctx);
         if (!embedded_info_token.value().empty() &&
             !m_support.user_signer().verify(embedded_info_token.value())) {
             return std::unexpected{m_support.wire_error(
@@ -53,7 +55,7 @@ public:
             )};
         }
 
-        const auto auth_ctx = input.request_context.auth;
+        const auto auth_ctx = ctx_auth(ctx);
         m_context.metrics().record_flow("embedded_token_info");
         m_context.metrics().counter("user.embedded_token_info").increment();
 

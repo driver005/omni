@@ -36,9 +36,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    create(const RefundsCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+    create(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsCreateData{ctx};
         // routes/refunds.rs:16-32,146 — serialize creation against the same payment.
         const std::string lock_key{"refund:" + input.payment_id};
         const auto lock = m_context.locks().acquire(lock_key, std::int64_t{30}, "refund_create");

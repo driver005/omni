@@ -23,10 +23,10 @@ public:
     }
 
     // core/card_issuer.rs:63-82 `delete_card_issuer`.
-    [[nodiscard]] std::
-        expected<::app::dto::card_issuer::CardIssuerDeleteResponse, core::error::AppError>
-        remove(const CardIssuerDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerDeleteResponse>
+        remove(const core::behavior::CallContext& ctx) const
     {
+        const auto input = CardIssuerDeleteData{ctx};
         const std::string& id = input.id;
 
         // core/card_issuer.rs:72-74 to_not_found_response message.

@@ -219,7 +219,7 @@ public:
     }
 
     /** @brief Upstream list defaults to 30 days, rejects end<=start, caps at 90 days. */
-    [[nodiscard]] std::expected<TimeWindow, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<TimeWindow>
     time_window(std::optional<std::string> raw) const
     {
         const auto now = now_epoch();
@@ -836,7 +836,7 @@ public:
         return out.empty() ? std::nullopt : std::optional{std::move(out)};
     }
 
-    [[nodiscard]] std::expected<FormLinkData, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<FormLinkData>
     form_payment_link_data(std::string_view merchant_id, std::string_view payment_id) const
     {
         // find_payment_intent_by_payment_id_processor_merchant_id (core:105-113).
@@ -1002,9 +1002,7 @@ public:
     }
 
     /** @brief get_payment_link_status() (core:892-1073) for the status route. */
-    [[nodiscard]] std::expected<
-        std::tuple<::app::model::payments::PaymentLinkStatusDetails, std::string, std::string>,
-        core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::tuple<::app::model::payments::PaymentLinkStatusDetails, std::string, std::string>>
     build_status_page_data(std::string_view merchant_id, std::string_view payment_id) const
     {
         auto intent = find_intent(payment_id);
@@ -1424,10 +1422,11 @@ public:
      * (core:557-619). Reads the dedicated link table first; payment intents
      * remain a documented fallback for links not mirrored into that table.
      */
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentLinkListResponse, core::error::AppError>
-        build_list_response(const PaymentLinkListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentLinkListResponse>
+        build_list_response(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkListData{dto, ctx};
         std::size_t limit = parse_size(input.request.get_limit().get_value());
         std::size_t offset = parse_size(input.request.get_offset().get_value());
         if (input.query_limit) {

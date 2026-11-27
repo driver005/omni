@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v1_misc;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,14 +59,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "list_payment_methods_for_payments_client",
                 extractor_only_spec_for("list_payment_methods_for_payments_client")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.list_payment_methods_for_payments_client");
@@ -73,17 +74,10 @@ public:
             .counter("payments.list_payment_methods_for_payments_client")
             .increment();
 
-        PaymentsRequestData data = m_input_support.request_data(req);
-        ListPaymentMethodsForPaymentsClientInput input{std::move(data)};
-        auto result = m_runtime.list_payment_methods_for_payments_client(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.list_payment_methods_for_payments_client(m_request_support->context(req))).handle(sink);
     }
 
     void handle_payments_dynamic_tax_calculation(
@@ -92,49 +86,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_dynamic_tax_calculation",
                 spec_for("payments_dynamic_tax_calculation")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_dynamic_tax_calculation");
         m_context.metrics().counter("payments.payments_dynamic_tax_calculation").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsDynamicTaxCalculationRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsDynamicTaxCalculationInput input{std::move(data)};
-        auto result = m_runtime.payments_dynamic_tax_calculation(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_dynamic_tax_calculation(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #40
@@ -152,6 +120,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_payment_methods_for_payments_client(
                                 req,
                                 res,
@@ -179,6 +149,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_dynamic_tax_calculation(req, res, std::move(send));
                         }
                     )

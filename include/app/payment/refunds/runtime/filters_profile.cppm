@@ -21,9 +21,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListFilters, core::error::AppError>
-    filters_profile(const RefundsFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListFilters>
+    filters_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsFiltersProfileData{ctx};
         m_context.metrics().record_flow("refund_profile_filters");
         m_context.metrics().counter("refunds_profile_filters_total").increment();
 

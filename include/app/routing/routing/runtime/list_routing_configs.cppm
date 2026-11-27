@@ -5,8 +5,8 @@ import core_serde;
 import core_error;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,25 +21,27 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_routing_configs(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_routing_configs(const ::core::behavior::CallContext& ctx) const
     {
+        const auto list_limit = ctx_query_number<std::uint16_t>(ctx, "limit");
+        const auto list_offset = ctx_query_number<std::uint8_t>(ctx, "offset");
         ::app::model::routing::RoutingRetrieveQuery filter;
-        if (input.list_limit) {
-            filter.set_limit(*input.list_limit);
+        if (list_limit) {
+            filter.set_limit(*list_limit);
         }
-        if (input.list_offset) {
-            filter.set_offset(*input.list_offset);
+        if (list_offset) {
+            filter.set_offset(*list_offset);
         }
-        if (input.query_txn) {
-            filter.set_transaction_type(
-                m_support.wrap<::app::model::routing::TransactionTypeValue>(*input.query_txn)
-            );
+        if (ctx_query(ctx, "transaction_type")) {
+            filter.set_transaction_type(m_support.wrap<::app::model::routing::TransactionTypeValue>(
+                *ctx_query(ctx, "transaction_type")
+            ));
         }
         auto items = m_support.list_impl(
-            input.merchant_id,
-            input.profile_id,
-            input.txn,
+            ctx.merchant_id,
+            ctx.profile_id,
+            ctx_transaction_type(ctx),
             false,
             "list_routing_configs",
             filter

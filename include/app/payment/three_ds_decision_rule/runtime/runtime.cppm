@@ -19,12 +19,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse,
-        core::error::AppError>
-    execute_decision_rule(const ExecuteDecisionRuleInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteResponse>
+        execute_decision_rule(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_execute_decision_rule.execute_decision_rule(input);
+        return m_execute_decision_rule.execute_decision_rule(dto, ctx);
     }
 
 private:

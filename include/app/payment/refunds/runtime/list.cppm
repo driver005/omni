@@ -21,9 +21,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
-    list(const RefundsListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
+        list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsListData{dto, ctx};
         m_context.metrics().record_flow("refund_list");
         m_context.metrics().counter("refunds_list_total").increment();
 

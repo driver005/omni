@@ -1,6 +1,7 @@
 export module app_payment:tokenization_handlers_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -63,13 +64,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto request = m_input_support.parse_create_request(body);
@@ -78,7 +81,7 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -89,7 +92,7 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "missing customer id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -99,7 +102,7 @@ public:
             m_request_support->authorize(req, "create_token_vault_api", spec_for(customer_id));
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -107,19 +110,9 @@ public:
         m_context.metrics().record_flow("TokenizationCreate");
         m_context.metrics().counter("TOKENIZATION_CREATED").increment();
 
-        CreateTokenVaultInput input{
-            *request,
-            m_input_support.resolve_merchant_id(req, m_policy->last().context)
-        };
-        auto result = m_runtime.create_token_vault(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *request;
+        auto result = m_runtime.create_token_vault(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_delete_tokenized_data_api(
@@ -128,13 +121,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto request = m_input_support.parse_delete_request(body);
@@ -143,7 +138,7 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -153,7 +148,7 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -161,7 +156,7 @@ public:
         const auto token_id = m_input_support.token_id_from_path(req);
         if (!token_id) {
             const auto& error = token_id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -174,7 +169,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -182,16 +177,8 @@ public:
         m_context.metrics().record_flow("TokenizationDelete");
         m_context.metrics().counter("TOKENIZATION_DELETED").increment();
 
-        DeleteTokenizedDataInput input{*token_id, request->get_customer_id()};
-        auto result = m_runtime.delete_tokenized_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.delete_tokenized_data(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -208,6 +195,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_create_token_vault_api(req, res, std::move(send));
                         }
                     )
@@ -222,6 +211,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_delete_tokenized_data_api(req, res, std::move(send));
                         }
                     )

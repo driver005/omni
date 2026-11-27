@@ -1,6 +1,7 @@
 export module app_auth:connector_onboarding_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -146,7 +147,7 @@ public:
 
     // Upstream utils/connector_onboarding.rs:17-33. The PayPal branch returns a BodyKey
     // auth built from client_secret/client_id; every other connector returns NotImplemented.
-    [[nodiscard]] std::expected<ConnectorAuth, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<ConnectorAuth>
     get_connector_auth(std::string_view connector, const ConnectorOnboardingConf& conf) const
     {
         if (is_paypal(connector)) {
@@ -262,7 +263,7 @@ public:
 
     // Upstream utils/connector_onboarding.rs:125-142: find_config_by_key_unwrap_or with a
     // freshly minted unix timestamp, then "<connector_id>_<timestamp>" (no insert).
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     get_tracking_id_from_configs(std::string_view connector_id, std::string_view connector) const
     {
         const auto key = build_key(connector_id, connector);
@@ -305,7 +306,7 @@ public:
     // Upstream utils/connector_onboarding/paypal.rs:17-40: get_connector_auth feeds the
     // PayPal access-token call. The injected connector's exchange_token is the in-process
     // substitute for Paypal::get_access_token / the HTTP token endpoint.
-    [[nodiscard]] std::expected<std::string, core::error::AppError> generate_access_token(
+    [[nodiscard]] core::behavior::Outcome<std::string> generate_access_token(
         std::string_view connector,
         const ConnectorOnboardingConf& conf,
         std::string_view merchant_id
@@ -338,7 +339,7 @@ public:
     }
 
     // Upstream types/.../paypal.rs:235-244: find the HATEOAS link whose rel == "action_url".
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     extract_action_url(std::string_view text) const
     {
         auto parsed = serde::Ser::decode_generic("application/json", text);
@@ -373,7 +374,7 @@ public:
     // Upstream core/connector_onboarding/paypal.rs:40-63. The partner-referral POST is
     // replaced by the injected connector's create_link; the response goes through the same
     // extract_action_url helper as upstream's PartnerReferralResponse.
-    [[nodiscard]] std::expected<std::string, core::error::AppError> get_action_url_from_paypal(
+    [[nodiscard]] core::behavior::Outcome<std::string> get_action_url_from_paypal(
         std::string_view tracking_id,
         std::string_view return_url,
         std::string_view merchant_id
@@ -435,7 +436,7 @@ public:
     }
 
     // Upstream types/.../paypal.rs:177-186: strip the leading '/' and prefix base_url.
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     extract_merchant_details_url(std::string_view href, std::string_view base_url) const
     {
         if (!href.starts_with('/')) {
@@ -448,7 +449,7 @@ public:
 
     // Upstream core/connector_onboarding/paypal.rs:117-142. A non-success PayPal status
     // becomes None -> AccountNotFound; the injected connector's sync is the substitute.
-    [[nodiscard]] std::expected<std::optional<PayPalMerchantStatus>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::optional<PayPalMerchantStatus>>
     find_paypal_merchant_by_tracking_id(
         std::string_view tracking_id,
         std::string_view access_token,
@@ -537,8 +538,7 @@ public:
 
     // Upstream core/connector_onboarding/paypal.rs:81-115. The merchant-details GET is
     // replaced by a second injected-connector sync keyed by the extracted details URL.
-    [[nodiscard]] std::expected<OnboardingOutcome, core::error::AppError>
-    sync_merchant_onboarding_status(
+    [[nodiscard]] core::behavior::Outcome<OnboardingOutcome> sync_merchant_onboarding_status(
         std::string_view tracking_id,
         std::string_view merchant_id
     ) const
@@ -607,14 +607,14 @@ public:
     // Upstream core/connector_onboarding/paypal.rs:144-201 (update_mca via
     // admin::update_connector). The SignatureKey auth JSON is stored through the repository;
     // AesWrap is the local stand-in for the upstream vault encryption of Secret<serde_json::Value>.
-    [[nodiscard]] std::
-        expected<::app::store::merchant_connectors::MerchantConnectorRecord, core::error::AppError>
-        update_mca(
-            std::string_view merchant_id,
-            std::string_view profile_id,
-            std::string_view connector_id,
-            const ConnectorAuth& auth_details
-        ) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::store::merchant_connectors::MerchantConnectorRecord>
+    update_mca(
+        std::string_view merchant_id,
+        std::string_view profile_id,
+        std::string_view connector_id,
+        const ConnectorAuth& auth_details
+    ) const
     {
         (void)merchant_id;
         (void)profile_id;

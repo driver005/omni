@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>,
-        core::error::AppError>
-    payment_methods_batch_retrieve_api(const PaymentMethodsBatchRetrieveApiInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::payment_methods::PaymentMethodsBatchRetrieveResponse>>
+    payment_methods_batch_retrieve_api(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodsBatchRetrieveApiData{ctx};
         m_context.metrics().record_flow("payment_methods_batch_retrieve_api");
         m_context.metrics()
             .counter("PAYMENT_METHOD_PAYMENT_METHODS_BATCH_RETRIEVE_API")

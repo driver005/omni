@@ -1,6 +1,7 @@
 export module app_payment:three_ds_decision_rule_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -25,6 +26,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream route uses HeaderAuth(ApiKeyAuth { allow_connected_scope_operation:
         // false, allow_platform_self_operation: false }). The ApiKey scheme is resolved
         // from the auditable RouteAuthRegistry. For API_KEY the two scope flags do not
@@ -38,7 +41,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -52,32 +55,16 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        using Input = ::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::three_ds_decision_rule::ThreeDsDecisionRuleExecuteRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        ExecuteDecisionRuleInput input{*parsed, m_policy.last().merchant_id};
-        auto result = m_runtime.execute_decision_rule(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.execute_decision_rule(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -93,6 +80,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_execute_decision_rule(req, res, std::move(send));
                     }
                 )

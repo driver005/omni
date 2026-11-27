@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -35,11 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        update(const OrganizationUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        update(const ::app::model::organization::OrganizationUpdateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        auto found = m_context.repository().find_organization_by_string(input.organization_id);
+        auto found = m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -47,24 +48,24 @@ public:
             )};
         }
         auto record = std::move(*found);
-        if (input.request.get_organization_name().has_value()) {
-            record.set_organization_name(*input.request.get_organization_name());
+        if (request.get_organization_name().has_value()) {
+            record.set_organization_name(*request.get_organization_name());
         }
-        if (input.request.get_organization_details().has_value()) {
-            record.set_organization_details(input.request.get_organization_details()->get_value());
+        if (request.get_organization_details().has_value()) {
+            record.set_organization_details(request.get_organization_details()->get_value());
         }
-        if (input.request.get_metadata().has_value()) {
-            record.set_metadata(input.request.get_metadata()->get_value());
+        if (request.get_metadata().has_value()) {
+            record.set_metadata(request.get_metadata()->get_value());
         }
-        if (input.request.get_platform_merchant_id().has_value()) {
-            record.set_platform_merchant_id(input.request.get_platform_merchant_id()->get_value());
+        if (request.get_platform_merchant_id().has_value()) {
+            record.set_platform_merchant_id(request.get_platform_merchant_id()->get_value());
         }
         if (const auto duplicate =
-                m_support.acquire_operation_lock("organization_update", input.organization_id)) {
+                m_support.acquire_operation_lock("organization_update", ctx_string(ctx,"organization_id"))) {
             return std::unexpected{*duplicate};
         }
         m_context.repository().update_organization(record);
-        m_support.release_operation_lock("organization_update", input.organization_id);
+        m_support.release_operation_lock("organization_update", ctx_string(ctx,"organization_id"));
 
         ::app::model::organization::OrganizationResponse response;
         ::app::model::organization::OrganizationIdValue id;

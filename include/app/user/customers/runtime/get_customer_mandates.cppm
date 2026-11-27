@@ -1,6 +1,7 @@
 export module app_user:customers_runtime_get_customer_mandates;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -20,17 +21,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_customer_mandates(const CustomersMandatesRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_customer_mandates(const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
-        const auto customer = m_support.locate_customer(repo, input.merchant_id, input.id);
+        const auto customer = m_support.locate_customer(repo, ctx_string(ctx,"merchant_id"), ctx_string(ctx,"id"));
         if (!customer) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")
             };
         }
-        const std::string merchant_id = input.merchant_id;
+        const std::string merchant_id = ctx_string(ctx,"merchant_id");
         serde::Value::Array out{};
         for (const auto& record:
              repo.find_mandates_by_customer_id(customer->record.get_customer_id())) {

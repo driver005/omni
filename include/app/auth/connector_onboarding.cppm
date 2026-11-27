@@ -37,58 +37,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "get_action_url", {})) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        using Dto = ::app::dto::connector_onboarding::ActionUrlRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        auto parsed = serde::Ser::deserialize<::app::dto::connector_onboarding::ActionUrlRequest>(
-            "application/json",
-            body
-        );
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        if (!m_input_support.valid_id(parsed->get_connector_id())) {
+        if (!m_input_support.valid_id(input->get_connector_id())) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid connector id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-        const auto merchant_id =
-            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
-        GetActionUrlInput input{*parsed, merchant_id};
-
-        auto result = m_runtime.get_action_url(input);
-        if (!result) {
-            const auto& error = result.error();
-            const auto status_override = m_input_support.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.get_action_url(*input, m_request_support.context(req)).handle(sink);
     }
 
     void handle_sync_onboarding_status(
@@ -97,61 +65,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
                 m_request_support.authorize(req, "sync_onboarding_status", {})) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        using Dto = ::app::dto::connector_onboarding::OnboardingSyncRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        auto parsed =
-            serde::Ser::deserialize<::app::dto::connector_onboarding::OnboardingSyncRequest>(
-                "application/json",
-                body
-            );
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        if (!m_input_support.valid_id(parsed->get_connector_id()) ||
-            !m_input_support.valid_id(parsed->get_profile_id())) {
+        if (!m_input_support.valid_id(input->get_connector_id()) ||
+            !m_input_support.valid_id(input->get_profile_id())) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-        const auto merchant_id =
-            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
-        SyncOnboardingStatusInput input{*parsed, merchant_id};
-
-        auto result = m_runtime.sync_onboarding_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            const auto status_override = m_input_support.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.sync_onboarding_status(*input, m_request_support.context(req)).handle(sink);
     }
 
     void handle_reset_tracking_id(
@@ -160,59 +95,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "reset_tracking_id", {})) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        using Dto = ::app::dto::connector_onboarding::ResetTrackingIdRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        auto parsed =
-            serde::Ser::deserialize<::app::dto::connector_onboarding::ResetTrackingIdRequest>(
-                "application/json",
-                body
-            );
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        if (!m_input_support.valid_id(parsed->get_connector_id())) {
+        if (!m_input_support.valid_id(input->get_connector_id())) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid connector id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto scope = m_request_support.scope(req);
-        const auto merchant_id =
-            scope.connected_merchant_id.empty() ? scope.merchant_id : scope.connected_merchant_id;
-        ResetTrackingIdInput input{*parsed, merchant_id};
-
-        auto result = m_runtime.reset_tracking_id(input);
-        if (!result) {
-            const auto& error = result.error();
-            const auto status_override = m_input_support.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.reset_tracking_id(*input, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_list_users_internal;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_users_internal(const ListUsersInternalInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    list_users_internal(const ::app::model::user::ListUsersInternalRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto limit = input.request_context.query.get("limit");
+        const auto limit = ctx_query(ctx).get("limit");
         (void)limit;
 
         m_context.metrics().record_flow("list_users_internal");
@@ -52,8 +54,8 @@ public:
         using Response = ::app::model::user::ListUsersInternalResponse;
         Response response{};
         std::vector<::app::model::user::GetUserInternalDetailsResponse> users{};
-        users.reserve(input.request.get_user_ids().size());
-        for (const auto& id: input.request.get_user_ids()) {
+        users.reserve(request.get_user_ids().size());
+        for (const auto& id: request.get_user_ids()) {
             const auto stored = m_context.repository().find_user_by_string(id);
             ::app::model::user::GetUserInternalDetailsResponse item{};
             item.set_user_id(id);

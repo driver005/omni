@@ -1,6 +1,7 @@
 export module app_payment:card_issuer_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -39,10 +40,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support.authorize(req, "add_card_issuer", spec_for("add_card_issuer"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -52,31 +55,17 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // Upstream `web::Json<api_types::CardIssuerRequest>` extraction.
-        using Input = ::app::dto::card_issuer::CardIssuerRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.make_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::card_issuer::CardIssuerRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        CardIssuerAddInput input{*parsed};
-        auto result = m_runtime.add(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.add(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     /** @brief Port of routes/card_issuer.rs:32-52 `update_card_issuer` (AdminApiAuth). */
@@ -86,11 +75,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "update_card_issuer", spec_for("update_card_issuer"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -103,31 +94,17 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // Upstream `web::Json<api_types::CardIssuerUpdateRequest>` extraction.
-        using Input = ::app::dto::card_issuer::CardIssuerUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.make_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::card_issuer::CardIssuerUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        CardIssuerUpdateInput input{id, *parsed};
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = id;
+        auto result = m_runtime.update(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     /** @brief Port of routes/card_issuer.rs:54-74 `delete_card_issuer` (AdminApiAuth). */
@@ -137,11 +114,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "delete_card_issuer", spec_for("delete_card_issuer"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -149,17 +128,8 @@ public:
         // the id comes from the path only (no body fallback upstream).
         const std::string id = m_request_support.path(req, 1);
 
-        CardIssuerDeleteInput input{id};
-        auto result = m_runtime.remove(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.remove(m_request_support.context(req));
+        result.handle(sink);
     }
 
     /**
@@ -172,6 +142,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // The `list_jwt_fallback` flag models upstream `auth_type`: the
         // ApiKeyAuth branch (default) OR the JWTAuth(MerchantAccountRead) branch,
         // both with allow_connected:false and allow_platform:false.
@@ -179,21 +151,12 @@ public:
                 m_request_support
                     .authorize(req, "list_card_issuers", spec_for("list_card_issuers"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        CardIssuerListInput input{};
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -213,6 +176,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_add_card_issuer(req, res, std::move(send));
                         }
                     )
@@ -227,6 +192,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_card_issuers(req, res, std::move(send));
                         }
                     )
@@ -241,6 +208,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_update_card_issuer(req, res, std::move(send));
                         }
                     )
@@ -255,6 +224,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_delete_card_issuer(req, res, std::move(send));
                         }
                     )

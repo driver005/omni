@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -36,18 +37,18 @@ public:
     }
 
     // utils.rs:25-74, 506-525.
-    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
-    remove_entry(const RemoveEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistResponse>
+    remove_entry(const EntryWire& entry, const ::core::behavior::CallContext& ctx) const
     {
         const auto existing = m_support.find_by_identity(
-            input.merchant,
-            input.profile,
-            input.data,
-            input.transaction_type
+            ctx.merchant_id,
+            ctx.profile_id,
+            entry.data,
+            entry.transaction_type
         );
         if (!existing) {
             const auto message =
-                input.kind == "payment_method"
+                entry.kind == "payment_method"
                     ? std::string{"no blocklist record for the given fingerprint id was found"}
                     : std::string{"could not find a blocklist entry for the given bin"};
             return std::unexpected{m_support.error(core::error::AppErrorKind::NOT_FOUND, message)};

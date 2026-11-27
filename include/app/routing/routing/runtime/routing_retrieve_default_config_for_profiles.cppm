@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -23,11 +23,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_default_config_for_profiles(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_default_config_for_profiles(const ::core::behavior::CallContext& ctx) const
     {
         std::vector<::app::model::routing::ProfileDefaultRoutingConfig> response;
-        const auto merchant = input.merchant_id;
+        const auto merchant = ctx.merchant_id;
         std::vector<std::string> profiles;
         for (const auto& record: m_context.repository().list_routing_configs()) {
             if (!merchant.empty() && record.get_merchant_id() != merchant) {

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -44,25 +45,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "set_dynamic_routing_volume_split", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.split = m_input_support.query_number<std::uint8_t>(req, "split");
-
-        auto result = m_runtime.set_dynamic_routing_volume_split(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.set_dynamic_routing_volume_split(m_request_support.context(req)).handle(sink);
     }
 
     // ─── retrieve_dynamic_routing_volume_split (core:2680) ──────────────────────────
@@ -72,24 +62,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "get_dynamic_routing_volume_split", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.get_dynamic_routing_volume_split(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.get_dynamic_routing_volume_split(m_request_support.context(req)).handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

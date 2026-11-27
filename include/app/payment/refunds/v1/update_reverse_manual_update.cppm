@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v1_update_reverse_manual_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,41 +47,31 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "V1Update", spec_for("V1Update"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
 
         // routes/refunds.rs:408 — path wins over body.
         if (const auto id = m_input_support.refund_id_from_path(req)) {
             parsed->set_refund_id(*id);
         }
-        RefundsUpdateInput input{*parsed};
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.update(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief refunds_reverse — routes/refunds.rs:431-456 (v1). */
@@ -90,39 +81,29 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "V1Reverse", spec_for("V1Reverse"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundReverseRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundReverseRequest>::pass(req, sink);
+        if (!parsed) return;
         if (const auto id = m_input_support.refund_id_from_path(req)) {
             parsed->set_refund_id(*id);
         }
-        RefundsReverseInput input{*parsed};
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.reverse(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.reverse(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief refunds_manual_update — routes/refunds.rs:828-847 (AdminApiAuth). */
@@ -132,39 +113,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(req, "Admin", spec_for("Admin"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundManualUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundManualUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
         if (const auto id = m_input_support.refund_id_from_path(req)) {
             parsed->set_refund_id(*id);
         }
-        RefundsManualUpdateInput input{*parsed};
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.manual_update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        // core/refunds.rs:2277 — ApplicationResponse::StatusOk (200, empty body).
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.manual_update(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     // original install() route #4

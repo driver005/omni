@@ -37,10 +37,10 @@ public:
     }
 
     // ───────────────────────── Core: get_payouts_aggregates_profile ─────────────────────────
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
-        get_payouts_aggregates_profile(const PayoutsAggregatesProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
+        get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsAggregatesProfileData{ctx};
         m_context.metrics().record_flow("get_payouts_aggregates_profile");
         m_context.metrics().counter("payouts_aggregates_profile_total").increment();
         if (const auto invalid = m_support.require_time_range(input.range)) {

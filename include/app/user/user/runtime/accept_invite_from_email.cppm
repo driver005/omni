@@ -1,6 +1,7 @@
 export module app_user:user_runtime_accept_invite_from_email;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    accept_invite_from_email(const AcceptInviteFromEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    accept_invite_from_email(const ::app::model::user::AcceptInviteFromEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        if (!m_support.user_signer().verify(input.request.get_token())) {
+        if (!m_support.user_signer().verify(request.get_token())) {
             return std::unexpected{m_support.wire_error(
                 "UR_04",
                 "Invalid or expired link",
@@ -52,7 +54,7 @@ public:
         }
 
         const auto email_entry =
-            m_context.cache().get("user.invite_token_email:" + input.request.get_token());
+            m_context.cache().get("user.invite_token_email:" + request.get_token());
         if (email_entry.hit) {
             const auto email = core::cache::value_as<std::string>(email_entry.value, std::string{});
             m_support.set_user_status_by_email(email, "active");
@@ -66,7 +68,7 @@ public:
         Response response{};
         ::app::model::user::TokenPurposeValue purpose{};
         purpose.set_value("LOGIN");
-        response.set_token(input.request.get_token());
+        response.set_token(request.get_token());
         response.set_token_type(purpose);
         auto document = ResponseDocument::from(response);
         return std::pair{document, set_cookie};

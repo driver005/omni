@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_client_list;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_payment_method_api(req, res, std::move(send));
                         }
                     )
@@ -71,6 +74,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_countries_currencies_for_connector_payment_method(
                                 req,
                                 res,
@@ -89,6 +94,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_methods_batch_retrieve_api(req, res, std::move(send));
                         }
                     )
@@ -104,6 +111,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_total_payment_method_count(req, res, std::move(send));
                             }
                         )
@@ -120,6 +129,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_list_customer_payment_method_api_client(
                                     req,
                                     res,
@@ -141,6 +152,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_list_customer_payment_method_api(
                                         req,
                                         res,
@@ -163,6 +176,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_list_customer_payment_method_api(
                                         req,
                                         res,
@@ -185,6 +200,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_list_payment_methods_for_payments_client(
                                         req,
                                         res,
@@ -207,6 +224,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_payment_method_api(req, res, std::move(send));
                         }
                     )
@@ -221,6 +240,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_list_countries_currencies_for_connector_payment_method(
                                 req,
                                 res,
@@ -241,6 +262,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "list_payment_method_api",
@@ -248,7 +271,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto sdk_error = m_request_support->authorize(
@@ -257,7 +280,7 @@ public:
                 client_facing_spec_for("list_payment_method_api")
             )) {
             const auto& error = *sdk_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -281,19 +304,11 @@ public:
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (const auto secret_error = m_input_support.check_client_secret("list", client_secret)) {
             const auto& error = *secret_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListPaymentMethodApiInput input{client_secret, amount, limit, merchant_id};
-        auto result = m_runtime.list_payment_method_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_payment_method_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_list_customer_payment_method_api(
@@ -302,6 +317,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "list_customer_payment_method_api",
@@ -309,7 +326,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.legacy_access_allowed(req)) {
@@ -317,7 +334,7 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "legacy endpoint access denied"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string customer_id = m_input_support.path_segment(req, 1);
@@ -326,7 +343,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing customer id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.customer_exists(customer_id)) {
@@ -334,20 +351,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Customer does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
-        ListCustomerPaymentMethodApiInput input{customer_id, merchant_id};
-        auto result = m_runtime.list_customer_payment_method_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_customer_payment_method_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_list_customer_payment_method_api_client(
@@ -356,6 +365,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "list_customer_payment_method_api_client",
@@ -363,7 +374,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto sdk_error = m_request_support->authorize(
@@ -372,7 +383,7 @@ public:
                 client_facing_spec_for("list_customer_payment_method_api_client")
             )) {
             const auto& error = *sdk_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -383,26 +394,18 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Customer does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto presented =
             client_secret.empty() ? std::nullopt : std::optional<std::string>{client_secret};
         if (const auto secret_error = m_input_support.check_client_secret(customer_id, presented)) {
             const auto& error = *secret_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListCustomerPaymentMethodApiClientInput input{customer_id, presented};
-        auto result = m_runtime.list_customer_payment_method_api_client(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_customer_payment_method_api_client(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_get_total_payment_method_count(
@@ -411,6 +414,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "get_total_payment_method_count",
@@ -418,7 +423,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -429,19 +434,11 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Customer does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetTotalPaymentMethodCountInput input{customer_id, merchant_id};
-        auto result = m_runtime.get_total_payment_method_count(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_total_payment_method_count(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_list_countries_currencies_for_connector_payment_method(
@@ -450,6 +447,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "list_countries_currencies_for_connector_payment_method",
@@ -457,22 +456,14 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
         const std::string connector = query.get("connector").value_or("");
         const std::string payment_method_type = query.get("payment_method_type").value_or("");
-        ListCountriesCurrenciesForConnectorPaymentMethodInput input{connector, payment_method_type};
-        auto result = m_runtime.list_countries_currencies_for_connector_payment_method(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_countries_currencies_for_connector_payment_method(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_methods_batch_retrieve_api(
@@ -481,6 +472,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_methods_batch_retrieve_api",
@@ -488,7 +481,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
@@ -498,7 +491,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "No payment_method_ids provided"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (rows.size() > 200) {
@@ -506,19 +499,11 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "A maximum of 200 payment_method_ids are allowed per request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodsBatchRetrieveApiInput input{rows};
-        auto result = m_runtime.payment_methods_batch_retrieve_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.payment_methods_batch_retrieve_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_list_payment_methods_for_payments_client(
@@ -527,6 +512,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "list_payment_methods_for_payments_client",
@@ -534,7 +521,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto sdk_error = m_request_support->authorize(
@@ -543,7 +530,7 @@ public:
                 client_facing_spec_for("list_payment_methods_for_payments_client")
             )) {
             const auto& error = *sdk_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_id = m_input_support.path_segment(req, 1);
@@ -552,14 +539,14 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (const auto access_error =
                 m_input_support.payment_access_error(payment_id, merchant_id)) {
             const auto& error = *access_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string client_secret =
@@ -568,19 +555,11 @@ public:
             client_secret.empty() ? std::nullopt : std::optional<std::string>{client_secret};
         if (const auto secret_error = m_input_support.check_client_secret(payment_id, presented)) {
             const auto& error = *secret_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListPaymentMethodsForPaymentsClientInput input{payment_id, merchant_id, presented};
-        auto result = m_runtime.list_payment_methods_for_payments_client(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.list_payment_methods_for_payments_client(m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_store:configs_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -27,28 +28,28 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create(const ConfigKeyCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create(const ConfigRequestWire& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve(const ConfigKeyRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update(const ConfigKeyUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update(const ConfigUpdateRequestWire& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    remove(const ConfigKeyDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    remove(const core::behavior::CallContext& ctx) const
     {
-        return m_delete.remove(input);
+        return m_delete.remove(ctx);
     }
 
 private:

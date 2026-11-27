@@ -634,7 +634,7 @@ public:
     // -- domain logic -------------------------------------------------------
 
     /** @brief utils.rs:294-350 - `get_flow_from_card_number`. */
-    [[nodiscard]] std::expected<void, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<void>
     card_flow(const PaymentRequest& input, PaymentData& data, const std::string& redirect_url) const
     {
         const std::string& number = input.pm.card_number;
@@ -674,7 +674,7 @@ public:
     }
 
     /** @brief utils.rs:267-292 - `get_flow_from_upi_collect`. */
-    [[nodiscard]] std::expected<void, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<void>
     upi_flow(const PaymentRequest& input, PaymentData& data, const std::string& redirect_url) const
     {
         if (input.pm.vpa_id == UPI_FAILURE_VPA) {
@@ -690,7 +690,7 @@ public:
     }
 
     /** @brief utils.rs:381-419 - `process_payment_attempt`. */
-    [[nodiscard]] std::expected<AttemptResult, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<AttemptResult>
     process_payment_attempt(const PaymentRequest& input, const std::string& redirect_url) const
     {
         AttemptResult result{};
@@ -727,7 +727,7 @@ public:
     }
 
     /** @brief types.rs:301-315 - `is_eligible_for_refund`. */
-    [[nodiscard]] std::expected<void, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<void>
     is_eligible_for_refund(const PaymentData& payment, std::int64_t refund_amount) const
     {
         if (payment.eligible_amount < refund_amount) {

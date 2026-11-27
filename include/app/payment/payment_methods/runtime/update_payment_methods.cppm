@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::PaymentMethodRecordUpdateResponse,
-        core::error::AppError>
-    update_payment_methods(const UpdatePaymentMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodRecordUpdateResponse>
+    update_payment_methods(const core::behavior::CallContext& ctx) const
     {
+        const auto input = UpdatePaymentMethodsData{ctx};
         m_context.metrics().record_flow("update_payment_methods");
         m_context.metrics().counter("PAYMENT_METHOD_UPDATE_PAYMENT_METHODS").increment();
         auto repository = m_context.repository();

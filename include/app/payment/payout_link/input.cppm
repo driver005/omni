@@ -8,6 +8,7 @@ import app_context;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::payout_link {
 
 /**
@@ -25,7 +26,7 @@ public:
     }
 
     /** @brief Extract (merchant_id, payout_id) from the :merchant_id/:payout_id path. */
-    [[nodiscard]] std::expected<std::pair<std::string, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<std::string, std::string>>
     payout_link_ids_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -82,11 +83,7 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// The render route has no request body. The old core read the sec-fetch-dest /
-// origin / referer / accept-language headers directly off IRequest; they are
-// captured here so the runtime stays free of HTTP types.
-struct PayoutLinkRenderInput
+struct PayoutLinkRenderData
 {
     std::string merchant_id{};
     std::string payout_id{};
@@ -94,7 +91,17 @@ struct PayoutLinkRenderInput
     std::string origin{};
     std::string referer{};
     std::string accept_language{};
+    explicit PayoutLinkRenderData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        payout_id{::app::payment::detail::last_path(ctx)},
+        sec_fetch_dest{::app::payment::detail::header_of(ctx, "sec-fetch-dest")},
+        origin{::app::payment::detail::header_of(ctx, "origin")},
+        referer{::app::payment::detail::header_of(ctx, "referer")},
+        accept_language{::app::payment::detail::header_of(ctx, "accept-language")}
+    {
+    }
 };
+
 
 /** @brief Request policy for the payout_link domain: wraps the domain auth rules. */
 class PayoutLinkPolicy
@@ -106,6 +113,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

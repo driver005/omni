@@ -274,20 +274,6 @@ struct ProxyRequest
     LocalTokenType token_type{LocalTokenType::PaymentMethodId};
 };
 
-struct AuthorizedRequest
-{
-    std::optional<core::error::AppError> error{};
-    ::app::auth::AuthContext context{};
-};
-
-/** @brief Everything the old proxy_core call received. */
-struct ProxyInput
-{
-    ProxyRequest request{};
-    std::string merchant_id{};
-    ::app::auth::AuthContext auth{};
-};
-
 /**
  * @brief Parse/auth support for the proxy handler.
  *
@@ -307,7 +293,8 @@ public:
     // allow_platform_self_operation: false } with X-Profile-Id scoping
     // (routes/proxy.rs:27-30, openapi/routes/proxy.rs:46-51). Expressed
     // literally rather than read from a registry substitute.
-    [[nodiscard]] AuthorizedRequest authorize(interfaces::io::IRequest& req) const
+    [[nodiscard]] std::optional<core::error::AppError>
+    authorize(interfaces::io::IRequest& req) const
     {
         const auto rule = ::app::auth::RouteAuthRuleBuilder{}
                               .scheme(::app::auth::AuthScheme::V2_API_KEY)
@@ -318,17 +305,62 @@ public:
                               .build();
         const auto auth_ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto auth = m_context.authorizer().authorize_route(auth_ctx, rule);
-        if (auth) {
-            const bool forbidden = auth->get_kind() == core::error::AppErrorKind::FORBIDDEN;
-            return AuthorizedRequest{
-                m_errors.to_app_error(m_proxy_errors(
-                    forbidden ? ProxyError::Kind::Forbidden : ProxyError::Kind::Unauthorized,
-                    auth->get_message()
-                )),
-                auth_ctx
-            };
+        if (!auth) {
+            return std::nullopt;
         }
-        return AuthorizedRequest{std::nullopt, auth_ctx};
+        const bool forbidden = auth->get_kind() == core::error::AppErrorKind::FORBIDDEN;
+        return m_errors.to_app_error(m_proxy_errors(
+            forbidden ? ProxyError::Kind::Forbidden : ProxyError::Kind::Unauthorized,
+            auth->get_message()
+        ));
+    }
+
+    /** @brief HTTP-free view of the request for the proxy forward runtime. */
+    [[nodiscard]] core::behavior::CallContext call_context(interfaces::io::IRequest& req) const
+    {
+        core::behavior::CallContext ctx{};
+        const auto auth = ::app::auth::AuthContextBuilder{}(req);
+        const std::string header = ::app::http::merchant_id_from_header{}(req);
+        ctx.merchant_id = header.empty() ? auth.merchant_id() : header;
+        ctx.org_id = ::app::http::org_id_from_header{}(req);
+        if (ctx.org_id.empty()) {
+            ctx.org_id = auth.org_id();
+        }
+        ctx.profile_id = auth.profile_id();
+        if (const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId)) {
+            ctx.connected_merchant_id = std::string{*connected};
+        }
+        if (const auto secret = auth.claim(::app::auth::kClaimClientSecret)) {
+            ctx.client_secret = std::string{*secret};
+        }
+        const auto segments = ::app::http::RequestPath{}(req);
+        for (std::size_t i{0}; i < segments.count(); ++i) {
+            if (const auto segment = segments.at(i)) {
+                ctx.path_segments.emplace_back(*segment);
+            }
+        }
+        const std::string_view raw = req.get_path();
+        const auto question = raw.find('?');
+        if (question != std::string_view::npos) {
+            auto tail = raw.substr(question + 1);
+            while (!tail.empty()) {
+                const auto amp = tail.find('&');
+                const auto pair =
+                    tail.substr(0, amp == std::string_view::npos ? tail.size() : amp);
+                const auto eq = pair.find('=');
+                ctx.query[std::string{
+                    eq == std::string_view::npos ? pair : pair.substr(0, eq)
+                }] = eq == std::string_view::npos ? std::string{} : std::string{pair.substr(eq + 1)};
+                if (amp == std::string_view::npos) {
+                    break;
+                }
+                tail = tail.substr(amp + 1);
+            }
+        }
+        for (const auto& [key, value]: auth.claims()) {
+            ctx.claims[key] = value;
+        }
+        return ctx;
     }
 
     /** @brief Decode the exact upstream ProxyRequest wire shape via core serde. */
@@ -462,7 +494,7 @@ public:
         const core::behavior::AuthSpec&
     ) const
     {
-        return m_support.authorize(req).error;
+        return m_support.authorize(req);
     }
 
     [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
@@ -472,6 +504,11 @@ public:
         const std::string header = ::app::http::merchant_id_from_header{}(req);
         result.merchant_id = header.empty() ? auth.merchant_id() : header;
         return result;
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return m_support.call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

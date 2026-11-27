@@ -36,9 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: list ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list(const PayoutsListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsListData{dto, ctx};
         m_context.metrics().record_flow("payout_list");
         m_context.metrics().counter("payouts_list_total").increment();
 

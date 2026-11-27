@@ -38,9 +38,10 @@ public:
     }
 
     // Upstream flow: Flow::RelayRetrieve (server_wrap, LockAction::NotApplicable).
-    [[nodiscard]] std::expected<::app::dto::relay::RelayResponse, core::error::AppError>
-    retrieve(const RelayRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::relay::RelayResponse>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RelayRetrieveData{ctx};
         m_support.record_flow("RelayRetrieve", "relay_retrieve_total");
 
         const auto& relay_id = input.relay_id;

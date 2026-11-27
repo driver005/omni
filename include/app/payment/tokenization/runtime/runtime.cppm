@@ -22,18 +22,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::tokenization::GenericTokenizationResponse, core::error::AppError>
-        create_token_vault(const CreateTokenVaultInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::GenericTokenizationResponse>
+    create_token_vault(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_create.create_token_vault(input);
+        return m_create.create_token_vault(dto, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::tokenization::DeleteTokenDataResponse, core::error::AppError>
-        delete_tokenized_data(const DeleteTokenizedDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::DeleteTokenDataResponse>
+        delete_tokenized_data(const core::behavior::CallContext& ctx) const
     {
-        return m_delete.delete_tokenized_data(input);
+        return m_delete.delete_tokenized_data(ctx);
     }
 
 private:

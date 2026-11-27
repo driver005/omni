@@ -52,49 +52,40 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "resolve_detailed_config", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto scope = m_input_support.extract_proxy_headers(req);
         if (!scope) {
             const auto& error = scope.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         m_input_support.cache_scope(req, *scope);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = scope->org_id;
+        ctx.headers["x-workspace"] = scope->workspace_id;
 
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.make_api_error(m_input_support.bad_request("empty request"));
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
             const auto error =
                 m_input_support.make_api_error(m_input_support.bad_request("invalid JSON"));
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ResolveDetailedConfigHandlerInput input{
-            ResolveDetailedConfigRequest{m_input_support.context_entries(*parsed)},
-            ::app::auth::AuthContextBuilder{}(req),
-            scope->org_id,
-            scope->workspace_id
-        };
-        auto result = m_runtime.resolve_detailed_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto request = ResolveDetailedConfigRequest{m_input_support.context_entries(*parsed)};
+        m_runtime.resolve_detailed_config(request, ctx).handle(sink);
     }
 
     // ── POST /v1/superposition/config/resolve/explain/{key} ─────────────────────
@@ -104,50 +95,42 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "resolve_config_explanation", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto scope = m_input_support.extract_proxy_headers(req);
         if (!scope) {
             const auto& error = scope.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         m_input_support.cache_scope(req, *scope);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = scope->org_id;
+        ctx.headers["x-workspace"] = scope->workspace_id;
 
         const auto key = m_request_support.path(req, ::app::routing::policy::last_path_index(req));
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.make_api_error(m_input_support.bad_request("empty request"));
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::decode_generic("application/json", body);
         if (!parsed) {
             const auto error =
                 m_input_support.make_api_error(m_input_support.bad_request("invalid JSON"));
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ResolveConfigExplanationHandlerInput input{
-            ResolveConfigExplanationRequest{key, m_input_support.context_entries(*parsed)},
-            ::app::auth::AuthContextBuilder{}(req),
-            scope->org_id,
-            scope->workspace_id
-        };
-        auto result = m_runtime.resolve_config_explanation(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto request =
+            ResolveConfigExplanationRequest{key, m_input_support.context_entries(*parsed)};
+        m_runtime.resolve_config_explanation(request, ctx).handle(sink);
     }
 
 private:

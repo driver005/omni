@@ -1,6 +1,7 @@
 export module app_user:user_runtime_create_platform;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    create_platform(const CreatePlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    create_platform(const ::app::model::user::PlatformAccountCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto org_name = input.request.get_organization_name();
+        const auto org_name = request.get_organization_name();
         for (const auto& existing: m_context.repository().list_organizations()) {
             if (existing.get_organization_name() == org_name) {
                 return std::unexpected{m_support.wire_error(
@@ -71,10 +73,10 @@ public:
         m_context.repository().save_merchant_account(std::move(merchant));
 
         const auto key = std::string{"user.create_platform:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
@@ -93,7 +95,7 @@ public:
         ::app::model::user::MerchantAccountTypeValue merchant_account_type{};
         merchant_account_type.set_value("platform");
         response.set_org_id(org_id);
-        response.set_org_name(input.request.get_organization_name());
+        response.set_org_name(request.get_organization_name());
         response.set_org_type(org_type);
         response.set_merchant_id(merchant_id);
         response.set_merchant_account_type(merchant_account_type);

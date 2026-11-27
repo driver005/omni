@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, Error>
-    attach_dispute_evidence(const AttachDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
+        attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = AttachDisputeEvidenceData{dto, ctx};
         m_context.metrics().record_flow("dispute_attach_evidence");
         const auto& scope = input.scope;
         const auto& request = input.request;

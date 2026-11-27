@@ -1,6 +1,7 @@
 export module app_payment:relay_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream route: ApiKeyAuth with a required profile (relay.rs:14-47).
         if (const auto auth =
                 m_request_support
                     .authorize(req, "unreferenced_refund", spec_for("unreferenced_refund"));
             auth.has_value()) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -53,35 +56,15 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::dto::unreferenced_refund::UnreferencedRefundRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::unreferenced_refund::UnreferencedRefundRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        RelayUnreferencedRefundInput input{
-            *parsed,
-            std::string{body},
-            m_input_support.resolve_scope(req)
-        };
-        auto result = m_runtime.unreferenced_refund(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.unreferenced_refund(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_relay(
@@ -90,11 +73,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream route: ApiKeyAuth with connected scope optional (relay.rs:51-81).
         if (const auto auth = m_request_support.authorize(req, "relay", spec_for("relay"));
             auth.has_value()) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -104,23 +89,14 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // The wire shape is a tagged union normalized through the generic JSON tree,
         // so the runtime receives the raw body rather than a typed DTO.
-        RelayCreateInput input{std::string{body}, m_input_support.resolve_scope(req)};
-        auto result = m_runtime.relay(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.relay(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_relay_retrieve(
@@ -129,19 +105,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream route: ApiKeyAuth with connected scope (relay.rs:85-119).
         if (const auto auth =
                 m_request_support.authorize(req, "relay_retrieve", spec_for("relay_retrieve"));
             auth.has_value()) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         auto relay_id = m_input_support.relay_id_from_path(req);
         if (!relay_id.has_value() || relay_id->empty()) {
-            using Input = ::app::dto::relay::RelayRetrieveRequest;
-            auto parsed = serde::Ser::deserialize<Input>("application/json", req.body_as_string());
+        auto parsed = core::behavior::Serializer<::app::dto::relay::RelayRetrieveRequest>::pass(req, sink);
+        if (!parsed) return;
             if (parsed && !parsed->get_id().get_value().empty()) {
                 relay_id = parsed->get_id().get_value();
             }
@@ -151,24 +129,11 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing relay id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RelayRetrieveInput input{
-            *relay_id,
-            m_input_support.force_sync_from_query(req),
-            m_input_support.resolve_scope(req)
-        };
-        auto result = m_runtime.retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.retrieve(m_request_support.context(req));
+        result.handle(sink);
     }
 
     /**
@@ -185,13 +150,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ids = m_input_support.webhook_path_ids(req);
         if (ids.merchant_id.empty() || ids.connector_id.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant_id or connector_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -205,29 +172,14 @@ public:
             );
             auth.has_value()) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // Upstream consumes `web::Bytes` verbatim; there is no JSON requirement
         // on the wire, so the raw body is kept for verification and decoding.
-        RelayIncomingWebhookInput input{
-            ids.merchant_id,
-            ids.connector_id,
-            req.body_as_string(),
-            m_input_support.webhook_signature(req)
-        };
-        auto result = m_runtime.incoming_webhook(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // Upstream WebhookResponse::StatusOk -> HTTP 200; empty typed result DTO.
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.incoming_webhook(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -244,6 +196,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_relay(req, res, std::move(send));
                         }
                     )
@@ -258,6 +212,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_unreferenced_refund(req, res, std::move(send));
                         }
                     )
@@ -272,6 +228,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_relay_retrieve(req, res, std::move(send));
                         }
                     )
@@ -292,6 +250,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_incoming_relay_webhook(req, res, std::move(send));
                             }
                         )

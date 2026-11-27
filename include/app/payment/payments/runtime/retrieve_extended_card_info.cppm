@@ -31,12 +31,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::ExtendedCardInfoResponse, core::error::AppError>
-        retrieve_extended_card_info(const RetrieveExtendedCardInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::ExtendedCardInfoResponse>
+        retrieve_extended_card_info(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
     {
-        auto records = m_support.list_payments_scoped(input.data);
-        if (const auto status_filter = m_support.query(input.data, "status");
+        const PaymentsRequestData input = m_support.request_data(dto, ctx);
+        auto records = m_support.list_payments_scoped(input);
+        if (const auto status_filter = m_support.query(input, "status");
             !status_filter.empty()) {
             std::vector<::app::store::payments::PaymentIntentRecord> filtered{};
             for (const auto& record: records) {
@@ -46,12 +46,12 @@ public:
             }
             records = std::move(filtered);
         }
-        if (const auto err = m_support.ensure_payment_exists(input.data)) {
+        if (const auto err = m_support.ensure_payment_exists(input)) {
             return std::unexpected{*err};
         }
         (void)records;
         ::app::model::payments::ExtendedCardInfoResponse response{};
-        response.set_payload(input.data.body);
+        response.set_payload(input.body);
         return ::app::model::payments::ExtendedCardInfoResponse{response};
     }
 

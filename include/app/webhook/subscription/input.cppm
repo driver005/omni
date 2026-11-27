@@ -134,7 +134,9 @@ public:
         if (root == nullptr) {
             return std::unexpected{json_body_error("Json payload must be an object")};
         }
-        return ParsedPayload{std::move(*parsed), root, body};
+        ParsedPayload result{std::move(*parsed), nullptr, body};
+        result.root = std::get_if<JsonObject>(&result.doc.get());
+        return result;
     }
 
     [[nodiscard]] std::optional<ParsedPayload>
@@ -149,7 +151,9 @@ public:
         if (root == nullptr) {
             return std::nullopt;
         }
-        return ParsedPayload{std::move(*parsed), root, body};
+        ParsedPayload result{std::move(*parsed), nullptr, body};
+        result.root = std::get_if<JsonObject>(&result.doc.get());
+        return result;
     }
 
     [[nodiscard]] Json json_from_query(const ::app::http::QueryParams& query) const
@@ -457,102 +461,41 @@ public:
         return converted.ec == std::errc{} && converted.ptr == raw->data() + raw->size() ? value
                                                                                          : fallback;
     }
-};
 
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old inline core block consumed.
+    /** Query values already captured in CallContext (no HTTP types in the runtime). */
+    [[nodiscard]] std::int64_t query_number(
+        const std::unordered_map<std::string, std::string>& query,
+        std::string_view key,
+        std::int64_t fallback
+    ) const
+    {
+        const auto found = query.find(std::string{key});
+        if (found == query.end()) {
+            return fallback;
+        }
+        std::int64_t value{};
+        const auto& raw = found->second;
+        const auto converted = std::from_chars(raw.data(), raw.data() + raw.size(), value);
+        return converted.ec == std::errc{} && converted.ptr == raw.data() + raw.size() ? value
+                                                                                        : fallback;
+    }
 
-struct CreateSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string customer_id{};
-    std::string item_price_id{};
-    ParsedPayload payload{};
-};
-
-struct PauseSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-    std::optional<ParsedPayload> payload{};
-};
-
-struct ResumeSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-    std::optional<ParsedPayload> payload{};
-};
-
-struct CancelSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-    std::optional<ParsedPayload> payload{};
-};
-
-struct ConfirmSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-    std::string client_secret{};
-    ParsedPayload payload{};
-};
-
-struct GetSubscriptionItemsInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string client_secret{};
-    std::uint32_t limit{};
-    std::uint32_t offset{};
-    std::string item_type{};
-};
-
-struct GetSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-};
-
-struct CreateAndConfirmSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string customer_id{};
-    std::string item_price_id{};
-    ParsedPayload payload{};
-};
-
-struct GetEstimateInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string client_secret{};
-    Json payload{};
-};
-
-struct UpdateSubscriptionInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::string subscription_id{};
-    std::string plan_id{};
-    std::string item_price_id{};
-};
-
-struct ListSubscriptionsInput
-{
-    std::string profile_id{};
-    std::string merchant_id{};
-    std::int64_t limit{};
-    std::int64_t offset{};
+    [[nodiscard]] std::uint64_t query_unsigned(
+        const std::unordered_map<std::string, std::string>& query,
+        std::string_view key,
+        std::uint64_t fallback
+    ) const
+    {
+        const auto found = query.find(std::string{key});
+        if (found == query.end()) {
+            return fallback;
+        }
+        std::uint64_t value{};
+        const auto& raw = found->second;
+        const auto converted = std::from_chars(raw.data(), raw.data() + raw.size(), value);
+        return converted.ec == std::errc{} && converted.ptr == raw.data() + raw.size() ? value
+                                                                                        : fallback;
+    }
 };
 
 } // namespace app::handlers::subscription

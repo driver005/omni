@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_list_subscriptions;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -26,24 +27,27 @@ public:
     }
 
     // list_subscriptions_by_profile_id(profile, limit, offset) (core.rs:741-748)
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_subscriptions(const ListSubscriptionsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_subscriptions(const ::core::behavior::CallContext& ctx) const
     {
+        const auto limit = m_support.query_number(ctx.query, "limit", kMaxListCount);
+        const auto offset = m_support.query_number(ctx.query, "offset", 0);
+
         if (const auto failure =
-                m_support.find_business_profile(input.profile_id, input.merchant_id)) {
+                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
 
         std::vector<SubscriptionRecord> records{};
         for (const auto& record: m_context.repository().list_subscriptions()) {
-            if (record.get_profile_id() == input.profile_id) {
+            if (record.get_profile_id() == ctx.profile_id) {
                 records.push_back(m_support.from_store_record(record));
             }
         }
         const std::size_t begin =
-            input.offset > 0 ? std::min(static_cast<std::size_t>(input.offset), records.size())
+            offset > 0 ? std::min(static_cast<std::size_t>(offset), records.size())
                              : 0U;
-        const std::size_t count = input.limit > 0 ? static_cast<std::size_t>(input.limit) : 0U;
+        const std::size_t count = limit > 0 ? static_cast<std::size_t>(limit) : 0U;
         const std::size_t stop = std::min(begin + count, records.size());
 
         Json::Array out{};

@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, Error>
-    delete_dispute_evidence(const DeleteDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = DeleteDisputeEvidenceData{dto, ctx};
         m_context.metrics().record_flow("dispute_delete_evidence");
         const auto& scope = input.scope;
         const auto& req = input.request;

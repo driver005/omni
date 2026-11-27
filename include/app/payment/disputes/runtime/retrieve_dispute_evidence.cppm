@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeEvidenceBlock>, Error>
-    retrieve_dispute_evidence(const RetrieveDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeEvidenceBlock>>
+        retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RetrieveDisputeEvidenceData{dto, ctx};
         m_context.metrics().record_flow("dispute_retrieve_evidence");
         const auto& scope = input.scope;
         const auto& req = input.dispute_id;

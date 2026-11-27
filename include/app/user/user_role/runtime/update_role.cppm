@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_update_role;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,16 +34,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
-    update_role(const UpdateRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
+    update_role(const UpdateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        if (input.role_id.empty()) {
+        if (ctx_string(ctx,"role_id").empty()) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
             };
         }
-        const auto role = m_support.role_info_from_id(input.identity, input.role_id);
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto role = m_support.role_info_from_id(identity_from_context(ctx), ctx_string(ctx,"role_id"));
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!role || !requestor) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")
@@ -59,17 +61,17 @@ public:
             )};
         }
         auto updated_name = role->role_name;
-        if (input.request.get_role_name().has_value()) {
-            if (!role_tables::valid_role_name(*input.request.get_role_name())) {
+        if (request.get_role_name().has_value()) {
+            if (!role_tables::valid_role_name(*request.get_role_name())) {
                 return std::unexpected{m_support.error(
                     core::error::AppErrorKind::VALIDATION_FAILED,
                     "RoleNameParsingError"
                 )};
             }
-            updated_name = role_tables::lowercased(*input.request.get_role_name());
+            updated_name = role_tables::lowercased(*request.get_role_name());
             if (const auto err = m_support.validate_role_name(
                     updated_name,
-                    input.identity,
+                    identity_from_context(ctx),
                     role->entity_type,
                     role->role_id
                 )) {
@@ -77,11 +79,11 @@ public:
             }
         }
         auto updated_groups = role->groups;
-        if (input.request.get_groups().has_value()) {
+        if (request.get_groups().has_value()) {
             std::string product_type{};
             if (role->entity_type == "merchant" || role->entity_type == "profile") {
                 const auto merchant = m_context.repository().find_merchant_account_by_string(
-                    input.identity.merchant_id
+                    identity_from_context(ctx).merchant_id
                 );
                 if (!merchant) {
                     return std::unexpected{
@@ -91,12 +93,12 @@ public:
                 product_type = m_support.merchant_product_type(*merchant);
             }
             if (const auto err =
-                    role_tables::validate_role_groups(*input.request.get_groups(), product_type)) {
+                    role_tables::validate_role_groups(*request.get_groups(), product_type)) {
                 return std::unexpected{*err};
             }
-            updated_groups = *input.request.get_groups();
+            updated_groups = *request.get_groups();
         }
-        auto record = m_context.repository().find_role_by_string(input.role_id);
+        auto record = m_context.repository().find_role_by_string(ctx_string(ctx,"role_id"));
         if (!record) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleOperation")

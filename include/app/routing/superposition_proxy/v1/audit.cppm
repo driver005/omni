@@ -50,35 +50,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "list_audit_logs", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto scope = m_input_support.extract_proxy_headers(req);
         if (!scope) {
             const auto& error = scope.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         m_input_support.cache_scope(req, *scope);
+        auto ctx = m_request_support.context(req);
+        ctx.org_id = scope->org_id;
+        ctx.headers["x-workspace"] = scope->workspace_id;
 
-        ListAuditLogsHandlerInput input{
-            m_input_support.list_audit_logs_query(m_input_support.query_pairs(req)),
-            ::app::auth::AuthContextBuilder{}(req),
-            scope->org_id,
-            scope->workspace_id
-        };
-        auto result = m_runtime.list_audit_logs(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto request = m_input_support.list_audit_logs_query(m_input_support.query_pairs(req));
+        m_runtime.list_audit_logs(request, ctx).handle(sink);
     }
 
 private:

@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -36,26 +37,30 @@ public:
     }
 
     // batch.rs:348-510 initiate_batch_blocklist_upload.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BatchBlocklistUploadResponse, core::error::AppError>
-        upload_batch_blocklist(const UploadBatchBlocklistInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BatchBlocklistUploadResponse>
+    upload_batch_blocklist(
+        const std::vector<CsvRow>& rows,
+        std::string_view file_name,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
+        const std::string override_type = query_value(ctx, "transaction_type").value_or("");
         const auto job_id = m_context.ids().payment_id("blkbatch");
         const auto stamp = m_support.now_iso8601();
         // in-process substitute for batch.rs:512-551 process_chunk (the worker is not present).
         std::uint32_t succeeded{0};
-        for (const auto& row: input.rows) {
+        for (const auto& row: rows) {
             const auto key =
                 m_support
-                    .identity_key(input.merchant, input.profile, row.data, row.transaction_type);
+                    .identity_key(ctx.merchant_id, ctx.profile_id, row.data, row.transaction_type);
             if (m_support.find_entry(key)) {
                 ++succeeded;
                 continue;
             }
             m_support.save_entry(m_support.make_entry(
                 row.data,
-                input.merchant,
-                input.profile,
+                ctx.merchant_id,
+                ctx.profile_id,
                 row.kind,
                 row.transaction_type,
                 stamp
@@ -63,16 +68,16 @@ public:
             ++succeeded;
         }
 
-        const auto total_rows = static_cast<std::uint32_t>(input.rows.size());
+        const auto total_rows = static_cast<std::uint32_t>(rows.size());
         m_support.upsert_job(
             job_id,
-            input.merchant,
-            input.profile,
+            ctx.merchant_id,
+            ctx.profile_id,
             "upload",
             "initiated",
             total_rows,
-            input.override_type,
-            input.file_name,
+            override_type,
+            file_name,
             {},
             false,
             std::nullopt,
@@ -84,13 +89,13 @@ public:
         // substitute updates it to Completed once the synchronous insert has run.
         m_support.upsert_job(
             job_id,
-            input.merchant,
-            input.profile,
+            ctx.merchant_id,
+            ctx.profile_id,
             "upload",
             "completed",
             total_rows,
-            input.override_type,
-            input.file_name,
+            override_type,
+            file_name,
             {},
             false,
             std::nullopt,
@@ -101,9 +106,9 @@ public:
         m_support.schedule_job(
             "BATCH_BLOCKLIST_UPLOAD",
             job_id,
-            input.merchant,
-            input.profile,
-            input.rows.size()
+            ctx.merchant_id,
+            ctx.profile_id,
+            rows.size()
         );
 
         ::app::model::blocklist::BatchBlocklistUploadResponse response;

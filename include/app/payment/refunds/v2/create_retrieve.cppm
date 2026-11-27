@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v2_create_retrieve;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,6 +47,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const bool v2 = m_input_support.is_v2(req);
         if (const auto denied = m_request_support->authorize(
                 req,
@@ -53,51 +56,28 @@ public:
                 spec_for(v2 ? "V2Create" : "V1Create")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto payment_id = m_input_support.json_string(body, "payment_id");
-        RefundsCreateInput
-            input{v2, payment_id, std::nullopt, std::nullopt, m_input_support.request_facts(req)};
         if (v2) {
-            using Input = ::app::model::refunds::RefundsCreateRequest;
-            auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-            if (!parsed) {
-                const auto error =
-                    core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-                error.send(res, send);
-                return;
-            }
-            input.v2_payload = *parsed;
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsCreateRequest>::pass(req, sink);
+        if (!parsed) return;
         } else {
-            using Input = ::app::model::refunds::RefundRequest;
-            auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-            if (!parsed) {
-                const auto error =
-                    core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-                error.send(res, send);
-                return;
-            }
-            input.v1_payload = *parsed;
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundRequest>::pass(req, sink);
+        if (!parsed) return;
         }
 
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.create(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief refunds_retrieve — routes/refunds.rs:191-241 (v1), :245-292 (v2). */
@@ -107,20 +87,22 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 m_input_support.is_v2(req) ? "V2Retrieve" : "V1Retrieve",
                 spec_for(m_input_support.is_v2(req) ? "V2Retrieve" : "V1Retrieve")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto path_id = m_input_support.refund_id_from_path(req);
         if (!path_id.has_value()) {
             const auto error =
                 core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -133,17 +115,10 @@ public:
         request.set_refund_id(*path_id);
         request.set_force_sync(force_sync);
         request.set_all_keys_required(all_keys);
-        RefundsRetrieveInput input{request, include_raw, m_input_support.request_facts(req)};
+        const auto& dto = request;
 
-        auto result = m_runtime.retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.retrieve(m_request_support->context(req)));
+        result.handle(sink);
     }
 
     /** @brief refunds_retrieve_with_gateway_creds — routes/refunds.rs:296-350 (v2). */
@@ -153,31 +128,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "V2Gateway", spec_for("V2Gateway"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundsRetrievePayload;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundsRetrievePayload>::pass(req, sink);
+        if (!parsed) return;
 
         const auto path_id = m_input_support.refund_id_from_path(req);
         if (!path_id.has_value()) {
             const auto error =
                 core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         ::app::model::refunds::RefundsRetrieveRequest request{};
@@ -190,17 +162,10 @@ public:
             request.set_merchant_connector_details(wrap);
         }
         const bool include_raw = parsed->get_return_raw_connector_response().value_or(false);
-        RefundsRetrieveGatewayInput input{request, include_raw, m_input_support.request_facts(req)};
+        const auto& dto = request;
 
-        auto result = m_runtime.retrieve_gateway(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.retrieve_gateway(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     // original install() route #16

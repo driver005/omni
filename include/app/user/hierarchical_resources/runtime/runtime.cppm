@@ -1,6 +1,7 @@
 export module app_user:hierarchical_resources_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -26,36 +27,33 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse,
-        core::error::AppError>
-    generate(const GenerateHierarchicalResourceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse>
+    generate(const ::core::behavior::CallContext& ctx) const
     {
-        return m_generate.generate(input);
+        return m_generate.generate(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::UploadCertificateResponse,
-        core::error::AppError>
-    upload(const UploadHierarchicalResourceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::UploadCertificateResponse>
+    upload(const ::core::behavior::CallContext& ctx) const
     {
-        return m_upload.upload(input);
+        return m_upload.upload(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse,
-        core::error::AppError>
-    list(const ListHierarchicalResourcesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::ListHierarchicalResourcesResponse>
+    list(const ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(request, ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse,
-        core::error::AppError>
-    link(const LinkHierarchicalResourceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::LinkHierarchicalResourceResponse>
+    link(const ::core::behavior::CallContext& ctx) const
     {
-        return m_link.link(input);
+        return m_link.link(ctx);
     }
 
 private:

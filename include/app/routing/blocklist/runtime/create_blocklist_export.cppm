@@ -19,8 +19,8 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
-import :blocklist_input;
 import :blocklist_result;
 import :blocklist_runtime_common;
 
@@ -36,23 +36,22 @@ public:
     }
 
     // export.rs:73-162 initiate_blocklist_export.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BlocklistExportResponse, core::error::AppError>
-        create_blocklist_export(const CreateBlocklistExportInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistExportResponse>
+    create_blocklist_export(const ::core::behavior::CallContext& ctx) const
     {
+        const std::string transaction_type = query_value(ctx, "transaction_type").value_or("");
         const auto export_id = m_context.ids().payment_id("blkexp");
         const auto stamp = m_support.now_iso8601();
         // export.rs:32-42: blocklist_export_YYYYMMDD_HHMMSS.csv.
         const auto file_name = "blocklist_export_" + stamp.substr(0, 4) + stamp.substr(5, 2) +
                                stamp.substr(8, 2) + "_" + stamp.substr(11, 2) +
                                stamp.substr(14, 2) + stamp.substr(17, 2) + ".csv";
-        const auto csv =
-            m_support.export_csv(input.merchant, input.profile, input.transaction_type);
+        const auto csv = m_support.export_csv(ctx.merchant_id, ctx.profile_id, transaction_type);
 
         ::app::store::files::FileRecord file;
         file.set_file_id(export_id);
-        file.set_merchant_id(input.merchant);
-        file.set_profile_id(input.profile);
+        file.set_merchant_id(ctx.merchant_id);
+        file.set_profile_id(ctx.profile_id);
         file.set_file_name(file_name);
         file.set_file_type("text/csv");
         file.set_file_size(static_cast<std::int64_t>(csv.size()));
@@ -65,12 +64,12 @@ public:
 
         m_support.upsert_job(
             export_id,
-            input.merchant,
-            input.profile,
+            ctx.merchant_id,
+            ctx.profile_id,
             "export",
             "initiated",
             0,
-            input.transaction_type,
+            transaction_type,
             file_name,
             {},
             false,
@@ -88,12 +87,12 @@ public:
                 : 0U;
         m_support.upsert_job(
             export_id,
-            input.merchant,
-            input.profile,
+            ctx.merchant_id,
+            ctx.profile_id,
             "export",
             "completed",
             rows,
-            input.transaction_type,
+            transaction_type,
             file_name,
             {},
             true,
@@ -104,7 +103,8 @@ public:
             m_support.now_iso8601(86'400),
             m_support.now_iso8601(900)
         );
-        m_support.schedule_job("BLOCKLIST_EXPORT", export_id, input.merchant, input.profile, rows);
+        m_support
+            .schedule_job("BLOCKLIST_EXPORT", export_id, ctx.merchant_id, ctx.profile_id, rows);
 
         ::app::model::blocklist::BlocklistExportResponse response;
         response.set_export_id(export_id);

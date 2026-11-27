@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_get_subscription_items;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -26,26 +27,35 @@ public:
     }
 
     // get_subscription_items + get_subscription_item_prices (core.rs:151-172)
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_subscription_items(const GetSubscriptionItemsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_subscription_items(const ::core::behavior::CallContext& ctx) const
     {
+        const auto limit = static_cast<std::uint32_t>(
+            m_support.query_unsigned(ctx.query, "limit", 10)
+        );
+        const auto offset = static_cast<std::uint32_t>(
+            m_support.query_unsigned(ctx.query, "offset", 0)
+        );
+        const std::string item_type =
+            ctx.query.contains("item_type") ? ctx.query.at("item_type") : std::string{"plan"};
+
         if (const auto failure =
-                m_support.find_business_profile(input.profile_id, input.merchant_id)) {
+                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
-        if (!input.client_secret.empty()) {
+        if (!ctx.client_secret.empty()) {
             if (const auto failure =
-                    m_support.validate_client_secret(input.client_secret, input.merchant_id)) {
+                    m_support.validate_client_secret(ctx.client_secret, ctx.merchant_id)) {
                 return std::unexpected{*failure};
             }
         }
         BillingProcessor billing{m_context};
-        if (const auto failure = billing.create(input.profile_id, input.merchant_id)) {
+        if (const auto failure = billing.create(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
 
         auto items =
-            billing.get_items(input.profile_id, input.limit, input.offset, input.item_type);
+            billing.get_items(ctx.profile_id, limit, offset, item_type);
         m_support.metrics_for("subscription.get_subscription_items");
         return m_support.build_items_response(items);
     }

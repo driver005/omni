@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -257,8 +258,7 @@ public:
     }
 
     /** @brief Port of settings::ApiKeys::get_hash_key (core/api_keys.rs:29-45). */
-    [[nodiscard]] std::expected<::app::crypto::SecretString, core::error::AppError>
-    get_hash_key() const
+    [[nodiscard]] core::behavior::Outcome<::app::crypto::SecretString> get_hash_key() const
     {
         constexpr std::string_view default_hex =
             "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";

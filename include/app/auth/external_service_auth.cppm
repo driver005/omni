@@ -46,52 +46,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "validate_token", {})) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-
-        // Deserialize the exact upstream request shape directly. The typed DTO's
-        // `ValidatingService` FieldConverter accepts the snake_case wire value
-        // "offer_engine" and rejects anything else, matching upstream
+        // The typed DTO's `ValidatingService` FieldConverter accepts the snake_case
+        // wire value "offer_engine" and rejects anything else, matching upstream
         // `#[serde(rename_all = "snake_case")]` (api_models:18-29).
-        using Input = ::app::dto::external_service_auth::ValidateTokenRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
+        using Dto = ::app::dto::external_service_auth::ValidateTokenRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-
-        ValidateTokenInput input{*parsed};
-        auto result = m_runtime.validate_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto encoded = result->serialize(validate_token_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.validate_token(*input, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

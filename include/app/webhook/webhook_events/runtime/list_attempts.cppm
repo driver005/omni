@@ -1,6 +1,7 @@
 export module app_webhook:webhook_events_runtime_list_attempts;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,20 +38,20 @@ public:
 
     // Upstream: GET /events/{merchant_id}/{initial_attempt_id}/attempts
     // routes/webhook_events.rs:105-140 -> core list_delivery_attempts.
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::webhook_events::EventRetrieveResponse>,
-        core::error::AppError>
-    list_attempts(const ListAttemptsInput& input) const
+    [[nodiscard]] core::behavior::
+        Outcome<std::vector<::app::dto::webhook_events::EventRetrieveResponse>>
+    list_attempts(const ::core::behavior::CallContext& ctx) const
     {
+        const std::string event_id = ctx.path_segments.size() > 2 ? ctx.path_segments.at(2) : "";
         // list_events_by_initiator_merchant_id_initial_attempt_id scopes by the
         // unique initial_attempt_id; ownership is verified below for every row.
         std::vector<std::pair<Record, std::string>> chain{};
         for (const auto& record: m_context.repository().list_webhook_events()) {
-            const auto payload = m_support.payload_of(record, input.merchant_id);
-            if (m_support.initial_attempt_id_of(record, payload) != input.event_id) {
+            const auto payload = m_support.payload_of(record, ctx.merchant_id);
+            if (m_support.initial_attempt_id_of(record, payload) != event_id) {
                 continue;
             }
-            if (m_support.initiator_of(record, payload) != input.merchant_id) {
+            if (m_support.initiator_of(record, payload) != ctx.merchant_id) {
                 continue;
             }
             chain.emplace_back(record, payload);
@@ -74,7 +75,7 @@ public:
                 record,
                 payload,
                 DeliverySource::ListDeliveryAttempts,
-                input.profile_id
+                ctx.profile_id
             );
             if (!item) {
                 return std::unexpected{std::move(item.error())};

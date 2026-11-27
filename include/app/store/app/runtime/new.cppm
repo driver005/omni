@@ -1,8 +1,8 @@
 export module app_store:app_runtime_new;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -20,7 +19,6 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 
@@ -36,10 +34,10 @@ public:
     }
 
     // Upstream AppState::new() delegates to with_storage(Postgresql) (app.rs:729-743).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    app_new(const NewInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    app_new(const core::behavior::CallContext& ctx) const
     {
-        const auto service_name = input.service_name;
+        const auto service_name = m_support.query_or(ctx, "service_name", "default");
         const auto session_id = m_context.ids().uuid_v4();
         const auto storage_impl = m_context.config_store()
                                       .get_value("app_state", "default_storage_impl")

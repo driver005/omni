@@ -1,6 +1,7 @@
 export module app_user:user_runtime_sso_sign;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    sso_sign(const SsoSignInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    sso_sign(const ::app::model::user::SsoSignInRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto state_entry =
-            m_context.repository().get_config("user.sso_state." + input.request.get_state());
+            m_context.repository().get_config("user.sso_state." + request.get_state());
         if (!state_entry) {
             return std::unexpected{m_support.wire_error(
                 "UR_46",
@@ -54,8 +56,8 @@ public:
         }
         const auto sso_payload = std::format(
             R"({{"code":"{}","state":"{}"}})",
-            input.request.get_code(),
-            input.request.get_state()
+            request.get_code(),
+            request.get_state()
         );
         const auto sso_token = m_support.user_signer().sign(sso_payload);
 

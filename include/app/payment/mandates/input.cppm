@@ -9,6 +9,7 @@ import app_auth;
 import app_http;
 import app_model;
 
+import :context;
 export namespace app::handlers::mandates {
 
 // Upstream routes/mandates.rs extractor modes: get/revoke use HeaderAuth(ApiKeyAuth),
@@ -221,28 +222,38 @@ public:
         return core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
     }
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old inline core block received (merchant
-// scope, mandate id and — for list — the parsed constraints plus effective filter).
-
-struct GetMandateInput
+struct GetMandateData
 {
     std::string merchant_id{};
     std::string mandate_id{};
+    explicit GetMandateData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        mandate_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct RevokeMandateInput
+struct RevokeMandateData
 {
     std::string merchant_id{};
     std::string mandate_id{};
+    explicit RevokeMandateData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        mandate_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct RetrieveMandatesListInput
+struct RetrieveMandatesListData
 {
     ::app::model::mandates::MandateListConstraints constraints{};
     std::optional<std::string> merchant_filter{};
+    template<class Dto>
+    explicit RetrieveMandatesListData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        constraints{::app::payment::detail::as_dto<::app::model::mandates::MandateListConstraints>(dto)},
+        merchant_filter{std::optional<std::string>{::app::payment::detail::query_of(ctx, "merchant_filter")}}
+    {
+    }
 };
+
 
 /** @brief Request policy for the mandates domain: wraps the domain auth rules. */
 class MandatesPolicy
@@ -252,6 +263,11 @@ public:
         :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_dto;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -23,10 +23,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    upsert_surcharge_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> upsert_surcharge_decision_manager_config(
+        const ::app::dto::surcharge_decision_configs::SurchargeDecisionConfigReq& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto& typed = *input.surcharge_request;
+        const auto& typed = request;
         if (!typed.get_algorithm()) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
@@ -40,7 +42,7 @@ public:
             };
         }
 
-        const auto profile = input.profile_id;
+        const auto profile = ctx.profile_id;
         const auto key = m_support.decision_key(profile, "surcharge");
         const auto existing = m_support.find_config(key);
         ::app::dto::surcharge_decision_configs::SurchargeDecisionManagerRecord record;
@@ -71,7 +73,7 @@ public:
         record.set_merchant_surcharge_configs(typed.get_merchant_surcharge_configs());
 
         auto stored = m_support.config_record(
-            input.merchant_id,
+            ctx.merchant_id,
             key,
             record.get_name(),
             "surcharge decision manager",

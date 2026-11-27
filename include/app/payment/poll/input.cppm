@@ -9,6 +9,7 @@ import app_dto;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::poll {
 
 struct PollAuthorizedRequest
@@ -66,7 +67,7 @@ public:
 
     // routes/poll.rs:31,34-36 — web::Path<String> wrapped into PollId. Returns
     // the error instead of writing it so the handler keeps one response path.
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     poll_id_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -111,14 +112,17 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// Everything the old retrieve_poll_status(request_poll_id, processor_merchant_id)
-// core call received.
-struct RetrievePollStatusInput
+struct RetrievePollStatusData
 {
     std::string request_poll_id{};
     std::string processor_merchant_id{};
+    explicit RetrievePollStatusData(const core::behavior::CallContext& ctx) :
+        request_poll_id{::app::payment::detail::last_path(ctx)},
+        processor_merchant_id{ctx.merchant_id}
+    {
+    }
 };
+
 
 /** @brief Request policy for the poll domain: wraps the domain auth rules. */
 class PollPolicy
@@ -127,6 +131,11 @@ public:
     PollPolicy(::app::context::AppContext& /*context*/, PollInputSupport& support) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

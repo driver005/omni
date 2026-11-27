@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_merchant_account_toggle_all_kv;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,8 +36,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ToggleAllKVResponse, core::error::AppError>
-    toggle_all(const MerchantAccountToggleAllKvInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ToggleAllKVResponse>
+    toggle_all(const ::core::behavior::CallContext& ctx) const
     {
         if (const auto blocked = m_support.kv_soft_kill_guard()) {
             return std::unexpected{*blocked};
@@ -45,7 +46,7 @@ public:
                 m_support.acquire_operation_lock("merchant_account_toggle_all_kv", "all")) {
             return std::unexpected{*duplicate};
         }
-        const std::string target_scheme{input.kv_enabled ? "kv" : "database"};
+        const std::string target_scheme{ctx_bool(ctx,"kv_enabled") ? "kv" : "database"};
         std::size_t total_updated{0};
         for (const auto& record: m_context.repository().list_merchant_accounts()) {
             const auto current =
@@ -61,7 +62,7 @@ public:
 
         ::app::dto::admin::ToggleAllKVResponse response;
         response.set_total_updated(total_updated);
-        response.set_kv_enabled(input.kv_enabled);
+        response.set_kv_enabled(ctx_bool(ctx,"kv_enabled"));
 
         m_context.metrics().record_flow("merchant_account_toggle_all_kv");
         m_context.metrics().counter("admin.merchant_account_toggle_all_kv").increment();

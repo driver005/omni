@@ -1,6 +1,7 @@
 export module app_user:user_runtime_internal_user_signup;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,15 +38,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    internal_user_signup(const InternalUserSignupInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    internal_user_signup(const ::app::model::user::CreateInternalUserRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto internal_user_id = m_context.ids().uuid_v4();
-        const auto internal_email = input.request.get_email().get_value();
-        const ::app::crypto::SecretString internal_secret{input.request.get_password()};
+        const auto internal_email = request.get_email().get_value();
+        const ::app::crypto::SecretString internal_secret{request.get_password()};
         const auto internal_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(internal_secret.value());
         m_support.store_password(internal_email, internal_hash);
@@ -54,16 +56,16 @@ public:
             internal_email,
             internal_email,
             "active",
-            input.request_context.merchant_id,
+            ctx.merchant_id,
             "admin"
         );
         m_support.publish_identity_event("user.internal_created", internal_user_id);
 
         const auto key = std::string{"user.internal_user_signup:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

@@ -20,10 +20,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::poll::PollResponseWire, core::error::AppError>
-    retrieve_poll_status(const RetrievePollStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::poll::PollResponseWire>
+    retrieve_poll_status(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_poll_status.retrieve_poll_status(input);
+        return m_retrieve_poll_status.retrieve_poll_status(ctx);
     }
 
 private:

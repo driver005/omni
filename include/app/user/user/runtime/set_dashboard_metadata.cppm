@@ -1,6 +1,7 @@
 export module app_user:user_runtime_set_dashboard_metadata;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,18 +38,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    set_dashboard_metadata(const SetDashboardMetadataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    set_dashboard_metadata(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto merchant_id = input.request_context.merchant_id;
-        const auto client_ip = input.request_context.client_ip;
+        const auto merchant_id = ctx.merchant_id;
+        const auto client_ip = ctx_string(ctx,"client_ip");
         const auto normalized = std::format(
             R"({{"ip":"{}","data":{}}})",
             std::string{client_ip.empty() ? std::string_view{"unknown"} : client_ip},
-            input.request_context.body
+            ctx_string(ctx,"body")
         );
         m_context.repository().set_config("dashboard_metadata." + merchant_id, normalized);
 

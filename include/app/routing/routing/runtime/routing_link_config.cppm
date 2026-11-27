@@ -4,8 +4,8 @@ import std;
 import core_error;
 import core_serde;
 import app_context;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -20,23 +20,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_link_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_link_config(
+        const std::optional<::app::model::routing::RoutingLinkWrapper>& link,
+        const std::optional<::app::model::routing::RoutingActivatePayload>& activate,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        std::string algorithm = input.algorithm_id;
+        std::string algorithm = ctx_algorithm(ctx);
         std::string payload_txn{};
 
-        if (!input.body.empty()) {
-            if (input.link) {
-                const auto& named =
-                    input.link->get_algorithm_id().get_routing_algorithm_id().get_value();
+        if (link || activate) {
+            if (link) {
+                const auto& named = link->get_algorithm_id().get_routing_algorithm_id().get_value();
                 if (!named.empty()) {
                     algorithm = named;
                 }
-                if (!input.link->get_profile_id().get_value().empty()) {
+                if (!link->get_profile_id().get_value().empty()) {
                     if (const auto validation_error = m_support.profile_validation_error(
-                            input.auth_profile,
-                            input.link->get_profile_id().get_value()
+                            ctx_auth_profile(ctx),
+                            link->get_profile_id().get_value()
                         )) {
                         return std::unexpected{m_support.error(
                             core::error::AppErrorKind::PRECONDITION_FAILED,
@@ -45,8 +47,8 @@ public:
                     }
                 }
             }
-            if (input.activate && input.activate->get_transaction_type()) {
-                payload_txn = input.activate->get_transaction_type()->get_value();
+            if (activate && activate->get_transaction_type()) {
+                payload_txn = activate->get_transaction_type()->get_value();
             }
         }
         if (algorithm.empty()) {
@@ -62,7 +64,7 @@ public:
             };
         }
 
-        const auto txn = payload_txn.empty() ? input.txn : payload_txn;
+        const auto txn = payload_txn.empty() ? ctx_transaction_type(ctx) : payload_txn;
         const auto record_txn = m_support.transaction_type_of(existing->get_config_json());
         if (record_txn != txn) {
             return std::unexpected{m_support.error(
@@ -72,8 +74,8 @@ public:
         }
 
         auto profile =
-            existing->get_profile_id().empty() ? input.profile_id : existing->get_profile_id();
-        if (const auto active = m_support.active_id_for(input.active_id, profile, txn);
+            existing->get_profile_id().empty() ? ctx.profile_id : existing->get_profile_id();
+        if (const auto active = m_support.active_id_for(ctx_query(ctx, "active_id"), profile, txn);
             active && *active == algorithm) {
             return std::unexpected{m_support.error(
                 core::error::AppErrorKind::PRECONDITION_FAILED,
@@ -81,7 +83,7 @@ public:
             )};
         }
         if (const auto validation_error =
-                m_support.profile_validation_error(input.auth_profile, profile)) {
+                m_support.profile_validation_error(ctx_auth_profile(ctx), profile)) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::PRECONDITION_FAILED, *validation_error)
             };

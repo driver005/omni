@@ -10,6 +10,7 @@ import app_store;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::refunds {
 
 using Error = core::error::AppError;
@@ -385,115 +386,193 @@ private:
 
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received, plus the auth/request
-// facts the old core derived from IRequest internally.
-
-struct RefundsCreateInput
+struct RefundsCreateData
 {
     bool is_v2{};
     std::string payment_id{};
     std::optional<::app::model::refunds::RefundRequest> v1_payload{};
     std::optional<::app::model::refunds::RefundsCreateRequest> v2_payload{};
     RefundRequestFacts facts{};
+    explicit RefundsCreateData(const core::behavior::CallContext& ctx) :
+        is_v2{},
+        payment_id{::app::payment::detail::last_path(ctx)},
+        v1_payload{},
+        v2_payload{},
+        facts{}
+    {
+    }
 };
-
-struct RefundsRetrieveInput
+struct RefundsRetrieveData
 {
     ::app::model::refunds::RefundsRetrieveRequest request{};
     bool include_raw_requested{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsRetrieveData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundsRetrieveRequest>(dto)},
+        include_raw_requested{},
+        facts{}
+    {
+    }
 };
-
-struct RefundsRetrieveGatewayInput
+struct RefundsRetrieveGatewayData
 {
     ::app::model::refunds::RefundsRetrieveRequest request{};
     bool include_raw_requested{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsRetrieveGatewayData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundsRetrieveRequest>(dto)},
+        include_raw_requested{},
+        facts{}
+    {
+    }
 };
-
-struct RefundsRetrieveBodyInput
+struct RefundsRetrieveBodyData
 {
     ::app::model::refunds::RefundsRetrieveRequest request{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsRetrieveBodyData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundsRetrieveRequest>(dto)},
+        facts{}
+    {
+    }
 };
-
-struct RefundsUpdateInput
+struct RefundsUpdateData
 {
     ::app::model::refunds::RefundUpdateRequest request{};
+    template<class Dto>
+    explicit RefundsUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundUpdateRequest>(dto)}
+    {
+    }
 };
-
-struct RefundsReverseInput
+struct RefundsReverseData
 {
     ::app::model::refunds::RefundReverseRequest request{};
+    template<class Dto>
+    explicit RefundsReverseData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundReverseRequest>(dto)}
+    {
+    }
 };
-
-struct RefundsMetadataUpdateInput
+struct RefundsMetadataUpdateData
 {
     std::string refund_id{};
     ::app::model::refunds::RefundMetadataUpdateRequest request{};
+    template<class Dto>
+    explicit RefundsMetadataUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        refund_id{::app::payment::detail::last_path(ctx)},
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundMetadataUpdateRequest>(dto)}
+    {
+    }
 };
-
-struct RefundsListInput
+struct RefundsListData
 {
     ::app::model::refunds::RefundListRequest request{};
     bool profile_scoped{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsListData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundListRequest>(dto)},
+        profile_scoped{},
+        facts{}
+    {
+    }
 };
-
-struct RefundsListPlatformInput
+struct RefundsListPlatformData
 {
     ::app::model::refunds::PlatformRefundListRequest request{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsListPlatformData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::PlatformRefundListRequest>(dto)},
+        facts{}
+    {
+    }
 };
-
-struct RefundsFilterPlatformInput
+struct RefundsFilterPlatformData
 {
     RefundRequestFacts facts{};
+    explicit RefundsFilterPlatformData(const core::behavior::CallContext& ctx) :
+        facts{}
+    {
+    }
 };
-
-struct RefundsListProfileInput
+struct RefundsListProfileData
 {
     ::app::model::refunds::RefundListRequest request{};
     RefundRequestFacts facts{};
+    template<class Dto>
+    explicit RefundsListProfileData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundListRequest>(dto)},
+        facts{}
+    {
+    }
 };
-
-struct RefundsFilterListInput
+struct RefundsFilterListData
 {
     std::string start_time{};
     std::string end_time{};
     RefundRequestFacts facts{};
+    explicit RefundsFilterListData(const core::behavior::CallContext& ctx) :
+        start_time{::app::payment::detail::last_path(ctx)},
+        end_time{::app::payment::detail::last_path(ctx)},
+        facts{}
+    {
+    }
 };
-
-struct RefundsFiltersInput
+struct RefundsFiltersData
 {
     RefundRequestFacts facts{};
+    explicit RefundsFiltersData(const core::behavior::CallContext& ctx) :
+        facts{}
+    {
+    }
 };
-
-struct RefundsFiltersProfileInput
+struct RefundsFiltersProfileData
 {
     RefundRequestFacts facts{};
+    explicit RefundsFiltersProfileData(const core::behavior::CallContext& ctx) :
+        facts{}
+    {
+    }
 };
-
-struct RefundsAggregatesInput
+struct RefundsAggregatesData
 {
     std::optional<std::string> start_time{};
     std::optional<std::string> end_time{};
     RefundRequestFacts facts{};
+    explicit RefundsAggregatesData(const core::behavior::CallContext& ctx) :
+        start_time{std::optional<std::string>{::app::payment::detail::query_of(ctx, "start_time")}},
+        end_time{std::optional<std::string>{::app::payment::detail::query_of(ctx, "end_time")}},
+        facts{}
+    {
+    }
 };
-
-struct RefundsAggregatesProfileInput
+struct RefundsAggregatesProfileData
 {
     std::optional<std::string> start_time{};
     std::optional<std::string> end_time{};
     RefundRequestFacts facts{};
+    explicit RefundsAggregatesProfileData(const core::behavior::CallContext& ctx) :
+        start_time{std::optional<std::string>{::app::payment::detail::query_of(ctx, "start_time")}},
+        end_time{std::optional<std::string>{::app::payment::detail::query_of(ctx, "end_time")}},
+        facts{}
+    {
+    }
 };
-
-struct RefundsManualUpdateInput
+struct RefundsManualUpdateData
 {
     ::app::model::refunds::RefundManualUpdateRequest request{};
+    template<class Dto>
+    explicit RefundsManualUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::refunds::RefundManualUpdateRequest>(dto)}
+    {
+    }
 };
+
 
 /** @brief Request policy for the refunds domain: wraps the domain auth rules. */
 class RefundsPolicy
@@ -502,6 +581,11 @@ public:
     RefundsPolicy(::app::context::AppContext& /*context*/, RefundsInputSupport& support) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

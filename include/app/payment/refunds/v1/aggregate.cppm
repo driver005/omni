@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v1_aggregate;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,28 +47,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "Aggregates", spec_for("Aggregates"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
-        RefundsAggregatesInput input{
-            query.get("start_time"),
-            query.get("end_time"),
-            m_input_support.request_facts(req)
-        };
 
-        auto result = m_runtime.aggregates(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.aggregates(m_request_support->context(req));
+        result.handle(sink);
     }
 
     /** @brief get_refunds_aggregate_profile — routes/refunds.rs:851-887. */
@@ -77,29 +68,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "AggregatesProfile", spec_for("AggregatesProfile"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
-        RefundsAggregatesProfileInput input{
-            query.get("start_time"),
-            query.get("end_time"),
-            m_input_support.request_facts(req)
-        };
 
-        auto result = m_runtime.aggregates_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.aggregates_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     // original install() route #12

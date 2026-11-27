@@ -1,6 +1,7 @@
 export module app_user:user_runtime_delete_sample_data;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    delete_sample_data(const DeleteSampleDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    delete_sample_data(const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -47,7 +49,7 @@ public:
         // tracked job + event; upstream returns StatusOk (empty 200).
         const auto tracker_id = m_context.process_trackers().schedule(
             "sample_data_delete",
-            input.request_context.body,
+            ctx_string(ctx,"body"),
             m_support.now_string()
         );
         m_context.process_trackers().mark_terminal(tracker_id, "queued");
@@ -56,8 +58,8 @@ public:
             std::format(R"({{"tracker_id":{}}})", tracker_id)
         );
         m_context.repository().set_config(
-            "user.sample_data.last_delete." + input.request_context.merchant_id,
-            std::to_string(input.request.get_record().value_or(0U))
+            "user.sample_data.last_delete." + ctx.merchant_id,
+            std::to_string(request.get_record().value_or(0U))
         );
 
         m_context.metrics().record_flow("delete_sample_data");

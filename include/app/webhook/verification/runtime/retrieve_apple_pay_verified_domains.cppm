@@ -1,6 +1,7 @@
 export module app_webhook:verification_runtime_retrieve_apple_pay_verified_domains;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,16 +38,17 @@ public:
 
     /** @brief Port of `get_verified_apple_domains_with_mid_mca_id`
      *  (core/verification.rs:95-119). */
-    [[nodiscard]] std::
-        expected<::app::dto::verifications::ApplepayVerifiedDomainsResponse, core::error::AppError>
+    [[nodiscard]] core::behavior::
+        Outcome<::app::dto::verifications::ApplepayVerifiedDomainsResponse>
         get_verified_apple_domains_with_mid_mca_id(
-            const RetrieveApplePayVerifiedDomainsInput& input
+            const ::core::behavior::CallContext& ctx
         ) const
     {
+        const auto connector = ctx.query.find("merchant_connector_account_id");
         auto account = m_support.get_apple_pay_merchant_connector_account(
-            input.merchant_id,
-            input.merchant_connector_id,
-            input.profile_id
+            ctx.merchant_id,
+            connector == ctx.query.end() ? std::string{} : connector->second,
+            ctx.profile_id
         );
         if (!account.has_value()) {
             return std::unexpected(account.error());

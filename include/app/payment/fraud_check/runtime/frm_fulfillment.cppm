@@ -31,9 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FulfillmentResponseWire, core::error::AppError>
-    frm_fulfillment(const FrmFulfillmentInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<FulfillmentResponseWire>
+        frm_fulfillment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = FrmFulfillmentData{dto, ctx};
         // ───────────────── core/fraud_check.rs:1175-1241 frm_fulfillment_core ─────────────────
 
         // 1181-1189 find_payment_intent_by_payment_id_processor_merchant_id.

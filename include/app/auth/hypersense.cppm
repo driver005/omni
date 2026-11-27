@@ -38,24 +38,8 @@ public:
         std::function<void()> send
     )
     {
-        GetTokenInput input{
-            m_input_support.bearer_token(req),
-            m_request_support.scope(req).merchant_id
-        };
-        auto result = m_runtime.get_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(get_token_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        m_runtime.get_token(m_request_support.context(req)).handle(sink);
     }
 
     // routes/hypersense.rs:75 — NoAuth. The payload token is the only credential.
@@ -65,40 +49,13 @@ public:
         std::function<void()> send
     )
     {
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        using Dto = ::app::dto::external_service_auth::ExternalVerifyTokenRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        using Input = ::app::dto::external_service_auth::ExternalVerifyTokenRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        VerifyTokenInput input{*parsed};
-        auto result = m_runtime.verify_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(HypersenseVerifyResponse::wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.verify_token(*input, m_request_support.context(req)).handle(sink);
     }
 
     // routes/hypersense.rs:51 — NoAuth. Successful core is bodyless StatusOk.
@@ -108,35 +65,13 @@ public:
         std::function<void()> send
     )
     {
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        using Dto = ::app::dto::external_service_auth::ExternalSignoutTokenRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        using Input = ::app::dto::external_service_auth::ExternalSignoutTokenRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        SignoutTokenInput input{*parsed};
-        auto result = m_runtime.signout_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::vector<std::byte>{});
-        send();
+        m_runtime.signout_token(*input, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -192,8 +127,7 @@ public:
         m_context{&context},
         m_runtime{context},
         m_policy{},
-        m_request_support{m_policy},
-        m_input_support{context}
+        m_request_support{m_policy}
     {
     }
 
@@ -202,7 +136,6 @@ private:
     HypersenseRuntime m_runtime;
     HypersensePolicy m_policy;
     core::behavior::RequestSupport<HypersensePolicy> m_request_support;
-    HypersenseInputSupport m_input_support;
 };
 
 } // namespace app::handlers::hypersense

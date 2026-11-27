@@ -20,10 +20,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<FulfillmentResponseWire, core::error::AppError>
-    frm_fulfillment(const FrmFulfillmentInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<FulfillmentResponseWire>
+        frm_fulfillment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_frm_fulfillment.frm_fulfillment(input);
+        return m_frm_fulfillment.frm_fulfillment(dto, ctx);
     }
 
 private:

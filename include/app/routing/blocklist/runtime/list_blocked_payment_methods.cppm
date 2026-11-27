@@ -19,8 +19,8 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
-import :blocklist_input;
 import :blocklist_result;
 import :blocklist_runtime_common;
 
@@ -36,18 +36,22 @@ public:
     }
 
     // utils.rs:120-162 list_blocklist_entries_for_merchant.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::ListBlocklistResponse, core::error::AppError>
-        list_blocked_payment_methods(const ListBlockedPaymentMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::ListBlocklistResponse>
+    list_blocked_payment_methods(const ::core::behavior::CallContext& ctx) const
     {
+        const std::string kind = query_value(ctx, "data_kind").value_or("");
+        const std::string transaction_type =
+            query_value(ctx, "transaction_type").value_or("payment");
+        const std::uint16_t limit = query_number<std::uint16_t>(ctx, "limit", 10);
+        const std::uint16_t offset = query_number<std::uint16_t>(ctx, "offset", 0);
         std::vector<EntryRecord> selected;
         for (const auto& record: m_support.list_entries()) {
             if (!m_support.matches_scope(
                     record,
-                    input.merchant,
-                    input.profile,
-                    input.kind,
-                    input.transaction_type
+                    ctx.merchant_id,
+                    ctx.profile_id,
+                    kind,
+                    transaction_type
                 )) {
                 continue;
             }
@@ -55,7 +59,7 @@ public:
         }
         m_support.sort_by_created_desc(selected);
         const std::size_t total = selected.size();
-        auto page = m_support.paginate(std::move(selected), input.offset, input.limit);
+        auto page = m_support.paginate(std::move(selected), offset, limit);
 
         std::vector<::app::model::blocklist::BlocklistResponse> data;
         data.reserve(page.size());

@@ -36,10 +36,10 @@ public:
     }
 
     /** Port of core::tokenization::delete_tokenized_data_core (core/tokenization.rs:100-163). */
-    [[nodiscard]] std::
-        expected<::app::dto::tokenization::DeleteTokenDataResponse, core::error::AppError>
-        delete_tokenized_data(const DeleteTokenizedDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::DeleteTokenDataResponse>
+        delete_tokenized_data(const core::behavior::CallContext& ctx) const
     {
+        const auto input = DeleteTokenizedDataData{ctx};
         // core:109-115 — get_entity_id_vault_id_by_token_id -> TokenizationRecordNotFound.
         auto record = m_context.repository().find_tokenization_by_string(input.token_id);
         if (!record) {

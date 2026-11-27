@@ -36,9 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: cancel ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    cancel(const PayoutsCancelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    cancel(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsCancelData{ctx};
         PayoutLockGuard lock{
             m_context.locks(),
             std::format("payout:{}", input.payout_id),

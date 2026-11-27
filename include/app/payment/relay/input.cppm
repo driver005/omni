@@ -9,6 +9,7 @@ import app_dto;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::relay {
 
 /** @brief Identity scope carried by the authenticated headers on relay routes. */
@@ -128,37 +129,56 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old handler handed to its *_core block.
-
-struct RelayUnreferencedRefundInput
+struct RelayUnreferencedRefundData
 {
     ::app::dto::unreferenced_refund::UnreferencedRefundRequest request{};
     std::string body{};
     RelayScope scope{};
+    template<class Dto>
+    explicit RelayUnreferencedRefundData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::dto::unreferenced_refund::UnreferencedRefundRequest>(dto)},
+        body{::app::payment::detail::body_of(dto)},
+        scope{}
+    {
+    }
 };
-
-struct RelayCreateInput
+struct RelayCreateData
 {
     std::string body{};
     RelayScope scope{};
+    explicit RelayCreateData(const core::behavior::CallContext& ctx) :
+        body{::app::payment::detail::body_of(dto)},
+        scope{}
+    {
+    }
 };
-
-struct RelayRetrieveInput
+struct RelayRetrieveData
 {
     std::string relay_id{};
-    bool force_sync{false};
+    bool force_sync{};
     RelayScope scope{};
+    explicit RelayRetrieveData(const core::behavior::CallContext& ctx) :
+        relay_id{::app::payment::detail::last_path(ctx)},
+        force_sync{},
+        scope{}
+    {
+    }
 };
-
-struct RelayIncomingWebhookInput
+struct RelayIncomingWebhookData
 {
     std::string merchant_id{};
     std::string connector_id{};
     std::string body{};
     std::string signature{};
+    explicit RelayIncomingWebhookData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        connector_id{},
+        body{::app::payment::detail::body_of(dto)},
+        signature{::app::payment::detail::header_of(ctx, "signature")}
+    {
+    }
 };
+
 
 /** @brief Request policy for the relay domain: wraps the domain auth rules. */
 class RelayPolicy
@@ -167,6 +187,11 @@ public:
     RelayPolicy(::app::context::AppContext& /*context*/, RelayInputSupport& support) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

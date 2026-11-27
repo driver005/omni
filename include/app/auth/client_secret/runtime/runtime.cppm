@@ -1,6 +1,7 @@
 export module app_auth:client_secret_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_dto;
@@ -23,18 +24,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
-        create(const ClientSecretCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::client_secret::ClientSecretResponse>
+    create(
+        const ::app::dto::client_secret::ClientSecretCreateRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::client_secret::ClientSecretResponse, core::error::AppError>
-        delete_client_secret(const ClientSecretDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::client_secret::ClientSecretResponse>
+    delete_client_secret(const core::behavior::CallContext& ctx) const
     {
-        return m_delete.delete_client_secret(input);
+        return m_delete.delete_client_secret(ctx);
     }
 
 private:

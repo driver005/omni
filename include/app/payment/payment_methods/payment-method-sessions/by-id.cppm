@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_payment_method_sessions_by_id;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -61,6 +62,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_methods_session_retrieve(req, res, std::move(send));
                             }
                         )
@@ -77,6 +80,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_methods_session_update(req, res, std::move(send));
                             }
                         )
@@ -94,6 +99,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_payment_method_session_confirm(
                                         req,
                                         res,
@@ -116,6 +123,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_methods_session_retrieve(req, res, std::move(send));
                         }
                     )
@@ -130,6 +139,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_methods_session_update(req, res, std::move(send));
                         }
                     )
@@ -145,6 +156,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_session_confirm(req, res, std::move(send));
                             }
                         )
@@ -159,6 +172,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_methods_session_retrieve",
@@ -166,7 +181,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req);
@@ -175,7 +190,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method_session(session_id);
@@ -184,27 +199,20 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto presented = ::app::http::RequestQuery{}(req).get("client_secret");
         if (presented) {
             if (const auto e = m_input_support.check_client_secret(session_id, *presented)) {
                 const auto& error = *e;
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
-        PaymentMethodsSessionRetrieveInput input{session_id, *record, presented};
-        auto result = m_runtime.payment_methods_session_retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = session_id;
+        auto result = m_runtime.payment_methods_session_retrieve(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_methods_session_update(
@@ -213,6 +221,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_methods_session_update",
@@ -220,7 +230,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req);
@@ -229,7 +239,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto record = m_input_support.find_payment_method_session(session_id);
@@ -238,34 +248,21 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodsSessionUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
-        PaymentMethodsSessionUpdateInput input{*parsed, session_id, std::move(*record)};
-        auto result = m_runtime.payment_methods_session_update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodsSessionUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
+        const auto& dto = *parsed;
+        auto result = m_runtime.payment_methods_session_update(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_session_confirm(
@@ -274,6 +271,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_session_confirm",
@@ -281,7 +280,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req, 1);
@@ -290,7 +289,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto session = m_input_support.find_payment_method_session(session_id);
@@ -299,7 +298,7 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (session->get_status() != "active") {
@@ -307,29 +306,23 @@ public:
                 core::error::AppErrorKind::PRECONDITION_FAILED,
                 "session is not active"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodSessionConfirmRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionConfirmRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto presented = ::app::http::RequestQuery{}(req).get("client_secret");
         if (presented) {
             if (const auto e = m_input_support.check_client_secret(session_id, *presented)) {
                 const auto& error = *e;
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
@@ -339,20 +332,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "Missing required field: payment_method_data"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodSessionConfirmInput
-            input{*parsed, std::move(*session), session_id, body, payload, presented};
-        auto result = m_runtime.payment_method_session_confirm(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.payment_method_session_confirm(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

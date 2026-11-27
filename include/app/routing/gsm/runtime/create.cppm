@@ -8,8 +8,8 @@ import app_dto;
 import app_store;
 import app_events;
 import app_metrics;
+import core_behavior;
 
-import :gsm_input;
 import :gsm_result;
 import :gsm_runtime_common;
 
@@ -27,10 +27,9 @@ public:
     // ── Core: create ───────────────────────────────────────────────────────
     // Upstream gsm_rule.foreign_into() then add_gsm_rule (core/gsm.rs:14-24,
     // transformers.rs:2055-2078).
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
-    create(const CreateGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmResponse>
+    create(const ::app::dto::gsm::GsmCreateRequest& in, const ::core::behavior::CallContext&) const
     {
-        const auto& in = input.request;
         if (const auto error = m_support.validate_create(in)) {
             return std::unexpected{*error};
         }

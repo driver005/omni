@@ -10,6 +10,7 @@ import app_model;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::payment_link {
 
 /** @brief Header values the secure-render validator needs (no HTTP types in runtime). */
@@ -168,34 +169,45 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received (plus the
-// request-derived query/header/auth values the old handler read directly).
-
-struct PaymentLinkRetrieveInput
+struct PaymentLinkRetrieveData
 {
     std::optional<::app::model::payments::RetrievePaymentLinkRequest> request{};
     std::optional<std::string> client_secret{};
     std::optional<std::string> secret_claim{};
     std::string payment_link_id{};
     std::string merchant_from_credential{};
+    explicit PaymentLinkRetrieveData(const core::behavior::CallContext& ctx) :
+        request{},
+        client_secret{std::optional<std::string>{ctx.client_secret}},
+        secret_claim{std::nullopt},
+        payment_link_id{::app::payment::detail::last_path(ctx)},
+        merchant_from_credential{ctx.merchant_id}
+    {
+    }
 };
-
-struct PaymentLinkInitiateInput
+struct PaymentLinkInitiateData
 {
     std::string merchant_id{};
     std::string payment_id{};
+    explicit PaymentLinkInitiateData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        payment_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct PaymentLinkInitiateSecureInput
+struct PaymentLinkInitiateSecureData
 {
     std::string merchant_id{};
     std::string payment_id{};
     SecureLinkHeaders headers{};
+    explicit PaymentLinkInitiateSecureData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        payment_id{::app::payment::detail::last_path(ctx)},
+        headers{}
+    {
+    }
 };
-
-struct PaymentLinkListInput
+struct PaymentLinkListData
 {
     ::app::model::payments::PaymentLinkListConstraints request{};
     std::optional<std::string> query_limit{};
@@ -205,14 +217,32 @@ struct PaymentLinkListInput
     std::string header_merchant_id{};
     std::string auth_merchant_id{};
     std::string auth_profile_id{};
-    bool profile_scoped{false};
+    bool profile_scoped{};
+    template<class Dto>
+    explicit PaymentLinkListData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payments::PaymentLinkListConstraints>(dto)},
+        query_limit{std::nullopt},
+        query_offset{std::nullopt},
+        query_time_range{std::nullopt},
+        query_profile_id{std::nullopt},
+        header_merchant_id{ctx.merchant_id},
+        auth_merchant_id{ctx.merchant_id},
+        auth_profile_id{ctx.profile_id},
+        profile_scoped{}
+    {
+    }
 };
-
-struct PaymentLinkStatusInput
+struct PaymentLinkStatusData
 {
     std::string merchant_id{};
     std::string payment_id{};
+    explicit PaymentLinkStatusData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        payment_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
+
 
 /** @brief Request policy for the payment_link domain: wraps the domain auth rules. */
 class PaymentLinkPolicy
@@ -224,6 +254,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

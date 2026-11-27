@@ -1,6 +1,7 @@
 export module app_user:user_runtime_totp_reset;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,15 +38,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_reset(const TotpResetInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    totp_reset(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         // Port of core/user.rs:2355-2391 (reset_totp): stage a fresh secret and
         // return BeginTotpResponse with the secret + otpauth URL.
-        const auto reset_totp_token = input.request_context.token.value();
+        const auto reset_totp_token = ctx_token(ctx).value();
         const auto new_secret = m_context.ids().uuid_v4();
         m_context.key_store()
             .rotate("totp-secret", reset_totp_token, ::app::crypto::SecretString{new_secret});

@@ -31,42 +31,41 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
-    authorize_payment(const AuthorizePaymentInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::string>
+    authorize_payment(const core::behavior::CallContext& ctx) const
     {
-        return m_authorize_payment.authorize_payment(input);
+        return m_authorize_payment.authorize_payment(ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    complete_payment(const CompletePaymentInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    complete_payment(const core::behavior::CallContext& ctx) const
     {
-        return m_complete_payment.complete_payment(input);
+        return m_complete_payment.complete_payment(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment(const PaymentInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        payment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_payment.payment(input);
+        return m_payment.payment(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment_data(const PaymentDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    payment_data(const core::behavior::CallContext& ctx) const
     {
-        return m_payment_data.payment_data(input);
+        return m_payment_data.payment_data(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
-        refund(const RefundInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
+        refund(const core::behavior::CallContext& ctx) const
     {
-        return m_refund.refund(input);
+        return m_refund.refund(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::handlers::dummy_connector::DummyConnectorRefundWire, core::error::AppError>
-        refund_data(const RefundDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::handlers::dummy_connector::DummyConnectorRefundWire>
+        refund_data(const core::behavior::CallContext& ctx) const
     {
-        return m_refund_data.refund_data(input);
+        return m_refund_data.refund_data(ctx);
     }
 
 private:

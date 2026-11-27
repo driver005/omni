@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_convert_organization_to_platform;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,10 +36,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::organization::ConvertOrganizationToPlatformResponse,
-        core::error::AppError>
-    convert(const ConvertOrganizationToPlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::organization::ConvertOrganizationToPlatformResponse>
+    convert(const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         if (m_context.config_store().get_value("platform", "enabled").value_or("true") == "false") {
             return std::unexpected{core::error::AppErrorBuilder{}(
@@ -46,7 +47,7 @@ public:
                 "Platform feature is not enabled"
             )};
         }
-        auto found = m_context.repository().find_organization_by_string(input.organization_id);
+        auto found = m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -62,7 +63,7 @@ public:
         }
         if (const auto duplicate = m_support.acquire_operation_lock(
                 "convert_organization_to_platform",
-                input.organization_id
+                ctx_string(ctx,"organization_id")
             )) {
             return std::unexpected{*duplicate};
         }
@@ -72,7 +73,7 @@ public:
         record.set_platform_merchant_id(platform_merchant_id);
         m_context.repository().update_organization(record);
 
-        std::string merchant_name{input.request.get_platform_merchant_name().value_or("")};
+        std::string merchant_name{request.get_platform_merchant_name().value_or("")};
         if (merchant_name.empty()) {
             merchant_name = record.get_organization_name() + " Platform";
         }
@@ -91,7 +92,7 @@ public:
                 record.get_organization_id()
             )
         );
-        m_support.release_operation_lock("convert_organization_to_platform", input.organization_id);
+        m_support.release_operation_lock("convert_organization_to_platform", ctx_string(ctx,"organization_id"));
 
         ::app::model::organization::ConvertOrganizationToPlatformResponse response;
         ::app::model::organization::OrganizationIdValue id;

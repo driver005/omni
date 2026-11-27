@@ -1,6 +1,7 @@
 export module app_store:configs_runtime_config_key_update;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -22,17 +23,17 @@ public:
     }
 
     /** Upstream `config_key_update` -> `update_config` (core/configs.rs:46-56). */
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update(const ConfigKeyUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update(const ConfigUpdateRequestWire& dto, const core::behavior::CallContext& ctx) const
     {
         // update_config: store.update_config_by_key(&key, update.foreign_into())
         // .to_not_found_response(ConfigNotFound)?
-        auto existing = m_context.repository().find_config_by_key(input.config_key);
+        auto existing = m_context.repository().find_config_by_key(m_support.config_key(ctx));
         if (!existing) {
             return std::unexpected{m_support.config_not_found_error()};
         }
         // foreign_into maps only `value` into the storage update; the path key wins.
-        existing->set_config_value(input.request.get_value());
+        existing->set_config_value(dto.get_value());
         if (!m_context.repository().update_config(*existing)) {
             // A zero-row update is the local equivalent of the store's not-found error.
             return std::unexpected{m_support.config_not_found_error()};

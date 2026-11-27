@@ -2,7 +2,6 @@ export module app_store:health_runtime_common;
 
 import std;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +10,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_metrics;
 import app_connector;
 import app_events;

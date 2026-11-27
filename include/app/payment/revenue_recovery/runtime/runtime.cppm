@@ -19,11 +19,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::RecoveryPaymentsResponse, core::error::AppError>
-        cancel(const RevenueRecoveryCancelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::RecoveryPaymentsResponse>
+        cancel(const core::behavior::CallContext& ctx) const
     {
-        return m_cancel.cancel(input);
+        return m_cancel.cancel(ctx);
     }
 
 private:

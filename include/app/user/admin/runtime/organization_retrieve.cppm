@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -35,12 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        retrieve(const OrganizationRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        retrieve(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_organization_by_string(input.organization_id);
+            m_context.repository().find_organization_by_string(ctx_string(ctx,"organization_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,

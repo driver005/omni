@@ -1,6 +1,7 @@
 export module app_user:user_runtime_authorize_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    authorize_token(const AuthorizeTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    authorize_token(const ::app::model::user::AuthorizeTokenRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -48,7 +50,7 @@ public:
         //   2. decode the JWT; a blacklisted token -> InvalidJwtToken.
         //   3. resolve role info from the token and check the permission.
         //   4. StatusOk.
-        const auto permission = input.request.get_permission();
+        const auto permission = request.get_permission();
         const auto valid_permission =
             !permission.empty() &&
             std::all_of(
@@ -68,7 +70,7 @@ public:
             )};
         }
 
-        const auto token = input.request.get_token();
+        const auto token = request.get_token();
         if (token.empty() || !m_support.user_signer().verify(token) ||
             m_support.is_blacklisted(token)) {
             return std::unexpected{m_support.wire_error(

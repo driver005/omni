@@ -89,17 +89,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "list_blocked_payment_methods", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // list is merchant-wide when no profile resolves (routes.rs:162-163).
@@ -112,7 +113,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing required param: data_kind"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto kind = m_input_support.query_kind(*data_kind);
@@ -121,7 +122,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "unknown variant for data_kind"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::string transaction_type{"payment"};
@@ -132,7 +133,7 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for transaction_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             transaction_type = *parsed;
@@ -141,24 +142,14 @@ public:
         const auto offset =
             m_input_support.query_number<std::uint16_t>(query, "offset").value_or(0);
 
-        ListBlockedPaymentMethodsInput
-            input{merchant, profile, *kind, transaction_type, limit, offset};
-        auto result = m_runtime.list_blocked_payment_methods(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::ListBlocklistResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        (void)profile;
+        (void)kind;
+        (void)transaction_type;
+        (void)limit;
+        (void)offset;
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        m_runtime.list_blocked_payment_methods(ctx).handle(sink);
     }
 
     // routes/blocklist.rs:207-242 -> core/blocklist.rs:56-65 ->
@@ -169,22 +160,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "get_blocklist_count", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.resolve_required_profile(req, merchant);
         if (profile.failure) {
             const auto& error = *profile.failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -195,7 +187,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing required param: data_kind"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto kind = m_input_support.query_kind(*raw_kind);
@@ -204,7 +196,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "unknown variant for data_kind"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::string transaction_type; // empty = both, including legacy NULL (api_models:109-112).
@@ -215,29 +207,16 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for transaction_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             transaction_type = *parsed;
         }
 
-        GetBlocklistCountInput input{merchant, profile.id, *kind, transaction_type};
-        auto result = m_runtime.get_blocklist_count(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::BlocklistCountResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile.id;
+        m_runtime.get_blocklist_count(ctx).handle(sink);
     }
 
     // routes/blocklist.rs:263-298 -> core/blocklist.rs:67-76 ->
@@ -248,22 +227,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "lookup_blocklist_entry", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto profile = m_input_support.resolve_required_profile(req, merchant);
         if (profile.failure) {
             const auto& error = *profile.failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto query = ::app::http::RequestQuery{}(req);
@@ -274,7 +254,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "Missing required param: data"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // LengthString<20,1> enforced at deserialization (common_utils/types.rs:1066-1071).
@@ -283,7 +263,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "data contains invalid data. Expected format is a string of 1 to 20 characters"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         std::string transaction_type;
@@ -294,29 +274,16 @@ public:
                     core::error::AppErrorKind::INVALID_REQUEST,
                     "unknown variant for transaction_type"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             transaction_type = *parsed;
         }
 
-        LookupBlocklistEntryInput input{merchant, profile.id, *data, transaction_type};
-        auto result = m_runtime.lookup_blocklist_entry(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire =
-            result->serialize(wire_fields<::app::model::blocklist::BlocklistLookupResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = profile.id;
+        m_runtime.lookup_blocklist_entry(ctx).handle(sink);
     }
 
 private:

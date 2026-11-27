@@ -1,6 +1,7 @@
 export module app_store:proxy_runtime_proxy;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -14,8 +15,9 @@ export namespace app::handlers::proxy {
 /**
  * @brief Single route sub-runtime: port of `proxy_core` (`core/proxy.rs:24-137`).
  *
- * All request data arrives in ProxyInput; all outcomes are a typed serde::Value
- * document or a typed AppError. No transport types are referenced here.
+ * Request data arrives as the parsed ProxyRequest plus an HTTP-free CallContext;
+ * all outcomes are a typed serde::Value document or a typed AppError. No
+ * transport types are referenced here.
  */
 class ProxyForwardRuntime
 {
@@ -26,22 +28,22 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    proxy(const ProxyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    proxy(const ProxyRequest& request, const core::behavior::CallContext& ctx) const
     {
         // proxy_core step 1: validate_destination() -> InvalidRequestData "destination_url is not
         // valid".
         const auto bypass_hosts = m_context.config_store()
                                       .get_value("proxy", "bypass_proxy_hosts")
                                       .value_or(std::string{});
-        if (DestinationValidator{}(input.request.destination_url, bypass_hosts)) {
+        if (DestinationValidator{}(request.destination_url, bypass_hosts)) {
             return std::unexpected{m_support.make_error(
                 m_errors(ProxyError::Kind::InvalidRequestData, "destination_url is not valid")
             )};
         }
 
         // Upstream Method is a five-value enum (common_utils/src/request.rs:37-57).
-        const auto method = TextTools{}.upper(input.request.method);
+        const auto method = TextTools{}.upper(request.method);
         if (!m_support.is_supported_method(method)) {
             return std::unexpected{m_support.make_error(
                 m_errors(ProxyError::Kind::InvalidRequestData, "method is not valid")
@@ -56,11 +58,11 @@ public:
         if (body_method) {
             // Upstream body_request(): parse Content-Type, then construct and validate
             // the body before fetching the proxy record or reading the vault.
-            auto content = ContentTypeInspector{}(input.request.headers);
+            auto content = ContentTypeInspector{}(request.headers);
             if (!content) {
                 return std::unexpected{m_support.make_error(std::move(content.error()))};
             }
-            auto made = ProxyBody{}.make(input.request.request_body, *content);
+            auto made = ProxyBody{}.make(request.request_body, *content);
             if (!made) {
                 return std::unexpected{m_support.make_error(m_support.invalid_body(made.error()))};
             }
@@ -71,9 +73,9 @@ public:
                 };
             }
             auto resolved = m_support.get_proxy_record(
-                input.request.token_type,
-                input.request.token,
-                input.merchant_id
+                request.token_type,
+                request.token,
+                ctx.merchant_id
             );
             if (!resolved) {
                 return std::unexpected{m_support.make_error(std::move(resolved.error()))};
@@ -83,7 +85,7 @@ public:
             if (!vault) {
                 return std::unexpected{m_support.make_error(std::move(vault.error()))};
             }
-            auto built = proxy_body.build(*vault, input.request.headers);
+            auto built = proxy_body.build(*vault, request.headers);
             if (!built) {
                 return std::unexpected{m_support.make_error(m_support.invalid_body(built.error()))};
             }
@@ -93,30 +95,30 @@ public:
             // Upstream GET/DELETE: fetch and validate the token but send no body and
             // never read the vault; attach default headers plus the caller's headers.
             auto resolved = m_support.get_proxy_record(
-                input.request.token_type,
-                input.request.token,
-                input.merchant_id
+                request.token_type,
+                request.token,
+                ctx.merchant_id
             );
             if (!resolved) {
                 return std::unexpected{m_support.make_error(std::move(resolved.error()))};
             }
             record = *std::move(resolved);
-            for (const auto& [name, value]: input.request.headers) {
+            for (const auto& [name, value]: request.headers) {
                 outbound_headers[TextTools{}.lower(name)] = value;
             }
         }
 
         // proxy_core step 3: execute_proxy_request() via call_connector_api("proxy").
         const auto envelope = m_support.build_envelope(
-            input.request.destination_url,
+            request.destination_url,
             method,
             outbound_headers,
             rendered_bytes,
             body_method
         );
         auto response = m_support.execute_proxy_request(
-            input.merchant_id,
-            record->vault_id.empty() ? input.request.token : record->vault_id,
+            ctx.merchant_id,
+            record->vault_id.empty() ? request.token : record->vault_id,
             envelope
         );
         if (!response) {

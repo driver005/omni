@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_connector_list;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,17 +36,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
-        core::error::AppError>
-    list(const ConnectorListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>>
+    list(const ::core::behavior::CallContext& ctx) const
     {
         std::vector<::app::dto::admin::MerchantConnectorListResponse> response;
-        if (input.for_profile) {
-            response = m_support.list_connectors_for_a_profile(input.profile_id_filter);
+        if (ctx_bool(ctx,"for_profile")) {
+            response = m_support.list_connectors_for_a_profile(ctx_string(ctx,"profile_id_filter"));
         } else {
             response =
-                m_support.list_payment_connectors(input.merchant_id, input.profile_id_filter);
+                m_support.list_payment_connectors(ctx_string(ctx,"merchant_id"), ctx_string(ctx,"profile_id_filter"));
         }
 
         m_context.metrics().record_flow("connector_list");

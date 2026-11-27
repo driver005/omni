@@ -21,9 +21,10 @@ public:
 
     // ───────────────────────── Core: get_mandate ─────────────────────────
     // core/mandate.rs:33-58 (find + MandateResponse::from_db_mandate).
-    [[nodiscard]] std::expected<::app::model::mandates::MandateResponse, core::error::AppError>
-    get_mandate(const GetMandateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::mandates::MandateResponse>
+    get_mandate(const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetMandateData{ctx};
         m_support.record_flow(
             "MandatesRetrieve"
         ); // LockAction::NotApplicable (routes/mandates.rs:37)

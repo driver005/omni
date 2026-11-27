@@ -1,6 +1,7 @@
 export module app_user:profiles_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -34,53 +35,55 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
-    create(const ProfileCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
+    create(const ::app::dto::admin::ProfileCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
-    retrieve(const ProfileRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
-    update(const ProfileUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
+    update(const ::app::dto::admin::ProfileUpdate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::expected<bool, core::error::AppError>
-    remove(const ProfileDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> remove(const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete.remove(input);
+        return m_delete.remove(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ProfileWireResponse>, core::error::AppError>
-    list(const ProfilesListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ProfileWireResponse>, core::error::AppError>
-    list_at_profile_level(const ProfilesListAtProfileLevelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_at_profile_level(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_at_profile_level.list(input);
+        return m_list_at_profile_level.list(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::admin::ConnectorAgnosticMitChoice, core::error::AppError>
-        toggle_connector_agnostic_mit(const ToggleConnectorAgnosticMitInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ConnectorAgnosticMitChoice>
+        toggle_connector_agnostic_mit(const ::app::dto::admin::ConnectorAgnosticMitChoice& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_toggle_connector_agnostic_mit.toggle(input);
+        return m_toggle_connector_agnostic_mit.toggle(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ExtendedCardInfoChoice, core::error::AppError>
-    toggle_extended_card_info(const ToggleExtendedCardInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ExtendedCardInfoChoice>
+    toggle_extended_card_info(const ::app::dto::admin::ExtendedCardInfoChoice& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_toggle_extended_card_info.toggle(input);
+        return m_toggle_extended_card_info.toggle(request, ctx);
     }
 
 private:

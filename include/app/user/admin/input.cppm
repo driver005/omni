@@ -65,131 +65,90 @@ private:
     ::app::context::AppContext& m_context;
 };
 
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old handler passed to its core call.
-
-struct OrganizationCreateInput
+/** @brief Request snapshot shared by every admin runtime method. */
+[[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
 {
-    ::app::model::organization::OrganizationCreateRequest request{};
-};
+    ::core::behavior::CallContext ctx{};
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+    if (ctx.merchant_id.empty()) {
+        ctx.merchant_id = auth.merchant_id();
+    }
+    ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
+    if (ctx.org_id.empty()) {
+        ctx.org_id = auth.org_id();
+    }
+    ctx.profile_id = auth.profile_id();
+    if (const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId)) {
+        ctx.connected_merchant_id = std::string{*connected};
+    }
+    if (const auto secret = auth.claim(::app::auth::kClaimClientSecret)) {
+        ctx.client_secret = std::string{*secret};
+    }
+    const auto segments = ::app::http::RequestPath{}(req);
+    for (std::size_t i{0}; i < segments.count(); ++i) {
+        ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    }
+    const auto raw_path = req.get_path();
+    const auto question = raw_path.find('?');
+    if (question != std::string_view::npos) {
+        const std::string_view tail = raw_path.substr(question + 1);
+        std::size_t start{0};
+        while (start <= tail.size()) {
+            const auto amp = tail.find('&', start);
+            const auto end = amp == std::string_view::npos ? tail.size() : amp;
+            const auto pair = tail.substr(start, end - start);
+            const auto eq = pair.find('=');
+            if (!pair.empty()) {
+                const std::string key{eq == std::string_view::npos ? pair : pair.substr(0, eq)};
+                const std::string value{
+                    eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)
+                };
+                ctx.query.insert_or_assign(key, value);
+            }
+            if (amp == std::string_view::npos) {
+                break;
+            }
+            start = amp + 1;
+        }
+    }
+    constexpr std::string_view kHeaders[] = {
+        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
+        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+    };
+    for (const auto name: kHeaders) {
+        const auto value = req.find_header(name);
+        if (!value.empty()) {
+            ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+        }
+    }
+    for (const auto& [key, value]: auth.claims()) {
+        ctx.claims.insert_or_assign(key, value);
+    }
+    ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
+    ctx.claims.insert_or_assign("org_id", ctx.org_id);
+    ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
+    return ctx;
+}
 
-struct OrganizationUpdateInput
+[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string organization_id{};
-    ::app::model::organization::OrganizationUpdateRequest request{};
-};
+    const auto it = ctx.claims.find(std::string{key});
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
 
-struct ConvertOrganizationToPlatformInput
+[[nodiscard]] inline bool ctx_bool(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string organization_id{};
-    ::app::model::organization::ConvertOrganizationToPlatformRequest request{};
-};
+    return ctx_string(ctx, key) == "true";
+}
 
-struct MerchantAccountCreateInput
+[[nodiscard]] inline std::size_t ctx_size(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    ::app::dto::admin::MerchantAccountCreate request{};
-    std::string organization_id{};
-};
-
-struct UpdateMerchantAccountInput
-{
-    std::string merchant_id{};
-    ::app::dto::admin::MerchantAccountUpdate request{};
-};
-
-struct ConnectorCreateInput
-{
-    std::string merchant_id{};
-    ::app::dto::admin::MerchantConnectorCreate request{};
-};
-
-struct ConnectorUpdateInput
-{
-    std::string connector_id{};
-    ::app::dto::admin::MerchantConnectorUpdate request{};
-};
-
-struct MerchantAccountToggleKvInput
-{
-    std::string merchant_id{};
-    bool kv_enabled{};
-};
-
-struct MerchantAccountToggleAllKvInput
-{
-    bool kv_enabled{};
-};
-
-struct MerchantAccountTransferKeysInput
-{
-    std::size_t offset{};
-    std::size_t limit{};
-};
-
-struct ConnectorWebhookRegisterInput
-{
-    std::string merchant_id{};
-    std::string connector_id{};
-    ::app::dto::admin::WebhookDetailsRequest request{};
-};
-
-struct OrganizationRetrieveInput
-{
-    std::string organization_id{};
-};
-
-struct RetrieveMerchantAccountInput
-{
-    std::string merchant_id{};
-};
-
-struct MerchantAccountListInput
-{
-    std::string organization_id{};
-    std::string merchant_filter{};
-    std::size_t offset{};
-    std::size_t limit{};
-};
-
-struct DeleteMerchantAccountInput
-{
-    std::string merchant_id{};
-};
-
-struct ConnectorRetrieveInput
-{
-    std::string merchant_id{};
-    std::string connector_id{};
-};
-
-struct ConnectorListInput
-{
-    std::string merchant_id{};
-    std::string profile_id_filter{};
-    bool for_profile{};
-};
-
-struct ConnectorListProfileInput
-{
-    std::string merchant_id{};
-};
-
-struct ConnectorDeleteInput
-{
-    std::string merchant_id{};
-    std::string connector_id{};
-};
-
-struct MerchantAccountKvStatusInput
-{
-    std::string merchant_id{};
-};
-
-struct RetrieveConnectorWebhookInput
-{
-    std::string merchant_id{};
-    std::string connector_id{};
-};
+    const auto raw = ctx_string(ctx, key);
+    std::size_t value{};
+    const auto result = std::from_chars(raw.data(), raw.data() + raw.size(), value);
+    return result.ec == std::errc{} && result.ptr == raw.data() + raw.size() ? value : 0U;
+}
 
 /**
  * @brief Domain authorization policy for Admin.
@@ -232,6 +191,12 @@ public:
             out.connected_merchant_id = std::string{*connected};
         }
         return out;
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

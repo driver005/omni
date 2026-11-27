@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_signup;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signup(const UserSignupInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_signup(const ::app::model::user::SignUpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto user_id = m_context.ids().uuid_v4();
-        const auto email = input.request.get_email().get_value();
+        const auto email = request.get_email().get_value();
 
         // First-run setup: create the default organization and merchant for this new
         // user so the Control Center can list/select them and enable setup actions.
@@ -98,7 +100,7 @@ public:
             }
         }
 
-        const ::app::crypto::SecretString password_secret{input.request.get_password()};
+        const ::app::crypto::SecretString password_secret{request.get_password()};
         const auto password_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(password_secret.value());
 
@@ -123,8 +125,8 @@ public:
         m_context.metrics().record_flow("user_signup");
         m_context.metrics().counter("user.user_signup").increment();
 
-        const auto flow = input.request_context.query.get("flow").value_or(
-            input.request_context.query.get("origin").value_or(std::string{"SIGNIN"})
+        const auto flow = ctx_query(ctx).get("flow").value_or(
+            ctx_query(ctx).get("origin").value_or(std::string{"SIGNIN"})
         );
         const auto token_payload =
             std::format(R"({{"sub":"{}","email":"{}","flow":"{}"}})", user_id, email, flow);

@@ -1,6 +1,7 @@
 export module app_user:customers_runtime_delete;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -20,20 +21,20 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_customer(const CustomersDeleteRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_customer(const ::core::behavior::CallContext& ctx) const
     {
-        auto value = delete_core(input);
+        auto value = delete_core(ctx);
         if (!value) {
             return std::unexpected{value.error()};
         }
         return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_customer_v2(const CustomersDeleteRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_customer_v2(const ::core::behavior::CallContext& ctx) const
     {
-        auto value = delete_core(input);
+        auto value = delete_core(ctx);
         if (!value) {
             return std::unexpected{value.error()};
         }
@@ -41,19 +42,19 @@ public:
     }
 
 private:
-    [[nodiscard]] std::expected<serde::Value, ::core::error::AppError>
-    delete_core(const CustomersDeleteRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_core(const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
-        auto existing = input.version == ApiVersion::V1
-                            ? m_support.locate_customer(repo, input.merchant_id, input.id)
-                            : m_support.locate_global_customer(repo, input.id);
+        auto existing = ctx_version(ctx) == ApiVersion::V1
+                            ? m_support.locate_customer(repo, ctx_string(ctx,"merchant_id"), ctx_string(ctx,"id"))
+                            : m_support.locate_global_customer(repo, ctx_string(ctx,"id"));
         if (!existing) {
             return std::unexpected{
                 m_support.upstream_error("CustomerNotFound", "customer not found")
             };
         }
-        const std::string merchant_id = input.merchant_id;
+        const std::string merchant_id = ctx_string(ctx,"merchant_id");
         if (!merchant_id.empty() && !existing->record.get_merchant_id().empty() &&
             existing->record.get_merchant_id() != merchant_id) {
             return std::unexpected{
@@ -110,7 +111,7 @@ private:
         m_support.persist_update(repo, *existing);
 
         serde::Value::Object response{};
-        if (input.version == ApiVersion::V1) {
+        if (ctx_version(ctx) == ApiVersion::V1) {
             response["customer_id"] = serde::Value{existing->record.get_customer_id()};
         } else {
             response["id"] = serde::Value{

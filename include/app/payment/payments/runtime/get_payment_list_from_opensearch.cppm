@@ -31,11 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentsAdvancedListResponse, core::error::AppError>
-        get_payment_list_from_opensearch(const GetPaymentListFromOpensearchInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsAdvancedListResponse>
+        get_payment_list_from_opensearch(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
     {
-        auto text = m_support.advanced_list_response(input.data, false);
+        const PaymentsRequestData input = m_support.request_data(dto, ctx);
+        auto text = m_support.advanced_list_response(input, false);
         if (!text) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::INVALID_REQUEST,

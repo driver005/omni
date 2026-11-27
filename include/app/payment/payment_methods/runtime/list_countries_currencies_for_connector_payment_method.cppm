@@ -37,13 +37,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::ListCountriesCurrenciesResponse,
-        core::error::AppError>
-    list_countries_currencies_for_connector_payment_method(
-        const ListCountriesCurrenciesForConnectorPaymentMethodInput& input
-    ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::ListCountriesCurrenciesResponse>
+    list_countries_currencies_for_connector_payment_method(const core::behavior::CallContext& ctx) const
     {
+        const auto input = ListCountriesCurrenciesForConnectorPaymentMethodData{ctx};
         // Upstream cards.rs:7801-7856 — pm_filters[connector][payment_method_type] with a
         // "default" fallback; when no filter is configured the full Currency / CountryAlpha2
         // enum sets are returned. The config store is the local substitute for

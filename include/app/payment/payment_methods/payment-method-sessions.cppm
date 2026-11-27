@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_payment_method_sessions;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -65,6 +66,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payment_methods_session_create(req, res, std::move(send));
                     }
                 )
@@ -80,6 +83,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payment_methods_session_create(req, res, std::move(send));
                     }
                 )
@@ -97,6 +102,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_methods_session_create",
@@ -104,24 +111,18 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodSessionRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionRequest>::pass(req, sink);
+        if (!parsed) return;
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         const std::string org_id = ::app::http::org_id_from_header{}(req);
         if (merchant_id.empty() && org_id.empty()) {
@@ -129,7 +130,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant or organization id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (parsed->get_customer_id() &&
@@ -138,19 +139,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Customer does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodsSessionCreateInput input{*parsed, merchant_id, org_id};
-        auto result = m_runtime.payment_methods_session_create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.payment_methods_session_create(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

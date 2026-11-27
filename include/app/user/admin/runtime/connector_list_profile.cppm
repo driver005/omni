@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_connector_list_profile;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,12 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
-        core::error::AppError>
-    list(const ConnectorListProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>>
+    list(const ::core::behavior::CallContext& ctx) const
     {
-        auto response = m_support.list_payment_connectors(input.merchant_id, "");
+        auto response = m_support.list_payment_connectors(ctx_string(ctx,"merchant_id"), "");
 
         m_context.metrics().record_flow("connector_list_profile");
         m_context.metrics().counter("admin.connector_list_profile").increment();

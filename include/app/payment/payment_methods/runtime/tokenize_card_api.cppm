@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::CardNetworkTokenizeResponse, core::error::AppError>
-        tokenize_card_api(const TokenizeCardApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::CardNetworkTokenizeResponse>
+        tokenize_card_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = TokenizeCardApiData{dto, ctx};
         const auto payload = serde::Ser::encode_json(input.request);
         const auto vault =
             m_support

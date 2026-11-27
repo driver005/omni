@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -43,6 +44,27 @@ public:
     error(core::error::AppErrorKind kind, std::string message) const
     {
         return core::error::AppErrorBuilder{}.operator()(kind, std::move(message));
+    }
+
+    [[nodiscard]] static std::optional<std::string>
+    query_value(const ::core::behavior::CallContext& ctx, std::string_view key)
+    {
+        const auto it = ctx.query.find(std::string{key});
+        return it == ctx.query.end() ? std::nullopt : std::optional<std::string>{it->second};
+    }
+
+    template<class T>
+    [[nodiscard]] static T
+    query_number(const ::core::behavior::CallContext& ctx, std::string_view key, T fallback)
+    {
+        const auto raw = query_value(ctx, key);
+        if (!raw) {
+            return fallback;
+        }
+        T value{};
+        const auto [end, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), value);
+        (void)end;
+        return ec == std::errc{} ? value : fallback;
     }
 
     template<typename T>

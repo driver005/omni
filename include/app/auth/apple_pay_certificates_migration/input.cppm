@@ -8,6 +8,8 @@ import app_context;
 import app_dto;
 import app_context_core;
 
+import :call_context;
+
 export namespace app::handlers::apple_pay_certificates_migration {
 
 /** @brief Parse/auth support for the migration handler.
@@ -71,6 +73,12 @@ public:
         return {};
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req, "apple_pay_certificates_migration");
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -80,13 +88,6 @@ public:
 
 private:
     ApplePayCertificatesMigrationInputSupport m_support;
-};
-
-// Plain input — carries exactly what the old core call received. The core only
-// consumed the deserialized request; the route-level auth was handled above.
-struct ApplePayCertificatesMigrationInput
-{
-    ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationRequest request{};
 };
 
 } // namespace app::handlers::apple_pay_certificates_migration

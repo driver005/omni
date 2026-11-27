@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -26,18 +27,23 @@ public:
     }
 
     // core::create_subscription (core.rs:31-123)
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create(const CreateSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create(const ParsedPayload& payload, const ::core::behavior::CallContext& ctx) const
     {
-        const auto merchant = input.merchant_id;
-        if (const auto failure = m_support.find_business_profile(input.profile_id, merchant)) {
+        const std::string customer_id =
+            m_support.json_string(payload.root, "customer_id").value_or("");
+        const std::string item_price_id =
+            m_support.json_string(payload.root, "item_price_id").value_or("");
+
+        const auto merchant = ctx.merchant_id;
+        if (const auto failure = m_support.find_business_profile(ctx.profile_id, merchant)) {
             return std::unexpected{*failure};
         }
-        if (const auto failure = m_support.find_customer(input.customer_id, merchant)) {
+        if (const auto failure = m_support.find_customer(customer_id, merchant)) {
             return std::unexpected{*failure};
         }
         BillingProcessor billing{m_context};
-        if (const auto failure = billing.create(input.profile_id, merchant)) {
+        if (const auto failure = billing.create(ctx.profile_id, merchant)) {
             return std::unexpected{*failure};
         }
 
@@ -45,15 +51,15 @@ public:
         SubscriptionRecord record{};
         record.subscription_id = subscription_id;
         record.merchant_id = merchant;
-        record.profile_id = input.profile_id;
-        record.customer_id = input.customer_id;
+        record.profile_id = ctx.profile_id;
+        record.customer_id = customer_id;
         record.status =
             "created"; // SubscriptionStatus::Created.to_string() -> "Created" (subscription.rs:54)
-        record.plan_id = m_support.json_string(input.payload.root, "plan_id").value_or("");
-        record.item_price_id = input.item_price_id;
-        record.coupon = m_support.json_string(input.payload.root, "coupon_code").value_or("");
+        record.plan_id = m_support.json_string(payload.root, "plan_id").value_or("");
+        record.item_price_id = item_price_id;
+        record.coupon = m_support.json_string(payload.root, "coupon_code").value_or("");
         record.merchant_reference_id =
-            m_support.json_string(input.payload.root, "merchant_reference_id").value_or("");
+            m_support.json_string(payload.root, "merchant_reference_id").value_or("");
         record.created_at = m_support.now_value();
         record.modified_at = record.created_at;
         record.client_secret =
@@ -69,15 +75,15 @@ public:
         // get_subscription_estimate -> amount/currency (core.rs:68-88)
         Estimate estimate = billing.estimate(
             record,
-            m_support.json_string(input.payload.root, "plan_id").value_or(""),
-            input.item_price_id,
+            m_support.json_string(payload.root, "plan_id").value_or(""),
+            item_price_id,
             "",
             record.client_secret
         );
 
         // create_payment_with_confirm_false (invoice_handler.rs:116-143)
         PaymentView payment =
-            m_support.create_payment(record, estimate, false, input.payload, false);
+            m_support.create_payment(record, estimate, false, payload, false);
 
         // create_invoice_entry (invoice_handler.rs:41-79), status = InvoiceCreated ->
         // "invoice_created"

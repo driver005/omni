@@ -4,8 +4,8 @@ import std;
 import app_dto;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :feature_matrix_input;
 import :feature_matrix_result;
 import :feature_matrix_runtime_common;
 import :feature_matrix_runtime_fetch_feature_matrix;
@@ -21,11 +21,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::feature_matrix::FeatureMatrixListResponse, core::error::AppError>
-        fetch_feature_matrix(const FetchFeatureMatrixInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::feature_matrix::FeatureMatrixListResponse>
+    fetch_feature_matrix(
+        const ::app::dto::feature_matrix::FeatureMatrixRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_fetch_feature_matrix.fetch_feature_matrix(input);
+        return m_fetch_feature_matrix.fetch_feature_matrix(request, ctx);
     }
 
 private:

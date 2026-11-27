@@ -1,6 +1,7 @@
 export module app_payment:disputes_handlers_retrieve;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_retrieve_dispute(req, res, std::move(send));
                     }
                 )
@@ -71,18 +74,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ctx = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         if (const auto denied =
                 m_request_support->authorize(req, "ProfileDisputeRead", kDisputeProfileReadSpec)) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto scope = m_request_support->scope(req);
         if (const auto invalid = m_request_support->scope_error(scope)) {
             const auto& error = *invalid;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -91,23 +96,16 @@ public:
         if (request.get_dispute_id().empty()) {
             const auto error =
                 core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing dispute id");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto force = query.get("force_sync")) {
             request.set_force_sync(*force == "true" || *force == "1");
         }
 
-        RetrieveDisputeInput input{scope, request};
-        auto result = m_runtime.retrieve_dispute(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = scope;
+        auto result = m_runtime.retrieve_dispute(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

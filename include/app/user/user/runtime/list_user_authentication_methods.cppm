@@ -1,6 +1,7 @@
 export module app_user:user_runtime_list_user_authentication_methods;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_user_authentication_methods(const ListUserAuthenticationMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    list_user_authentication_methods(const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
         // Port of core/user.rs:2947-3001: exactly one of auth_id / email_domain
         // query parameters selects the method list; both/neither is invalid.
-        const auto query = input.request_context.query;
+        const auto query = ctx_query(ctx);
         const auto auth_id = query.get("auth_id");
         const auto email_domain = query.get("email_domain");
         if (auth_id.has_value() == email_domain.has_value()) {

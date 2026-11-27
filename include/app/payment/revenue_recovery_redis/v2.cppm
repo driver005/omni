@@ -1,6 +1,7 @@
 export module app_payment:revenue_recovery_redis_handlers_v2;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,6 +36,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream route uses V2AdminApiAuth (revenue_recovery_redis.rs:30). The
         // declarative rule in RouteAuthRegistry is PLATFORM_ADMIN / ADMIN; use it
         // instead of building a rule inline so the permission stays in one place.
@@ -45,7 +48,7 @@ public:
         );
         if (auth) {
             const auto& error = *auth;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -55,7 +58,7 @@ public:
         const auto id = m_input_support.connector_customer_id_from_path(req);
         if (!id.has_value()) {
             const auto& error = id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -66,21 +69,12 @@ public:
         const auto is_tokens = m_input_support.key_type_from_query(req);
         if (!is_tokens.has_value()) {
             const auto& error = is_tokens.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        GetRevenueRecoveryRedisDataInput input{*id, *is_tokens};
-        auto result = m_runtime.get_revenue_recovery_redis_data(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_revenue_recovery_redis_data(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -97,6 +91,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_revenue_recovery_redis_data(req, res, std::move(send));
                         }
                     )

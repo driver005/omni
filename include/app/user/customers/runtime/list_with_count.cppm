@@ -1,6 +1,7 @@
 export module app_user:customers_runtime_list_with_count;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -20,20 +21,20 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_with_count(const CustomersListWithCountRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_with_count(const ::core::behavior::CallContext& ctx) const
     {
-        auto value = list_with_count_core(input);
+        auto value = list_with_count_core(ctx);
         if (!value) {
             return std::unexpected{value.error()};
         }
         return std::move(*value);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_with_count_v2(const CustomersListWithCountRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_with_count_v2(const ::core::behavior::CallContext& ctx) const
     {
-        auto value = list_with_count_core(input);
+        auto value = list_with_count_core(ctx);
         if (!value) {
             return std::unexpected{value.error()};
         }
@@ -41,20 +42,20 @@ public:
     }
 
 private:
-    [[nodiscard]] std::expected<serde::Value, ::core::error::AppError>
-    list_with_count_core(const CustomersListWithCountRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_with_count_core(const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
         std::vector<CustomerAggregate> filtered{};
         for (const auto& record: repo.list_customers()) {
-            if (!input.merchant_id.empty() && record.get_merchant_id() != input.merchant_id) {
+            if (!ctx_string(ctx,"merchant_id").empty() && record.get_merchant_id() != ctx_string(ctx,"merchant_id")) {
                 continue;
             }
-            if (input.customer_id && record.get_customer_id() != *input.customer_id) {
+            if (ctx_optional_string(ctx,"customer_id") && record.get_customer_id() != *ctx_optional_string(ctx,"customer_id")) {
                 continue;
             }
-            if (input.time_range &&
-                !m_support.within_range(record.get_created_at(), *input.time_range)) {
+            if (ctx_time_range(ctx) &&
+                !m_support.within_range(record.get_created_at(), *ctx_time_range(ctx))) {
                 continue;
             }
             if (auto aggregate = m_support.load_aggregate(record)) {
@@ -65,15 +66,15 @@ private:
         serde::Value::Array data{};
         std::size_t position{0};
         for (const auto& aggregate: filtered) {
-            if (position < input.offset) {
+            if (position < ctx_size(ctx,"offset")) {
                 ++position;
                 continue;
             }
-            if (position - input.offset >= input.limit) {
+            if (position - ctx_size(ctx,"offset") >= ctx_size(ctx,"limit")) {
                 break;
             }
             data.push_back(
-                m_support.customer_document(aggregate, std::nullopt, std::nullopt, input.version)
+                m_support.customer_document(aggregate, std::nullopt, std::nullopt, ctx_version(ctx))
             );
             ++position;
         }

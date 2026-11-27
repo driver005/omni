@@ -10,6 +10,7 @@ import app_dto;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::tokenization {
 
 struct AuthorizedRequest
@@ -120,7 +121,7 @@ public:
     }
 
     // routes/tokenization.rs:82 — GlobalTokenId comes from web::Path, not the body.
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     token_id_from_path(interfaces::io::IRequest& req) const
     {
         const auto path = ::app::http::RequestPath{}(req);
@@ -199,21 +200,28 @@ private:
 
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct CreateTokenVaultInput
+struct CreateTokenVaultData
 {
     ::app::dto::tokenization::GenericTokenizationRequest request{};
     std::string merchant_id{};
+    template<class Dto>
+    explicit CreateTokenVaultData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::dto::tokenization::GenericTokenizationRequest>(dto)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct DeleteTokenizedDataInput
+struct DeleteTokenizedDataData
 {
     std::string token_id{};
     std::string customer_id{};
+    explicit DeleteTokenizedDataData(const core::behavior::CallContext& ctx) :
+        token_id{::app::payment::detail::last_path(ctx)},
+        customer_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
+
 
 /** @brief Request policy for the tokenization domain: wraps the domain auth rules. */
 class TokenizationPolicy
@@ -225,6 +233,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

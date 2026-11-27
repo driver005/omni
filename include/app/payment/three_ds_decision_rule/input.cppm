@@ -8,18 +8,21 @@ import app_context;
 import app_dto;
 import app_auth;
 
+import :context;
 export namespace app::handlers::three_ds_decision_rule {
 
 namespace Dto = ::app::dto::three_ds_decision_rule;
-
-// Upstream route uses HeaderAuth(ApiKeyAuth { allow_connected_scope_operation:
-// false, allow_platform_self_operation: false }). For API_KEY the two scope flags do not
-// affect authorization (AppAuthorizer consults them only for HEADER_MERCHANT/HEADER_ORG).
-struct ExecuteDecisionRuleAuthorizedInput
+struct ExecuteDecisionRuleAuthorizedData
 {
     std::optional<core::error::AppError> error{};
     std::string merchant_id{};
+    explicit ExecuteDecisionRuleAuthorizedData(const core::behavior::CallContext& ctx) :
+        error{},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
+
 
 /**
  * @brief Parse/auth support for the three_ds_decision_rule handler.
@@ -53,12 +56,18 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-struct ExecuteDecisionRuleInput
+struct ExecuteDecisionRuleData
 {
     Dto::ThreeDsDecisionRuleExecuteRequest request{};
     std::string processor_merchant_id{};
+    template<class Dto>
+    explicit ExecuteDecisionRuleData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<Dto::ThreeDsDecisionRuleExecuteRequest>(dto)},
+        processor_merchant_id{ctx.merchant_id}
+    {
+    }
 };
+
 
 /** @brief Request policy for the three_ds_decision_rule domain: wraps the domain auth rules. */
 class ThreeDsDecisionRulePolicy
@@ -70,6 +79,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

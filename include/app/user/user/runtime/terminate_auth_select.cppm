@@ -1,6 +1,7 @@
 export module app_user:user_runtime_terminate_auth_select;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_auth_select(const TerminateAuthSelectInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    terminate_auth_select(const ::app::model::user::AuthSelectRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -46,8 +48,8 @@ public:
         // Port of core/user.rs:3142-3188 (terminate_auth_select): the selected
         // auth method id must resolve to a known method, then a purpose-bound
         // token for the next login flow is issued together with a cookie.
-        const auto owner = input.request_context.token.value();
-        const auto selected = input.request.get_id();
+        const auto owner = ctx_token(ctx).value();
+        const auto selected = request.get_id();
         if (selected && !selected->empty() &&
             !m_context.repository().find_authentication_record_by_string(*selected)) {
             return std::unexpected{m_support.wire_error(

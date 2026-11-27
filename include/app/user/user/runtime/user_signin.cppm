@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_signin;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signin(const UserSigninInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_signin(const ::app::model::user::SignInRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
-        const auto email = input.request.get_email().get_value();
-        const auto password = input.request.get_password();
+        const auto email = request.get_email().get_value();
+        const auto password = request.get_password();
         if (email.empty() || password.empty()) {
             return std::unexpected{m_support.wire_error(
                 "UR_07",
@@ -61,7 +63,7 @@ public:
             )};
         }
 
-        const auto auth_ctx = input.request_context.auth;
+        const auto auth_ctx = ctx_auth(ctx);
         // Upstream UserFromToken::user_id is the persisted user id, not the email.
         // Role-scoped handlers resolve role_id from this claim, so keep sub aligned
         // with the id stored by persist_new_user().

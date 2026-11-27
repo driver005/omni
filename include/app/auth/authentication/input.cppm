@@ -9,6 +9,8 @@ import app_dto;
 import app_context_core;
 import app_http;
 
+import :call_context;
+
 export namespace app::handlers::authentication {
 
 // Upstream `api::AuthFlow` (services/api.rs:158): Client for SDK/publishable-key
@@ -220,11 +222,6 @@ public:
         m_body_secret = std::move(body_secret);
     }
 
-    [[nodiscard]] const AuthorizedRequest& authorized() const noexcept
-    {
-        return m_authorized;
-    }
-
     [[nodiscard]] std::optional<core::error::AppError> authorize(
         interfaces::io::IRequest& req,
         std::string_view operation,
@@ -255,6 +252,19 @@ public:
         return out;
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = detail::make_call_context(req);
+        ctx.client_secret = m_authorized.client_secret;
+        ctx.claims.insert_or_assign(
+            "x-auth-flow",
+            m_authorized.flow == AuthFlowKind::Client ? "client" : "merchant"
+        );
+        ctx.claims.insert_or_assign("x-request-body", req.body_as_string());
+        return ctx;
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -271,67 +281,6 @@ private:
     AuthenticationInputSupport m_support;
     mutable AuthorizedRequest m_authorized{};
     std::optional<std::string> m_body_secret{};
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct AuthenticationCreateInput
-{
-    ::app::dto::authentication::AuthenticationCreateRequest request{};
-    std::string merchant_id{};
-    AuthorizedRequest auth{};
-};
-
-struct AuthenticationEligibilityInput
-{
-    ::app::dto::authentication::AuthenticationEligibilityRequest request{};
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
-    std::string body{};
-};
-
-struct AuthenticationAuthenticateInput
-{
-    ::app::dto::authentication::AuthenticationAuthenticateRequest request{};
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
-};
-
-struct AuthenticationEligibilityCheckInput
-{
-    ::app::dto::authentication::AuthenticationEligibilityCheckRequest request{};
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
-    std::string body{};
-};
-
-struct AuthenticationRetrieveEligibilityCheckInput
-{
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
-};
-
-struct AuthenticationSyncInput
-{
-    ::app::dto::authentication::AuthenticationSyncRequest request{};
-    std::string merchant_id{};
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
-};
-
-struct AuthenticationSyncPostUpdateInput
-{
-    std::string authentication_id{};
-    std::string merchant_id{};
-    AuthorizedRequest auth{};
-};
-
-struct AuthenticationSessionTokenInput
-{
-    ::app::dto::authentication::AuthenticationSessionTokenRequest request{};
-    std::string authentication_id{};
-    AuthorizedRequest auth{};
 };
 
 } // namespace app::handlers::authentication

@@ -1,6 +1,7 @@
 export module app_payment:cards_info_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -30,13 +31,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         // Upstream routes/cards_info.rs:42-47 runs check_sdk_auth_and_get_auth
         // (SDK authorization header or api_key/publishable-key) before server_wrap.
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support.authorize(req, "card_iin_info", spec_for("card_iin_info"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -51,7 +54,7 @@ public:
                 "The provided card IIN does not exist"
             );
             error.set_kind_name("InvalidCardIin");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         ::app::model::cards_info::CardsInfoRequest payload;
@@ -65,16 +68,9 @@ public:
             payload.set_client_secret(std::string{*authenticated_secret});
         }
 
-        CardIinInfoInput input{payload};
-        auto result = m_runtime.card_iin_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = payload;
+        auto result = m_runtime.card_iin_info(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_create_cards_info(
@@ -83,12 +79,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "create_cards_info", spec_for("create_cards_info"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -100,32 +98,15 @@ public:
                 "Json payload deserialization failed: empty body"
             );
             error.set_kind_name("InvalidRequestData");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::cards_info::CardInfoCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            m_input_support.record_flow("CardsInfoCreate");
-            auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Json payload deserialization failed"
-            );
-            error.set_kind_name("InvalidRequestData");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::cards_info::CardInfoCreateRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        CreateCardsInfoInput input{*parsed};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.create(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_update_cards_info(
@@ -134,12 +115,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "update_cards_info", spec_for("update_cards_info"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -151,32 +134,15 @@ public:
                 "Json payload deserialization failed: empty body"
             );
             error.set_kind_name("InvalidRequestData");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::cards_info::CardInfoUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            m_input_support.record_flow("CardsInfoUpdate");
-            auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Json payload deserialization failed"
-            );
-            error.set_kind_name("InvalidRequestData");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::cards_info::CardInfoUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
 
-        UpdateCardsInfoInput input{*parsed};
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.update(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_migrate_cards_info(
@@ -185,12 +151,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_context = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "migrate_cards_info", spec_for("migrate_cards_info"))) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -202,7 +170,7 @@ public:
                 "Multipart form deserialization failed: empty body"
             );
             error.set_kind_name("InvalidRequestData");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -217,7 +185,7 @@ public:
                     "cards bin CSV exceeds 1MB limit"
                 );
                 error.set_kind_name("PreconditionFailed");
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             auto parsed_csv = m_input_support.parse_cards_csv(*csv_bytes);
@@ -228,23 +196,13 @@ public:
                     "failed to parse cards bin CSV"
                 );
                 error.set_kind_name("PreconditionFailed");
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             records = std::move(*parsed_csv);
         } else {
-            using Input = std::vector<::app::model::cards_info::CardInfoUpdateRequest>;
-            auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-            if (!parsed) {
-                m_input_support.record_flow("CardsInfoMigrate");
-                auto error = core::error::AppErrorBuilder{}(
-                    core::error::AppErrorKind::VALIDATION_FAILED,
-                    "Json payload deserialization failed"
-                );
-                error.set_kind_name("InvalidRequestData");
-                error.send(res, send);
-                return;
-            }
+        auto parsed = core::behavior::Serializer<std::vector<::app::model::cards_info::CardInfoUpdateRequest>>::pass(req, sink);
+        if (!parsed) return;
             records = std::move(*parsed);
             // Upstream assigns a 1-based line_number from a row counter for every
             // record (core/cards_info.rs:138-143); caller input is never trusted.
@@ -253,16 +211,8 @@ public:
             }
         }
 
-        MigrateCardsInfoInput input{std::move(records)};
-        auto result = m_runtime.migrate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.migrate(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -279,6 +229,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_card_iin_info(req, res, std::move(send));
                         }
                     )
@@ -293,6 +245,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_create_cards_info(req, res, std::move(send));
                         }
                     )
@@ -307,6 +261,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_update_cards_info(req, res, std::move(send));
                         }
                     )
@@ -321,6 +277,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_migrate_cards_info(req, res, std::move(send));
                         }
                     )

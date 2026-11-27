@@ -32,6 +32,35 @@ import :offer_engine_input;
  */
 export namespace app::handlers::offer_engine {
 
+/** @brief Local mirror of `core::configs::dimension_state::Dimensions`. */
+struct OfferEngineDimensions
+{
+    std::string processor_merchant_id{};
+    std::string organization_id{};
+    std::optional<std::string> profile_id{};
+
+    [[nodiscard]] std::string context() const
+    {
+        std::string out{};
+        if (!processor_merchant_id.empty()) {
+            out += "merchant:" + processor_merchant_id;
+        }
+        if (!organization_id.empty()) {
+            if (!out.empty()) {
+                out += '/';
+            }
+            out += "org:" + organization_id;
+        }
+        if (profile_id.has_value() && !profile_id->empty()) {
+            if (!out.empty()) {
+                out += '/';
+            }
+            out += "profile:" + *profile_id;
+        }
+        return out;
+    }
+};
+
 inline constexpr std::string_view kOffersListPath{"v1/offers/list"};
 inline constexpr std::string_view kClientNamespace{"offer_engine_client"};
 inline constexpr std::string_view kRequestNamespace{"offer_engine_client_requests"};

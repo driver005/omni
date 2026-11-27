@@ -14,6 +14,7 @@ import app_http;
 import app_crypto;
 import app_store;
 
+import :context;
 export namespace app::handlers::payment_methods {
 
 /**
@@ -137,7 +138,7 @@ public:
         return m_context.cache().get("payment_methods.collect:" + std::string{collect_id}).hit;
     }
 
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     token_payment_method(std::string_view temporary_token) const
     {
         const auto hit =
@@ -325,191 +326,326 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old handler handed to its core block,
-// plus the path/query/auth values the core could no longer read from req.
-
-struct CreatePaymentMethodApiInput
+struct CreatePaymentMethodApiData
 {
     ::app::model::payment_methods::PaymentMethodCreate request{};
     std::string merchant_id{};
     std::string profile_id{};
+    template<class Dto>
+    explicit CreatePaymentMethodApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodCreate>(dto)},
+        merchant_id{ctx.merchant_id},
+        profile_id{ctx.profile_id}
+    {
+    }
 };
-
-struct GetPmNtEligibilityApiInput
+struct GetPmNtEligibilityApiData
 {
     std::string card_bin{};
     std::string org_id{};
+    explicit GetPmNtEligibilityApiData(const core::behavior::CallContext& ctx) :
+        card_bin{::app::payment::detail::last_path(ctx)},
+        org_id{ctx.org_id}
+    {
+    }
 };
-
-struct CreatePaymentMethodIntentApiInput
+struct CreatePaymentMethodIntentApiData
 {
     ::app::model::payment_methods::PaymentMethodIntentCreate request{};
     std::string merchant_id{};
+    template<class Dto>
+    explicit CreatePaymentMethodIntentApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodIntentCreate>(dto)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct PaymentMethodUpdateApiInput
+struct PaymentMethodUpdateApiData
 {
     ::app::model::payment_methods::PaymentMethodUpdate request{};
     std::string payment_method_id{};
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit PaymentMethodUpdateApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodUpdate>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        record{}
+    {
+    }
 };
-
-struct PaymentMethodRetrieveApiInput
+struct PaymentMethodRetrieveApiData
 {
     ::app::store::payment_methods::PaymentMethodRecord record{};
     std::string payment_method_id{};
     std::string merchant_id{};
-    bool force_sync{false};
+    bool force_sync{};
+    template<class Dto>
+    explicit PaymentMethodRetrieveApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        record{::app::payment::detail::as_dto<::app::store::payment_methods::PaymentMethodRecord>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        merchant_id{ctx.merchant_id},
+        force_sync{}
+    {
+    }
 };
-
-struct PaymentMethodDeleteApiInput
+struct PaymentMethodDeleteApiData
 {
     ::app::store::payment_methods::PaymentMethodRecord record{};
     std::string payment_method_id{};
+    template<class Dto>
+    explicit PaymentMethodDeleteApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        record{::app::payment::detail::as_dto<::app::store::payment_methods::PaymentMethodRecord>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct MigratePaymentMethodApiInput
+struct MigratePaymentMethodApiData
 {
     ::app::model::payment_methods::PaymentMethodMigrate request{};
     std::string merchant_id{};
+    template<class Dto>
+    explicit MigratePaymentMethodApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodMigrate>(dto)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct MigratePaymentMethodsInput
+struct MigratePaymentMethodsData
 {
     std::vector<::app::model::payment_methods::PaymentMethodMigrate> rows{};
+    explicit MigratePaymentMethodsData(const core::behavior::CallContext& ctx) :
+        rows{}
+    {
+    }
 };
-
-struct UpdatePaymentMethodsInput
+struct UpdatePaymentMethodsData
 {
     std::vector<::app::model::payment_methods::UpdatePaymentMethodRecord> rows{};
+    explicit UpdatePaymentMethodsData(const core::behavior::CallContext& ctx) :
+        rows{}
+    {
+    }
 };
-
-struct PaymentMethodsBatchRetrieveApiInput
+struct PaymentMethodsBatchRetrieveApiData
 {
     std::vector<std::pair<std::string, std::int64_t>> rows{};
+    explicit PaymentMethodsBatchRetrieveApiData(const core::behavior::CallContext& ctx) :
+        rows{}
+    {
+    }
 };
-
-struct SavePaymentMethodApiInput
+struct SavePaymentMethodApiData
 {
     ::app::model::payment_methods::PaymentMethodCreate request{};
     std::string payment_method_id{};
     std::string merchant_id{};
+    template<class Dto>
+    explicit SavePaymentMethodApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodCreate>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct ListPaymentMethodApiInput
+struct ListPaymentMethodApiData
 {
     std::optional<std::string> client_secret{};
     std::optional<std::string> amount{};
-    std::size_t limit{20};
+    std::size_t limit{};
     std::string merchant_id{};
+    explicit ListPaymentMethodApiData(const core::behavior::CallContext& ctx) :
+        client_secret{std::optional<std::string>{ctx.client_secret}},
+        amount{std::optional<std::string>{::app::payment::detail::query_of(ctx, "amount")}},
+        limit{},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct ListCustomerPaymentMethodApiInput
+struct ListCustomerPaymentMethodApiData
 {
     std::string customer_id{};
     std::string merchant_id{};
+    explicit ListCustomerPaymentMethodApiData(const core::behavior::CallContext& ctx) :
+        customer_id{::app::payment::detail::last_path(ctx)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct ListCustomerPaymentMethodApiClientInput
+struct ListCustomerPaymentMethodApiClientData
 {
     std::string customer_id{};
     std::optional<std::string> client_secret{};
+    explicit ListCustomerPaymentMethodApiClientData(const core::behavior::CallContext& ctx) :
+        customer_id{::app::payment::detail::last_path(ctx)},
+        client_secret{std::optional<std::string>{ctx.client_secret}}
+    {
+    }
 };
-
-struct InitiatePmCollectLinkFlowInput
+struct InitiatePmCollectLinkFlowData
 {
     ::app::model::payment_methods::PaymentMethodCollectLinkRequest request{};
     std::string merchant_id{};
     std::string body{};
+    template<class Dto>
+    explicit InitiatePmCollectLinkFlowData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodCollectLinkRequest>(dto)},
+        merchant_id{ctx.merchant_id},
+        body{::app::payment::detail::body_of(dto)}
+    {
+    }
 };
-
-struct PaymentMethodRetrieveOlapApiInput
+struct PaymentMethodRetrieveOlapApiData
 {
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit PaymentMethodRetrieveOlapApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        record{::app::payment::detail::as_dto<::app::store::payment_methods::PaymentMethodRecord>(dto)}
+    {
+    }
 };
-
-struct GetPaymentMethodTokenDataInput
+struct GetPaymentMethodTokenDataData
 {
     ::app::store::payment_methods::PaymentMethodRecord record{};
     std::string payment_method_id{};
     std::string token_type{};
+    template<class Dto>
+    explicit GetPaymentMethodTokenDataData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        record{::app::payment::detail::as_dto<::app::store::payment_methods::PaymentMethodRecord>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        token_type{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct GetTotalPaymentMethodCountInput
+struct GetTotalPaymentMethodCountData
 {
     std::string customer_id{};
     std::string merchant_id{};
+    explicit GetTotalPaymentMethodCountData(const core::behavior::CallContext& ctx) :
+        customer_id{::app::payment::detail::last_path(ctx)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct RenderPmCollectLinkInput
+struct RenderPmCollectLinkData
 {
     std::string merchant_id{};
     std::string collect_id{};
+    explicit RenderPmCollectLinkData(const core::behavior::CallContext& ctx) :
+        merchant_id{ctx.merchant_id},
+        collect_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct ListCountriesCurrenciesForConnectorPaymentMethodInput
+struct ListCountriesCurrenciesForConnectorPaymentMethodData
 {
     std::string connector{};
     std::string payment_method_type{};
+    explicit ListCountriesCurrenciesForConnectorPaymentMethodData(const core::behavior::CallContext& ctx) :
+        connector{::app::payment::detail::last_path(ctx)},
+        payment_method_type{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct DefaultPaymentMethodSetApiInput
+struct DefaultPaymentMethodSetApiData
 {
     ::app::model::payment_methods::DefaultPaymentMethod request{};
     std::string customer_id{};
     std::string payment_method_id{};
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit DefaultPaymentMethodSetApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::DefaultPaymentMethod>(dto)},
+        customer_id{::app::payment::detail::last_path(ctx)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        record{}
+    {
+    }
 };
-
-struct TokenizeCardApiInput
+struct TokenizeCardApiData
 {
     ::app::model::payment_methods::TokenizeCardRequest request{};
     std::string merchant_id{};
+    template<class Dto>
+    explicit TokenizeCardApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::TokenizeCardRequest>(dto)},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct TokenizeCardUsingPmApiInput
+struct TokenizeCardUsingPmApiData
 {
     ::app::model::payment_methods::TokenizePaymentMethodRequest request{};
     std::string payment_method_id{};
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit TokenizeCardUsingPmApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::TokenizePaymentMethodRequest>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        record{}
+    {
+    }
 };
-
-struct TokenizeCardBatchApiInput
+struct TokenizeCardBatchApiData
 {
     std::vector<std::string> payloads{};
     std::string merchant_id{};
+    explicit TokenizeCardBatchApiData(const core::behavior::CallContext& ctx) :
+        payloads{},
+        merchant_id{ctx.merchant_id}
+    {
+    }
 };
-
-struct PaymentMethodsSessionCreateInput
+struct PaymentMethodsSessionCreateData
 {
     ::app::model::payment_methods::PaymentMethodSessionRequest request{};
     std::string merchant_id{};
     std::string org_id{};
+    template<class Dto>
+    explicit PaymentMethodsSessionCreateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodSessionRequest>(dto)},
+        merchant_id{ctx.merchant_id},
+        org_id{ctx.org_id}
+    {
+    }
 };
-
-struct PaymentMethodsSessionUpdateInput
+struct PaymentMethodsSessionUpdateData
 {
     ::app::model::payment_methods::PaymentMethodsSessionUpdateRequest request{};
     std::string session_id{};
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord record{};
+    template<class Dto>
+    explicit PaymentMethodsSessionUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodsSessionUpdateRequest>(dto)},
+        session_id{::app::payment::detail::last_path(ctx)},
+        record{}
+    {
+    }
 };
-
-struct PaymentMethodsSessionRetrieveInput
+struct PaymentMethodsSessionRetrieveData
 {
     std::string session_id{};
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord record{};
     std::optional<std::string> client_secret{};
+    template<class Dto>
+    explicit PaymentMethodsSessionRetrieveData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        session_id{::app::payment::detail::last_path(ctx)},
+        record{::app::payment::detail::as_dto<::app::store::payment_method_sessions::PaymentMethodSessionRecord>(dto)},
+        client_secret{std::optional<std::string>{ctx.client_secret}}
+    {
+    }
 };
-
-struct PaymentMethodSessionListPaymentMethodsInput
+struct PaymentMethodSessionListPaymentMethodsData
 {
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord session{};
     std::string customer_id{};
+    template<class Dto>
+    explicit PaymentMethodSessionListPaymentMethodsData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        session{::app::payment::detail::as_dto<::app::store::payment_method_sessions::PaymentMethodSessionRecord>(dto)},
+        customer_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct PaymentMethodSessionConfirmInput
+struct PaymentMethodSessionConfirmData
 {
     ::app::model::payment_methods::PaymentMethodSessionConfirmRequest request{};
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord session{};
@@ -517,45 +653,85 @@ struct PaymentMethodSessionConfirmInput
     std::string body{};
     std::string payload{};
     std::optional<std::string> client_secret{};
+    template<class Dto>
+    explicit PaymentMethodSessionConfirmData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodSessionConfirmRequest>(dto)},
+        session{},
+        session_id{::app::payment::detail::last_path(ctx)},
+        body{::app::payment::detail::body_of(dto)},
+        payload{::app::payment::detail::body_of(dto)},
+        client_secret{std::optional<std::string>{ctx.client_secret}}
+    {
+    }
 };
-
-struct PaymentMethodSessionUpdateSavedPaymentMethodInput
+struct PaymentMethodSessionUpdateSavedPaymentMethodData
 {
     ::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod request{};
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord session{};
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit PaymentMethodSessionUpdateSavedPaymentMethodData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod>(dto)},
+        session{},
+        record{}
+    {
+    }
 };
-
-struct PaymentMethodSessionDeleteSavedPaymentMethodInput
+struct PaymentMethodSessionDeleteSavedPaymentMethodData
 {
     std::string token{};
     ::app::store::payment_method_sessions::PaymentMethodSessionRecord session{};
     ::app::store::payment_methods::PaymentMethodRecord record{};
+    template<class Dto>
+    explicit PaymentMethodSessionDeleteSavedPaymentMethodData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        token{::app::payment::detail::last_path(ctx)},
+        session{::app::payment::detail::as_dto<::app::store::payment_method_sessions::PaymentMethodSessionRecord>(dto)},
+        record{}
+    {
+    }
 };
-
-struct NetworkTokenStatusCheckApiInput
+struct NetworkTokenStatusCheckApiData
 {
     ::app::store::payment_methods::PaymentMethodRecord record{};
     std::string payment_method_id{};
+    template<class Dto>
+    explicit NetworkTokenStatusCheckApiData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        record{::app::payment::detail::as_dto<::app::store::payment_methods::PaymentMethodRecord>(dto)},
+        payment_method_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct PaymentMethodGetTokenDetailsApiInput
+struct PaymentMethodGetTokenDetailsApiData
 {
     std::string payment_method_id{};
     std::string temporary_token{};
+    explicit PaymentMethodGetTokenDetailsApiData(const core::behavior::CallContext& ctx) :
+        payment_method_id{::app::payment::detail::last_path(ctx)},
+        temporary_token{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct ListPaymentMethodsForPaymentsClientInput
+struct ListPaymentMethodsForPaymentsClientData
 {
     std::string payment_id{};
     std::string merchant_id{};
     std::optional<std::string> client_secret{};
+    explicit ListPaymentMethodsForPaymentsClientData(const core::behavior::CallContext& ctx) :
+        payment_id{::app::payment::detail::last_path(ctx)},
+        merchant_id{ctx.merchant_id},
+        client_secret{std::optional<std::string>{ctx.client_secret}}
+    {
+    }
 };
-
-struct ModularMigratePaymentMethodsInput
+struct ModularMigratePaymentMethodsData
 {
     std::vector<::app::model::payment_methods::PaymentMethodMigrate> rows{};
+    explicit ModularMigratePaymentMethodsData(const core::behavior::CallContext& ctx) :
+        rows{}
+    {
+    }
 };
+
 
 /** @brief Request policy for the payment_methods domain: wraps the domain auth rules. */
 class PaymentMethodsPolicy
@@ -567,6 +743,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

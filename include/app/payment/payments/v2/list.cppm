@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v2_list;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,49 +59,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support->authorize(req, "payments_list", spec_for("payments_list"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_list");
         m_context.metrics().counter("payments.payments_list").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        PaymentsListInput input{std::move(data)};
-        auto result = m_runtime.payments_list(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.payments_list(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_revenue_recovery_invoices_list(
@@ -109,52 +79,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "revenue_recovery_invoices_list",
                 spec_for("revenue_recovery_invoices_list")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.revenue_recovery_invoices_list");
         m_context.metrics().counter("payments.revenue_recovery_invoices_list").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        RevenueRecoveryInvoicesListInput input{std::move(data)};
-        auto result = m_runtime.revenue_recovery_invoices_list(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.revenue_recovery_invoices_list(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_revenue_recovery_invoices_list_profile(
@@ -163,52 +102,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "revenue_recovery_invoices_list_profile",
                 spec_for("revenue_recovery_invoices_list_profile")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.revenue_recovery_invoices_list_profile");
         m_context.metrics().counter("payments.revenue_recovery_invoices_list_profile").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        RevenueRecoveryInvoicesListProfileInput input{std::move(data)};
-        auto result = m_runtime.revenue_recovery_invoices_list_profile(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.revenue_recovery_invoices_list_profile(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #4
@@ -225,6 +133,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_list(req, res, std::move(send));
                     }
                 )
@@ -246,6 +156,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_revenue_recovery_invoices_list(req, res, std::move(send));
                     }
                 )
@@ -268,6 +180,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_revenue_recovery_invoices_list_profile(
                                 req,
                                 res,

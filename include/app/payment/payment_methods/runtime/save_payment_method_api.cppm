@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
-        save_payment_method_api(const SavePaymentMethodApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
+        save_payment_method_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = SavePaymentMethodApiData{dto, ctx};
         auto repository = m_context.repository();
         auto record = repository.find_payment_method_by_string(input.payment_method_id);
         if (!record) {

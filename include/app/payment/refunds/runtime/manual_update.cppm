@@ -22,9 +22,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    manual_update(const RefundsManualUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsManualUpdateData{dto, ctx};
         m_context.metrics().record_flow("refund_manual_update");
         m_context.metrics().counter("refunds_manual_update_total").increment();
 

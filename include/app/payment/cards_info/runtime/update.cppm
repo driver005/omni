@@ -27,9 +27,11 @@ public:
     // core/cards_info.rs:70-125 update_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfoUpdate, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    update(const UpdateCardsInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = UpdateCardsInfoData{dto, ctx};
         auto repository = m_context.repository();
         auto stored = repository.find_card_info_by_string(input.request.get_card_iin());
         if (!stored) {

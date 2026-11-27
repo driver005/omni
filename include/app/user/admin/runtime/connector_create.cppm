@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_connector_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,12 +36,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
-    create(const ConnectorCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
+    create(const ::app::dto::admin::MerchantConnectorCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        const std::string connector_name{input.request.get_connector_name().get_value()};
+        const std::string connector_name{request.get_connector_name().get_value()};
         if (const auto invalid =
-                m_support.validate_connector_create(input.merchant_id, connector_name)) {
+                m_support.validate_connector_create(ctx_string(ctx,"merchant_id"), connector_name)) {
             return std::unexpected{*invalid};
         }
         const std::string connector_id{"mca_" + m_support.uuid_simple()};
@@ -62,32 +64,32 @@ public:
             ::app::crypto::SecretString{m_context.ids().key_id()}
         );
 
-        const std::string connector_type{input.request.get_connector_type().get_value()};
+        const std::string connector_type{request.get_connector_type().get_value()};
         const std::string account_plaintext{
-            input.request.get_connector_account_details()
-                ? input.request.get_connector_account_details()->get_value()
+            request.get_connector_account_details()
+                ? request.get_connector_account_details()->get_value()
                 : std::string{}
         };
         const std::string account_ciphertext{::app::crypto::AesWrap{}.encrypt(
             account_plaintext,
-            m_support.connector_encryption_key(input.merchant_id, connector_id)
+            m_support.connector_encryption_key(ctx_string(ctx,"merchant_id"), connector_id)
         )};
 
         ::app::store::merchant_connectors::MerchantConnectorRecord record;
         record.set_merchant_connector_id(connector_id);
-        record.set_merchant_id(std::string{input.merchant_id});
+        record.set_merchant_id(std::string{ctx_string(ctx,"merchant_id")});
         record.set_connector_name(connector_name);
         record.set_connector_type(connector_type);
-        record.set_connector_label(input.request.get_connector_label().value_or(""));
-        record.set_profile_id(input.request.get_profile_id().get_value());
+        record.set_connector_label(request.get_connector_label().value_or(""));
+        record.set_profile_id(request.get_profile_id().get_value());
         record.set_connector_account_details(account_ciphertext);
         record.set_metadata(
-            input.request.get_metadata() ? input.request.get_metadata()->get_value() : std::string{}
+            request.get_metadata() ? request.get_metadata()->get_value() : std::string{}
         );
         record.set_status(
-            input.request.get_status() ? input.request.get_status()->get_value() : std::string{}
+            request.get_status() ? request.get_status()->get_value() : std::string{}
         );
-        record.set_disabled(input.request.get_disabled().value_or(false));
+        record.set_disabled(request.get_disabled().value_or(false));
         const auto saved = m_context.repository().save_merchant_connector(std::move(record));
         m_support.release_operation_lock("connector_create", connector_id);
 
@@ -107,11 +109,11 @@ public:
         if (!saved.get_status().empty()) {
             response.set_status(m_support.connector_status_value(saved.get_status()));
         }
-        if (input.request.get_connector_webhook_details().has_value()) {
-            response.set_connector_webhook_details(*input.request.get_connector_webhook_details());
+        if (request.get_connector_webhook_details().has_value()) {
+            response.set_connector_webhook_details(*request.get_connector_webhook_details());
         }
-        if (input.request.get_payment_methods_enabled().has_value()) {
-            response.set_payment_methods_enabled(*input.request.get_payment_methods_enabled());
+        if (request.get_payment_methods_enabled().has_value()) {
+            response.set_payment_methods_enabled(*request.get_payment_methods_enabled());
         }
 
         m_context.metrics().record_flow("connector_create");

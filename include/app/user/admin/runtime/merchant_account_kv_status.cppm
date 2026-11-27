@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_merchant_account_kv_status;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,11 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
-    status(const MerchantAccountKvStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ToggleKVResponse>
+    status(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_account_by_string(input.merchant_id);
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,

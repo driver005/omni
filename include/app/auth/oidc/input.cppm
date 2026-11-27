@@ -9,6 +9,7 @@ import app_dto;
 import app_context_core;
 import app_http;
 
+import :call_context;
 import :oidc_runtime_common;
 
 export namespace app::handlers::oidc {
@@ -199,6 +200,18 @@ public:
         return {};
     }
 
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        auto ctx = detail::make_call_context(req);
+        if (const auto basic = m_support.parse_basic_auth(req)) {
+            ctx.claims.insert_or_assign("client_id", basic->first);
+            ctx.client_secret = basic->second;
+        }
+        ctx.claims.insert_or_assign("x-user-id", m_support.authenticated_user_id(req));
+        return ctx;
+    }
+
     [[nodiscard]] std::optional<core::error::AppError>
     scope_error(const core::behavior::Scope& scope) const
     {
@@ -208,27 +221,6 @@ public:
 
 private:
     OidcInputSupport m_support;
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct OidcDiscoveryInput
-{};
-
-struct JwksEndpointInput
-{};
-
-struct OidcAuthorizeInput
-{
-    ::app::dto::oidc::OidcAuthorizeQuery payload{};
-    std::string user_id{};
-};
-
-struct OidcTokenInput
-{
-    ::app::dto::oidc::OidcTokenRequest request{};
-    std::pair<std::string, std::string> basic{};
 };
 
 } // namespace app::handlers::oidc

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_terminate_accept_invite;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_accept_invite(const TerminateAcceptInviteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    terminate_accept_invite(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         std::string invite_token{};
-        if (const auto* object = std::get_if<interfaces::Value::Object>(&input.generic.get())) {
+        if (const auto* object = std::get_if<interfaces::Value::Object>(&generic.get())) {
             if (const auto field = object->get("token")) {
                 if (const auto* text = std::get_if<std::string>(&field.value().get())) {
                     invite_token = *text;
@@ -61,7 +63,7 @@ public:
         m_context.metrics().record_flow("terminate_accept_invite");
         m_context.metrics().counter("user.terminate_accept_invite").increment();
 
-        auto document = ResponseDocument::from(input.generic);
+        auto document = ResponseDocument::from(generic);
         return std::pair{document, set_cookie};
     }
 

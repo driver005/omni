@@ -1,8 +1,8 @@
 export module app_store:app_runtime_create_email_client;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -20,7 +19,6 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 
@@ -36,13 +34,16 @@ public:
     }
 
     // Upstream create_email_client() is a free helper (app.rs:477-495), no HTTP auth.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_email_client(const CreateEmailClientInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    create_email_client(
+        const serde::Value& payload,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         // Upstream create_email_client(): choose from EmailClientConfigs
         // (ses / smtp / no_email_client). Credentials are secrets and must not
         // be returned to the caller in the clear.
-        const auto configured_client = m_support.field_string(input.payload, "client_config");
+        const auto configured_client = m_support.field_string(payload, "client_config");
         auto client_type = configured_client.value_or("no_email_client");
         if (client_type != "ses" && client_type != "smtp" && client_type != "no_email_client") {
             return std::unexpected{m_support.make_error(
@@ -57,19 +58,20 @@ public:
                               .value_or(client_type);
         }
 
-        const auto proxy_url = input.proxy_url.value_or(
-            m_context.config_store().get_value("email_client", "proxy_url").value_or("")
-        );
+        const auto query_proxy = ctx.query.find("proxy_url");
+        const auto proxy_url = query_proxy != ctx.query.end() && !query_proxy->second.empty()
+            ? query_proxy->second
+            : m_context.config_store().get_value("email_client", "proxy_url").value_or("");
         const auto client_id = m_context.ids().key_id();
 
         // Deterministic substitute for upstream secret fetch (fetch_raw_secrets): a caller may
         // pass a key-store id; the active value is resolved through the injected KeyStore and
         // never echoed. The literal field is only a fallback for callers without a managed key.
         ::app::crypto::SecretString secret{
-            m_support.field_string(input.payload, "secret").value_or("")
+            m_support.field_string(payload, "secret").value_or("")
         };
         bool key_configured{false};
-        const auto secret_id = m_support.field_string(input.payload, "secret_id").value_or("");
+        const auto secret_id = m_support.field_string(payload, "secret_id").value_or("");
         if (!secret_id.empty()) {
             const auto managed = m_context.key_store().get("email_client", secret_id);
             if (managed) {

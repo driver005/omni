@@ -4,8 +4,8 @@ import std;
 import app_dto;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :superposition_sdk_config_input;
 import :superposition_sdk_config_result;
 import :superposition_sdk_config_runtime_common;
 import :superposition_sdk_config_runtime_get_sdk_config;
@@ -23,20 +23,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
-        core::error::AppError>
-    get_sdk_config(const GetSdkConfigInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse>
+    get_sdk_config(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_sdk_config.get_sdk_config(input);
+        return m_get_sdk_config.get_sdk_config(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse,
-        core::error::AppError>
-    get_profile_sdk_config(const GetProfileSdkConfigInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::superposition_sdk_config::SuperPositionConfigResponse>
+    get_profile_sdk_config(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_profile_sdk_config.get_profile_sdk_config(input);
+        return m_get_profile_sdk_config.get_profile_sdk_config(ctx);
     }
 
 private:

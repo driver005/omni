@@ -52,113 +52,113 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    create(const PayoutsCreateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+        create(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    retrieve(const PayoutsRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve.retrieve(input);
+        return m_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    update(const PayoutsUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    confirm(const PayoutsConfirmInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    confirm(const core::behavior::CallContext& ctx) const
     {
-        return m_confirm.confirm(input);
+        return m_confirm.confirm(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    cancel(const PayoutsCancelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    cancel(const core::behavior::CallContext& ctx) const
     {
-        return m_cancel.cancel(input);
+        return m_cancel.cancel(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    fulfill(const PayoutsFulfillInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    fulfill(const core::behavior::CallContext& ctx) const
     {
-        return m_fulfill.fulfill(input);
+        return m_fulfill.fulfill(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list(const PayoutsListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list.list(input);
+        return m_list.list(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list_profile(const PayoutsListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list_profile.list_profile(input);
+        return m_list_profile.list_profile(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list_by_filter(const PayoutsListByFilterInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list_by_filter(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list_by_filter.list_by_filter(input);
+        return m_list_by_filter.list_by_filter(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list_by_filter_profile(const PayoutsListByFilterProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list_by_filter_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_list_by_filter_profile.list_by_filter_profile(input);
+        return m_list_by_filter_profile.list_by_filter_profile(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
-    list_available_filters_for_merchant(
-        const PayoutsListAvailableFiltersForMerchantInput& input
-    ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFilters>
+    list_available_filters_for_merchant(const core::behavior::CallContext& ctx) const
     {
-        return m_list_available_filters_for_merchant.list_available_filters_for_merchant(input);
+        return m_list_available_filters_for_merchant.list_available_filters_for_merchant(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFilters, core::error::AppError>
-    list_available_filters_for_profile(
-        const PayoutsListAvailableFiltersForProfileInput& input
-    ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFilters>
+    list_available_filters_for_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_list_available_filters_for_profile.list_available_filters_for_profile(input);
+        return m_list_available_filters_for_profile.list_available_filters_for_profile(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFiltersV2, core::error::AppError>
-    get_payout_filters(const PayoutsGetFiltersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFiltersV2>
+    get_payout_filters(const core::behavior::CallContext& ctx) const
     {
-        return m_get_payout_filters.get_payout_filters(input);
+        return m_get_payout_filters.get_payout_filters(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFiltersV2, core::error::AppError>
-    get_payout_filters_profile(const PayoutsGetFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFiltersV2>
+    get_payout_filters_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_get_payout_filters_profile.get_payout_filters_profile(input);
+        return m_get_payout_filters_profile.get_payout_filters_profile(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
-        get_payouts_aggregates(const PayoutsAggregatesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
+        get_payouts_aggregates(const core::behavior::CallContext& ctx) const
     {
-        return m_get_payouts_aggregates.get_payouts_aggregates(input);
+        return m_get_payouts_aggregates.get_payouts_aggregates(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsAggregateResponse, core::error::AppError>
-        get_payouts_aggregates_profile(const PayoutsAggregatesProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsAggregateResponse>
+        get_payouts_aggregates_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_get_payouts_aggregates_profile.get_payouts_aggregates_profile(input);
+        return m_get_payouts_aggregates_profile.get_payouts_aggregates_profile(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payouts::PayoutsManualUpdateResponse, core::error::AppError>
-        manual_update(const PayoutsManualUpdateInput& input) const
+        template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutsManualUpdateResponse>
+    manual_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_manual_update.manual_update(input);
+        return m_manual_update.manual_update(dto, ctx);
     }
 
 private:

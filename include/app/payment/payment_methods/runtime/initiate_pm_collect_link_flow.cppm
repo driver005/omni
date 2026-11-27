@@ -35,11 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::PaymentMethodCollectLinkResponse,
-        core::error::AppError>
-    initiate_pm_collect_link_flow(const InitiatePmCollectLinkFlowInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodCollectLinkResponse>
+        initiate_pm_collect_link_flow(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = InitiatePmCollectLinkFlowData{dto, ctx};
         const std::string collect_id = m_context.ids().payment_id("pml_");
         const std::string token = m_support.issued_token(collect_id);
         m_support.remember_client_secret(collect_id, token);

@@ -36,9 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    retrieve_dispute(const RetrieveDisputeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RetrieveDisputeData{dto, ctx};
         m_context.metrics().record_flow("dispute_retrieve");
         const auto& scope = input.scope;
         const auto& request = input.request;

@@ -1,12 +1,11 @@
 export module app_store:health_runtime_health;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
 import app_metrics;
-
-import :health_input;
 
 export namespace app::handlers::health {
 
@@ -21,10 +20,10 @@ public:
     // Upstream routes::health::health(): no body, no auth. HEALTH_METRIC.add(1, &[])
     // (routes/health.rs:17) is the local metrics substitute, then the exact
     // plain-text "health is good" body.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    health(const HealthInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    health(const core::behavior::CallContext& ctx) const
     {
-        (void)input;
+        (void)ctx;
         m_context.metrics().record_flow("health");
         m_context.metrics().counter("health").increment();
         return serde::Value{std::string{"health is good"}};

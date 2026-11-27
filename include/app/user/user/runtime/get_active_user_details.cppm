@@ -1,6 +1,7 @@
 export module app_user:user_runtime_get_active_user_details;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,14 +38,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_active_user_details(const GetActiveUserDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    get_active_user_details(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
-        const auto merchant_id = input.request_context.merchant_id;
-        const auto org_id = input.request_context.org_id;
-        const auto auth_ctx = input.request_context.auth;
+        const auto merchant_id = ctx.merchant_id;
+        const auto org_id = ctx.org_id;
+        const auto auth_ctx = ctx_auth(ctx);
 
         // The bearer token is a signed JWT, not a user id. Decode its `sub` claim
         // and use the persisted user/merchant so a freshly signed-up account has a

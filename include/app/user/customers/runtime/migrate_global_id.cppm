@@ -1,6 +1,7 @@
 export module app_user:customers_runtime_migrate_global_id;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -21,13 +22,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    migrate_global_id(const CustomersMigrateRouteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    migrate_global_id(const std::vector<MigrationOutcome>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         auto repo = m_context.repository();
         std::vector<::app::model::customers::CustomerGlobalIdMigrationRowResult> results{};
-        results.reserve(input.rows.size());
-        for (const auto& row: input.rows) {
+        results.reserve(request.size());
+        for (const auto& row: request) {
             if (!std::holds_alternative<MigrationRow>(row)) {
                 results.push_back(m_support.build_migration_result(
                     std::get<::app::model::customers::CustomerGlobalIdMigrationRowResult>(row)

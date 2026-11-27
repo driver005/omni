@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -46,44 +47,25 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "routing_update_default_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto typed = serde::Ser::deserialize<Connectors>("application/json", body);
-        if (!typed) {
+        auto parsed =
+            serde::Ser::deserialize<Connectors>(req.get_content_type(), req.body_as_string());
+        if (!parsed) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.connectors = *typed;
-
-        auto result = m_runtime.routing_update_default_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_update_default_config(*parsed, m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── retrieve_default_routing_config (core:2101 v1) / fallback (:2079 v2) ─────
@@ -94,24 +76,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "routing_retrieve_default_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.routing_retrieve_default_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_retrieve_default_config(m_request_support.context(req)).handle(sink);
     }
 
     // ─── conditional_config::upsert_conditional_config (v1 :66 / v2 :18) ───────────
@@ -121,45 +93,24 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "upsert_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!generic) {
+        auto parsed = serde::Ser::decode_generic(req.get_content_type(), req.body_as_string());
+        if (!parsed) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.decision_name = m_input_support.generic_string(*generic, "name");
-        input.decision_program = m_input_support.generic_string(*generic, "program", "algorithm");
-
-        auto result = m_runtime.upsert_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.upsert_decision_manager_config(*parsed, m_request_support.context(req))
+            .handle(sink);
     }
 
     void handle_delete_decision_manager_config(
@@ -168,24 +119,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "delete_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.delete_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.delete_decision_manager_config(m_request_support.context(req)).handle(sink);
     }
 
     void handle_retrieve_decision_manager_config(
@@ -194,24 +135,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "retrieve_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.retrieve_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.retrieve_decision_manager_config(m_request_support.context(req)).handle(sink);
     }
 
     // ─── retrieve_default_routing_config_for_profiles (core:2408) ──────────────────
@@ -222,25 +153,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support
                     .authorize(req, "routing_retrieve_default_config_for_profiles", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.routing_retrieve_default_config_for_profiles(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_retrieve_default_config_for_profiles(m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── update_default_routing_config_for_profile (core:2454) ─────────────────────
@@ -250,44 +172,25 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "routing_update_default_config_for_profile", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto typed = serde::Ser::deserialize<Connectors>("application/json", body);
-        if (!typed) {
+        auto parsed =
+            serde::Ser::deserialize<Connectors>(req.get_content_type(), req.body_as_string());
+        if (!parsed) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.connectors = *typed;
-
-        auto result = m_runtime.routing_update_default_config_for_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_update_default_config_for_profile(*parsed, m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

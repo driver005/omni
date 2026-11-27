@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_tokenize;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_tokenize_card_api(req, res, std::move(send));
                         }
                     )
@@ -71,6 +74,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_tokenize_card_batch_api(req, res, std::move(send));
                         }
                     )
@@ -86,6 +91,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_tokenize_card_using_pm_api(req, res, std::move(send));
                             }
                         )
@@ -100,39 +107,28 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error =
             m_request_support->authorize(req, "tokenize_card_api", spec_for("tokenize_card_api"));
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::TokenizeCardRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::TokenizeCardRequest>::pass(req, sink);
+        if (!parsed) return;
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
-        TokenizeCardApiInput input{*parsed, merchant_id};
-        auto result = m_runtime.tokenize_card_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.tokenize_card_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_tokenize_card_using_pm_api(
@@ -141,6 +137,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "tokenize_card_using_pm_api",
@@ -148,7 +146,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req, 1);
@@ -157,43 +155,30 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::TokenizePaymentMethodRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::TokenizePaymentMethodRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto record = m_input_support.find_payment_method(payment_method_id);
         if (!record) {
             const auto error = m_input_support.error(
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        TokenizeCardUsingPmApiInput input{*parsed, payment_method_id, *record};
-        auto result = m_runtime.tokenize_card_using_pm_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.tokenize_card_using_pm_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_tokenize_card_batch_api(
@@ -202,6 +187,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "tokenize_card_batch_api",
@@ -209,14 +196,14 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed =
@@ -224,7 +211,7 @@ public:
         if (!parsed) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto array = std::get_if<interfaces::Value::Array>(&parsed->get());
@@ -233,7 +220,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "expected an array of cards"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (array->size() > 200) {
@@ -241,7 +228,7 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "batch limit is 200"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
@@ -249,16 +236,8 @@ public:
         for (const auto& element: *array) {
             payloads.push_back(serde::Ser::encode_json(element));
         }
-        TokenizeCardBatchApiInput input{std::move(payloads), merchant_id};
-        auto result = m_runtime.tokenize_card_batch_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.tokenize_card_batch_api(m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

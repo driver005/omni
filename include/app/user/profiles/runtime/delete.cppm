@@ -1,6 +1,7 @@
 export module app_user:profiles_runtime_delete;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -23,18 +24,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<bool, core::error::AppError>
-    remove(const ProfileDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> remove(const ::core::behavior::CallContext& ctx) const
     {
         if (!m_support
-                 .delete_profile_by_profile_id_merchant_id(input.profile_id, input.merchant_id)) {
-            return std::unexpected{m_support.profile_not_found(input.profile_id)};
+                 .delete_profile_by_profile_id_merchant_id(ctx_string(ctx,"profile_id"), ctx_string(ctx,"merchant_id"))) {
+            return std::unexpected{m_support.profile_not_found(ctx_string(ctx,"profile_id"))};
         }
-        m_support.emit_event("delete", input.profile_id);
+        m_support.emit_event("delete", ctx_string(ctx,"profile_id"));
         m_context.metrics().record_flow("profiles.delete");
         m_context.metrics().record_flow("Flow::ProfileDelete");
         m_context.metrics().counter("profiles_delete").increment();
-        return true;
+        return serde::Value{true};
     }
 
 private:

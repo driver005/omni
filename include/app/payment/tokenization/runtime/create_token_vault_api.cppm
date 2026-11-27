@@ -36,10 +36,11 @@ public:
     }
 
     /** Port of core::tokenization::create_vault_token_core (core/tokenization.rs:34-96). */
-    [[nodiscard]] std::
-        expected<::app::dto::tokenization::GenericTokenizationResponse, core::error::AppError>
-        create_token_vault(const CreateTokenVaultInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::tokenization::GenericTokenizationResponse>
+        create_token_vault(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CreateTokenVaultData{dto, ctx};
         // core:40 — VaultId::generate(generate_uuid_v7().to_string()).
         const std::string vault_id = m_support.uuid_v7();
 

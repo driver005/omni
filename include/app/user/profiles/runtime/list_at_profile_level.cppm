@@ -1,6 +1,7 @@
 export module app_user:profiles_runtime_list_at_profile_level;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -23,17 +24,21 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<ProfileWireResponse>, core::error::AppError>
-    list(const ProfilesListAtProfileLevelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list(const ::core::behavior::CallContext& ctx) const
     {
-        auto result = m_support.list_profile(input.merchant_id, input.profile_id_list);
+        auto result = m_support.list_profile(ctx_string(ctx,"merchant_id"), ctx_ids(ctx,"profile_id_list"));
         if (!result) {
             return std::unexpected{result.error()};
         }
         m_context.metrics().record_flow("profiles.list_at_profile_level");
         m_context.metrics().record_flow("Flow::ProfileList");
         m_context.metrics().counter("profiles_list_at_profile_level").increment();
-        return std::move(*result);
+                serde::Value::Array array{};
+        for (const auto& item: *result) {
+            array.push_back(serde::Serializer<ProfileWireResponse>::build_value(item, kProfileWireFields));
+        }
+        return serde::Value{std::move(array)};
     }
 
 private:

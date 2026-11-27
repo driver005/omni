@@ -137,367 +137,425 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_active_user_details(const GetActiveUserDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    get_active_user_details(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_active_user_details.get_active_user_details(input);
+        return m_get_active_user_details.get_active_user_details(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    launch_sage(const LaunchSageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    launch_sage(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_launch_sage.launch_sage(input);
+        return m_launch_sage.launch_sage(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signup_with_merchant_id(const UserSignupWithMerchantIdInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_signup_with_merchant_id(const ::app::model::user::SignUpWithMerchantIdRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_signup_with_merchant_id.user_signup_with_merchant_id(input);
+        return m_user_signup_with_merchant_id.user_signup_with_merchant_id(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signup(const UserSignupInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_signup(const ::app::model::user::SignUpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_signup.user_signup(input);
+        return m_user_signup.user_signup(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signin(const UserSigninInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_signin(const ::app::model::user::SignInRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_signin.user_signin(input);
+        return m_user_signin.user_signin(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_connect_account(const UserConnectAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_connect_account(const ::app::model::user::ConnectAccountRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_connect_account.user_connect_account(input);
+        return m_user_connect_account.user_connect_account(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    signout(const SignoutInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    signout(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_signout.signout(input);
+        return m_signout.signout(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    change_password(const ChangePasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    change_password(const ::app::model::user::ChangePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_change_password.change_password(input);
+        return m_change_password.change_password(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    set_dashboard_metadata(const SetDashboardMetadataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    set_dashboard_metadata(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_set_dashboard_metadata.set_dashboard_metadata(input);
+        return m_set_dashboard_metadata.set_dashboard_metadata(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_multiple_dashboard_metadata(const GetMultipleDashboardMetadataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    get_multiple_dashboard_metadata(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_multiple_dashboard_metadata.get_multiple_dashboard_metadata(input);
+        return m_get_multiple_dashboard_metadata.get_multiple_dashboard_metadata(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    internal_user_signup(const InternalUserSignupInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    internal_user_signup(const ::app::model::user::CreateInternalUserRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_internal_user_signup.internal_user_signup(input);
+        return m_internal_user_signup.internal_user_signup(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    create_tenant_user(const CreateTenantUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    create_tenant_user(const ::app::model::user::CreateTenantUserRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_tenant_user.create_tenant_user(input);
+        return m_create_tenant_user.create_tenant_user(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    create_platform(const CreatePlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    create_platform(const ::app::model::user::PlatformAccountCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_platform.create_platform(input);
+        return m_create_platform.create_platform(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_org_create(const UserOrgCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_org_create(const ::app::model::user::UserOrgMerchantCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_org_create.user_org_create(input);
+        return m_user_org_create.user_org_create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_merchant_account_create(const UserMerchantAccountCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_merchant_account_create(const ::app::model::user::UserMerchantCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_merchant_account_create.user_merchant_account_create(input);
+        return m_user_merchant_account_create.user_merchant_account_create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    generate_sample_data(const GenerateSampleDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    generate_sample_data(const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_generate_sample_data.generate_sample_data(input);
+        return m_generate_sample_data.generate_sample_data(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    delete_sample_data(const DeleteSampleDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    delete_sample_data(const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete_sample_data.delete_sample_data(input);
+        return m_delete_sample_data.delete_sample_data(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_user_roles_details(const ListUserRolesDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_user_roles_details(const ::app::model::user::GetUserRoleDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_user_roles_details.list_user_roles_details(input);
+        return m_list_user_roles_details.list_user_roles_details(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    rotate_password(const RotatePasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    rotate_password(const ::app::model::user::RotatePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_rotate_password.rotate_password(input);
+        return m_rotate_password.rotate_password(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    forgot_password(const ForgotPasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    forgot_password(const ::app::model::user::ForgotPasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_forgot_password.forgot_password(input);
+        return m_forgot_password.forgot_password(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    reset_password(const ResetPasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    reset_password(const ::app::model::user::ResetPasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_reset_password.reset_password(input);
+        return m_reset_password.reset_password(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    invite_multiple_user(const InviteMultipleUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    invite_multiple_user(const std::vector<::app::model::user::InviteUserRequest>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_invite_multiple_user.invite_multiple_user(input);
+        return m_invite_multiple_user.invite_multiple_user(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    resend_invite(const ResendInviteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    resend_invite(const ::app::model::user::ReInviteUserRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_resend_invite.resend_invite(input);
+        return m_resend_invite.resend_invite(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    accept_invite_from_email(const AcceptInviteFromEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    accept_invite_from_email(const ::app::model::user::AcceptInviteFromEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_accept_invite_from_email.accept_invite_from_email(input);
+        return m_accept_invite_from_email.accept_invite_from_email(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_accept_invite(const TerminateAcceptInviteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    terminate_accept_invite(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_terminate_accept_invite.terminate_accept_invite(input);
+        return m_terminate_accept_invite.terminate_accept_invite(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    verify_email(const VerifyEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    verify_email(const ::app::model::user::VerifyEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_verify_email.verify_email(input);
+        return m_verify_email.verify_email(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    verify_email_request(const VerifyEmailRequestInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    verify_email_request(const ::app::model::user::SendVerifyEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_verify_email_request.verify_email_request(input);
+        return m_verify_email_request.verify_email_request(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    update_user_account_details(const UpdateUserAccountDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    update_user_account_details(const ::app::model::user::UpdateUserAccountDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update_user_account_details.update_user_account_details(input);
+        return m_update_user_account_details.update_user_account_details(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_from_email(const UserFromEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    user_from_email(const ::app::model::user::UserFromEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_user_from_email.user_from_email(input);
+        return m_user_from_email.user_from_email(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_begin(const TotpBeginInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    totp_begin(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_totp_begin.totp_begin(input);
+        return m_totp_begin.totp_begin(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_reset(const TotpResetInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    totp_reset(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_totp_reset.totp_reset(input);
+        return m_totp_reset.totp_reset(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_verify(const TotpVerifyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    totp_verify(const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_totp_verify.totp_verify(input);
+        return m_totp_verify.totp_verify(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    verify_recovery_code(const VerifyRecoveryCodeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    verify_recovery_code(const ::app::model::user::VerifyRecoveryCodeRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_verify_recovery_code.verify_recovery_code(input);
+        return m_verify_recovery_code.verify_recovery_code(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_update(const TotpUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    totp_update(const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_totp_update.totp_update(input);
+        return m_totp_update.totp_update(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    generate_recovery_codes(const GenerateRecoveryCodesInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    generate_recovery_codes(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_generate_recovery_codes.generate_recovery_codes(input);
+        return m_generate_recovery_codes.generate_recovery_codes(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_two_factor_auth(const TerminateTwoFactorAuthInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    terminate_two_factor_auth(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_terminate_two_factor_auth.terminate_two_factor_auth(input);
+        return m_terminate_two_factor_auth.terminate_two_factor_auth(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    check_two_factor_auth_status(const CheckTwoFactorAuthStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    check_two_factor_auth_status(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_check_two_factor_auth_status.check_two_factor_auth_status(input);
+        return m_check_two_factor_auth_status.check_two_factor_auth_status(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
     check_two_factor_auth_status_with_attempts(
-        const CheckTwoFactorAuthStatusWithAttemptsInput& input
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         return m_check_two_factor_auth_status_with_attempts
-            .check_two_factor_auth_status_with_attempts(input);
+            .check_two_factor_auth_status_with_attempts(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_sso_auth_url(const GetSsoAuthUrlInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    get_sso_auth_url(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_sso_auth_url.get_sso_auth_url(input);
+        return m_get_sso_auth_url.get_sso_auth_url(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    sso_sign(const SsoSignInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    sso_sign(const ::app::model::user::SsoSignInRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_sso_sign.sso_sign(input);
+        return m_sso_sign.sso_sign(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    create_user_authentication_method(const CreateUserAuthenticationMethodInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    create_user_authentication_method(const ::app::model::user::CreateUserAuthenticationMethodRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_user_authentication_method.create_user_authentication_method(input);
+        return m_create_user_authentication_method.create_user_authentication_method(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    update_user_authentication_method(const UpdateUserAuthenticationMethodInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    update_user_authentication_method(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update_user_authentication_method.update_user_authentication_method(input);
+        return m_update_user_authentication_method.update_user_authentication_method(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_user_authentication_methods(const ListUserAuthenticationMethodsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_user_authentication_methods(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_user_authentication_methods.list_user_authentication_methods(input);
+        return m_list_user_authentication_methods.list_user_authentication_methods(ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    terminate_auth_select(const TerminateAuthSelectInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    terminate_auth_select(const ::app::model::user::AuthSelectRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_terminate_auth_select.terminate_auth_select(input);
+        return m_terminate_auth_select.terminate_auth_select(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    transfer_user_key(const TransferUserKeyInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    transfer_user_key(const ::app::model::user::UserKeyTransferRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_transfer_user_key.transfer_user_key(input);
+        return m_transfer_user_key.transfer_user_key(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_orgs_for_user(const ListOrgsForUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_orgs_for_user(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_orgs_for_user.list_orgs_for_user(input);
+        return m_list_orgs_for_user.list_orgs_for_user(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_merchants_for_user_in_org(const ListMerchantsForUserInOrgInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_merchants_for_user_in_org(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_merchants_for_user_in_org.list_merchants_for_user_in_org(input);
+        return m_list_merchants_for_user_in_org.list_merchants_for_user_in_org(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
     list_profiles_for_user_in_org_and_merchant(
-        const ListProfilesForUserInOrgAndMerchantInput& input
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         return m_list_profiles_for_user_in_org_and_merchant
-            .list_profiles_for_user_in_org_and_merchant(input);
+            .list_profiles_for_user_in_org_and_merchant(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    switch_org_for_user(const SwitchOrgForUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    switch_org_for_user(const ::app::model::user::SwitchOrganizationRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_switch_org_for_user.switch_org_for_user(input);
+        return m_switch_org_for_user.switch_org_for_user(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    switch_merchant_for_user_in_org(const SwitchMerchantForUserInOrgInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    switch_merchant_for_user_in_org(const ::app::model::user::SwitchMerchantRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_switch_merchant_for_user_in_org.switch_merchant_for_user_in_org(input);
+        return m_switch_merchant_for_user_in_org.switch_merchant_for_user_in_org(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
     switch_profile_for_user_in_org_and_merchant(
-        const SwitchProfileForUserInOrgAndMerchantInput& input
+        const ::app::model::user::SwitchProfileRequest& request,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         return m_switch_profile_for_user_in_org_and_merchant
-            .switch_profile_for_user_in_org_and_merchant(input);
+            .switch_profile_for_user_in_org_and_merchant(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    clone_connector(const CloneConnectorInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    clone_connector(const ::app::model::user::CloneConnectorRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_clone_connector.clone_connector(input);
+        return m_clone_connector.clone_connector(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    issue_embedded_token(const IssueEmbeddedTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    issue_embedded_token(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_issue_embedded_token.issue_embedded_token(input);
+        return m_issue_embedded_token.issue_embedded_token(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    embedded_token_info(const EmbeddedTokenInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    embedded_token_info(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_embedded_token_info.embedded_token_info(input);
+        return m_embedded_token_info.embedded_token_info(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_user_details_internal(const GetUserDetailsInternalInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    get_user_details_internal(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_user_details_internal.get_user_details_internal(input);
+        return m_get_user_details_internal.get_user_details_internal(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_users_internal(const ListUsersInternalInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_users_internal(const ::app::model::user::ListUsersInternalRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_users_internal.list_users_internal(input);
+        return m_list_users_internal.list_users_internal(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_members_for_entity(const ListMembersForEntityInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    list_members_for_entity(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_members_for_entity.list_members_for_entity(input);
+        return m_list_members_for_entity.list_members_for_entity(generic, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    authorize_token(const AuthorizeTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    authorize_token(const ::app::model::user::AuthorizeTokenRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_authorize_token.authorize_token(input);
+        return m_authorize_token.authorize_token(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_user_merchant_details(const GetUserMerchantDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>, core::error::AppError>
+    get_user_merchant_details(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_user_merchant_details.get_user_merchant_details(input);
+        return m_get_user_merchant_details.get_user_merchant_details(generic, ctx);
     }
 
 private:

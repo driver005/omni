@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_context;
 import core_error;
@@ -44,45 +45,24 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "upsert_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!generic) {
+        auto parsed = serde::Ser::decode_generic(req.get_content_type(), req.body_as_string());
+        if (!parsed) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.decision_name = m_input_support.generic_string(*generic, "name");
-        input.decision_program = m_input_support.generic_string(*generic, "program", "algorithm");
-
-        auto result = m_runtime.upsert_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.upsert_decision_manager_config(*parsed, m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── retrieve_decision_manager_config (shared v1/v2 adapter, v2 scope) ─────────
@@ -92,24 +72,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "retrieve_decision_manager_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.retrieve_decision_manager_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.retrieve_decision_manager_config(m_request_support.context(req)).handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

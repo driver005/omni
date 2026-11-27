@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_context;
@@ -26,7 +27,7 @@ public:
         m_context{ctx},
         m_runtime{runtime},
         m_input_support{input},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -171,50 +172,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "internal_user_signup", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "internal_user_signup", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::CreateInternalUserRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        InternalUserSignupInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.internal_user_signup(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::CreateInternalUserRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.internal_user_signup(*parsed, ctx).handle(sink);
     }
 
     void handle_create_tenant_user(
@@ -223,50 +192,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "create_tenant_user", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "create_tenant_user", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::CreateTenantUserRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        CreateTenantUserInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.create_tenant_user(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::CreateTenantUserRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.create_tenant_user(*parsed, ctx).handle(sink);
     }
 
     void handle_create_platform(
@@ -275,47 +212,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "create_platform", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "create_platform", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::PlatformAccountCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        CreatePlatformInput input{m_input_support.request_data(req, req.body_as_string()), *parsed};
-        auto result = m_runtime.create_platform(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::PlatformAccountCreateRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.create_platform(*parsed, ctx).handle(sink);
     }
 
     void handle_generate_sample_data(
@@ -324,50 +232,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "generate_sample_data", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "generate_sample_data", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::SampleDataRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        GenerateSampleDataInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.generate_sample_data(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::SampleDataRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.generate_sample_data(*parsed, ctx).handle(sink);
     }
 
     void handle_delete_sample_data(
@@ -376,50 +252,18 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "delete_sample_data", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "delete_sample_data", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::SampleDataRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        DeleteSampleDataInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.delete_sample_data(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::SampleDataRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.delete_sample_data(*parsed, ctx).handle(sink);
     }
 
     void handle_list_user_roles_details(
@@ -428,51 +272,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "list_user_roles_details", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "list_user_roles_details", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::GetUserRoleDetailsRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        ListUserRolesDetailsInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.list_user_roles_details(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::GetUserRoleDetailsRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.list_user_roles_details(*parsed, ctx).handle(sink);
     }
 
     void handle_update_user_account_details(
@@ -481,51 +293,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "update_user_account_details", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+                m_support.authorize(req, "update_user_account_details", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
         const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::UpdateUserAccountDetailsRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        UpdateUserAccountDetailsInput input{
-            m_input_support.request_data(req, req.body_as_string()),
-            *parsed
-        };
-        auto result = m_runtime.update_user_account_details(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::UpdateUserAccountDetailsRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.update_user_account_details(*parsed, ctx).handle(sink);
     }
 
     void handle_user_from_email(
@@ -534,54 +314,24 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "user_from_email", {})) {
-            res.set_status((*auth_error).get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "user_from_email", {})) {
+            sink.set_status((*auth_error).get_status());
+            sink.set_body(serde::Ser::serialize("application/json", *auth_error));
+            sink.send();
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::user::UserFromEmailRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            auto deserialize_error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::VALIDATION_FAILED,
-                "Failed to deserialize the JSON body into the target type"
-            );
-            deserialize_error.set_kind_name("IR_06");
-            deserialize_error.send(res, send);
-            return;
-        }
-        UserFromEmailInput input{m_input_support.request_data(req, req.body_as_string()), *parsed};
-        auto result = m_runtime.user_from_email(input);
-        if (!result) {
-            res.set_status((result.error()).get_status());
-            res.set_body(serde::Ser::serialize("application/json", result.error()));
-            send();
-            return;
-        }
-        if (!result->second.empty()) {
-            res.add_set_cookie(result->second);
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        auto parsed = core::behavior::Serializer<::app::model::user::UserFromEmailRequest>::pass(req, sink);
+        if (!parsed) return;
+        auto ctx = m_support.context(req);
+        m_runtime.user_from_email(*parsed, ctx).handle(sink);
     }
 
 private:
     ::app::context::AppContext& m_context;
     UserRuntime& m_runtime;
     UserInputSupport& m_input_support;
-    UserRequestSupport& m_request_support;
+    UserRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user

@@ -10,6 +10,7 @@ import app_store;
 import app_auth;
 import app_crypto;
 import app_metrics;
+import core_behavior;
 import app_services;
 import core_cache;
 
@@ -506,10 +507,10 @@ public:
     // ───────────────────────── dimension filter / superposition ─────────────────────────
 
     [[nodiscard]] std::string
-    organization_id(std::string_view merchant_id, const ::app::auth::AuthContext& auth_ctx) const
+    organization_id(std::string_view merchant_id, const ::core::behavior::CallContext& ctx) const
     {
-        if (!auth_ctx.org_id().empty()) {
-            return auth_ctx.org_id();
+        if (!ctx.org_id.empty()) {
+            return ctx.org_id;
         }
         const auto merchant = m_context.repository().find_merchant_account_by_string(merchant_id);
         return merchant ? merchant->get_organization_id() : std::string{};
@@ -694,13 +695,13 @@ public:
         const ::app::store::profiles::ProfileRecord& /*profile*/,
         std::string_view profile_id,
         std::string_view merchant_id,
-        const ::app::auth::AuthContext& auth_ctx
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         using namespace ::app::dto::superposition_sdk_config;
         std::string org_id{};
-        if (!auth_ctx.org_id().empty()) {
-            org_id = auth_ctx.org_id();
+        if (!ctx.org_id.empty()) {
+            org_id = ctx.org_id;
         } else {
             const auto merchant =
                 m_context.repository().find_merchant_account_by_string(merchant_id);

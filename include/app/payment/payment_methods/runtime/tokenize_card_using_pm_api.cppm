@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::TokenizedCardValue1, core::error::AppError>
-        tokenize_card_using_pm_api(const TokenizeCardUsingPmApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::TokenizedCardValue1>
+        tokenize_card_using_pm_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = TokenizeCardUsingPmApiData{dto, ctx};
         const auto& record = input.record;
         const auto vault = m_support.call_connector(
             record.get_merchant_id(),

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -39,7 +40,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -49,57 +50,17 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "api_key_create", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "api_key_create", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::api_keys::CreateApiKeyRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::api_keys::CreateApiKeyRequest>::pass(req, sink);
+        if (!parsed) return;
+        m_runtime.create(*parsed, m_support.context(req)).handle(sink);
 
-        const std::string merchant_id = m_input_support.merchant_from_request(req);
-        if (merchant_id.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::UNAUTHORIZED,
-                "missing merchant id"
-            );
-            error.send(res, send);
-            return;
-        }
-
-        ApiKeyCreateInput input{*parsed, merchant_id};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kCreateApiKeyResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
     }
 
     void handle_api_key_retrieve(
@@ -108,38 +69,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "api_key_retrieve", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "api_key_retrieve", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const std::string merchant_id = m_input_support.merchant_from_request(req);
-        const std::string key_id = m_input_support.key_id_from_request(req);
-        if (key_id.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "missing key id"
-            );
-            error.send(res, send);
-            return;
-        }
+        m_runtime.retrieve(m_support.context(req)).handle(sink);
 
-        ApiKeyRetrieveInput input{merchant_id, key_id};
-        auto result = m_runtime.retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kRetrieveApiKeyResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
     }
 
     void handle_api_key_update(
@@ -148,58 +86,17 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "api_key_update", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "api_key_update", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::api_keys::UpdateApiKeyRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::dto::api_keys::UpdateApiKeyRequest>::pass(req, sink);
+        if (!parsed) return;
+        m_runtime.update(*parsed, m_support.context(req)).handle(sink);
 
-        const std::string merchant_id = m_input_support.merchant_from_request(req);
-        const std::string key_id = m_input_support.key_id_from_request(req);
-        if (key_id.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "missing key id"
-            );
-            error.send(res, send);
-            return;
-        }
-
-        ApiKeyUpdateInput input{*parsed, merchant_id, key_id};
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kRetrieveApiKeyResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
     }
 
     void handle_api_key_revoke(
@@ -208,38 +105,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "api_key_revoke", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "api_key_revoke", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const std::string merchant_id = m_input_support.merchant_from_request(req);
-        const std::string key_id = m_input_support.key_id_from_request(req);
-        if (key_id.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "missing key id"
-            );
-            error.send(res, send);
-            return;
-        }
+        m_runtime.revoke(m_support.context(req)).handle(sink);
 
-        ApiKeyRevokeInput input{merchant_id, key_id};
-        auto result = m_runtime.revoke(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kRevokeApiKeyResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
     }
 
     void handle_api_key_list(
@@ -248,30 +122,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "api_key_list", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "api_key_list", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const std::string merchant_id = m_input_support.merchant_from_request(req);
-        ApiKeyListInput input{merchant_id, m_input_support.parse_constraints(req)};
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded =
-            serde::Serializer<std::vector<::app::dto::api_keys::RetrieveApiKeyResponse>>::
-                serialize_values(*result, kRetrieveApiKeyResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto constraints = m_input_support.parse_constraints(req);
+        m_runtime.list(constraints, m_support.context(req)).handle(sink);
+
     }
 
     void install(core::router::RouterContext<>& router)
@@ -359,7 +219,7 @@ private:
     ::app::context::AppContext& m_context;
     ApiKeysRuntime& m_runtime;
     ApiKeysInputSupport& m_input_support;
-    ApiKeysRequestSupport& m_request_support;
+    ApiKeysRequestSupport& m_support;
 };
 
 } // namespace app::handlers::api_keys

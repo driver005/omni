@@ -11,30 +11,44 @@ import app_auth;
 import app_http;
 import app_metrics;
 
+import :context;
 export namespace app::handlers::cards_info {
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct CardIinInfoInput
+struct CardIinInfoData
 {
     ::app::model::cards_info::CardsInfoRequest payload{};
+    template<class Dto>
+    explicit CardIinInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        payload{::app::payment::detail::as_dto<::app::model::cards_info::CardsInfoRequest>(dto)}
+    {
+    }
 };
-
-struct CreateCardsInfoInput
+struct CreateCardsInfoData
 {
     ::app::model::cards_info::CardInfoCreateRequest request{};
+    template<class Dto>
+    explicit CreateCardsInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::cards_info::CardInfoCreateRequest>(dto)}
+    {
+    }
 };
-
-struct UpdateCardsInfoInput
+struct UpdateCardsInfoData
 {
     ::app::model::cards_info::CardInfoUpdateRequest request{};
+    template<class Dto>
+    explicit UpdateCardsInfoData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::model::cards_info::CardInfoUpdateRequest>(dto)}
+    {
+    }
 };
-
-struct MigrateCardsInfoInput
+struct MigrateCardsInfoData
 {
     std::vector<::app::model::cards_info::CardInfoUpdateRequest> records{};
+    explicit MigrateCardsInfoData(const core::behavior::CallContext& ctx) :
+        records{}
+    {
+    }
 };
+
 
 /**
  * @brief Parse/auth/path/query support for the cards-info handlers.
@@ -456,6 +470,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_verify_recovery_code;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,19 +38,20 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    verify_recovery_code(const VerifyRecoveryCodeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    verify_recovery_code(const ::app::model::user::VerifyRecoveryCodeRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         std::uint64_t seed{0};
-        if (const auto seed_param = input.request_context.query.get("seed")) {
+        if (const auto seed_param = ctx_query(ctx).get("seed")) {
             std::from_chars(seed_param->data(), seed_param->data() + seed_param->size(), seed);
         }
-        const auto owner = input.request_context.token.value();
+        const auto owner = ctx_token(ctx).value();
         ::app::crypto::RecoveryCodeGenerator generator{seed, owner, m_context.one_time_store()};
-        if (!generator.verify(input.request.get_recovery_code())) {
+        if (!generator.verify(request.get_recovery_code())) {
             return std::unexpected{m_support.wire_error(
                 "UR_39",
                 "Invalid Recovery Code",
@@ -58,10 +60,10 @@ public:
         }
 
         const auto key = std::string{"user.verify_recovery_code:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

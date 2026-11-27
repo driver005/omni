@@ -1,6 +1,7 @@
 export module app_store:currency_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import app_dto;
@@ -265,7 +266,7 @@ public:
     }
 
     // ── core/currency.rs:56-101 — get_forex_exchange_rates (analytics helper) ─
-    [[nodiscard]] std::expected<ExchangeRates, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<ExchangeRates>
     get_forex_exchange_rates() const
     {
         constexpr int kAttempts{3}; // DEFAULT_ANALYTICS_FOREX_RETRY_ATTEMPTS

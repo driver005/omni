@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_signup_with_merchant_id;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,15 +38,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_signup_with_merchant_id(const UserSignupWithMerchantIdInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_signup_with_merchant_id(const ::app::model::user::SignUpWithMerchantIdRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto user_id = m_context.ids().uuid_v4();
-        const auto email = input.request.get_email().get_value();
-        const ::app::crypto::SecretString password_secret{input.request.get_password()};
+        const auto email = request.get_email().get_value();
+        const ::app::crypto::SecretString password_secret{request.get_password()};
         const auto password_hash =
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(password_secret.value());
 
@@ -54,7 +56,7 @@ public:
         m_context.metrics().record_flow("user_signup_with_merchant_id");
         m_context.metrics().counter("user.user_signup_with_merchant_id").increment();
 
-        const auto company_name = input.request.get_company_name();
+        const auto company_name = request.get_company_name();
         if (!company_name.empty()) {
             const auto org_id = "org_" + company_name;
             const auto merchant_id = "merchant_" + company_name;

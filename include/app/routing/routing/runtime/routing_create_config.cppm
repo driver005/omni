@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_model;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -21,10 +21,12 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_create_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_create_config(
+        const ::app::model::routing::RoutingConfigRequest& config_request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto& typed = *input.config_request;
+        const auto& typed = config_request;
         // Required fields in upstream order (core:840-873).
         if (typed.get_name().empty()) {
             return std::unexpected{m_support.error(
@@ -38,9 +40,9 @@ public:
                 "Description of config not given"
             )};
         }
-        const auto txn = input.txn;
+        const auto txn = ctx_transaction_type(ctx);
         auto profile = typed.get_profile_id().get_value().empty()
-                           ? input.profile_id
+                           ? ctx.profile_id
                            : typed.get_profile_id().get_value();
         if (profile.empty()) {
             return std::unexpected{m_support.error(
@@ -49,7 +51,7 @@ public:
             )};
         }
         if (const auto validation_error =
-                m_support.profile_validation_error(input.auth_profile, profile)) {
+                m_support.profile_validation_error(ctx_auth_profile(ctx), profile)) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::PRECONDITION_FAILED, *validation_error)
             };
@@ -63,7 +65,7 @@ public:
             config_json += R"(,"algorithm_for":"payout"})";
         }
         auto record = m_support.config_record(
-            input.merchant_id,
+            ctx.merchant_id,
             algorithm_id,
             typed.get_name(),
             typed.get_description(),

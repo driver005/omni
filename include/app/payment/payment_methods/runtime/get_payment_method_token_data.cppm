@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::TokenDataResponse, core::error::AppError>
-        get_payment_method_token_data(const GetPaymentMethodTokenDataInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::TokenDataResponse>
+        get_payment_method_token_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetPaymentMethodTokenDataData{dto, ctx};
         const auto& record = input.record;
         const auto vault = m_support.call_connector(
             record.get_merchant_id(),

@@ -21,9 +21,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundListResponse, core::error::AppError>
-    list_profile(const RefundsListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundListResponse>
+        list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsListProfileData{dto, ctx};
         m_context.metrics().record_flow("refund_profile_list");
         m_context.metrics().counter("refunds_profile_list_total").increment();
 

@@ -1,6 +1,7 @@
 export module app_user:user_runtime_user_org_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,16 +38,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    user_org_create(const UserOrgCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    user_org_create(const ::app::model::user::UserOrgMerchantCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto org_id_str = m_context.ids().payment_id("org_");
         const auto merchant_id_str = m_context.ids().payment_id("merchant_");
-        const auto org_name = input.request.get_organization_name();
-        const auto merchant_name_value = input.request.get_merchant_name();
+        const auto org_name = request.get_organization_name();
+        const auto merchant_name_value = request.get_merchant_name();
 
         ::app::store::organizations::OrganizationRecord org{};
         org.set_organization_id(org_id_str);
@@ -62,10 +64,10 @@ public:
         m_context.repository().save_merchant_account(std::move(merchant));
 
         const auto key = std::string{"user.user_org_create:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
@@ -78,7 +80,7 @@ public:
         ::app::model::user::MerchantIdValue merchant_id{};
         merchant_id.set_value(merchant_id_str);
         ::app::model::user::OptionalEncryptableNameValue merchant_name{};
-        merchant_name.set_value(input.request.get_organization_name());
+        merchant_name.set_value(request.get_organization_name());
         ::app::model::user::MerchantAccountTypeValue merchant_account_type{};
         merchant_account_type.set_value("orchestration");
         ::app::model::user::ApiVersionValue version{};

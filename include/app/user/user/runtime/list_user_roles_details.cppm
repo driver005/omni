@@ -1,6 +1,7 @@
 export module app_user:user_runtime_list_user_roles_details;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    list_user_roles_details(const ListUserRolesDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    list_user_roles_details(const ::app::model::user::GetUserRoleDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -47,7 +49,7 @@ public:
         // emit a Vec<GetUserRoleDetailsResponseV2> built from persisted user roles.
         using Response = std::vector<::app::model::user::GetUserRoleDetailsResponseV2>;
         Response response{};
-        const auto email = input.request.get_email().get_value();
+        const auto email = request.get_email().get_value();
         std::string target_user{};
         const auto index = m_context.cache().get("user.email_index:" + email);
         if (index.hit) {
@@ -60,9 +62,9 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST
             )};
         }
-        const auto org_id = input.request_context.org_id;
-        const auto merchant_id = input.request_context.merchant_id;
-        const auto profile_id = input.request_context.auth.profile_id();
+        const auto org_id = ctx.org_id;
+        const auto merchant_id = ctx.merchant_id;
+        const auto profile_id = ctx_auth(ctx).profile_id();
         for (const auto& role: m_context.repository().list_user_roles()) {
             if (!target_user.empty() && role.get_user_id() != target_user) {
                 continue;

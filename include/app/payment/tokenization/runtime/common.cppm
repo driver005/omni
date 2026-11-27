@@ -81,7 +81,7 @@ public:
     // ─── Local in-process substitutes for external pm_vault / KMS ───
 
     /** Local pm_vault::call_to_vault::<AddVault> (core/tokenization.rs:57-61). */
-    [[nodiscard]] std::expected<AddVaultResponseWire, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<AddVaultResponseWire>
     call_to_vault_add(const AddVaultRequestWire& request) const
     {
         const auto payload = serde::Ser::encode_json(request);
@@ -98,7 +98,7 @@ public:
     }
 
     /** Local pm_vault::retrieve_value_from_vault (core/tokenization.rs:195-198). */
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     retrieve_value_from_vault(const VaultRetrieveRequestWire& request) const
     {
         const auto entry = m_context.cache().get(vault_cache_key(request.vault_id));
@@ -126,7 +126,7 @@ public:
      * No route calls this upstream; kept as a local helper so the retrieve primitive is
      * present verbatim for future use.
      */
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     get_token_vault_core(std::string_view token_id) const
     {
         // core:175-179 — get_entity_id_vault_id_by_token_id -> InternalServerError.

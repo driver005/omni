@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -36,17 +37,17 @@ public:
     }
 
     // utils.rs:377-430 (fingerprint) and :448-504 (BIN duplicate check).
-    [[nodiscard]] std::expected<::app::model::blocklist::BlocklistResponse, core::error::AppError>
-    add_entry(const AddEntryInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BlocklistResponse>
+    add_entry(const EntryWire& entry, const ::core::behavior::CallContext& ctx) const
     {
         if (m_support.find_by_identity(
-                input.merchant,
-                input.profile,
-                input.data,
-                input.transaction_type
+                ctx.merchant_id,
+                ctx.profile_id,
+                entry.data,
+                entry.transaction_type
             )) {
             const auto message =
-                input.kind == "payment_method"
+                entry.kind == "payment_method"
                     ? std::string{"data associated with the given fingerprint is already blocked"}
                     : std::string{"provided bin is already blocked"};
             // Upstream PreconditionFailed maps to HTTP 400 (api_error_response.rs:626-628).
@@ -57,31 +58,31 @@ public:
 
         const auto created = m_support.now_iso8601();
         m_support.save_entry(m_support.make_entry(
-            input.data,
-            input.merchant,
-            input.profile,
-            input.kind,
-            input.transaction_type,
+            entry.data,
+            ctx.merchant_id,
+            ctx.profile_id,
+            entry.kind,
+            entry.transaction_type,
             created
         ));
 
         // transformers.rs:17-27 (ForeignFrom<storage::Blocklist>).
         ::app::model::blocklist::BlocklistResponse response;
-        response.set_fingerprint_id(input.data);
+        response.set_fingerprint_id(entry.data);
         response.set_data_kind(
-            m_support.wrap<::app::model::blocklist::BlocklistDataKindValue>(input.kind)
+            m_support.wrap<::app::model::blocklist::BlocklistDataKindValue>(entry.kind)
         );
         response.set_transaction_type(
             m_support.wrap<::app::model::blocklist::BlocklistTransactionTypeValue>(
-                input.transaction_type
+                entry.transaction_type
             )
         );
         response.set_created_at(
             m_support.wrap<::app::model::blocklist::PrimitiveDateTimeValue>(created)
         );
-        if (!input.profile.empty()) {
+        if (!ctx.profile_id.empty()) {
             response.set_profile_id(
-                m_support.wrap<::app::model::blocklist::ProfileIdValue>(input.profile)
+                m_support.wrap<::app::model::blocklist::ProfileIdValue>(ctx.profile_id)
             );
         }
         m_support.emit("blocklist.entry.added", response);

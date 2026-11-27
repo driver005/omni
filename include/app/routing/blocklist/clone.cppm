@@ -3,6 +3,7 @@ export module app_routing:blocklist_handlers_clone;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -60,36 +61,26 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "clone_blocklist_entries", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
+        auto typed =
+            core::behavior::Serializer<::app::model::blocklist::CloneBlocklistEntriesRequest>::pass(
+                req,
+                sink
             );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::model::blocklist::CloneBlocklistEntriesRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
         if (!typed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
 
         const auto merchant = m_input_support.merchant_id_of(req);
         if (const auto bad = m_input_support.require_merchant(merchant)) {
             const auto& error = *bad;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // clone.rs:76-80: source is auth.profile, no default-profile fallback here.
@@ -99,7 +90,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "Missing required param: profile_id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -124,7 +115,7 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "target_profile_ids must contain at least one profile"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (std::any_of(
@@ -139,45 +130,29 @@ public:
                 core::error::AppErrorKind::VALIDATION_FAILED,
                 "target_profile_ids must not contain the source profile"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // clone.rs:26-63 resolve_clone_targets: any foreign profile fails the whole request.
         if (!m_input_support.profile_is_owned(source, merchant)) {
             const auto error = m_input_support.profile_not_found(source);
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         for (const auto& target: targets) {
             if (!m_input_support.profile_is_owned(target.get_value(), merchant)) {
                 const auto error = m_input_support.profile_not_found(target.get_value());
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
 
-        std::string transaction_type;
-        if (typed->get_transaction_type()) {
-            transaction_type = typed->get_transaction_type()->get_value();
-        }
-        CloneBlocklistEntriesInput input{merchant, source, targets, transaction_type};
-        auto result = m_runtime.clone_blocklist_entries(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire = result->serialize(
-            wire_fields<::app::model::blocklist::CloneBlocklistEntriesResponse>()
-        );
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        auto request = *typed;
+        request.set_target_profile_ids(targets);
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = merchant;
+        ctx.profile_id = source;
+        m_runtime.clone_blocklist_entries(request, ctx).handle(sink);
     }
 
 private:

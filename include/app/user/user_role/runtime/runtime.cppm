@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -59,131 +60,137 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<GroupInfoWire>, core::error::AppError>
-    get_authorization_info(const GetAuthorizationInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_authorization_info(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_authorization_info.get_authorization_info(input);
+        return m_get_authorization_info.get_authorization_info(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ParentInfoWire>, core::error::AppError>
-    get_role_information(const GetRoleInformationInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_role_information(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_role_information.get_role_information(input);
+        return m_get_role_information.get_role_information(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ParentGroupDescriptionWire>, core::error::AppError>
-    get_parent_group_info(const GetParentGroupInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_parent_group_info(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_parent_group_info.get_parent_group_info(input);
+        return m_get_parent_group_info.get_parent_group_info(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
-    get_role_from_token(const GetRoleFromTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_role_from_token(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_role_from_token.get_role_from_token(input);
+        return m_get_role_from_token.get_role_from_token(ctx);
     }
 
-    [[nodiscard]] std::expected<GroupsAndResourcesWire, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<GroupsAndResourcesWire>
     get_groups_and_resources_for_role_from_token(
-        const GetGroupsAndResourcesForRoleFromTokenInput& input
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         return m_get_groups_and_resources_for_role_from_token
-            .get_groups_and_resources_for_role_from_token(input);
+            .get_groups_and_resources_for_role_from_token(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ParentGroupInfoWire>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
     get_parent_groups_info_for_role_from_token(
-        const GetParentGroupsInfoForRoleFromTokenInput& input
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         return m_get_parent_groups_info_for_role_from_token
-            .get_parent_groups_info_for_role_from_token(input);
+            .get_parent_groups_info_for_role_from_token(request, ctx);
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
-    create_role(const CreateRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
+    create_role(const CreateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_role.create_role(input);
+        return m_create_role.create_role(request, ctx);
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
-    create_role_v2(const CreateRoleV2Input& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
+    create_role_v2(const CreateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create_role_v2.create_role_v2(input);
+        return m_create_role_v2.create_role_v2(request, ctx);
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
-    get_role(const GetRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
+    get_role(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_role.get_role(input);
+        return m_get_role.get_role(ctx);
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithParentsWire, core::error::AppError>
-    get_parent_info_for_role(const GetParentInfoForRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithParentsWire>
+    get_parent_info_for_role(const ::core::behavior::CallContext& ctx) const
     {
-        return m_get_parent_info_for_role.get_parent_info_for_role(input);
+        return m_get_parent_info_for_role.get_parent_info_for_role(ctx);
     }
 
-    [[nodiscard]] std::expected<RoleInfoWithGroupsWire, core::error::AppError>
-    update_role(const UpdateRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<RoleInfoWithGroupsWire>
+    update_role(const UpdateRoleInputWire& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update_role.update_role(input);
+        return m_update_role.update_role(request, ctx);
     }
 
-    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
-    update_user_role(const UpdateUserRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
+    update_user_role(const ::app::dto::user_role::UpdateUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update_user_role.update_user_role(input);
+        return m_update_user_role.update_user_role(request, ctx);
     }
 
-    [[nodiscard]] std::expected<StatusOkWire, core::error::AppError>
-    accept_invitations_v2(const AcceptInvitationsV2Input& input) const
+    [[nodiscard]] core::behavior::Outcome<StatusOkWire>
+    accept_invitations_v2(const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_accept_invitations_v2.accept_invitations_v2(input);
+        return m_accept_invitations_v2.accept_invitations_v2(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::pair<TokenResponseWire, std::string>, core::error::AppError>
-    accept_invitations_pre_auth(const AcceptInvitationsPreAuthInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<TokenResponseWire, std::string>>
+    accept_invitations_pre_auth(const std::vector<AcceptEntityWire>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_accept_invitations_pre_auth.accept_invitations_pre_auth(input);
+        return m_accept_invitations_pre_auth.accept_invitations_pre_auth(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::user_role::DeleteUserRoleResponse, core::error::AppError>
-        delete_user_role(const DeleteUserRoleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::user_role::DeleteUserRoleResponse>
+        delete_user_role(const ::app::dto::user_role::DeleteUserRoleRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete_user_role.delete_user_role(input);
+        return m_delete_user_role.delete_user_role(request, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<ListUsersInEntityWire>, core::error::AppError>
-    list_users_in_lineage(const ListUsersInLineageInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_users_in_lineage(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_users_in_lineage.list_users_in_lineage(input);
+        return m_list_users_in_lineage.list_users_in_lineage(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_roles_with_info(const ListRolesWithInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_roles_with_info(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_roles_with_info.list_roles_with_info(input);
+        return m_list_roles_with_info.list_roles_with_info(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
-    list_invitable_roles_at_entity_level(const ListInvitableRolesAtEntityLevelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_invitable_roles_at_entity_level(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_invitable_roles_at_entity_level.list_invitable_roles_at_entity_level(input);
+        return m_list_invitable_roles_at_entity_level.list_invitable_roles_at_entity_level(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<MinimalRoleInfoWire>, core::error::AppError>
-    list_updatable_roles_at_entity_level(const ListUpdatableRolesAtEntityLevelInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_updatable_roles_at_entity_level(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_updatable_roles_at_entity_level.list_updatable_roles_at_entity_level(input);
+        return m_list_updatable_roles_at_entity_level.list_updatable_roles_at_entity_level(ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<InvitationWire>, core::error::AppError>
-    list_invitations_for_user(const ListInvitationsForUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_invitations_for_user(const ::core::behavior::CallContext& ctx) const
     {
-        return m_list_invitations_for_user.list_invitations_for_user(input);
+        return m_list_invitations_for_user.list_invitations_for_user(ctx);
     }
 
 private:

@@ -1,6 +1,7 @@
 export module app_webhook:subscription_runtime_update_subscription;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -25,17 +26,27 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    update_subscription(const UpdateSubscriptionInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    update_subscription(
+        const ParsedPayload& payload,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
+        const std::string subscription_id =
+            ctx.path_segments.size() > 1 ? ctx.path_segments.at(1) : std::string{};
+        const std::string plan_id =
+            m_support.json_string(payload.root, "plan_id").value_or("");
+        const std::string item_price_id =
+            m_support.json_string(payload.root, "item_price_id").value_or("");
+
         if (const auto failure =
-                m_support.find_business_profile(input.profile_id, input.merchant_id)) {
+                m_support.find_business_profile(ctx.profile_id, ctx.merchant_id)) {
             return std::unexpected{*failure};
         }
-        auto found = m_support.find_subscription(input.subscription_id);
+        auto found = m_support.find_subscription(subscription_id);
         if (!found) {
             return std::unexpected{m_support.generic_not_found(
-                "subscription not found for id: " + input.subscription_id
+                "subscription not found for id: " + subscription_id
             )};
         }
         InvoiceView invoice = m_support.latest_invoice(found->subscription_id);
@@ -44,8 +55,8 @@ public:
         }
 
         // update_subscription(plan_id, item_price_id) (core.rs:669-677)
-        found->plan_id = input.plan_id;
-        found->item_price_id = input.item_price_id;
+        found->plan_id = plan_id;
+        found->item_price_id = item_price_id;
         found->modified_at = m_support.now_value();
         m_context.repository().update_subscription(m_support.to_store_record(*found));
 
@@ -54,7 +65,7 @@ public:
             return std::unexpected{*failure};
         }
         Estimate estimate =
-            billing.estimate(*found, input.plan_id, input.item_price_id, "", found->client_secret);
+            billing.estimate(*found, plan_id, item_price_id, "", found->client_secret);
 
         // update_invoice + update_payment (core.rs:698-718)
         invoice.amount = estimate.amount;

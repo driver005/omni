@@ -24,9 +24,11 @@ public:
     }
 
     // routes/dummy_connector.rs:66-83 -> core.rs:13-42 (payment).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment(const PaymentInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        payment(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentData{dto, ctx};
         const PaymentRequest& request = input.request;
 
         // types.rs:77-88 - PaymentId::default() (pay_*) and

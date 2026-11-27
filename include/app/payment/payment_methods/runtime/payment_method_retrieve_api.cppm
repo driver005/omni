@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodResponse, core::error::AppError>
-        payment_method_retrieve_api(const PaymentMethodRetrieveApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodResponse>
+        payment_method_retrieve_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodRetrieveApiData{dto, ctx};
         auto record = input.record;
         if (input.force_sync) {
             const auto sync = m_support.call_connector(

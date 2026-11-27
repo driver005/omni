@@ -1,6 +1,7 @@
 export module app_user:user_runtime_get_user_merchant_details;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,17 +38,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    get_user_merchant_details(const GetUserMerchantDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    get_user_merchant_details(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto merchant_id = input.request_context.merchant_id;
+        const auto merchant_id = ctx.merchant_id;
         const auto key = std::string{"user.get_user_merchant_details:"} + merchant_id;
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

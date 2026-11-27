@@ -4,8 +4,8 @@ import std;
 import app_dto;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :gsm_input;
 import :gsm_result;
 import :gsm_runtime_common;
 import :gsm_runtime_create;
@@ -27,28 +27,35 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
-    create(const CreateGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmResponse> create(
+        const ::app::dto::gsm::GsmCreateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
-    get(const GetGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmResponse>
+    get(const ::app::dto::gsm::GsmRetrieveRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_get.get(input);
+        return m_get.get(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmResponse, core::error::AppError>
-    update(const UpdateGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmResponse> update(
+        const ::app::dto::gsm::GsmUpdateRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_update.update(input);
+        return m_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::gsm::GsmDeleteResponse, core::error::AppError>
-    remove(const DeleteGsmRuleInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::gsm::GsmDeleteResponse> remove(
+        const ::app::dto::gsm::GsmDeleteRequest& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_delete.remove(input);
+        return m_delete.remove(request, ctx);
     }
 
 private:

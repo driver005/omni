@@ -36,9 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: get_payout_filters_profile ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListFiltersV2, core::error::AppError>
-    get_payout_filters_profile(const PayoutsGetFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListFiltersV2>
+    get_payout_filters_profile(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsGetFiltersProfileData{ctx};
         m_context.metrics().record_flow("get_payout_filters_profile");
         m_context.metrics().counter("payouts_get_filters_profile_total").increment();
 

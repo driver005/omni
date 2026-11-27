@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
-        payment_methods_session_retrieve(const PaymentMethodsSessionRetrieveInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
+        payment_methods_session_retrieve(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodsSessionRetrieveData{dto, ctx};
         const auto& record = input.record;
         m_context.metrics().record_flow("payment_methods_session_retrieve");
         m_context.metrics().counter("PAYMENT_METHOD_PAYMENT_METHODS_SESSION_RETRIEVE").increment();

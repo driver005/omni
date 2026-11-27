@@ -27,9 +27,11 @@ public:
     // core/cards_info.rs:32-53 retrieve_card_info, wrapped by
     // api::server_wrap(Flow::CardsInfo, ..., LockAction::NotApplicable).
 
-    [[nodiscard]] std::expected<::app::model::cards_info::CardInfoResponse, core::error::AppError>
-    card_iin_info(const CardIinInfoInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::cards_info::CardInfoResponse>
+        card_iin_info(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CardIinInfoData{dto, ctx};
         // core/cards_info.rs:32-53 retrieve_card_info.
         const auto& payload = input.payload;
         if (const auto invalid = m_support.verify_iin_length(payload.get_card_iin())) {

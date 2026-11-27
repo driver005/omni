@@ -19,6 +19,7 @@ import app_connector;
 import app_events;
 import app_workflow;
 import app_keystore;
+import core_behavior;
 
 import :blocklist_input;
 import :blocklist_result;
@@ -36,11 +37,13 @@ public:
     }
 
     // batch.rs:553-590 get_batch_blocklist_job_status.
-    [[nodiscard]] std::
-        expected<::app::model::blocklist::BatchBlocklistJobStatusResponse, core::error::AppError>
-        get_batch_blocklist_job_status(const GetBatchBlocklistJobStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::blocklist::BatchBlocklistJobStatusResponse>
+    get_batch_blocklist_job_status(
+        const JobRecord& stored,
+        const ::core::behavior::CallContext&
+    ) const
     {
-        auto response = m_support.job_status_of(input.stored);
+        auto response = m_support.job_status_of(stored);
         // batch.rs:581-589: the only place a download link is minted.
         if (m_support.is_export_downloadable(response)) {
             const auto expires = m_support.now_iso8601(900);

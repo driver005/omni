@@ -52,6 +52,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // 1. request -> Input
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error = m_request_support.authorize(
@@ -60,14 +61,14 @@ public:
                 ::app::webhook::policy::kVerificationV1
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto merchant_id = m_input_support.merchant_id_from_path(req);
         if (!merchant_id) {
             const auto& error = merchant_id.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -80,7 +81,7 @@ public:
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "Unauthorized"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -90,44 +91,20 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // web::Json<ApplepayMerchantVerificationRequest> is strict: the plain
         // snake_case wire is the only accepted shape.
-        using Input = VerificationRequestWire;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed = core::behavior::Serializer<VerificationRequestWire>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        ApplePayMerchantRegistrationInput input{
-            *parsed,
-            *merchant_id,
-            std::string{auth.profile_id()}
-        };
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = *merchant_id;
+        ctx.profile_id = auth.profile_id();
 
-        // 2. Input -> DTO response
-        auto result = m_runtime.apple_pay_merchant_registration(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. DTO -> response (same wire fields through Serializer).
-        auto encoded = result->serialize(apple_pay_merchant_registration_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.apple_pay_merchant_registration(*parsed, ctx).handle(sink);
     }
 
     /** @brief Route handler for upstream `retrieve_apple_pay_verified_domains`
@@ -138,6 +115,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // 1. request -> Input
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error = m_request_support.authorize(
@@ -146,14 +124,14 @@ public:
                 ::app::webhook::policy::kVerificationV1
             )) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto query = m_input_support.verified_domains_query(req);
         if (!query) {
             const auto& error = query.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -163,33 +141,16 @@ public:
                 core::error::AppErrorKind::UNAUTHORIZED,
                 "Unauthorized"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        RetrieveApplePayVerifiedDomainsInput input{
-            query->first,
-            std::string{auth.profile_id()},
-            query->second
-        };
+        auto ctx = m_request_support.context(req);
+        ctx.merchant_id = query->first;
+        ctx.profile_id = auth.profile_id();
+        ctx.query["merchant_connector_account_id"] = query->second;
 
-        // 2. Input -> DTO response
-        auto result = m_runtime.retrieve_apple_pay_verified_domains(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // 3. DTO -> response (same wire fields through Serializer).
-        auto encoded = result->serialize(retrieve_apple_pay_verified_domains_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.retrieve_apple_pay_verified_domains(ctx).handle(sink);
     }
 
     void install_v1(core::router::RouterContext<>& router)

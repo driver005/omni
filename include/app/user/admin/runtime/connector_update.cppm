@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_connector_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,10 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
-    update(const ConnectorUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
+    update(const ::app::dto::admin::MerchantConnectorUpdate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        auto found = m_context.repository().find_merchant_connector_by_string(input.connector_id);
+        auto found = m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -46,32 +48,32 @@ public:
             )};
         }
         if (const auto duplicate =
-                m_support.acquire_operation_lock("connector_update", input.connector_id)) {
+                m_support.acquire_operation_lock("connector_update", ctx_string(ctx,"connector_id"))) {
             return std::unexpected{*duplicate};
         }
         auto record = std::move(*found);
-        if (input.request.get_connector_label().has_value()) {
-            record.set_connector_label(*input.request.get_connector_label());
+        if (request.get_connector_label().has_value()) {
+            record.set_connector_label(*request.get_connector_label());
         }
-        if (input.request.get_metadata().has_value()) {
-            record.set_metadata(input.request.get_metadata()->get_value());
+        if (request.get_metadata().has_value()) {
+            record.set_metadata(request.get_metadata()->get_value());
         }
-        if (input.request.get_disabled().has_value()) {
-            record.set_disabled(*input.request.get_disabled());
+        if (request.get_disabled().has_value()) {
+            record.set_disabled(*request.get_disabled());
         }
-        if (input.request.get_status().has_value()) {
-            record.set_status(input.request.get_status()->get_value());
+        if (request.get_status().has_value()) {
+            record.set_status(request.get_status()->get_value());
         }
-        if (input.request.get_connector_account_details().has_value()) {
+        if (request.get_connector_account_details().has_value()) {
             record.set_connector_account_details(
                 ::app::crypto::AesWrap{}.encrypt(
-                    input.request.get_connector_account_details()->get_value(),
-                    m_support.connector_encryption_key(record.get_merchant_id(), input.connector_id)
+                    request.get_connector_account_details()->get_value(),
+                    m_support.connector_encryption_key(record.get_merchant_id(), ctx_string(ctx,"connector_id"))
                 )
             );
         }
         m_context.repository().update_merchant_connector(record);
-        m_support.release_operation_lock("connector_update", input.connector_id);
+        m_support.release_operation_lock("connector_update", ctx_string(ctx,"connector_id"));
 
         ::app::dto::admin::MerchantConnectorResponse response;
         response.set_connector_type(m_support.connector_type_value(record.get_connector_type()));

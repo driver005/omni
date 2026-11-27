@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::GetNetworkTokenEiligibilityResponse,
-        core::error::AppError>
-    get_pm_nt_eligibility_api(const GetPmNtEligibilityApiInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::GetNetworkTokenEiligibilityResponse>
+    get_pm_nt_eligibility_api(const core::behavior::CallContext& ctx) const
     {
+        const auto input = GetPmNtEligibilityApiData{ctx};
         // Upstream core/payment_methods.rs:1777-1781 — NotSupported when network
         // tokenization is disabled for the profile. Local wire-name substitute.
         if (const auto nt_enabled = m_context.config_store().get_value(

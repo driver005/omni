@@ -1,6 +1,7 @@
 export module app_store:files_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_serde;
 import core_error;
@@ -80,6 +81,29 @@ public:
         return Builder{}(kind, std::move(message));
     }
 
+    /** @brief web::Path<String> /files/{file_id}: segment following "files". */
+    [[nodiscard]] static std::optional<std::string>
+    file_id_from(const core::behavior::CallContext& ctx)
+    {
+        for (std::size_t i{0}; i < ctx.path_segments.size(); ++i) {
+            if (ctx.path_segments[i] != "files") {
+                continue;
+            }
+            if (i + 1 < ctx.path_segments.size()) {
+                return ctx.path_segments[i + 1];
+            }
+            break;
+        }
+        return std::nullopt;
+    }
+
+    /** @brief Authenticated identity merchant id; falls back to the processor scope. */
+    [[nodiscard]] static std::string provider_merchant_id(const core::behavior::CallContext& ctx)
+    {
+        const auto it = ctx.claims.find("x-merchant-id");
+        return it != ctx.claims.end() && !it->second.empty() ? it->second : ctx.merchant_id;
+    }
+
     /**
      * @brief Port of `validate_file_upload` (`core/files/helpers.rs:34-86`).
      *  DisputeEvidence: MissingDisputeId -> dispute lookup (DisputeNotFound) ->
@@ -144,7 +168,7 @@ public:
      * @brief Port of `upload_and_get_provider_provider_file_id_profile_id`
      * (`core/files/helpers.rs:287-406`, v1).
      */
-    [[nodiscard]] std::expected<UploadOutcome, Error>
+    [[nodiscard]] core::behavior::Outcome<UploadOutcome>
     upload_and_get_provider_provider_file_id_profile_id(
         const CreateFileRequestData& request,
         std::string_view file_key,
@@ -226,7 +250,7 @@ public:
     /**
      * @brief Port of `delete_file_using_file_id` (`core/files/helpers.rs:88-121`).
      */
-    [[nodiscard]] std::expected<FileRecord, Error> delete_file_using_file_id(
+    [[nodiscard]] core::behavior::Outcome<FileRecord> delete_file_using_file_id(
         std::string_view processor_merchant_id,
         std::string_view file_id
     ) const
@@ -259,7 +283,7 @@ public:
      * @brief Port of `retrieve_file_and_provider_file_id_from_file_id`
      * (`core/files/helpers.rs:199-264`).
      */
-    [[nodiscard]] std::expected<FileInfo, Error> retrieve_file_and_provider_file_id_from_file_id(
+    [[nodiscard]] core::behavior::Outcome<FileInfo> retrieve_file_and_provider_file_id_from_file_id(
         std::string_view processor_merchant_id,
         std::string_view file_id,
         const std::optional<std::string>& dispute_id,
@@ -305,7 +329,7 @@ public:
     /**
      * @brief Port of `retrieve_file_from_connector` (`core/files/helpers.rs:123-197`).
      */
-    [[nodiscard]] std::expected<std::string, Error> retrieve_file_from_connector(
+    [[nodiscard]] core::behavior::Outcome<std::string> retrieve_file_from_connector(
         const FileRecord& metadata,
         const std::optional<std::string>& dispute_id,
         std::string_view processor_merchant_id
@@ -354,7 +378,7 @@ public:
     // ── Upstream metadata persistence ports ─────────────────────────────────────────
 
     /** @brief `store.insert_file_metadata` (`core/files.rs:54-59`). */
-    [[nodiscard]] std::expected<FileRecord, Error>
+    [[nodiscard]] core::behavior::Outcome<FileRecord>
     insert_file_metadata(const FileRecord& record) const
     {
         auto created = m_context.repository().create_file(record);

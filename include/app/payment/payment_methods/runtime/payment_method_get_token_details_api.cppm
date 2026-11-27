@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse,
-        core::error::AppError>
-    payment_method_get_token_details_api(const PaymentMethodGetTokenDetailsApiInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodGetTokenDetailsResponse>
+    payment_method_get_token_details_api(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodGetTokenDetailsApiData{ctx};
         m_context.metrics().record_flow("payment_method_get_token_details_api");
         m_context.metrics()
             .counter("PAYMENT_METHOD_PAYMENT_METHOD_GET_TOKEN_DETAILS_API")

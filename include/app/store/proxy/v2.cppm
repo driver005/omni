@@ -45,36 +45,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth_error = m_request_support.authorize(req, "proxy", {});
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
-
         // Bind the forward to the authenticated identity, never to the request body.
-        const auto merchant_id = m_request_support.scope(req).merchant_id;
-
         const auto body = req.body_as_string();
         auto parsed = m_input_support.parse_request(body);
         if (!parsed) {
-            const auto& error = parsed.error();
-            error.send(res, send);
+            parsed.error().send(sink);
             return;
         }
-        ProxyInput input{*parsed, std::string{merchant_id}, auth};
-
-        auto result = m_runtime.proxy(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.proxy(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)

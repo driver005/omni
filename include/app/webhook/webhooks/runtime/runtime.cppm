@@ -1,6 +1,7 @@
 export module app_webhook:webhooks_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -24,22 +25,31 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
-    receive_incoming_webhook(const ReceiveIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
+    receive_incoming_webhook(
+        const std::string& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_receive_incoming_webhook.receive_incoming_webhook(input);
+        return m_receive_incoming_webhook.receive_incoming_webhook(body, ctx);
     }
 
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
-    receive_incoming_webhook_v2(const ReceiveIncomingWebhookV2Input& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
+    receive_incoming_webhook_v2(
+        const std::string& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_receive_incoming_webhook_v2.receive_incoming_webhook_v2(input);
+        return m_receive_incoming_webhook_v2.receive_incoming_webhook_v2(body, ctx);
     }
 
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
-    receive_network_token(const ReceiveNetworkTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
+    receive_network_token(
+        const std::string& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_receive_network_token.receive_network_token(input);
+        return m_receive_network_token.receive_network_token(body, ctx);
     }
 
 private:

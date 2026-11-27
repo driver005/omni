@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_olap_support;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -57,6 +58,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_initiate_pm_collect_link_flow(req, res, std::move(send));
                         }
                     )
@@ -73,6 +76,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_render_pm_collect_link(req, res, std::move(send));
                                 }
                             )
@@ -90,6 +95,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                             }
                         )
@@ -107,6 +114,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_retrieve_olap_api(req, res, std::move(send));
                         }
                     )
@@ -121,6 +130,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "initiate_pm_collect_link_flow",
@@ -128,31 +139,25 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodCollectLinkRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCollectLinkRequest>::pass(req, sink);
+        if (!parsed) return;
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) {
             const auto error = m_input_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.customer_exists(parsed->get_customer_id().get_value())) {
@@ -160,19 +165,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Customer does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        InitiatePmCollectLinkFlowInput input{*parsed, merchant_id, body};
-        auto result = m_runtime.initiate_pm_collect_link_flow(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.initiate_pm_collect_link_flow(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_render_pm_collect_link(
@@ -181,6 +179,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "render_pm_collect_link",
@@ -188,7 +188,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string merchant_id = m_input_support.path_segment(req, 1);
@@ -198,7 +198,7 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "collect link not found"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.collect_link_exists(collect_id)) {
@@ -206,7 +206,7 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "collect link not found"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto presented = ::app::http::RequestQuery{}(req).get("token");
@@ -214,20 +214,12 @@ public:
             if (const auto secret_error =
                     m_input_support.check_client_secret(collect_id, *presented)) {
                 const auto& error = *secret_error;
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
         }
-        RenderPmCollectLinkInput input{merchant_id, collect_id};
-        auto result = m_runtime.render_pm_collect_link(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.render_pm_collect_link(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_retrieve_olap_api(
@@ -236,6 +228,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_retrieve_olap_api",
@@ -243,7 +237,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req, 1);
@@ -252,7 +246,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method(payment_method_id);
@@ -261,19 +255,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodRetrieveOlapApiInput input{*record};
-        auto result = m_runtime.payment_method_retrieve_olap_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *record;
+        auto result = m_runtime.payment_method_retrieve_olap_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

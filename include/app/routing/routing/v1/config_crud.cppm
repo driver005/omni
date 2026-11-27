@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -47,25 +48,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_entry", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        // Upstream takes RoutingEntryRequest from web::Query, not the body (routing.rs:26).
-        input.target = m_request_support.query(req, "target");
-
-        auto result = m_runtime.routing_entry(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_entry(m_request_support.context(req)).handle(sink);
     }
 
     // ─── create_routing_algorithm_under_profile (core:826 v1 / :757 v2) ────────────
@@ -75,46 +64,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_create_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto parsed = serde::Ser::deserialize<::app::model::routing::RoutingConfigRequest>(
-            "application/json",
-            body
+        auto parsed = core::behavior::Serializer<::app::model::routing::RoutingConfigRequest>::pass(
+            req,
+            sink
         );
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.config_request = *parsed;
-
-        auto result = m_runtime.routing_create_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_create_config(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     // ─── link_routing_config (core:1119 v1) / link_..._under_profile (:1049 v2) ─────
@@ -124,21 +87,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_link_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
+        std::optional<::app::model::routing::RoutingLinkWrapper> link{};
+        std::optional<::app::model::routing::RoutingActivatePayload> activate{};
         const auto body = req.body_as_string();
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
         if (!body.empty()) {
-            auto link = serde::Ser::deserialize<::app::model::routing::RoutingLinkWrapper>(
+            link = serde::Ser::deserialize<::app::model::routing::RoutingLinkWrapper>(
                 "application/json",
                 body
             );
-            auto activate = serde::Ser::deserialize<::app::model::routing::RoutingActivatePayload>(
+            activate = serde::Ser::deserialize<::app::model::routing::RoutingActivatePayload>(
                 "application/json",
                 body
             );
@@ -147,26 +110,11 @@ public:
                     core::error::AppErrorKind::INVALID_JSON,
                     "invalid JSON"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
-            if (link) {
-                input.link = *link;
-            }
-            if (activate) {
-                input.activate = *activate;
-            }
         }
-
-        auto result = m_runtime.routing_link_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_link_config(link, activate, m_request_support.context(req)).handle(sink);
     }
 
     // ─── retrieve_routing_algorithm_from_algorithm_id (core:1605/1640) ─────────────
@@ -176,23 +124,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_retrieve_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.routing_retrieve_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_retrieve_config(m_request_support.context(req)).handle(sink);
     }
 
     // ─── retrieve_merchant_routing_dictionary (core:590) + merge (:636/:704) ───────
@@ -203,25 +141,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "list_routing_configs", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.list_limit = m_input_support.query_number<std::uint16_t>(req, "limit");
-        input.list_offset = m_input_support.query_number<std::uint8_t>(req, "offset");
-
-        auto result = m_runtime.list_routing_configs(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.list_routing_configs(m_request_support.context(req)).handle(sink);
     }
 
     void handle_list_routing_configs_for_profile(
@@ -230,26 +156,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "list_routing_configs_for_profile", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.list_limit = m_input_support.query_number<std::uint16_t>(req, "limit");
-        input.list_offset = m_input_support.query_number<std::uint8_t>(req, "offset");
-
-        auto result = m_runtime.list_routing_configs_for_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.list_routing_configs_for_profile(m_request_support.context(req)).handle(sink);
     }
 
     // ─── unlink_routing_config (core:1767 v1) / unlink_..._under_profile (:1714 v2) ─
@@ -259,33 +173,22 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_unlink_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
+        std::optional<::app::model::routing::RoutingConfigRequest> config_request{};
         const auto body = req.body_as_string();
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
         if (!body.empty()) {
-            if (auto parsed = serde::Ser::deserialize<::app::model::routing::RoutingConfigRequest>(
-                    "application/json",
-                    body
-                )) {
-                input.config_request = *parsed;
-            }
+            config_request = serde::Ser::deserialize<::app::model::routing::RoutingConfigRequest>(
+                "application/json",
+                body
+            );
         }
-
-        auto result = m_runtime.routing_unlink_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_unlink_config(config_request, m_request_support.context(req))
+            .handle(sink);
     }
 
     // ─── retrieve_linked_routing_config (core:2168 v1) / under_profile (:2128 v2) ──
@@ -296,24 +199,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied =
                 m_request_support.authorize(req, "routing_retrieve_linked_config", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-
-        auto result = m_runtime.routing_retrieve_linked_config(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_retrieve_linked_config(m_request_support.context(req)).handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

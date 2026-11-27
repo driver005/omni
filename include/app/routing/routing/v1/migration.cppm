@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_context;
@@ -44,42 +45,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "routing_migration_status", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.migration_limit =
-            m_input_support.query_number<std::uint32_t>(req, "limit").value_or(20);
-        input.migration_offset =
-            m_input_support.query_number<std::uint32_t>(req, "offset").value_or(0);
         if (const auto body = req.body_as_string(); !body.empty()) {
-            auto typed =
-                serde::Ser::deserialize<::app::model::routing::RoutingMigrationStatusQuery>(
-                    "application/json",
-                    body
-                );
+            auto typed = core::behavior::Serializer<
+                ::app::model::routing::RoutingMigrationStatusQuery>::pass(req, sink);
             if (!typed) {
-                const auto error = core::error::AppErrorBuilder{}(
-                    core::error::AppErrorKind::INVALID_JSON,
-                    "invalid JSON"
-                );
-                error.send(res, send);
                 return;
             }
         }
-
-        auto result = m_runtime.routing_migration_status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.routing_migration_status(m_request_support.context(req)).handle(sink);
     }
 
     // ─── migrate_rules_for_profiles (core:3072) + migrate_rules_for_profile (:3193) ─
@@ -89,46 +68,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto denied = m_request_support.authorize(req, "migrate_routing_rules", {})) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        auto typed = serde::Ser::deserialize<::app::model::routing::RuleMigrationRequest>(
-            "application/json",
-            body
+        auto parsed = core::behavior::Serializer<::app::model::routing::RuleMigrationRequest>::pass(
+            req,
+            sink
         );
-        if (!typed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
+        if (!parsed) {
             return;
         }
-        RoutingInput input{};
-        m_input_support.fill_common(req, input);
-        input.body = body;
-        input.migration_request = *typed;
-
-        auto result = m_runtime.migrate_routing_rules(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.migrate_routing_rules(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     // ─── Route registrations (original install() order) ────────────────────────────

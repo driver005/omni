@@ -1,6 +1,7 @@
 export module app_user:user_runtime_update_user_account_details;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    update_user_account_details(const UpdateUserAccountDetailsInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    update_user_account_details(const ::app::model::user::UpdateUserAccountDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto owner = input.request_context.token.value();
+        const auto owner = ctx_token(ctx).value();
         const auto email_entry = m_context.cache().get("user.token_email:" + owner);
         const auto email =
             email_entry.hit ? core::cache::value_as<std::string>(email_entry.value, std::string{})
@@ -52,8 +54,8 @@ public:
         const auto user_id =
             index_entry.hit ? core::cache::value_as<std::string>(index_entry.value, email) : email;
         if (auto user = m_context.repository().find_user_by_string(user_id)) {
-            if (input.request.get_name()) {
-                user->set_name(*input.request.get_name());
+            if (request.get_name()) {
+                user->set_name(*request.get_name());
             }
             m_context.repository().update_user(*user);
             m_support.publish_identity_event("user.details_updated", user_id);

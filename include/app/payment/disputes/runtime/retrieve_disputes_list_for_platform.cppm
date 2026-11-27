@@ -38,9 +38,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListResponse, Error>
-    retrieve_disputes_list_for_platform(const RetrieveDisputesListForPlatformInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListResponse>
+        retrieve_disputes_list_for_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RetrieveDisputesListForPlatformData{dto, ctx};
         m_context.metrics().record_flow("dispute_platform_list");
         const auto& scope = input.scope;
         const auto& constraints = input.constraints;

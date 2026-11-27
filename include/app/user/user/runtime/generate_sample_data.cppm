@@ -1,6 +1,7 @@
 export module app_user:user_runtime_generate_sample_data;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    generate_sample_data(const GenerateSampleDataInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    generate_sample_data(const ::app::model::user::SampleDataRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -46,7 +48,7 @@ public:
         // Local in-process substitute for core/user/sample_data.rs: the typed
         // request drives a tracked generation job and a Kafka-shaped event;
         // upstream returns ApplicationResponse::StatusOk (empty 200).
-        const auto count = input.request.get_record().value_or(10U);
+        const auto count = request.get_record().value_or(10U);
         const auto tracker_id = m_context.process_trackers().schedule(
             "sample_data_generate",
             std::to_string(count),
@@ -58,7 +60,7 @@ public:
             std::format(R"({{"tracker_id":{}}})", tracker_id)
         );
         m_context.repository().set_config(
-            "user.sample_data.last_generate." + input.request_context.merchant_id,
+            "user.sample_data.last_generate." + ctx.merchant_id,
             std::to_string(count)
         );
 

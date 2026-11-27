@@ -1,6 +1,7 @@
 export module app_user:profiles_runtime_retrieve;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -23,19 +24,19 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<ProfileWireResponse, core::error::AppError>
-    retrieve(const ProfileRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ProfileWireResponse>
+    retrieve(const ::core::behavior::CallContext& ctx) const
     {
         const auto profile = m_support.find_business_profile_by_merchant_id_profile_id(
-            input.merchant_id,
-            input.profile_id
+            ctx_string(ctx,"merchant_id"),
+            ctx_string(ctx,"profile_id")
         );
         if (!profile) {
-            return std::unexpected(m_support.profile_not_found(input.profile_id));
+            return std::unexpected(m_support.profile_not_found(ctx_string(ctx,"profile_id")));
         }
         // core/admin.rs:4167-4179 — cache hits preserve the DB ownership constraint.
-        if (profile->get_merchant_id() != input.merchant_id && !input.merchant_id.empty()) {
-            return std::unexpected(m_support.profile_not_found(input.profile_id));
+        if (profile->get_merchant_id() != ctx_string(ctx,"merchant_id") && !ctx_string(ctx,"merchant_id").empty()) {
+            return std::unexpected(m_support.profile_not_found(ctx_string(ctx,"profile_id")));
         }
         m_context.metrics().record_flow("profiles.retrieve");
         m_context.metrics().record_flow("Flow::ProfileRetrieve");

@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodDeleteResponse, core::error::AppError>
-        payment_method_delete_api(const PaymentMethodDeleteApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodDeleteResponse>
+        payment_method_delete_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodDeleteApiData{dto, ctx};
         const auto& record = input.record;
         const auto response_vault = m_support.call_connector(
             record.get_merchant_id(),

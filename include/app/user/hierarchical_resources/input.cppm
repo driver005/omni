@@ -112,9 +112,8 @@ public:
     }
 
     /** @brief routes:48-71 parse_upload_certificate_body. */
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::UploadCertificateRequest,
-        core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::UploadCertificateRequest>
     parse_upload_certificate_body(interfaces::io::IRequest& req, std::string_view body) const
     {
         using Input = ::app::dto::hierarchical_resources::UploadCertificateRequest;
@@ -192,70 +191,59 @@ private:
         return true;
     }
 
-    // ── Standard base64 (upstream BASE64_ENGINE; local, no new module deps) ────
-
-    [[nodiscard]] std::string base64_encode(std::string_view input) const
-    {
-        static constexpr std::string_view table{
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-        };
-        std::string out{};
-        out.reserve(4 * ((input.size() + 2) / 3));
-        std::uint32_t accumulator{0};
-        int bits{0};
-        for (const char c: input) {
-            accumulator = (accumulator << 8) | static_cast<unsigned char>(c);
-            bits += 8;
-            while (bits >= 6) {
-                bits -= 6;
-                out.push_back(table[(accumulator >> bits) & 0x3FU]);
+    /** @brief Request snapshot shared by every hierarchical_resources runtime method. */
+[[nodiscard]] inline ::core::behavior::CallContext make_call_context(interfaces::io::IRequest& req)
+{
+    ::core::behavior::CallContext ctx{};
+    const auto auth = ::app::auth::AuthContextBuilder{}(req);
+    ctx.merchant_id = std::string{::app::http::merchant_id_from_header{}(req)};
+    if (ctx.merchant_id.empty()) ctx.merchant_id = auth.merchant_id();
+    ctx.org_id = std::string{::app::http::org_id_from_header{}(req)};
+    if (ctx.org_id.empty()) ctx.org_id = auth.org_id();
+    ctx.profile_id = auth.profile_id();
+    if (const auto c = auth.claim(::app::auth::kClaimConnectedMerchantId)) ctx.connected_merchant_id = std::string{*c};
+    if (const auto s = auth.claim(::app::auth::kClaimClientSecret)) ctx.client_secret = std::string{*s};
+    const auto segments = ::app::http::RequestPath{}(req);
+    for (std::size_t i{0}; i < segments.count(); ++i) ctx.path_segments.push_back(std::string{segments.at(i).value_or("")});
+    const auto raw = req.get_path();
+    if (const auto q = raw.find('?'); q != std::string_view::npos) {
+        const std::string_view tail = raw.substr(q + 1);
+        std::size_t start{0};
+        while (start <= tail.size()) {
+            const auto amp = tail.find('&', start);
+            const auto end = amp == std::string_view::npos ? tail.size() : amp;
+            const auto pair = tail.substr(start, end - start);
+            const auto eq = pair.find('=');
+            if (!pair.empty()) {
+                ctx.query.insert_or_assign(
+                    std::string{eq == std::string_view::npos ? pair : pair.substr(0, eq)},
+                    std::string{eq == std::string_view::npos ? std::string_view{} : pair.substr(eq + 1)}
+                );
             }
+            if (amp == std::string_view::npos) break;
+            start = amp + 1;
         }
-        if (bits > 0) {
-            out.push_back(table[(accumulator << (6 - bits)) & 0x3FU]);
-            while (out.size() % 4 != 0) {
-                out.push_back('=');
-            }
-        }
-        return out;
     }
+    constexpr std::string_view kHeaders[] = {
+        "x-merchant-id", "x-org-id", "x-organization-id", "x-profile-id", "authorization",
+        "x-client-secret", "x-api-key", "x-connected-merchant-id", "x-forwarded-for"
+    };
+    for (const auto name: kHeaders) {
+        const auto value = req.find_header(name);
+        if (!value.empty()) ctx.headers.insert_or_assign(std::string{name}, std::string{value});
+    }
+    for (const auto& [key, value]: auth.claims()) ctx.claims.insert_or_assign(key, value);
+    ctx.claims.insert_or_assign("merchant_id", ctx.merchant_id);
+    ctx.claims.insert_or_assign("org_id", ctx.org_id);
+    ctx.claims.insert_or_assign("profile_id", ctx.profile_id);
+    return ctx;
+}
 
-    ::app::context::AppContext& m_context;
-};
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct GenerateHierarchicalResourceInput
+[[nodiscard]] inline std::string ctx_string(const ::core::behavior::CallContext& ctx, std::string_view key)
 {
-    std::string merchant_id{};
-    std::string organization_id{};
-    std::string resource_type{};
-};
-
-struct UploadHierarchicalResourceInput
-{
-    std::string resource_id{};
-    std::string certificate{};
-    std::string merchant_id{};
-    std::string organization_id{};
-};
-
-struct ListHierarchicalResourcesInput
-{
-    ::app::dto::hierarchical_resources::ListHierarchicalResourcesRequest request{};
-    std::string merchant_id{};
-    std::string organization_id{};
-};
-
-struct LinkHierarchicalResourceInput
-{
-    std::string resource_id{};
-    std::string requestor_type{};
-    std::string requestor_id{};
-    std::string merchant_id{};
-    std::string organization_id{};
-};
+    const auto it = ctx.claims.find(std::string{key});
+    return it == ctx.claims.end() ? std::string{} : it->second;
+}
 
 /**
  * @brief Domain authorization policy for HierarchicalResources.
@@ -298,6 +286,12 @@ public:
             out.connected_merchant_id = std::string{*connected};
         }
         return out;
+    }
+
+    [[nodiscard]] ::core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

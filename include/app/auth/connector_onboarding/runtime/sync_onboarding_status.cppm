@@ -1,6 +1,7 @@
 export module app_auth:connector_onboarding_runtime_sync_onboarding_status;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -20,6 +21,7 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
+import :call_context;
 import :connector_onboarding_input;
 import :connector_onboarding_result;
 import :connector_onboarding_runtime_common;
@@ -38,33 +40,36 @@ public:
     }
 
     // Upstream core::sync_onboarding_status (core/connector_onboarding.rs:60-120).
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    sync_onboarding_status(const SyncOnboardingStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    sync_onboarding_status(
+        const ::app::dto::connector_onboarding::OnboardingSyncRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         // The profile used for the ownership check is the request body's profile_id
         // (utils/connector_onboarding.rs:71), not a query/auth fallback.
         if (const auto guard = m_support.check_if_connector_exists(
-                input.request.get_connector_id(),
-                input.merchant_id,
-                std::optional<std::string>{input.request.get_profile_id()}
+                request.get_connector_id(),
+                detail::effective_merchant_id(ctx),
+                std::optional<std::string>{request.get_profile_id()}
             )) {
             return std::unexpected{*guard};
         }
         const auto conf = m_support.connector_onboarding_conf();
-        const auto enabled = m_support.is_enabled(input.request.get_connector(), conf);
+        const auto enabled = m_support.is_enabled(request.get_connector(), conf);
         auto tracking = m_support.get_tracking_id_from_configs(
-            input.request.get_connector_id(),
-            input.request.get_connector()
+            request.get_connector_id(),
+            request.get_connector()
         );
         if (!tracking) {
             return std::unexpected{std::move(tracking.error())};
         }
         if (!enabled.has_value() || !*enabled ||
-            !m_support.is_paypal(input.request.get_connector())) {
-            return std::unexpected{m_support.flow_not_supported(input.request.get_connector())};
+            !m_support.is_paypal(request.get_connector())) {
+            return std::unexpected{m_support.flow_not_supported(request.get_connector())};
         }
 
-        auto status = m_support.sync_merchant_onboarding_status(*tracking, input.merchant_id);
+        auto status = m_support.sync_merchant_onboarding_status(*tracking, detail::effective_merchant_id(ctx));
         if (!status) {
             return std::unexpected{std::move(status.error())};
         }
@@ -77,9 +82,9 @@ public:
             const ConnectorAuth
                 auth_details{"SignatureKey", conf.client_secret, conf.client_id, status->payer_id};
             auto mca = m_support.update_mca(
-                input.merchant_id,
-                input.request.get_profile_id(),
-                input.request.get_connector_id(),
+                detail::effective_merchant_id(ctx),
+                request.get_profile_id(),
+                request.get_connector_id(),
                 auth_details
             );
             if (!mca) {

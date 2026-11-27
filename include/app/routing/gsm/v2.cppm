@@ -3,6 +3,7 @@ export module app_routing:gsm_handlers_v2;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import core_error;
 import utils_openapi;
@@ -48,45 +49,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "create_gsm_rule", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::gsm::GsmCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed =
+            core::behavior::Serializer<::app::dto::gsm::GsmCreateRequest>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        CreateGsmRuleInput input{*parsed};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.create(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void handle_get_gsm_rule(
@@ -95,45 +69,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "get_gsm_rule", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::gsm::GsmRetrieveRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed =
+            core::behavior::Serializer<::app::dto::gsm::GsmRetrieveRequest>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        GetGsmRuleInput input{*parsed};
-        auto result = m_runtime.get(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.get(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void handle_update_gsm_rule(
@@ -142,45 +89,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "update_gsm_rule", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::gsm::GsmUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed =
+            core::behavior::Serializer<::app::dto::gsm::GsmUpdateRequest>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        UpdateGsmRuleInput input{*parsed};
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.update(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void handle_delete_gsm_rule(
@@ -189,45 +109,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "delete_gsm_rule", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::gsm::GsmDeleteRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
+        auto parsed =
+            core::behavior::Serializer<::app::dto::gsm::GsmDeleteRequest>::pass(req, sink);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
-        DeleteGsmRuleInput input{*parsed};
-        auto result = m_runtime.remove(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto wire = result->serialize(wire_fields<::app::dto::gsm::GsmDeleteResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.remove(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)

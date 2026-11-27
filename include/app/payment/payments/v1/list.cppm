@@ -1,6 +1,7 @@
 export module app_payment:payments_handlers_v1_list;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -58,49 +59,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support->authorize(req, "payments_list", spec_for("payments_list"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_list");
         m_context.metrics().counter("payments.payments_list").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        PaymentsListInput input{std::move(data)};
-        auto result = m_runtime.payments_list(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.payments_list(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_list_by_filter(
@@ -109,49 +79,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_list_by_filter",
                 spec_for("payments_list_by_filter")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_list_by_filter");
         m_context.metrics().counter("payments.payments_list_by_filter").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        PaymentsListByFilterInput input{std::move(data)};
-        auto result = m_runtime.payments_list_by_filter(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.payments_list_by_filter(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_list_for_platform(
@@ -160,52 +104,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_list_for_platform",
                 spec_for("payments_list_for_platform")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_list_for_platform");
         m_context.metrics().counter("payments.payments_list_for_platform").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        PaymentsListForPlatformInput input{std::move(data)};
-        auto result = m_runtime.payments_list_for_platform(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.payments_list_for_platform(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_payments_list_for_platform_filters(
@@ -214,43 +127,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "payments_list_for_platform_filters",
                 spec_for("payments_list_for_platform_filters")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.payments_list_for_platform_filters");
         m_context.metrics().counter("payments.payments_list_for_platform_filters").increment();
 
-        using Input = ::app::model::payments::PaymentsFilterRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"status", "connector", "payment_method", "payment_method_type", "offset", "limit"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        PaymentsListForPlatformFiltersInput input{std::move(data)};
-        auto result = m_runtime.payments_list_for_platform_filters(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.payments_list_for_platform_filters(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_profile_payments_list(
@@ -259,50 +150,19 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error =
                 m_request_support
                     ->authorize(req, "profile_payments_list", spec_for("profile_payments_list"))) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.profile_payments_list");
         m_context.metrics().counter("payments.profile_payments_list").increment();
 
-        using Input = ::app::model::payments::PaymentsListRequest;
-        auto typed = m_input_support.parse_query_as<Input>(
-            req,
-            {"merchant_id",
-             "profile_id",
-             "status",
-             "connector",
-             "payment_method",
-             "payment_method_type",
-             "offset",
-             "limit",
-             "force_sync",
-             "expand_attempts"}
-        );
-        if (!typed) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::INVALID_REQUEST,
-                "invalid query parameters"
-            );
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        ProfilePaymentsListInput input{std::move(data)};
-        auto result = m_runtime.profile_payments_list(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const ::app::model::payments::PaymentsRequest dto{};
+        m_runtime.profile_payments_list(dto, m_request_support->context(req)).handle(sink);
     }
 
     void handle_profile_payments_list_by_filter(
@@ -311,49 +171,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth_error = m_request_support->authorize(
                 req,
                 "profile_payments_list_by_filter",
                 spec_for("profile_payments_list_by_filter")
             )) {
-            res.set_status(auth_error->get_status());
-            res.set_body(serde::Ser::serialize("application/json", *auth_error));
-            send();
+            auth_error->send(sink);
             return;
         }
         m_context.metrics().record_flow("payments.profile_payments_list_by_filter");
         m_context.metrics().counter("payments.profile_payments_list_by_filter").increment();
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto err = m_input_support.api_error(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            err.send(res, send);
-            return;
-        }
-        using Input = ::app::model::payments::PaymentsRequest;
-        auto typed = serde::Ser::deserialize<Input>("application/json", body);
-        auto generic = serde::Ser::decode_generic("application/json", body);
-        if (!typed && !generic) {
-            const auto err =
-                m_input_support.api_error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            err.send(res, send);
-            return;
-        }
-        PaymentsRequestData data = m_input_support.request_data(req);
-        data.body = body;
-        ProfilePaymentsListByFilterInput input{std::move(data)};
-        auto result = m_runtime.profile_payments_list_by_filter(input);
-        if (!result) {
-            const auto err = m_input_support.api_error(result.error());
-            err.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto parsed_dto = core::behavior::Serializer<::app::model::payments::PaymentsRequest>::pass(req, sink);
+        if (!parsed_dto) return;
+        const auto& dto = *parsed_dto;
+        m_runtime.profile_payments_list_by_filter(dto, m_request_support->context(req)).handle(sink);
     }
 
     // original install() route #28
@@ -370,6 +204,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_list(req, res, std::move(send));
                     }
                 )
@@ -391,6 +227,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_payments_list_by_filter(req, res, std::move(send));
                     }
                 )
@@ -413,6 +251,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_list_for_platform(req, res, std::move(send));
                         }
                     )
@@ -436,6 +276,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_list_for_platform_filters(req, res, std::move(send));
                         }
                     )
@@ -459,6 +301,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_profile_payments_list(req, res, std::move(send));
                         }
                     )
@@ -482,6 +326,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_profile_payments_list_by_filter(req, res, std::move(send));
                         }
                     )

@@ -1,6 +1,7 @@
 export module app_payment:fraud_check_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -43,6 +44,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto auth =
                 m_request_support.authorize(req, "frm_fulfillment", spec_for("frm_fulfillment"))) {
             res.set_status(auth->get_status());
@@ -61,7 +64,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -71,25 +74,16 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid FrmFulfillmentRequest payload"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const std::string org_id{::app::http::org_id_from_header{}(req)};
         const std::string header_merchant_id{::app::http::merchant_id_from_header{}(req)};
 
-        FrmFulfillmentInput
-            input{*request, std::string{body}, std::move(header_merchant_id), std::move(org_id)};
-        auto result = m_runtime.frm_fulfillment(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *request;
+        auto result = m_runtime.frm_fulfillment(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -105,6 +99,8 @@ public:
                         std::function<void()> send
                     )
                     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                         handle_frm_fulfillment(req, res, std::move(send));
                     }
                 )

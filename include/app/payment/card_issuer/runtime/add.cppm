@@ -23,9 +23,11 @@ public:
     }
 
     // core/card_issuer.rs:16-39 `add_card_issuer`.
-    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
-    add(const CardIssuerAddInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
+        add(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CardIssuerAddData{dto, ctx};
         const std::string issuer_name = input.request.get_issuer_name().get_value();
         // CardIssuerName nutype validation (common_utils/new_type.rs:21-24):
         // serde rejects an empty or >255-char name with a 422 on the request path.

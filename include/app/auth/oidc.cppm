@@ -34,28 +34,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "oidc_discovery", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        OidcDiscoveryInput input{};
-        auto result = m_runtime.discovery(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto encoded = result->serialize(discovery_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.discovery(m_request_support.context(req)).handle(sink);
     }
 
     void handle_jwks_endpoint(
@@ -64,28 +50,14 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "jwks_endpoint", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        JwksEndpointInput input{};
-        auto result = m_runtime.jwks(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto encoded = result->serialize(jwks_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.jwks(m_request_support.context(req)).handle(sink);
     }
 
     void handle_oidc_authorize(
@@ -94,9 +66,10 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error = m_request_support.authorize(req, "oidc_authorize", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -104,24 +77,12 @@ public:
         const auto payload = m_input_support.parse_authorize_query(req);
         if (!payload) {
             const auto error = oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidRequest);
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        // The session identity is a pure request read, extracted here because the runtime
-        // never touches IRequest. Missing session becomes AccessDenied inside the runtime.
-        const auto user_id = m_input_support.authenticated_user_id(req);
-
-        OidcAuthorizeInput input{*payload, user_id};
-        auto result = m_runtime.authorize(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::FOUND);
-        res.set_header(interfaces::io::types::Token::LOCATION, result->second);
-        res.set_body(serde::Ser::serialize("application/json", result->first));
-        send();
+        // Session identity and Basic credentials are captured in CallContext; runtime
+        // never touches IRequest. Missing session becomes AccessDenied inside runtime.
+        m_runtime.authorize(*payload, m_request_support.context(req)).handle(sink);
     }
 
     void handle_oidc_token(
@@ -130,37 +91,23 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream applies OIDC_CLIENT_AUTH (HTTP Basic), not a dashboard JWT: no
         // authorize_operation call. The exact Basic validation lives in the runtime.
 
         const auto request = m_input_support.parse_token_request(req);
         if (!request) {
             const auto error = oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidRequest);
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto basic = m_input_support.parse_basic_auth(req);
-        if (!basic) {
+        if (!m_input_support.parse_basic_auth(req)) {
             const auto error = oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidBasicAuth);
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        OidcTokenInput input{*request, *basic};
-        auto result = m_runtime.token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(token_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.token(*request, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

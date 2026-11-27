@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_get_role_from_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,10 +34,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
-    get_role_from_token(const GetRoleFromTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_role_from_token(const ::core::behavior::CallContext& ctx) const
     {
-        const auto role = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto role = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!role) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::NOT_FOUND, "InvalidRoleId")
@@ -44,7 +45,7 @@ public:
         }
         auto groups = role->permission_groups();
         m_support.track_flow("get_role_from_token", "user_role.get_role_from_token");
-        return std::move(groups);
+        return strings_to_document(groups);
     }
 
 private:

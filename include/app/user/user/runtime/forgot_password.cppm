@@ -1,6 +1,7 @@
 export module app_user:user_runtime_forgot_password;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    forgot_password(const ForgotPasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    forgot_password(const ::app::model::user::ForgotPasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto email = input.request.get_email().get_value();
+        const auto email = request.get_email().get_value();
         const auto reset_payload = std::string{R"({"email":")"} + email + R"("})";
         const auto reset_token = m_support.user_signer().sign(reset_payload);
         m_context.cache().put(
@@ -52,10 +54,10 @@ public:
         );
 
         const auto key = std::string{"user.forgot_password:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

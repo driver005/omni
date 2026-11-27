@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_retrieve_connector_webhook;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,11 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
-    fetch(const RetrieveConnectorWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
+    fetch(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_connector_webhook_by_string(input.connector_id);
+            m_context.repository().find_connector_webhook_by_string(ctx_string(ctx,"connector_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -48,7 +49,7 @@ public:
         }
         const std::string decrypted{::app::crypto::AesWrap{}.decrypt(
             found->get_secret(),
-            m_support.connector_encryption_key(found->get_merchant_id(), input.connector_id)
+            m_support.connector_encryption_key(found->get_merchant_id(), ctx_string(ctx,"connector_id"))
         )};
         ::app::dto::admin::WebhookDetailsResponse response;
         if (!found->get_event_type().empty()) {

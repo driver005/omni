@@ -31,13 +31,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentsClientMethodsResponse, core::error::AppError>
-        list_payment_methods_for_payments_client(
-            const ListPaymentMethodsForPaymentsClientInput& input
-        ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsClientMethodsResponse>
+        list_payment_methods_for_payments_client(const ::app::model::payments::PaymentsRequest& dto, const core::behavior::CallContext& ctx) const
     {
-        auto text = m_support.client_payment_methods_response(input.data);
+        const PaymentsRequestData input = m_support.request_data(dto, ctx);
+        auto text = m_support.client_payment_methods_response(input);
         if (!text) {
             return std::unexpected{m_support.make_error(
                 core::error::AppErrorKind::UNAUTHORIZED,

@@ -1,6 +1,7 @@
 export module app_webhook:verification_runtime_apple_pay_merchant_registration;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,18 +38,20 @@ public:
 
     /** @brief Port of `verify_merchant_creds_for_applepay`
      *  (core/verification.rs:11-93). */
-    [[nodiscard]] std::
-        expected<::app::dto::verifications::ApplepayMerchantResponse, core::error::AppError>
-        verify_merchant_creds_for_applepay(const ApplePayMerchantRegistrationInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::verifications::ApplepayMerchantResponse>
+    verify_merchant_creds_for_applepay(
+        const VerificationRequestWire& wire,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        const auto& domain_names = input.request.get_domain_names();
-        const auto& merchant_connector_id = input.request.get_merchant_connector_account_id();
+        const auto& domain_names = wire.get_domain_names();
+        const auto& merchant_connector_id = wire.get_merchant_connector_account_id();
 
         // core/verification.rs:18-24 — resolve key store + MCA first.
         auto account = m_support.get_apple_pay_merchant_connector_account(
-            input.merchant_id,
+            ctx.merchant_id,
             merchant_connector_id,
-            input.profile_id
+            ctx.profile_id
         );
         if (!account.has_value()) {
             return std::unexpected(account.error());
@@ -73,7 +76,7 @@ public:
         const auto request = m_support.request_builder(configs);
 
         // core/verification.rs:56-63.
-        const auto response = m_support.call_connector_api(input.merchant_id, request);
+        const auto response = m_support.call_connector_api(ctx.merchant_id, request);
         m_support.log_applepay_verification_response_if_error(response);
 
         // core/verification.rs:65-66 — outer client error maps to

@@ -943,9 +943,11 @@ public:
      * @brief authenticator() hands extract_id(parameters,"profile_id").ok().flatten() to auth;
      * charge() re-parses it and rejects an unusable id there.
      */
+    template<class Dto>
     [[nodiscard]] AuthenticationData
-    authentication_data(const TelephoneOrderChargeInput& input) const
+        authentication_data(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = TelephoneOrderChargeData{dto, ctx};
         AuthenticationData auth{};
         auth.merchant_id = input.merchant_id;
         auto profile = TelephoneOrderCore::extract_id(

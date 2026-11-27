@@ -1,6 +1,7 @@
 export module app_store:files_runtime_retrieve;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
@@ -23,17 +24,26 @@ public:
     }
 
     /** @brief Port of `files_retrieve_core` (`core/files.rs:111-146`). */
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve(const FilesRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
         // Upstream: files.rs:151-152 — server_wrap records the flow and route counter.
         m_context.metrics().record_flow("files.retrieve");
         m_context.metrics().counter("files_retrieve_total").increment();
 
+        const auto file_id = m_support.file_id_from(ctx);
+        if (!file_id.has_value()) {
+            return std::unexpected{Builder{}(Kind::INVALID_REQUEST, "missing file id in path")};
+        }
+        std::optional<std::string> dispute_id{};
+        if (const auto it = ctx.query.find("dispute_id"); it != ctx.query.end()) {
+            dispute_id = it->second;
+        }
+
         // core/files.rs:116-125 — find_file_metadata... . FileNotFound when absent.
         const auto metadata = m_support.find_file_metadata_by_processor_merchant_id_file_id(
-            input.processor_merchant_id,
-            input.file_id
+            ctx.merchant_id,
+            *file_id
         );
         if (!metadata) {
             return std::unexpected{
@@ -43,9 +53,9 @@ public:
 
         // core/files.rs:126-133 — FileDataRequired::Required.
         auto info = m_support.retrieve_file_and_provider_file_id_from_file_id(
-            input.processor_merchant_id,
-            input.file_id,
-            input.dispute_id,
+            ctx.merchant_id,
+            *file_id,
+            dispute_id,
             FileDataRequired::Required
         );
         if (!info) {

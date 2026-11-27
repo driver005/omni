@@ -1,6 +1,7 @@
 export module app_user:admin_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -60,142 +61,141 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        create_organization(const OrganizationCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        create_organization(const ::app::model::organization::OrganizationCreateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_organization_create.create(input);
+        return m_organization_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        update_organization(const OrganizationUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        update_organization(const ::app::model::organization::OrganizationUpdateRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_organization_update.update(input);
+        return m_organization_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::organization::OrganizationResponse, core::error::AppError>
-        retrieve_organization(const OrganizationRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::organization::OrganizationResponse>
+        retrieve_organization(const ::core::behavior::CallContext& ctx) const
     {
-        return m_organization_retrieve.retrieve(input);
+        return m_organization_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::organization::ConvertOrganizationToPlatformResponse,
-        core::error::AppError>
-    convert_organization_to_platform(const ConvertOrganizationToPlatformInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::model::organization::ConvertOrganizationToPlatformResponse>
+    convert_organization_to_platform(const ::app::model::organization::ConvertOrganizationToPlatformRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_convert_organization_to_platform.convert(input);
+        return m_convert_organization_to_platform.convert(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
-    create_merchant_account(const MerchantAccountCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
+    create_merchant_account(const ::app::dto::admin::MerchantAccountCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_create.create(input);
+        return m_merchant_account_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
-    retrieve_merchant_account(const RetrieveMerchantAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
+    retrieve_merchant_account(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_merchant_account.retrieve(input);
+        return m_retrieve_merchant_account.retrieve(ctx);
     }
 
-    [[nodiscard]] std::
-        expected<std::vector<::app::dto::admin::MerchantAccountResponse>, core::error::AppError>
-        list_merchant_accounts(const MerchantAccountListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        list_merchant_accounts(const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_list.list(input);
+        return m_merchant_account_list.list(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
-    update_merchant_account(const UpdateMerchantAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
+    update_merchant_account(const ::app::dto::admin::MerchantAccountUpdate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update_merchant_account.update(input);
+        return m_update_merchant_account.update(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::admin::MerchantAccountDeleteResponse, core::error::AppError>
-        delete_merchant_account(const DeleteMerchantAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountDeleteResponse>
+        delete_merchant_account(const ::core::behavior::CallContext& ctx) const
     {
-        return m_delete_merchant_account.remove(input);
+        return m_delete_merchant_account.remove(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
-    create_connector(const ConnectorCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
+    create_connector(const ::app::dto::admin::MerchantConnectorCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_create.create(input);
+        return m_connector_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
-    retrieve_connector(const ConnectorRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
+    retrieve_connector(const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_retrieve.retrieve(input);
+        return m_connector_retrieve.retrieve(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
-        core::error::AppError>
-    list_connectors(const ConnectorListInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>>
+    list_connectors(const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_list.list(input);
+        return m_connector_list.list(ctx);
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::dto::admin::MerchantConnectorListResponse>,
-        core::error::AppError>
-    list_connectors_profile(const ConnectorListProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        std::vector<::app::dto::admin::MerchantConnectorListResponse>>
+    list_connectors_profile(const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_list_profile.list(input);
+        return m_connector_list_profile.list(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantConnectorResponse, core::error::AppError>
-    update_connector(const ConnectorUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorResponse>
+    update_connector(const ::app::dto::admin::MerchantConnectorUpdate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_update.update(input);
+        return m_connector_update.update(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::admin::MerchantConnectorDeleteResponse, core::error::AppError>
-        delete_connector(const ConnectorDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorDeleteResponse>
+        delete_connector(const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_delete.remove(input);
+        return m_connector_delete.remove(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
-    toggle_kv(const MerchantAccountToggleKvInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ToggleKVResponse>
+    toggle_kv(const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_toggle_kv.toggle(input);
+        return m_merchant_account_toggle_kv.toggle(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ToggleAllKVResponse, core::error::AppError>
-    toggle_all_kv(const MerchantAccountToggleAllKvInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ToggleAllKVResponse>
+    toggle_all_kv(const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_toggle_all_kv.toggle_all(input);
+        return m_merchant_account_toggle_all_kv.toggle_all(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::ToggleKVResponse, core::error::AppError>
-    kv_status(const MerchantAccountKvStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::ToggleKVResponse>
+    kv_status(const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_kv_status.status(input);
+        return m_merchant_account_kv_status.status(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::TransferKeyResponse, core::error::AppError>
-    transfer_keys(const MerchantAccountTransferKeysInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::TransferKeyResponse>
+    transfer_keys(const ::core::behavior::CallContext& ctx) const
     {
-        return m_merchant_account_transfer_keys.transfer(input);
+        return m_merchant_account_transfer_keys.transfer(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
-    register_webhook(const ConnectorWebhookRegisterInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
+    register_webhook(const ::app::dto::admin::WebhookDetailsRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_connector_webhook_register.register_webhook(input);
+        return m_connector_webhook_register.register_webhook(request, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::WebhookDetailsResponse, core::error::AppError>
-    fetch_webhook(const RetrieveConnectorWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::WebhookDetailsResponse>
+    fetch_webhook(const ::core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_connector_webhook.fetch(input);
+        return m_retrieve_connector_webhook.fetch(ctx);
     }
 
 private:

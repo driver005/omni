@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_list_invitations_for_user;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,13 +34,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<InvitationWire>, core::error::AppError>
-    list_invitations_for_user(const ListInvitationsForUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_invitations_for_user(const ::core::behavior::CallContext& ctx) const
     {
         std::vector<InvitationWire> response{};
         std::set<std::string> seen{};
         for (const auto& assignment: m_context.repository().list_user_roles()) {
-            if (assignment.get_user_id() != input.identity.user_id ||
+            if (assignment.get_user_id() != identity_from_context(ctx).user_id ||
                 assignment.get_status() != "invitation_sent") {
                 continue;
             }
@@ -65,7 +66,7 @@ public:
             response.push_back(std::move(item));
         }
         m_support.track_flow("list_invitations_for_user", "user_role.list_invitations_for_user");
-        return std::move(response);
+        return to_document_array(response, kInvitationWireFields);
     }
 
 private:

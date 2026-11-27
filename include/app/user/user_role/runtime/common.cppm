@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -1713,7 +1714,7 @@ public:
     }
 
     // Upstream `parent_group_info_request_to_permission_groups` (utils/user_role.rs:538-565).
-    [[nodiscard]] std::expected<std::vector<std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::vector<std::string>>
     parent_group_info_request_to_permission_groups(
         const std::vector<ParentGroupInfoRequestWire>& parents
     ) const

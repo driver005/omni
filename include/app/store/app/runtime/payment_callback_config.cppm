@@ -1,8 +1,8 @@
 export module app_store:app_runtime_payment_callback_config;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -20,7 +19,6 @@ import app_events;
 import app_workflow;
 import app_keystore;
 
-import :app_input;
 import :app_result;
 import :app_runtime_common;
 
@@ -37,10 +35,10 @@ public:
 
     // Upstream SessionState::payment_callback_config() is an internal OnceCell load
     // (app.rs:207-212) with no HTTP auth. The registry row is NO_AUTH.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    payment_callback_config(const PaymentCallbackConfigInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    payment_callback_config(const core::behavior::CallContext& ctx) const
     {
-        (void)input;
+        (void)ctx;
 
         // Load the runtime rollout policy stored under the "payment_callback" config key.
         // ConfigStore (superposition-backed) is consulted first, then the repository config

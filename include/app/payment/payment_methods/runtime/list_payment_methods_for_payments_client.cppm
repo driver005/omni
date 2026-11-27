@@ -37,12 +37,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payments::PaymentsClientMethodsResponse, core::error::AppError>
-        list_payment_methods_for_payments_client(
-            const ListPaymentMethodsForPaymentsClientInput& input
-        ) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payments::PaymentsClientMethodsResponse>
+        list_payment_methods_for_payments_client(const core::behavior::CallContext& ctx) const
     {
+        const auto input = ListPaymentMethodsForPaymentsClientData{ctx};
         m_context.metrics().record_flow("list_payment_methods_for_payments_client");
         m_context.metrics()
             .counter("PAYMENT_METHOD_LIST_PAYMENT_METHODS_FOR_PAYMENTS_CLIENT")

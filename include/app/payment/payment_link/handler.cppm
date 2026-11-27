@@ -1,6 +1,7 @@
 export module app_payment:payment_link_handler;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -39,11 +40,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     .authorize(req, "payment_link_retrieve", spec_for("payment_link_retrieve"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -59,7 +62,7 @@ public:
                     core::error::AppErrorKind::INVALID_JSON,
                     "invalid JSON"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             input = *parsed;
@@ -78,7 +81,7 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "client secret mismatch"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -88,26 +91,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment link id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PaymentLinkRetrieveInput runtime_input{
-            input,
-            client_secret,
-            secret_claim,
-            payment_link_id,
-            m_input_support.merchant_id_from_header(req)
-        };
-        auto result = m_runtime.retrieve(runtime_input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *input;
+        auto result = m_runtime.retrieve(m_request_support.context(req)));
+        result.handle(sink);
     }
 
     // initiate_payment_link (routes:66-98) -> initiate_payment_link_flow
@@ -119,6 +109,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ids = m_input_support.path_merchant_payment(req);
         const std::string merchant_id = ids.first;
         const std::string payment_id = ids.second;
@@ -128,7 +120,7 @@ public:
                 m_request_support
                     .authorize(req, "initiate_payment_link", spec_for("initiate_payment_link"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (merchant_id.empty() || payment_id.empty()) {
@@ -136,20 +128,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "merchant id or payment id not found in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PaymentLinkInitiateInput input{merchant_id, payment_id};
-        auto result = m_runtime.initiate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.initiate(m_request_support.context(req));
+        result.handle(sink);
     }
 
     // initiate_secure_payment_link (routes:100-133) ->
@@ -161,6 +145,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ids = m_input_support.path_merchant_payment(req);
         const std::string merchant_id = ids.first;
         const std::string payment_id = ids.second;
@@ -172,7 +158,7 @@ public:
                 spec_for("initiate_secure_payment_link")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (merchant_id.empty() || payment_id.empty()) {
@@ -180,24 +166,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "merchant id or payment id not found in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PaymentLinkInitiateSecureInput input{
-            merchant_id,
-            payment_id,
-            m_input_support.secure_headers(req)
-        };
-        auto result = m_runtime.initiate_secure(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.initiate_secure(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void handle_payments_link_list(
@@ -206,11 +180,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     .authorize(req, "payments_link_list", spec_for("payments_link_list"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -221,7 +197,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
@@ -230,31 +206,14 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto auth = m_input_support.auth_merchant_and_profile(req);
-        PaymentLinkListInput input{
-            *parsed,
-            m_request_support.query(req, "limit"),
-            m_request_support.query(req, "offset"),
-            m_request_support.query(req, "time_range"),
-            m_request_support.query(req, "profile_id"),
-            m_input_support.merchant_id_from_header(req),
-            auth.first,
-            auth.second,
-            false
-        };
-        auto result = m_runtime.list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.list(m_request_support.context(req)));
+        result.handle(sink);
     }
 
     void handle_profile_payment_link_list(
@@ -263,13 +222,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support.authorize(
                 req,
                 "profile_payment_link_list",
                 spec_for("profile_payment_link_list")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -280,7 +241,7 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed = serde::Ser::deserialize<Input>("application/json", body);
@@ -289,31 +250,14 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto auth = m_input_support.auth_merchant_and_profile(req);
-        PaymentLinkListInput input{
-            *parsed,
-            m_request_support.query(req, "limit"),
-            m_request_support.query(req, "offset"),
-            m_request_support.query(req, "time_range"),
-            m_request_support.query(req, "profile_id"),
-            m_input_support.merchant_id_from_header(req),
-            auth.first,
-            auth.second,
-            true
-        };
-        auto result = m_runtime.profile_list(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.profile_list(dto, m_request_support.context(req));
+        result.handle(sink);
     }
 
     // payment_link_status (routes:217-249) -> get_payment_link_status
@@ -325,6 +269,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto ids = m_input_support.path_merchant_payment(req);
         std::string merchant_id = ids.first;
         const std::string payment_id = ids.second;
@@ -338,7 +284,7 @@ public:
                 m_request_support
                     .authorize(req, "payment_link_status", spec_for("payment_link_status"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (payment_id.empty()) {
@@ -346,20 +292,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "payment id not found in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PaymentLinkStatusInput input{merchant_id, payment_id};
-        auto result = m_runtime.status(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.status(m_request_support.context(req));
+        result.handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)
@@ -376,6 +314,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payments_link_list(req, res, std::move(send));
                         }
                     )
@@ -391,6 +331,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_profile_payment_link_list(req, res, std::move(send));
                             }
                         )
@@ -406,6 +348,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_link_retrieve(req, res, std::move(send));
                         }
                     )
@@ -421,6 +365,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_initiate_payment_link(req, res, std::move(send));
                             }
                         )
@@ -438,6 +384,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_initiate_secure_payment_link(req, res, std::move(send));
                                 }
                             )
@@ -456,6 +404,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_payment_link_status(req, res, std::move(send));
                                 }
                             )

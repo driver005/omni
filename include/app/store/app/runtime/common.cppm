@@ -2,7 +2,7 @@ export module app_store:app_runtime_common;
 
 import std;
 import interfaces;
-import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_crypto;
 import app_metrics;
 import app_context_core;
@@ -68,6 +67,17 @@ public:
     [[nodiscard]] bool known_storage_impl(std::string_view value) const noexcept
     {
         return value == "postgresql" || value == "postgresql_test" || value == "mock";
+    }
+
+    /** @brief Query value from the runtime context, or the supplied default. */
+    [[nodiscard]] static std::string query_or(
+        const core::behavior::CallContext& ctx,
+        std::string_view key,
+        std::string_view fallback
+    )
+    {
+        const auto it = ctx.query.find(std::string{key});
+        return it == ctx.query.end() || it->second.empty() ? std::string{fallback} : it->second;
     }
 
     // PaymentCallbackConfig is a config entry (stored as JSON), not one of the typed domain

@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest,
-        core::error::AppError>
-    render_pm_collect_link(const RenderPmCollectLinkInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest>
+    render_pm_collect_link(const core::behavior::CallContext& ctx) const
     {
+        const auto input = RenderPmCollectLinkData{ctx};
         m_context.metrics().record_flow("render_pm_collect_link");
         m_context.metrics().counter("PAYMENT_METHOD_RENDER_PM_COLLECT_LINK").increment();
         ::app::model::payment_methods::PaymentMethodCollectLinkRenderRequest response{};

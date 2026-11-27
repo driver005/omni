@@ -4,8 +4,8 @@ import std;
 import core_serde;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -20,15 +20,17 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_success_based_routing(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> create_success_based_routing(
+        const std::optional<serde::Value>& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         auto result = m_support.dynamic_create(
-            input.merchant_id,
-            input.profile_id,
-            input.auth_profile,
-            input.body,
-            input.enable,
+            ctx.merchant_id,
+            ctx.profile_id,
+            ctx_auth_profile(ctx),
+            body,
+            ctx_enable(ctx),
             "create_success_based_routing",
             "Success rate based dynamic routing algorithm",
             "success_rate_based",

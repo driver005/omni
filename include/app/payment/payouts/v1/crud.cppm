@@ -1,6 +1,7 @@
 export module app_payment:payouts_handlers_v1_crud;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -52,10 +53,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_create", spec_for("payouts_create"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -65,43 +68,21 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payouts::PayoutCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
+        if (!parsed) return;
 
         const auto header_merchant_id = m_input_support.header_merchant_id(req);
         const auto auth_merchant_id = m_input_support.auth_merchant_id(req);
         (void)m_input_support.org_id(req);
         const auto profile_id = m_input_support.profile_id(req, parsed->profile_id);
         const auto browser_info = m_input_support.browser_info(req, parsed->browser_info);
-        PayoutsCreateInput input{
-            *parsed,
-            std::string{body},
-            header_merchant_id,
-            auth_merchant_id,
-            profile_id,
-            browser_info
-        };
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.create(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_retrieve(
@@ -110,11 +91,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support
                     ->authorize(req, "payouts_retrieve", spec_for("payouts_retrieve"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -124,7 +107,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         // Upstream uses `web::Query<PayoutRetrieveBody>` (`payouts.rs:90-97`); all
@@ -139,23 +122,15 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "invalid PayoutRetrieveBody query"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const bool force_sync = retrieve->get_force_sync().value_or(false);
         const bool expand_attempts = retrieve->get_expand_attempts().value_or(false);
         const auto profile_id = m_input_support.profile_id(req, std::nullopt);
 
-        PayoutsRetrieveInput input{*path_id, force_sync, expand_attempts, profile_id};
-        auto result = m_runtime.retrieve(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.retrieve(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_update(
@@ -164,10 +139,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_update", spec_for("payouts_update"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -177,19 +154,11 @@ public:
                 core::error::AppErrorKind::EMPTY_REQUEST,
                 "empty request"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payouts::PayoutCreateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payouts::PayoutCreateRequest>::pass(req, sink);
+        if (!parsed) return;
 
         const auto path_id = m_input_support.payout_id_from_path(req);
         if (!path_id.has_value()) {
@@ -197,31 +166,17 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto header_merchant_id = m_input_support.header_merchant_id(req);
         const auto profile_id = m_input_support.profile_id(req, parsed->profile_id);
         const auto browser_info = m_input_support.browser_info(req, parsed->browser_info);
-        PayoutsUpdateInput input{
-            *parsed,
-            std::string{body},
-            *path_id,
-            header_merchant_id,
-            profile_id,
-            browser_info
-        };
+        const auto& dto = *parsed;
 
-        auto result = m_runtime.update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.update(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_confirm(
@@ -230,10 +185,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_confirm", spec_for("payouts_confirm"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -247,7 +204,7 @@ public:
                     core::error::AppErrorKind::INVALID_JSON,
                     "invalid JSON"
                 );
-                error.send(res, send);
+                error.send(sink);
                 return;
             }
             parsed.emplace(std::move(*decoded));
@@ -259,20 +216,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsConfirmInput input{std::move(parsed), std::string{body}, *path_id};
-        auto result = m_runtime.confirm(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.confirm(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_cancel(
@@ -281,10 +230,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_cancel", spec_for("payouts_cancel"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -294,20 +245,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsCancelInput input{*path_id};
-        auto result = m_runtime.cancel(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.cancel(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payouts_fulfill(
@@ -316,10 +259,12 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "payouts_fulfill", spec_for("payouts_fulfill"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -329,20 +274,12 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payout id in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsFulfillInput input{*path_id};
-        auto result = m_runtime.fulfill(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.fulfill(m_request_support->context(req));
+        result.handle(sink);
     }
 
     using Route = utils::openapi::ApiRoute;
@@ -360,6 +297,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_create(req, res, std::move(send));
                         }
                     )
@@ -374,6 +313,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_retrieve(req, res, std::move(send));
                         }
                     )
@@ -388,6 +329,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payouts_update(req, res, std::move(send));
                         }
                     )
@@ -403,6 +346,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_confirm(req, res, std::move(send));
                             }
                         )
@@ -419,6 +364,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_cancel(req, res, std::move(send));
                             }
                         )
@@ -435,6 +382,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payouts_fulfill(req, res, std::move(send));
                             }
                         )

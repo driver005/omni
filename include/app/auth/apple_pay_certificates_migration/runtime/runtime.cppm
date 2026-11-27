@@ -1,6 +1,7 @@
 export module app_auth:apple_pay_certificates_migration_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_dto;
@@ -21,12 +22,15 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse,
-        core::error::AppError>
-    migrate(const ApplePayCertificatesMigrationInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse>
+    migrate(
+        const ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationRequest&
+            request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_migrate.migrate(input);
+        return m_migrate.migrate(request, ctx);
     }
 
 private:

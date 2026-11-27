@@ -1,6 +1,7 @@
 export module app_webhook:recovery_webhooks_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -19,10 +20,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<WebhookResponse, core::error::AppError>
-    recovery_receive_incoming_webhook(const RecoveryReceiveIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookResponse>
+    recovery_receive_incoming_webhook(
+        const IncomingWebhookRequestDetails& request,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
-        return m_recovery_receive_incoming_webhook.receive_incoming_webhook(input);
+        return m_recovery_receive_incoming_webhook.receive_incoming_webhook(request, ctx);
     }
 
 private:

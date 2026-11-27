@@ -1,6 +1,7 @@
 export module app_user:user_runtime_change_password;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,20 +38,21 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    change_password(const ChangePasswordInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    change_password(const ::app::model::user::ChangePasswordRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        if (input.request.get_old_password() == input.request.get_new_password()) {
+        if (request.get_old_password() == request.get_new_password()) {
             return std::unexpected{m_support.wire_error(
                 "UR_29",
                 "Old and new password cannot be same",
                 core::error::AppErrorKind::INVALID_REQUEST
             )};
         }
-        const auto token = input.request_context.token;
+        const auto token = ctx_token(ctx);
         const auto email_entry = m_context.cache().get("user.token_email:" + token.value());
         const auto email =
             email_entry.hit ? core::cache::value_as<std::string>(email_entry.value, std::string{})
@@ -63,7 +65,7 @@ public:
             )};
         }
         const auto old_hash = m_context.key_store().get("user-password", email);
-        const ::app::crypto::SecretString old_secret{input.request.get_old_password()};
+        const ::app::crypto::SecretString old_secret{request.get_old_password()};
         if (!old_hash || !::app::crypto::KeyedHasher{"user-password-pepper"}
                               .verify(old_secret.value(), old_hash->value())) {
             return std::unexpected{m_support.wire_error(
@@ -72,7 +74,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST
             )};
         }
-        const ::app::crypto::SecretString new_secret{input.request.get_new_password()};
+        const ::app::crypto::SecretString new_secret{request.get_new_password()};
         m_support.store_password(
             email,
             ::app::crypto::KeyedHasher{"user-password-pepper"}.hash(new_secret.value())

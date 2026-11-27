@@ -1,6 +1,7 @@
 export module app_user:user_runtime_list_profiles_for_user_in_org_and_merchant;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -39,15 +40,16 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
     list_profiles_for_user_in_org_and_merchant(
-        const ListProfilesForUserInOrgAndMerchantInput& input
+        const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx
     ) const
     {
         std::string set_cookie{};
 
 
-        const auto merchant_id = input.request_context.merchant_id;
+        const auto merchant_id = ctx.merchant_id;
         m_context.metrics().record_flow("list_profiles_for_user_in_org_and_merchant");
         m_context.metrics().counter("user.list_profiles_for_user_in_org_and_merchant").increment();
 

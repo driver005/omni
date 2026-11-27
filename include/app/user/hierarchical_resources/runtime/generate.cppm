@@ -1,6 +1,7 @@
 export module app_user:hierarchical_resources_runtime_generate;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -36,15 +37,14 @@ public:
     }
 
     /** @brief core:578-603 generate_hierarchical_resource. */
-    [[nodiscard]] std::expected<
-        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse,
-        core::error::AppError>
-    generate(const GenerateHierarchicalResourceInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse>
+    generate(const ::core::behavior::CallContext& ctx) const
     {
         m_context.metrics().record_flow("HierarchicalResourcesGenerate");
         m_context.metrics().counter("hierarchical_resources_generate_total").increment();
 
-        const auto org_key = m_support.ensure_organization_key_store(input.organization_id);
+        const auto org_key = m_support.ensure_organization_key_store(ctx_string(ctx,"organization_id"));
         const auto keys = m_support.generate_ec_keypair_and_csr(org_key);
 
         // core:179 — id_type::ResourceId::default() -> "res" + alphanumeric.
@@ -63,12 +63,12 @@ public:
         payload.data = m_support.encode_apple_pay_certificate_data(data);
         payload.encrypted_data = encrypted_private_key;
         payload.public_key_digest = ::app::crypto::KeyedHasher{org_key}.hash(keys.private_key_pem);
-        payload.merchant_id = input.merchant_id;
+        payload.merchant_id = ctx_string(ctx,"merchant_id");
 
         ::app::store::hierarchical_resources::HierarchicalResourceRecord record{};
         record.set_resource_id(resource_id);
-        record.set_scope_id(std::string{input.organization_id});
-        record.set_resource_type(std::string{input.resource_type});
+        record.set_scope_id(std::string{ctx_string(ctx,"organization_id")});
+        record.set_resource_type(std::string{ctx_string(ctx,"resource_type")});
         record.set_data(m_support.encode_resource_data(payload));
         record.set_status(data.status);
         record.set_created_at(m_support.created_at_value());
@@ -78,7 +78,7 @@ public:
         }
 
         // core:196-211 — response data is {"apple_pay_certificate":{"csr": <PEM>}}.
-        const auto response_data = "{\"" + std::string{input.resource_type} +
+        const auto response_data = "{\"" + std::string{ctx_string(ctx,"resource_type")} +
                                    "\":{\"csr\":" + serde::Ser::encode_json(keys.csr_pem) + "}}";
         ::app::dto::hierarchical_resources::GenerateHierarchicalResourceResponse response;
         response.set_id(m_support.resource_id_value(resource_id));

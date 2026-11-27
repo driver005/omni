@@ -1,6 +1,7 @@
 export module app_user:user_runtime_issue_embedded_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    issue_embedded_token(const IssueEmbeddedTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    issue_embedded_token(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto auth_ctx = input.request_context.auth;
+        const auto auth_ctx = ctx_auth(ctx);
         const auto processor = m_context.repository()
                                    .get_config("embedded.processor." + auth_ctx.merchant_id())
                                    .value_or(std::string{"local"});
@@ -57,10 +59,10 @@ public:
         const auto embedded_token = m_support.user_signer().sign(embedded_payload);
 
         const auto key = std::string{"user.issue_embedded_token:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

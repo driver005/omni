@@ -88,52 +88,29 @@ public:
         std::function<void()> send
     )
     {
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        using Dto = ::app::dto::authentication::AuthenticationEligibilityRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        using Input = ::app::dto::authentication::AuthenticationEligibilityRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        m_policy.set_body_secret(parsed->get_client_secret());
+        m_policy.set_body_secret(input->get_client_secret());
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "authentication_eligibility", kAuthenticationSdkAuthSpec)) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
-        const auto authorized = m_policy.authorized();
-        const auto id = m_request_support.path(req, 1);
-        if (id.empty()) {
+        const auto ctx = m_request_support.context(req);
+        if (ctx.path_segments.size() < 2 || ctx.path_segments[1].empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "authentication id missing in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        AuthenticationEligibilityInput input{*parsed, id, authorized, std::string{body}};
-        auto result = m_runtime.eligibility(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        m_runtime.eligibility(*input, ctx).handle(sink);
     }
 
     // routes/authentication.rs:94-135 -> unified_authentication_service.rs:1354-1518
@@ -143,60 +120,32 @@ public:
         std::function<void()> send
     )
     {
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
-            );
-            error.send(res, send);
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        using Dto = ::app::dto::authentication::AuthenticationAuthenticateRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
             return;
         }
-        using Input = ::app::dto::authentication::AuthenticationAuthenticateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
-            return;
-        }
-        m_policy.set_body_secret(parsed->get_client_secret());
+        m_policy.set_body_secret(input->get_client_secret());
         if (const auto auth_error =
                 m_request_support
                     .authorize(req, "authentication_authenticate", kAuthenticationSdkAuthSpec)) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
-        const auto authorized = m_policy.authorized();
-        const auto id = m_request_support.path(req, 1);
-        if (id.empty()) {
+        const auto ctx = m_request_support.context(req);
+        if (ctx.path_segments.size() < 2 || ctx.path_segments[1].empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "authentication id missing in path"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto authentication_id_value = ::app::dto::authentication::AuthenticationIdValue{};
-        authentication_id_value.set_value(id);
-        parsed->set_authentication_id(authentication_id_value);
-        AuthenticationAuthenticateInput input{*parsed, id, authorized};
-        auto result = m_runtime.authenticate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(authenticate_wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        authentication_id_value.set_value(ctx.path_segments[1]);
+        input->set_authentication_id(authentication_id_value);
+        m_runtime.authenticate(*input, ctx).handle(sink);
     }
 
 private:

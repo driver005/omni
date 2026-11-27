@@ -1,6 +1,7 @@
 export module app_payment:refunds_handlers_v2_metadata_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -46,43 +47,33 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied =
                 m_request_support->authorize(req, "V2Metadata", spec_for("V2Metadata"))) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error = core::error::AppErrorBuilder{}(Kind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::refunds::RefundMetadataUpdateRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(Kind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::refunds::RefundMetadataUpdateRequest>::pass(req, sink);
+        if (!parsed) return;
         const auto path_id = m_input_support.refund_id_from_path(req);
         if (!path_id.has_value()) {
             const auto error =
                 core::error::AppErrorBuilder{}(Kind::INVALID_REQUEST, "missing refund id in path");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        RefundsMetadataUpdateInput input{*path_id, *parsed};
+        const auto& dto = *path_id;
 
-        auto result = m_runtime.metadata_update(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.metadata_update(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     // original install() route #19

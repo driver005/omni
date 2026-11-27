@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_get_role_information;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,13 +34,13 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<ParentInfoWire>, core::error::AppError>
-    get_role_information(const GetRoleInformationInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_role_information(const ::core::behavior::CallContext& ctx) const
     {
         (void)input;
         auto parents = m_support.parent_authorization_info();
         m_support.track_flow("get_role_information", "user_role.get_role_information");
-        return std::move(parents);
+        return to_document_array(parents, kParentInfoWireFields);
     }
 
 private:

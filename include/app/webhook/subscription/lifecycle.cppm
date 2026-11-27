@@ -139,24 +139,25 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure =
                 m_request_support
                     .authorize(req, "api_key_or_jwt", ::app::webhook::policy::kSubscriptionWrite)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body(req);
         if (!payload) {
             const auto& error = payload.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto customer_id = m_input_support.json_string(payload->root, "customer_id");
@@ -165,22 +166,14 @@ public:
             const auto error = m_input_support.json_body_error(
                 "missing field `item_price_id` or `customer_id` at line 1 column 2"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto merchant = m_input_support.merchant_id(req, auth);
-        CreateSubscriptionInput
-            input{profile.value(), merchant, *customer_id, *item_price_id, *payload};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.create(*payload, ctx).handle(sink);
     }
 
     // ── POST /subscriptions/:id/pause — pause_subscription ──────────────────────
@@ -190,37 +183,31 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure = m_request_support.authorize(req, "api_key", {})) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body_optional(req);
 
-        PauseSubscriptionInput
-            input{profile.value(), m_input_support.merchant_id(req, auth), id, payload};
-        auto result = m_runtime.pause(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.pause(payload, ctx).handle(sink);
     }
 
     // ── POST /subscriptions/:id/resume — resume_subscription ────────────────────
@@ -230,37 +217,31 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure = m_request_support.authorize(req, "api_key", {})) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body_optional(req);
 
-        ResumeSubscriptionInput
-            input{profile.value(), m_input_support.merchant_id(req, auth), id, payload};
-        auto result = m_runtime.resume(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.resume(payload, ctx).handle(sink);
     }
 
     // ── POST /subscriptions/:id/cancel — cancel_subscription ────────────────────
@@ -270,37 +251,31 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure = m_request_support.authorize(req, "api_key", {})) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body_optional(req);
 
-        CancelSubscriptionInput
-            input{profile.value(), m_input_support.merchant_id(req, auth), id, payload};
-        auto result = m_runtime.cancel(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.cancel(payload, ctx).handle(sink);
     }
 
     // ── POST /subscriptions/:id/confirm — confirm_subscription ──────────────────
@@ -310,12 +285,13 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto raw_body = req.body_as_string();
         const auto auth = ::app::auth::AuthContextBuilder{}(req, raw_body);
         auto payload = m_input_support.parse_json_body(req);
         if (!payload) {
             const auto& error = payload.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -324,13 +300,13 @@ public:
                 m_request_support
                     .authorize(req, "sdk_body", ::app::webhook::policy::kSubscriptionWrite)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -342,31 +318,25 @@ public:
             const auto error = m_input_support.invalid_request_data(
                 "Either payment_method_data or payment_token must be present"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         const auto id = m_input_support.subscription_id_from_request(req);
         if (id.empty()) {
             const auto error = m_input_support.generic_not_found("subscription not found for id: ");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // The SDK flow overwrites payload.client_secret with the authenticated claim.
         const std::string client_secret =
             m_input_support.effective_client_secret(auth, payload->root);
-        const auto merchant = m_input_support.merchant_id(req, auth);
-        ConfirmSubscriptionInput input{profile.value(), merchant, id, client_secret, *payload};
-        auto result = m_runtime.confirm(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        ctx.client_secret = client_secret;
+        m_runtime.confirm(*payload, ctx).handle(sink);
     }
 
     // ── POST /subscriptions — create_and_confirm_subscription ──────────────────
@@ -376,24 +346,25 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto failure =
                 m_request_support
                     .authorize(req, "api_key_or_jwt", ::app::webhook::policy::kSubscriptionWrite)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto payload = m_input_support.parse_json_body(req);
         if (!payload) {
             const auto& error = payload.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
@@ -404,7 +375,7 @@ public:
             const auto error = m_input_support.invalid_request_data(
                 "Either payment_method_data or payment_method_id must be present"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto customer_id = m_input_support.json_string(payload->root, "customer_id");
@@ -413,22 +384,14 @@ public:
             const auto error = m_input_support.json_body_error(
                 "missing field `item_price_id` or `customer_id` at line 1 column 2"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto merchant = m_input_support.merchant_id(req, auth);
-        CreateAndConfirmSubscriptionInput
-            input{profile.value(), merchant, *customer_id, *item_price_id, *payload};
-        auto result = m_runtime.create_and_confirm(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        m_runtime.create_and_confirm(*payload, ctx).handle(sink);
     }
 
 private:

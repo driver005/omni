@@ -3,6 +3,7 @@ export module app_routing:offer_engine_handler;
 import std;
 import interfaces;
 import core_router;
+import core_behavior;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -34,33 +35,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream: &auth::AdminApiAuth (routes/offer_engine.rs:23). The registry entry
         // `offer_engine_connectivity_check` carries the equivalent platform-admin rule
         // (auth/registry.cppm:244) and `authorize_route` enforces it.
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support.authorize(req, "offer_engine_connectivity_check", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        ConnectivityCheckInput input{auth};
-        auto result = m_runtime.connectivity_check(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        auto wire = result->serialize(wire_fields<ConnectivityCheckResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        m_runtime.connectivity_check(m_request_support.context(req)).handle(sink);
     }
 
     /** @brief Port of `routes::offer_engine::offer_engine_browse_offers` (routes:29-53). */
@@ -70,66 +56,30 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream: HeaderAuth(ApiKeyAuth { allow_connected_scope_operation: true,
         // allow_platform_self_operation: false }) (routes/offer_engine.rs:46-49).
         // The registry entry `offer_engine_browse_offers` carries those flags
         // (auth/registry.cppm:243).
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
         if (const auto auth_error =
                 m_request_support.authorize(req, "offer_engine_browse_offers", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const auto body = req.body_as_string();
-        if (body.empty()) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::EMPTY_REQUEST,
-                "empty request"
+        auto parsed =
+            core::behavior::Serializer<::app::dto::offer_engine::BrowseOffersRequest>::pass(
+                req,
+                sink
             );
-            error.send(res, send);
-            return;
-        }
-        using Input = ::app::dto::offer_engine::BrowseOffersRequest;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
         if (!parsed) {
-            const auto error = core::error::AppErrorBuilder{}(
-                core::error::AppErrorKind::INVALID_JSON,
-                "invalid JSON"
-            );
-            error.send(res, send);
             return;
         }
 
         // Upstream `browse_offers(state, auth.platform, profile_id, payload)`
-        // (browse.rs:22-28): dimensions come from the authenticated platform.
-        OfferEngineDimensions dimensions{};
-        dimensions.processor_merchant_id = auth.merchant_id();
-        dimensions.organization_id = auth.org_id();
-        if (!auth.profile_id().empty()) {
-            dimensions.profile_id = auth.profile_id();
-        }
-
-        BrowseOffersInput input{*parsed, dimensions, auth};
-        auto result = m_runtime.browse_offers(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-
-        // Both API error shapes (IR_22 / HE_00) arrive as AppError through the
-        // `!result` branch above; the success case is the typed DTO below.
-        auto wire =
-            result->serialize(wire_fields<::app::dto::offer_engine::BrowseOffersResponse>());
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        // (browse.rs:22-28): dimensions come from the authenticated CallContext.
+        m_runtime.browse_offers(*parsed, m_request_support.context(req)).handle(sink);
     }
 
     void install_routes(core::router::RouterContext<>& router)

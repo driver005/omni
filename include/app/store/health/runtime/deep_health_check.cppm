@@ -1,8 +1,8 @@
 export module app_store:health_runtime_deep_health_check;
 
 import std;
+import core_behavior;
 import interfaces;
-import core_router;
 import core_serde;
 import utils_openapi;
 import app_model;
@@ -11,7 +11,6 @@ import app_context;
 import core_cache;
 import core_error;
 import app_context_core;
-import app_http;
 import app_metrics;
 import app_connector;
 import app_events;
@@ -19,7 +18,6 @@ import app_context_core;
 import app_workflow;
 import app_keystore;
 
-import :health_input;
 import :health_runtime_common;
 
 export namespace app::handlers::health {
@@ -36,10 +34,10 @@ public:
     // Sequence and component names mirror deep_health_check_func exactly
     // (routes/health.rs:51-166). Any failure maps to the upstream
     // ApiErrorResponse::HealthCheckError wire shape and returns early.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    deep_health_check(const DeepHealthCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    deep_health_check(const core::behavior::CallContext& ctx) const
     {
-        (void)input;
+        (void)ctx;
 
         // HEALTH_METRIC.add(1, &[]) (routes/health.rs:28) — local metrics substitute.
         m_context.metrics().record_flow("deep_health_check");

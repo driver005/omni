@@ -22,18 +22,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
-        create(const CreateProfileAcquirerInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::profile_acquirer::ProfileAcquirerResponse>
+        create(const ::app::dto::profile_acquirer::ProfileAcquirerCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_create.create(input);
+        return m_create.create(request, ctx);
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::profile_acquirer::ProfileAcquirerResponse, core::error::AppError>
-        update(const ProfileAcquirerUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::profile_acquirer::ProfileAcquirerResponse>
+        update(const ::app::dto::profile_acquirer::ProfileAcquirerUpdate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        return m_update.update(input);
+        return m_update.update(request, ctx);
     }
 
 private:

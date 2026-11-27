@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_crud;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -60,6 +61,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_create_payment_method_api(req, res, std::move(send));
                         }
                     )
@@ -74,6 +77,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_create_payment_method_intent_api(req, res, std::move(send));
                         }
                     )
@@ -88,6 +93,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_retrieve_api(req, res, std::move(send));
                         }
                     )
@@ -102,6 +109,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_delete_api(req, res, std::move(send));
                         }
                     )
@@ -118,6 +127,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_create_payment_method_api(req, res, std::move(send));
                         }
                     )
@@ -132,6 +143,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_retrieve_api(req, res, std::move(send));
                         }
                     )
@@ -146,6 +159,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_delete_api(req, res, std::move(send));
                         }
                     )
@@ -161,6 +176,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "create_payment_method_api",
@@ -168,7 +185,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.legacy_access_allowed(req)) {
@@ -176,7 +193,7 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "legacy endpoint access denied"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (const auto sdk_error = m_request_support->authorize(
@@ -185,24 +202,18 @@ public:
                 client_facing_spec_for("create_payment_method_api")
             )) {
             const auto& error = *sdk_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodCreate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodCreate>::pass(req, sink);
+        if (!parsed) return;
         if (!parsed->get_client_secret()) {
             if (const auto secret = ::app::http::RequestQuery{}(req).get("client_secret")) {
                 parsed->set_client_secret(*secret);
@@ -214,20 +225,13 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string profile_id = ::app::auth::AuthContextBuilder{}(req).profile_id();
-        CreatePaymentMethodApiInput input{*parsed, merchant_id, profile_id};
-        auto result = m_runtime.create_payment_method_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.create_payment_method_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_create_payment_method_intent_api(
@@ -236,6 +240,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "create_payment_method_intent_api",
@@ -243,7 +249,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.legacy_access_allowed(req)) {
@@ -251,43 +257,30 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "legacy endpoint access denied"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodIntentCreate;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodIntentCreate>::pass(req, sink);
+        if (!parsed) return;
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
         if (merchant_id.empty()) {
             const auto error = m_input_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing merchant id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        CreatePaymentMethodIntentApiInput input{*parsed, merchant_id};
-        auto result = m_runtime.create_payment_method_intent_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.create_payment_method_intent_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_retrieve_api(
@@ -296,6 +289,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_retrieve_api",
@@ -303,7 +298,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.legacy_access_allowed(req)) {
@@ -311,7 +306,7 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "legacy endpoint access denied"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req);
@@ -320,7 +315,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto record = m_input_support.find_payment_method(payment_method_id);
@@ -329,7 +324,7 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string merchant_id = ::app::http::merchant_id_from_header{}(req);
@@ -338,21 +333,13 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "payment method belongs to another merchant"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const bool force_sync = ::app::http::RequestQuery{}(req).get("force_sync").has_value();
-        PaymentMethodRetrieveApiInput
-            input{std::move(*record), payment_method_id, merchant_id, force_sync};
-        auto result = m_runtime.payment_method_retrieve_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *record;
+        auto result = m_runtime.payment_method_retrieve_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_delete_api(
@@ -361,6 +348,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_delete_api",
@@ -368,7 +357,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         if (!m_input_support.legacy_access_allowed(req)) {
@@ -376,7 +365,7 @@ public:
                 core::error::AppErrorKind::FORBIDDEN,
                 "legacy endpoint access denied"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string payment_method_id = m_input_support.path_segment(req);
@@ -385,7 +374,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method(payment_method_id);
@@ -394,19 +383,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodDeleteApiInput input{*record, payment_method_id};
-        auto result = m_runtime.payment_method_delete_api(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *record;
+        auto result = m_runtime.payment_method_delete_api(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

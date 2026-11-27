@@ -9,6 +9,7 @@ import app_auth;
 import app_http;
 import app_dto;
 
+import :context;
 export namespace app::handlers::card_issuer {
 
 /**
@@ -29,6 +30,11 @@ public:
     // list route's ApiKeyAuth OR JWTAuth(MerchantAccountRead) fallback. The
     // original authorize() helper is preserved verbatim, including the rule
     // registry lookup and the inline JWT fallback rule.
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
+    }
+
     [[nodiscard]] std::optional<core::error::AppError> authorize(
         interfaces::io::IRequest& req,
         std::string_view operation,
@@ -69,73 +75,42 @@ public:
 private:
     ::app::context::AppContext& m_context;
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old *_core call received.
-
-struct CardIssuerAddInput
+struct CardIssuerAddData
 {
     ::app::dto::card_issuer::CardIssuerRequest request{};
+    template<class Dto>
+    explicit CardIssuerAddData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<::app::dto::card_issuer::CardIssuerRequest>(dto)}
+    {
+    }
 };
-
-struct CardIssuerUpdateInput
+struct CardIssuerUpdateData
 {
     std::string id{};
     ::app::dto::card_issuer::CardIssuerUpdateRequest request{};
+    template<class Dto>
+    explicit CardIssuerUpdateData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        id{::app::payment::detail::last_path(ctx)},
+        request{::app::payment::detail::as_dto<::app::dto::card_issuer::CardIssuerUpdateRequest>(dto)}
+    {
+    }
 };
-
-struct CardIssuerDeleteInput
+struct CardIssuerDeleteData
 {
     std::string id{};
+    explicit CardIssuerDeleteData(const core::behavior::CallContext& ctx) :
+        id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct CardIssuerListInput
-{};
-
-/** @brief Request policy for the card_issuer domain: wraps the domain auth rules. */
-class CardIssuerPolicy
+struct CardIssuerListData
 {
-public:
-    CardIssuerPolicy(
-        ::app::context::AppContext& /*context*/,
-        CardIssuerInputSupport& support
-    ) noexcept :
-        m_support{support}
+    explicit CardIssuerListData(const core::behavior::CallContext& ctx) 
     {
+        (void)ctx;
     }
-
-    [[nodiscard]] std::optional<core::error::AppError> authorize(
-        interfaces::io::IRequest& req,
-        std::string_view operation,
-        const core::behavior::AuthSpec& spec
-    ) const
-    {
-        (void)spec;
-        return m_support.authorize(req, operation, operation == "list_card_issuers");
-    }
-
-    [[nodiscard]] core::behavior::Scope scope(interfaces::io::IRequest& req) const
-    {
-        const auto auth = ::app::auth::AuthContextBuilder{}(req);
-        core::behavior::Scope result;
-        result.merchant_id = std::string{auth.merchant_id()};
-        result.profile_id = std::string{auth.profile_id()};
-        result.org_id = std::string{auth.org_id()};
-        const auto connected = auth.claim(::app::auth::kClaimConnectedMerchantId);
-        result.connected_merchant_id = connected ? std::string{*connected} : std::string{};
-        return result;
-    }
-
-    [[nodiscard]] std::optional<core::error::AppError>
-    scope_error(const core::behavior::Scope&) const
-    {
-        return std::nullopt;
-    }
-
-
-private:
-    CardIssuerInputSupport& m_support;
 };
+
 
 using CardIssuerRequestSupport = core::behavior::RequestSupport<CardIssuerPolicy>;
 using CardIssuerPolicySpec = core::behavior::AuthSpec;

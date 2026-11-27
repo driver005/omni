@@ -1,6 +1,7 @@
 export module app_auth:apple_pay_certificates_migration_runtime_migrate;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 import app_dto;
@@ -26,12 +27,16 @@ public:
 
     // ───────────────────────── Core: migration ─────────────────────────
     // core/apple_pay_certificates_migration.rs:27-113.
-    [[nodiscard]] std::expected<
-        ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse,
-        core::error::AppError>
-    migrate(const ApplePayCertificatesMigrationInput& input) const
+    [[nodiscard]] core::behavior::Outcome<
+        ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationResponse>
+    migrate(
+        const ::app::dto::apple_pay_certificates_migration::ApplePayCertificatesMigrationRequest&
+            request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        const auto& merchant_id_list = input.request.get_merchant_ids();
+        (void)ctx;
+        const auto& merchant_id_list = request.get_merchant_ids();
 
         // Upstream core:27-30.
         std::vector<std::string> migration_successful_merchant_ids{};

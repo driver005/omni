@@ -1,6 +1,7 @@
 export module app_user:user_runtime_totp_begin;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_begin(const TotpBeginInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    totp_begin(const interfaces::Value& generic,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        const auto totp_token = input.request_context.token;
+        const auto totp_token = ctx_token(ctx);
 
         // Port of core/user.rs:2322-2353 (begin_totp): when TOTP is already set
         // for the user, upstream returns BeginTotpResponse { secret: None }.
@@ -75,17 +77,17 @@ public:
         ::app::store::authentication_records::AuthenticationRecord record{};
         record.set_auth_id(m_context.ids().key_id());
         record.set_user_id(totp_token.value());
-        record.set_merchant_id(input.request_context.merchant_id);
+        record.set_merchant_id(ctx.merchant_id);
         record.set_method("TOTP");
         record.set_status("pending");
         record.set_created_at(m_support.now_string());
         (void)m_context.repository().create_authentication_record(record);
 
         const auto key =
-            std::string{"user.totp_begin:"} + std::to_string(input.request_context.body.size());
+            std::string{"user.totp_begin:"} + std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;

@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_merchant_account_create;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,10 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::MerchantAccountResponse, core::error::AppError>
-    create(const MerchantAccountCreateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountResponse>
+    create(const ::app::dto::admin::MerchantAccountCreate& request,
+        const ::core::behavior::CallContext& ctx) const
     {
-        std::string merchant_id{input.request.get_merchant_id().get_value()};
+        std::string merchant_id{request.get_merchant_id().get_value()};
         if (merchant_id.empty()) {
             merchant_id = "merchant_" + m_support.uuid_simple();
         }
@@ -52,9 +54,9 @@ public:
                 m_support.acquire_operation_lock("merchant_account_create", merchant_id)) {
             return std::unexpected{*duplicate};
         }
-        std::string organization_id{input.organization_id};
-        if (organization_id.empty() && input.request.get_organization_id().has_value()) {
-            organization_id = input.request.get_organization_id()->get_value();
+        std::string organization_id{ctx_string(ctx,"organization_id")};
+        if (organization_id.empty() && request.get_organization_id().has_value()) {
+            organization_id = request.get_organization_id()->get_value();
         }
 
         const std::string simple_uuid{m_support.uuid_simple()};
@@ -80,27 +82,27 @@ public:
 
         ::app::store::merchant_accounts::MerchantAccountRecord record;
         record.set_merchant_id(merchant_id);
-        record.set_merchant_name(input.request.get_merchant_name().value_or(""));
+        record.set_merchant_name(request.get_merchant_name().value_or(""));
         record.set_organization_id(organization_id);
-        if (input.request.get_parent_merchant_id().has_value()) {
-            record.set_parent_merchant_id(input.request.get_parent_merchant_id()->get_value());
+        if (request.get_parent_merchant_id().has_value()) {
+            record.set_parent_merchant_id(request.get_parent_merchant_id()->get_value());
         }
-        if (input.request.get_return_url().has_value()) {
-            record.set_return_url(input.request.get_return_url()->get_value());
+        if (request.get_return_url().has_value()) {
+            record.set_return_url(request.get_return_url()->get_value());
         }
         record.set_publishable_key(publishable_key.value());
         record.set_locker_id(locker_id);
         record.set_payment_response_hash_key(response_hash);
-        record.set_sub_merchants_enabled(input.request.get_sub_merchants_enabled().value_or(false));
+        record.set_sub_merchants_enabled(request.get_sub_merchants_enabled().value_or(false));
         record.set_enable_payment_response_hash(
-            input.request.get_enable_payment_response_hash().value_or(false)
+            request.get_enable_payment_response_hash().value_or(false)
         );
         record.set_redirect_to_merchant_with_http_post(
-            input.request.get_redirect_to_merchant_with_http_post().value_or(false)
+            request.get_redirect_to_merchant_with_http_post().value_or(false)
         );
-        if (input.request.get_merchant_account_type().has_value()) {
+        if (request.get_merchant_account_type().has_value()) {
             record.set_merchant_account_type(
-                input.request.get_merchant_account_type()->get_value()
+                request.get_merchant_account_type()->get_value()
             );
         }
         const auto saved = m_context.repository().save_merchant_account(std::move(record));

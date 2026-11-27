@@ -45,8 +45,7 @@ public:
     ) noexcept :
         m_context{context},
         m_runtime{runtime},
-        m_request_support{request_support},
-        m_input_support{}
+        m_request_support{request_support}
     {
     }
 
@@ -56,39 +55,27 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
                 m_request_support.authorize(req, "client_secret_create", kClientSecretApiKeySpec)) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
-        using Input = ::app::dto::client_secret::ClientSecretCreateRequest;
-        const auto body = req.body_as_string();
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed || !parsed->get_resource_id().is_customer()) {
+        using Dto = ::app::dto::client_secret::ClientSecretCreateRequest;
+        auto input = core::behavior::Serializer<Dto>::pass(req, sink);
+        if (!input) {
+            return;
+        }
+        if (!input->get_resource_id().is_customer()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid JSON"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-
-        ClientSecretCreateInput input{*parsed, m_request_support.scope(req).merchant_id, {}};
-        auto result = m_runtime.create(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.create(*input, m_request_support.context(req)).handle(sink);
     }
 
     void handle_client_secret_delete(
@@ -97,38 +84,24 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
                 m_request_support.authorize(req, "client_secret_delete", kClientSecretApiKeySpec)) {
-            auth_error->send(res, send);
+            auth_error->send(sink);
             return;
         }
 
         // web::Path<String> id — routes/client_secret.rs:46,49.
-        const auto client_secret_id = m_input_support.client_secret_id_from_request(req);
-        if (client_secret_id.empty()) {
+        const auto ctx = m_request_support.context(req);
+        if (ctx.path_segments.empty()) {
             const auto error = core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing client secret id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-
-        ClientSecretDeleteInput input{client_secret_id, {}};
-        auto result = m_runtime.delete_client_secret(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        auto encoded = result->serialize(wire_fields());
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{encoded->data(), encoded->size()}));
-        send();
+        m_runtime.delete_client_secret(ctx).handle(sink);
     }
 
     void install(core::router::RouterContext<>& router)
@@ -170,7 +143,6 @@ private:
     ::app::context::AppContext& m_context;
     ClientSecretRuntime& m_runtime;
     core::behavior::RequestSupport<ClientSecretPolicy>& m_request_support;
-    ClientSecretInputSupport m_input_support;
 };
 
 } // namespace app::handlers::client_secret

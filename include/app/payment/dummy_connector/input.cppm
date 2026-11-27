@@ -18,6 +18,7 @@ import app_http;
 // Redis is the only external dependency; the in-process cache is a local stand-in
 // that keeps the same keys, values and TTLs.
 // ---------------------------------------------------------------------------
+import :context;
 export namespace app::handlers::dummy_connector {
 
 /** @brief `DummyConnectorStatus` (types.rs:58-67), lowercase wire form. */
@@ -150,39 +151,60 @@ inline constexpr std::string_view UPI_SUCCESS_VPA{"success@upi"};     // consts.
 
 // -- JSON tree navigation ------------------------------------------------------
 using Object = interfaces::Value::Object;
-
-// -- Plain inputs -------------------------------------------------------------
-struct AuthorizePaymentInput
+struct AuthorizePaymentData
 {
     std::string attempt_id{};
+    explicit AuthorizePaymentData(const core::behavior::CallContext& ctx) :
+        attempt_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct CompletePaymentInput
+struct CompletePaymentData
 {
     std::string attempt_id{};
-    bool confirm{false};
+    bool confirm{};
+    explicit CompletePaymentData(const core::behavior::CallContext& ctx) :
+        attempt_id{::app::payment::detail::last_path(ctx)},
+        confirm{}
+    {
+    }
 };
-
-struct PaymentInput
+struct PaymentData
 {
     PaymentRequest request{};
+    template<class Dto>
+    explicit PaymentData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        request{::app::payment::detail::as_dto<PaymentRequest>(dto)}
+    {
+    }
 };
-
-struct PaymentDataInput
+struct PaymentDataData
 {
     std::string payment_id{};
+    explicit PaymentDataData(const core::behavior::CallContext& ctx) :
+        payment_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
-
-struct RefundInput
+struct RefundData
 {
     std::string payment_id{};
-    std::int64_t amount{0};
+    std::int64_t amount{};
+    explicit RefundData(const core::behavior::CallContext& ctx) :
+        payment_id{::app::payment::detail::last_path(ctx)},
+        amount{}
+    {
+    }
 };
-
-struct RefundDataInput
+struct RefundDataData
 {
     std::string refund_id{};
+    explicit RefundDataData(const core::behavior::CallContext& ctx) :
+        refund_id{::app::payment::detail::last_path(ctx)}
+    {
+    }
 };
+
 
 /**
  * @brief Parse/auth/path/query support for the dummy-connector handlers.
@@ -657,7 +679,7 @@ public:
     }
 
     // -- request parsing ----------------------------------------------------
-    [[nodiscard]] std::expected<PaymentRequest, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<PaymentRequest>
     parse_payment_request(std::string_view body) const
     {
         auto tree = serde::Ser::decode_generic("application/json", body);
@@ -699,7 +721,7 @@ public:
         return request;
     }
 
-    [[nodiscard]] std::expected<RefundRequest, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<RefundRequest>
     parse_refund_request(std::string_view body) const
     {
         auto tree = serde::Ser::decode_generic("application/json", body);
@@ -730,6 +752,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

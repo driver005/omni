@@ -1,6 +1,7 @@
 export module app_user:user_runtime_totp_update;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,8 +38,9 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    totp_update(const TotpUpdateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    totp_update(const ::app::model::user::VerifyTotpRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
@@ -46,7 +48,7 @@ public:
         // Port of core/user.rs:2447-2518 (update_totp): the pending secret staged
         // by totp_begin/reset must validate the submitted code before it is
         // promoted to the durable per-user TOTP secret; then StatusOk.
-        const auto owner = input.request_context.token.value();
+        const auto owner = ctx_token(ctx).value();
         const auto pending = m_context.key_store().get("totp-secret", owner);
         if (!pending) {
             return std::unexpected{m_support.wire_error(
@@ -57,14 +59,14 @@ public:
         }
 
         std::uint64_t step{0};
-        if (const auto step_param = input.request_context.query.get("step")) {
+        if (const auto step_param = ctx_query(ctx).get("step")) {
             std::from_chars(step_param->data(), step_param->data() + step_param->size(), step);
         }
         ::app::crypto::TotpGenerator generator{m_context.one_time_store()};
         if (!generator.verify(
                 pending->value(),
                 step,
-                input.request.get_totp(),
+                request.get_totp(),
                 m_support.now_seconds()
             )) {
             return std::unexpected{m_support.wire_error(

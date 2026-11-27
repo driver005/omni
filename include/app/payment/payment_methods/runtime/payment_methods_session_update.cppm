@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodSessionResponse, core::error::AppError>
-        payment_methods_session_update(const PaymentMethodsSessionUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodSessionResponse>
+        payment_methods_session_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodsSessionUpdateData{dto, ctx};
         auto record = input.record;
         const auto& parsed = input.request;
         if (parsed.get_billing()) {

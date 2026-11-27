@@ -1,6 +1,7 @@
 export module app_user:user_runtime_verify_email;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,13 +38,14 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    verify_email(const VerifyEmailInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    verify_email(const ::app::model::user::VerifyEmailRequest& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
-        if (!m_support.user_signer().verify(input.request.get_token())) {
+        if (!m_support.user_signer().verify(request.get_token())) {
             return std::unexpected{m_support.wire_error(
                 "UR_04",
                 "Invalid or expired link",
@@ -53,8 +55,8 @@ public:
 
         // Port of core/user.rs:2157-2180: a verified single-purpose token is
         // exchanged for a LOGIN token with a cookie.
-        const auto subject = m_support.jwt_claim(input.request.get_token(), "sub");
-        const auto email = m_support.jwt_claim(input.request.get_token(), "email");
+        const auto subject = m_support.jwt_claim(request.get_token(), "sub");
+        const auto email = m_support.jwt_claim(request.get_token(), "email");
         const auto login_token = m_support.user_signer().sign(
             std::format(R"({{"sub":"{}","email":"{}"}})", subject, email)
         );

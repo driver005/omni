@@ -2,6 +2,7 @@ export module app_auth:unified_connector_service_runtime_common;
 
 import std;
 import interfaces;
+import core_behavior;
 import core_router;
 import core_serde;
 import utils_openapi;
@@ -18,6 +19,26 @@ import app_services;
 import :unified_connector_service_input;
 
 export namespace app::handlers::unified_connector_service {
+
+/** @brief Resolve the final path segment into the upstream listed key/scope pair. */
+[[nodiscard]] inline ScopeInfo resolve_scope(const core::behavior::CallContext& ctx)
+{
+    ScopeInfo result{};
+    if (ctx.path_segments.empty()) {
+        return result;
+    }
+    result.listed_key = ctx.path_segments.back();
+    if (result.listed_key.empty()) {
+        return result;
+    }
+    result.scope = result.listed_key;
+    const auto prefix = std::string{kKillSwitchPrefix} + "_";
+    if (const auto pos = result.scope.find(prefix); pos != std::string::npos) {
+        result.scope.erase(0, pos + prefix.size());
+    }
+    result.shadow = result.listed_key == kShadowKey;
+    return result;
+}
 
 /** @brief Typed RolloutConfig subset consumed by trip_status. */
 class RolloutConfigView

@@ -1,6 +1,7 @@
 export module app_auth:hypersense_runtime_common;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -340,7 +341,7 @@ public:
      * allow_connected/allow_platform are inert for the dashboard JWT scheme; the
      * authenticating work is parse JWT -> check blacklist -> check tenant -> UserFromToken.
      */
-    [[nodiscard]] std::expected<UserFromToken, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<UserFromToken>
     authenticate_dashboard(std::string_view bearer, std::string_view header_merchant_id) const
     {
         if (bearer.empty()) {

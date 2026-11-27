@@ -10,6 +10,7 @@ import app_dto;
 import app_auth;
 import app_http;
 
+import :context;
 export namespace app::handlers::revenue_recovery_data_backfill {
 
 namespace backfill_support {
@@ -220,31 +221,47 @@ struct ScheduledUpdate
     ScheduledKind kind{ScheduledKind::Null};
     std::string datetime{};
 };
-
-// ───────────────────────── Plain inputs ─────────────────────────
-// Each struct carries exactly what the old core call received.
-
-struct RevenueRecoveryDataBackfillInput
+struct RevenueRecoveryDataBackfillData
 {
     ::app::dto::revenue_recovery_data_backfill::CsvParsingResult parsed{};
     std::optional<backfill_support::PrimitiveDateTime> cutoff_datetime{};
+    template<class Dto>
+    explicit RevenueRecoveryDataBackfillData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        parsed{::app::payment::detail::as_dto<::app::dto::revenue_recovery_data_backfill::CsvParsingResult>(dto)},
+        cutoff_datetime{}
+    {
+    }
 };
-
-struct RetryStatsMigrationInput
+struct RetryStatsMigrationData
 {
     ::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationCsvResult parsed{};
+    template<class Dto>
+    explicit RetryStatsMigrationData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        parsed{::app::payment::detail::as_dto<::app::dto::revenue_recovery_data_backfill::RetryStatsMigrationCsvResult>(dto)}
+    {
+    }
 };
-
-struct UpdateRedisDataInput
+struct UpdateRedisDataData
 {
     ::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusRequest parsed{};
     std::optional<ScheduledUpdate> scheduled_update{};
+    template<class Dto>
+    explicit UpdateRedisDataData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        parsed{::app::payment::detail::as_dto<::app::dto::revenue_recovery_data_backfill::UpdateTokenStatusRequest>(dto)},
+        scheduled_update{}
+    {
+    }
 };
-
-struct UnlockStatusInput
+struct UnlockStatusData
 {
     ::app::dto::revenue_recovery_data_backfill::UnlockStatusRequest parsed{};
+    template<class Dto>
+    explicit UnlockStatusData(const Dto& dto, const core::behavior::CallContext& ctx) :
+        parsed{::app::payment::detail::as_dto<::app::dto::revenue_recovery_data_backfill::UnlockStatusRequest>(dto)}
+    {
+    }
 };
+
 
 /**
  * @brief Parse/auth/path/query support for the revenue-recovery handlers.
@@ -268,7 +285,7 @@ public:
         return m_context.authorizer().authorize_route(::app::auth::AuthContextBuilder{}(req), rule);
     }
 
-    [[nodiscard]] std::expected<std::optional<backfill_support::PrimitiveDateTime>, std::string>
+    [[nodiscard]] core::behavior::Outcome<std::optional<backfill_support::PrimitiveDateTime>, std::string>
     cutoff_datetime_from_query(interfaces::io::IRequest& req) const
     {
         const auto query = ::app::http::RequestQuery{}(req);
@@ -345,8 +362,7 @@ public:
     }
 
     [[nodiscard]] std::expected<
-        ::app::dto::revenue_recovery_data_backfill::UnlockStatusRequest,
-        core::error::AppError>
+        ::app::dto::revenue_recovery_data_backfill::UnlockStatusRequest>
     status_request_from_path(interfaces::io::IRequest& req) const
     {
         const auto segments = ::app::http::RequestPath{}(req);
@@ -607,6 +623,11 @@ public:
     ) noexcept :
         m_support{support}
     {
+    }
+
+    [[nodiscard]] core::behavior::CallContext context(interfaces::io::IRequest& req) const
+    {
+        return ::app::payment::detail::make_call_context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> authorize(

@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -39,7 +40,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -50,17 +51,17 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "accept_invitations_v2", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "accept_invitations_v2", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto identity = m_input_support.identity_from(req);
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed =
@@ -70,24 +71,11 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid invitation payload"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        AcceptInvitationsV2Input input{identity, *parsed};
-        auto result = m_runtime.accept_invitations_v2(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->serialize(kStatusOkWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.accept_invitations_v2(*parsed, ctx).handle(sink);
     }
 
     // Alias of handle_accept_invitations_pre_auth (POST .../accept/v2/pre_auth).
@@ -97,18 +85,18 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "accept_invitations_pre_auth", {})) {
+                m_support.authorize(req, "accept_invitations_pre_auth", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        const auto identity = m_input_support.identity_from(req);
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto parsed =
@@ -118,25 +106,11 @@ public:
                 core::error::AppErrorKind::INVALID_JSON,
                 "invalid invitation payload"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        AcceptInvitationsPreAuthInput input{identity, *parsed};
-        auto result = m_runtime.accept_invitations_pre_auth(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_header(std::string_view{"set-cookie"}, result->second);
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = result->first.serialize(kTokenResponseWireFields);
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.accept_invitations_pre_auth(*parsed, ctx).handle(sink);
     }
 
     // Alias of handle_list_users_in_lineage (GET /user/v2/list).
@@ -146,32 +120,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "list_users_in_lineage", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "list_users_in_lineage", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListUsersInLineageInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or("")
-        };
-        auto result = m_runtime.list_users_in_lineage(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ListUsersInEntityWire>>::serialize_values(
-            *result,
-            kListUsersInEntityWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        m_runtime.list_users_in_lineage(ctx).handle(sink);
     }
 
     // Alias of handle_list_roles_with_info (GET /role/v2/list).
@@ -181,25 +138,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "list_roles_with_info", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "list_roles_with_info", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListRolesWithInfoInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or(""),
-            m_request_support.query(req, "groups").value_or("") == "true"
-        };
-        auto result = m_runtime.list_roles_with_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        ctx.claims.insert_or_assign("groups", m_support.query(req, "groups").value_or("") == "true" ? "true" : "false");
+        m_runtime.list_roles_with_info(ctx).handle(sink);
     }
 
     // original install() route #12
@@ -324,7 +272,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
-    UserRoleRequestSupport& m_request_support;
+    UserRoleRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user_role

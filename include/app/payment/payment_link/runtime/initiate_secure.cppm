@@ -38,9 +38,10 @@ public:
     // initiate_secure_payment_link (routes:100-133) ->
     // initiate_secure_payment_link_flow (core:362-470). Renders a GenericLinks
     // form (SecurePaymentLink) or the status page, after header validation.
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    initiate_secure(const PaymentLinkInitiateSecureInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    initiate_secure(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentLinkInitiateSecureData{ctx};
         m_context.metrics().record_flow("payment_link.initiate_secure");
         m_context.metrics().counter("payment_link.initiate_secure").increment();
 

@@ -1,6 +1,7 @@
 export module app_auth:verify_connector_runtime_common;
 
 import std;
+import core_behavior;
 import core_serde;
 import core_error;
 import app_context;
@@ -131,7 +132,7 @@ public:
      * Parses the card number via cards::CardNumber; an invalid number maps to InternalServerError.
      * The in-process substitute validates non-empty digits (no external card-validation crate).
      */
-    [[nodiscard]] std::expected<DomainCard, Error> generate_card_from_details(
+    [[nodiscard]] core::behavior::Outcome<DomainCard> generate_card_from_details(
         std::string number,
         std::string year,
         std::string month,
@@ -159,7 +160,7 @@ public:
      * @brief Upstream `utils::get_test_card_details` (utils/verify_connector.rs:35-55).
      * Table-driven: Stripe -> 4242..., Paypal -> 4111..., every other connector -> None.
      */
-    [[nodiscard]] std::expected<std::optional<DomainCard>, Error>
+    [[nodiscard]] core::behavior::Outcome<std::optional<DomainCard>>
     get_test_card_details(Connector connector) const
     {
         switch (connector) {
@@ -211,7 +212,7 @@ public:
      * entry is the miss path, while the validated enum name itself is the connector carried into
      * VerifyConnectorData.
      */
-    [[nodiscard]] std::expected<ConnectorData, Error>
+    [[nodiscard]] core::behavior::Outcome<ConnectorData>
     get_connector_by_name(std::string_view name) const
     {
         // Upstream `state.conf.connectors` enumerates every known Connector variant, so a name that
@@ -331,7 +332,7 @@ public:
      * (types/api/verify_connector.rs:167-209): get_payment_authorize_data -> get_access_token ->
      * get_router_data -> build_request -> call_connector_api -> StatusOk / error mapping.
      */
-    [[nodiscard]] std::expected<void, Error> stripe_verify(
+    [[nodiscard]] core::behavior::Outcome<void> stripe_verify(
         const std::shared_ptr<::app::connector::IConnector>& connector,
         std::string_view merchant_id,
         const VerifyConnectorData& data
@@ -355,7 +356,7 @@ public:
      * get_access_token with an OAuth token exchange; the in-process connector's exchange_token()
      * stands in for that external call. Success maps to StatusOk.
      */
-    [[nodiscard]] std::expected<void, Error> paypal_get_access_token(
+    [[nodiscard]] core::behavior::Outcome<void> paypal_get_access_token(
         const std::shared_ptr<::app::connector::IConnector>& connector,
         std::string_view merchant_id,
         const VerifyConnectorData& data

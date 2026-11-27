@@ -1,6 +1,7 @@
 export module app_webhook:webhooks_runtime_receive_incoming_webhook;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
@@ -21,20 +22,14 @@ public:
 
     // Upstream POST/GET/PUT /webhooks/{merchant_id}/{connector_id_or_name},
     // MerchantIdAuth(path) (routes/webhooks.rs:11-44, app.rs:2352-2357).
-    [[nodiscard]] std::expected<WebhookAck, core::error::AppError>
-    receive_incoming_webhook(const ReceiveIncomingWebhookInput& input) const
+    [[nodiscard]] core::behavior::Outcome<WebhookAck>
+    receive_incoming_webhook(
+        const std::string& body,
+        const ::core::behavior::CallContext& ctx
+    ) const
     {
         (void)m_context;
-        auto ack = m_support.incoming_webhooks_wrapper(
-            input.ids,
-            input.body,
-            input.header,
-            input.operation,
-            input.flow,
-            input.counter,
-            false,
-            false
-        );
+        auto ack = m_support.incoming_webhooks_wrapper(body, ctx, false, false);
         if (!ack) {
             return std::unexpected{ack.error()};
         }

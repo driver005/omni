@@ -23,6 +23,20 @@ struct Scope
     std::string connected_merchant_id{};
 };
 
+struct CallContext
+{
+    std::string operation{};
+    std::string merchant_id{};
+    std::string profile_id{};
+    std::string org_id{};
+    std::string connected_merchant_id{};
+    std::string client_secret{};
+    std::vector<std::string> path_segments{};
+    std::unordered_map<std::string, std::string> query{};
+    std::unordered_map<std::string, std::string> headers{};
+    std::unordered_map<std::string, std::string> claims{};
+};
+
 template<class P>
 concept RequestPolicy = requires(
     P& policy,
@@ -35,6 +49,7 @@ concept RequestPolicy = requires(
         policy.authorize(req, op, spec)
     } -> std::convertible_to<std::optional<core::error::AppError>>;
     { policy.scope(req) } -> std::convertible_to<Scope>;
+    { policy.context(req) } -> std::convertible_to<CallContext>;
     { policy.scope_error(scope) } -> std::convertible_to<std::optional<core::error::AppError>>;
 };
 
@@ -56,6 +71,11 @@ public:
     [[nodiscard]] Scope scope(interfaces::io::IRequest& req) const
     {
         return m_policy.scope(req);
+    }
+
+    [[nodiscard]] CallContext context(interfaces::io::IRequest& req) const
+    {
+        return m_policy.context(req);
     }
 
     [[nodiscard]] std::optional<core::error::AppError> scope_error(const Scope& scope) const

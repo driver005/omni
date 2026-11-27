@@ -1,6 +1,7 @@
 export module app_payment:payment_methods_handlers_payment_method_sessions_by_id_saved;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -61,6 +62,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_session_delete_saved_payment_method(
                                     req,
                                     res,
@@ -82,6 +85,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_payment_method_session_list_payment_methods(
                                         req,
                                         res,
@@ -104,6 +109,8 @@ public:
                                     std::function<void()> send
                                 )
                                 {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                     handle_payment_method_session_update_saved_payment_method(
                                         req,
                                         res,
@@ -127,6 +134,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_session_list_payment_methods(
                                     req,
                                     res,
@@ -148,6 +157,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_session_delete_saved_payment_method(
                                 req,
                                 res,
@@ -169,6 +180,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_session_list_payment_methods(
                                     req,
                                     res,
@@ -191,6 +204,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_payment_method_session_update_saved_payment_method(
                                     req,
                                     res,
@@ -215,6 +230,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_payment_method_session_list_payment_methods(
                                 req,
                                 res,
@@ -233,6 +250,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_session_delete_saved_payment_method",
@@ -240,7 +259,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req);
@@ -249,7 +268,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto session = m_input_support.find_payment_method_session(session_id);
@@ -258,25 +277,19 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
-        using Input = ::app::model::payment_methods::PaymentMethodSessionDeleteSavedPaymentMethod;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionDeleteSavedPaymentMethod>::pass(req, sink);
+        if (!parsed) return;
         const std::string token = parsed->get_payment_method_token();
         if (token.empty()) {
             const auto error = m_input_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method token"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto record = m_input_support.find_payment_method(token);
@@ -285,19 +298,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodSessionDeleteSavedPaymentMethodInput input{token, *session, *record};
-        auto result = m_runtime.payment_method_session_delete_saved_payment_method(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = token;
+        auto result = m_runtime.payment_method_session_delete_saved_payment_method(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_session_list_payment_methods(
@@ -306,6 +312,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_session_list_payment_methods",
@@ -313,7 +321,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req, 1);
@@ -322,7 +330,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto session = m_input_support.find_payment_method_session(session_id);
@@ -331,21 +339,14 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string customer_id =
             ::app::http::RequestQuery{}(req).get("customer_id").value_or("");
-        PaymentMethodSessionListPaymentMethodsInput input{*session, customer_id};
-        auto result = m_runtime.payment_method_session_list_payment_methods(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *session;
+        auto result = m_runtime.payment_method_session_list_payment_methods(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_payment_method_session_update_saved_payment_method(
@@ -354,6 +355,8 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         const auto auth_error = m_request_support->authorize(
             req,
             "payment_method_session_update_saved_payment_method",
@@ -361,7 +364,7 @@ public:
         );
         if (auth_error) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const std::string session_id = m_input_support.path_segment(req, 1);
@@ -370,7 +373,7 @@ public:
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing session id"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto session = m_input_support.find_payment_method_session(session_id);
@@ -379,31 +382,25 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "payment methods session does not exist or has expired"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         const auto body = req.body_as_string();
         if (body.empty()) {
             const auto error =
                 m_input_support.error(core::error::AppErrorKind::EMPTY_REQUEST, "empty request");
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        using Input = ::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod;
-        auto parsed = serde::Ser::deserialize<Input>("application/json", body);
-        if (!parsed) {
-            const auto error =
-                m_input_support.error(core::error::AppErrorKind::INVALID_JSON, "invalid JSON");
-            error.send(res, send);
-            return;
-        }
+        auto parsed = core::behavior::Serializer<::app::model::payment_methods::PaymentMethodSessionUpdateSavedPaymentMethod>::pass(req, sink);
+        if (!parsed) return;
         const std::string token = parsed->get_payment_method_token().value_or("");
         if (token.empty()) {
             const auto error = m_input_support.error(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 "missing payment method token"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto record = m_input_support.find_payment_method(token);
@@ -420,23 +417,12 @@ public:
                 core::error::AppErrorKind::NOT_FOUND,
                 "Payment method does not exist in our records"
             );
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        PaymentMethodSessionUpdateSavedPaymentMethodInput input{
-            *parsed,
-            *session,
-            std::move(*record)
-        };
-        auto result = m_runtime.payment_method_session_update_saved_payment_method(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        const auto& dto = *parsed;
+        auto result = m_runtime.payment_method_session_update_saved_payment_method(dto, m_request_support->context(req));
+        result.handle(sink);
     }
 
 private:

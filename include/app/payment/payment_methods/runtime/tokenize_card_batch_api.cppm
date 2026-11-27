@@ -35,11 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::model::payment_methods::TokenizedCardValue1>,
-        core::error::AppError>
-    tokenize_card_batch_api(const TokenizeCardBatchApiInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::payment_methods::TokenizedCardValue1>>
+    tokenize_card_batch_api(const core::behavior::CallContext& ctx) const
     {
+        const auto input = TokenizeCardBatchApiData{ctx};
         std::vector<::app::model::payment_methods::TokenizedCardValue1> results{};
         for (const auto& payload: input.payloads) {
             const auto vault = m_support.call_connector(

@@ -1,5 +1,7 @@
 export module app_payment;
 
+export import :context;
+
 export import :telephone_order_base;
 export import :card_issuer_base;
 export import :cards_info_base;

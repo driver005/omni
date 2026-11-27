@@ -5,6 +5,7 @@ import interfaces;
 import core_router;
 import app_context;
 import :payments_input;
+import :context;
 import :payments_result;
 import :payments_runtime;
 import :payments_handlers_v1;

@@ -21,9 +21,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    reverse(const RefundsReverseInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        reverse(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsReverseData{dto, ctx};
         m_context.metrics().record_flow("refund_reverse");
         m_context.metrics().counter("refunds_reverse_total").increment();
 

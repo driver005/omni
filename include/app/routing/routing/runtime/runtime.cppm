@@ -4,8 +4,8 @@ import std;
 import core_serde;
 import core_error;
 import app_context;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 import :routing_runtime_routing_entry;
@@ -69,161 +69,185 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_entry(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_entry(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_routing_entry.routing_entry(input);
+        return m_routing_entry.routing_entry(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_create_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_create_config(
+        const ::app::model::routing::RoutingConfigRequest& config_request,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_routing_create_config.routing_create_config(input);
+        return m_routing_create_config.routing_create_config(config_request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_link_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_link_config(
+        const std::optional<::app::model::routing::RoutingLinkWrapper>& link,
+        const std::optional<::app::model::routing::RoutingActivatePayload>& activate,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_routing_link_config.routing_link_config(input);
+        return m_routing_link_config.routing_link_config(link, activate, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_config(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_routing_retrieve_config.routing_retrieve_config(input);
+        return m_routing_retrieve_config.routing_retrieve_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_routing_configs(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_routing_configs(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_list_routing_configs.list_routing_configs(input);
+        return m_list_routing_configs.list_routing_configs(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_routing_configs_for_profile(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_routing_configs_for_profile(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_list_routing_configs_for_profile.list_routing_configs_for_profile(input);
+        return m_list_routing_configs_for_profile.list_routing_configs_for_profile(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_unlink_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_unlink_config(
+        const std::optional<::app::model::routing::RoutingConfigRequest>& config_request,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_routing_unlink_config.routing_unlink_config(input);
+        return m_routing_unlink_config.routing_unlink_config(config_request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_update_default_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_update_default_config(
+        const Connectors& connectors,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_routing_update_default_config.routing_update_default_config(input);
+        return m_routing_update_default_config.routing_update_default_config(connectors, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_default_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_default_config(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_routing_retrieve_default_config.routing_retrieve_default_config(input);
+        return m_routing_retrieve_default_config.routing_retrieve_default_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    upsert_surcharge_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> upsert_surcharge_decision_manager_config(
+        const ::app::dto::surcharge_decision_configs::SurchargeDecisionConfigReq& request,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
         return m_upsert_surcharge_decision_manager_config.upsert_surcharge_decision_manager_config(
-            input
+            request,
+            ctx
         );
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_surcharge_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_surcharge_decision_manager_config(const ::core::behavior::CallContext& ctx ctx) const
     {
         return m_delete_surcharge_decision_manager_config.delete_surcharge_decision_manager_config(
-            input
+            ctx
         );
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_surcharge_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_surcharge_decision_manager_config(const ::core::behavior::CallContext& ctx ctx) const
     {
         return m_retrieve_surcharge_decision_manager_config
-            .retrieve_surcharge_decision_manager_config(input);
+            .retrieve_surcharge_decision_manager_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    upsert_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> upsert_decision_manager_config(
+        const serde::Value& body,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_upsert_decision_manager_config.upsert_decision_manager_config(input);
+        return m_upsert_decision_manager_config.upsert_decision_manager_config(body, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    delete_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    delete_decision_manager_config(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_delete_decision_manager_config.delete_decision_manager_config(input);
+        return m_delete_decision_manager_config.delete_decision_manager_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_decision_manager_config(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_retrieve_decision_manager_config.retrieve_decision_manager_config(input);
+        return m_retrieve_decision_manager_config.retrieve_decision_manager_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_linked_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_linked_config(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_routing_retrieve_linked_config.routing_retrieve_linked_config(input);
+        return m_routing_retrieve_linked_config.routing_retrieve_linked_config(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_retrieve_default_config_for_profiles(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_retrieve_default_config_for_profiles(const ::core::behavior::CallContext& ctx ctx) const
     {
         return m_routing_retrieve_default_config_for_profiles
-            .routing_retrieve_default_config_for_profiles(input);
+            .routing_retrieve_default_config_for_profiles(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_update_default_config_for_profile(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> routing_update_default_config_for_profile(
+        const Connectors& connectors,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
         return m_routing_update_default_config_for_profile
-            .routing_update_default_config_for_profile(input);
+            .routing_update_default_config_for_profile(connectors, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_success_based_routing(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> create_success_based_routing(
+        const std::optional<serde::Value>& body,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_create_success_based_routing.create_success_based_routing(input);
+        return m_create_success_based_routing.create_success_based_routing(body, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    create_elimination_routing(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> create_elimination_routing(
+        const std::optional<serde::Value>& body,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_create_elimination_routing.create_elimination_routing(input);
+        return m_create_elimination_routing.create_elimination_routing(body, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    contract_based_routing_setup_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> contract_based_routing_setup_config(
+        const std::optional<serde::Value>& body,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_contract_based_routing_setup_config.contract_based_routing_setup_config(input);
+        return m_contract_based_routing_setup_config.contract_based_routing_setup_config(body, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    set_dynamic_routing_volume_split(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    set_dynamic_routing_volume_split(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_set_dynamic_routing_volume_split.set_dynamic_routing_volume_split(input);
+        return m_set_dynamic_routing_volume_split.set_dynamic_routing_volume_split(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_dynamic_routing_volume_split(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_dynamic_routing_volume_split(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_get_dynamic_routing_volume_split.get_dynamic_routing_volume_split(input);
+        return m_get_dynamic_routing_volume_split.get_dynamic_routing_volume_split(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    routing_migration_status(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    routing_migration_status(const ::core::behavior::CallContext& ctx ctx) const
     {
-        return m_routing_migration_status.routing_migration_status(input);
+        return m_routing_migration_status.routing_migration_status(ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    migrate_routing_rules(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> migrate_routing_rules(
+        const ::app::model::routing::RuleMigrationRequest& request,
+        const ::core::behavior::CallContext& ctx ctx
+    ) const
     {
-        return m_migrate_routing_rules.migrate_routing_rules(input);
+        return m_migrate_routing_rules.migrate_routing_rules(request, ctx);
     }
 
 private:

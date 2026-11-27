@@ -1,6 +1,7 @@
 export module app_user:admin_runtime_merchant_account_transfer_keys;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -35,8 +36,8 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::admin::TransferKeyResponse, core::error::AppError>
-    transfer(const MerchantAccountTransferKeysInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::TransferKeyResponse>
+    transfer(const ::core::behavior::CallContext& ctx) const
     {
         if (const auto duplicate =
                 m_support.acquire_operation_lock("merchant_account_transfer_keys", "all")) {
@@ -44,8 +45,8 @@ public:
         }
         std::size_t total_transferred{0};
         const auto accounts = m_context.repository().list_merchant_accounts();
-        for (std::size_t index{input.offset};
-             index < accounts.size() && total_transferred < input.limit;
+        for (std::size_t index{ctx_size(ctx,"offset")};
+             index < accounts.size() && total_transferred < ctx_size(ctx,"limit");
              ++index) {
             auto record = accounts[index];
             const std::string new_key{m_context.ids().key_id()};

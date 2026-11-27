@@ -4,6 +4,7 @@ import std;
 import interfaces;
 import core_router;
 import core_serde;
+import core_behavior;
 import utils_openapi;
 import app_model;
 import app_dto;
@@ -38,7 +39,7 @@ public:
         m_context{context},
         m_runtime{runtime},
         m_input_support{input_support},
-        m_request_support{request_support}
+        m_support{request_support}
     {
     }
 
@@ -49,30 +50,15 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "get_authorization_info", {})) {
+                m_support.authorize(req, "get_authorization_info", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetAuthorizationInfoInput input{m_input_support.identity_from(req)};
-        auto result = m_runtime.get_authorization_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<GroupInfoWire>>::serialize_values(
-            *result,
-            kGroupInfoWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_authorization_info(ctx).handle(sink);
     }
 
     // ── GET /role — core::role::get_role_from_token_with_groups ────────────────
@@ -82,21 +68,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "get_role_from_token", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "get_role_from_token", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetRoleFromTokenInput input{m_input_support.identity_from(req)};
-        auto result = m_runtime.get_role_from_token(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_role_from_token(ctx).handle(sink);
     }
 
     // ── GET /module/list — core::get_authorization_info_with_group_tag ─────────
@@ -106,29 +85,14 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "get_role_information", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "get_role_information", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetRoleInformationInput input{m_input_support.identity_from(req)};
-        auto result = m_runtime.get_role_information(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ParentInfoWire>>::serialize_values(
-            *result,
-            kParentInfoWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        m_runtime.get_role_information(ctx).handle(sink);
     }
 
     // ── GET /parent/list — core::get_parent_group_info ─────────────────────────
@@ -138,33 +102,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "get_parent_group_info", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "get_parent_group_info", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        GetParentGroupInfoInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or(""),
-            m_request_support.query(req, "product_type").value_or("")
-        };
-        auto result = m_runtime.get_parent_group_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ParentGroupDescriptionWire>>::serialize_values(
-            *result,
-            kParentGroupDescriptionWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        ctx.claims.insert_or_assign("product_type", std::string{m_support.query(req, "product_type").value_or("")});
+        m_runtime.get_parent_group_info(ctx).handle(sink);
     }
 
     // ── GET /user/list — core::list_users_in_lineage ───────────────────────────
@@ -174,32 +121,15 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "list_users_in_lineage", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "list_users_in_lineage", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListUsersInLineageInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or("")
-        };
-        auto result = m_runtime.list_users_in_lineage(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<ListUsersInEntityWire>>::serialize_values(
-            *result,
-            kListUsersInEntityWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        m_runtime.list_users_in_lineage(ctx).handle(sink);
     }
 
     // ── GET /role/list — core::role::list_roles_with_info ──────────────────────
@@ -209,25 +139,16 @@ public:
         std::function<void()> send
     )
     {
-        if (const auto auth_error = m_request_support.authorize(req, "list_roles_with_info", {})) {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+        if (const auto auth_error = m_support.authorize(req, "list_roles_with_info", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListRolesWithInfoInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or(""),
-            m_request_support.query(req, "groups").value_or("") == "true"
-        };
-        auto result = m_runtime.list_roles_with_info(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        ctx.claims.insert_or_assign("groups", m_support.query(req, "groups").value_or("") == "true" ? "true" : "false");
+        m_runtime.list_roles_with_info(ctx).handle(sink);
     }
 
     // ── GET /role/list/update — core::role::list_roles_at_entity_level(Update) ─
@@ -237,33 +158,16 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         if (const auto auth_error =
-                m_request_support.authorize(req, "list_updatable_roles_at_entity_level", {})) {
+                m_support.authorize(req, "list_updatable_roles_at_entity_level", {})) {
             const auto& error = *auth_error;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
-        ListUpdatableRolesAtEntityLevelInput input{
-            m_input_support.identity_from(req),
-            m_request_support.query(req, "entity_type").value_or("")
-        };
-        auto result = m_runtime.list_updatable_roles_at_entity_level(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        auto encoded = serde::Serializer<std::vector<MinimalRoleInfoWire>>::serialize_values(
-            *result,
-            kMinimalRoleInfoWireFields
-        );
-        if (!encoded) {
-            encoded.error().send(res, send);
-            return;
-        }
-        res.set_body(serde::Ser::serialize_raw("application/json", *encoded));
-        send();
+        auto ctx = m_support.context(req);
+        ctx.claims.insert_or_assign("entity_type", std::string{m_support.query(req, "entity_type").value_or("")});
+        m_runtime.list_updatable_roles_at_entity_level(ctx).handle(sink);
     }
 
     // original install() route #01
@@ -444,7 +348,7 @@ private:
     ::app::context::AppContext& m_context;
     UserRoleRuntime& m_runtime;
     UserRoleInputSupport& m_input_support;
-    UserRoleRequestSupport& m_request_support;
+    UserRoleRequestSupport& m_support;
 };
 
 } // namespace app::handlers::user_role

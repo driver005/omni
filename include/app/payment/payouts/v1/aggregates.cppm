@@ -1,6 +1,7 @@
 export module app_payment:payouts_handlers_v1_aggregates;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -52,29 +53,21 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "get_payouts_aggregates",
                 spec_for("get_payouts_aggregates")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
         // Upstream input is `web::Query<TimeRange>` (`payouts.rs:708`); no body is read.
-        PayoutsAggregatesInput input{
-            m_input_support.time_range_from_query(m_input_support.query(req))
-        };
-        auto result = m_runtime.get_payouts_aggregates(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_payouts_aggregates(m_request_support->context(req));
+        result.handle(sink);
     }
 
     void handle_get_payouts_aggregates_profile(
@@ -83,29 +76,20 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
         if (const auto denied = m_request_support->authorize(
                 req,
                 "get_payouts_aggregates_profile",
                 spec_for("get_payouts_aggregates_profile")
             )) {
             const auto& error = *denied;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        PayoutsAggregatesProfileInput input{
-            m_input_support.time_range_from_query(m_input_support.query(req)),
-            m_input_support.profile_id(req, std::nullopt)
-        };
-        auto result = m_runtime.get_payouts_aggregates_profile(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serialize_wire(*result));
-        send();
+        auto result = m_runtime.get_payouts_aggregates_profile(m_request_support->context(req));
+        result.handle(sink);
     }
 
     using Route = utils::openapi::ApiRoute;
@@ -123,6 +107,8 @@ public:
                             std::function<void()> send
                         )
                         {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                             handle_get_payouts_aggregates(req, res, std::move(send));
                         }
                     )
@@ -138,6 +124,8 @@ public:
                                 std::function<void()> send
                             )
                             {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
+
                                 handle_get_payouts_aggregates_profile(req, res, std::move(send));
                             }
                         )

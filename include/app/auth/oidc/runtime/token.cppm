@@ -1,6 +1,7 @@
 export module app_auth:oidc_runtime_token;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,8 +34,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::dto::oidc::OidcTokenResponse, core::error::AppError>
-    token(const OidcTokenInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::oidc::OidcTokenResponse>
+    token(
+        const ::app::dto::oidc::OidcTokenRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
         // Upstream applies OIDC_CLIENT_AUTH (HTTP Basic), not a dashboard JWT.
         // The exact Basic client validation is enforced here (see input support).
@@ -45,10 +49,12 @@ public:
 
         m_support.ensure_oidc_config();
 
-        const auto& request = input.request;
         // auth::OIDC_CLIENT_AUTH: Basic client_id/client_secret vs conf.oidc.client.
-        const auto client = m_support.configured_oidc_client(input.basic.first);
-        if (!client || client->client_secret != input.basic.second) {
+        static const std::string no_client{};
+        const auto client_it = ctx.claims.find("client_id");
+        const auto& client_id = client_it == ctx.claims.end() ? no_client : client_it->second;
+        const auto client = m_support.configured_oidc_client(client_id);
+        if (!client || client->client_secret != ctx.client_secret) {
             return std::unexpected{
                 oidc_wire::oidc_error(oidc_wire::OidcErrorKind::InvalidBasicAuth)
             };

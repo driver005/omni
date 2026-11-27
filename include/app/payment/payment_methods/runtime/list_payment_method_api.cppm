@@ -35,10 +35,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodListResponse, core::error::AppError>
-        list_payment_method_api(const ListPaymentMethodApiInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodListResponse>
+        list_payment_method_api(const core::behavior::CallContext& ctx) const
     {
+        const auto input = ListPaymentMethodApiData{ctx};
         m_context.metrics().record_flow("list_payment_method_api");
         m_context.metrics().counter("PAYMENT_METHOD_LIST_PAYMENT_METHOD_API").increment();
         ::app::model::payment_methods::PaymentMethodListResponse response{};

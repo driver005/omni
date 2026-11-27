@@ -36,9 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: confirm ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    confirm(const PayoutsConfirmInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    confirm(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsConfirmData{ctx};
         PayoutLockGuard lock{
             m_context.locks(),
             std::format("payout:{}", input.payout_id),

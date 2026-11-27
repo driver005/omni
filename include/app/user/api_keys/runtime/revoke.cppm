@@ -1,6 +1,7 @@
 export module app_user:api_keys_runtime_revoke;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,10 +38,10 @@ public:
     }
 
     /** @brief core::api_keys::revoke_api_key (436-497). */
-    [[nodiscard]] std::expected<::app::dto::api_keys::RevokeApiKeyResponse, core::error::AppError>
-    revoke(const ApiKeyRevokeInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::api_keys::RevokeApiKeyResponse>
+    revoke(const ::core::behavior::CallContext& ctx) const
     {
-        const auto found = m_support.find_api_key(input.merchant_id, input.key_id);
+        const auto found = m_support.find_api_key(ctx.merchant_id, (ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}));
         if (!found) {
             return std::unexpected{m_support.api_key_not_found_error()};
         }
@@ -57,7 +58,7 @@ public:
         m_support.revoke_api_key_decision(record.get_api_key());
 
         if constexpr (kEmail) {
-            if (auto expiry_error = m_support.revoke_api_key_expiry_task(input.key_id)) {
+            if (auto expiry_error = m_support.revoke_api_key_expiry_task((ctx.path_segments.size() > 2 ? ctx.path_segments[2] : std::string{}))) {
                 return std::unexpected{*expiry_error};
             }
         }

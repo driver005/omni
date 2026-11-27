@@ -35,9 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    exchange_token(const ExchangeTokenInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        exchange_token(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = ExchangeTokenData{dto, ctx};
         const auto& request = input.request;
         const std::string& public_token = request.get_public_token();
         const std::string& payment_id = request.get_payment_id().get_value();

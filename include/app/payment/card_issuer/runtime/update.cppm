@@ -23,9 +23,11 @@ public:
     }
 
     // core/card_issuer.rs:41-61 `update_card_issuer`.
-    [[nodiscard]] std::expected<::app::dto::card_issuer::CardIssuerResponse, core::error::AppError>
-    update(const CardIssuerUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::card_issuer::CardIssuerResponse>
+        update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = CardIssuerUpdateData{dto, ctx};
         const std::string& id = input.id;
         const std::string issuer_name = input.request.get_issuer_name().get_value();
         if (const auto invalid = m_support.validate_issuer_name(issuer_name)) {

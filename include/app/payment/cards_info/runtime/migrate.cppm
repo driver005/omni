@@ -28,11 +28,10 @@ public:
     // api::server_wrap(Flow::CardsInfoMigrate, ...). No counter in server_wrap;
     // CARDS_INFO_MIGRATED is incremented by the core itself.
 
-    [[nodiscard]] std::expected<
-        std::vector<::app::model::cards_info::CardInfoMigrationResponse>,
-        core::error::AppError>
-    migrate(const MigrateCardsInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::cards_info::CardInfoMigrationResponse>>
+    migrate(const core::behavior::CallContext& ctx) const
     {
+        const auto input = MigrateCardsInfoData{ctx};
         std::vector<CardInfoMigrationResponse> result{};
         result.reserve(input.records.size());
         std::size_t migrated{0};

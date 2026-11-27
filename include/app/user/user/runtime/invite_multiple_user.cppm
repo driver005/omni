@@ -1,6 +1,7 @@
 export module app_user:user_runtime_invite_multiple_user;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -37,17 +38,18 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::pair<serde::Value, std::string>, core::error::AppError>
-    invite_multiple_user(const InviteMultipleUserInput& input) const
+    [[nodiscard]] core::behavior::Outcome<std::pair<serde::Value, std::string>>
+    invite_multiple_user(const std::vector<::app::model::user::InviteUserRequest>& request,
+        const ::core::behavior::CallContext& ctx) const
     {
         std::string set_cookie{};
 
 
         const auto key = std::string{"user.invite_multiple_user:"} +
-                         std::to_string(input.request_context.body.size());
+                         std::to_string(ctx_string(ctx,"body").size());
         m_context.cache().put(
             key,
-            core::cache::to_cache_value(std::string{input.request_context.body})
+            core::cache::to_cache_value(std::string{ctx_string(ctx,"body")})
         );
         const auto cached = m_context.cache().get(key);
         (void)cached;
@@ -58,8 +60,8 @@ public:
         using Response = std::vector<::app::model::user::InviteMultipleUserResponse>;
         Response response{};
         std::vector<::app::model::user::InviteMultipleUserResponse> responses{};
-        responses.reserve(input.request.size());
-        for (const auto& request: input.request) {
+        responses.reserve(request.size());
+        for (const auto& request: request) {
             const auto email_value = request.get_email().get_value();
             const auto invite_user_id = m_context.ids().uuid_v4();
             const auto invite_payload = std::string{R"({"sub":")"} + invite_user_id +
@@ -82,7 +84,7 @@ public:
                 email_value,
                 email_value,
                 "invited",
-                input.request_context.merchant_id,
+                ctx.merchant_id,
                 "invited_user"
             );
             m_support.publish_identity_event("user.invited", invite_user_id);

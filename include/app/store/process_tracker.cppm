@@ -30,27 +30,25 @@ public:
 
 private:
     void send_error(
-        interfaces::io::IResponse& res,
-        std::function<void()> send,
+        interfaces::io::ResponseSink& sink,
         core::error::AppError error
     ) const
     {
-        error.send(res, send);
+        error.send(sink);
     }
 
     template<typename T>
     void send_json(
-        interfaces::io::IResponse& res,
-        std::function<void()> send,
+        interfaces::io::ResponseSink& sink,
         const T& value,
         bool ok
     ) const
     {
-        res.set_status(
+        sink.set_status(
             ok ? interfaces::io::types::Status::OK : interfaces::io::types::Status::BAD_REQUEST
         );
-        res.set_body(serde::Ser::serialize("application/json", value));
-        send();
+        sink.set_body(serde::Ser::serialize("application/json", value));
+        sink.send();
     }
 
     ::app::context::AppContext* m_context{nullptr};

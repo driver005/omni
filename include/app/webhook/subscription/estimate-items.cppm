@@ -76,6 +76,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         Json payload = m_input_support.json_from_query(query);
@@ -83,36 +84,21 @@ public:
                 m_request_support
                     .authorize(req, "sdk_query", ::app::webhook::policy::kSubscriptionRead)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const std::string client_secret = m_input_support.effective_client_secret(auth, payload);
-        const auto merchant = m_input_support.merchant_id(req, auth);
-
-        const std::uint32_t limit =
-            static_cast<std::uint32_t>(m_input_support.query_unsigned(query, "limit", 10));
-        const std::uint32_t offset =
-            static_cast<std::uint32_t>(m_input_support.query_unsigned(query, "offset", 0));
-        const std::string item_type = query.get("item_type").value_or("plan");
-
-        GetSubscriptionItemsInput
-            input{profile.value(), merchant, client_secret, limit, offset, item_type};
-        auto result = m_runtime.get_subscription_items(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        ctx.client_secret = m_input_support.effective_client_secret(auth, payload);
+        m_runtime.get_subscription_items(ctx).handle(sink);
     }
 
     // ── GET /subscriptions/estimate — get_estimate ──────────────────────────────
@@ -122,6 +108,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         const auto auth = ::app::auth::AuthContextBuilder{}(req);
         const auto query = ::app::http::RequestQuery{}(req);
         Json payload = m_input_support.json_from_query(query);
@@ -131,28 +118,21 @@ public:
                 m_request_support
                     .authorize(req, "sdk_query", ::app::webhook::policy::kSubscriptionWrite)) {
             const auto& error = *failure;
-            error.send(res, send);
+            error.send(sink);
             return;
         }
         auto profile = m_input_support.extract_profile_id(req);
         if (!profile) {
             const auto& error = profile.error();
-            error.send(res, send);
+            error.send(sink);
             return;
         }
 
-        const std::string client_secret = m_input_support.effective_client_secret(auth, payload);
-        const auto merchant = m_input_support.merchant_id(req, auth);
-        GetEstimateInput input{profile.value(), merchant, client_secret, payload};
-        auto result = m_runtime.get_estimate(input);
-        if (!result) {
-            const auto& error = result.error();
-            error.send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(serde::Ser::serialize("application/json", *result));
-        send();
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile.value();
+        ctx.merchant_id = m_input_support.merchant_id(req, auth);
+        ctx.client_secret = m_input_support.effective_client_secret(auth, payload);
+        m_runtime.get_estimate(payload, ctx).handle(sink);
     }
 
 private:

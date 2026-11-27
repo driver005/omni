@@ -21,9 +21,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::refunds::RefundResponse, core::error::AppError>
-    metadata_update(const RefundsMetadataUpdateInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::refunds::RefundResponse>
+        metadata_update(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RefundsMetadataUpdateData{dto, ctx};
         m_context.metrics().record_flow("refund_metadata_update");
         m_context.metrics().counter("refunds_metadata_update_total").increment();
 

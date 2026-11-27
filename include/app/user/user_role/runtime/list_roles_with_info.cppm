@@ -1,6 +1,7 @@
 export module app_user:user_role_runtime_list_roles_with_info;
 
 import std;
+import core_behavior;
 import interfaces;
 import core_router;
 import core_serde;
@@ -33,25 +34,25 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    list_roles_with_info(const ListRolesWithInfoInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    list_roles_with_info(const ::core::behavior::CallContext& ctx) const
     {
-        const auto requestor = m_support.role_info_from_id(input.identity, input.identity.role_id);
+        const auto requestor = m_support.role_info_from_id(identity_from_context(ctx), identity_from_context(ctx).role_id);
         if (!requestor || requestor->is_internal) {
             return std::unexpected{
                 m_support.error(core::error::AppErrorKind::FORBIDDEN, "InvalidRoleOperation")
             };
         }
-        const auto entity_type = m_support.normalize_entity(input.entity_type);
+        const auto entity_type = m_support.normalize_entity(ctx_string(ctx,"entity_type"));
         if (const auto err = m_support.get_min_entity(requestor->entity_type, entity_type)) {
             return std::unexpected{*err};
         }
         auto roles =
-            m_support.roles_for_entity(input.identity, requestor->entity_type, entity_type, false);
+            m_support.roles_for_entity(identity_from_context(ctx), requestor->entity_type, entity_type, false);
         std::string product_type{};
         if (!entity_type.empty() && (entity_type == "merchant" || entity_type == "profile")) {
             const auto merchant =
-                m_context.repository().find_merchant_account_by_string(input.identity.merchant_id);
+                m_context.repository().find_merchant_account_by_string(identity_from_context(ctx).merchant_id);
             if (!merchant) {
                 return std::unexpected{
                     m_support.error(core::error::AppErrorKind::NOT_FOUND, "MerchantIdNotFound")
@@ -74,7 +75,7 @@ public:
                 return !entity_type.empty() && role.entity_type != entity_type;
             }
         );
-        if (input.groups) {
+        if (ctx_bool(ctx,"groups")) {
             std::vector<RoleInfoResponseWithParentsGroupWire> with_parents{};
             for (const auto& role: roles) {
                 RoleInfoResponseWithParentsGroupWire item{};

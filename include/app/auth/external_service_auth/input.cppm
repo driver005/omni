@@ -8,18 +8,9 @@ import app_context;
 import app_dto;
 import app_context_core;
 
-export namespace app::handlers::external_service_auth {
+import :call_context;
 
-/**
- * @brief Plain input for the validate_token route.
- *
- * Upstream routes/external_service_auth.rs:11-27 passes only the deserialized
- * request body into the core; no path or query data is used.
- */
-struct ValidateTokenInput
-{
-    ::app::dto::external_service_auth::ValidateTokenRequest request{};
-};
+export namespace app::handlers::external_service_auth {
 
 /**
  * @brief Parse/auth support for the external_service_auth handler.
@@ -74,6 +65,12 @@ public:
     {
         (void)req;
         return {};
+    }
+
+    [[nodiscard]] core::behavior::CallContext
+    context(interfaces::io::IRequest& req) const
+    {
+        return detail::make_call_context(req, "validate_token");
     }
 
     [[nodiscard]] std::optional<core::error::AppError>

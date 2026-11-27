@@ -36,9 +36,10 @@ public:
     }
 
     // ───────────────────────── Core: retrieve ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutCreateResponse, core::error::AppError>
-    retrieve(const PayoutsRetrieveInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutCreateResponse>
+    retrieve(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsRetrieveData{ctx};
         m_context.metrics().record_flow("payout_retrieve");
         m_context.metrics().counter("payouts_retrieve_total").increment();
 

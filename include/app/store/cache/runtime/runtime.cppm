@@ -1,10 +1,10 @@
 export module app_store:cache_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import app_context;
 
-import :cache_input;
 import :cache_runtime_common;
 import :cache_runtime_invalidate;
 
@@ -19,10 +19,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<void, core::error::AppError>
-    invalidate(const CacheInvalidateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<void>
+    invalidate(const core::behavior::CallContext& ctx) const
     {
-        return m_invalidate.invalidate(input);
+        return m_invalidate.invalidate(ctx);
     }
 
 private:

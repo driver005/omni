@@ -51,6 +51,7 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream step 1 (routes:63-66): get_payment_id_from_headers_or_payload, before auth.
         const std::string auth_header = ::app::http::HeaderReader{}.get(req, "authorization");
         const auto sdk_auth = m_input_support.decode_sdk_authorization(auth_header);
@@ -60,9 +61,9 @@ public:
         if (resolved.error) {
             const auto& error = *resolved.error;
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
         const std::string payment_id = resolved.value->payment_id;
@@ -74,43 +75,31 @@ public:
         if (const auto denied = m_request_support.authorize(req, "get_sdk_config", {})) {
             const auto& error = *denied;
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
 
-        // The policy ran the same auth check; rebuild the authenticated context for the
-        // runtime input without invoking the authorizer a second time.
-        const auto auth_ctx = m_input_support.build_context(req, client_secret, sdk_auth);
-
-        std::string sdk_profile_id{};
-        if (sdk_auth && sdk_auth->decoded) {
-            sdk_profile_id = sdk_auth->profile_id;
+        // The policy ran the same auth check; carry its identity into the runtime context.
+        auto ctx = m_request_support.context(req);
+        ctx.query["payment_id"] = payment_id;
+        ctx.client_secret = client_secret;
+        if (sdk_auth && sdk_auth->decoded && !sdk_auth->profile_id.empty()) {
+            ctx.profile_id = sdk_auth->profile_id;
         }
-        GetSdkConfigInput
-            input{payment_id, sdk_profile_id, m_input_support.provider_merchant_id(req), auth_ctx};
 
-        auto result = m_runtime.get_sdk_config(input);
+        auto result = m_runtime.get_sdk_config(ctx);
         if (!result) {
             const auto& error = result.error();
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
 
-        auto wire = result->serialize(
-            wire_fields<::app::dto::superposition_sdk_config::SuperPositionConfigResponse>()
-        );
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        result.handle(sink);
     }
 
     // Upstream routes::get_profile_sdk_config (routes:98-126).
@@ -120,55 +109,42 @@ public:
         std::function<void()> send
     )
     {
+        interfaces::io::ResponseSink sink{res, std::move(send)};
         // Upstream HeaderAuth(PublishableKeyAuth{...}) (routes:119-122). Registry row:
         // registry.cppm:165.
         if (const auto denied = m_request_support.authorize(req, "get_profile_sdk_config", {})) {
             const auto& error = *denied;
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
-        const auto auth_ctx = m_input_support.build_context(req, {}, std::nullopt);
-
         // Upstream path.into_inner() (routes:105); the payload is ignored.
         const std::string profile_id = m_input_support.profile_id_from_path(req);
         if (profile_id.empty()) {
             const auto error = m_errors.missing_required_field("profile_id");
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
 
-        GetProfileSdkConfigInput input{
-            profile_id,
-            m_input_support.provider_merchant_id(req),
-            auth_ctx
-        };
+        auto ctx = m_request_support.context(req);
+        ctx.profile_id = profile_id;
 
-        auto result = m_runtime.get_profile_sdk_config(input);
+        auto result = m_runtime.get_profile_sdk_config(ctx);
         if (!result) {
             const auto& error = result.error();
             const auto status_override = m_errors.status_override_for(error.get_kind_name());
-            res.set_status(status_override.value_or(error.get_status()));
-            res.set_body(serde::Ser::serialize("application/json", error));
-            send();
+            sink.set_status(status_override.value_or(error.get_status()));
+            sink.set_body(serde::Ser::serialize("application/json", error));
+            sink.send();
             return;
         }
 
-        auto wire = result->serialize(
-            wire_fields<::app::dto::superposition_sdk_config::SuperPositionConfigResponse>()
-        );
-        if (!wire) {
-            wire.error().send(res, send);
-            return;
-        }
-        res.set_status(interfaces::io::types::Status::OK);
-        res.set_body(std::as_bytes(std::span{*wire}));
-        send();
+        result.handle(sink);
     }
 
     // Upstream app.rs SdkConfig::server (app.rs:3584-3595): exactly the two GET routes below.

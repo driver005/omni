@@ -38,9 +38,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
-    retrieve_disputes_list_profile(const RetrieveDisputesListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
+        retrieve_disputes_list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = RetrieveDisputesListProfileData{dto, ctx};
         m_context.metrics().record_flow("dispute_profile_list");
         auto result =
             m_support.retrieve_disputes_list(input.scope, input.constraints, input.profile_id_list);

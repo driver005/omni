@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -35,24 +36,23 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::admin::MerchantConnectorDeleteResponse, core::error::AppError>
-        remove(const ConnectorDeleteInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantConnectorDeleteResponse>
+        remove(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_connector_by_string(input.connector_id);
+            m_context.repository().find_merchant_connector_by_string(ctx_string(ctx,"connector_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
                 "Merchant connector account does not exist in our records"
             )};
         }
-        if (!input.merchant_id.empty() && found->get_merchant_id() != input.merchant_id) {
+        if (!ctx_string(ctx,"merchant_id").empty() && found->get_merchant_id() != ctx_string(ctx,"merchant_id")) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::INVALID_REQUEST,
                 std::format(
                     "Invalid merchant_id {} provided for merchant_connector_account",
-                    input.merchant_id
+                    ctx_string(ctx,"merchant_id")
                 )
             )};
         }

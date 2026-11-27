@@ -65,94 +65,104 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    retrieve_dispute(const RetrieveDisputeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        retrieve_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_dispute.retrieve_dispute(input);
+        return m_retrieve_dispute.retrieve_dispute(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
-    fetch_disputes(const FetchDisputesInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
+        fetch_disputes(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_fetch_disputes.fetch_disputes(input);
+        return m_fetch_disputes.fetch_disputes(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
-    retrieve_disputes_list(const RetrieveDisputesListInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
+        retrieve_disputes_list(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_disputes_list.retrieve_disputes_list(input);
+        return m_retrieve_disputes_list.retrieve_disputes_list(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeResponse>, Error>
-    retrieve_disputes_list_profile(const RetrieveDisputesListProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeResponse>>
+        retrieve_disputes_list_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_disputes_list_profile.retrieve_disputes_list_profile(input);
+        return m_retrieve_disputes_list_profile.retrieve_disputes_list_profile(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListResponse, Error>
-    retrieve_disputes_list_for_platform(const RetrieveDisputesListForPlatformInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListResponse>
+        retrieve_disputes_list_for_platform(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_disputes_list_for_platform.retrieve_disputes_list_for_platform(input);
+        return m_retrieve_disputes_list_for_platform.retrieve_disputes_list_for_platform(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
-    get_disputes_filters(const GetDisputesFiltersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeListFilters>
+    get_disputes_filters(const core::behavior::CallContext& ctx) const
     {
-        return m_get_disputes_filters.get_disputes_filters(input);
+        return m_get_disputes_filters.get_disputes_filters(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeListFilters, Error>
-    get_disputes_filters_profile(const GetDisputesFiltersProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeListFilters>
+    get_disputes_filters_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_get_disputes_filters_profile.get_disputes_filters_profile(input);
+        return m_get_disputes_filters_profile.get_disputes_filters_profile(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::PlatformDisputeListFilters, Error>
-    get_platform_disputes_filters(const GetPlatformDisputesFiltersInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::PlatformDisputeListFilters>
+    get_platform_disputes_filters(const core::behavior::CallContext& ctx) const
     {
-        return m_get_platform_disputes_filters.get_platform_disputes_filters(input);
+        return m_get_platform_disputes_filters.get_platform_disputes_filters(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    accept_dispute(const AcceptDisputeInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        accept_dispute(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_accept_dispute.accept_dispute(input);
+        return m_accept_dispute.accept_dispute(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputeResponse, Error>
-    submit_dispute_evidence(const SubmitDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputeResponse>
+        submit_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_submit_dispute_evidence.submit_dispute_evidence(input);
+        return m_submit_dispute_evidence.submit_dispute_evidence(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::dto::files::CreateFileResponse, Error>
-    attach_dispute_evidence(const AttachDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::dto::files::CreateFileResponse>
+        attach_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_attach_dispute_evidence.attach_dispute_evidence(input);
+        return m_attach_dispute_evidence.attach_dispute_evidence(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<std::vector<::app::model::disputes::DisputeEvidenceBlock>, Error>
-    retrieve_dispute_evidence(const RetrieveDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<std::vector<::app::model::disputes::DisputeEvidenceBlock>>
+        retrieve_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_retrieve_dispute_evidence.retrieve_dispute_evidence(input);
+        return m_retrieve_dispute_evidence.retrieve_dispute_evidence(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, Error>
-    delete_dispute_evidence(const DeleteDisputeEvidenceInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+        delete_dispute_evidence(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
-        return m_delete_dispute_evidence.delete_dispute_evidence(input);
+        return m_delete_dispute_evidence.delete_dispute_evidence(dto, ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
-    get_disputes_aggregate(const GetDisputesAggregateInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputesAggregateResponse>
+    get_disputes_aggregate(const core::behavior::CallContext& ctx) const
     {
-        return m_get_disputes_aggregate.get_disputes_aggregate(input);
+        return m_get_disputes_aggregate.get_disputes_aggregate(ctx);
     }
 
-    [[nodiscard]] std::expected<::app::model::disputes::DisputesAggregateResponse, Error>
-    get_disputes_aggregate_profile(const GetDisputesAggregateProfileInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::model::disputes::DisputesAggregateResponse>
+    get_disputes_aggregate_profile(const core::behavior::CallContext& ctx) const
     {
-        return m_get_disputes_aggregate_profile.get_disputes_aggregate_profile(input);
+        return m_get_disputes_aggregate_profile.get_disputes_aggregate_profile(ctx);
     }
 
 private:

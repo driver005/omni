@@ -36,9 +36,11 @@ public:
     }
 
     // ───────────────────────── Core: list_by_filter_profile ─────────────────────────
-    [[nodiscard]] std::expected<::app::model::payouts::PayoutListResponse, core::error::AppError>
-    list_by_filter_profile(const PayoutsListByFilterProfileInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payouts::PayoutListResponse>
+        list_by_filter_profile(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutsListByFilterProfileData{dto, ctx};
         const auto filters = m_support.list_filters_from_dto(input.request, input.query);
         if (filters.limit > 20) {
             return std::unexpected{m_support.make_error(

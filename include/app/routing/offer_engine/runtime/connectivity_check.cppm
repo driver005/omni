@@ -15,8 +15,8 @@ import app_crypto;
 import app_metrics;
 import app_connector;
 import app_services;
+import core_behavior;
 
-import :offer_engine_input;
 import :offer_engine_result;
 import :offer_engine_runtime_common;
 
@@ -32,10 +32,9 @@ public:
     }
 
     /** @brief Port of `check_offer_engine_connectivity(state)` (connectivity.rs:26-72). */
-    [[nodiscard]] std::expected<ConnectivityCheckResponse, core::error::AppError>
-    connectivity_check(const ConnectivityCheckInput& input) const
+    [[nodiscard]] core::behavior::Outcome<ConnectivityCheckResponse>
+    connectivity_check(const ::core::behavior::CallContext&) const
     {
-        (void)input;
         m_context.metrics().record_flow("OfferEngineConnectivityCheck");
         m_context.metrics().counter("OFFER_ENGINE_CONNECTIVITY_CHECK").increment();
 

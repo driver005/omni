@@ -5,8 +5,8 @@ import core_error;
 import core_serde;
 import app_context;
 import app_dto;
+import core_behavior;
 
-import :routing_input;
 import :routing_result;
 import :routing_runtime_common;
 
@@ -23,10 +23,10 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    retrieve_surcharge_decision_manager_config(const RoutingInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    retrieve_surcharge_decision_manager_config(const ::core::behavior::CallContext& ctx) const
     {
-        const auto profile = input.profile_id;
+        const auto profile = ctx.profile_id;
         const auto key = m_support.decision_key(profile, "surcharge");
         const auto stored = m_support.find_config(key);
         if (!stored) {

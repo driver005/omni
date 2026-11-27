@@ -9,6 +9,7 @@ import app_model;
 import app_dto;
 import app_context;
 import core_cache;
+import core_behavior;
 import core_error;
 import app_auth;
 import app_http;
@@ -35,12 +36,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::dto::admin::MerchantAccountDeleteResponse, core::error::AppError>
-        remove(const DeleteMerchantAccountInput& input) const
+    [[nodiscard]] core::behavior::Outcome<::app::dto::admin::MerchantAccountDeleteResponse>
+        remove(const ::core::behavior::CallContext& ctx) const
     {
         const auto found =
-            m_context.repository().find_merchant_account_by_string(input.merchant_id);
+            m_context.repository().find_merchant_account_by_string(ctx_string(ctx,"merchant_id"));
         if (!found.has_value()) {
             return std::unexpected{core::error::AppErrorBuilder{}(
                 core::error::AppErrorKind::NOT_FOUND,
@@ -60,7 +60,7 @@ public:
         bool key_store_deleted = false;
         if (account_deleted) {
             key_store_deleted =
-                m_context.key_store().find_record("merchant_aes", input.merchant_id).has_value();
+                m_context.key_store().find_record("merchant_aes", ctx_string(ctx,"merchant_id")).has_value();
         }
         ::app::dto::admin::MerchantAccountDeleteResponse response;
         response.set_merchant_id(m_support.merchant_id_value(found->get_merchant_id()));

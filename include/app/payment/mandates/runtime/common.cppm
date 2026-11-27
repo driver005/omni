@@ -90,7 +90,7 @@ public:
      * payment record has no profile column, so the profile persisted on the mandate is
      * used after verifying the original payment exists.
      */
-    [[nodiscard]] std::expected<std::string, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::string>
     get_profile_id_for_mandate(const Record& record) const
     {
         if (record.get_payment_id().empty()) {
@@ -113,7 +113,7 @@ public:
 
     /** @brief get_mandate_type (core/mandate/helpers.rs:46-85), retained as a local validator. */
     [[maybe_unused]]
-    [[nodiscard]] std::expected<std::optional<std::string_view>, core::error::AppError>
+    [[nodiscard]] core::behavior::Outcome<std::optional<std::string_view>>
     get_mandate_type(
         bool has_mandate_data,
         bool has_off_session,

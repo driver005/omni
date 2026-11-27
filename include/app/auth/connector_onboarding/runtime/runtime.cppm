@@ -1,9 +1,11 @@
 export module app_auth:connector_onboarding_runtime;
 
 import std;
+import core_behavior;
 import core_error;
 import core_serde;
 import app_context;
+import app_dto;
 
 import :connector_onboarding_input;
 import :connector_onboarding_result;
@@ -25,22 +27,29 @@ public:
     {
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    get_action_url(const GetActionUrlInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    get_action_url(
+        const ::app::dto::connector_onboarding::ActionUrlRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_get_action_url.get_action_url(input);
+        return m_get_action_url.get_action_url(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    sync_onboarding_status(const SyncOnboardingStatusInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> sync_onboarding_status(
+        const ::app::dto::connector_onboarding::OnboardingSyncRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_sync_onboarding_status.sync_onboarding_status(input);
+        return m_sync_onboarding_status.sync_onboarding_status(request, ctx);
     }
 
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    reset_tracking_id(const ResetTrackingIdInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value> reset_tracking_id(
+        const ::app::dto::connector_onboarding::ResetTrackingIdRequest& request,
+        const core::behavior::CallContext& ctx
+    ) const
     {
-        return m_reset_tracking_id.reset_tracking_id(input);
+        return m_reset_tracking_id.reset_tracking_id(request, ctx);
     }
 
 private:

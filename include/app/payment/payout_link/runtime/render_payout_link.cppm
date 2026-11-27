@@ -35,9 +35,10 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
     // core/payout_link.rs:39-329 — initiate_payout_link
     // ─────────────────────────────────────────────────────────────────────────
-    [[nodiscard]] std::expected<serde::Value, core::error::AppError>
-    render(const PayoutLinkRenderInput& input) const
+    [[nodiscard]] core::behavior::Outcome<serde::Value>
+    render(const core::behavior::CallContext& ctx) const
     {
+        const auto input = PayoutLinkRenderData{ctx};
         // routes/payout_link.rs:37-38 flow/counter (previously recorded by the
         // route handler just before calling the core).
         m_context.metrics().record_flow("PayoutLinkInitiate");

@@ -35,10 +35,11 @@ public:
     {
     }
 
-    [[nodiscard]] std::
-        expected<::app::model::payment_methods::PaymentMethodUpdateResponse, core::error::AppError>
-        payment_method_update_api(const PaymentMethodUpdateApiInput& input) const
+    template<class Dto>
+    [[nodiscard]] core::behavior::Outcome<::app::model::payment_methods::PaymentMethodUpdateResponse>
+        payment_method_update_api(const Dto& dto, const core::behavior::CallContext& ctx) const
     {
+        const auto input = PaymentMethodUpdateApiData{dto, ctx};
         auto record = input.record;
         if (input.request.get_card()) {
             const auto vault_response = m_support.call_connector(
